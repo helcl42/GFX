@@ -3142,7 +3142,6 @@ GfxResult vulkan_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPip
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
     const uint32_t viewportWidth = 800;
-    ;
     const uint32_t viewportHeight = 600;
 
     VkViewport viewport = { 0 };
