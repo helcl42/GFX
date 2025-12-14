@@ -106,7 +106,12 @@ public:
 
     void* mapAsync(uint64_t offset = 0, uint64_t size = 0) override
     {
-        return gfxBufferMapAsync(handle, offset, size);
+        void* mappedPointer = nullptr;
+        GfxResult result = gfxBufferMapAsync(handle, offset, size, &mappedPointer);
+        if (result != GFX_RESULT_SUCCESS) {
+            return nullptr;
+        }
+        return mappedPointer;
     }
 
     void unmap() override
@@ -179,8 +184,9 @@ public:
         cDesc.baseArrayLayer = descriptor.baseArrayLayer;
         cDesc.arrayLayerCount = descriptor.arrayLayerCount;
 
-        GfxTextureView view = gfxTextureCreateView(handle, &cDesc);
-        if (!view)
+        GfxTextureView view = nullptr;
+        GfxResult result = gfxTextureCreateView(handle, &cDesc, &view);
+        if (result != GFX_RESULT_SUCCESS || !view)
             throw std::runtime_error("Failed to create texture view");
 
         return std::make_shared<CTextureViewImpl>(view, shared_from_this());
@@ -439,24 +445,27 @@ public:
                 cDepthStencil = impl->getHandle();
         }
 
-        GfxRenderPassEncoder encoder = gfxCommandEncoderBeginRenderPass(
+        GfxRenderPassEncoder encoder = nullptr;
+        GfxResult result = gfxCommandEncoderBeginRenderPass(
             handle,
             cColorAttachments.data(),
             static_cast<uint32_t>(cColorAttachments.size()),
             cClearColors.empty() ? nullptr : cClearColors.data(),
             cDepthStencil,
             depthClearValue,
-            stencilClearValue);
+            stencilClearValue,
+            &encoder);
 
-        if (!encoder)
+        if (result != GFX_RESULT_SUCCESS || !encoder)
             throw std::runtime_error("Failed to begin render pass");
         return std::make_shared<CRenderPassEncoderImpl>(encoder);
     }
 
     std::shared_ptr<ComputePassEncoder> beginComputePass(const std::string& label = "") override
     {
-        GfxComputePassEncoder encoder = gfxCommandEncoderBeginComputePass(handle, label.c_str());
-        if (!encoder)
+        GfxComputePassEncoder encoder = nullptr;
+        GfxResult result = gfxCommandEncoderBeginComputePass(handle, label.c_str(), &encoder);
+        if (result != GFX_RESULT_SUCCESS || !encoder)
             throw std::runtime_error("Failed to begin compute pass");
         return std::make_shared<CComputePassEncoderImpl>(encoder);
     }
@@ -807,8 +816,9 @@ public:
         cDesc.width = descriptor.width;
         cDesc.height = descriptor.height;
 
-        GfxSurface surface = gfxDeviceCreateSurface(handle, &cDesc);
-        if (!surface)
+        GfxSurface surface = nullptr;
+        GfxResult result = gfxDeviceCreateSurface(handle, &cDesc, &surface);
+        if (result != GFX_RESULT_SUCCESS || !surface)
             throw std::runtime_error("Failed to create surface");
         return std::make_shared<CSurfaceImpl>(surface);
     }
@@ -830,8 +840,9 @@ public:
         cDesc.presentMode = static_cast<GfxPresentMode>(descriptor.presentMode);
         cDesc.bufferCount = descriptor.bufferCount;
 
-        GfxSwapchain swapchain = gfxDeviceCreateSwapchain(handle, surfaceImpl->getHandle(), &cDesc);
-        if (!swapchain)
+        GfxSwapchain swapchain = nullptr;
+        GfxResult result = gfxDeviceCreateSwapchain(handle, surfaceImpl->getHandle(), &cDesc, &swapchain);
+        if (result != GFX_RESULT_SUCCESS || !swapchain)
             throw std::runtime_error("Failed to create swapchain");
         return std::make_shared<CSwapchainImpl>(swapchain);
     }
@@ -844,8 +855,9 @@ public:
         cDesc.usage = cppBufferUsageToCUsage(descriptor.usage);
         cDesc.mappedAtCreation = descriptor.mappedAtCreation;
 
-        GfxBuffer buffer = gfxDeviceCreateBuffer(handle, &cDesc);
-        if (!buffer)
+        GfxBuffer buffer = nullptr;
+        GfxResult result = gfxDeviceCreateBuffer(handle, &cDesc, &buffer);
+        if (result != GFX_RESULT_SUCCESS || !buffer)
             throw std::runtime_error("Failed to create buffer");
         return std::make_shared<CBufferImpl>(buffer);
     }
@@ -860,8 +872,9 @@ public:
         cDesc.format = cppFormatToCFormat(descriptor.format);
         cDesc.usage = cppTextureUsageToCUsage(descriptor.usage);
 
-        GfxTexture texture = gfxDeviceCreateTexture(handle, &cDesc);
-        if (!texture)
+        GfxTexture texture = nullptr;
+        GfxResult result = gfxDeviceCreateTexture(handle, &cDesc, &texture);
+        if (result != GFX_RESULT_SUCCESS || !texture)
             throw std::runtime_error("Failed to create texture");
         return std::make_shared<CTextureImpl>(texture);
     }
@@ -888,8 +901,9 @@ public:
             cDesc.compare = nullptr;
         }
 
-        GfxSampler sampler = gfxDeviceCreateSampler(handle, &cDesc);
-        if (!sampler)
+        GfxSampler sampler = nullptr;
+        GfxResult result = gfxDeviceCreateSampler(handle, &cDesc, &sampler);
+        if (result != GFX_RESULT_SUCCESS || !sampler)
             throw std::runtime_error("Failed to create sampler");
         return std::make_shared<CSamplerImpl>(sampler);
     }
@@ -902,8 +916,9 @@ public:
         cDesc.codeSize = descriptor.code.size(); // Set the actual binary size
         cDesc.entryPoint = descriptor.entryPoint.c_str();
 
-        GfxShader shader = gfxDeviceCreateShader(handle, &cDesc);
-        if (!shader)
+        GfxShader shader = nullptr;
+        GfxResult result = gfxDeviceCreateShader(handle, &cDesc, &shader);
+        if (result != GFX_RESULT_SUCCESS || !shader)
             throw std::runtime_error("Failed to create shader");
         return std::make_shared<CShaderImpl>(shader);
     }
@@ -948,8 +963,9 @@ public:
         cDesc.entries = cEntries.data();
         cDesc.entryCount = static_cast<uint32_t>(cEntries.size());
 
-        GfxBindGroupLayout layout = gfxDeviceCreateBindGroupLayout(handle, &cDesc);
-        if (!layout)
+        GfxBindGroupLayout layout = nullptr;
+        GfxResult result = gfxDeviceCreateBindGroupLayout(handle, &cDesc, &layout);
+        if (result != GFX_RESULT_SUCCESS || !layout)
             throw std::runtime_error("Failed to create bind group layout");
         return std::make_shared<CBindGroupLayoutImpl>(layout);
     }
@@ -1002,8 +1018,9 @@ public:
         cDesc.entries = cEntries.data();
         cDesc.entryCount = static_cast<uint32_t>(cEntries.size());
 
-        GfxBindGroup bindGroup = gfxDeviceCreateBindGroup(handle, &cDesc);
-        if (!bindGroup)
+        GfxBindGroup bindGroup = nullptr;
+        GfxResult result = gfxDeviceCreateBindGroup(handle, &cDesc, &bindGroup);
+        if (result != GFX_RESULT_SUCCESS || !bindGroup)
             throw std::runtime_error("Failed to create bind group");
         return std::make_shared<CBindGroupImpl>(bindGroup);
     }
@@ -1154,8 +1171,9 @@ public:
         cDesc.bindGroupLayouts = cBindGroupLayouts.empty() ? nullptr : cBindGroupLayouts.data();
         cDesc.bindGroupLayoutCount = static_cast<uint32_t>(cBindGroupLayouts.size());
 
-        GfxRenderPipeline pipeline = gfxDeviceCreateRenderPipeline(handle, &cDesc);
-        if (!pipeline)
+        GfxRenderPipeline pipeline = nullptr;
+        GfxResult result = gfxDeviceCreateRenderPipeline(handle, &cDesc, &pipeline);
+        if (result != GFX_RESULT_SUCCESS || !pipeline)
             throw std::runtime_error("Failed to create render pipeline");
         return std::make_shared<CRenderPipelineImpl>(pipeline);
     }
@@ -1171,16 +1189,18 @@ public:
         cDesc.compute = shaderImpl->getHandle();
         cDesc.entryPoint = descriptor.entryPoint.c_str();
 
-        GfxComputePipeline pipeline = gfxDeviceCreateComputePipeline(handle, &cDesc);
-        if (!pipeline)
+        GfxComputePipeline pipeline = nullptr;
+        GfxResult result = gfxDeviceCreateComputePipeline(handle, &cDesc, &pipeline);
+        if (result != GFX_RESULT_SUCCESS || !pipeline)
             throw std::runtime_error("Failed to create compute pipeline");
         return std::make_shared<CComputePipelineImpl>(pipeline);
     }
 
     std::shared_ptr<CommandEncoder> createCommandEncoder(const std::string& label = "") override
     {
-        GfxCommandEncoder encoder = gfxDeviceCreateCommandEncoder(handle, label.c_str());
-        if (!encoder)
+        GfxCommandEncoder encoder = nullptr;
+        GfxResult result = gfxDeviceCreateCommandEncoder(handle, label.c_str(), &encoder);
+        if (result != GFX_RESULT_SUCCESS || !encoder)
             throw std::runtime_error("Failed to create command encoder");
         return std::make_shared<CCommandEncoderImpl>(encoder);
     }
@@ -1191,8 +1211,9 @@ public:
         cDesc.label = descriptor.label.c_str();
         cDesc.signaled = descriptor.signaled;
 
-        GfxFence fence = gfxDeviceCreateFence(handle, &cDesc);
-        if (!fence)
+        GfxFence fence = nullptr;
+        GfxResult result = gfxDeviceCreateFence(handle, &cDesc, &fence);
+        if (result != GFX_RESULT_SUCCESS || !fence)
             throw std::runtime_error("Failed to create fence");
         return std::make_shared<CFenceImpl>(fence);
     }
@@ -1204,8 +1225,9 @@ public:
         cDesc.type = static_cast<GfxSemaphoreType>(descriptor.type);
         cDesc.initialValue = descriptor.initialValue;
 
-        GfxSemaphore semaphore = gfxDeviceCreateSemaphore(handle, &cDesc);
-        if (!semaphore)
+        GfxSemaphore semaphore = nullptr;
+        GfxResult result = gfxDeviceCreateSemaphore(handle, &cDesc, &semaphore);
+        if (result != GFX_RESULT_SUCCESS || !semaphore)
             throw std::runtime_error("Failed to create semaphore");
         return std::make_shared<CSemaphoreImpl>(semaphore);
     }
@@ -1237,8 +1259,9 @@ public:
         cDesc.label = descriptor.label.c_str();
         // Convert required features if needed
 
-        GfxDevice device = gfxAdapterCreateDevice(handle, &cDesc);
-        if (!device)
+        GfxDevice device = nullptr;
+        GfxResult result = gfxAdapterCreateDevice(handle, &cDesc, &device);
+        if (result != GFX_RESULT_SUCCESS || !device)
             throw std::runtime_error("Failed to create device");
         return std::make_shared<CDeviceImpl>(device);
     }
@@ -1276,8 +1299,9 @@ public:
         cDesc.powerPreference = static_cast<GfxPowerPreference>(descriptor.powerPreference);
         cDesc.forceFallbackAdapter = descriptor.forceFallbackAdapter;
 
-        GfxAdapter adapter = gfxInstanceRequestAdapter(handle, &cDesc);
-        if (!adapter)
+        GfxAdapter adapter = nullptr;
+        GfxResult result = gfxInstanceRequestAdapter(handle, &cDesc, &adapter);
+        if (result != GFX_RESULT_SUCCESS || !adapter)
             throw std::runtime_error("Failed to request adapter");
         return std::make_shared<CAdapterImpl>(adapter);
     }
@@ -1321,8 +1345,9 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
     cDesc.requiredExtensions = extensions.empty() ? nullptr : extensions.data();
     cDesc.requiredExtensionCount = static_cast<uint32_t>(extensions.size());
 
-    GfxInstance instance = gfxCreateInstance(&cDesc);
-    if (!instance) {
+    GfxInstance instance = nullptr;
+    GfxResult result = gfxCreateInstance(&cDesc, &instance);
+    if (result != GFX_RESULT_SUCCESS || !instance) {
         throw std::runtime_error("Failed to create instance");
     }
 

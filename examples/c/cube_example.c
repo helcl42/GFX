@@ -194,18 +194,16 @@ bool initializeGraphics(CubeApp* app)
     }
 
     // Create graphics instance
-    // The backend is already loaded, so this just creates an instance
     GfxInstanceDescriptor instanceDesc = {
         .backend = GFX_BACKEND_AUTO,
-        .enableValidation = true, // Enable validation to get diagnostic information
+        .enableValidation = true,
         .applicationName = "Cube Example (C)",
         .applicationVersion = 1,
         .requiredExtensions = glfwExtensions,
         .requiredExtensionCount = glfwExtensionCount
     };
 
-    app->instance = gfxCreateInstance(&instanceDesc);
-    if (!app->instance) {
+    if (gfxCreateInstance(&instanceDesc, &app->instance) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create graphics instance\n");
         return false;
     }
@@ -216,8 +214,7 @@ bool initializeGraphics(CubeApp* app)
         .forceFallbackAdapter = false
     };
 
-    app->adapter = gfxInstanceRequestAdapter(app->instance, &adapterDesc);
-    if (!app->adapter) {
+    if (gfxInstanceRequestAdapter(app->instance, &adapterDesc, &app->adapter) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to get graphics adapter\n");
         return false;
     }
@@ -232,8 +229,7 @@ bool initializeGraphics(CubeApp* app)
         .requiredFeatureCount = 0
     };
 
-    app->device = gfxAdapterCreateDevice(app->adapter, &deviceDesc);
-    if (!app->device) {
+    if (gfxAdapterCreateDevice(app->adapter, &deviceDesc, &app->device) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create device\n");
         return false;
     }
@@ -250,8 +246,7 @@ bool initializeGraphics(CubeApp* app)
         .height = WINDOW_HEIGHT
     };
 
-    app->surface = gfxDeviceCreateSurface(app->device, &surfaceDesc);
-    if (!app->surface) {
+    if (gfxDeviceCreateSurface(app->device, &surfaceDesc, &app->surface) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create surface\n");
         return false;
     }
@@ -267,8 +262,7 @@ bool initializeGraphics(CubeApp* app)
         .bufferCount = 2
     };
 
-    app->swapchain = gfxDeviceCreateSwapchain(app->device, app->surface, &swapchainDesc);
-    if (!app->swapchain) {
+    if (gfxDeviceCreateSwapchain(app->device, app->surface, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create swapchain\n");
         return false;
     }
@@ -286,8 +280,7 @@ bool initializeGraphics(CubeApp* app)
         .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT
     };
 
-    app->depthTexture = gfxDeviceCreateTexture(app->device, &depthTextureDesc);
-    if (!app->depthTexture) {
+    if (gfxDeviceCreateTexture(app->device, &depthTextureDesc, &app->depthTexture) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create depth texture\n");
         return false;
     }
@@ -302,8 +295,7 @@ bool initializeGraphics(CubeApp* app)
         .arrayLayerCount = 1
     };
 
-    app->depthTextureView = gfxTextureCreateView(app->depthTexture, &depthViewDesc);
-    if (!app->depthTextureView) {
+    if (gfxTextureCreateView(app->depthTexture, &depthViewDesc, &app->depthTextureView) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create depth texture view\n");
         return false;
     }
@@ -353,8 +345,7 @@ bool createRenderingResources(CubeApp* app)
         .mappedAtCreation = false
     };
 
-    app->vertexBuffer = gfxDeviceCreateBuffer(app->device, &vertexBufferDesc);
-    if (!app->vertexBuffer) {
+    if (gfxDeviceCreateBuffer(app->device, &vertexBufferDesc, &app->vertexBuffer) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create vertex buffer\n");
         return false;
     }
@@ -367,8 +358,7 @@ bool createRenderingResources(CubeApp* app)
         .mappedAtCreation = false
     };
 
-    app->indexBuffer = gfxDeviceCreateBuffer(app->device, &indexBufferDesc);
-    if (!app->indexBuffer) {
+    if (gfxDeviceCreateBuffer(app->device, &indexBufferDesc, &app->indexBuffer) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create index buffer\n");
         return false;
     }
@@ -381,8 +371,7 @@ bool createRenderingResources(CubeApp* app)
         .mappedAtCreation = false
     };
 
-    app->uniformBuffer = gfxDeviceCreateBuffer(app->device, &uniformBufferDesc);
-    if (!app->uniformBuffer) {
+    if (gfxDeviceCreateBuffer(app->device, &uniformBufferDesc, &app->uniformBuffer) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create uniform buffer\n");
         return false;
     }
@@ -395,7 +384,7 @@ bool createRenderingResources(CubeApp* app)
     GfxBindGroupLayoutEntry uniformLayoutEntry = {
         .binding = 0,
         .visibility = GFX_SHADER_STAGE_VERTEX,
-        .type = GFX_BINDING_TYPE_BUFFER, // Explicitly specify this is a buffer binding
+        .type = GFX_BINDING_TYPE_BUFFER,
         .buffer = {
             .hasDynamicOffset = false,
             .minBindingSize = sizeof(UniformData) }
@@ -407,22 +396,10 @@ bool createRenderingResources(CubeApp* app)
         .entryCount = 1
     };
 
-    GfxBindGroupLayout tempLayout = gfxDeviceCreateBindGroupLayout(app->device, &uniformLayoutDesc);
-    printf("[EXAMPLE DEBUG] Bind group layout returned from function: %p\n", (void*)tempLayout);
-
-    app->uniformBindGroupLayout = tempLayout;
-    printf("[EXAMPLE DEBUG] Bind group layout after storing in app: %p\n", (void*)app->uniformBindGroupLayout);
-
-    if (!app->uniformBindGroupLayout) {
+    if (gfxDeviceCreateBindGroupLayout(app->device, &uniformLayoutDesc, &app->uniformBindGroupLayout) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create uniform bind group layout\n");
         return false;
     }
-
-    printf("[EXAMPLE DEBUG] Bind group layout final value check: %p\n", (void*)app->uniformBindGroupLayout);
-    printf("[EXAMPLE DEBUG] Value stored in app->uniformBindGroupLayout: %p\n", (void*)app->uniformBindGroupLayout);
-    printf("[EXAMPLE DEBUG] Address of app->uniformBindGroupLayout field: %p\n", (void*)&app->uniformBindGroupLayout);
-    printf("[EXAMPLE DEBUG] Size of CubeApp struct: %zu bytes\n", sizeof(CubeApp));
-    printf("[EXAMPLE DEBUG] Offset of uniformBindGroupLayout in struct: %zu bytes\n", offsetof(CubeApp, uniformBindGroupLayout));
 
     // Create bind group
     GfxBindGroupEntry uniformEntry = {
@@ -442,8 +419,7 @@ bool createRenderingResources(CubeApp* app)
         .entryCount = 1
     };
 
-    app->uniformBindGroup = gfxDeviceCreateBindGroup(app->device, &uniformBindGroupDesc);
-    if (!app->uniformBindGroup) {
+    if (gfxDeviceCreateBindGroup(app->device, &uniformBindGroupDesc, &app->uniformBindGroup) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create uniform bind group\n");
         return false;
     }
@@ -466,8 +442,7 @@ bool createRenderingResources(CubeApp* app)
         .entryPoint = "main"
     };
 
-    app->vertexShader = gfxDeviceCreateShader(app->device, &vertexShaderDesc);
-    if (!app->vertexShader) {
+    if (gfxDeviceCreateShader(app->device, &vertexShaderDesc, &app->vertexShader) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create vertex shader\n");
         free(vertexShaderCode);
         free(fragmentShaderCode);
@@ -482,8 +457,7 @@ bool createRenderingResources(CubeApp* app)
         .entryPoint = "main"
     };
 
-    app->fragmentShader = gfxDeviceCreateShader(app->device, &fragmentShaderDesc);
-    if (!app->fragmentShader) {
+    if (gfxDeviceCreateShader(app->device, &fragmentShaderDesc, &app->fragmentShader) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create fragment shader\n");
         free(vertexShaderCode);
         free(fragmentShaderCode);
@@ -580,14 +554,13 @@ bool createRenderPipeline(CubeApp* app)
         .vertex = &vertexState,
         .fragment = &fragmentState,
         .primitive = &primitiveState,
-        .depthStencil = &depthStencilState, // Enable depth testing
+        .depthStencil = &depthStencilState,
         .sampleCount = 1,
-        .bindGroupLayouts = bindGroupLayouts, // Pass the array
+        .bindGroupLayouts = bindGroupLayouts,
         .bindGroupLayoutCount = 1
     };
 
-    app->renderPipeline = gfxDeviceCreateRenderPipeline(app->device, &pipelineDesc);
-    if (!app->renderPipeline) {
+    if (gfxDeviceCreateRenderPipeline(app->device, &pipelineDesc, &app->renderPipeline) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create render pipeline\n");
         return false;
     }
@@ -648,25 +621,25 @@ void render(CubeApp* app)
     }
 
     // Create command encoder
-    GfxCommandEncoder encoder = gfxDeviceCreateCommandEncoder(app->device, "Frame Commands");
-    if (!encoder) {
+    GfxCommandEncoder encoder;
+    if (gfxDeviceCreateCommandEncoder(app->device, "Frame Commands", &encoder) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create command encoder\n");
-        // NOTE: Do NOT destroy swapchain texture views - they are owned by the swapchain
         return;
     }
 
-    // Begin render pass with dark blue clear color (match C++)
+    // Begin render pass with dark blue clear color
     GfxColor clearColor = { 0.1f, 0.2f, 0.3f, 1.0f };
-    GfxRenderPassEncoder renderPass = gfxCommandEncoderBeginRenderPass(
+    GfxRenderPassEncoder renderPass;
+    if (gfxCommandEncoderBeginRenderPass(
         encoder,
         &backbuffer,
         1,
         &clearColor,
-        app->depthTextureView, // Use depth buffer
+        app->depthTextureView,
         1.0f,
-        0);
-
-    if (renderPass) {
+        0,
+        &renderPass) == GFX_RESULT_SUCCESS) {
+        
         // Set pipeline
         gfxRenderPassEncoderSetPipeline(renderPass, app->renderPipeline);
 
@@ -682,7 +655,7 @@ void render(CubeApp* app)
             GFX_INDEX_FORMAT_UINT16, 0,
             gfxBufferGetSize(app->indexBuffer));
 
-        // Draw indexed (36 indices for the cube: 6 faces * 2 triangles * 3 vertices)
+        // Draw indexed (36 indices for the cube)
         gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
 
         // End render pass
@@ -701,7 +674,6 @@ void render(CubeApp* app)
 
     // Cleanup
     gfxCommandEncoderDestroy(encoder);
-    // NOTE: Do NOT destroy backbuffer - swapchain owns it and will clean it up
 }
 
 void cleanup(CubeApp* app)

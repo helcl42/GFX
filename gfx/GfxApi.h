@@ -155,8 +155,23 @@ typedef enum {
 // Result codes
 typedef enum GfxResult {
     GFX_RESULT_SUCCESS = 0,
+    
+    // General errors
     GFX_RESULT_ERROR_INVALID_PARAMETER,
+    GFX_RESULT_ERROR_OUT_OF_MEMORY,
+    GFX_RESULT_ERROR_DEVICE_LOST,
+    GFX_RESULT_ERROR_SURFACE_LOST,
+    GFX_RESULT_ERROR_OUT_OF_DATE,
+    
+    // Operation-specific errors
     GFX_RESULT_TIMEOUT,
+    GFX_RESULT_NOT_READY,
+    
+    // Backend errors
+    GFX_RESULT_ERROR_BACKEND_NOT_LOADED,
+    GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED,
+    
+    // Unknown/generic
     GFX_RESULT_ERROR_UNKNOWN
 } GfxResult;
 
@@ -542,33 +557,33 @@ bool gfxLoadAllBackends(void);
 void gfxUnloadAllBackends(void);
 
 // Instance functions
-GfxInstance gfxCreateInstance(const GfxInstanceDescriptor* descriptor);
+GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance);
 void gfxInstanceDestroy(GfxInstance instance);
-GfxAdapter gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor);
+GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter);
 uint32_t gfxInstanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters);
 
 // Adapter functions
 void gfxAdapterDestroy(GfxAdapter adapter);
-GfxDevice gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor);
+GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice);
 const char* gfxAdapterGetName(GfxAdapter adapter);
 GfxBackend gfxAdapterGetBackend(GfxAdapter adapter);
 
 // Device functions
 void gfxDeviceDestroy(GfxDevice device);
 GfxQueue gfxDeviceGetQueue(GfxDevice device);
-GfxSurface gfxDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor);
-GfxSwapchain gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor);
-GfxBuffer gfxDeviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor);
-GfxTexture gfxDeviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor);
-GfxSampler gfxDeviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor);
-GfxShader gfxDeviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor);
-GfxBindGroupLayout gfxDeviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor);
-GfxBindGroup gfxDeviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor);
-GfxRenderPipeline gfxDeviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor);
-GfxComputePipeline gfxDeviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor);
-GfxCommandEncoder gfxDeviceCreateCommandEncoder(GfxDevice device, const char* label);
-GfxFence gfxDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor);
-GfxSemaphore gfxDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor);
+GfxResult gfxDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface);
+GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain);
+GfxResult gfxDeviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer);
+GfxResult gfxDeviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture);
+GfxResult gfxDeviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler);
+GfxResult gfxDeviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader);
+GfxResult gfxDeviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout);
+GfxResult gfxDeviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup);
+GfxResult gfxDeviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline);
+GfxResult gfxDeviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline);
+GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const char* label, GfxCommandEncoder* outEncoder);
+GfxResult gfxDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence);
+GfxResult gfxDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore);
 void gfxDeviceWaitIdle(GfxDevice device);
 
 // Surface functions
@@ -587,7 +602,7 @@ uint32_t gfxSwapchainGetHeight(GfxSwapchain swapchain);
 GfxTextureFormat gfxSwapchainGetFormat(GfxSwapchain swapchain);
 uint32_t gfxSwapchainGetBufferCount(GfxSwapchain swapchain);
 GfxTextureView gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain);
-void gfxSwapchainPresent(GfxSwapchain swapchain);
+GfxResult gfxSwapchainPresent(GfxSwapchain swapchain);
 void gfxSwapchainResize(GfxSwapchain swapchain, uint32_t width, uint32_t height);
 bool gfxSwapchainNeedsRecreation(GfxSwapchain swapchain);
 
@@ -595,7 +610,7 @@ bool gfxSwapchainNeedsRecreation(GfxSwapchain swapchain);
 void gfxBufferDestroy(GfxBuffer buffer);
 uint64_t gfxBufferGetSize(GfxBuffer buffer);
 GfxBufferUsage gfxBufferGetUsage(GfxBuffer buffer);
-void* gfxBufferMapAsync(GfxBuffer buffer, uint64_t offset, uint64_t size);
+GfxResult gfxBufferMapAsync(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer);
 void gfxBufferUnmap(GfxBuffer buffer);
 
 // Texture functions
@@ -605,7 +620,7 @@ GfxTextureFormat gfxTextureGetFormat(GfxTexture texture);
 uint32_t gfxTextureGetMipLevelCount(GfxTexture texture);
 uint32_t gfxTextureGetSampleCount(GfxTexture texture);
 GfxTextureUsage gfxTextureGetUsage(GfxTexture texture);
-GfxTextureView gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor);
+GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView);
 
 // TextureView functions
 void gfxTextureViewDestroy(GfxTextureView textureView);
@@ -630,21 +645,22 @@ void gfxRenderPipelineDestroy(GfxRenderPipeline renderPipeline);
 void gfxComputePipelineDestroy(GfxComputePipeline computePipeline);
 
 // Queue functions
-void gfxQueueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder);
-void gfxQueueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo);
+GfxResult gfxQueueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder);
+GfxResult gfxQueueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo);
 void gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size);
 void gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
     const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent);
-void gfxQueueWaitIdle(GfxQueue queue);
+GfxResult gfxQueueWaitIdle(GfxQueue queue);
 
 // CommandEncoder functions
 void gfxCommandEncoderDestroy(GfxCommandEncoder commandEncoder);
-GfxRenderPassEncoder gfxCommandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
+GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
     const GfxTextureView* colorAttachments, uint32_t colorAttachmentCount,
     const GfxColor* clearColors,
     GfxTextureView depthStencilAttachment,
-    float depthClearValue, uint32_t stencilClearValue);
-GfxComputePassEncoder gfxCommandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label);
+    float depthClearValue, uint32_t stencilClearValue,
+    GfxRenderPassEncoder* outRenderPass);
+GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass);
 void gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
     GfxBuffer source, uint64_t sourceOffset,
     GfxBuffer destination, uint64_t destinationOffset,

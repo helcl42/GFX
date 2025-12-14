@@ -520,14 +520,16 @@ static uint32_t* compileWGSLToSPIRV(const char* wgslCode, const char* entryPoint
 // Missing Device Functions
 // ============================================================================
 
-GfxFence vulkan_deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor)
+GfxResult vulkan_deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence)
 {
-    if (!device || !descriptor)
-        return NULL;
+    if (!device || !descriptor || !outFence)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outFence = NULL;
 
     GfxFence fence = malloc(sizeof(struct GfxFence_T));
     if (!fence)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(fence, 0, sizeof(struct GfxFence_T));
     fence->device = device;
@@ -539,20 +541,23 @@ GfxFence vulkan_deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* de
     VkResult result = vkCreateFence(device->device, &createInfo, NULL, &fence->fence);
     if (result != VK_SUCCESS) {
         free(fence);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    return fence;
+    *outFence = fence;
+    return GFX_RESULT_SUCCESS;
 }
 
-GfxSemaphore vulkan_deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor)
+GfxResult vulkan_deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore)
 {
-    if (!device || !descriptor)
-        return NULL;
+    if (!device || !descriptor || !outSemaphore)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outSemaphore = NULL;
 
     GfxSemaphore semaphore = malloc(sizeof(struct GfxSemaphore_T));
     if (!semaphore)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(semaphore, 0, sizeof(struct GfxSemaphore_T));
     semaphore->device = device;
@@ -573,10 +578,11 @@ GfxSemaphore vulkan_deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDe
     VkResult result = vkCreateSemaphore(device->device, &createInfo, NULL, &semaphore->semaphore);
     if (result != VK_SUCCESS) {
         free(semaphore);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    return semaphore;
+    *outSemaphore = semaphore;
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_deviceWaitIdle(GfxDevice device)
@@ -590,10 +596,10 @@ void vulkan_deviceWaitIdle(GfxDevice device)
 // Enhanced Queue Operations
 // ============================================================================
 
-void vulkan_queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo)
+GfxResult vulkan_queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo)
 {
     if (!queue || !submitInfo)
-        return;
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
     // Convert command encoders to command buffers
     VkCommandBuffer* commandBuffers = NULL;
@@ -648,13 +654,16 @@ void vulkan_queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo)
         free(waitStages);
     if (signalSemaphores)
         free(signalSemaphores);
+    
+    return GFX_RESULT_SUCCESS;
 }
 
-void vulkan_queueWaitIdle(GfxQueue queue)
+GfxResult vulkan_queueWaitIdle(GfxQueue queue)
 {
     if (!queue)
-        return;
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
     vkQueueWaitIdle(queue->queue);
+    return GFX_RESULT_SUCCESS;
 }
 
 // ============================================================================
@@ -781,14 +790,16 @@ uint64_t vulkan_semaphoreGetValue(GfxSemaphore semaphore)
 // Bind Group Layout Implementation
 // ============================================================================
 
-GfxBindGroupLayout vulkan_deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor)
+GfxResult vulkan_deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout)
 {
-    if (!device || !descriptor)
-        return NULL;
+    if (!device || !descriptor || !outLayout)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outLayout = NULL;
 
     GfxBindGroupLayout layout = malloc(sizeof(struct GfxBindGroupLayout_T));
     if (!layout)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(layout, 0, sizeof(struct GfxBindGroupLayout_T));
     layout->device = device;
@@ -797,7 +808,7 @@ GfxBindGroupLayout vulkan_deviceCreateBindGroupLayout(GfxDevice device, const Gf
     VkDescriptorSetLayoutBinding* bindings = malloc(descriptor->entryCount * sizeof(VkDescriptorSetLayoutBinding));
     if (!bindings) {
         free(layout);
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
     }
 
     for (uint32_t i = 0; i < descriptor->entryCount; i++) {
@@ -862,14 +873,14 @@ GfxBindGroupLayout vulkan_deviceCreateBindGroupLayout(GfxDevice device, const Gf
     if (result != VK_SUCCESS) {
         printf("[ERROR] Failed to create descriptor set layout! VkResult = %d\n", result);
         free(layout);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Validate the handle is not NULL
     if (layout->descriptorSetLayout == VK_NULL_HANDLE) {
         printf("[ERROR] Descriptor set layout handle is VK_NULL_HANDLE!\n");
         free(layout);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     printf("[DEBUG] Successfully created bind group layout with valid handle: %p\n",
@@ -878,7 +889,8 @@ GfxBindGroupLayout vulkan_deviceCreateBindGroupLayout(GfxDevice device, const Gf
     printf("[DEBUG] Verifying layout->descriptorSetLayout one more time: %p\n",
         (void*)(uintptr_t)layout->descriptorSetLayout);
 
-    return layout;
+    *outLayout = layout;
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout)
@@ -894,14 +906,16 @@ void vulkan_bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout)
 // Bind Group Implementation
 // ============================================================================
 
-GfxBindGroup vulkan_deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor)
+GfxResult vulkan_deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup)
 {
-    if (!device || !descriptor || !descriptor->layout)
-        return NULL;
+    if (!device || !descriptor || !descriptor->layout || !outBindGroup)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outBindGroup = NULL;
 
     GfxBindGroup bindGroup = malloc(sizeof(struct GfxBindGroup_T));
     if (!bindGroup)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(bindGroup, 0, sizeof(struct GfxBindGroup_T));
     bindGroup->device = device;
@@ -964,7 +978,7 @@ GfxBindGroup vulkan_deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDe
     if (poolSizeCount == 0) {
         fprintf(stderr, "Error: No descriptor types specified in bind group\n");
         free(bindGroup);
-        return NULL;
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
     VkDescriptorPoolCreateInfo poolInfo = { 0 };
@@ -977,7 +991,7 @@ GfxBindGroup vulkan_deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDe
     VkResult result = vkCreateDescriptorPool(device->device, &poolInfo, NULL, &bindGroup->descriptorPool);
     if (result != VK_SUCCESS) {
         free(bindGroup);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Allocate descriptor set
@@ -999,7 +1013,7 @@ GfxBindGroup vulkan_deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDe
     if (result != VK_SUCCESS) {
         vkDestroyDescriptorPool(device->device, bindGroup->descriptorPool, NULL);
         free(bindGroup);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Update descriptor set with resources
@@ -1061,7 +1075,8 @@ GfxBindGroup vulkan_deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDe
     free(bufferInfos);
     free(imageInfos);
 
-    return bindGroup;
+    *outBindGroup = bindGroup;
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_bindGroupDestroy(GfxBindGroup bindGroup)
@@ -1079,14 +1094,16 @@ void vulkan_bindGroupDestroy(GfxBindGroup bindGroup)
 // Instance Implementation
 // ============================================================================
 
-GfxInstance vulkan_createInstance(const GfxInstanceDescriptor* descriptor)
+GfxResult vulkan_createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance)
 {
-    if (!descriptor)
-        return NULL;
+    if (!descriptor || !outInstance)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outInstance = NULL;
 
     GfxInstance instance = malloc(sizeof(struct GfxInstance_T));
     if (!instance)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(instance, 0, sizeof(struct GfxInstance_T));
     instance->validationEnabled = descriptor->enableValidation;
@@ -1164,7 +1181,7 @@ GfxInstance vulkan_createInstance(const GfxInstanceDescriptor* descriptor)
 
     if (result != VK_SUCCESS) {
         free(instance);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Setup debug messenger if validation is enabled
@@ -1182,7 +1199,8 @@ GfxInstance vulkan_createInstance(const GfxInstanceDescriptor* descriptor)
         }
     }
 
-    return instance;
+    *outInstance = instance;
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_instanceDestroy(GfxInstance instance)
@@ -1202,10 +1220,12 @@ void vulkan_instanceDestroy(GfxInstance instance)
     free(instance);
 }
 
-GfxAdapter vulkan_instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor)
+GfxResult vulkan_instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter)
 {
-    if (!instance)
-        return NULL;
+    if (!instance || !outAdapter)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outAdapter = NULL;
 
     printf("[DEBUG] instanceRequestAdapter: Starting adapter enumeration...\n");
     fflush(stdout);
@@ -1216,7 +1236,7 @@ GfxAdapter vulkan_instanceRequestAdapter(GfxInstance instance, const GfxAdapterD
     fflush(stdout);
 
     if (deviceCount == 0)
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
 
     VkPhysicalDevice* devices = malloc(deviceCount * sizeof(VkPhysicalDevice));
     vkEnumeratePhysicalDevices(instance->instance, &deviceCount, devices);
@@ -1253,7 +1273,7 @@ GfxAdapter vulkan_instanceRequestAdapter(GfxInstance instance, const GfxAdapterD
 
     free(devices);
     if (selectedDevice == VK_NULL_HANDLE)
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
 
     printf("[DEBUG] instanceRequestAdapter: Selected device, finding queue families...\n");
     fflush(stdout);
@@ -1275,7 +1295,7 @@ GfxAdapter vulkan_instanceRequestAdapter(GfxInstance instance, const GfxAdapterD
 
     free(queueFamilies);
     if (graphicsFamily == UINT32_MAX)
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
 
     printf("[DEBUG] instanceRequestAdapter: Creating adapter structure...\n");
     fflush(stdout);
@@ -1283,7 +1303,7 @@ GfxAdapter vulkan_instanceRequestAdapter(GfxInstance instance, const GfxAdapterD
     // Create adapter
     GfxAdapter adapter = malloc(sizeof(struct GfxAdapter_T));
     if (!adapter)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     adapter->physicalDevice = selectedDevice;
     adapter->properties = selectedProps;
@@ -1296,7 +1316,8 @@ GfxAdapter vulkan_instanceRequestAdapter(GfxInstance instance, const GfxAdapterD
     printf("[DEBUG] instanceRequestAdapter: Adapter created successfully\n");
     fflush(stdout);
 
-    return adapter;
+    *outAdapter = adapter;
+    return GFX_RESULT_SUCCESS;
 }
 
 uint32_t vulkan_instanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters)
@@ -1359,19 +1380,22 @@ void vulkan_adapterDestroy(GfxAdapter adapter)
     }
 }
 
-GfxDevice vulkan_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor)
+GfxResult vulkan_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice)
 {
-    if (!adapter)
-        return NULL;
+    if (!adapter || !outDevice)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outDevice = NULL;
 
     GfxDevice device = malloc(sizeof(struct GfxDevice_T));
     if (!device)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(device, 0, sizeof(struct GfxDevice_T));
     device->adapter = adapter;
 
-    // Queue create info
+    // ...existing code for queue creation...
+
     float queuePriority = 1.0f;
     VkDeviceQueueCreateInfo queueCreateInfo = { 0 };
     queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -1379,7 +1403,6 @@ GfxDevice vulkan_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescript
     queueCreateInfo.queueCount = 1;
     queueCreateInfo.pQueuePriorities = &queuePriority;
 
-    // Device features
     VkPhysicalDeviceFeatures deviceFeatures = { 0 };
 
     // Check for swapchain extension support
@@ -1397,7 +1420,6 @@ GfxDevice vulkan_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescript
     }
     free(availableExtensions);
 
-    // Build extension list
     const char* deviceExtensions[16];
     uint32_t enabledExtensionCount = 0;
 
@@ -1405,7 +1427,6 @@ GfxDevice vulkan_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescript
         deviceExtensions[enabledExtensionCount++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
     }
 
-    // Device create info
     VkDeviceCreateInfo createInfo = { 0 };
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.pQueueCreateInfos = &queueCreateInfo;
@@ -1417,7 +1438,7 @@ GfxDevice vulkan_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescript
     VkResult result = vkCreateDevice(adapter->physicalDevice, &createInfo, NULL, &device->device);
     if (result != VK_SUCCESS) {
         free(device);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Create queue wrapper
@@ -1428,7 +1449,8 @@ GfxDevice vulkan_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescript
         device->queue->device = device;
     }
 
-    return device;
+    *outDevice = device;
+    return GFX_RESULT_SUCCESS;
 }
 
 const char* vulkan_adapterGetName(GfxAdapter adapter)
@@ -1463,14 +1485,16 @@ GfxQueue vulkan_deviceGetQueue(GfxDevice device)
     return device ? device->queue : NULL;
 }
 
-GfxSurface vulkan_deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor)
+GfxResult vulkan_deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface)
 {
-    if (!device || !descriptor)
-        return NULL;
+    if (!device || !descriptor || !outSurface)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outSurface = NULL;
 
     GfxSurface surface = malloc(sizeof(struct GfxSurface_T));
     if (!surface)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(surface, 0, sizeof(struct GfxSurface_T));
     surface->windowHandle = descriptor->windowHandle;
@@ -1577,183 +1601,23 @@ GfxSurface vulkan_deviceCreateSurface(GfxDevice device, const GfxSurfaceDescript
 
     if (result != VK_SUCCESS) {
         free(surface);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    return surface;
+    *outSurface = surface;
+    return GFX_RESULT_SUCCESS;
 }
 
-// ============================================================================
-// Buffer Implementation
-// ============================================================================
-
-GfxBuffer vulkan_deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor)
+GfxResult vulkan_deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain)
 {
-    if (!device || !descriptor)
-        return NULL;
+    if (!device || !surface || !descriptor || !outSwapchain)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    GfxBuffer buffer = malloc(sizeof(struct GfxBuffer_T));
-    if (!buffer)
-        return NULL;
-
-    memset(buffer, 0, sizeof(struct GfxBuffer_T));
-    buffer->size = descriptor->size;
-    buffer->usage = descriptor->usage;
-    buffer->device = device;
-
-    // Create buffer
-    VkBufferCreateInfo bufferInfo = { 0 };
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = descriptor->size;
-    bufferInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    VkResult result = vkCreateBuffer(device->device, &bufferInfo, NULL, &buffer->buffer);
-    if (result != VK_SUCCESS) {
-        free(buffer);
-        return NULL;
-    }
-
-    // Allocate memory
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(device->device, buffer->buffer, &memRequirements);
-
-    VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    uint32_t memoryType = findMemoryType(device->adapter->physicalDevice, memRequirements.memoryTypeBits, properties);
-
-    if (memoryType == UINT32_MAX) {
-        vkDestroyBuffer(device->device, buffer->buffer, NULL);
-        free(buffer);
-        return NULL;
-    }
-
-    VkMemoryAllocateInfo allocInfo = { 0 };
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = memoryType;
-
-    result = vkAllocateMemory(device->device, &allocInfo, NULL, &buffer->memory);
-    if (result != VK_SUCCESS) {
-        vkDestroyBuffer(device->device, buffer->buffer, NULL);
-        free(buffer);
-        return NULL;
-    }
-
-    vkBindBufferMemory(device->device, buffer->buffer, buffer->memory, 0);
-
-    // Map memory if requested
-    if (descriptor->mappedAtCreation) {
-        vkMapMemory(device->device, buffer->memory, 0, descriptor->size, 0, &buffer->mappedData);
-    }
-
-    return buffer;
-}
-
-void vulkan_bufferDestroy(GfxBuffer buffer)
-{
-    if (!buffer)
-        return;
-
-    if (buffer->mappedData) {
-        vkUnmapMemory(buffer->device->device, buffer->memory);
-    }
-
-    vkDestroyBuffer(buffer->device->device, buffer->buffer, NULL);
-    vkFreeMemory(buffer->device->device, buffer->memory, NULL);
-    free(buffer);
-}
-
-uint64_t vulkan_bufferGetSize(GfxBuffer buffer)
-{
-    return buffer ? buffer->size : 0;
-}
-
-GfxBufferUsage vulkan_bufferGetUsage(GfxBuffer buffer)
-{
-    return buffer ? buffer->usage : GFX_BUFFER_USAGE_NONE;
-}
-
-void* vulkan_bufferMapAsync(GfxBuffer buffer, uint64_t offset, uint64_t size)
-{
-    if (!buffer)
-        return NULL;
-
-    if (!buffer->mappedData) {
-        VkResult result = vkMapMemory(buffer->device->device, buffer->memory, offset,
-            size == 0 ? VK_WHOLE_SIZE : size, 0, &buffer->mappedData);
-        if (result != VK_SUCCESS)
-            return NULL;
-    }
-
-    return buffer->mappedData;
-}
-
-void vulkan_bufferUnmap(GfxBuffer buffer)
-{
-    if (!buffer || !buffer->mappedData)
-        return;
-
-    vkUnmapMemory(buffer->device->device, buffer->memory);
-    buffer->mappedData = NULL;
-}
-
-// ============================================================================
-// Queue Implementation
-// ============================================================================
-
-void vulkan_queueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder)
-{
-    if (!queue || !commandEncoder)
-        return;
-
-    VkSubmitInfo submitInfo = { 0 };
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandEncoder->commandBuffer;
-
-    vkQueueSubmit(queue->queue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(queue->queue); // Simple synchronization for now
-}
-
-void vulkan_queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size)
-{
-    if (!queue || !buffer || !data)
-        return;
-
-    void* mappedData = vulkan_bufferMapAsync(buffer, offset, size);
-    if (mappedData) {
-        memcpy(mappedData, data, size);
-        vulkan_bufferUnmap(buffer);
-    }
-}
-
-void vulkan_queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
-    const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent)
-{
-    // Implementation would require staging buffer and command buffer operations
-    // This is a simplified stub
-    (void)queue;
-    (void)texture;
-    (void)origin;
-    (void)mipLevel;
-    (void)data;
-    (void)dataSize;
-    (void)bytesPerRow;
-    (void)extent;
-}
-
-// ============================================================================
-// Swapchain Implementation
-// ============================================================================
-
-GfxSwapchain vulkan_deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor)
-{
-    if (!device || !surface || !descriptor)
-        return NULL;
+    *outSwapchain = NULL;
 
     GfxSwapchain swapchain = malloc(sizeof(struct GfxSwapchain_T));
     if (!swapchain)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(swapchain, 0, sizeof(struct GfxSwapchain_T));
     swapchain->device = device;
@@ -1853,7 +1717,7 @@ GfxSwapchain vulkan_deviceCreateSwapchain(GfxDevice device, GfxSurface surface, 
     VkResult result = vkCreateSwapchainKHR(device->device, &createInfo, NULL, &swapchain->swapchain);
     if (result != VK_SUCCESS) {
         free(swapchain);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Store swapchain properties
@@ -1912,8 +1776,254 @@ GfxSwapchain vulkan_deviceCreateSwapchain(GfxDevice device, GfxSurface surface, 
             swapchain->textureViews[i]->width, swapchain->textureViews[i]->height);
     }
 
-    return swapchain;
+    *outSwapchain = swapchain;
+    return GFX_RESULT_SUCCESS;
 }
+
+GfxResult vulkan_deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer)
+{
+    if (!device || !descriptor || !outBuffer)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outBuffer = NULL;
+
+    GfxBuffer buffer = malloc(sizeof(struct GfxBuffer_T));
+    if (!buffer)
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
+
+    memset(buffer, 0, sizeof(struct GfxBuffer_T));
+    buffer->size = descriptor->size;
+    buffer->usage = descriptor->usage;
+    buffer->device = device;
+
+    // Create buffer
+    VkBufferCreateInfo bufferInfo = { 0 };
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = descriptor->size;
+    bufferInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VkResult result = vkCreateBuffer(device->device, &bufferInfo, NULL, &buffer->buffer);
+    if (result != VK_SUCCESS) {
+        free(buffer);
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+
+    // Allocate memory
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device->device, buffer->buffer, &memRequirements);
+
+    VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    uint32_t memoryType = findMemoryType(device->adapter->physicalDevice, memRequirements.memoryTypeBits, properties);
+
+    if (memoryType == UINT32_MAX) {
+        vkDestroyBuffer(device->device, buffer->buffer, NULL);
+        free(buffer);
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+
+    VkMemoryAllocateInfo allocInfo = { 0 };
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = memoryType;
+
+    result = vkAllocateMemory(device->device, &allocInfo, NULL, &buffer->memory);
+    if (result != VK_SUCCESS) {
+        vkDestroyBuffer(device->device, buffer->buffer, NULL);
+        free(buffer);
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+
+    vkBindBufferMemory(device->device, buffer->buffer, buffer->memory, 0);
+
+    // Map memory if requested
+    if (descriptor->mappedAtCreation) {
+        vkMapMemory(device->device, buffer->memory, 0, descriptor->size, 0, &buffer->mappedData);
+    }
+
+    *outBuffer = buffer;
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult vulkan_deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture)
+{
+    if (!device || !descriptor || !outTexture)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outTexture = NULL;
+
+    GfxTexture texture = malloc(sizeof(struct GfxTexture_T));
+    if (!texture)
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
+
+    memset(texture, 0, sizeof(struct GfxTexture_T));
+    texture->device = device;
+    texture->format = gfxTextureFormatToVkFormat(descriptor->format);
+    texture->extent = descriptor->size;
+    texture->mipLevels = descriptor->mipLevelCount;
+    texture->arrayLayers = descriptor->size.depth;
+    texture->samples = VK_SAMPLE_COUNT_1_BIT; // Simple default
+    texture->usage = descriptor->usage;
+
+    // Create image
+    VkImageCreateInfo imageInfo = (VkImageCreateInfo){ 0 };
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width = descriptor->size.width;
+    imageInfo.extent.height = descriptor->size.height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = descriptor->mipLevelCount;
+    imageInfo.arrayLayers = descriptor->size.depth;
+    imageInfo.format = texture->format;
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = gfxTextureUsageToVkImageUsage(descriptor->usage, texture->format);
+    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VkResult result = vkCreateImage(device->device, &imageInfo, NULL, &texture->image);
+    if (result != VK_SUCCESS) {
+        free(texture);
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+
+    // Allocate memory
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(device->device, texture->image, &memRequirements);
+
+    VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    uint32_t memoryType = findMemoryType(device->adapter->physicalDevice, memRequirements.memoryTypeBits, properties);
+
+    if (memoryType == UINT32_MAX) {
+        vkDestroyImage(device->device, texture->image, NULL);
+        free(texture);
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+
+    VkMemoryAllocateInfo allocInfo = (VkMemoryAllocateInfo){ 0 };
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = memoryType;
+
+    result = vkAllocateMemory(device->device, &allocInfo, NULL, &texture->memory);
+    if (result != VK_SUCCESS) {
+        vkDestroyImage(device->device, texture->image, NULL);
+        free(texture);
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+
+    vkBindImageMemory(device->device, texture->image, texture->memory, 0);
+
+    *outTexture = texture;
+    return GFX_RESULT_SUCCESS;
+}
+
+// ============================================================================
+// Buffer Implementation
+// ============================================================================
+
+void vulkan_bufferDestroy(GfxBuffer buffer)
+{
+    if (!buffer)
+        return;
+
+    if (buffer->mappedData) {
+        vkUnmapMemory(buffer->device->device, buffer->memory);
+    }
+
+    vkDestroyBuffer(buffer->device->device, buffer->buffer, NULL);
+    vkFreeMemory(buffer->device->device, buffer->memory, NULL);
+    free(buffer);
+}
+
+uint64_t vulkan_bufferGetSize(GfxBuffer buffer)
+{
+    return buffer ? buffer->size : 0;
+}
+
+GfxBufferUsage vulkan_bufferGetUsage(GfxBuffer buffer)
+{
+    return buffer ? buffer->usage : GFX_BUFFER_USAGE_NONE;
+}
+
+GfxResult vulkan_bufferMapAsync(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer)
+{
+    if (!buffer || !outMappedPointer)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outMappedPointer = NULL;
+
+    if (!buffer->mappedData) {
+        VkResult result = vkMapMemory(buffer->device->device, buffer->memory, offset,
+            size == 0 ? VK_WHOLE_SIZE : size, 0, &buffer->mappedData);
+        if (result != VK_SUCCESS)
+            return GFX_RESULT_ERROR_UNKNOWN;
+    }
+
+    *outMappedPointer = buffer->mappedData;
+    return GFX_RESULT_SUCCESS;
+}
+
+void vulkan_bufferUnmap(GfxBuffer buffer)
+{
+    if (!buffer || !buffer->mappedData)
+        return;
+
+    vkUnmapMemory(buffer->device->device, buffer->memory);
+    buffer->mappedData = NULL;
+}
+
+// ============================================================================
+// Queue Implementation
+// ============================================================================
+
+GfxResult vulkan_queueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder)
+{
+    if (!queue || !commandEncoder)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    VkSubmitInfo submitInfo = { 0 };
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandEncoder->commandBuffer;
+
+    vkQueueSubmit(queue->queue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(queue->queue); // Simple synchronization for now
+    
+    return GFX_RESULT_SUCCESS;
+}
+
+void vulkan_queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size)
+{
+    if (!queue || !buffer || !data)
+        return;
+
+    void* mappedData = NULL;
+    GfxResult result = vulkan_bufferMapAsync(buffer, offset, size, &mappedData);
+    if (result == GFX_RESULT_SUCCESS && mappedData) {
+        memcpy(mappedData, data, size);
+        vulkan_bufferUnmap(buffer);
+    }
+}
+
+void vulkan_queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+    const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent)
+{
+    // Implementation would require staging buffer and command buffer operations
+    // This is a simplified stub
+    (void)queue;
+    (void)texture;
+    (void)origin;
+    (void)mipLevel;
+    (void)data;
+    (void)dataSize;
+    (void)bytesPerRow;
+    (void)extent;
+}
+
+// ============================================================================
+// Swapchain Implementation
+// ============================================================================
 
 void vulkan_swapchainDestroy(GfxSwapchain swapchain)
 {
@@ -2003,10 +2113,10 @@ GfxTextureView vulkan_swapchainGetCurrentTextureView(GfxSwapchain swapchain)
     return view;
 }
 
-void vulkan_swapchainPresent(GfxSwapchain swapchain)
+GfxResult vulkan_swapchainPresent(GfxSwapchain swapchain)
 {
     if (!swapchain)
-        return;
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
     // Wait for the acquire fence before presenting
     vkWaitForFences(swapchain->device->device, 1, &swapchain->acquireFence, VK_TRUE, UINT64_MAX);
@@ -2023,6 +2133,8 @@ void vulkan_swapchainPresent(GfxSwapchain swapchain)
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         swapchain->needsRecreation = true;
     }
+    
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_swapchainResize(GfxSwapchain swapchain, uint32_t width, uint32_t height)
@@ -2135,76 +2247,6 @@ GfxPlatformWindowHandle vulkan_surfaceGetPlatformHandle(GfxSurface surface)
 // Texture Implementation
 // ============================================================================
 
-GfxTexture vulkan_deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor)
-{
-    if (!device || !descriptor)
-        return NULL;
-
-    GfxTexture texture = malloc(sizeof(struct GfxTexture_T));
-    if (!texture)
-        return NULL;
-
-    memset(texture, 0, sizeof(struct GfxTexture_T));
-    texture->device = device;
-    texture->format = gfxTextureFormatToVkFormat(descriptor->format);
-    texture->extent = descriptor->size;
-    texture->mipLevels = descriptor->mipLevelCount;
-    texture->arrayLayers = descriptor->size.depth;
-    texture->samples = VK_SAMPLE_COUNT_1_BIT; // Simple default
-    texture->usage = descriptor->usage;
-
-    // Create image
-    VkImageCreateInfo imageInfo = (VkImageCreateInfo){ 0 };
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = descriptor->size.width;
-    imageInfo.extent.height = descriptor->size.height;
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = descriptor->mipLevelCount;
-    imageInfo.arrayLayers = descriptor->size.depth;
-    imageInfo.format = texture->format;
-    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = gfxTextureUsageToVkImageUsage(descriptor->usage, texture->format);
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    VkResult result = vkCreateImage(device->device, &imageInfo, NULL, &texture->image);
-    if (result != VK_SUCCESS) {
-        free(texture);
-        return NULL;
-    }
-
-    // Allocate memory
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(device->device, texture->image, &memRequirements);
-
-    VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    uint32_t memoryType = findMemoryType(device->adapter->physicalDevice, memRequirements.memoryTypeBits, properties);
-
-    if (memoryType == UINT32_MAX) {
-        vkDestroyImage(device->device, texture->image, NULL);
-        free(texture);
-        return NULL;
-    }
-
-    VkMemoryAllocateInfo allocInfo = (VkMemoryAllocateInfo){ 0 };
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = memoryType;
-
-    result = vkAllocateMemory(device->device, &allocInfo, NULL, &texture->memory);
-    if (result != VK_SUCCESS) {
-        vkDestroyImage(device->device, texture->image, NULL);
-        free(texture);
-        return NULL;
-    }
-
-    vkBindImageMemory(device->device, texture->image, texture->memory, 0);
-
-    return texture;
-}
-
 void vulkan_textureDestroy(GfxTexture texture)
 {
     if (!texture)
@@ -2240,14 +2282,16 @@ GfxTextureUsage vulkan_textureGetUsage(GfxTexture texture)
     return texture ? texture->usage : GFX_TEXTURE_USAGE_NONE;
 }
 
-GfxTextureView vulkan_textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor)
+GfxResult vulkan_textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView)
 {
-    if (!texture)
-        return NULL;
+    if (!texture || !outView)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outView = NULL;
 
     GfxTextureView textureView = malloc(sizeof(struct GfxTextureView_T));
     if (!textureView)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(textureView, 0, sizeof(struct GfxTextureView_T));
     textureView->texture = texture;
@@ -2276,10 +2320,11 @@ GfxTextureView vulkan_textureCreateView(GfxTexture texture, const GfxTextureView
     VkResult result = vkCreateImageView(texture->device->device, &viewInfo, NULL, &textureView->imageView);
     if (result != VK_SUCCESS) {
         free(textureView);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    return textureView;
+    *outView = textureView;
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_textureViewDestroy(GfxTextureView textureView)
@@ -2300,14 +2345,16 @@ GfxTexture vulkan_textureViewGetTexture(GfxTextureView textureView)
 // Sampler Implementation
 // ============================================================================
 
-GfxSampler vulkan_deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor)
+GfxResult vulkan_deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler)
 {
-    if (!device || !descriptor)
-        return NULL;
+    if (!device || !descriptor || !outSampler)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outSampler = NULL;
 
     GfxSampler sampler = malloc(sizeof(struct GfxSampler_T));
     if (!sampler)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(sampler, 0, sizeof(struct GfxSampler_T));
     sampler->device = device;
@@ -2333,10 +2380,11 @@ GfxSampler vulkan_deviceCreateSampler(GfxDevice device, const GfxSamplerDescript
     VkResult result = vkCreateSampler(device->device, &samplerInfo, NULL, &sampler->sampler);
     if (result != VK_SUCCESS) {
         free(sampler);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    return sampler;
+    *outSampler = sampler;
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_samplerDestroy(GfxSampler sampler)
@@ -2352,14 +2400,16 @@ void vulkan_samplerDestroy(GfxSampler sampler)
 // Shader Implementation
 // ============================================================================
 
-GfxShader vulkan_deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor)
+GfxResult vulkan_deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader)
 {
-    if (!device || !descriptor)
-        return NULL;
+    if (!device || !descriptor || !outShader)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outShader = NULL;
 
     GfxShader shader = malloc(sizeof(struct GfxShader_T));
     if (!shader)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(shader, 0, sizeof(struct GfxShader_T));
     shader->device = device;
@@ -2391,7 +2441,7 @@ GfxShader vulkan_deviceCreateShader(GfxDevice device, const GfxShaderDescriptor*
             if (shader->entryPoint)
                 free(shader->entryPoint);
             free(shader);
-            return NULL;
+            return GFX_RESULT_ERROR_UNKNOWN;
         }
     }
 
@@ -2410,10 +2460,11 @@ GfxShader vulkan_deviceCreateShader(GfxDevice device, const GfxShaderDescriptor*
         if (shader->entryPoint)
             free(shader->entryPoint);
         free(shader);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    return shader;
+    *outShader = shader;
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_shaderDestroy(GfxShader shader)
@@ -2431,14 +2482,16 @@ void vulkan_shaderDestroy(GfxShader shader)
 // Command Encoder Implementation
 // ============================================================================
 
-GfxCommandEncoder vulkan_deviceCreateCommandEncoder(GfxDevice device, const char* label)
+GfxResult vulkan_deviceCreateCommandEncoder(GfxDevice device, const char* label, GfxCommandEncoder* outEncoder)
 {
-    if (!device)
-        return NULL;
+    if (!device || !outEncoder)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outEncoder = NULL;
 
     GfxCommandEncoder encoder = malloc(sizeof(struct GfxCommandEncoder_T));
     if (!encoder)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(encoder, 0, sizeof(struct GfxCommandEncoder_T));
     encoder->device = device;
@@ -2452,7 +2505,7 @@ GfxCommandEncoder vulkan_deviceCreateCommandEncoder(GfxDevice device, const char
     VkResult result = vkCreateCommandPool(device->device, &poolInfo, NULL, &encoder->commandPool);
     if (result != VK_SUCCESS) {
         free(encoder);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Allocate command buffer
@@ -2466,7 +2519,7 @@ GfxCommandEncoder vulkan_deviceCreateCommandEncoder(GfxDevice device, const char
     if (result != VK_SUCCESS) {
         vkDestroyCommandPool(device->device, encoder->commandPool, NULL);
         free(encoder);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Begin command buffer
@@ -2477,7 +2530,8 @@ GfxCommandEncoder vulkan_deviceCreateCommandEncoder(GfxDevice device, const char
     vkBeginCommandBuffer(encoder->commandBuffer, &beginInfo);
     encoder->isRecording = true;
 
-    return encoder;
+    *outEncoder = encoder;
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_commandEncoderDestroy(GfxCommandEncoder commandEncoder)
@@ -2512,18 +2566,21 @@ void vulkan_commandEncoderFinish(GfxCommandEncoder commandEncoder)
 // Render Pass Encoder Implementation
 // ============================================================================
 
-GfxRenderPassEncoder vulkan_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
+GfxResult vulkan_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
     const GfxTextureView* colorAttachments, uint32_t colorAttachmentCount,
     const GfxColor* clearColors,
     GfxTextureView depthStencilAttachment,
-    float depthClearValue, uint32_t stencilClearValue)
+    float depthClearValue, uint32_t stencilClearValue,
+    GfxRenderPassEncoder* outRenderPass)
 {
-    if (!commandEncoder || !colorAttachments || colorAttachmentCount == 0)
-        return NULL;
+    if (!commandEncoder || !colorAttachments || colorAttachmentCount == 0 || !outRenderPass)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outRenderPass = NULL;
 
     GfxRenderPassEncoder encoder = malloc(sizeof(struct GfxRenderPassEncoder_T));
     if (!encoder)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(encoder, 0, sizeof(struct GfxRenderPassEncoder_T));
     encoder->commandBuffer = commandEncoder->commandBuffer;
@@ -2619,7 +2676,7 @@ GfxRenderPassEncoder vulkan_commandEncoderBeginRenderPass(GfxCommandEncoder comm
 
     if (result != VK_SUCCESS) {
         free(encoder);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Create framebuffer
@@ -2646,7 +2703,7 @@ GfxRenderPassEncoder vulkan_commandEncoderBeginRenderPass(GfxCommandEncoder comm
     if (result != VK_SUCCESS) {
         vkDestroyRenderPass(commandEncoder->device->device, encoder->renderPass, NULL);
         free(encoder);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Track these resources in the command encoder for cleanup after submission
@@ -2655,7 +2712,7 @@ GfxRenderPassEncoder vulkan_commandEncoderBeginRenderPass(GfxCommandEncoder comm
         vkDestroyFramebuffer(commandEncoder->device->device, encoder->framebuffer, NULL);
         vkDestroyRenderPass(commandEncoder->device->device, encoder->renderPass, NULL);
         free(encoder);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     commandEncoder->renderPasses[commandEncoder->resourceCount] = encoder->renderPass;
@@ -2694,7 +2751,8 @@ GfxRenderPassEncoder vulkan_commandEncoderBeginRenderPass(GfxCommandEncoder comm
     vkCmdBeginRenderPass(encoder->commandBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
     free(clearValues);
 
-    return encoder;
+    *outRenderPass = encoder;
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_renderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder)
@@ -2849,14 +2907,16 @@ static VkBlendOp gfxBlendOperationToVkBlendOp(GfxBlendOperation op)
     }
 }
 
-GfxRenderPipeline vulkan_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor)
+GfxResult vulkan_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline)
 {
-    if (!device || !descriptor)
-        return NULL;
+    if (!device || !descriptor || !outPipeline)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outPipeline = NULL;
 
     GfxRenderPipeline pipeline = malloc(sizeof(struct GfxRenderPipeline_T));
     if (!pipeline)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(pipeline, 0, sizeof(struct GfxRenderPipeline_T));
     pipeline->device = device;
@@ -2897,7 +2957,7 @@ GfxRenderPipeline vulkan_deviceCreateRenderPipeline(GfxDevice device, const GfxR
 
     if (result != VK_SUCCESS) {
         free(pipeline);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Create a compatible render pass for the pipeline
@@ -3001,7 +3061,7 @@ GfxRenderPipeline vulkan_deviceCreateRenderPipeline(GfxDevice device, const GfxR
     if (result != VK_SUCCESS) {
         vkDestroyPipelineLayout(device->device, pipeline->pipelineLayout, NULL);
         free(pipeline);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Shader stages
@@ -3259,10 +3319,11 @@ GfxRenderPipeline vulkan_deviceCreateRenderPipeline(GfxDevice device, const GfxR
         vkDestroyRenderPass(device->device, pipeline->renderPass, NULL);
         vkDestroyPipelineLayout(device->device, pipeline->pipelineLayout, NULL);
         free(pipeline);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    return pipeline;
+    *outPipeline = pipeline;
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_renderPipelineDestroy(GfxRenderPipeline renderPipeline)
@@ -3276,18 +3337,16 @@ void vulkan_renderPipelineDestroy(GfxRenderPipeline renderPipeline)
     free(renderPipeline);
 }
 
-// ============================================================================
-// Compute Pipeline Implementation
-// ============================================================================
-
-GfxComputePipeline vulkan_deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor)
+GfxResult vulkan_deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline)
 {
-    if (!device || !descriptor || !descriptor->compute)
-        return NULL;
+    if (!device || !descriptor || !descriptor->compute || !outPipeline)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outPipeline = NULL;
 
     GfxComputePipeline pipeline = malloc(sizeof(struct GfxComputePipeline_T));
     if (!pipeline)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(pipeline, 0, sizeof(struct GfxComputePipeline_T));
     pipeline->device = device;
@@ -3303,7 +3362,7 @@ GfxComputePipeline vulkan_deviceCreateComputePipeline(GfxDevice device, const Gf
     VkResult result = vkCreatePipelineLayout(device->device, &pipelineLayoutInfo, NULL, &pipeline->pipelineLayout);
     if (result != VK_SUCCESS) {
         free(pipeline);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Create compute pipeline
@@ -3321,11 +3380,16 @@ GfxComputePipeline vulkan_deviceCreateComputePipeline(GfxDevice device, const Gf
     if (result != VK_SUCCESS) {
         vkDestroyPipelineLayout(device->device, pipeline->pipelineLayout, NULL);
         free(pipeline);
-        return NULL;
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    return pipeline;
+    *outPipeline = pipeline;
+    return GFX_RESULT_SUCCESS;
 }
+
+// ============================================================================
+// Compute Pipeline Implementation
+// ============================================================================
 
 void vulkan_computePipelineDestroy(GfxComputePipeline computePipeline)
 {
@@ -3341,14 +3405,16 @@ void vulkan_computePipelineDestroy(GfxComputePipeline computePipeline)
 // Compute Pass Encoder Implementation
 // ============================================================================
 
-GfxComputePassEncoder vulkan_commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label)
+GfxResult vulkan_commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass)
 {
-    if (!commandEncoder)
-        return NULL;
+    if (!commandEncoder || !outComputePass)
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outComputePass = NULL;
 
     GfxComputePassEncoder encoder = malloc(sizeof(struct GfxComputePassEncoder_T));
     if (!encoder)
-        return NULL;
+        return GFX_RESULT_ERROR_OUT_OF_MEMORY;
 
     memset(encoder, 0, sizeof(struct GfxComputePassEncoder_T));
     encoder->commandBuffer = commandEncoder->commandBuffer;
@@ -3356,7 +3422,8 @@ GfxComputePassEncoder vulkan_commandEncoderBeginComputePass(GfxCommandEncoder co
     encoder->isRecording = true;
 
     // No special setup needed for compute pass in Vulkan - just return the encoder
-    return encoder;
+    *outComputePass = encoder;
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_computePassEncoderDestroy(GfxComputePassEncoder computePassEncoder)
