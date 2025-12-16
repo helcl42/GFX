@@ -132,6 +132,8 @@ if(BUILD_SHARED_LIBS)
         VERSION ${PROJECT_VERSION}
         SOVERSION ${PROJECT_VERSION_MAJOR}
     )
+    # Define GFX_BUILDING_DLL when building the shared library
+    target_compile_definitions(gfx_c PRIVATE GFX_BUILDING_DLL)
 else()
     add_library(gfx_c STATIC ${GFX_C_SOURCES})
 endif()
