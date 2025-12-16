@@ -498,6 +498,45 @@ static VkStencilOp gfxStencilOperationToVkStencilOp(GfxStencilOperation op)
     }
 }
 
+static uint32_t getFormatBitsPerPixel(VkFormat format)
+{
+    switch (format) {
+    case VK_FORMAT_R8_UNORM:
+        return 8;
+    case VK_FORMAT_R8G8_UNORM:
+        return 16;
+    case VK_FORMAT_R8G8B8A8_UNORM:
+    case VK_FORMAT_R8G8B8A8_SRGB:
+    case VK_FORMAT_B8G8R8A8_UNORM:
+    case VK_FORMAT_B8G8R8A8_SRGB:
+        return 32;
+    case VK_FORMAT_R16_SFLOAT:
+        return 16;
+    case VK_FORMAT_R16G16_SFLOAT:
+        return 32;
+    case VK_FORMAT_R16G16B16A16_SFLOAT:
+        return 64;
+    case VK_FORMAT_R32_SFLOAT:
+        return 32;
+    case VK_FORMAT_R32G32_SFLOAT:
+        return 64;
+    case VK_FORMAT_R32G32B32_SFLOAT:
+        return 96;
+    case VK_FORMAT_R32G32B32A32_SFLOAT:
+        return 128;
+    case VK_FORMAT_D16_UNORM:
+        return 16;
+    case VK_FORMAT_D24_UNORM_S8_UINT:
+        return 32;
+    case VK_FORMAT_D32_SFLOAT:
+        return 32;
+    case VK_FORMAT_D32_SFLOAT_S8_UINT:
+        return 40;
+    default:
+        return 32; // Default to 32 bits
+    }
+}
+
 // Simple WGSL to SPIR-V compiler stub - in a real implementation, you'd use
 // a proper WGSL compiler like Tint or naga
 static uint32_t* compileWGSLToSPIRV(const char* wgslCode, const char* entryPoint, size_t* spirvSize)
@@ -2009,16 +2048,142 @@ void vulkan_queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, 
 void vulkan_queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
     const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent)
 {
-    // Implementation would require staging buffer and command buffer operations
-    // This is a simplified stub
-    (void)queue;
-    (void)texture;
-    (void)origin;
-    (void)mipLevel;
-    (void)data;
-    (void)dataSize;
-    (void)bytesPerRow;
-    (void)extent;
+    if (!queue || !texture || !data || !extent || dataSize == 0)
+        return;
+
+    GfxDevice device = queue->device;
+
+    // Create staging buffer
+    VkBufferCreateInfo bufferInfo = { 0 };
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = dataSize;
+    bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VkBuffer stagingBuffer;
+    VkResult result = vkCreateBuffer(device->device, &bufferInfo, NULL, &stagingBuffer);
+    if (result != VK_SUCCESS) {
+        fprintf(stderr, "[ERROR] Failed to create staging buffer for texture upload\n");
+        return;
+    }
+
+    // Allocate staging buffer memory
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device->device, stagingBuffer, &memRequirements);
+
+    VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    uint32_t memoryType = findMemoryType(device->adapter->physicalDevice, memRequirements.memoryTypeBits, properties);
+
+    if (memoryType == UINT32_MAX) {
+        fprintf(stderr, "[ERROR] Failed to find suitable memory type for staging buffer\n");
+        vkDestroyBuffer(device->device, stagingBuffer, NULL);
+        return;
+    }
+
+    VkMemoryAllocateInfo allocInfo = { 0 };
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = memoryType;
+
+    VkDeviceMemory stagingMemory;
+    result = vkAllocateMemory(device->device, &allocInfo, NULL, &stagingMemory);
+    if (result != VK_SUCCESS) {
+        fprintf(stderr, "[ERROR] Failed to allocate staging buffer memory\n");
+        vkDestroyBuffer(device->device, stagingBuffer, NULL);
+        return;
+    }
+
+    vkBindBufferMemory(device->device, stagingBuffer, stagingMemory, 0);
+
+    // Copy data to staging buffer
+    void* mappedData;
+    vkMapMemory(device->device, stagingMemory, 0, dataSize, 0, &mappedData);
+    memcpy(mappedData, data, dataSize);
+    vkUnmapMemory(device->device, stagingMemory);
+
+    // Create command buffer for copy operation
+    VkCommandPoolCreateInfo poolInfo = { 0 };
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    poolInfo.queueFamilyIndex = queue->queueFamily;
+
+    VkCommandPool commandPool;
+    vkCreateCommandPool(device->device, &poolInfo, NULL, &commandPool);
+
+    VkCommandBufferAllocateInfo allocCmdInfo = { 0 };
+    allocCmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocCmdInfo.commandPool = commandPool;
+    allocCmdInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocCmdInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(device->device, &allocCmdInfo, &commandBuffer);
+
+    // Begin command buffer
+    VkCommandBufferBeginInfo beginInfo = { 0 };
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    // Transition image layout to transfer dst optimal
+    VkImageMemoryBarrier barrier = { 0 };
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = texture->image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = mipLevel;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
+
+    // Copy buffer to image
+    VkBufferImageCopy region = { 0 };
+    region.bufferOffset = 0;
+    region.bufferRowLength = bytesPerRow > 0 ? (bytesPerRow * 8) / getFormatBitsPerPixel(texture->format) : 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = mipLevel;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+    region.imageOffset = (VkOffset3D){ origin ? origin->x : 0, origin ? origin->y : 0, origin ? origin->z : 0 };
+    region.imageExtent = (VkExtent3D){ extent->width, extent->height, extent->depth };
+
+    vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, texture->image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    // Transition image layout to shader read optimal
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
+
+    // End command buffer
+    vkEndCommandBuffer(commandBuffer);
+
+    // Submit command buffer
+    VkSubmitInfo submitInfo = { 0 };
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(queue->queue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(queue->queue);
+
+    // Cleanup
+    vkDestroyCommandPool(device->device, commandPool, NULL);
+    vkDestroyBuffer(device->device, stagingBuffer, NULL);
+    vkFreeMemory(device->device, stagingMemory, NULL);
 }
 
 // ============================================================================
