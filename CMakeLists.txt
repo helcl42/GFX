@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(BUILD_EXAMPLES "Build example applications" ON)
 option(BUILD_VULKAN_BACKEND "Build Vulkan backend" ON)
 option(BUILD_WEBGPU_BACKEND "Build WebGPU backend" ON)
+option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
 
 # Find required packages
 find_package(PkgConfig REQUIRED)
@@ -123,7 +124,18 @@ if(BUILD_WEBGPU_BACKEND)
     list(APPEND GFX_C_SOURCES gfx/GfxWebGPU.c)
 endif()
 
-add_library(gfx_c STATIC ${GFX_C_SOURCES})
+# Create library based on BUILD_SHARED_LIBS option
+if(BUILD_SHARED_LIBS)
+    add_library(gfx_c SHARED ${GFX_C_SOURCES})
+    # Set version information for shared library
+    set_target_properties(gfx_c PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+    )
+else()
+    add_library(gfx_c STATIC ${GFX_C_SOURCES})
+endif()
+
 target_include_directories(gfx_c PUBLIC gfx/)
 
 # Link Vulkan if available
@@ -150,7 +162,18 @@ set(GFX_CPP_SOURCES
     gfx_cpp/GfxApiImpl.cpp  # Single unified C++ wrapper for all backends
 )
 
-add_library(gfx_cpp STATIC ${GFX_CPP_SOURCES})
+# Create library based on BUILD_SHARED_LIBS option
+if(BUILD_SHARED_LIBS)
+    add_library(gfx_cpp SHARED ${GFX_CPP_SOURCES})
+    # Set version information for shared library
+    set_target_properties(gfx_cpp PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+    )
+else()
+    add_library(gfx_cpp STATIC ${GFX_CPP_SOURCES})
+endif()
+
 target_include_directories(gfx_cpp PUBLIC gfx_cpp/)
 target_link_libraries(gfx_cpp PUBLIC gfx_c)  # Link to C API library
 
@@ -217,6 +240,12 @@ install(FILES gfx_cpp/GfxApi.hpp DESTINATION include/gfx)
 # Print configuration summary
 message(STATUS "")
 message(STATUS "GfxWrapper Configuration Summary:")
+message(STATUS "  Library type: ${BUILD_SHARED_LIBS}")
+if(BUILD_SHARED_LIBS)
+    message(STATUS "  Building SHARED libraries")
+else()
+    message(STATUS "  Building STATIC libraries")
+endif()
 message(STATUS "  Build examples: ${BUILD_EXAMPLES}")
 message(STATUS "  Vulkan backend: ${BUILD_VULKAN_BACKEND}")
 message(STATUS "  WebGPU backend: ${BUILD_WEBGPU_BACKEND}")
