@@ -291,13 +291,13 @@ GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescri
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->instanceRequestAdapter(backendHandle, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxAdapter backendAdapter;
+    GfxResult status = api->instanceRequestAdapter(backendHandle, descriptor, &backendAdapter);
+    if (status != GFX_RESULT_SUCCESS || !backendAdapter)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)instance;
-    *outAdapter = wrapHandle(meta->backend, result);
+    *outAdapter = wrapHandle(meta->backend, backendAdapter);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -354,13 +354,13 @@ GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* 
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->adapterCreateDevice(backendHandle, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxDevice backendDevice;
+    GfxResult status = api->adapterCreateDevice(backendHandle, descriptor, &backendDevice);
+    if (status != GFX_RESULT_SUCCESS || !backendDevice)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)adapter;
-    *outDevice = wrapHandle(meta->backend, result);
+    *outDevice = wrapHandle(meta->backend, backendDevice);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -435,13 +435,13 @@ GfxResult gfxDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* d
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->deviceCreateSurface(backendHandle, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxSurface backendSurface;
+    GfxResult status = api->deviceCreateSurface(backendHandle, descriptor, &backendSurface);
+    if (status != GFX_RESULT_SUCCESS || !backendSurface)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    *outSurface = wrapHandle(meta->backend, result);
+    *outSurface = wrapHandle(meta->backend, backendSurface);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -462,13 +462,13 @@ GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const G
     if (!backendSurface)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
+    GfxSwapchain backendSwapchain;
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    GfxResult status = api->deviceCreateSwapchain(backendDevice, backendSurface, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxResult status = api->deviceCreateSwapchain(backendDevice, backendSurface, descriptor, &backendSwapchain);
+    if (status != GFX_RESULT_SUCCESS || !backendSwapchain)
         return status;
 
-    *outSwapchain = wrapHandle(meta->backend, result);
+    *outSwapchain = wrapHandle(meta->backend, backendSwapchain);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -484,13 +484,13 @@ GfxResult gfxDeviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* des
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->deviceCreateBuffer(backendHandle, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxBuffer backendBuffer;
+    GfxResult status = api->deviceCreateBuffer(backendHandle, descriptor, &backendBuffer);
+    if (status != GFX_RESULT_SUCCESS || !backendBuffer)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    *outBuffer = wrapHandle(meta->backend, result);
+    *outBuffer = wrapHandle(meta->backend, backendBuffer);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -506,13 +506,13 @@ GfxResult gfxDeviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* d
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->deviceCreateTexture(backendHandle, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxTexture backendTexture;
+    GfxResult status = api->deviceCreateTexture(backendHandle, descriptor, &backendTexture);
+    if (status != GFX_RESULT_SUCCESS || !backendTexture)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    *outTexture = wrapHandle(meta->backend, result);
+    *outTexture = wrapHandle(meta->backend, backendTexture);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -528,13 +528,13 @@ GfxResult gfxDeviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* d
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->deviceCreateSampler(backendHandle, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxSampler backendSampler;
+    GfxResult status = api->deviceCreateSampler(backendHandle, descriptor, &backendSampler);
+    if (status != GFX_RESULT_SUCCESS || !backendSampler)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    *outSampler = wrapHandle(meta->backend, result);
+    *outSampler = wrapHandle(meta->backend, backendSampler);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -550,13 +550,13 @@ GfxResult gfxDeviceCreateShader(GfxDevice device, const GfxShaderDescriptor* des
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->deviceCreateShader(backendHandle, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxShader backendShader;
+    GfxResult status = api->deviceCreateShader(backendHandle, descriptor, &backendShader);
+    if (status != GFX_RESULT_SUCCESS || !backendShader)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    *outShader = wrapHandle(meta->backend, result);
+    *outShader = wrapHandle(meta->backend, backendShader);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -572,13 +572,13 @@ GfxResult gfxDeviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLay
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->deviceCreateBindGroupLayout(backendHandle, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxBindGroupLayout backendLayout;
+    GfxResult status = api->deviceCreateBindGroupLayout(backendHandle, descriptor, &backendLayout);
+    if (status != GFX_RESULT_SUCCESS || !backendLayout)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    *outLayout = wrapHandle(meta->backend, result);
+    *outLayout = wrapHandle(meta->backend, backendLayout);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -634,19 +634,19 @@ GfxResult gfxDeviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescripto
         backendDescriptor.entries = backendEntries;
     }
 
-    void* result;
-    GfxResult status = api->deviceCreateBindGroup(backendHandle, &backendDescriptor, &result);
+    GfxBindGroup backendBindGroup;
+    GfxResult status = api->deviceCreateBindGroup(backendHandle, &backendDescriptor, &backendBindGroup);
 
     // Free the temporary entries array
     if (backendEntries) {
         free(backendEntries);
     }
 
-    if (status != GFX_RESULT_SUCCESS || !result)
+    if (status != GFX_RESULT_SUCCESS || !backendBindGroup)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    *outBindGroup = wrapHandle(meta->backend, result);
+    *outBindGroup = wrapHandle(meta->backend, backendBindGroup);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -697,19 +697,19 @@ GfxResult gfxDeviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelin
         backendDescriptor.bindGroupLayouts = backendLayouts;
     }
 
-    void* result;
-    GfxResult status = api->deviceCreateRenderPipeline(backendHandle, &backendDescriptor, &result);
+    GfxRenderPipeline backendPipeline;
+    GfxResult status = api->deviceCreateRenderPipeline(backendHandle, &backendDescriptor, &backendPipeline);
 
     // Free temporary allocations
     if (backendLayouts) {
         free(backendLayouts);
     }
 
-    if (status != GFX_RESULT_SUCCESS || !result)
+    if (status != GFX_RESULT_SUCCESS || !backendPipeline)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    *outPipeline = wrapHandle(meta->backend, result);
+    *outPipeline = wrapHandle(meta->backend, backendPipeline);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -725,13 +725,13 @@ GfxResult gfxDeviceCreateComputePipeline(GfxDevice device, const GfxComputePipel
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->deviceCreateComputePipeline(backendHandle, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxComputePipeline backendPipeline;
+    GfxResult status = api->deviceCreateComputePipeline(backendHandle, descriptor, &backendPipeline);
+    if (status != GFX_RESULT_SUCCESS || !backendPipeline)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    *outPipeline = wrapHandle(meta->backend, result);
+    *outPipeline = wrapHandle(meta->backend, backendPipeline);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -747,13 +747,13 @@ GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const char* label, Gfx
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->deviceCreateCommandEncoder(backendHandle, label, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxCommandEncoder backendEncoder;
+    GfxResult status = api->deviceCreateCommandEncoder(backendHandle, label, &backendEncoder);
+    if (status != GFX_RESULT_SUCCESS || !backendEncoder)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    *outEncoder = wrapHandle(meta->backend, result);
+    *outEncoder = wrapHandle(meta->backend, backendEncoder);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -769,13 +769,13 @@ GfxResult gfxDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descr
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->deviceCreateFence(backendHandle, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxFence backendFence;
+    GfxResult status = api->deviceCreateFence(backendHandle, descriptor, &backendFence);
+    if (status != GFX_RESULT_SUCCESS || !backendFence)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    *outFence = wrapHandle(meta->backend, result);
+    *outFence = wrapHandle(meta->backend, backendFence);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -791,13 +791,13 @@ GfxResult gfxDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescripto
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->deviceCreateSemaphore(backendHandle, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxSemaphore backendSemaphore;
+    GfxResult status = api->deviceCreateSemaphore(backendHandle, descriptor, &backendSemaphore);
+    if (status != GFX_RESULT_SUCCESS || !backendSemaphore)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)device;
-    *outSemaphore = wrapHandle(meta->backend, result);
+    *outSemaphore = wrapHandle(meta->backend, backendSemaphore);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -1142,13 +1142,13 @@ GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescripto
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->textureCreateView(backendHandle, descriptor, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxTextureView backendView;
+    GfxResult status = api->textureCreateView(backendHandle, descriptor, &backendView);
+    if (status != GFX_RESULT_SUCCESS || !backendView)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)texture;
-    *outView = wrapHandle(meta->backend, result);
+    *outView = wrapHandle(meta->backend, backendView);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -1439,17 +1439,17 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
         backendDepthAttachment = unwrapHandleOrPassthrough(depthStencilAttachment);
     }
 
-    void* result;
+    GfxRenderPassEncoder backendRenderPass;
     GfxResult status = api->commandEncoderBeginRenderPass(backendEncoder, backendColorAttachments, colorAttachmentCount,
-        clearColors, backendDepthAttachment, depthClearValue, stencilClearValue, &result);
+        clearColors, backendDepthAttachment, depthClearValue, stencilClearValue, &backendRenderPass);
 
     free(backendColorAttachments);
 
-    if (status != GFX_RESULT_SUCCESS || !result)
+    if (status != GFX_RESULT_SUCCESS || !backendRenderPass)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)commandEncoder;
-    *outRenderPass = wrapHandle(meta->backend, result);
+    *outRenderPass = wrapHandle(meta->backend, backendRenderPass);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -1465,13 +1465,13 @@ GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, co
     if (!api || !backendHandle)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-    void* result;
-    GfxResult status = api->commandEncoderBeginComputePass(backendHandle, label, &result);
-    if (status != GFX_RESULT_SUCCESS || !result)
+    GfxComputePassEncoder backendComputePass;
+    GfxResult status = api->commandEncoderBeginComputePass(backendHandle, label, &backendComputePass);
+    if (status != GFX_RESULT_SUCCESS || !backendComputePass)
         return status;
 
     GfxHandleMetadata* meta = (GfxHandleMetadata*)commandEncoder;
-    *outComputePass = wrapHandle(meta->backend, result);
+    *outComputePass = wrapHandle(meta->backend, backendComputePass);
     return GFX_RESULT_SUCCESS;
 }
 

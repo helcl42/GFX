@@ -356,9 +356,56 @@ static VkBool32 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeve
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData)
 {
-    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-        fprintf(stderr, "Vulkan validation layer: %s\n", pCallbackData->pMessage);
+    (void)pUserData;
+
+    // Determine severity prefix
+    const char* severityStr = "UNKNOWN";
+    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+        severityStr = "ERROR";
+    } else if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+        severityStr = "WARNING";
+    } else if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+        severityStr = "INFO";
+    } else if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
+        severityStr = "VERBOSE";
     }
+
+    // Determine message type
+    const char* typeStr = "";
+    if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) {
+        typeStr = "[GENERAL] ";
+    } else if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) {
+        typeStr = "[VALIDATION] ";
+    } else if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
+        typeStr = "[PERFORMANCE] ";
+    }
+
+    fprintf(stderr, "[Vulkan %s] %s", severityStr, typeStr);
+
+    // Include message ID if available
+    if (pCallbackData->pMessageIdName) {
+        fprintf(stderr, "%s: ", pCallbackData->pMessageIdName);
+    }
+
+    fprintf(stderr, "%s\n", pCallbackData->pMessage);
+
+    // Print object information if available
+    if (pCallbackData->objectCount > 0) {
+        fprintf(stderr, "  Objects involved:\n");
+        for (uint32_t i = 0; i < pCallbackData->objectCount; i++) {
+            fprintf(stderr, "    [%u] Type: %d, Handle: 0x%llx",
+                i,
+                pCallbackData->pObjects[i].objectType,
+                (unsigned long long)pCallbackData->pObjects[i].objectHandle);
+            if (pCallbackData->pObjects[i].pObjectName) {
+                fprintf(stderr, ", Name: %s", pCallbackData->pObjects[i].pObjectName);
+            }
+            fprintf(stderr, "\n");
+        }
+    }
+
+    fflush(stderr);
+
     return VK_FALSE;
 }
 
@@ -693,7 +740,7 @@ GfxResult vulkan_queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submit
         free(waitStages);
     if (signalSemaphores)
         free(signalSemaphores);
-    
+
     return GFX_RESULT_SUCCESS;
 }
 
@@ -797,6 +844,8 @@ GfxResult vulkan_semaphoreSignal(GfxSemaphore semaphore, uint64_t value)
 
 GfxResult vulkan_semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs)
 {
+    (void)value;
+    (void)timeoutNs;
     if (!semaphore)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
@@ -1421,6 +1470,7 @@ void vulkan_adapterDestroy(GfxAdapter adapter)
 
 GfxResult vulkan_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice)
 {
+    (void)descriptor;
     if (!adapter || !outDevice)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
@@ -1499,6 +1549,7 @@ const char* vulkan_adapterGetName(GfxAdapter adapter)
 
 GfxBackend vulkan_adapterGetBackend(GfxAdapter adapter)
 {
+    (void)adapter;
     return GFX_BACKEND_VULKAN;
 }
 
@@ -1583,9 +1634,6 @@ GfxResult vulkan_deviceCreateSurface(GfxDevice device, const GfxSurfaceDescripto
                 printf("[DEBUG] Getting vkCreateXcbSurfaceKHR function pointer...\n");
                 fflush(stdout);
                 PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR = (PFN_vkCreateXcbSurfaceKHR)vkGetInstanceProcAddr(surface->instance->instance, "vkCreateXcbSurfaceKHR");
-
-                printf("[DEBUG] Function pointer: %p\n", (void*)vkCreateXcbSurfaceKHR);
-                fflush(stdout);
 
                 if (vkCreateXcbSurfaceKHR) {
                     printf("[DEBUG] Calling vkCreateXcbSurfaceKHR...\n");
@@ -2028,7 +2076,7 @@ GfxResult vulkan_queueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder)
 
     vkQueueSubmit(queue->queue, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(queue->queue); // Simple synchronization for now
-    
+
     return GFX_RESULT_SUCCESS;
 }
 
@@ -2298,7 +2346,7 @@ GfxResult vulkan_swapchainPresent(GfxSwapchain swapchain)
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         swapchain->needsRecreation = true;
     }
-    
+
     return GFX_RESULT_SUCCESS;
 }
 
@@ -2649,6 +2697,7 @@ void vulkan_shaderDestroy(GfxShader shader)
 
 GfxResult vulkan_deviceCreateCommandEncoder(GfxDevice device, const char* label, GfxCommandEncoder* outEncoder)
 {
+    (void)label;
     if (!device || !outEncoder)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
@@ -2968,6 +3017,7 @@ void vulkan_renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder,
 
 void vulkan_renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size)
 {
+    (void)size;
     if (!renderPassEncoder || !buffer)
         return;
 
@@ -2978,6 +3028,7 @@ void vulkan_renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEnco
 
 void vulkan_renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size)
 {
+    (void)size;
     if (!renderPassEncoder || !buffer)
         return;
 
@@ -3571,6 +3622,7 @@ void vulkan_computePipelineDestroy(GfxComputePipeline computePipeline)
 
 GfxResult vulkan_commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass)
 {
+    (void)label;
     if (!commandEncoder || !outComputePass)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
@@ -3643,6 +3695,7 @@ void vulkan_commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
     GfxTexture destination, const GfxOrigin3D* origin,
     const GfxExtent3D* extent, uint32_t mipLevel)
 {
+    (void)bytesPerRow;
     if (!commandEncoder || !source || !destination || !origin || !extent)
         return;
 
@@ -3695,6 +3748,7 @@ void vulkan_commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
     GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
     const GfxExtent3D* extent)
 {
+    (void)bytesPerRow;
     if (!commandEncoder || !source || !destination || !origin || !extent)
         return;
 
