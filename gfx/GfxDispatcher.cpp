@@ -45,30 +45,42 @@ public:
 
     template<typename T>
     T wrap(GfxBackend backend, T nativeHandle) {
-        if (!nativeHandle) return nullptr;
+        if (!nativeHandle) {
+            return nullptr;
+        }
         std::scoped_lock lock(m_mutex);
         m_handles[nativeHandle] = {backend, nativeHandle};
         return nativeHandle;
     }
 
     const GfxBackendAPI* getAPI(void* handle) {
-        if (!handle) return nullptr;
+        if (!handle) {
+            return nullptr;
+        }
         std::scoped_lock lock(m_mutex);
         auto it = m_handles.find(handle);
-        if (it == m_handles.end()) return nullptr;
+        if (it == m_handles.end()) {
+            return nullptr;
+        }
         return getBackendAPI(it->second.m_backend);
     }
 
     GfxBackend getBackend(void* handle) {
-        if (!handle) return GFX_BACKEND_AUTO;
+        if (!handle) {
+            return GFX_BACKEND_AUTO;
+        }
         std::scoped_lock lock(m_mutex);
         auto it = m_handles.find(handle);
-        if (it == m_handles.end()) return GFX_BACKEND_AUTO;
+        if (it == m_handles.end()) {
+            return GFX_BACKEND_AUTO;
+        }
         return it->second.m_backend;
     }
 
     void unwrap(void* handle) {
-        if (!handle) return;
+        if (!handle) {
+            return;
+        }
         std::scoped_lock lock(m_mutex);
         m_handles.erase(handle);
     }
@@ -131,7 +143,9 @@ extern "C" {
 
 // Backend Loading - helper without lock
 static bool gfxLoadBackendInternal(GfxBackend backend) {
-    if (backend < 0 || backend >= GFX_BACKEND_AUTO) return false;
+    if (backend < 0 || backend >= GFX_BACKEND_AUTO) {
+        return false;
+    }
     
     auto& registry = gfx::BackendRegistry::getInstance();
     auto backends = registry.getBackends();
@@ -153,7 +167,9 @@ static bool gfxLoadBackendInternal(GfxBackend backend) {
                 return false;
         }
         
-        if (!backends[backend]) return false;
+        if (!backends[backend]) {
+            return false;
+        }
         refCounts[backend] = 0;
     }
     
@@ -165,10 +181,14 @@ bool gfxLoadBackend(GfxBackend backend) {
     if (backend == GFX_BACKEND_AUTO) {
         // Try backends without holding lock during recursion
 #ifdef GFX_ENABLE_VULKAN
-        if (gfxLoadBackend(GFX_BACKEND_VULKAN)) return true;
+        if (gfxLoadBackend(GFX_BACKEND_VULKAN)) {
+            return true;
+        }
 #endif
 #ifdef GFX_ENABLE_WEBGPU
-        if (gfxLoadBackend(GFX_BACKEND_WEBGPU)) return true;
+        if (gfxLoadBackend(GFX_BACKEND_WEBGPU)) {
+            return true;
+        }
 #endif
         return false;
     }
@@ -219,10 +239,14 @@ void gfxUnloadBackend(GfxBackend backend) {
 bool gfxLoadAllBackends(void) {
     bool loadedAny = false;
 #ifdef GFX_ENABLE_VULKAN
-    if (gfxLoadBackend(GFX_BACKEND_VULKAN)) loadedAny = true;
+    if (gfxLoadBackend(GFX_BACKEND_VULKAN)) {
+        loadedAny = true;
+    }
 #endif
 #ifdef GFX_ENABLE_WEBGPU
-    if (gfxLoadBackend(GFX_BACKEND_WEBGPU)) loadedAny = true;
+    if (gfxLoadBackend(GFX_BACKEND_WEBGPU)) {
+        loadedAny = true;
+    }
 #endif
     return loadedAny;
 }
@@ -256,10 +280,14 @@ GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance
     
     if (backend == GFX_BACKEND_AUTO) {
 #ifdef GFX_ENABLE_VULKAN
-        if (backends[GFX_BACKEND_VULKAN]) backend = GFX_BACKEND_VULKAN;
+        if (backends[GFX_BACKEND_VULKAN]) {
+            backend = GFX_BACKEND_VULKAN;
+        }
 #endif
 #ifdef GFX_ENABLE_WEBGPU
-        if (backend == GFX_BACKEND_AUTO && backends[GFX_BACKEND_WEBGPU]) backend = GFX_BACKEND_WEBGPU;
+        if (backend == GFX_BACKEND_AUTO && backends[GFX_BACKEND_WEBGPU]) {
+            backend = GFX_BACKEND_WEBGPU;
+        }
 #endif
         if (backend == GFX_BACKEND_AUTO) {
             return GFX_RESULT_ERROR_BACKEND_NOT_LOADED;
@@ -282,7 +310,9 @@ GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance
 }
 
 void gfxInstanceDestroy(GfxInstance instance) {
-    if (!instance) return;
+    if (!instance) {
+        return;
+    }
     auto api = gfx::getAPI(instance);
     if (api) {
         api->instanceDestroy(gfx::native(instance));
@@ -313,15 +343,21 @@ GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescri
 }
 
 uint32_t gfxInstanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters) {
-    if (!instance) return 0;
+    if (!instance) {
+        return 0;
+    }
     auto api = gfx::getAPI(instance);
-    if (!api) return 0;
+    if (!api) {
+        return 0;
+    }
     return api->instanceEnumerateAdapters(gfx::native(instance), adapters, maxAdapters);
 }
 
 // Adapter Functions
 void gfxAdapterDestroy(GfxAdapter adapter) {
-    if (!adapter) return;
+    if (!adapter) {
+        return;
+    }
     auto api = gfx::getAPI(adapter);
     if (api) {
         api->adapterDestroy(gfx::native(adapter));
@@ -352,9 +388,13 @@ GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* 
 }
 
 const char* gfxAdapterGetName(GfxAdapter adapter) {
-    if (!adapter) return nullptr;
+    if (!adapter) {
+        return nullptr;
+    }
     auto api = gfx::getAPI(adapter);
-    if (!api) return nullptr;
+    if (!api) {
+        return nullptr;
+    }
     return api->adapterGetName(gfx::native(adapter));
 }
 
@@ -364,7 +404,9 @@ GfxBackend gfxAdapterGetBackend(GfxAdapter adapter) {
 
 // Device Functions
 void gfxDeviceDestroy(GfxDevice device) {
-    if (!device) return;
+    if (!device) {
+        return;
+    }
     auto api = gfx::getAPI(device);
     if (api) {
         api->deviceDestroy(gfx::native(device));
@@ -373,13 +415,19 @@ void gfxDeviceDestroy(GfxDevice device) {
 }
 
 GfxQueue gfxDeviceGetQueue(GfxDevice device) {
-    if (!device) return nullptr;
+    if (!device) {
+        return nullptr;
+    }
     auto api = gfx::getAPI(device);
-    if (!api) return nullptr;
+    if (!api) {
+        return nullptr;
+    }
     
     GfxBackend backend = gfx::getBackend(device);
     GfxQueue nativeQueue = api->deviceGetQueue(gfx::native(device));
-    if (!nativeQueue) return nullptr;
+    if (!nativeQueue) {
+        return nullptr;
+    }
     
     return gfx::wrap(backend, nativeQueue);
 }
@@ -412,10 +460,14 @@ DEVICE_CREATE_FUNC(Fence, Fence)
 DEVICE_CREATE_FUNC(Semaphore, Semaphore)
 
 GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) {
-    if (!device || !surface || !descriptor || !outSwapchain) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!device || !surface || !descriptor || !outSwapchain) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     *outSwapchain = nullptr;
     auto api = gfx::getAPI(device);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     
     GfxBackend backend = gfx::getBackend(device);
     GfxSwapchain nativeSwapchain = nullptr;
@@ -425,28 +477,38 @@ GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const G
         descriptor,
         &nativeSwapchain);
     
-    if (result != GFX_RESULT_SUCCESS) return result;
+    if (result != GFX_RESULT_SUCCESS) {
+        return result;
+    }
     *outSwapchain = gfx::wrap(backend, nativeSwapchain);
     return GFX_RESULT_SUCCESS;
 }
 
 GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const char* label, GfxCommandEncoder* outEncoder) {
-    if (!device || !outEncoder) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!device || !outEncoder) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     *outEncoder = nullptr;
     auto api = gfx::getAPI(device);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     
     GfxBackend backend = gfx::getBackend(device);
     GfxCommandEncoder nativeEncoder = nullptr;
     GfxResult result = api->deviceCreateCommandEncoder(gfx::native(device), label, &nativeEncoder);
-    if (result != GFX_RESULT_SUCCESS) return result;
+    if (result != GFX_RESULT_SUCCESS) {
+        return result;
+    }
     
     *outEncoder = gfx::wrap(backend, nativeEncoder);
     return GFX_RESULT_SUCCESS;
 }
 
 void gfxDeviceWaitIdle(GfxDevice device) {
-    if (!device) return;
+    if (!device) {
+        return;
+    }
     auto api = gfx::getAPI(device);
     if (api) {
         api->deviceWaitIdle(gfx::native(device));
@@ -487,7 +549,9 @@ void gfxQueueDestroy(GfxQueue queue) {
 
 // Render/Compute pass encoders are just aliases to command encoder - don't unwrap them
 void gfxRenderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder) {
-    if (!renderPassEncoder) return;
+    if (!renderPassEncoder) {
+        return;
+    }
     auto api = gfx::getAPI(renderPassEncoder);
     if (api) {
         api->renderPassEncoderDestroy(gfx::native(renderPassEncoder));
@@ -496,7 +560,9 @@ void gfxRenderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder) {
 }
 
 void gfxComputePassEncoderDestroy(GfxComputePassEncoder computePassEncoder) {
-    if (!computePassEncoder) return;
+    if (!computePassEncoder) {
+        return;
+    }
     auto api = gfx::getAPI(computePassEncoder);
     if (api) {
         api->computePassEncoderDestroy(gfx::native(computePassEncoder));
@@ -506,21 +572,31 @@ void gfxComputePassEncoderDestroy(GfxComputePassEncoder computePassEncoder) {
 
 // Surface Functions
 uint32_t gfxSurfaceGetWidth(GfxSurface surface) {
-    if (!surface) return 0;
+    if (!surface) {
+        return 0;
+    }
     auto api = gfx::getAPI(surface);
-    if (!api) return 0;
+    if (!api) {
+        return 0;
+    }
     return api->surfaceGetWidth(gfx::native(surface));
 }
 
 uint32_t gfxSurfaceGetHeight(GfxSurface surface) {
-    if (!surface) return 0;
+    if (!surface) {
+        return 0;
+    }
     auto api = gfx::getAPI(surface);
-    if (!api) return 0;
+    if (!api) {
+        return 0;
+    }
     return api->surfaceGetHeight(gfx::native(surface));
 }
 
 void gfxSurfaceResize(GfxSurface surface, uint32_t width, uint32_t height) {
-    if (!surface) return;
+    if (!surface) {
+        return;
+    }
     auto api = gfx::getAPI(surface);
     if (api) {
         api->surfaceResize(gfx::native(surface), width, height);
@@ -528,60 +604,92 @@ void gfxSurfaceResize(GfxSurface surface, uint32_t width, uint32_t height) {
 }
 
 uint32_t gfxSurfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats) {
-    if (!surface) return 0;
+    if (!surface) {
+        return 0;
+    }
     auto api = gfx::getAPI(surface);
-    if (!api) return 0;
+    if (!api) {
+        return 0;
+    }
     return api->surfaceGetSupportedFormats(gfx::native(surface), formats, maxFormats);
 }
 
 uint32_t gfxSurfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes) {
-    if (!surface) return 0;
+    if (!surface) {
+        return 0;
+    }
     auto api = gfx::getAPI(surface);
-    if (!api) return 0;
+    if (!api) {
+        return 0;
+    }
     return api->surfaceGetSupportedPresentModes(gfx::native(surface), presentModes, maxModes);
 }
 
 GfxPlatformWindowHandle gfxSurfaceGetPlatformHandle(GfxSurface surface) {
-    if (!surface) return {};
+    if (!surface) {
+        return {};
+    }
     auto api = gfx::getAPI(surface);
-    if (!api) return {};
+    if (!api) {
+        return {};
+    }
     return api->surfaceGetPlatformHandle(gfx::native(surface));
 }
 
 // Swapchain Functions
 uint32_t gfxSwapchainGetWidth(GfxSwapchain swapchain) {
-    if (!swapchain) return 0;
+    if (!swapchain) {
+        return 0;
+    }
     auto api = gfx::getAPI(swapchain);
-    if (!api) return 0;
+    if (!api) {
+        return 0;
+    }
     return api->swapchainGetWidth(gfx::native(swapchain));
 }
 
 uint32_t gfxSwapchainGetHeight(GfxSwapchain swapchain) {
-    if (!swapchain) return 0;
+    if (!swapchain) {
+        return 0;
+    }
     auto api = gfx::getAPI(swapchain);
-    if (!api) return 0;
+    if (!api) {
+        return 0;
+    }
     return api->swapchainGetHeight(gfx::native(swapchain));
 }
 
 GfxTextureFormat gfxSwapchainGetFormat(GfxSwapchain swapchain) {
-    if (!swapchain) return GFX_TEXTURE_FORMAT_UNDEFINED;
+    if (!swapchain) {
+        return GFX_TEXTURE_FORMAT_UNDEFINED;
+    }
     auto api = gfx::getAPI(swapchain);
-    if (!api) return GFX_TEXTURE_FORMAT_UNDEFINED;
+    if (!api) {
+        return GFX_TEXTURE_FORMAT_UNDEFINED;
+    }
     return api->swapchainGetFormat(gfx::native(swapchain));
 }
 
 uint32_t gfxSwapchainGetBufferCount(GfxSwapchain swapchain) {
-    if (!swapchain) return 0;
+    if (!swapchain) {
+        return 0;
+    }
     auto api = gfx::getAPI(swapchain);
-    if (!api) return 0;
+    if (!api) {
+        return 0;
+    }
     return api->swapchainGetBufferCount(gfx::native(swapchain));
 }
 
 GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, 
     GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) {
-    if (!swapchain || !outImageIndex) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!swapchain || !outImageIndex) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     auto api = gfx::getAPI(swapchain);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     
     GfxSemaphore nativeSemaphore = imageAvailableSemaphore ? gfx::native(imageAvailableSemaphore) : nullptr;
     GfxFence nativeFence = fence ? gfx::native(fence) : nullptr;
@@ -591,25 +699,37 @@ GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutN
 }
 
 GfxTextureView gfxSwapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex) {
-    if (!swapchain) return nullptr;
+    if (!swapchain) {
+        return nullptr;
+    }
     auto api = gfx::getAPI(swapchain);
-    if (!api) return nullptr;
+    if (!api) {
+        return nullptr;
+    }
     // Swapchain texture views are NOT wrapped - managed by swapchain
     return api->swapchainGetImageView(gfx::native(swapchain), imageIndex);
 }
 
 GfxTextureView gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain) {
-    if (!swapchain) return nullptr;
+    if (!swapchain) {
+        return nullptr;
+    }
     auto api = gfx::getAPI(swapchain);
-    if (!api) return nullptr;
+    if (!api) {
+        return nullptr;
+    }
     // Swapchain texture views are NOT wrapped - managed by swapchain
     return api->swapchainGetCurrentTextureView(gfx::native(swapchain));
 }
 
 GfxResult gfxSwapchainPresentWithSync(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) {
-    if (!swapchain) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!swapchain) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     auto api = gfx::getAPI(swapchain);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     
     // Convert semaphores to native handles
     GfxPresentInfo nativePresentInfo = {};
@@ -628,14 +748,20 @@ GfxResult gfxSwapchainPresentWithSync(GfxSwapchain swapchain, const GfxPresentIn
 }
 
 GfxResult gfxSwapchainPresent(GfxSwapchain swapchain) {
-    if (!swapchain) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!swapchain) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     auto api = gfx::getAPI(swapchain);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     return api->swapchainPresent(gfx::native(swapchain));
 }
 
 void gfxSwapchainResize(GfxSwapchain swapchain, uint32_t width, uint32_t height) {
-    if (!swapchain) return;
+    if (!swapchain) {
+        return;
+    }
     auto api = gfx::getAPI(swapchain);
     if (api) {
         api->swapchainResize(gfx::native(swapchain), width, height);
@@ -643,36 +769,54 @@ void gfxSwapchainResize(GfxSwapchain swapchain, uint32_t width, uint32_t height)
 }
 
 bool gfxSwapchainNeedsRecreation(GfxSwapchain swapchain) {
-    if (!swapchain) return false;
+    if (!swapchain) {
+        return false;
+    }
     auto api = gfx::getAPI(swapchain);
-    if (!api) return false;
+    if (!api) {
+        return false;
+    }
     return api->swapchainNeedsRecreation(gfx::native(swapchain));
 }
 
 // Buffer Functions
 uint64_t gfxBufferGetSize(GfxBuffer buffer) {
-    if (!buffer) return 0;
+    if (!buffer) {
+        return 0;
+    }
     auto api = gfx::getAPI(buffer);
-    if (!api) return 0;
+    if (!api) {
+        return 0;
+    }
     return api->bufferGetSize(gfx::native(buffer));
 }
 
 GfxBufferUsage gfxBufferGetUsage(GfxBuffer buffer) {
-    if (!buffer) return GFX_BUFFER_USAGE_NONE;
+    if (!buffer) {
+        return GFX_BUFFER_USAGE_NONE;
+    }
     auto api = gfx::getAPI(buffer);
-    if (!api) return GFX_BUFFER_USAGE_NONE;
+    if (!api) {
+        return GFX_BUFFER_USAGE_NONE;
+    }
     return api->bufferGetUsage(gfx::native(buffer));
 }
 
 GfxResult gfxBufferMapAsync(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) {
-    if (!buffer || !outMappedPointer) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!buffer || !outMappedPointer) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     auto api = gfx::getAPI(buffer);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     return api->bufferMapAsync(gfx::native(buffer), offset, size, outMappedPointer);
 }
 
 void gfxBufferUnmap(GfxBuffer buffer) {
-    if (!buffer) return;
+    if (!buffer) {
+        return;
+    }
     auto api = gfx::getAPI(buffer);
     if (api) {
         api->bufferUnmap(gfx::native(buffer));
@@ -681,75 +825,113 @@ void gfxBufferUnmap(GfxBuffer buffer) {
 
 // Texture Functions
 GfxExtent3D gfxTextureGetSize(GfxTexture texture) {
-    if (!texture) return {0, 0, 0};
+    if (!texture) {
+        return {0, 0, 0};
+    }
     auto api = gfx::getAPI(texture);
-    if (!api) return {0, 0, 0};
+    if (!api) {
+        return {0, 0, 0};
+    }
     return api->textureGetSize(gfx::native(texture));
 }
 
 GfxTextureFormat gfxTextureGetFormat(GfxTexture texture) {
-    if (!texture) return GFX_TEXTURE_FORMAT_UNDEFINED;
+    if (!texture) {
+        return GFX_TEXTURE_FORMAT_UNDEFINED;
+    }
     auto api = gfx::getAPI(texture);
-    if (!api) return GFX_TEXTURE_FORMAT_UNDEFINED;
+    if (!api) {
+        return GFX_TEXTURE_FORMAT_UNDEFINED;
+    }
     return api->textureGetFormat(gfx::native(texture));
 }
 
 uint32_t gfxTextureGetMipLevelCount(GfxTexture texture) {
-    if (!texture) return 0;
+    if (!texture) {
+        return 0;
+    }
     auto api = gfx::getAPI(texture);
-    if (!api) return 0;
+    if (!api) {
+        return 0;
+    }
     return api->textureGetMipLevelCount(gfx::native(texture));
 }
 
 uint32_t gfxTextureGetSampleCount(GfxTexture texture) {
-    if (!texture) return 0;
+    if (!texture) {
+        return 0;
+    }
     auto api = gfx::getAPI(texture);
-    if (!api) return 1;
+    if (!api) {
+        return 1;
+    }
     return api->textureGetSampleCount(gfx::native(texture));
 }
 
 GfxTextureUsage gfxTextureGetUsage(GfxTexture texture) {
-    if (!texture) return GFX_TEXTURE_USAGE_NONE;
+    if (!texture) {
+        return GFX_TEXTURE_USAGE_NONE;
+    }
     auto api = gfx::getAPI(texture);
-    if (!api) return GFX_TEXTURE_USAGE_NONE;
+    if (!api) {
+        return GFX_TEXTURE_USAGE_NONE;
+    }
     return api->textureGetUsage(gfx::native(texture));
 }
 
 GfxTextureLayout gfxTextureGetLayout(GfxTexture texture) {
-    if (!texture) return GFX_TEXTURE_LAYOUT_UNDEFINED;
+    if (!texture) {
+        return GFX_TEXTURE_LAYOUT_UNDEFINED;
+    }
     auto api = gfx::getAPI(texture);
-    if (!api) return GFX_TEXTURE_LAYOUT_UNDEFINED;
+    if (!api) {
+        return GFX_TEXTURE_LAYOUT_UNDEFINED;
+    }
     return api->textureGetLayout(gfx::native(texture));
 }
 
 GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) {
-    if (!texture || !outView) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!texture || !outView) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     *outView = nullptr;
     auto api = gfx::getAPI(texture);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     
     GfxBackend backend = gfx::getBackend(texture);
     GfxTextureView nativeView = nullptr;
     GfxResult result = api->textureCreateView(gfx::native(texture), descriptor, &nativeView);
-    if (result != GFX_RESULT_SUCCESS) return result;
+    if (result != GFX_RESULT_SUCCESS) {
+        return result;
+    }
     
     *outView = gfx::wrap(backend, nativeView);
     return GFX_RESULT_SUCCESS;
 }
 
 GfxTexture gfxTextureViewGetTexture(GfxTextureView textureView) {
-    if (!textureView) return nullptr;
+    if (!textureView) {
+        return nullptr;
+    }
     auto api = gfx::getAPI(textureView);
-    if (!api) return nullptr;
+    if (!api) {
+        return nullptr;
+    }
     // Return the native texture directly - already wrapped
     return api->textureViewGetTexture(gfx::native(textureView));
 }
 
 // Queue Functions
 GfxResult gfxQueueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder) {
-    if (!queue || !commandEncoder) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!queue || !commandEncoder) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     auto api = gfx::getAPI(queue);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     return api->queueSubmit(
         gfx::native(queue),
         gfx::native(commandEncoder));
@@ -758,7 +940,9 @@ GfxResult gfxQueueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder) {
 // Command Encoder Functions
 void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) {
-    if (!commandEncoder || !textureBarriers) return;
+    if (!commandEncoder || !textureBarriers) {
+        return;
+    }
     auto api = gfx::getAPI(commandEncoder);
     if (api && api->commandEncoderPipelineBarrier) {
         api->commandEncoderPipelineBarrier(gfx::native(commandEncoder), textureBarriers, textureBarrierCount);
@@ -766,7 +950,9 @@ void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
 }
 
 void gfxCommandEncoderFinish(GfxCommandEncoder commandEncoder) {
-    if (!commandEncoder) return;
+    if (!commandEncoder) {
+        return;
+    }
     auto api = gfx::getAPI(commandEncoder);
     if (api) {
         api->commandEncoderFinish(gfx::native(commandEncoder));
@@ -805,10 +991,14 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     GfxTextureView depthStencilAttachment,
     float depthClearValue, uint32_t stencilClearValue,
     GfxRenderPassEncoder* outEncoder) {
-    if (!encoder || !outEncoder) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!encoder || !outEncoder) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     *outEncoder = nullptr;
     auto api = gfx::getAPI(encoder);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     
     GfxBackend backend = gfx::getBackend(encoder);
     GfxRenderPassEncoder nativePass = nullptr;
@@ -819,22 +1009,30 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
         depthStencilAttachment,
         depthClearValue, stencilClearValue,
         &nativePass);
-    if (result != GFX_RESULT_SUCCESS) return result;
+    if (result != GFX_RESULT_SUCCESS) {
+        return result;
+    }
     
     *outEncoder = gfx::wrap(backend, nativePass);
     return GFX_RESULT_SUCCESS;
 }
 
 GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const char* label, GfxComputePassEncoder* outEncoder) {
-    if (!encoder || !outEncoder) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!encoder || !outEncoder) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     *outEncoder = nullptr;
     auto api = gfx::getAPI(encoder);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     
     GfxBackend backend = gfx::getBackend(encoder);
     GfxComputePassEncoder nativePass = nullptr;
     GfxResult result = api->commandEncoderBeginComputePass(gfx::native(encoder), label, &nativePass);
-    if (result != GFX_RESULT_SUCCESS) return result;
+    if (result != GFX_RESULT_SUCCESS) {
+        return result;
+    }
     
     *outEncoder = gfx::wrap(backend, nativePass);
     return GFX_RESULT_SUCCESS;
@@ -842,7 +1040,9 @@ GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const cha
 
 // Render Pass Encoder Functions
 void gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder encoder, GfxRenderPipeline pipeline) {
-    if (!encoder || !pipeline) return;
+    if (!encoder || !pipeline) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->renderPassEncoderSetPipeline(
@@ -852,7 +1052,9 @@ void gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder encoder, GfxRenderPipe
 }
 
 void gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup) {
-    if (!encoder || !bindGroup) return;
+    if (!encoder || !bindGroup) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->renderPassEncoderSetBindGroup(
@@ -863,7 +1065,9 @@ void gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t gro
 }
 
 void gfxRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder encoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) {
-    if (!encoder || !buffer) return;
+    if (!encoder || !buffer) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->renderPassEncoderSetVertexBuffer(
@@ -876,7 +1080,9 @@ void gfxRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder encoder, uint32_t 
 }
 
 void gfxRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder encoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) {
-    if (!encoder || !buffer) return;
+    if (!encoder || !buffer) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->renderPassEncoderSetIndexBuffer(
@@ -889,7 +1095,9 @@ void gfxRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder encoder, GfxBuffer 
 }
 
 void gfxRenderPassEncoderSetViewport(GfxRenderPassEncoder encoder, const GfxViewport* viewport) {
-    if (!encoder || !viewport) return;
+    if (!encoder || !viewport) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->renderPassEncoderSetViewport(
@@ -899,7 +1107,9 @@ void gfxRenderPassEncoderSetViewport(GfxRenderPassEncoder encoder, const GfxView
 }
 
 void gfxRenderPassEncoderSetScissorRect(GfxRenderPassEncoder encoder, const GfxScissorRect* scissor) {
-    if (!encoder || !scissor) return;
+    if (!encoder || !scissor) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->renderPassEncoderSetScissorRect(
@@ -909,7 +1119,9 @@ void gfxRenderPassEncoderSetScissorRect(GfxRenderPassEncoder encoder, const GfxS
 }
 
 void gfxRenderPassEncoderDraw(GfxRenderPassEncoder encoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
-    if (!encoder) return;
+    if (!encoder) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->renderPassEncoderDraw(
@@ -919,7 +1131,9 @@ void gfxRenderPassEncoderDraw(GfxRenderPassEncoder encoder, uint32_t vertexCount
 }
 
 void gfxRenderPassEncoderDrawIndexed(GfxRenderPassEncoder encoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) {
-    if (!encoder) return;
+    if (!encoder) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->renderPassEncoderDrawIndexed(
@@ -929,7 +1143,9 @@ void gfxRenderPassEncoderDrawIndexed(GfxRenderPassEncoder encoder, uint32_t inde
 }
 
 void gfxRenderPassEncoderEnd(GfxRenderPassEncoder encoder) {
-    if (!encoder) return;
+    if (!encoder) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->renderPassEncoderEnd(gfx::native(encoder));
@@ -938,7 +1154,9 @@ void gfxRenderPassEncoderEnd(GfxRenderPassEncoder encoder) {
 
 // Compute Pass Encoder Functions
 void gfxComputePassEncoderSetPipeline(GfxComputePassEncoder encoder, GfxComputePipeline pipeline) {
-    if (!encoder || !pipeline) return;
+    if (!encoder || !pipeline) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->computePassEncoderSetPipeline(
@@ -948,7 +1166,9 @@ void gfxComputePassEncoderSetPipeline(GfxComputePassEncoder encoder, GfxComputeP
 }
 
 void gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup) {
-    if (!encoder || !bindGroup) return;
+    if (!encoder || !bindGroup) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->computePassEncoderSetBindGroup(
@@ -959,7 +1179,9 @@ void gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32_t g
 }
 
 void gfxComputePassEncoderDispatchWorkgroups(GfxComputePassEncoder encoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) {
-    if (!encoder) return;
+    if (!encoder) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->computePassEncoderDispatchWorkgroups(
@@ -969,7 +1191,9 @@ void gfxComputePassEncoderDispatchWorkgroups(GfxComputePassEncoder encoder, uint
 }
 
 void gfxComputePassEncoderEnd(GfxComputePassEncoder encoder) {
-    if (!encoder) return;
+    if (!encoder) {
+        return;
+    }
     auto api = gfx::getAPI(encoder);
     if (api) {
         api->computePassEncoderEnd(gfx::native(encoder));
@@ -978,21 +1202,31 @@ void gfxComputePassEncoderEnd(GfxComputePassEncoder encoder) {
 
 // Fence Functions
 GfxResult gfxFenceGetStatus(GfxFence fence, bool* isSignaled) {
-    if (!fence) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!fence) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     auto api = gfx::getAPI(fence);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     return api->fenceGetStatus(gfx::native(fence), isSignaled);
 }
 
 GfxResult gfxFenceWait(GfxFence fence, uint64_t timeoutNs) {
-    if (!fence) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!fence) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     auto api = gfx::getAPI(fence);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     return api->fenceWait(gfx::native(fence), timeoutNs);
 }
 
 void gfxFenceReset(GfxFence fence) {
-    if (!fence) return;
+    if (!fence) {
+        return;
+    }
     auto api = gfx::getAPI(fence);
     if (api) {
         api->fenceReset(gfx::native(fence));
@@ -1001,14 +1235,20 @@ void gfxFenceReset(GfxFence fence) {
 
 // Additional Queue Functions
 GfxResult gfxQueueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo) {
-    if (!queue || !submitInfo) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!queue || !submitInfo) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     auto api = gfx::getAPI(queue);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     return api->queueSubmitWithSync(gfx::native(queue), submitInfo);
 }
 
 void gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) {
-    if (!queue || !buffer) return;
+    if (!queue || !buffer) {
+        return;
+    }
     auto api = gfx::getAPI(queue);
     if (api) {
         api->queueWriteBuffer(gfx::native(queue), gfx::native(buffer), offset, data, size);
@@ -1017,7 +1257,9 @@ void gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, cons
 
 void gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
     const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) {
-    if (!queue || !texture) return;
+    if (!queue || !texture) {
+        return;
+    }
     auto api = gfx::getAPI(queue);
     if (api) {
         api->queueWriteTexture(gfx::native(queue), gfx::native(texture), origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
@@ -1025,9 +1267,13 @@ void gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D*
 }
 
 GfxResult gfxQueueWaitIdle(GfxQueue queue) {
-    if (!queue) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!queue) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     auto api = gfx::getAPI(queue);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     return api->queueWaitIdle(gfx::native(queue));
 }
 
@@ -1036,7 +1282,9 @@ void gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
     GfxBuffer source, uint64_t sourceOffset,
     GfxBuffer destination, uint64_t destinationOffset,
     uint64_t size) {
-    if (!commandEncoder || !source || !destination) return;
+    if (!commandEncoder || !source || !destination) {
+        return;
+    }
     auto api = gfx::getAPI(commandEncoder);
     if (api) {
         api->commandEncoderCopyBufferToBuffer(gfx::native(commandEncoder),
@@ -1050,7 +1298,9 @@ void gfxCommandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
     GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
     GfxTexture destination, const GfxOrigin3D* origin,
     const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) {
-    if (!commandEncoder || !source || !destination) return;
+    if (!commandEncoder || !source || !destination) {
+        return;
+    }
     auto api = gfx::getAPI(commandEncoder);
     if (api) {
         api->commandEncoderCopyBufferToTexture(gfx::native(commandEncoder),
@@ -1064,7 +1314,9 @@ void gfxCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
     GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
     const GfxExtent3D* extent, GfxTextureLayout finalLayout) {
-    if (!commandEncoder || !source || !destination) return;
+    if (!commandEncoder || !source || !destination) {
+        return;
+    }
     auto api = gfx::getAPI(commandEncoder);
     if (api) {
         api->commandEncoderCopyTextureToBuffer(gfx::native(commandEncoder),
@@ -1078,7 +1330,9 @@ void gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
     const GfxExtent3D* extent, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout) {
-    if (!commandEncoder || !source || !destination) return;
+    if (!commandEncoder || !source || !destination) {
+        return;
+    }
     auto api = gfx::getAPI(commandEncoder);
     if (api) {
         api->commandEncoderCopyTextureToTexture(gfx::native(commandEncoder),
@@ -1090,30 +1344,46 @@ void gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
 
 // Semaphore Functions
 GfxSemaphoreType gfxSemaphoreGetType(GfxSemaphore semaphore) {
-    if (!semaphore) return GFX_SEMAPHORE_TYPE_BINARY;
+    if (!semaphore) {
+        return GFX_SEMAPHORE_TYPE_BINARY;
+    }
     auto api = gfx::getAPI(semaphore);
-    if (!api) return GFX_SEMAPHORE_TYPE_BINARY;
+    if (!api) {
+        return GFX_SEMAPHORE_TYPE_BINARY;
+    }
     return api->semaphoreGetType(gfx::native(semaphore));
 }
 
 uint64_t gfxSemaphoreGetValue(GfxSemaphore semaphore) {
-    if (!semaphore) return 0;
+    if (!semaphore) {
+        return 0;
+    }
     auto api = gfx::getAPI(semaphore);
-    if (!api) return 0;
+    if (!api) {
+        return 0;
+    }
     return api->semaphoreGetValue(gfx::native(semaphore));
 }
 
 GfxResult gfxSemaphoreSignal(GfxSemaphore semaphore, uint64_t value) {
-    if (!semaphore) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!semaphore) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     auto api = gfx::getAPI(semaphore);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     return api->semaphoreSignal(gfx::native(semaphore), value);
 }
 
 GfxResult gfxSemaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) {
-    if (!semaphore) return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    if (!semaphore) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
     auto api = gfx::getAPI(semaphore);
-    if (!api) return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
     return api->semaphoreWait(gfx::native(semaphore), value, timeoutNs);
 }
 

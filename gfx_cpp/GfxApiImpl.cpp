@@ -164,8 +164,9 @@ public:
     }
     ~CBufferImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxBufferDestroy(m_handle);
+        }
     }
 
     GfxBuffer getHandle() const { return m_handle; }
@@ -202,8 +203,9 @@ public:
     }
     ~CTextureViewImpl() override
     {
-        if (m_handle && m_ownsHandle)
+        if (m_handle && m_ownsHandle) {
             gfxTextureViewDestroy(m_handle);
+        }
     }
 
     GfxTextureView getHandle() const { return m_handle; }
@@ -224,8 +226,9 @@ public:
     }
     ~CTextureImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxTextureDestroy(m_handle);
+        }
     }
 
     GfxTexture getHandle() const { return m_handle; }
@@ -258,8 +261,9 @@ public:
 
         GfxTextureView view = nullptr;
         GfxResult result = gfxTextureCreateView(m_handle, &cDesc, &view);
-        if (result != GFX_RESULT_SUCCESS || !view)
+        if (result != GFX_RESULT_SUCCESS || !view) {
             throw std::runtime_error("Failed to create texture view");
+        }
 
         return std::make_shared<CTextureViewImpl>(view, shared_from_this());
     }
@@ -276,8 +280,9 @@ public:
     }
     ~CSamplerImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxSamplerDestroy(m_handle);
+        }
     }
 
     GfxSampler getHandle() const { return m_handle; }
@@ -294,8 +299,9 @@ public:
     }
     ~CShaderImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxShaderDestroy(m_handle);
+        }
     }
 
     GfxShader getHandle() const { return m_handle; }
@@ -312,8 +318,9 @@ public:
     }
     ~CBindGroupLayoutImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxBindGroupLayoutDestroy(m_handle);
+        }
     }
 
     GfxBindGroupLayout getHandle() const { return m_handle; }
@@ -330,8 +337,9 @@ public:
     }
     ~CBindGroupImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxBindGroupDestroy(m_handle);
+        }
     }
 
     GfxBindGroup getHandle() const { return m_handle; }
@@ -348,8 +356,9 @@ public:
     }
     ~CRenderPipelineImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxRenderPipelineDestroy(m_handle);
+        }
     }
 
     GfxRenderPipeline getHandle() const { return m_handle; }
@@ -366,8 +375,9 @@ public:
     }
     ~CComputePipelineImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxComputePipelineDestroy(m_handle);
+        }
     }
 
     GfxComputePipeline getHandle() const { return m_handle; }
@@ -390,22 +400,25 @@ public:
     void setPipeline(std::shared_ptr<RenderPipeline> pipeline) override
     {
         auto impl = std::dynamic_pointer_cast<CRenderPipelineImpl>(pipeline);
-        if (impl)
+        if (impl) {
             gfxRenderPassEncoderSetPipeline(m_handle, impl->getHandle());
+        }
     }
 
     void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup) override
     {
         auto impl = std::dynamic_pointer_cast<CBindGroupImpl>(bindGroup);
-        if (impl)
+        if (impl) {
             gfxRenderPassEncoderSetBindGroup(m_handle, index, impl->getHandle());
+        }
     }
 
     void setVertexBuffer(uint32_t slot, std::shared_ptr<Buffer> buffer, uint64_t offset = 0, uint64_t size = 0) override
     {
         auto impl = std::dynamic_pointer_cast<CBufferImpl>(buffer);
-        if (impl)
+        if (impl) {
             gfxRenderPassEncoderSetVertexBuffer(m_handle, slot, impl->getHandle(), offset, size);
+        }
     }
 
     void setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset = 0, uint64_t size = 0) override
@@ -462,15 +475,17 @@ public:
     void setPipeline(std::shared_ptr<ComputePipeline> pipeline) override
     {
         auto impl = std::dynamic_pointer_cast<CComputePipelineImpl>(pipeline);
-        if (impl)
+        if (impl) {
             gfxComputePassEncoderSetPipeline(m_handle, impl->getHandle());
+        }
     }
 
     void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup) override
     {
         auto impl = std::dynamic_pointer_cast<CBindGroupImpl>(bindGroup);
-        if (impl)
+        if (impl) {
             gfxComputePassEncoderSetBindGroup(m_handle, index, impl->getHandle());
+        }
     }
 
     void dispatchWorkgroups(uint32_t workgroupCountX, uint32_t workgroupCountY = 1, uint32_t workgroupCountZ = 1) override
@@ -495,8 +510,9 @@ public:
     }
     ~CCommandEncoderImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxCommandEncoderDestroy(m_handle);
+        }
     }
 
     GfxCommandEncoder getHandle() const { return m_handle; }
@@ -511,8 +527,9 @@ public:
         std::vector<GfxTextureView> cColorAttachments;
         for (auto& view : colorAttachments) {
             auto impl = std::dynamic_pointer_cast<CTextureViewImpl>(view);
-            if (impl)
+            if (impl) {
                 cColorAttachments.push_back(impl->getHandle());
+            }
         }
 
         std::vector<GfxColor> cClearColors;
@@ -523,8 +540,9 @@ public:
         GfxTextureView cDepthStencil = nullptr;
         if (depthStencilAttachment) {
             auto impl = std::dynamic_pointer_cast<CTextureViewImpl>(depthStencilAttachment);
-            if (impl)
+            if (impl) {
                 cDepthStencil = impl->getHandle();
+            }
         }
 
         GfxRenderPassEncoder encoder = nullptr;
@@ -538,8 +556,9 @@ public:
             stencilClearValue,
             &encoder);
 
-        if (result != GFX_RESULT_SUCCESS || !encoder)
+        if (result != GFX_RESULT_SUCCESS || !encoder) {
             throw std::runtime_error("Failed to begin render pass");
+        }
         return std::make_shared<CRenderPassEncoderImpl>(encoder);
     }
 
@@ -547,8 +566,9 @@ public:
     {
         GfxComputePassEncoder encoder = nullptr;
         GfxResult result = gfxCommandEncoderBeginComputePass(m_handle, label.c_str(), &encoder);
-        if (result != GFX_RESULT_SUCCESS || !encoder)
+        if (result != GFX_RESULT_SUCCESS || !encoder) {
             throw std::runtime_error("Failed to begin compute pass");
+        }
         return std::make_shared<CComputePassEncoderImpl>(encoder);
     }
 
@@ -615,8 +635,9 @@ public:
 
     void pipelineBarrier(const std::vector<TextureBarrier>& textureBarriers) override
     {
-        if (textureBarriers.empty())
+        if (textureBarriers.empty()) {
             return;
+        }
 
         std::vector<GfxTextureBarrier> cBarriers;
         cBarriers.reserve(textureBarriers.size());
@@ -669,8 +690,9 @@ public:
     }
     ~CFenceImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxFenceDestroy(m_handle);
+        }
     }
 
     GfxFence getHandle() const { return m_handle; }
@@ -704,8 +726,9 @@ public:
     }
     ~CSemaphoreImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxSemaphoreDestroy(m_handle);
+        }
     }
 
     GfxSemaphore getHandle() const { return m_handle; }
@@ -738,8 +761,9 @@ private:
 template <>
 inline GfxSemaphore extractNativeHandle<GfxSemaphore>(std::shared_ptr<void> ptr)
 {
-    if (!ptr)
+    if (!ptr) {
         return nullptr;
+    }
     auto impl = std::static_pointer_cast<CSemaphoreImpl>(ptr);
     return impl->getHandle();
 }
@@ -747,8 +771,9 @@ inline GfxSemaphore extractNativeHandle<GfxSemaphore>(std::shared_ptr<void> ptr)
 template <>
 inline GfxFence extractNativeHandle<GfxFence>(std::shared_ptr<void> ptr)
 {
-    if (!ptr)
+    if (!ptr) {
         return nullptr;
+    }
     auto impl = std::static_pointer_cast<CFenceImpl>(ptr);
     return impl->getHandle();
 }
@@ -767,8 +792,9 @@ public:
     void submit(std::shared_ptr<CommandEncoder> commandEncoder) override
     {
         auto impl = std::dynamic_pointer_cast<CCommandEncoderImpl>(commandEncoder);
-        if (impl)
+        if (impl) {
             gfxQueueSubmit(m_handle, impl->getHandle());
+        }
     }
 
     void submitWithSync(const SubmitInfo& submitInfo) override
@@ -777,22 +803,25 @@ public:
         std::vector<GfxCommandEncoder> cEncoders;
         for (auto& encoder : submitInfo.commandEncoders) {
             auto impl = std::dynamic_pointer_cast<CCommandEncoderImpl>(encoder);
-            if (impl)
+            if (impl) {
                 cEncoders.push_back(impl->getHandle());
+            }
         }
 
         std::vector<GfxSemaphore> cWaitSems;
         for (auto& sem : submitInfo.waitSemaphores) {
             auto impl = std::dynamic_pointer_cast<CSemaphoreImpl>(sem);
-            if (impl)
+            if (impl) {
                 cWaitSems.push_back(impl->getHandle());
+            }
         }
 
         std::vector<GfxSemaphore> cSignalSems;
         for (auto& sem : submitInfo.signalSemaphores) {
             auto impl = std::dynamic_pointer_cast<CSemaphoreImpl>(sem);
-            if (impl)
+            if (impl) {
                 cSignalSems.push_back(impl->getHandle());
+            }
         }
 
         GfxSubmitInfo cInfo = {};
@@ -818,8 +847,9 @@ public:
     void writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size) override
     {
         auto impl = std::dynamic_pointer_cast<CBufferImpl>(buffer);
-        if (impl)
+        if (impl) {
             gfxQueueWriteBuffer(m_handle, impl->getHandle(), offset, data, size);
+        }
     }
 
     void writeTexture(
@@ -853,8 +883,9 @@ public:
     }
     ~CSurfaceImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxSurfaceDestroy(m_handle);
+        }
     }
 
     GfxSurface getHandle() const { return m_handle; }
@@ -928,8 +959,9 @@ public:
     }
     ~CSwapchainImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxSwapchainDestroy(m_handle);
+        }
     }
 
     uint32_t getWidth() const override { return gfxSwapchainGetWidth(m_handle); }
@@ -940,8 +972,9 @@ public:
     std::shared_ptr<TextureView> getCurrentTextureView() override
     {
         GfxTextureView view = gfxSwapchainGetCurrentTextureView(m_handle);
-        if (!view)
+        if (!view) {
             return nullptr;
+        }
         // Swapchain texture views are owned by the swapchain, not by the wrapper
         return std::make_shared<CTextureViewImpl>(view, nullptr, false);
     }
@@ -976,8 +1009,9 @@ public:
     std::shared_ptr<TextureView> getImageView(uint32_t index) override
     {
         GfxTextureView view = gfxSwapchainGetImageView(m_handle, index);
-        if (!view)
+        if (!view) {
             return nullptr;
+        }
         // Swapchain texture views are owned by the swapchain, not by the wrapper
         return std::make_shared<CTextureViewImpl>(view, nullptr, false);
     }
@@ -1032,8 +1066,9 @@ public:
 
         GfxSurface surface = nullptr;
         GfxResult result = gfxDeviceCreateSurface(m_handle, &cDesc, &surface);
-        if (result != GFX_RESULT_SUCCESS || !surface)
+        if (result != GFX_RESULT_SUCCESS || !surface) {
             throw std::runtime_error("Failed to create surface");
+        }
         return std::make_shared<CSurfaceImpl>(surface);
     }
 
@@ -1042,8 +1077,9 @@ public:
         const SwapchainDescriptor& descriptor) override
     {
         auto surfaceImpl = std::dynamic_pointer_cast<CSurfaceImpl>(surface);
-        if (!surfaceImpl)
+        if (!surfaceImpl) {
             throw std::runtime_error("Invalid surface type");
+        }
 
         GfxSwapchainDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
@@ -1056,8 +1092,9 @@ public:
 
         GfxSwapchain swapchain = nullptr;
         GfxResult result = gfxDeviceCreateSwapchain(m_handle, surfaceImpl->getHandle(), &cDesc, &swapchain);
-        if (result != GFX_RESULT_SUCCESS || !swapchain)
+        if (result != GFX_RESULT_SUCCESS || !swapchain) {
             throw std::runtime_error("Failed to create swapchain");
+        }
         return std::make_shared<CSwapchainImpl>(swapchain);
     }
 
@@ -1071,8 +1108,9 @@ public:
 
         GfxBuffer buffer = nullptr;
         GfxResult result = gfxDeviceCreateBuffer(m_handle, &cDesc, &buffer);
-        if (result != GFX_RESULT_SUCCESS || !buffer)
+        if (result != GFX_RESULT_SUCCESS || !buffer) {
             throw std::runtime_error("Failed to create buffer");
+        }
         return std::make_shared<CBufferImpl>(buffer);
     }
 
@@ -1088,8 +1126,9 @@ public:
 
         GfxTexture texture = nullptr;
         GfxResult result = gfxDeviceCreateTexture(m_handle, &cDesc, &texture);
-        if (result != GFX_RESULT_SUCCESS || !texture)
+        if (result != GFX_RESULT_SUCCESS || !texture) {
             throw std::runtime_error("Failed to create texture");
+        }
         return std::make_shared<CTextureImpl>(texture);
     }
 
@@ -1117,8 +1156,9 @@ public:
 
         GfxSampler sampler = nullptr;
         GfxResult result = gfxDeviceCreateSampler(m_handle, &cDesc, &sampler);
-        if (result != GFX_RESULT_SUCCESS || !sampler)
+        if (result != GFX_RESULT_SUCCESS || !sampler) {
             throw std::runtime_error("Failed to create sampler");
+        }
         return std::make_shared<CSamplerImpl>(sampler);
     }
 
@@ -1132,8 +1172,9 @@ public:
 
         GfxShader shader = nullptr;
         GfxResult result = gfxDeviceCreateShader(m_handle, &cDesc, &shader);
-        if (result != GFX_RESULT_SUCCESS || !shader)
+        if (result != GFX_RESULT_SUCCESS || !shader) {
             throw std::runtime_error("Failed to create shader");
+        }
         return std::make_shared<CShaderImpl>(shader);
     }
 
@@ -1179,16 +1220,18 @@ public:
 
         GfxBindGroupLayout layout = nullptr;
         GfxResult result = gfxDeviceCreateBindGroupLayout(m_handle, &cDesc, &layout);
-        if (result != GFX_RESULT_SUCCESS || !layout)
+        if (result != GFX_RESULT_SUCCESS || !layout) {
             throw std::runtime_error("Failed to create bind group layout");
+        }
         return std::make_shared<CBindGroupLayoutImpl>(layout);
     }
 
     std::shared_ptr<BindGroup> createBindGroup(const BindGroupDescriptor& descriptor) override
     {
         auto layoutImpl = std::dynamic_pointer_cast<CBindGroupLayoutImpl>(descriptor.layout);
-        if (!layoutImpl)
+        if (!layoutImpl) {
             throw std::runtime_error("Invalid bind group layout type");
+        }
 
         // Convert entries properly
         std::vector<GfxBindGroupEntry> cEntries(descriptor.entries.size());
@@ -1234,8 +1277,9 @@ public:
 
         GfxBindGroup bindGroup = nullptr;
         GfxResult result = gfxDeviceCreateBindGroup(m_handle, &cDesc, &bindGroup);
-        if (result != GFX_RESULT_SUCCESS || !bindGroup)
+        if (result != GFX_RESULT_SUCCESS || !bindGroup) {
             throw std::runtime_error("Failed to create bind group");
+        }
         return std::make_shared<CBindGroupImpl>(bindGroup);
     }
 
@@ -1243,8 +1287,9 @@ public:
     {
         // Extract shader handles
         auto vertexShaderImpl = std::dynamic_pointer_cast<CShaderImpl>(descriptor.vertex.module);
-        if (!vertexShaderImpl)
+        if (!vertexShaderImpl) {
             throw std::runtime_error("Invalid vertex shader type");
+        }
 
         // Convert vertex attributes
         std::vector<std::vector<GfxVertexAttribute>> cAttributesPerBuffer;
@@ -1285,8 +1330,9 @@ public:
         if (descriptor.fragment.has_value()) {
             const auto& fragment = *descriptor.fragment;
             auto fragmentShaderImpl = std::dynamic_pointer_cast<CShaderImpl>(fragment.module);
-            if (!fragmentShaderImpl)
+            if (!fragmentShaderImpl) {
                 throw std::runtime_error("Invalid fragment shader type");
+            }
 
             // Convert color targets
             for (const auto& target : fragment.targets) {
@@ -1387,16 +1433,18 @@ public:
 
         GfxRenderPipeline pipeline = nullptr;
         GfxResult result = gfxDeviceCreateRenderPipeline(m_handle, &cDesc, &pipeline);
-        if (result != GFX_RESULT_SUCCESS || !pipeline)
+        if (result != GFX_RESULT_SUCCESS || !pipeline) {
             throw std::runtime_error("Failed to create render pipeline");
+        }
         return std::make_shared<CRenderPipelineImpl>(pipeline);
     }
 
     std::shared_ptr<ComputePipeline> createComputePipeline(const ComputePipelineDescriptor& descriptor) override
     {
         auto shaderImpl = std::dynamic_pointer_cast<CShaderImpl>(descriptor.compute);
-        if (!shaderImpl)
+        if (!shaderImpl) {
             throw std::runtime_error("Invalid shader type");
+        }
 
         GfxComputePipelineDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
@@ -1405,8 +1453,9 @@ public:
 
         GfxComputePipeline pipeline = nullptr;
         GfxResult result = gfxDeviceCreateComputePipeline(m_handle, &cDesc, &pipeline);
-        if (result != GFX_RESULT_SUCCESS || !pipeline)
+        if (result != GFX_RESULT_SUCCESS || !pipeline) {
             throw std::runtime_error("Failed to create compute pipeline");
+        }
         return std::make_shared<CComputePipelineImpl>(pipeline);
     }
 
@@ -1414,8 +1463,9 @@ public:
     {
         GfxCommandEncoder encoder = nullptr;
         GfxResult result = gfxDeviceCreateCommandEncoder(m_handle, label.c_str(), &encoder);
-        if (result != GFX_RESULT_SUCCESS || !encoder)
+        if (result != GFX_RESULT_SUCCESS || !encoder) {
             throw std::runtime_error("Failed to create command encoder");
+        }
         return std::make_shared<CCommandEncoderImpl>(encoder);
     }
 
@@ -1427,8 +1477,9 @@ public:
 
         GfxFence fence = nullptr;
         GfxResult result = gfxDeviceCreateFence(m_handle, &cDesc, &fence);
-        if (result != GFX_RESULT_SUCCESS || !fence)
+        if (result != GFX_RESULT_SUCCESS || !fence) {
             throw std::runtime_error("Failed to create fence");
+        }
         return std::make_shared<CFenceImpl>(fence);
     }
 
@@ -1441,8 +1492,9 @@ public:
 
         GfxSemaphore semaphore = nullptr;
         GfxResult result = gfxDeviceCreateSemaphore(m_handle, &cDesc, &semaphore);
-        if (result != GFX_RESULT_SUCCESS || !semaphore)
+        if (result != GFX_RESULT_SUCCESS || !semaphore) {
             throw std::runtime_error("Failed to create semaphore");
+        }
         return std::make_shared<CSemaphoreImpl>(semaphore);
     }
 
@@ -1464,8 +1516,9 @@ public:
     }
     ~CAdapterImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxAdapterDestroy(m_handle);
+        }
     }
 
     std::shared_ptr<Device> createDevice(const DeviceDescriptor& descriptor = {}) override
@@ -1476,8 +1529,9 @@ public:
 
         GfxDevice device = nullptr;
         GfxResult result = gfxAdapterCreateDevice(m_handle, &cDesc, &device);
-        if (result != GFX_RESULT_SUCCESS || !device)
+        if (result != GFX_RESULT_SUCCESS || !device) {
             throw std::runtime_error("Failed to create device");
+        }
         return std::make_shared<CDeviceImpl>(device);
     }
 
@@ -1504,8 +1558,9 @@ public:
     }
     ~CInstanceImpl() override
     {
-        if (m_handle)
+        if (m_handle) {
             gfxInstanceDestroy(m_handle);
+        }
     }
 
     std::shared_ptr<Adapter> requestAdapter(const AdapterDescriptor& descriptor = {}) override
@@ -1516,8 +1571,9 @@ public:
 
         GfxAdapter adapter = nullptr;
         GfxResult result = gfxInstanceRequestAdapter(m_handle, &cDesc, &adapter);
-        if (result != GFX_RESULT_SUCCESS || !adapter)
+        if (result != GFX_RESULT_SUCCESS || !adapter) {
             throw std::runtime_error("Failed to request adapter");
+        }
         return std::make_shared<CAdapterImpl>(adapter);
     }
 

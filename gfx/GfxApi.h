@@ -743,6 +743,7 @@ GFX_API GfxResult gfxSwapchainPresentWithSync(GfxSwapchain swapchain, const GfxP
 GFX_API GfxResult gfxSwapchainPresent(GfxSwapchain swapchain);
 
 GFX_API void gfxSwapchainResize(GfxSwapchain swapchain, uint32_t width, uint32_t height);
+// TODO -> remove this
 GFX_API bool gfxSwapchainNeedsRecreation(GfxSwapchain swapchain);
 
 // Buffer functions

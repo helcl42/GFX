@@ -803,49 +803,68 @@ void cleanup(CubeApp* app)
     // Destroy per-frame resources
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         // Destroy synchronization objects
-        if (app->imageAvailableSemaphores[i])
+        if (app->imageAvailableSemaphores[i]) {
             gfxSemaphoreDestroy(app->imageAvailableSemaphores[i]);
-        if (app->renderFinishedSemaphores[i])
+        }
+        if (app->renderFinishedSemaphores[i]) {
             gfxSemaphoreDestroy(app->renderFinishedSemaphores[i]);
-        if (app->inFlightFences[i])
+        }
+        if (app->inFlightFences[i]) {
             gfxFenceDestroy(app->inFlightFences[i]);
+        }
 
         // Destroy per-frame resources
-        if (app->commandEncoders[i])
+        if (app->commandEncoders[i]) {
             gfxCommandEncoderDestroy(app->commandEncoders[i]);
-        if (app->uniformBindGroups[i])
+        }
+        if (app->uniformBindGroups[i]) {
             gfxBindGroupDestroy(app->uniformBindGroups[i]);
-        if (app->uniformBuffers[i])
+        }
+        if (app->uniformBuffers[i]) {
             gfxBufferDestroy(app->uniformBuffers[i]);
+        }
     }
 
     // Destroy graphics resources
-    if (app->renderPipeline)
+    if (app->renderPipeline) {
         gfxRenderPipelineDestroy(app->renderPipeline);
-    if (app->fragmentShader)
+    }
+    if (app->fragmentShader) {
         gfxShaderDestroy(app->fragmentShader);
-    if (app->vertexShader)
+    }
+    if (app->vertexShader) {
         gfxShaderDestroy(app->vertexShader);
-    if (app->uniformBindGroupLayout)
+    }
+    if (app->uniformBindGroupLayout) {
         gfxBindGroupLayoutDestroy(app->uniformBindGroupLayout);
-    if (app->indexBuffer)
+    }
+    if (app->indexBuffer) {
         gfxBufferDestroy(app->indexBuffer);
-    if (app->vertexBuffer)
+    }
+    if (app->vertexBuffer) {
         gfxBufferDestroy(app->vertexBuffer);
-    if (app->depthTextureView)
+    }
+    if (app->depthTextureView) {
         gfxTextureViewDestroy(app->depthTextureView);
-    if (app->depthTexture)
+    }
+    if (app->depthTexture) {
         gfxTextureDestroy(app->depthTexture);
-    if (app->swapchain)
+    }
+    if (app->swapchain) {
         gfxSwapchainDestroy(app->swapchain);
-    if (app->surface)
+    }
+    if (app->surface) {
         gfxSurfaceDestroy(app->surface);
-    if (app->device)
+    }
+    if (app->device) {
         gfxDeviceDestroy(app->device);
-    if (app->adapter)
+    }
+    if (app->adapter) {
         gfxAdapterDestroy(app->adapter);
-    if (app->instance)
+    }
+    if (app->instance) {
         gfxInstanceDestroy(app->instance);
+    }
 
     // Unload the backend API after destroying all instances
     printf("Unloading graphics backend...\n");
