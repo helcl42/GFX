@@ -157,29 +157,26 @@ CHandle extractNativeHandle(std::shared_ptr<void> /* unused */)
 // ============================================================================
 
 class CBufferImpl : public Buffer {
-private:
-    GfxBuffer handle;
-
 public:
     explicit CBufferImpl(GfxBuffer h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CBufferImpl() override
     {
-        if (handle)
-            gfxBufferDestroy(handle);
+        if (m_handle)
+            gfxBufferDestroy(m_handle);
     }
 
-    GfxBuffer getHandle() const { return handle; }
+    GfxBuffer getHandle() const { return m_handle; }
 
-    uint64_t getSize() const override { return gfxBufferGetSize(handle); }
-    BufferUsage getUsage() const override { return static_cast<BufferUsage>(gfxBufferGetUsage(handle)); }
+    uint64_t getSize() const override { return gfxBufferGetSize(m_handle); }
+    BufferUsage getUsage() const override { return static_cast<BufferUsage>(gfxBufferGetUsage(m_handle)); }
 
     void* mapAsync(uint64_t offset = 0, uint64_t size = 0) override
     {
         void* mappedPointer = nullptr;
-        GfxResult result = gfxBufferMapAsync(handle, offset, size, &mappedPointer);
+        GfxResult result = gfxBufferMapAsync(m_handle, offset, size, &mappedPointer);
         if (result != GFX_RESULT_SUCCESS) {
             return nullptr;
         }
@@ -188,66 +185,66 @@ public:
 
     void unmap() override
     {
-        gfxBufferUnmap(handle);
+        gfxBufferUnmap(m_handle);
     }
+
+private:
+    GfxBuffer m_handle;
 };
 
 class CTextureViewImpl : public TextureView {
-private:
-    GfxTextureView handle;
-    std::shared_ptr<Texture> texture;
-    bool ownsHandle; // False for swapchain texture views
-
 public:
     explicit CTextureViewImpl(GfxTextureView h, std::shared_ptr<Texture> tex = nullptr, bool owns = true)
-        : handle(h)
-        , texture(tex)
-        , ownsHandle(owns)
+        : m_handle(h)
+        , m_texture(tex)
+        , m_ownsHandle(owns)
     {
     }
     ~CTextureViewImpl() override
     {
-        if (handle && ownsHandle)
-            gfxTextureViewDestroy(handle);
+        if (m_handle && m_ownsHandle)
+            gfxTextureViewDestroy(m_handle);
     }
 
-    GfxTextureView getHandle() const { return handle; }
+    GfxTextureView getHandle() const { return m_handle; }
 
-    std::shared_ptr<Texture> getTexture() override { return texture; }
+    std::shared_ptr<Texture> getTexture() override { return m_texture; }
+
+private:
+    GfxTextureView m_handle;
+    std::shared_ptr<Texture> m_texture;
+    bool m_ownsHandle; // False for swapchain texture views
 };
 
 class CTextureImpl : public Texture, public std::enable_shared_from_this<CTextureImpl> {
-private:
-    GfxTexture handle;
-
 public:
     explicit CTextureImpl(GfxTexture h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CTextureImpl() override
     {
-        if (handle)
-            gfxTextureDestroy(handle);
+        if (m_handle)
+            gfxTextureDestroy(m_handle);
     }
 
-    GfxTexture getHandle() const { return handle; }
+    GfxTexture getHandle() const { return m_handle; }
 
     Extent3D getSize() const override
     {
-        GfxExtent3D size = gfxTextureGetSize(handle);
+        GfxExtent3D size = gfxTextureGetSize(m_handle);
         return Extent3D(size.width, size.height, size.depth);
     }
 
     TextureFormat getFormat() const override
     {
-        return cFormatToCppFormat(gfxTextureGetFormat(handle));
+        return cFormatToCppFormat(gfxTextureGetFormat(m_handle));
     }
 
-    uint32_t getMipLevelCount() const override { return gfxTextureGetMipLevelCount(handle); }
-    uint32_t getSampleCount() const override { return gfxTextureGetSampleCount(handle); }
-    TextureUsage getUsage() const override { return static_cast<TextureUsage>(gfxTextureGetUsage(handle)); }
-    TextureLayout getLayout() const override { return static_cast<TextureLayout>(gfxTextureGetLayout(handle)); }
+    uint32_t getMipLevelCount() const override { return gfxTextureGetMipLevelCount(m_handle); }
+    uint32_t getSampleCount() const override { return gfxTextureGetSampleCount(m_handle); }
+    TextureUsage getUsage() const override { return static_cast<TextureUsage>(gfxTextureGetUsage(m_handle)); }
+    TextureLayout getLayout() const override { return static_cast<TextureLayout>(gfxTextureGetLayout(m_handle)); }
 
     std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) override
     {
@@ -260,129 +257,129 @@ public:
         cDesc.arrayLayerCount = descriptor.arrayLayerCount;
 
         GfxTextureView view = nullptr;
-        GfxResult result = gfxTextureCreateView(handle, &cDesc, &view);
+        GfxResult result = gfxTextureCreateView(m_handle, &cDesc, &view);
         if (result != GFX_RESULT_SUCCESS || !view)
             throw std::runtime_error("Failed to create texture view");
 
         return std::make_shared<CTextureViewImpl>(view, shared_from_this());
     }
+
+private:
+    GfxTexture m_handle;
 };
 
 class CSamplerImpl : public Sampler {
-private:
-    GfxSampler handle;
-
 public:
     explicit CSamplerImpl(GfxSampler h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CSamplerImpl() override
     {
-        if (handle)
-            gfxSamplerDestroy(handle);
+        if (m_handle)
+            gfxSamplerDestroy(m_handle);
     }
 
-    GfxSampler getHandle() const { return handle; }
+    GfxSampler getHandle() const { return m_handle; }
+
+private:
+    GfxSampler m_handle;
 };
 
 class CShaderImpl : public Shader {
-private:
-    GfxShader handle;
-
 public:
     explicit CShaderImpl(GfxShader h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CShaderImpl() override
     {
-        if (handle)
-            gfxShaderDestroy(handle);
+        if (m_handle)
+            gfxShaderDestroy(m_handle);
     }
 
-    GfxShader getHandle() const { return handle; }
+    GfxShader getHandle() const { return m_handle; }
+
+private:
+    GfxShader m_handle;
 };
 
 class CBindGroupLayoutImpl : public BindGroupLayout {
-private:
-    GfxBindGroupLayout handle;
-
 public:
     explicit CBindGroupLayoutImpl(GfxBindGroupLayout h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CBindGroupLayoutImpl() override
     {
-        if (handle)
-            gfxBindGroupLayoutDestroy(handle);
+        if (m_handle)
+            gfxBindGroupLayoutDestroy(m_handle);
     }
 
-    GfxBindGroupLayout getHandle() const { return handle; }
+    GfxBindGroupLayout getHandle() const { return m_handle; }
+
+private:
+    GfxBindGroupLayout m_handle;
 };
 
 class CBindGroupImpl : public BindGroup {
-private:
-    GfxBindGroup handle;
-
 public:
     explicit CBindGroupImpl(GfxBindGroup h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CBindGroupImpl() override
     {
-        if (handle)
-            gfxBindGroupDestroy(handle);
+        if (m_handle)
+            gfxBindGroupDestroy(m_handle);
     }
 
-    GfxBindGroup getHandle() const { return handle; }
+    GfxBindGroup getHandle() const { return m_handle; }
+
+private:
+    GfxBindGroup m_handle;
 };
 
 class CRenderPipelineImpl : public RenderPipeline {
-private:
-    GfxRenderPipeline handle;
-
 public:
     explicit CRenderPipelineImpl(GfxRenderPipeline h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CRenderPipelineImpl() override
     {
-        if (handle)
-            gfxRenderPipelineDestroy(handle);
+        if (m_handle)
+            gfxRenderPipelineDestroy(m_handle);
     }
 
-    GfxRenderPipeline getHandle() const { return handle; }
+    GfxRenderPipeline getHandle() const { return m_handle; }
+
+private:
+    GfxRenderPipeline m_handle;
 };
 
 class CComputePipelineImpl : public ComputePipeline {
-private:
-    GfxComputePipeline handle;
-
 public:
     explicit CComputePipelineImpl(GfxComputePipeline h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CComputePipelineImpl() override
     {
-        if (handle)
-            gfxComputePipelineDestroy(handle);
+        if (m_handle)
+            gfxComputePipelineDestroy(m_handle);
     }
 
-    GfxComputePipeline getHandle() const { return handle; }
+    GfxComputePipeline getHandle() const { return m_handle; }
+
+private:
+    GfxComputePipeline m_handle;
 };
 
 class CRenderPassEncoderImpl : public RenderPassEncoder {
-private:
-    GfxRenderPassEncoder handle;
-
 public:
     explicit CRenderPassEncoderImpl(GfxRenderPassEncoder h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CRenderPassEncoderImpl() override
@@ -394,21 +391,21 @@ public:
     {
         auto impl = std::dynamic_pointer_cast<CRenderPipelineImpl>(pipeline);
         if (impl)
-            gfxRenderPassEncoderSetPipeline(handle, impl->getHandle());
+            gfxRenderPassEncoderSetPipeline(m_handle, impl->getHandle());
     }
 
     void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup) override
     {
         auto impl = std::dynamic_pointer_cast<CBindGroupImpl>(bindGroup);
         if (impl)
-            gfxRenderPassEncoderSetBindGroup(handle, index, impl->getHandle());
+            gfxRenderPassEncoderSetBindGroup(m_handle, index, impl->getHandle());
     }
 
     void setVertexBuffer(uint32_t slot, std::shared_ptr<Buffer> buffer, uint64_t offset = 0, uint64_t size = 0) override
     {
         auto impl = std::dynamic_pointer_cast<CBufferImpl>(buffer);
         if (impl)
-            gfxRenderPassEncoderSetVertexBuffer(handle, slot, impl->getHandle(), offset, size);
+            gfxRenderPassEncoderSetVertexBuffer(m_handle, slot, impl->getHandle(), offset, size);
     }
 
     void setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset = 0, uint64_t size = 0) override
@@ -416,45 +413,45 @@ public:
         auto impl = std::dynamic_pointer_cast<CBufferImpl>(buffer);
         if (impl) {
             GfxIndexFormat cFormat = (format == IndexFormat::Uint16) ? GFX_INDEX_FORMAT_UINT16 : GFX_INDEX_FORMAT_UINT32;
-            gfxRenderPassEncoderSetIndexBuffer(handle, impl->getHandle(), cFormat, offset, size);
+            gfxRenderPassEncoderSetIndexBuffer(m_handle, impl->getHandle(), cFormat, offset, size);
         }
     }
 
     void setViewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f) override
     {
         GfxViewport viewport = { x, y, width, height, minDepth, maxDepth };
-        gfxRenderPassEncoderSetViewport(handle, &viewport);
+        gfxRenderPassEncoderSetViewport(m_handle, &viewport);
     }
 
     void setScissorRect(int32_t x, int32_t y, uint32_t width, uint32_t height) override
     {
         GfxScissorRect scissor = { x, y, width, height };
-        gfxRenderPassEncoderSetScissorRect(handle, &scissor);
+        gfxRenderPassEncoderSetScissorRect(m_handle, &scissor);
     }
 
     void draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) override
     {
-        gfxRenderPassEncoderDraw(handle, vertexCount, instanceCount, firstVertex, firstInstance);
+        gfxRenderPassEncoderDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
     }
 
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t baseVertex = 0, uint32_t firstInstance = 0) override
     {
-        gfxRenderPassEncoderDrawIndexed(handle, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+        gfxRenderPassEncoderDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
     }
 
     void end() override
     {
-        gfxRenderPassEncoderEnd(handle);
+        gfxRenderPassEncoderEnd(m_handle);
     }
+
+private:
+    GfxRenderPassEncoder m_handle;
 };
 
 class CComputePassEncoderImpl : public ComputePassEncoder {
-private:
-    GfxComputePassEncoder handle;
-
 public:
     explicit CComputePassEncoderImpl(GfxComputePassEncoder h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CComputePassEncoderImpl() override
@@ -466,43 +463,43 @@ public:
     {
         auto impl = std::dynamic_pointer_cast<CComputePipelineImpl>(pipeline);
         if (impl)
-            gfxComputePassEncoderSetPipeline(handle, impl->getHandle());
+            gfxComputePassEncoderSetPipeline(m_handle, impl->getHandle());
     }
 
     void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup) override
     {
         auto impl = std::dynamic_pointer_cast<CBindGroupImpl>(bindGroup);
         if (impl)
-            gfxComputePassEncoderSetBindGroup(handle, index, impl->getHandle());
+            gfxComputePassEncoderSetBindGroup(m_handle, index, impl->getHandle());
     }
 
     void dispatchWorkgroups(uint32_t workgroupCountX, uint32_t workgroupCountY = 1, uint32_t workgroupCountZ = 1) override
     {
-        gfxComputePassEncoderDispatchWorkgroups(handle, workgroupCountX, workgroupCountY, workgroupCountZ);
+        gfxComputePassEncoderDispatchWorkgroups(m_handle, workgroupCountX, workgroupCountY, workgroupCountZ);
     }
 
     void end() override
     {
-        gfxComputePassEncoderEnd(handle);
+        gfxComputePassEncoderEnd(m_handle);
     }
+
+private:
+    GfxComputePassEncoder m_handle;
 };
 
 class CCommandEncoderImpl : public CommandEncoder {
-private:
-    GfxCommandEncoder handle;
-
 public:
     explicit CCommandEncoderImpl(GfxCommandEncoder h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CCommandEncoderImpl() override
     {
-        if (handle)
-            gfxCommandEncoderDestroy(handle);
+        if (m_handle)
+            gfxCommandEncoderDestroy(m_handle);
     }
 
-    GfxCommandEncoder getHandle() const { return handle; }
+    GfxCommandEncoder getHandle() const { return m_handle; }
 
     std::shared_ptr<RenderPassEncoder> beginRenderPass(
         const std::vector<std::shared_ptr<TextureView>>& colorAttachments,
@@ -532,7 +529,7 @@ public:
 
         GfxRenderPassEncoder encoder = nullptr;
         GfxResult result = gfxCommandEncoderBeginRenderPass(
-            handle,
+            m_handle,
             cColorAttachments.data(),
             static_cast<uint32_t>(cColorAttachments.size()),
             cClearColors.empty() ? nullptr : cClearColors.data(),
@@ -549,7 +546,7 @@ public:
     std::shared_ptr<ComputePassEncoder> beginComputePass(const std::string& label = "") override
     {
         GfxComputePassEncoder encoder = nullptr;
-        GfxResult result = gfxCommandEncoderBeginComputePass(handle, label.c_str(), &encoder);
+        GfxResult result = gfxCommandEncoderBeginComputePass(m_handle, label.c_str(), &encoder);
         if (result != GFX_RESULT_SUCCESS || !encoder)
             throw std::runtime_error("Failed to begin compute pass");
         return std::make_shared<CComputePassEncoderImpl>(encoder);
@@ -563,7 +560,7 @@ public:
         auto src = std::dynamic_pointer_cast<CBufferImpl>(source);
         auto dst = std::dynamic_pointer_cast<CBufferImpl>(destination);
         if (src && dst) {
-            gfxCommandEncoderCopyBufferToBuffer(handle, src->getHandle(), sourceOffset,
+            gfxCommandEncoderCopyBufferToBuffer(m_handle, src->getHandle(), sourceOffset,
                 dst->getHandle(), destinationOffset, size);
         }
     }
@@ -578,7 +575,7 @@ public:
         if (src && dst) {
             GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
-            gfxCommandEncoderCopyBufferToTexture(handle, src->getHandle(), sourceOffset, bytesPerRow,
+            gfxCommandEncoderCopyBufferToTexture(m_handle, src->getHandle(), sourceOffset, bytesPerRow,
                 dst->getHandle(), &cOrigin, &cExtent, mipLevel, static_cast<GfxTextureLayout>(finalLayout));
         }
     }
@@ -593,7 +590,7 @@ public:
         if (src && dst) {
             GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
-            gfxCommandEncoderCopyTextureToBuffer(handle, src->getHandle(), &cOrigin, mipLevel,
+            gfxCommandEncoderCopyTextureToBuffer(m_handle, src->getHandle(), &cOrigin, mipLevel,
                 dst->getHandle(), destinationOffset, bytesPerRow, &cExtent, static_cast<GfxTextureLayout>(finalLayout));
         }
     }
@@ -609,7 +606,7 @@ public:
             GfxOrigin3D cSourceOrigin = { sourceOrigin.x, sourceOrigin.y, sourceOrigin.z };
             GfxOrigin3D cDestOrigin = { destinationOrigin.x, destinationOrigin.y, destinationOrigin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
-            gfxCommandEncoderCopyTextureToTexture(handle, 
+            gfxCommandEncoderCopyTextureToTexture(m_handle, 
                 src->getHandle(), &cSourceOrigin, sourceMipLevel,
                 dst->getHandle(), &cDestOrigin, destinationMipLevel,
                 &cExtent);
@@ -651,87 +648,90 @@ public:
         }
 
         if (!cBarriers.empty()) {
-            gfxCommandEncoderPipelineBarrier(handle, cBarriers.data(), static_cast<uint32_t>(cBarriers.size()));
+            gfxCommandEncoderPipelineBarrier(m_handle, cBarriers.data(), static_cast<uint32_t>(cBarriers.size()));
         }
     }
 
     void finish() override
     {
-        gfxCommandEncoderFinish(handle);
+        gfxCommandEncoderFinish(m_handle);
     }
+
+private:
+    GfxCommandEncoder m_handle;
 };
 
 class CFenceImpl : public Fence {
-private:
-    GfxFence handle;
-
 public:
     explicit CFenceImpl(GfxFence h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CFenceImpl() override
     {
-        if (handle)
-            gfxFenceDestroy(handle);
+        if (m_handle)
+            gfxFenceDestroy(m_handle);
     }
 
-    GfxFence getHandle() const { return handle; }
+    GfxFence getHandle() const { return m_handle; }
 
     FenceStatus getStatus() const override
     {
         bool signaled;
-        gfxFenceGetStatus(handle, &signaled);
+        gfxFenceGetStatus(m_handle, &signaled);
         return signaled ? FenceStatus::Signaled : FenceStatus::Unsignaled;
     }
 
     bool wait(uint64_t timeoutNanoseconds = UINT64_MAX) override
     {
-        return gfxFenceWait(handle, timeoutNanoseconds) == GFX_RESULT_SUCCESS;
+        return gfxFenceWait(m_handle, timeoutNanoseconds) == GFX_RESULT_SUCCESS;
     }
 
     void reset() override
     {
-        gfxFenceReset(handle);
+        gfxFenceReset(m_handle);
     }
+
+private:
+    GfxFence m_handle;
 };
 
 class CSemaphoreImpl : public Semaphore {
-private:
-    GfxSemaphore handle;
-
 public:
     explicit CSemaphoreImpl(GfxSemaphore h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CSemaphoreImpl() override
     {
-        if (handle)
-            gfxSemaphoreDestroy(handle);
+        if (m_handle)
+            gfxSemaphoreDestroy(m_handle);
     }
 
-    GfxSemaphore getHandle() const { return handle; }
+    GfxSemaphore getHandle() const { return m_handle; }
 
     SemaphoreType getType() const override
     {
-        return static_cast<SemaphoreType>(gfxSemaphoreGetType(handle));
+        return static_cast<SemaphoreType>(gfxSemaphoreGetType(m_handle));
     }
 
     uint64_t getValue() const override
     {
-        return gfxSemaphoreGetValue(handle);
+        return gfxSemaphoreGetValue(m_handle);
     }
 
     void signal(uint64_t value) override
     {
-        gfxSemaphoreSignal(handle, value);
+        gfxSemaphoreSignal(m_handle, value);
     }
 
     bool wait(uint64_t value, uint64_t timeoutNanoseconds = UINT64_MAX) override
     {
-        return gfxSemaphoreWait(handle, value, timeoutNanoseconds) == GFX_RESULT_SUCCESS;
+        return gfxSemaphoreWait(m_handle, value, timeoutNanoseconds) == GFX_RESULT_SUCCESS;
     }
+
+private:
+    GfxSemaphore m_handle;
 };
 
 // Template specializations for extractNativeHandle (must come after class definitions)
@@ -754,12 +754,9 @@ inline GfxFence extractNativeHandle<GfxFence>(std::shared_ptr<void> ptr)
 }
 
 class CQueueImpl : public Queue {
-private:
-    GfxQueue handle;
-
 public:
     explicit CQueueImpl(GfxQueue h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CQueueImpl() override
@@ -771,7 +768,7 @@ public:
     {
         auto impl = std::dynamic_pointer_cast<CCommandEncoderImpl>(commandEncoder);
         if (impl)
-            gfxQueueSubmit(handle, impl->getHandle());
+            gfxQueueSubmit(m_handle, impl->getHandle());
     }
 
     void submitWithSync(const SubmitInfo& submitInfo) override
@@ -815,14 +812,14 @@ public:
             cInfo.signalFence = nullptr;
         }
 
-        gfxQueueSubmitWithSync(handle, &cInfo);
+        gfxQueueSubmitWithSync(m_handle, &cInfo);
     }
 
     void writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size) override
     {
         auto impl = std::dynamic_pointer_cast<CBufferImpl>(buffer);
         if (impl)
-            gfxQueueWriteBuffer(handle, impl->getHandle(), offset, data, size);
+            gfxQueueWriteBuffer(m_handle, impl->getHandle(), offset, data, size);
     }
 
     void writeTexture(
@@ -834,42 +831,42 @@ public:
         if (impl) {
             GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
-            gfxQueueWriteTexture(handle, impl->getHandle(), &cOrigin, mipLevel,
+            gfxQueueWriteTexture(m_handle, impl->getHandle(), &cOrigin, mipLevel,
                 data, dataSize, bytesPerRow, &cExtent, static_cast<GfxTextureLayout>(finalLayout));
         }
     }
 
     void waitIdle() override
     {
-        gfxQueueWaitIdle(handle);
+        gfxQueueWaitIdle(m_handle);
     }
+
+private:
+    GfxQueue m_handle;
 };
 
 class CSurfaceImpl : public Surface {
-private:
-    GfxSurface handle;
-
 public:
     explicit CSurfaceImpl(GfxSurface h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CSurfaceImpl() override
     {
-        if (handle)
-            gfxSurfaceDestroy(handle);
+        if (m_handle)
+            gfxSurfaceDestroy(m_handle);
     }
 
-    GfxSurface getHandle() const { return handle; }
+    GfxSurface getHandle() const { return m_handle; }
 
-    uint32_t getWidth() const override { return gfxSurfaceGetWidth(handle); }
-    uint32_t getHeight() const override { return gfxSurfaceGetHeight(handle); }
-    void resize(uint32_t width, uint32_t height) override { gfxSurfaceResize(handle, width, height); }
+    uint32_t getWidth() const override { return gfxSurfaceGetWidth(m_handle); }
+    uint32_t getHeight() const override { return gfxSurfaceGetHeight(m_handle); }
+    void resize(uint32_t width, uint32_t height) override { gfxSurfaceResize(m_handle, width, height); }
 
     std::vector<TextureFormat> getSupportedFormats() const override
     {
         GfxTextureFormat formats[16];
-        uint32_t count = gfxSurfaceGetSupportedFormats(handle, formats, 16);
+        uint32_t count = gfxSurfaceGetSupportedFormats(m_handle, formats, 16);
         std::vector<TextureFormat> result;
         for (uint32_t i = 0; i < count; ++i) {
             result.push_back(cFormatToCppFormat(formats[i]));
@@ -880,7 +877,7 @@ public:
     std::vector<PresentMode> getSupportedPresentModes() const override
     {
         GfxPresentMode modes[8];
-        uint32_t count = gfxSurfaceGetSupportedPresentModes(handle, modes, 8);
+        uint32_t count = gfxSurfaceGetSupportedPresentModes(m_handle, modes, 8);
         std::vector<PresentMode> result;
         for (uint32_t i = 0; i < count; ++i) {
             result.push_back(static_cast<PresentMode>(modes[i]));
@@ -890,7 +887,7 @@ public:
 
     PlatformWindowHandle getPlatformHandle() const override
     {
-        GfxPlatformWindowHandle cHandle = gfxSurfaceGetPlatformHandle(handle);
+        GfxPlatformWindowHandle cHandle = gfxSurfaceGetPlatformHandle(m_handle);
         PlatformWindowHandle result;
         result.windowingSystem = cWindowingSystemToCpp(cHandle.windowingSystem);
 
@@ -918,31 +915,31 @@ public:
         }
         return result;
     }
+
+private:
+    GfxSurface m_handle;
 };
 
 class CSwapchainImpl : public Swapchain {
-private:
-    GfxSwapchain handle;
-
 public:
     explicit CSwapchainImpl(GfxSwapchain h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CSwapchainImpl() override
     {
-        if (handle)
-            gfxSwapchainDestroy(handle);
+        if (m_handle)
+            gfxSwapchainDestroy(m_handle);
     }
 
-    uint32_t getWidth() const override { return gfxSwapchainGetWidth(handle); }
-    uint32_t getHeight() const override { return gfxSwapchainGetHeight(handle); }
-    TextureFormat getFormat() const override { return cFormatToCppFormat(gfxSwapchainGetFormat(handle)); }
-    uint32_t getBufferCount() const override { return gfxSwapchainGetBufferCount(handle); }
+    uint32_t getWidth() const override { return gfxSwapchainGetWidth(m_handle); }
+    uint32_t getHeight() const override { return gfxSwapchainGetHeight(m_handle); }
+    TextureFormat getFormat() const override { return cFormatToCppFormat(gfxSwapchainGetFormat(m_handle)); }
+    uint32_t getBufferCount() const override { return gfxSwapchainGetBufferCount(m_handle); }
 
     std::shared_ptr<TextureView> getCurrentTextureView() override
     {
-        GfxTextureView view = gfxSwapchainGetCurrentTextureView(handle);
+        GfxTextureView view = gfxSwapchainGetCurrentTextureView(m_handle);
         if (!view)
             return nullptr;
         // Swapchain texture views are owned by the swapchain, not by the wrapper
@@ -951,17 +948,17 @@ public:
 
     void present() override
     {
-        gfxSwapchainPresent(handle);
+        gfxSwapchainPresent(m_handle);
     }
 
     void resize(uint32_t width, uint32_t height) override
     {
-        gfxSwapchainResize(handle, width, height);
+        gfxSwapchainResize(m_handle, width, height);
     }
 
     bool needsRecreation() const override
     {
-        return gfxSwapchainNeedsRecreation(handle);
+        return gfxSwapchainNeedsRecreation(m_handle);
     }
 
     Result acquireNextImage(uint64_t timeout,
@@ -972,13 +969,13 @@ public:
         GfxSemaphore cSemaphore = signalSemaphore ? extractNativeHandle<GfxSemaphore>(signalSemaphore) : nullptr;
         GfxFence cFence = signalFence ? extractNativeHandle<GfxFence>(signalFence) : nullptr;
 
-        GfxResult result = gfxSwapchainAcquireNextImage(handle, timeout, cSemaphore, cFence, imageIndex);
+        GfxResult result = gfxSwapchainAcquireNextImage(m_handle, timeout, cSemaphore, cFence, imageIndex);
         return cResultToCppResult(result);
     }
 
     std::shared_ptr<TextureView> getImageView(uint32_t index) override
     {
-        GfxTextureView view = gfxSwapchainGetImageView(handle, index);
+        GfxTextureView view = gfxSwapchainGetImageView(m_handle, index);
         if (!view)
             return nullptr;
         // Swapchain texture views are owned by the swapchain, not by the wrapper
@@ -999,32 +996,31 @@ public:
         cInfo.waitSemaphores = cWaitSemaphores.empty() ? nullptr : cWaitSemaphores.data();
         cInfo.waitSemaphoreCount = cWaitSemaphores.size();
 
-        GfxResult result = gfxSwapchainPresentWithSync(handle, &cInfo);
+        GfxResult result = gfxSwapchainPresentWithSync(m_handle, &cInfo);
         return cResultToCppResult(result);
     }
+
+private:
+    GfxSwapchain m_handle;
 };
 
 class CDeviceImpl : public Device {
-private:
-    GfxDevice handle;
-    std::shared_ptr<CQueueImpl> queue;
-
 public:
     explicit CDeviceImpl(GfxDevice h)
-        : handle(h)
+        : m_handle(h)
     {
-        GfxQueue queueHandle = gfxDeviceGetQueue(handle);
-        queue = std::make_shared<CQueueImpl>(queueHandle);
+        GfxQueue queueHandle = gfxDeviceGetQueue(m_handle);
+        m_queue = std::make_shared<CQueueImpl>(queueHandle);
     }
     ~CDeviceImpl() override
     {
-        if (handle) {
-            gfxDeviceWaitIdle(handle);
-            gfxDeviceDestroy(handle);
+        if (m_handle) {
+            gfxDeviceWaitIdle(m_handle);
+            gfxDeviceDestroy(m_handle);
         }
     }
 
-    std::shared_ptr<Queue> getQueue() override { return queue; }
+    std::shared_ptr<Queue> getQueue() override { return m_queue; }
 
     std::shared_ptr<Surface> createSurface(const SurfaceDescriptor& descriptor) override
     {
@@ -1035,7 +1031,7 @@ public:
         cDesc.height = descriptor.height;
 
         GfxSurface surface = nullptr;
-        GfxResult result = gfxDeviceCreateSurface(handle, &cDesc, &surface);
+        GfxResult result = gfxDeviceCreateSurface(m_handle, &cDesc, &surface);
         if (result != GFX_RESULT_SUCCESS || !surface)
             throw std::runtime_error("Failed to create surface");
         return std::make_shared<CSurfaceImpl>(surface);
@@ -1059,7 +1055,7 @@ public:
         cDesc.bufferCount = descriptor.bufferCount;
 
         GfxSwapchain swapchain = nullptr;
-        GfxResult result = gfxDeviceCreateSwapchain(handle, surfaceImpl->getHandle(), &cDesc, &swapchain);
+        GfxResult result = gfxDeviceCreateSwapchain(m_handle, surfaceImpl->getHandle(), &cDesc, &swapchain);
         if (result != GFX_RESULT_SUCCESS || !swapchain)
             throw std::runtime_error("Failed to create swapchain");
         return std::make_shared<CSwapchainImpl>(swapchain);
@@ -1074,7 +1070,7 @@ public:
         cDesc.mappedAtCreation = descriptor.mappedAtCreation;
 
         GfxBuffer buffer = nullptr;
-        GfxResult result = gfxDeviceCreateBuffer(handle, &cDesc, &buffer);
+        GfxResult result = gfxDeviceCreateBuffer(m_handle, &cDesc, &buffer);
         if (result != GFX_RESULT_SUCCESS || !buffer)
             throw std::runtime_error("Failed to create buffer");
         return std::make_shared<CBufferImpl>(buffer);
@@ -1091,7 +1087,7 @@ public:
         cDesc.usage = cppTextureUsageToCUsage(descriptor.usage);
 
         GfxTexture texture = nullptr;
-        GfxResult result = gfxDeviceCreateTexture(handle, &cDesc, &texture);
+        GfxResult result = gfxDeviceCreateTexture(m_handle, &cDesc, &texture);
         if (result != GFX_RESULT_SUCCESS || !texture)
             throw std::runtime_error("Failed to create texture");
         return std::make_shared<CTextureImpl>(texture);
@@ -1120,7 +1116,7 @@ public:
         }
 
         GfxSampler sampler = nullptr;
-        GfxResult result = gfxDeviceCreateSampler(handle, &cDesc, &sampler);
+        GfxResult result = gfxDeviceCreateSampler(m_handle, &cDesc, &sampler);
         if (result != GFX_RESULT_SUCCESS || !sampler)
             throw std::runtime_error("Failed to create sampler");
         return std::make_shared<CSamplerImpl>(sampler);
@@ -1135,7 +1131,7 @@ public:
         cDesc.entryPoint = descriptor.entryPoint.c_str();
 
         GfxShader shader = nullptr;
-        GfxResult result = gfxDeviceCreateShader(handle, &cDesc, &shader);
+        GfxResult result = gfxDeviceCreateShader(m_handle, &cDesc, &shader);
         if (result != GFX_RESULT_SUCCESS || !shader)
             throw std::runtime_error("Failed to create shader");
         return std::make_shared<CShaderImpl>(shader);
@@ -1182,7 +1178,7 @@ public:
         cDesc.entryCount = static_cast<uint32_t>(cEntries.size());
 
         GfxBindGroupLayout layout = nullptr;
-        GfxResult result = gfxDeviceCreateBindGroupLayout(handle, &cDesc, &layout);
+        GfxResult result = gfxDeviceCreateBindGroupLayout(m_handle, &cDesc, &layout);
         if (result != GFX_RESULT_SUCCESS || !layout)
             throw std::runtime_error("Failed to create bind group layout");
         return std::make_shared<CBindGroupLayoutImpl>(layout);
@@ -1237,7 +1233,7 @@ public:
         cDesc.entryCount = static_cast<uint32_t>(cEntries.size());
 
         GfxBindGroup bindGroup = nullptr;
-        GfxResult result = gfxDeviceCreateBindGroup(handle, &cDesc, &bindGroup);
+        GfxResult result = gfxDeviceCreateBindGroup(m_handle, &cDesc, &bindGroup);
         if (result != GFX_RESULT_SUCCESS || !bindGroup)
             throw std::runtime_error("Failed to create bind group");
         return std::make_shared<CBindGroupImpl>(bindGroup);
@@ -1390,7 +1386,7 @@ public:
         cDesc.bindGroupLayoutCount = static_cast<uint32_t>(cBindGroupLayouts.size());
 
         GfxRenderPipeline pipeline = nullptr;
-        GfxResult result = gfxDeviceCreateRenderPipeline(handle, &cDesc, &pipeline);
+        GfxResult result = gfxDeviceCreateRenderPipeline(m_handle, &cDesc, &pipeline);
         if (result != GFX_RESULT_SUCCESS || !pipeline)
             throw std::runtime_error("Failed to create render pipeline");
         return std::make_shared<CRenderPipelineImpl>(pipeline);
@@ -1408,7 +1404,7 @@ public:
         cDesc.entryPoint = descriptor.entryPoint.c_str();
 
         GfxComputePipeline pipeline = nullptr;
-        GfxResult result = gfxDeviceCreateComputePipeline(handle, &cDesc, &pipeline);
+        GfxResult result = gfxDeviceCreateComputePipeline(m_handle, &cDesc, &pipeline);
         if (result != GFX_RESULT_SUCCESS || !pipeline)
             throw std::runtime_error("Failed to create compute pipeline");
         return std::make_shared<CComputePipelineImpl>(pipeline);
@@ -1417,7 +1413,7 @@ public:
     std::shared_ptr<CommandEncoder> createCommandEncoder(const std::string& label = "") override
     {
         GfxCommandEncoder encoder = nullptr;
-        GfxResult result = gfxDeviceCreateCommandEncoder(handle, label.c_str(), &encoder);
+        GfxResult result = gfxDeviceCreateCommandEncoder(m_handle, label.c_str(), &encoder);
         if (result != GFX_RESULT_SUCCESS || !encoder)
             throw std::runtime_error("Failed to create command encoder");
         return std::make_shared<CCommandEncoderImpl>(encoder);
@@ -1430,7 +1426,7 @@ public:
         cDesc.signaled = descriptor.signaled;
 
         GfxFence fence = nullptr;
-        GfxResult result = gfxDeviceCreateFence(handle, &cDesc, &fence);
+        GfxResult result = gfxDeviceCreateFence(m_handle, &cDesc, &fence);
         if (result != GFX_RESULT_SUCCESS || !fence)
             throw std::runtime_error("Failed to create fence");
         return std::make_shared<CFenceImpl>(fence);
@@ -1444,7 +1440,7 @@ public:
         cDesc.initialValue = descriptor.initialValue;
 
         GfxSemaphore semaphore = nullptr;
-        GfxResult result = gfxDeviceCreateSemaphore(handle, &cDesc, &semaphore);
+        GfxResult result = gfxDeviceCreateSemaphore(m_handle, &cDesc, &semaphore);
         if (result != GFX_RESULT_SUCCESS || !semaphore)
             throw std::runtime_error("Failed to create semaphore");
         return std::make_shared<CSemaphoreImpl>(semaphore);
@@ -1452,23 +1448,24 @@ public:
 
     void waitIdle() override
     {
-        gfxDeviceWaitIdle(handle);
+        gfxDeviceWaitIdle(m_handle);
     }
+
+private:
+    GfxDevice m_handle;
+    std::shared_ptr<CQueueImpl> m_queue;
 };
 
 class CAdapterImpl : public Adapter {
-private:
-    GfxAdapter handle;
-
 public:
     explicit CAdapterImpl(GfxAdapter h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CAdapterImpl() override
     {
-        if (handle)
-            gfxAdapterDestroy(handle);
+        if (m_handle)
+            gfxAdapterDestroy(m_handle);
     }
 
     std::shared_ptr<Device> createDevice(const DeviceDescriptor& descriptor = {}) override
@@ -1478,7 +1475,7 @@ public:
         // Convert required features if needed
 
         GfxDevice device = nullptr;
-        GfxResult result = gfxAdapterCreateDevice(handle, &cDesc, &device);
+        GfxResult result = gfxAdapterCreateDevice(m_handle, &cDesc, &device);
         if (result != GFX_RESULT_SUCCESS || !device)
             throw std::runtime_error("Failed to create device");
         return std::make_shared<CDeviceImpl>(device);
@@ -1486,29 +1483,29 @@ public:
 
     std::string getName() const override
     {
-        const char* name = gfxAdapterGetName(handle);
+        const char* name = gfxAdapterGetName(m_handle);
         return name ? name : "Unknown";
     }
 
     Backend getBackend() const override
     {
-        return cBackendToCppBackend(gfxAdapterGetBackend(handle));
+        return cBackendToCppBackend(gfxAdapterGetBackend(m_handle));
     }
+
+private:
+    GfxAdapter m_handle;
 };
 
 class CInstanceImpl : public Instance {
-private:
-    GfxInstance handle;
-
 public:
     explicit CInstanceImpl(GfxInstance h)
-        : handle(h)
+        : m_handle(h)
     {
     }
     ~CInstanceImpl() override
     {
-        if (handle)
-            gfxInstanceDestroy(handle);
+        if (m_handle)
+            gfxInstanceDestroy(m_handle);
     }
 
     std::shared_ptr<Adapter> requestAdapter(const AdapterDescriptor& descriptor = {}) override
@@ -1518,7 +1515,7 @@ public:
         cDesc.forceFallbackAdapter = descriptor.forceFallbackAdapter;
 
         GfxAdapter adapter = nullptr;
-        GfxResult result = gfxInstanceRequestAdapter(handle, &cDesc, &adapter);
+        GfxResult result = gfxInstanceRequestAdapter(m_handle, &cDesc, &adapter);
         if (result != GFX_RESULT_SUCCESS || !adapter)
             throw std::runtime_error("Failed to request adapter");
         return std::make_shared<CAdapterImpl>(adapter);
@@ -1527,7 +1524,7 @@ public:
     std::vector<std::shared_ptr<Adapter>> enumerateAdapters() override
     {
         GfxAdapter adapters[16];
-        uint32_t count = gfxInstanceEnumerateAdapters(handle, adapters, 16);
+        uint32_t count = gfxInstanceEnumerateAdapters(m_handle, adapters, 16);
 
         std::vector<std::shared_ptr<Adapter>> result;
         for (uint32_t i = 0; i < count; ++i) {
@@ -1535,6 +1532,9 @@ public:
         }
         return result;
     }
+
+private:
+    GfxInstance m_handle;
 };
 
 // ============================================================================

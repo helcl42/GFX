@@ -18,8 +18,8 @@ namespace gfx {
 
 // Handle metadata stores backend info
 struct HandleMeta {
-    GfxBackend backend;
-    void* nativeHandle;
+    GfxBackend m_backend;
+    void* m_nativeHandle;
 };
 
 // Singleton class to manage backend state
@@ -38,7 +38,7 @@ public:
 
     const GfxBackendAPI* getBackendAPI(GfxBackend backend) {
         if (backend >= 0 && backend < GFX_BACKEND_AUTO) {
-            return backends[backend];
+            return m_backends[backend];
         }
         return nullptr;
     }
@@ -46,51 +46,51 @@ public:
     template<typename T>
     T wrap(GfxBackend backend, T nativeHandle) {
         if (!nativeHandle) return nullptr;
-        std::lock_guard<std::mutex> lock(mutex);
-        handles[nativeHandle] = {backend, nativeHandle};
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_handles[nativeHandle] = {backend, nativeHandle};
         return nativeHandle;
     }
 
     const GfxBackendAPI* getAPI(void* handle) {
         if (!handle) return nullptr;
-        std::lock_guard<std::mutex> lock(mutex);
-        auto it = handles.find(handle);
-        if (it == handles.end()) return nullptr;
-        return getBackendAPI(it->second.backend);
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto it = m_handles.find(handle);
+        if (it == m_handles.end()) return nullptr;
+        return getBackendAPI(it->second.m_backend);
     }
 
     GfxBackend getBackend(void* handle) {
         if (!handle) return GFX_BACKEND_AUTO;
-        std::lock_guard<std::mutex> lock(mutex);
-        auto it = handles.find(handle);
-        if (it == handles.end()) return GFX_BACKEND_AUTO;
-        return it->second.backend;
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto it = m_handles.find(handle);
+        if (it == m_handles.end()) return GFX_BACKEND_AUTO;
+        return it->second.m_backend;
     }
 
     void unwrap(void* handle) {
         if (!handle) return;
-        std::lock_guard<std::mutex> lock(mutex);
-        handles.erase(handle);
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_handles.erase(handle);
     }
 
-    std::mutex& getMutex() { return mutex; }
-    const GfxBackendAPI** getBackends() { return backends; }
-    int* getRefCounts() { return refCounts; }
+    std::mutex& getMutex() { return m_mutex; }
+    const GfxBackendAPI** getBackends() { return m_backends; }
+    int* getRefCounts() { return m_refCounts; }
 
 private:
     BackendRegistry() {
         for (int i = 0; i < 3; ++i) {
-            backends[i] = nullptr;
-            refCounts[i] = 0;
+            m_backends[i] = nullptr;
+            m_refCounts[i] = 0;
         }
     }
 
     ~BackendRegistry() = default;
 
-    const GfxBackendAPI* backends[3];
-    int refCounts[3];
-    std::mutex mutex;
-    std::unordered_map<void*, HandleMeta> handles;
+    const GfxBackendAPI* m_backends[3];
+    int m_refCounts[3];
+    std::mutex m_mutex;
+    std::unordered_map<void*, HandleMeta> m_handles;
 };
 
 // Convenience inline functions for backward compatibility

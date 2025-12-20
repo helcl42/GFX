@@ -163,6 +163,10 @@ class Semaphore;
 namespace gfx::vulkan {
 
 class Instance {
+    VkInstance instance_ = VK_NULL_HANDLE;
+    VkDebugUtilsMessengerEXT debugMessenger_ = VK_NULL_HANDLE;
+    bool validationEnabled_ = false;
+
 public:
     // Prevent copying
     Instance(const Instance&) = delete;
@@ -197,8 +201,8 @@ public:
 #endif
         }
 
-        m_validationEnabled = descriptor && descriptor->enableValidation;
-        if (m_validationEnabled) {
+        validationEnabled_ = descriptor && descriptor->enableValidation;
+        if (validationEnabled_) {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
@@ -207,44 +211,40 @@ public:
 
         // Validation layers
         std::vector<const char*> layers;
-        if (m_validationEnabled) {
+        if (validationEnabled_) {
             layers.push_back("VK_LAYER_KHRONOS_validation");
         }
         createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
         createInfo.ppEnabledLayerNames = layers.data();
 
-        VkResult result = vkCreateInstance(&createInfo, nullptr, &m_instance);
+        VkResult result = vkCreateInstance(&createInfo, nullptr, &instance_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create Vulkan instance");
         }
 
         // Setup debug messenger if validation enabled
-        if (m_validationEnabled) {
+        if (validationEnabled_) {
             setupDebugMessenger();
         }
     }
 
     ~Instance()
     {
-        if (m_debugMessenger != VK_NULL_HANDLE) {
+        if (debugMessenger_ != VK_NULL_HANDLE) {
             auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-                m_instance, "vkDestroyDebugUtilsMessengerEXT");
+                instance_, "vkDestroyDebugUtilsMessengerEXT");
             if (func) {
-                func(m_instance, m_debugMessenger, nullptr);
+                func(instance_, debugMessenger_, nullptr);
             }
         }
-        if (m_instance != VK_NULL_HANDLE) {
-            vkDestroyInstance(m_instance, nullptr);
+        if (instance_ != VK_NULL_HANDLE) {
+            vkDestroyInstance(instance_, nullptr);
         }
     }
 
-    VkInstance handle() const { return m_instance; }
+    VkInstance handle() const { return instance_; }
 
 private:
-    VkInstance m_instance = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
-    bool m_validationEnabled = false;
-
     void setupDebugMessenger()
     {
         VkDebugUtilsMessengerCreateInfoEXT createInfo{};
@@ -254,9 +254,9 @@ private:
         createInfo.pfnUserCallback = debugCallback;
 
         auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-            m_instance, "vkCreateDebugUtilsMessengerEXT");
+            instance_, "vkCreateDebugUtilsMessengerEXT");
         if (func) {
-            func(m_instance, &createInfo, nullptr, &m_debugMessenger);
+            func(instance_, &createInfo, nullptr, &debugMessenger_);
         }
     }
 
@@ -277,86 +277,82 @@ private:
 };
 
 class Adapter {
+    VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
+    VkPhysicalDeviceProperties properties_{};
+    uint32_t graphicsQueueFamily_ = UINT32_MAX;
+    Instance* instance_ = nullptr;
+
 public:
     Adapter(const Adapter&) = delete;
     Adapter& operator=(const Adapter&) = delete;
 
     Adapter(Instance* instance, VkPhysicalDevice pd)
-        : m_physicalDevice(pd)
-        , m_instance(instance)
+        : physicalDevice_(pd)
+        , instance_(instance)
     {
-        vkGetPhysicalDeviceProperties(m_physicalDevice, &m_properties);
+        vkGetPhysicalDeviceProperties(physicalDevice_, &properties_);
 
         // Find graphics queue family
         uint32_t queueFamilyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueFamilyCount, nullptr);
+        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice_, &queueFamilyCount, nullptr);
 
         std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueFamilyCount, queueFamilies.data());
+        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice_, &queueFamilyCount, queueFamilies.data());
 
         for (uint32_t i = 0; i < queueFamilyCount; i++) {
             if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-                m_graphicsQueueFamily = i;
+                graphicsQueueFamily_ = i;
                 break;
             }
         }
     }
 
-    VkPhysicalDevice handle() const { return m_physicalDevice; }
-    const char* getName() const { return m_properties.deviceName; }
-    uint32_t getGraphicsQueueFamily() const { return m_graphicsQueueFamily; }
-    Instance* getInstance() const { return m_instance; }
-
-private:
-    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
-    VkPhysicalDeviceProperties m_properties{};
-    uint32_t m_graphicsQueueFamily = UINT32_MAX;
-    Instance* m_instance = nullptr;
+    VkPhysicalDevice handle() const { return physicalDevice_; }
+    const char* getName() const { return properties_.deviceName; }
+    uint32_t getGraphicsQueueFamily() const { return graphicsQueueFamily_; }
+    Instance* getInstance() const { return instance_; }
 };
 
 class Queue {
+    VkQueue queue_ = VK_NULL_HANDLE;
+    VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
+    uint32_t queueFamily_ = 0;
+
 public:
     Queue(const Queue&) = delete;
     Queue& operator=(const Queue&) = delete;
 
     Queue(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t queueFamily)
-        : m_physicalDevice(physicalDevice)
-        , m_queueFamily(queueFamily)
+        : physicalDevice_(physicalDevice)
+        , queueFamily_(queueFamily)
     {
-        vkGetDeviceQueue(device, queueFamily, 0, &m_queue);
+        vkGetDeviceQueue(device, queueFamily, 0, &queue_);
     }
 
-    VkQueue handle() const { return m_queue; }
-    VkPhysicalDevice physicalDevice() const { return m_physicalDevice; }
-    uint32_t family() const { return m_queueFamily; }
-
-private:
-    VkQueue m_queue = VK_NULL_HANDLE;
-    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
-    uint32_t m_queueFamily = 0;
+    VkQueue handle() const { return queue_; }
+    VkPhysicalDevice physicalDevice() const { return physicalDevice_; }
+    uint32_t family() const { return queueFamily_; }
 };
 
 class Device {
+    VkDevice device_ = VK_NULL_HANDLE;
+    Adapter* adapter_ = nullptr; // Non-owning pointer
+    std::unique_ptr<Queue> queue_;
+
 public:
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
 
     Device(Adapter* adapter, const GfxDeviceDescriptor* descriptor)
-        : m_adapter(adapter)
+        : adapter_(adapter)
     {
-        // TODO in descriptor
-        // - query presentable device when not headless
-        // - pass device override index in
-        // - handle heaadless
-        // - additional extensions
-        // - additional features
         (void)descriptor;
 
         // Queue create info
         float queuePriority = 1.0f;
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex = m_adapter->getGraphicsQueueFamily();
+        queueCreateInfo.queueFamilyIndex = adapter_->getGraphicsQueueFamily();
         queueCreateInfo.queueCount = 1;
         queueCreateInfo.pQueuePriorities = &queuePriority;
 
@@ -374,43 +370,42 @@ public:
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
         createInfo.ppEnabledExtensionNames = extensions.data();
 
-        VkResult result = vkCreateDevice(m_adapter->handle(), &createInfo, nullptr, &m_device);
+        VkResult result = vkCreateDevice(adapter_->handle(), &createInfo, nullptr, &device_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create Vulkan device");
         }
 
-        m_queue = std::make_unique<Queue>(m_device, m_adapter->handle(), m_adapter->getGraphicsQueueFamily());
+        queue_ = std::make_unique<Queue>(device_, adapter_->handle(), adapter_->getGraphicsQueueFamily());
     }
 
     ~Device()
     {
-        if (m_device != VK_NULL_HANDLE) {
-            vkDestroyDevice(m_device, nullptr);
+        if (device_ != VK_NULL_HANDLE) {
+            vkDestroyDevice(device_, nullptr);
         }
     }
 
-    VkDevice handle() const { return m_device; }
-    Queue* getQueue() { return m_queue.get(); }
-    Adapter* getAdapter() { return m_adapter; }
-
-private:
-    VkDevice m_device = VK_NULL_HANDLE;
-    Adapter* m_adapter = nullptr; // Non-owning pointer
-    std::unique_ptr<Queue> m_queue;
+    VkDevice handle() const { return device_; }
+    Queue* getQueue() { return queue_.get(); }
+    Adapter* getAdapter() { return adapter_; }
 };
 
 class Shader {
+    VkShaderModule shaderModule_ = VK_NULL_HANDLE;
+    std::string entryPoint_;
+    VkDevice device_ = VK_NULL_HANDLE;
+
 public:
     Shader(const Shader&) = delete;
     Shader& operator=(const Shader&) = delete;
 
     Shader(VkDevice device, const GfxShaderDescriptor* descriptor)
-        : m_device(device)
+        : device_(device)
     {
         if (descriptor->entryPoint) {
-            m_entryPoint = descriptor->entryPoint;
+            entryPoint_ = descriptor->entryPoint;
         } else {
-            m_entryPoint = "main";
+            entryPoint_ = "main";
         }
 
         VkShaderModuleCreateInfo createInfo{};
@@ -418,7 +413,7 @@ public:
         createInfo.codeSize = descriptor->codeSize;
         createInfo.pCode = reinterpret_cast<const uint32_t*>(descriptor->code);
 
-        VkResult result = vkCreateShaderModule(m_device, &createInfo, nullptr, &m_shaderModule);
+        VkResult result = vkCreateShaderModule(device_, &createInfo, nullptr, &shaderModule_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create shader module");
         }
@@ -426,27 +421,25 @@ public:
 
     ~Shader()
     {
-        if (m_shaderModule != VK_NULL_HANDLE) {
-            vkDestroyShaderModule(m_device, m_shaderModule, nullptr);
+        if (shaderModule_ != VK_NULL_HANDLE) {
+            vkDestroyShaderModule(device_, shaderModule_, nullptr);
         }
     }
 
-    VkShaderModule handle() const { return m_shaderModule; }
-    const char* entryPoint() const { return m_entryPoint.c_str(); }
-
-private:
-    VkShaderModule m_shaderModule = VK_NULL_HANDLE;
-    std::string m_entryPoint;
-    VkDevice m_device = VK_NULL_HANDLE;
+    VkShaderModule handle() const { return shaderModule_; }
+    const char* entryPoint() const { return entryPoint_.c_str(); }
 };
 
 class BindGroupLayout {
+    VkDescriptorSetLayout layout_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
+
 public:
     BindGroupLayout(const BindGroupLayout&) = delete;
     BindGroupLayout& operator=(const BindGroupLayout&) = delete;
 
     BindGroupLayout(VkDevice device, const GfxBindGroupLayoutDescriptor* descriptor)
-        : m_device(device)
+        : device_(device)
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings;
 
@@ -493,7 +486,7 @@ public:
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
 
-        VkResult result = vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_layout);
+        VkResult result = vkCreateDescriptorSetLayout(device_, &layoutInfo, nullptr, &layout_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create descriptor set layout");
         }
@@ -501,28 +494,30 @@ public:
 
     ~BindGroupLayout()
     {
-        if (m_layout != VK_NULL_HANDLE) {
-            vkDestroyDescriptorSetLayout(m_device, m_layout, nullptr);
+        if (layout_ != VK_NULL_HANDLE) {
+            vkDestroyDescriptorSetLayout(device_, layout_, nullptr);
         }
     }
 
-    VkDescriptorSetLayout handle() const { return m_layout; }
-
-private:
-    VkDescriptorSetLayout m_layout = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
+    VkDescriptorSetLayout handle() const { return layout_; }
 };
 
 class Surface {
+    VkSurfaceKHR surface_ = VK_NULL_HANDLE;
+    VkInstance instance_ = VK_NULL_HANDLE;
+    uint32_t width_ = 0;
+    uint32_t height_ = 0;
+    GfxPlatformWindowHandle windowHandle_;
+
 public:
     Surface(const Surface&) = delete;
     Surface& operator=(const Surface&) = delete;
 
     Surface(VkInstance instance, const GfxSurfaceDescriptor* descriptor)
-        : m_instance(instance)
-        , m_width(descriptor ? descriptor->width : 0)
-        , m_height(descriptor ? descriptor->height : 0)
-        , m_windowHandle(descriptor ? descriptor->windowHandle : GfxPlatformWindowHandle{})
+        : instance_(instance)
+        , width_(descriptor ? descriptor->width : 0)
+        , height_(descriptor ? descriptor->height : 0)
+        , windowHandle_(descriptor ? descriptor->windowHandle : GfxPlatformWindowHandle{})
     {
         if (descriptor && descriptor->windowHandle.windowingSystem == GFX_WINDOWING_SYSTEM_X11 && descriptor->windowHandle.x11.display) {
             VkXlibSurfaceCreateInfoKHR createInfo{};
@@ -530,7 +525,7 @@ public:
             createInfo.dpy = static_cast<Display*>(descriptor->windowHandle.x11.display);
             createInfo.window = reinterpret_cast<Window>(descriptor->windowHandle.x11.window);
 
-            VkResult result = vkCreateXlibSurfaceKHR(m_instance, &createInfo, nullptr, &m_surface);
+            VkResult result = vkCreateXlibSurfaceKHR(instance_, &createInfo, nullptr, &surface_);
             if (result != VK_SUCCESS) {
                 throw std::runtime_error("Failed to create Xlib surface");
             }
@@ -539,42 +534,48 @@ public:
 
     ~Surface()
     {
-        if (m_surface != VK_NULL_HANDLE) {
-            vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+        if (surface_ != VK_NULL_HANDLE) {
+            vkDestroySurfaceKHR(instance_, surface_, nullptr);
         }
     }
 
-    VkSurfaceKHR handle() const { return m_surface; }
-    uint32_t getWidth() const { return m_width; }
-    uint32_t getHeight() const { return m_height; }
-    GfxPlatformWindowHandle getPlatformHandle() const { return m_windowHandle; }
+    VkSurfaceKHR handle() const { return surface_; }
+    uint32_t getWidth() const { return width_; }
+    uint32_t getHeight() const { return height_; }
+    GfxPlatformWindowHandle getPlatformHandle() const { return windowHandle_; }
 
     void resize(uint32_t width, uint32_t height)
     {
-        m_width = width;
-        m_height = height;
+        width_ = width;
+        height_ = height;
     }
-
-private:
-    VkSurfaceKHR m_surface = VK_NULL_HANDLE;
-    VkInstance m_instance = VK_NULL_HANDLE;
-    uint32_t m_width = 0;
-    uint32_t m_height = 0;
-    GfxPlatformWindowHandle m_windowHandle;
 };
 
 class Swapchain {
+    VkSwapchainKHR swapchain_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
+    VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
+    VkSurfaceKHR surface_ = VK_NULL_HANDLE;
+    VkQueue presentQueue_ = VK_NULL_HANDLE;
+    std::vector<VkImage> images_;
+    std::vector<std::unique_ptr<TextureView>> textureViews_;
+    VkFormat format_ = VK_FORMAT_UNDEFINED;
+    uint32_t width_ = 0;
+    uint32_t height_ = 0;
+    uint32_t currentImageIndex_ = 0;
+    VkFence acquireFence_ = VK_NULL_HANDLE;
+
 public:
     Swapchain(const Swapchain&) = delete;
     Swapchain& operator=(const Swapchain&) = delete;
 
     Swapchain(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
         const GfxSwapchainDescriptor* descriptor)
-        : m_device(device)
-        , m_physicalDevice(physicalDevice)
-        , m_surface(surface)
-        , m_width(descriptor->width)
-        , m_height(descriptor->height)
+        : device_(device)
+        , physicalDevice_(physicalDevice)
+        , surface_(surface)
+        , width_(descriptor->width)
+        , height_(descriptor->height)
     {
         // Query surface capabilities
         VkSurfaceCapabilitiesKHR capabilities;
@@ -587,7 +588,7 @@ public:
         vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
 
         VkSurfaceFormatKHR surfaceFormat = formats[0];
-        m_format = surfaceFormat.format;
+        format_ = surfaceFormat.format;
 
         // Create swapchain
         VkSwapchainCreateInfoKHR createInfo{};
@@ -597,9 +598,9 @@ public:
         if (capabilities.maxImageCount > 0) {
             createInfo.minImageCount = std::min(createInfo.minImageCount, capabilities.maxImageCount);
         }
-        createInfo.imageFormat = m_format;
+        createInfo.imageFormat = format_;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = { m_width, m_height };
+        createInfo.imageExtent = { width_, height_ };
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -608,60 +609,60 @@ public:
         createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
         createInfo.clipped = VK_TRUE;
 
-        VkResult result = vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapchain);
+        VkResult result = vkCreateSwapchainKHR(device_, &createInfo, nullptr, &swapchain_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create swapchain");
         }
 
         // Get swapchain images
         uint32_t imageCount;
-        vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, nullptr);
-        m_images.resize(imageCount);
-        vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, m_images.data());
+        vkGetSwapchainImagesKHR(device_, swapchain_, &imageCount, nullptr);
+        images_.resize(imageCount);
+        vkGetSwapchainImagesKHR(device_, swapchain_, &imageCount, images_.data());
 
         // Create texture view objects (not just VkImageViews)
-        m_textureViews.reserve(imageCount);
+        textureViews_.reserve(imageCount);
         for (size_t i = 0; i < imageCount; i++) {
-            m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], m_format));
+            textureViews_.push_back(std::make_unique<TextureView>(device_, images_[i], format_));
         }
 
         // Get present queue (assume queue family 0)
-        vkGetDeviceQueue(m_device, 0, 0, &m_presentQueue);
+        vkGetDeviceQueue(device_, 0, 0, &presentQueue_);
 
         // Create fence for acquire (used internally by legacy present function)
         VkFenceCreateInfo fenceInfo{};
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        vkCreateFence(m_device, &fenceInfo, nullptr, &m_acquireFence);
+        vkCreateFence(device_, &fenceInfo, nullptr, &acquireFence_);
 
         // Don't pre-acquire an image - let explicit acquire handle it
-        m_currentImageIndex = 0;
+        currentImageIndex_ = 0;
     }
 
     ~Swapchain()
     {
         // TextureView objects will be automatically destroyed by unique_ptr
-        if (m_acquireFence != VK_NULL_HANDLE) {
-            vkDestroyFence(m_device, m_acquireFence, nullptr);
+        if (acquireFence_ != VK_NULL_HANDLE) {
+            vkDestroyFence(device_, acquireFence_, nullptr);
         }
-        if (m_swapchain != VK_NULL_HANDLE) {
-            vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+        if (swapchain_ != VK_NULL_HANDLE) {
+            vkDestroySwapchainKHR(device_, swapchain_, nullptr);
         }
     }
 
-    VkSwapchainKHR handle() const { return m_swapchain; }
-    uint32_t getImageCount() const { return static_cast<uint32_t>(m_images.size()); }
-    TextureView* getTextureView(uint32_t index) const { return m_textureViews[index].get(); }
-    TextureView* getCurrentTextureView() const { return m_textureViews[m_currentImageIndex].get(); }
-    VkFormat getFormat() const { return m_format; }
-    uint32_t getWidth() const { return m_width; }
-    uint32_t getHeight() const { return m_height; }
-    uint32_t getCurrentImageIndex() const { return m_currentImageIndex; }
+    VkSwapchainKHR handle() const { return swapchain_; }
+    uint32_t getImageCount() const { return static_cast<uint32_t>(images_.size()); }
+    TextureView* getTextureView(uint32_t index) const { return textureViews_[index].get(); }
+    TextureView* getCurrentTextureView() const { return textureViews_[currentImageIndex_].get(); }
+    VkFormat getFormat() const { return format_; }
+    uint32_t getWidth() const { return width_; }
+    uint32_t getHeight() const { return height_; }
+    uint32_t getCurrentImageIndex() const { return currentImageIndex_; }
 
     VkResult acquireNextImage(uint64_t timeoutNs, VkSemaphore semaphore, VkFence fence, uint32_t* outImageIndex)
     {
-        VkResult result = vkAcquireNextImageKHR(m_device, m_swapchain, timeoutNs, semaphore, fence, outImageIndex);
+        VkResult result = vkAcquireNextImageKHR(device_, swapchain_, timeoutNs, semaphore, fence, outImageIndex);
         if (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR) {
-            m_currentImageIndex = *outImageIndex;
+            currentImageIndex_ = *outImageIndex;
         }
         return result;
     }
@@ -672,15 +673,15 @@ public:
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 0;
         presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = &m_swapchain;
-        presentInfo.pImageIndices = &m_currentImageIndex;
+        presentInfo.pSwapchains = &swapchain_;
+        presentInfo.pImageIndices = &currentImageIndex_;
 
-        vkQueuePresentKHR(m_presentQueue, &presentInfo);
+        vkQueuePresentKHR(presentQueue_, &presentInfo);
 
         // Acquire next image for next frame
-        vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, VK_NULL_HANDLE, m_acquireFence, &m_currentImageIndex);
-        vkWaitForFences(m_device, 1, &m_acquireFence, VK_TRUE, UINT64_MAX);
-        vkResetFences(m_device, 1, &m_acquireFence);
+        vkAcquireNextImageKHR(device_, swapchain_, UINT64_MAX, VK_NULL_HANDLE, acquireFence_, &currentImageIndex_);
+        vkWaitForFences(device_, 1, &acquireFence_, VK_TRUE, UINT64_MAX);
+        vkResetFences(device_, 1, &acquireFence_);
     }
 
     VkResult presentWithSync(const std::vector<VkSemaphore>& waitSemaphores)
@@ -690,10 +691,10 @@ public:
         presentInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
         presentInfo.pWaitSemaphores = waitSemaphores.empty() ? nullptr : waitSemaphores.data();
         presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = &m_swapchain;
-        presentInfo.pImageIndices = &m_currentImageIndex;
+        presentInfo.pSwapchains = &swapchain_;
+        presentInfo.pImageIndices = &currentImageIndex_;
 
-        return vkQueuePresentKHR(m_presentQueue, &presentInfo);
+        return vkQueuePresentKHR(presentQueue_, &presentInfo);
     }
 
     void resize(uint32_t newWidth, uint32_t newHeight)
@@ -702,41 +703,41 @@ public:
             return;
 
         // Wait for device to be idle
-        vkDeviceWaitIdle(m_device);
+        vkDeviceWaitIdle(device_);
 
-        m_width = newWidth;
-        m_height = newHeight;
+        width_ = newWidth;
+        height_ = newHeight;
 
         // Clean up old texture views
-        m_textureViews.clear();
+        textureViews_.clear();
 
         // Store old swapchain for recreation
-        VkSwapchainKHR oldSwapchain = m_swapchain;
+        VkSwapchainKHR oldSwapchain = swapchain_;
 
         // Query surface capabilities
         VkSurfaceCapabilitiesKHR capabilities;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice, m_surface, &capabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice_, surface_, &capabilities);
 
         // Choose format
         uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice_, surface_, &formatCount, nullptr);
         std::vector<VkSurfaceFormatKHR> formats(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount, formats.data());
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice_, surface_, &formatCount, formats.data());
 
         VkSurfaceFormatKHR surfaceFormat = formats[0];
-        m_format = surfaceFormat.format;
+        format_ = surfaceFormat.format;
 
         // Create new swapchain
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = m_surface;
+        createInfo.surface = surface_;
         createInfo.minImageCount = std::min(3u, capabilities.minImageCount + 1);
         if (capabilities.maxImageCount > 0) {
             createInfo.minImageCount = std::min(createInfo.minImageCount, capabilities.maxImageCount);
         }
-        createInfo.imageFormat = m_format;
+        createInfo.imageFormat = format_;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = { m_width, m_height };
+        createInfo.imageExtent = { width_, height_ };
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -746,58 +747,50 @@ public:
         createInfo.clipped = VK_TRUE;
         createInfo.oldSwapchain = oldSwapchain;
 
-        VkResult result = vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapchain);
+        VkResult result = vkCreateSwapchainKHR(device_, &createInfo, nullptr, &swapchain_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to recreate swapchain");
         }
 
         // Destroy old swapchain
         if (oldSwapchain != VK_NULL_HANDLE) {
-            vkDestroySwapchainKHR(m_device, oldSwapchain, nullptr);
+            vkDestroySwapchainKHR(device_, oldSwapchain, nullptr);
         }
 
         // Get new swapchain images
         uint32_t imageCount;
-        vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, nullptr);
-        m_images.resize(imageCount);
-        vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, m_images.data());
+        vkGetSwapchainImagesKHR(device_, swapchain_, &imageCount, nullptr);
+        images_.resize(imageCount);
+        vkGetSwapchainImagesKHR(device_, swapchain_, &imageCount, images_.data());
 
         // Create new texture views
-        m_textureViews.reserve(imageCount);
+        textureViews_.reserve(imageCount);
         for (size_t i = 0; i < imageCount; i++) {
-            m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], m_format));
+            textureViews_.push_back(std::make_unique<TextureView>(device_, images_[i], format_));
         }
 
         // Acquire first image
-        vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, VK_NULL_HANDLE, m_acquireFence, &m_currentImageIndex);
-        vkWaitForFences(m_device, 1, &m_acquireFence, VK_TRUE, UINT64_MAX);
-        vkResetFences(m_device, 1, &m_acquireFence);
+        vkAcquireNextImageKHR(device_, swapchain_, UINT64_MAX, VK_NULL_HANDLE, acquireFence_, &currentImageIndex_);
+        vkWaitForFences(device_, 1, &acquireFence_, VK_TRUE, UINT64_MAX);
+        vkResetFences(device_, 1, &acquireFence_);
     }
-
-private:
-    VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
-    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
-    VkSurfaceKHR m_surface = VK_NULL_HANDLE;
-    VkQueue m_presentQueue = VK_NULL_HANDLE;
-    std::vector<VkImage> m_images;
-    std::vector<std::unique_ptr<TextureView>> m_textureViews;
-    VkFormat m_format = VK_FORMAT_UNDEFINED;
-    uint32_t m_width = 0;
-    uint32_t m_height = 0;
-    uint32_t m_currentImageIndex = 0;
-    VkFence m_acquireFence = VK_NULL_HANDLE;
 };
 
 class Buffer {
+    VkBuffer buffer_ = VK_NULL_HANDLE;
+    VkDeviceMemory memory_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
+    size_t size_ = 0;
+    GfxBufferUsage usage_ = static_cast<GfxBufferUsage>(0);
+
 public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
     Buffer(VkDevice device, VkPhysicalDevice physicalDevice, const GfxBufferDescriptor* descriptor)
-        : m_device(device)
-        , m_size(descriptor->size)
-        , m_usage(descriptor->usage)
+        : device_(device)
+        , size_(descriptor->size)
+        , usage_(descriptor->usage)
     {
         // Convert GfxBufferUsage to VkBufferUsageFlags
         VkBufferUsageFlags usage = 0;
@@ -818,17 +811,17 @@ public:
 
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferInfo.size = m_size;
+        bufferInfo.size = size_;
         bufferInfo.usage = usage;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        VkResult result = vkCreateBuffer(m_device, &bufferInfo, nullptr, &m_buffer);
+        VkResult result = vkCreateBuffer(device_, &bufferInfo, nullptr, &buffer_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create buffer");
         }
 
         VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(m_device, m_buffer, &memRequirements);
+        vkGetBufferMemoryRequirements(device_, buffer_, &memRequirements);
 
         // Find memory type
         VkPhysicalDeviceMemoryProperties memProperties;
@@ -845,7 +838,7 @@ public:
         }
 
         if (memoryTypeIndex == UINT32_MAX) {
-            vkDestroyBuffer(m_device, m_buffer, nullptr);
+            vkDestroyBuffer(device_, buffer_, nullptr);
             throw std::runtime_error("Failed to find suitable memory type");
         }
 
@@ -854,57 +847,54 @@ public:
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = memoryTypeIndex;
 
-        result = vkAllocateMemory(m_device, &allocInfo, nullptr, &m_memory);
+        result = vkAllocateMemory(device_, &allocInfo, nullptr, &memory_);
         if (result != VK_SUCCESS) {
-            vkDestroyBuffer(m_device, m_buffer, nullptr);
+            vkDestroyBuffer(device_, buffer_, nullptr);
             throw std::runtime_error("Failed to allocate buffer memory");
         }
 
-        vkBindBufferMemory(m_device, m_buffer, m_memory, 0);
+        vkBindBufferMemory(device_, buffer_, memory_, 0);
     }
 
     ~Buffer()
     {
-        if (m_memory != VK_NULL_HANDLE) {
-            vkFreeMemory(m_device, m_memory, nullptr);
+        if (memory_ != VK_NULL_HANDLE) {
+            vkFreeMemory(device_, memory_, nullptr);
         }
-        if (m_buffer != VK_NULL_HANDLE) {
-            vkDestroyBuffer(m_device, m_buffer, nullptr);
+        if (buffer_ != VK_NULL_HANDLE) {
+            vkDestroyBuffer(device_, buffer_, nullptr);
         }
     }
 
-    VkBuffer handle() const { return m_buffer; }
+    VkBuffer handle() const { return buffer_; }
 
     void* map()
     {
         void* data;
-        vkMapMemory(m_device, m_memory, 0, m_size, 0, &data);
+        vkMapMemory(device_, memory_, 0, size_, 0, &data);
         return data;
     }
 
     void unmap()
     {
-        vkUnmapMemory(m_device, m_memory);
+        vkUnmapMemory(device_, memory_);
     }
 
-    size_t size() const { return m_size; }
-    GfxBufferUsage getUsage() const { return m_usage; }
-
-private:
-    VkBuffer m_buffer = VK_NULL_HANDLE;
-    VkDeviceMemory m_memory = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
-    size_t m_size = 0;
-    GfxBufferUsage m_usage = static_cast<GfxBufferUsage>(0);
+    size_t size() const { return size_; }
+    GfxBufferUsage getUsage() const { return usage_; }
 };
 
 class BindGroup {
+    VkDescriptorSet descriptorSet_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
+    VkDescriptorPool pool_ = VK_NULL_HANDLE;
+
 public:
     BindGroup(const BindGroup&) = delete;
     BindGroup& operator=(const BindGroup&) = delete;
 
     BindGroup(VkDevice device, const GfxBindGroupDescriptor* descriptor)
-        : m_device(device)
+        : device_(device)
     {
         // Create descriptor pool
         std::vector<VkDescriptorPoolSize> poolSizes;
@@ -919,7 +909,7 @@ public:
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = 10;
 
-        VkResult result = vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_pool);
+        VkResult result = vkCreateDescriptorPool(device_, &poolInfo, nullptr, &pool_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create descriptor pool");
         }
@@ -930,11 +920,11 @@ public:
 
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = m_pool;
+        allocInfo.descriptorPool = pool_;
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &setLayout;
 
-        result = vkAllocateDescriptorSets(m_device, &allocInfo, &m_descriptorSet);
+        result = vkAllocateDescriptorSets(device_, &allocInfo, &descriptorSet_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to allocate descriptor set");
         }
@@ -957,7 +947,7 @@ public:
 
                 VkWriteDescriptorSet descriptorWrite{};
                 descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrite.dstSet = m_descriptorSet;
+                descriptorWrite.dstSet = descriptorSet_;
                 descriptorWrite.dstBinding = entry.binding;
                 descriptorWrite.dstArrayElement = 0;
                 descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -969,38 +959,43 @@ public:
         }
 
         if (!descriptorWrites.empty()) {
-            vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()),
+            vkUpdateDescriptorSets(device_, static_cast<uint32_t>(descriptorWrites.size()),
                 descriptorWrites.data(), 0, nullptr);
         }
     }
 
     ~BindGroup()
     {
-        if (m_pool != VK_NULL_HANDLE) {
-            vkDestroyDescriptorPool(m_device, m_pool, nullptr);
+        if (pool_ != VK_NULL_HANDLE) {
+            vkDestroyDescriptorPool(device_, pool_, nullptr);
         }
     }
 
-    VkDescriptorSet handle() const { return m_descriptorSet; }
-
-private:
-    VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
-    VkDescriptorPool m_pool = VK_NULL_HANDLE;
+    VkDescriptorSet handle() const { return descriptorSet_; }
 };
 
 class Texture {
+    VkImage image_ = VK_NULL_HANDLE;
+    VkDeviceMemory memory_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
+    GfxExtent3D size_;
+    GfxTextureFormat format_;
+    uint32_t mipLevelCount_;
+    uint32_t sampleCount_;
+    GfxTextureUsage usage_;
+    GfxTextureLayout currentLayout_ = GFX_TEXTURE_LAYOUT_UNDEFINED;
+
 public:
     Texture(const Texture&) = delete;
     Texture& operator=(const Texture&) = delete;
 
     Texture(VkDevice device, VkPhysicalDevice physicalDevice, const GfxTextureDescriptor* descriptor)
-        : m_device(device)
-        , m_size(descriptor->size)
-        , m_format(descriptor->format)
-        , m_mipLevelCount(descriptor->mipLevelCount)
-        , m_sampleCount(descriptor->sampleCount)
-        , m_usage(descriptor->usage)
+        : device_(device)
+        , size_(descriptor->size)
+        , format_(descriptor->format)
+        , mipLevelCount_(descriptor->mipLevelCount)
+        , sampleCount_(descriptor->sampleCount)
+        , usage_(descriptor->usage)
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1038,13 +1033,13 @@ public:
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 
-        VkResult result = vkCreateImage(m_device, &imageInfo, nullptr, &m_image);
+        VkResult result = vkCreateImage(device_, &imageInfo, nullptr, &image_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create image");
         }
 
         VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(m_device, m_image, &memRequirements);
+        vkGetImageMemoryRequirements(device_, image_, &memRequirements);
 
         VkPhysicalDeviceMemoryProperties memProperties;
         vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
@@ -1062,55 +1057,48 @@ public:
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = memoryTypeIndex;
 
-        result = vkAllocateMemory(m_device, &allocInfo, nullptr, &m_memory);
+        result = vkAllocateMemory(device_, &allocInfo, nullptr, &memory_);
         if (result != VK_SUCCESS) {
-            vkDestroyImage(m_device, m_image, nullptr);
+            vkDestroyImage(device_, image_, nullptr);
             throw std::runtime_error("Failed to allocate image memory");
         }
 
-        vkBindImageMemory(m_device, m_image, m_memory, 0);
+        vkBindImageMemory(device_, image_, memory_, 0);
     }
 
     ~Texture()
     {
-        if (m_memory != VK_NULL_HANDLE) {
-            vkFreeMemory(m_device, m_memory, nullptr);
+        if (memory_ != VK_NULL_HANDLE) {
+            vkFreeMemory(device_, memory_, nullptr);
         }
-        if (m_image != VK_NULL_HANDLE) {
-            vkDestroyImage(m_device, m_image, nullptr);
+        if (image_ != VK_NULL_HANDLE) {
+            vkDestroyImage(device_, image_, nullptr);
         }
     }
 
-    VkImage handle() const { return m_image; }
-    VkDevice device() const { return m_device; }
-    GfxExtent3D getSize() const { return m_size; }
-    GfxTextureFormat getFormat() const { return m_format; }
-    uint32_t getMipLevelCount() const { return m_mipLevelCount; }
-    uint32_t getSampleCount() const { return m_sampleCount; }
-    GfxTextureUsage getUsage() const { return m_usage; }
-    GfxTextureLayout getLayout() const { return m_currentLayout; }
-    void setLayout(GfxTextureLayout layout) { m_currentLayout = layout; }
-
-private:
-    VkImage m_image = VK_NULL_HANDLE;
-    VkDeviceMemory m_memory = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
-    GfxExtent3D m_size;
-    GfxTextureFormat m_format;
-    uint32_t m_mipLevelCount;
-    uint32_t m_sampleCount;
-    GfxTextureUsage m_usage;
-    GfxTextureLayout m_currentLayout = GFX_TEXTURE_LAYOUT_UNDEFINED;
+    VkImage handle() const { return image_; }
+    VkDevice device() const { return device_; }
+    GfxExtent3D getSize() const { return size_; }
+    GfxTextureFormat getFormat() const { return format_; }
+    uint32_t getMipLevelCount() const { return mipLevelCount_; }
+    uint32_t getSampleCount() const { return sampleCount_; }
+    GfxTextureUsage getUsage() const { return usage_; }
+    GfxTextureLayout getLayout() const { return currentLayout_; }
+    void setLayout(GfxTextureLayout layout) { currentLayout_ = layout; }
 };
 
 class TextureView {
+    VkImageView imageView_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
+    GfxTexture texture_ = nullptr;
+
 public:
     TextureView(const TextureView&) = delete;
     TextureView& operator=(const TextureView&) = delete;
 
     TextureView(VkDevice device, VkImage image, VkFormat format, GfxTexture texture = nullptr)
-        : m_device(device)
-        , m_texture(texture)
+        : device_(device)
+        , texture_(texture)
     {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1137,7 +1125,7 @@ public:
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount = 1;
 
-        VkResult result = vkCreateImageView(m_device, &viewInfo, nullptr, &m_imageView);
+        VkResult result = vkCreateImageView(device_, &viewInfo, nullptr, &imageView_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create image view");
         }
@@ -1145,27 +1133,25 @@ public:
 
     ~TextureView()
     {
-        if (m_imageView != VK_NULL_HANDLE) {
-            vkDestroyImageView(m_device, m_imageView, nullptr);
+        if (imageView_ != VK_NULL_HANDLE) {
+            vkDestroyImageView(device_, imageView_, nullptr);
         }
     }
 
-    VkImageView handle() const { return m_imageView; }
-    GfxTexture getTexture() const { return m_texture; }
-
-private:
-    VkImageView m_imageView = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
-    GfxTexture m_texture = nullptr;
+    VkImageView handle() const { return imageView_; }
+    GfxTexture getTexture() const { return texture_; }
 };
 
 class Sampler {
+    VkSampler sampler_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
+
 public:
     Sampler(const Sampler&) = delete;
     Sampler& operator=(const Sampler&) = delete;
 
     Sampler(VkDevice device, const GfxSamplerDescriptor* descriptor)
-        : m_device(device)
+        : device_(device)
     {
         VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -1201,7 +1187,7 @@ public:
             samplerInfo.compareEnable = VK_FALSE;
         }
 
-        VkResult result = vkCreateSampler(m_device, &samplerInfo, nullptr, &m_sampler);
+        VkResult result = vkCreateSampler(device_, &samplerInfo, nullptr, &sampler_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create sampler");
         }
@@ -1209,25 +1195,25 @@ public:
 
     ~Sampler()
     {
-        if (m_sampler != VK_NULL_HANDLE) {
-            vkDestroySampler(m_device, m_sampler, nullptr);
+        if (sampler_ != VK_NULL_HANDLE) {
+            vkDestroySampler(device_, sampler_, nullptr);
         }
     }
 
-    VkSampler handle() const { return m_sampler; }
-
-private:
-    VkSampler m_sampler = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
+    VkSampler handle() const { return sampler_; }
 };
 
 class RenderPipeline {
+    VkPipeline pipeline_ = VK_NULL_HANDLE;
+    VkPipelineLayout pipelineLayout_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
+
 public:
     RenderPipeline(const RenderPipeline&) = delete;
     RenderPipeline& operator=(const RenderPipeline&) = delete;
 
     RenderPipeline(VkDevice device, const GfxRenderPipelineDescriptor* descriptor)
-        : m_device(device)
+        : device_(device)
     {
         // Create pipeline layout
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -1243,7 +1229,7 @@ public:
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
         pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
-        VkResult result = vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout);
+        VkResult result = vkCreatePipelineLayout(device_, &pipelineLayoutInfo, nullptr, &pipelineLayout_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create pipeline layout");
         }
@@ -1420,7 +1406,7 @@ public:
         renderPassInfo.pSubpasses = &subpass;
 
         VkRenderPass renderPass;
-        vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &renderPass);
+        vkCreateRenderPass(device_, &renderPassInfo, nullptr, &renderPass);
 
         // Create graphics pipeline
         VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -1437,46 +1423,45 @@ public:
         if (descriptor->depthStencil) {
             pipelineInfo.pDepthStencilState = &depthStencil;
         }
-        pipelineInfo.layout = m_pipelineLayout;
+        pipelineInfo.layout = pipelineLayout_;
         pipelineInfo.renderPass = renderPass;
         pipelineInfo.subpass = 0;
 
-        result = vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline);
+        result = vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline_);
 
-        vkDestroyRenderPass(m_device, renderPass, nullptr);
+        vkDestroyRenderPass(device_, renderPass, nullptr);
 
         if (result != VK_SUCCESS) {
-            vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+            vkDestroyPipelineLayout(device_, pipelineLayout_, nullptr);
             throw std::runtime_error("Failed to create graphics pipeline");
         }
     }
 
     ~RenderPipeline()
     {
-        if (m_pipeline != VK_NULL_HANDLE) {
-            vkDestroyPipeline(m_device, m_pipeline, nullptr);
+        if (pipeline_ != VK_NULL_HANDLE) {
+            vkDestroyPipeline(device_, pipeline_, nullptr);
         }
-        if (m_pipelineLayout != VK_NULL_HANDLE) {
-            vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+        if (pipelineLayout_ != VK_NULL_HANDLE) {
+            vkDestroyPipelineLayout(device_, pipelineLayout_, nullptr);
         }
     }
 
-    VkPipeline handle() const { return m_pipeline; }
-    VkPipelineLayout layout() const { return m_pipelineLayout; }
-
-private:
-    VkPipeline m_pipeline = VK_NULL_HANDLE;
-    VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
+    VkPipeline handle() const { return pipeline_; }
+    VkPipelineLayout layout() const { return pipelineLayout_; }
 };
 
 class ComputePipeline {
+    VkPipeline pipeline_ = VK_NULL_HANDLE;
+    VkPipelineLayout pipelineLayout_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
+
 public:
     ComputePipeline(const ComputePipeline&) = delete;
     ComputePipeline& operator=(const ComputePipeline&) = delete;
 
     ComputePipeline(VkDevice device, const GfxComputePipelineDescriptor* descriptor)
-        : m_device(device)
+        : device_(device)
     {
         // Create pipeline layout (empty for now, bind groups can be added later)
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -1484,7 +1469,7 @@ public:
         pipelineLayoutInfo.setLayoutCount = 0;
         pipelineLayoutInfo.pSetLayouts = nullptr;
 
-        VkResult result = vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout);
+        VkResult result = vkCreatePipelineLayout(device_, &pipelineLayoutInfo, nullptr, &pipelineLayout_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create compute pipeline layout");
         }
@@ -1502,41 +1487,39 @@ public:
         VkComputePipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
         pipelineInfo.stage = computeShaderStageInfo;
-        pipelineInfo.layout = m_pipelineLayout;
+        pipelineInfo.layout = pipelineLayout_;
 
-        result = vkCreateComputePipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline);
+        result = vkCreateComputePipelines(device_, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline_);
         if (result != VK_SUCCESS) {
-            vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+            vkDestroyPipelineLayout(device_, pipelineLayout_, nullptr);
             throw std::runtime_error("Failed to create compute pipeline");
         }
     }
 
     ~ComputePipeline()
     {
-        if (m_pipeline != VK_NULL_HANDLE) {
-            vkDestroyPipeline(m_device, m_pipeline, nullptr);
+        if (pipeline_ != VK_NULL_HANDLE) {
+            vkDestroyPipeline(device_, pipeline_, nullptr);
         }
-        if (m_pipelineLayout != VK_NULL_HANDLE) {
-            vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+        if (pipelineLayout_ != VK_NULL_HANDLE) {
+            vkDestroyPipelineLayout(device_, pipelineLayout_, nullptr);
         }
     }
 
-    VkPipeline handle() const { return m_pipeline; }
-    VkPipelineLayout layout() const { return m_pipelineLayout; }
-
-private:
-    VkPipeline m_pipeline = VK_NULL_HANDLE;
-    VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
+    VkPipeline handle() const { return pipeline_; }
+    VkPipelineLayout layout() const { return pipelineLayout_; }
 };
 
 class Fence {
+    VkFence fence_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
+
 public:
     Fence(const Fence&) = delete;
     Fence& operator=(const Fence&) = delete;
 
     Fence(VkDevice device, const GfxFenceDescriptor* descriptor)
-        : m_device(device)
+        : device_(device)
     {
         VkFenceCreateInfo fenceInfo{};
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -1546,7 +1529,7 @@ public:
             fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         }
 
-        VkResult result = vkCreateFence(m_device, &fenceInfo, nullptr, &m_fence);
+        VkResult result = vkCreateFence(device_, &fenceInfo, nullptr, &fence_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create fence");
         }
@@ -1554,19 +1537,19 @@ public:
 
     ~Fence()
     {
-        if (m_fence != VK_NULL_HANDLE) {
-            vkDestroyFence(m_device, m_fence, nullptr);
+        if (fence_ != VK_NULL_HANDLE) {
+            vkDestroyFence(device_, fence_, nullptr);
         }
     }
 
-    VkFence handle() const { return m_fence; }
+    VkFence handle() const { return fence_; }
 
     GfxResult getStatus(bool* isSignaled) const
     {
         if (!isSignaled)
             return GFX_RESULT_ERROR_INVALID_PARAMETER;
 
-        VkResult result = vkGetFenceStatus(m_device, m_fence);
+        VkResult result = vkGetFenceStatus(device_, fence_);
         if (result == VK_SUCCESS) {
             *isSignaled = true;
             return GFX_RESULT_SUCCESS;
@@ -1580,7 +1563,7 @@ public:
 
     GfxResult wait(uint64_t timeoutNs)
     {
-        VkResult result = vkWaitForFences(m_device, 1, &m_fence, VK_TRUE, timeoutNs);
+        VkResult result = vkWaitForFences(device_, 1, &fence_, VK_TRUE, timeoutNs);
         if (result == VK_SUCCESS) {
             return GFX_RESULT_SUCCESS;
         } else if (result == VK_TIMEOUT) {
@@ -1592,25 +1575,25 @@ public:
 
     void reset()
     {
-        vkResetFences(m_device, 1, &m_fence);
+        vkResetFences(device_, 1, &fence_);
     }
-
-private:
-    VkFence m_fence = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
 };
 
 class Semaphore {
+    VkSemaphore semaphore_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
+    GfxSemaphoreType type_;
+
 public:
     Semaphore(const Semaphore&) = delete;
     Semaphore& operator=(const Semaphore&) = delete;
 
     Semaphore(VkDevice device, const GfxSemaphoreDescriptor* descriptor)
-        : m_device(device)
-        , m_type(descriptor ? descriptor->type : GFX_SEMAPHORE_TYPE_BINARY)
+        : device_(device)
+        , type_(descriptor ? descriptor->type : GFX_SEMAPHORE_TYPE_BINARY)
     {
 
-        if (m_type == GFX_SEMAPHORE_TYPE_TIMELINE) {
+        if (type_ == GFX_SEMAPHORE_TYPE_TIMELINE) {
             // Timeline semaphore
             VkSemaphoreTypeCreateInfo timelineInfo{};
             timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
@@ -1621,7 +1604,7 @@ public:
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
             semaphoreInfo.pNext = &timelineInfo;
 
-            VkResult result = vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_semaphore);
+            VkResult result = vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &semaphore_);
             if (result != VK_SUCCESS) {
                 throw std::runtime_error("Failed to create timeline semaphore");
             }
@@ -1630,7 +1613,7 @@ public:
             VkSemaphoreCreateInfo semaphoreInfo{};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-            VkResult result = vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_semaphore);
+            VkResult result = vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &semaphore_);
             if (result != VK_SUCCESS) {
                 throw std::runtime_error("Failed to create binary semaphore");
             }
@@ -1639,42 +1622,42 @@ public:
 
     ~Semaphore()
     {
-        if (m_semaphore != VK_NULL_HANDLE) {
-            vkDestroySemaphore(m_device, m_semaphore, nullptr);
+        if (semaphore_ != VK_NULL_HANDLE) {
+            vkDestroySemaphore(device_, semaphore_, nullptr);
         }
     }
 
-    VkSemaphore handle() const { return m_semaphore; }
-    GfxSemaphoreType type() const { return m_type; }
+    VkSemaphore handle() const { return semaphore_; }
+    GfxSemaphoreType type() const { return type_; }
 
     GfxResult signal(uint64_t value)
     {
-        if (m_type != GFX_SEMAPHORE_TYPE_TIMELINE) {
+        if (type_ != GFX_SEMAPHORE_TYPE_TIMELINE) {
             return GFX_RESULT_ERROR_INVALID_PARAMETER; // Binary semaphores can't be manually signaled
         }
 
         VkSemaphoreSignalInfo signalInfo{};
         signalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
-        signalInfo.semaphore = m_semaphore;
+        signalInfo.semaphore = semaphore_;
         signalInfo.value = value;
 
-        VkResult result = vkSignalSemaphore(m_device, &signalInfo);
+        VkResult result = vkSignalSemaphore(device_, &signalInfo);
         return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
     }
 
     GfxResult wait(uint64_t value, uint64_t timeoutNs)
     {
-        if (m_type != GFX_SEMAPHORE_TYPE_TIMELINE) {
+        if (type_ != GFX_SEMAPHORE_TYPE_TIMELINE) {
             return GFX_RESULT_ERROR_INVALID_PARAMETER; // Binary semaphores can't be manually waited
         }
 
         VkSemaphoreWaitInfo waitInfo{};
         waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
         waitInfo.semaphoreCount = 1;
-        waitInfo.pSemaphores = &m_semaphore;
+        waitInfo.pSemaphores = &semaphore_;
         waitInfo.pValues = &value;
 
-        VkResult result = vkWaitSemaphores(m_device, &waitInfo, timeoutNs);
+        VkResult result = vkWaitSemaphores(device_, &waitInfo, timeoutNs);
         if (result == VK_SUCCESS) {
             return GFX_RESULT_SUCCESS;
         } else if (result == VK_TIMEOUT) {
@@ -1686,28 +1669,34 @@ public:
 
     uint64_t getValue() const
     {
-        if (m_type != GFX_SEMAPHORE_TYPE_TIMELINE) {
+        if (type_ != GFX_SEMAPHORE_TYPE_TIMELINE) {
             return 0; // Binary semaphores don't have values
         }
 
         uint64_t value = 0;
-        vkGetSemaphoreCounterValue(m_device, m_semaphore, &value);
+        vkGetSemaphoreCounterValue(device_, semaphore_, &value);
         return value;
     }
-
-private:
-    VkSemaphore m_semaphore = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
-    GfxSemaphoreType m_type;
 };
 
 class CommandEncoder {
+    VkCommandBuffer commandBuffer_ = VK_NULL_HANDLE;
+    VkCommandPool commandPool_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
+    bool isRecording_ = false;
+    VkPipelineLayout currentPipelineLayout_ = VK_NULL_HANDLE;
+    VkRenderPass currentRenderPass_ = VK_NULL_HANDLE;
+
+    // Track resources for cleanup - RAII handles lifetime automatically!
+    std::vector<VkRenderPass> renderPasses_;
+    std::vector<VkFramebuffer> framebuffers_;
+
 public:
     CommandEncoder(const CommandEncoder&) = delete;
     CommandEncoder& operator=(const CommandEncoder&) = delete;
 
     CommandEncoder(VkDevice device, uint32_t queueFamily)
-        : m_device(device)
+        : device_(device)
     {
         // Create command pool
         VkCommandPoolCreateInfo poolInfo{};
@@ -1715,7 +1704,7 @@ public:
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         poolInfo.queueFamilyIndex = queueFamily;
 
-        VkResult result = vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandPool);
+        VkResult result = vkCreateCommandPool(device_, &poolInfo, nullptr, &commandPool_);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create command pool");
         }
@@ -1723,13 +1712,13 @@ public:
         // Allocate command buffer
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = m_commandPool;
+        allocInfo.commandPool = commandPool_;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = 1;
 
-        result = vkAllocateCommandBuffers(m_device, &allocInfo, &m_commandBuffer);
+        result = vkAllocateCommandBuffers(device_, &allocInfo, &commandBuffer_);
         if (result != VK_SUCCESS) {
-            vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+            vkDestroyCommandPool(device_, commandPool_, nullptr);
             throw std::runtime_error("Failed to allocate command buffer");
         }
 
@@ -1738,59 +1727,47 @@ public:
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-        vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
-        m_isRecording = true;
+        vkBeginCommandBuffer(commandBuffer_, &beginInfo);
+        isRecording_ = true;
     }
 
     ~CommandEncoder()
     {
         // Automatic cleanup in reverse order - C++ RAII magic!
-        for (auto fb : m_framebuffers) {
-            vkDestroyFramebuffer(m_device, fb, nullptr);
+        for (auto fb : framebuffers_) {
+            vkDestroyFramebuffer(device_, fb, nullptr);
         }
-        for (auto rp : m_renderPasses) {
-            vkDestroyRenderPass(m_device, rp, nullptr);
+        for (auto rp : renderPasses_) {
+            vkDestroyRenderPass(device_, rp, nullptr);
         }
-        if (m_commandPool != VK_NULL_HANDLE) {
-            vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+        if (commandPool_ != VK_NULL_HANDLE) {
+            vkDestroyCommandPool(device_, commandPool_, nullptr);
         }
     }
 
-    VkCommandBuffer handle() const { return m_commandBuffer; }
-    VkDevice device() const { return m_device; }
-    VkPipelineLayout currentPipelineLayout() const { return m_currentPipelineLayout; }
+    VkCommandBuffer handle() const { return commandBuffer_; }
+    VkDevice device() const { return device_; }
+    VkPipelineLayout currentPipelineLayout() const { return currentPipelineLayout_; }
 
     void setCurrentPipelineLayout(VkPipelineLayout layout)
     {
-        m_currentPipelineLayout = layout;
+        currentPipelineLayout_ = layout;
     }
 
     void trackRenderPass(VkRenderPass rp, VkFramebuffer fb)
     {
-        m_renderPasses.push_back(rp);
-        m_framebuffers.push_back(fb);
-        m_currentRenderPass = rp;
+        renderPasses_.push_back(rp);
+        framebuffers_.push_back(fb);
+        currentRenderPass_ = rp;
     }
 
     void finish()
     {
-        if (m_isRecording) {
-            vkEndCommandBuffer(m_commandBuffer);
-            m_isRecording = false;
+        if (isRecording_) {
+            vkEndCommandBuffer(commandBuffer_);
+            isRecording_ = false;
         }
     }
-
-private:
-    VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
-    VkCommandPool m_commandPool = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
-    bool m_isRecording = false;
-    VkPipelineLayout m_currentPipelineLayout = VK_NULL_HANDLE;
-    VkRenderPass m_currentRenderPass = VK_NULL_HANDLE;
-
-    // Track resources for cleanup - RAII handles lifetime automatically!
-    std::vector<VkRenderPass> m_renderPasses;
-    std::vector<VkFramebuffer> m_framebuffers;
 };
 
 } // namespace gfx::vulkan
