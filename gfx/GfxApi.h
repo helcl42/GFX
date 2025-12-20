@@ -422,6 +422,19 @@ typedef struct {
 } GfxAdapterDescriptor;
 
 
+// Device limits
+typedef struct {
+    uint32_t minUniformBufferOffsetAlignment;
+    uint32_t minStorageBufferOffsetAlignment;
+    uint32_t maxUniformBufferBindingSize;
+    uint32_t maxStorageBufferBindingSize;
+    uint64_t maxBufferSize;
+    uint32_t maxTextureDimension1D;
+    uint32_t maxTextureDimension2D;
+    uint32_t maxTextureDimension3D;
+    uint32_t maxTextureArrayLayers;
+} GfxDeviceLimits;
+
 // - query presentable device when not headless
 // - pass device override index in
 // - handle heaadless
@@ -730,6 +743,13 @@ GFX_API GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const char* la
 GFX_API GfxResult gfxDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence);
 GFX_API GfxResult gfxDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore);
 GFX_API void gfxDeviceWaitIdle(GfxDevice device);
+GFX_API void gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
+
+// Alignment helper functions
+// Use these to align buffer offsets/sizes to device requirements:
+// Example: uint64_t alignedOffset = gfxAlignUp(offset, limits.minUniformBufferOffsetAlignment);
+GFX_API uint64_t gfxAlignUp(uint64_t value, uint64_t alignment);
+GFX_API uint64_t gfxAlignDown(uint64_t value, uint64_t alignment);
 
 // Surface functions
 GFX_API void gfxSurfaceDestroy(GfxSurface surface);
@@ -853,7 +873,10 @@ GFX_API GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout);
 // RenderPassEncoder functions
 GFX_API void gfxRenderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder);
 GFX_API void gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline);
-GFX_API void gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup);
+// Dynamic offsets allow using a single bind group with multiple offsets into uniform/storage buffers
+// The offsets MUST be aligned to device limits (use gfxAlignUp with minUniformBufferOffsetAlignment)
+// Pass NULL and 0 if not using dynamic offsets
+GFX_API void gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount);
 GFX_API void gfxRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size);
 GFX_API void gfxRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size);
 GFX_API void gfxRenderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport);
@@ -865,7 +888,10 @@ GFX_API void gfxRenderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder);
 // ComputePassEncoder functions
 GFX_API void gfxComputePassEncoderDestroy(GfxComputePassEncoder computePassEncoder);
 GFX_API void gfxComputePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline);
-GFX_API void gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup);
+// Dynamic offsets allow using a single bind group with multiple offsets into uniform/storage buffers
+// The offsets MUST be aligned to device limits (use gfxAlignUp with minUniformBufferOffsetAlignment)
+// Pass NULL and 0 if not using dynamic offsets
+GFX_API void gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount);
 GFX_API void gfxComputePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ);
 GFX_API void gfxComputePassEncoderEnd(GfxComputePassEncoder computePassEncoder);
 

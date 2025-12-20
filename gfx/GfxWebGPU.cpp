@@ -1814,6 +1814,28 @@ void webgpu_deviceWaitIdle(GfxDevice device)
     }
 }
 
+void webgpu_deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
+{
+    if (!device || !outLimits) {
+        return;
+    }
+    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+    
+    WGPUSupportedLimits limits{};
+    limits.nextInChain = nullptr;
+    wgpuDeviceGetLimits(devicePtr->handle(), &limits);
+    
+    outLimits->minUniformBufferOffsetAlignment = limits.limits.minUniformBufferOffsetAlignment;
+    outLimits->minStorageBufferOffsetAlignment = limits.limits.minStorageBufferOffsetAlignment;
+    outLimits->maxUniformBufferBindingSize = limits.limits.maxUniformBufferBindingSize;
+    outLimits->maxStorageBufferBindingSize = limits.limits.maxStorageBufferBindingSize;
+    outLimits->maxBufferSize = limits.limits.maxBufferSize;
+    outLimits->maxTextureDimension1D = limits.limits.maxTextureDimension1D;
+    outLimits->maxTextureDimension2D = limits.limits.maxTextureDimension2D;
+    outLimits->maxTextureDimension3D = limits.limits.maxTextureDimension3D;
+    outLimits->maxTextureArrayLayers = limits.limits.maxTextureArrayLayers;
+}
+
 // Surface functions
 void webgpu_surfaceDestroy(GfxSurface surface)
 {
@@ -2691,7 +2713,7 @@ void webgpu_renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder,
     wgpuRenderPassEncoderSetPipeline(encoderPtr->handle(), pipelinePtr->handle());
 }
 
-void webgpu_renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup)
+void webgpu_renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
     if (!renderPassEncoder || !bindGroup) {
         return;
@@ -2700,7 +2722,7 @@ void webgpu_renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder
     auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
     auto* bindGroupPtr = reinterpret_cast<gfx::webgpu::BindGroup*>(bindGroup);
 
-    wgpuRenderPassEncoderSetBindGroup(encoderPtr->handle(), index, bindGroupPtr->handle(), 0, nullptr);
+    wgpuRenderPassEncoderSetBindGroup(encoderPtr->handle(), index, bindGroupPtr->handle(), dynamicOffsetCount, dynamicOffsets);
 }
 
 void webgpu_renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot,
@@ -2813,7 +2835,7 @@ void webgpu_computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncod
     wgpuComputePassEncoderSetPipeline(encoderPtr->handle(), pipelinePtr->handle());
 }
 
-void webgpu_computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup)
+void webgpu_computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
     if (!computePassEncoder || !bindGroup) {
         return;
@@ -2822,7 +2844,7 @@ void webgpu_computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEnco
     auto* encoderPtr = reinterpret_cast<gfx::webgpu::ComputePassEncoder*>(computePassEncoder);
     auto* bindGroupPtr = reinterpret_cast<gfx::webgpu::BindGroup*>(bindGroup);
 
-    wgpuComputePassEncoderSetBindGroup(encoderPtr->handle(), index, bindGroupPtr->handle(), 0, nullptr);
+    wgpuComputePassEncoderSetBindGroup(encoderPtr->handle(), index, bindGroupPtr->handle(), dynamicOffsetCount, dynamicOffsets);
 }
 
 void webgpu_computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder,
@@ -2967,6 +2989,7 @@ static const GfxBackendAPI webGpuBackendApi = {
     .deviceCreateFence = webgpu_deviceCreateFence,
     .deviceCreateSemaphore = webgpu_deviceCreateSemaphore,
     .deviceWaitIdle = webgpu_deviceWaitIdle,
+    .deviceGetLimits = webgpu_deviceGetLimits,
     .surfaceDestroy = webgpu_surfaceDestroy,
     .surfaceGetWidth = webgpu_surfaceGetWidth,
     .surfaceGetHeight = webgpu_surfaceGetHeight,

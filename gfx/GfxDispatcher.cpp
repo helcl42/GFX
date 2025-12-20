@@ -515,6 +515,31 @@ void gfxDeviceWaitIdle(GfxDevice device) {
     }
 }
 
+void gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) {
+    if (!device || !outLimits) {
+        return;
+    }
+    auto api = gfx::getAPI(device);
+    if (api) {
+        api->deviceGetLimits(gfx::native(device), outLimits);
+    }
+}
+
+// Alignment helper functions
+uint64_t gfxAlignUp(uint64_t value, uint64_t alignment) {
+    if (alignment == 0) {
+        return value;
+    }
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
+uint64_t gfxAlignDown(uint64_t value, uint64_t alignment) {
+    if (alignment == 0) {
+        return value;
+    }
+    return value & ~(alignment - 1);
+}
+
 // Macro for simple destroy functions
 #define DESTROY_FUNC(TypeName, typeName) \
 void gfx##TypeName##Destroy(Gfx##TypeName typeName) { \
@@ -1051,7 +1076,7 @@ void gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder encoder, GfxRenderPipe
     }
 }
 
-void gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup) {
+void gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) {
     if (!encoder || !bindGroup) {
         return;
     }
@@ -1060,7 +1085,9 @@ void gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t gro
         api->renderPassEncoderSetBindGroup(
             gfx::native(encoder),
             groupIndex,
-            gfx::native(bindGroup));
+            gfx::native(bindGroup),
+            dynamicOffsets,
+            dynamicOffsetCount);
     }
 }
 
@@ -1165,7 +1192,7 @@ void gfxComputePassEncoderSetPipeline(GfxComputePassEncoder encoder, GfxComputeP
     }
 }
 
-void gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup) {
+void gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) {
     if (!encoder || !bindGroup) {
         return;
     }
@@ -1174,7 +1201,9 @@ void gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32_t g
         api->computePassEncoderSetBindGroup(
             gfx::native(encoder),
             groupIndex,
-            gfx::native(bindGroup));
+            gfx::native(bindGroup),
+            dynamicOffsets,
+            dynamicOffsetCount);
     }
 }
 

@@ -678,6 +678,18 @@ struct SemaphoreDescriptor {
     uint64_t initialValue = 0; // For timeline semaphores, ignored for binary
 };
 
+struct DeviceLimits {
+    uint64_t minUniformBufferOffsetAlignment = 0;
+    uint64_t minStorageBufferOffsetAlignment = 0;
+    uint32_t maxUniformBufferBindingSize = 0;
+    uint32_t maxStorageBufferBindingSize = 0;
+    uint64_t maxBufferSize = 0;
+    uint32_t maxTextureDimension1D = 0;
+    uint32_t maxTextureDimension2D = 0;
+    uint32_t maxTextureDimension3D = 0;
+    uint32_t maxTextureArrayLayers = 0;
+};
+
 struct SubmitInfo {
     std::vector<std::shared_ptr<CommandEncoder>> commandEncoders;
 
@@ -864,7 +876,7 @@ public:
     virtual ~RenderPassEncoder() = default;
 
     virtual void setPipeline(std::shared_ptr<RenderPipeline> pipeline) = 0;
-    virtual void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup) = 0;
+    virtual void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets = nullptr, uint32_t dynamicOffsetCount = 0) = 0;
     virtual void setVertexBuffer(uint32_t slot, std::shared_ptr<Buffer> buffer, uint64_t offset = 0, uint64_t size = 0) = 0;
     virtual void setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset = 0, uint64_t size = 0) = 0;
     virtual void setViewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f) = 0;
@@ -881,7 +893,7 @@ public:
     virtual ~ComputePassEncoder() = default;
 
     virtual void setPipeline(std::shared_ptr<ComputePipeline> pipeline) = 0;
-    virtual void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup) = 0;
+    virtual void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets = nullptr, uint32_t dynamicOffsetCount = 0) = 0;
     virtual void dispatchWorkgroups(uint32_t workgroupCountX, uint32_t workgroupCountY = 1, uint32_t workgroupCountZ = 1) = 0;
 
     virtual void end() = 0;
@@ -1018,6 +1030,7 @@ public:
     virtual std::shared_ptr<Semaphore> createSemaphore(const SemaphoreDescriptor& descriptor = {}) = 0;
 
     virtual void waitIdle() = 0;
+    virtual DeviceLimits getLimits() const = 0;
 };
 
 class Adapter {
@@ -1063,6 +1076,10 @@ namespace utils {
 
     // Generic helper for raw platform handles
     PlatformWindowHandle createGenericHandle(void* handle);
+
+    // Alignment helpers - align buffer offsets/sizes to device requirements
+    uint64_t alignUp(uint64_t value, uint64_t alignment);
+    uint64_t alignDown(uint64_t value, uint64_t alignment);
 } // namespace utils
 
 // ============================================================================

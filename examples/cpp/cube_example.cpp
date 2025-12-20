@@ -97,7 +97,8 @@ private:
     std::shared_ptr<BindGroupLayout> uniformBindGroupLayout;
 
     // Per-frame resources (for frames in flight)
-    std::array<std::shared_ptr<Buffer>, MAX_FRAMES_IN_FLIGHT> uniformBuffers;
+    std::shared_ptr<Buffer> sharedUniformBuffer; // Single buffer for all frames
+    size_t uniformAlignedSize = 0; // Aligned size per frame
     std::array<std::shared_ptr<BindGroup>, MAX_FRAMES_IN_FLIGHT> uniformBindGroups;
     std::array<std::shared_ptr<CommandEncoder>, MAX_FRAMES_IN_FLIGHT> commandEncoders;
 
@@ -360,19 +361,23 @@ bool CubeApp::createRenderingResources()
         queue->writeBuffer(vertexBuffer, 0, vertices.data(), sizeof(vertices));
         queue->writeBuffer(indexBuffer, 0, indices.data(), sizeof(indices));
 
-        // Create uniform buffers (one per frame in flight)
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-            BufferDescriptor uniformBufferDesc{};
-            uniformBufferDesc.label = "Transform Uniforms Frame " + std::to_string(i);
-            uniformBufferDesc.size = sizeof(UniformData);
-            uniformBufferDesc.usage = BufferUsage::Uniform | BufferUsage::CopyDst;
-            uniformBufferDesc.mappedAtCreation = false;
+        // Create single large uniform buffer for all frames with proper alignment
+        auto limits = device->getLimits();
 
-            uniformBuffers[i] = device->createBuffer(uniformBufferDesc);
-            if (!uniformBuffers[i]) {
-                std::cerr << "Failed to create uniform buffer " << i << std::endl;
-                return false;
-            }
+        size_t uniformSize = sizeof(UniformData);
+        uniformAlignedSize = utils::alignUp(uniformSize, limits.minUniformBufferOffsetAlignment);
+        size_t totalBufferSize = uniformAlignedSize * MAX_FRAMES_IN_FLIGHT;
+
+        BufferDescriptor uniformBufferDesc{};
+        uniformBufferDesc.label = "Shared Transform Uniforms";
+        uniformBufferDesc.size = totalBufferSize;
+        uniformBufferDesc.usage = BufferUsage::Uniform | BufferUsage::CopyDst;
+        uniformBufferDesc.mappedAtCreation = false;
+
+        sharedUniformBuffer = device->createBuffer(uniformBufferDesc);
+        if (!sharedUniformBuffer) {
+            std::cerr << "Failed to create shared uniform buffer" << std::endl;
+            return false;
         }
 
         // Create bind group layout for uniforms
@@ -394,12 +399,12 @@ bool CubeApp::createRenderingResources()
             return false;
         }
 
-        // Create bind groups (one per frame in flight)
+        // Create bind groups (one per frame in flight) using offsets into shared buffer
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
             BindGroupEntry uniformEntry{};
             uniformEntry.binding = 0;
-            uniformEntry.resource = uniformBuffers[i];
-            uniformEntry.offset = 0;
+            uniformEntry.resource = sharedUniformBuffer;
+            uniformEntry.offset = i * uniformAlignedSize; // Aligned offset into shared buffer
             uniformEntry.size = sizeof(UniformData);
 
             BindGroupDescriptor uniformBindGroupDesc{};
@@ -553,8 +558,9 @@ void CubeApp::updateUniforms()
     float aspect = static_cast<float>(width) / static_cast<float>(height);
     matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f);
 
-    // Upload uniform data to current frame's uniform buffer
-    queue->writeBuffer(uniformBuffers[currentFrame], 0, &uniforms, sizeof(uniforms));
+    // Upload uniform data to current frame's offset in shared buffer
+    size_t offset = currentFrame * uniformAlignedSize;
+    queue->writeBuffer(sharedUniformBuffer, offset, &uniforms, sizeof(uniforms));
 }
 
 void CubeApp::render()
@@ -752,8 +758,10 @@ void CubeApp::cleanup()
         renderFinishedSemaphores[i].reset();
         imageAvailableSemaphores[i].reset();
         uniformBindGroups[i].reset();
-        uniformBuffers[i].reset();
     }
+
+    // Destroy shared uniform buffer
+    sharedUniformBuffer.reset();
 
     // C++ destructors will handle cleanup automatically
     // But we can explicitly reset shared_ptrs if needed

@@ -63,7 +63,8 @@ typedef struct {
     GfxTextureView depthTextureView;
 
     // Per-frame resources (for frames in flight)
-    GfxBuffer uniformBuffers[MAX_FRAMES_IN_FLIGHT];
+    GfxBuffer sharedUniformBuffer; // Single buffer for all frames
+    size_t uniformAlignedSize; // Aligned size per frame
     GfxBindGroup uniformBindGroups[MAX_FRAMES_IN_FLIGHT];
     GfxCommandEncoder commandEncoders[MAX_FRAMES_IN_FLIGHT]; // Track for deferred cleanup
 
@@ -243,6 +244,20 @@ bool initializeGraphics(CubeApp* app)
         fprintf(stderr, "Failed to create device\n");
         return false;
     }
+
+    // Query and print device limits
+    GfxDeviceLimits limits;
+    gfxDeviceGetLimits(app->device, &limits);
+    printf("Device Limits:\n");
+    printf("  Min Uniform Buffer Offset Alignment: %u bytes\n", limits.minUniformBufferOffsetAlignment);
+    printf("  Min Storage Buffer Offset Alignment: %u bytes\n", limits.minStorageBufferOffsetAlignment);
+    printf("  Max Uniform Buffer Binding Size: %u bytes\n", limits.maxUniformBufferBindingSize);
+    printf("  Max Storage Buffer Binding Size: %u bytes\n", limits.maxStorageBufferBindingSize);
+    printf("  Max Buffer Size: %llu bytes\n", (unsigned long long)limits.maxBufferSize);
+    printf("  Max Texture Dimension 1D: %u\n", limits.maxTextureDimension1D);
+    printf("  Max Texture Dimension 2D: %u\n", limits.maxTextureDimension2D);
+    printf("  Max Texture Dimension 3D: %u\n", limits.maxTextureDimension3D);
+    printf("  Max Texture Array Layers: %u\n", limits.maxTextureArrayLayers);
 
     app->queue = gfxDeviceGetQueue(app->device);
 
@@ -430,22 +445,24 @@ bool createRenderingResources(CubeApp* app)
     gfxQueueWriteBuffer(app->queue, app->vertexBuffer, 0, vertices, sizeof(vertices));
     gfxQueueWriteBuffer(app->queue, app->indexBuffer, 0, indices, sizeof(indices));
 
-    // Create uniform buffers (one per frame in flight)
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        char label[64];
-        snprintf(label, sizeof(label), "Transform Uniforms Frame %d", i);
+    // Create single large uniform buffer for all frames with proper alignment
+    GfxDeviceLimits limits;
+    gfxDeviceGetLimits(app->device, &limits);
 
-        GfxBufferDescriptor uniformBufferDesc = {
-            .label = label,
-            .size = sizeof(UniformData),
-            .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST,
-            .mappedAtCreation = false
-        };
+    size_t uniformSize = sizeof(UniformData);
+    app->uniformAlignedSize = gfxAlignUp(uniformSize, limits.minUniformBufferOffsetAlignment);
+    size_t totalBufferSize = app->uniformAlignedSize * MAX_FRAMES_IN_FLIGHT;
 
-        if (gfxDeviceCreateBuffer(app->device, &uniformBufferDesc, &app->uniformBuffers[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create uniform buffer %d\n", i);
-            return false;
-        }
+    GfxBufferDescriptor uniformBufferDesc = {
+        .label = "Shared Transform Uniforms",
+        .size = totalBufferSize,
+        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST,
+        .mappedAtCreation = false
+    };
+
+    if (gfxDeviceCreateBuffer(app->device, &uniformBufferDesc, &app->sharedUniformBuffer) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create shared uniform buffer\n");
+        return false;
     }
 
     // Create bind group layout for uniforms
@@ -469,7 +486,7 @@ bool createRenderingResources(CubeApp* app)
         return false;
     }
 
-    // Create bind groups (one per frame in flight)
+    // Create bind groups (one per frame in flight) using offsets into shared buffer
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         char label[64];
         snprintf(label, sizeof(label), "Uniform Bind Group Frame %d", i);
@@ -479,8 +496,8 @@ bool createRenderingResources(CubeApp* app)
             .type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER,
             .resource = {
                 .buffer = {
-                    .buffer = app->uniformBuffers[i],
-                    .offset = 0,
+                    .buffer = app->sharedUniformBuffer,
+                    .offset = i * app->uniformAlignedSize, // Aligned offset into shared buffer
                     .size = sizeof(UniformData) } }
         };
 
@@ -680,8 +697,9 @@ void updateUniforms(CubeApp* app)
         0.1f, // near plane
         100.0f); // far plane
 
-    // Upload uniform data to current frame's buffer
-    gfxQueueWriteBuffer(app->queue, app->uniformBuffers[app->currentFrame], 0, &uniforms, sizeof(uniforms));
+    // Upload uniform data to current frame's offset in shared buffer
+    size_t offset = app->currentFrame * app->uniformAlignedSize;
+    gfxQueueWriteBuffer(app->queue, app->sharedUniformBuffer, offset, &uniforms, sizeof(uniforms));
 }
 
 void render(CubeApp* app)
@@ -748,8 +766,8 @@ void render(CubeApp* app)
         gfxRenderPassEncoderSetViewport(renderPass, &viewport);
         gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
 
-        // Set bind group for current frame
-        gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->uniformBindGroups[app->currentFrame]);
+        // Set bind group for current frame (no dynamic offsets)
+        gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->uniformBindGroups[app->currentFrame], NULL, 0);
 
         // Set vertex buffer
         gfxRenderPassEncoderSetVertexBuffer(renderPass, 0, app->vertexBuffer, 0,
@@ -823,9 +841,11 @@ void cleanup(CubeApp* app)
         if (app->uniformBindGroups[i]) {
             gfxBindGroupDestroy(app->uniformBindGroups[i]);
         }
-        if (app->uniformBuffers[i]) {
-            gfxBufferDestroy(app->uniformBuffers[i]);
-        }
+    }
+
+    // Destroy shared uniform buffer
+    if (app->sharedUniformBuffer) {
+        gfxBufferDestroy(app->sharedUniformBuffer);
     }
 
     // Destroy graphics resources

@@ -37,6 +37,7 @@ typedef struct {
     GfxResult (*deviceCreateFence)(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence);
     GfxResult (*deviceCreateSemaphore)(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore);
     void (*deviceWaitIdle)(GfxDevice device);
+    void (*deviceGetLimits)(GfxDevice device, GfxDeviceLimits* outLimits);
 
     // Surface functions
     void (*surfaceDestroy)(GfxSurface surface);
@@ -140,7 +141,7 @@ typedef struct {
     // RenderPassEncoder functions
     void (*renderPassEncoderDestroy)(GfxRenderPassEncoder renderPassEncoder);
     void (*renderPassEncoderSetPipeline)(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline);
-    void (*renderPassEncoderSetBindGroup)(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup);
+    void (*renderPassEncoderSetBindGroup)(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount);
     void (*renderPassEncoderSetVertexBuffer)(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size);
     void (*renderPassEncoderSetIndexBuffer)(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size);
     void (*renderPassEncoderSetViewport)(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport);
@@ -152,7 +153,7 @@ typedef struct {
     // ComputePassEncoder functions
     void (*computePassEncoderDestroy)(GfxComputePassEncoder computePassEncoder);
     void (*computePassEncoderSetPipeline)(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline);
-    void (*computePassEncoderSetBindGroup)(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup);
+    void (*computePassEncoderSetBindGroup)(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount);
     void (*computePassEncoderDispatchWorkgroups)(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ);
     void (*computePassEncoderEnd)(GfxComputePassEncoder computePassEncoder);
 

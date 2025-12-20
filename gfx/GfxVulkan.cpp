@@ -3099,6 +3099,28 @@ void vulkan_deviceWaitIdle(GfxDevice device)
     vkDeviceWaitIdle(dev->handle());
 }
 
+void vulkan_deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
+{
+    if (!device || !outLimits) {
+        return;
+    }
+    auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
+    auto* adapter = dev->getAdapter();
+    
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(adapter->handle(), &properties);
+    
+    outLimits->minUniformBufferOffsetAlignment = properties.limits.minUniformBufferOffsetAlignment;
+    outLimits->minStorageBufferOffsetAlignment = properties.limits.minStorageBufferOffsetAlignment;
+    outLimits->maxUniformBufferBindingSize = properties.limits.maxUniformBufferRange;
+    outLimits->maxStorageBufferBindingSize = properties.limits.maxStorageBufferRange;
+    outLimits->maxBufferSize = UINT64_MAX; // Vulkan doesn't expose a direct limit
+    outLimits->maxTextureDimension1D = properties.limits.maxImageDimension1D;
+    outLimits->maxTextureDimension2D = properties.limits.maxImageDimension2D;
+    outLimits->maxTextureDimension3D = properties.limits.maxImageDimension3D;
+    outLimits->maxTextureArrayLayers = properties.limits.maxImageArrayLayers;
+}
+
 uint32_t vulkan_swapchainGetWidth(GfxSwapchain swapchain)
 {
     if (!swapchain) {
@@ -3534,7 +3556,7 @@ void vulkan_renderPassEncoderSetPipeline(GfxRenderPassEncoder encoder, GfxRender
     enc->setCurrentPipelineLayout(pipe->layout());
 }
 
-void vulkan_renderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t index, GfxBindGroup bindGroup)
+void vulkan_renderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
     if (!encoder || !bindGroup) {
         return;
@@ -3547,7 +3569,7 @@ void vulkan_renderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t
 
     if (layout != VK_NULL_HANDLE) {
         VkDescriptorSet set = bg->handle();
-        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, index, 1, &set, 0, nullptr);
+        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, index, 1, &set, dynamicOffsetCount, dynamicOffsets);
     }
 }
 
@@ -3691,7 +3713,7 @@ void vulkan_computePassEncoderSetPipeline(GfxComputePassEncoder encoder, GfxComp
     enc->setCurrentPipelineLayout(pipe->layout());
 }
 
-void vulkan_computePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32_t index, GfxBindGroup bindGroup)
+void vulkan_computePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
     if (!encoder || !bindGroup) {
         return;
@@ -3705,7 +3727,7 @@ void vulkan_computePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32
 
     if (layout != VK_NULL_HANDLE) {
         VkDescriptorSet set = bg->handle();
-        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, index, 1, &set, 0, nullptr);
+        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, index, 1, &set, dynamicOffsetCount, dynamicOffsets);
     }
 }
 
@@ -3760,6 +3782,7 @@ static const GfxBackendAPI vulkanBackendApi = {
     .deviceCreateFence = vulkan_deviceCreateFence,
     .deviceCreateSemaphore = vulkan_deviceCreateSemaphore,
     .deviceWaitIdle = vulkan_deviceWaitIdle,
+    .deviceGetLimits = vulkan_deviceGetLimits,
     .surfaceDestroy = vulkan_surfaceDestroy,
     .surfaceGetWidth = vulkan_surfaceGetWidth,
     .surfaceGetHeight = vulkan_surfaceGetHeight,

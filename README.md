@@ -166,6 +166,46 @@ Represents a physical graphics device (GPU). Creates logical devices.
 ### Device
 Logical connection to an adapter. Creates all other graphics resources.
 
+#### Device Limits and Buffer Alignment
+Modern GPUs have hardware-specific alignment requirements for uniform and storage buffers. The API provides functions to query these limits:
+
+**C API:**
+```c
+GfxDeviceLimits limits;
+gfxDeviceGetLimits(device, &limits);
+
+// Use alignment helpers for buffer offsets
+uint64_t offset = calculateSomeOffset();
+uint64_t alignedOffset = gfxAlignUp(offset, limits.minUniformBufferOffsetAlignment);
+
+// Common use case: multiple uniform blocks in one buffer
+uint64_t block1Offset = 0;
+uint64_t block2Offset = gfxAlignUp(block1Size, limits.minUniformBufferOffsetAlignment);
+uint64_t block3Offset = gfxAlignUp(block2Offset + block2Size, limits.minUniformBufferOffsetAlignment);
+```
+
+**C++ API:**
+```cpp
+auto limits = device->getLimits();
+
+// Use utils namespace helpers
+uint64_t alignedOffset = gfx::utils::alignUp(offset, limits.minUniformBufferOffsetAlignment);
+```
+
+**Available Limits:**
+- `minUniformBufferOffsetAlignment` - Minimum alignment for uniform buffer offsets (typically 64-256 bytes)
+- `minStorageBufferOffsetAlignment` - Minimum alignment for storage buffer offsets (typically 4-32 bytes)
+- `maxUniformBufferBindingSize` - Maximum size of a uniform buffer binding
+- `maxStorageBufferBindingSize` - Maximum size of a storage buffer binding
+- `maxBufferSize` - Maximum total buffer size
+- `maxTextureDimension1D/2D/3D` - Maximum texture dimensions
+- `maxTextureArrayLayers` - Maximum array layers for texture arrays
+
+**Why This Matters:**
+- Dynamic offsets in bind groups MUST be aligned to `minUniformBufferOffsetAlignment`
+- Suballocating multiple uniform blocks within a single buffer requires proper alignment
+- Failure to align can cause validation errors or GPU faults
+
 ### Queue
 Submits command buffers for execution on the GPU.
 

@@ -444,11 +444,11 @@ public:
         }
     }
 
-    void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup) override
+    void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets = nullptr, uint32_t dynamicOffsetCount = 0) override
     {
         auto impl = std::dynamic_pointer_cast<CBindGroupImpl>(bindGroup);
         if (impl) {
-            gfxRenderPassEncoderSetBindGroup(m_handle, index, impl->getHandle());
+            gfxRenderPassEncoderSetBindGroup(m_handle, index, impl->getHandle(), dynamicOffsets, dynamicOffsetCount);
         }
     }
 
@@ -519,11 +519,11 @@ public:
         }
     }
 
-    void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup) override
+    void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets = nullptr, uint32_t dynamicOffsetCount = 0) override
     {
         auto impl = std::dynamic_pointer_cast<CBindGroupImpl>(bindGroup);
         if (impl) {
-            gfxComputePassEncoderSetBindGroup(m_handle, index, impl->getHandle());
+            gfxComputePassEncoderSetBindGroup(m_handle, index, impl->getHandle(), dynamicOffsets, dynamicOffsetCount);
         }
     }
 
@@ -1544,6 +1544,24 @@ public:
         gfxDeviceWaitIdle(m_handle);
     }
 
+    DeviceLimits getLimits() const override
+    {
+        GfxDeviceLimits cLimits;
+        gfxDeviceGetLimits(m_handle, &cLimits);
+        
+        DeviceLimits limits;
+        limits.minUniformBufferOffsetAlignment = cLimits.minUniformBufferOffsetAlignment;
+        limits.minStorageBufferOffsetAlignment = cLimits.minStorageBufferOffsetAlignment;
+        limits.maxUniformBufferBindingSize = cLimits.maxUniformBufferBindingSize;
+        limits.maxStorageBufferBindingSize = cLimits.maxStorageBufferBindingSize;
+        limits.maxBufferSize = cLimits.maxBufferSize;
+        limits.maxTextureDimension1D = cLimits.maxTextureDimension1D;
+        limits.maxTextureDimension2D = cLimits.maxTextureDimension2D;
+        limits.maxTextureDimension3D = cLimits.maxTextureDimension3D;
+        limits.maxTextureArrayLayers = cLimits.maxTextureArrayLayers;
+        return limits;
+    }
+
 private:
     GfxDevice m_handle;
     std::shared_ptr<CQueueImpl> m_queue;
@@ -1669,5 +1687,19 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
 
     return std::make_shared<CInstanceImpl>(instance);
 }
+
+namespace utils {
+
+uint64_t alignUp(uint64_t value, uint64_t alignment)
+{
+    return gfxAlignUp(value, alignment);
+}
+
+uint64_t alignDown(uint64_t value, uint64_t alignment)
+{
+    return gfxAlignDown(value, alignment);
+}
+
+} // namespace utils
 
 } // namespace gfx
