@@ -259,7 +259,7 @@ bool CubeApp::createSyncObjects()
 {
     try {
         // Create synchronization objects for each frame in flight
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
             // Create binary semaphores for image availability and render completion
             SemaphoreDescriptor semDesc{};
             semDesc.label = "Image Available Semaphore Frame " + std::to_string(i);
@@ -361,7 +361,7 @@ bool CubeApp::createRenderingResources()
         queue->writeBuffer(indexBuffer, 0, indices.data(), sizeof(indices));
 
         // Create uniform buffers (one per frame in flight)
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
             BufferDescriptor uniformBufferDesc{};
             uniformBufferDesc.label = "Transform Uniforms Frame " + std::to_string(i);
             uniformBufferDesc.size = sizeof(UniformData);
@@ -395,7 +395,7 @@ bool CubeApp::createRenderingResources()
         }
 
         // Create bind groups (one per frame in flight)
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
             BindGroupEntry uniformEntry{};
             uniformEntry.binding = 0;
             uniformEntry.resource = uniformBuffers[i];
@@ -746,7 +746,7 @@ void CubeApp::cleanup()
     }
 
     // Clean up per-frame resources
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         commandEncoders[i].reset();
         inFlightFences[i].reset();
         renderFinishedSemaphores[i].reset();
@@ -893,8 +893,8 @@ void CubeApp::matrixMultiply(std::array<std::array<float, 4>, 4>& result,
     const std::array<std::array<float, 4>, 4>& b)
 {
     std::array<std::array<float, 4>, 4> temp;
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
             temp[i][j] = 0.0f;
             for (int k = 0; k < 4; k++) {
                 temp[i][j] += a[i][k] * b[k][j];

@@ -294,7 +294,7 @@ public:
         std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueFamilyCount, queueFamilies.data());
 
-        for (uint32_t i = 0; i < queueFamilyCount; i++) {
+        for (uint32_t i = 0; i < queueFamilyCount; ++i) {
             if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 m_graphicsQueueFamily = i;
                 break;
@@ -450,7 +450,7 @@ public:
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings;
 
-        for (uint32_t i = 0; i < descriptor->entryCount; i++) {
+        for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
             const auto& entry = descriptor->entries[i];
 
             VkDescriptorSetLayoutBinding binding{};
@@ -621,7 +621,7 @@ public:
 
         // Create texture view objects (not just VkImageViews)
         m_textureViews.reserve(imageCount);
-        for (size_t i = 0; i < imageCount; i++) {
+        for (size_t i = 0; i < imageCount; ++i) {
             m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], m_format));
         }
 
@@ -765,7 +765,7 @@ public:
 
         // Create new texture views
         m_textureViews.reserve(imageCount);
-        for (size_t i = 0; i < imageCount; i++) {
+        for (size_t i = 0; i < imageCount; ++i) {
             m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], m_format));
         }
 
@@ -845,7 +845,7 @@ public:
         uint32_t memoryTypeIndex = UINT32_MAX;
         VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
             if ((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
                 memoryTypeIndex = i;
                 break;
@@ -951,7 +951,7 @@ public:
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         std::vector<VkDescriptorBufferInfo> bufferInfos;
 
-        for (uint32_t i = 0; i < descriptor->entryCount; i++) {
+        for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
             const auto& entry = descriptor->entries[i];
 
             if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_BUFFER) {
@@ -1062,7 +1062,7 @@ public:
         vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
         uint32_t memoryTypeIndex = UINT32_MAX;
-        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
             if ((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
                 memoryTypeIndex = i;
                 break;
@@ -1247,7 +1247,7 @@ public:
 
         // Process bind group layouts
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-        for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; i++) {
+        for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
             auto* layout = reinterpret_cast<BindGroupLayout*>(descriptor->bindGroupLayouts[i]);
             descriptorSetLayouts.push_back(layout->handle());
         }
@@ -1286,7 +1286,7 @@ public:
         std::vector<VkVertexInputBindingDescription> bindings;
         std::vector<VkVertexInputAttributeDescription> attributes;
 
-        for (uint32_t i = 0; i < descriptor->vertex->bufferCount; i++) {
+        for (uint32_t i = 0; i < descriptor->vertex->bufferCount; ++i) {
             const auto& bufferLayout = descriptor->vertex->buffers[i];
 
             VkVertexInputBindingDescription binding{};
@@ -1295,7 +1295,7 @@ public:
             binding.inputRate = bufferLayout.stepModeInstance ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
             bindings.push_back(binding);
 
-            for (uint32_t j = 0; j < bufferLayout.attributeCount; j++) {
+            for (uint32_t j = 0; j < bufferLayout.attributeCount; ++j) {
                 const auto& attr = bufferLayout.attributes[j];
 
                 VkVertexInputAttributeDescription attribute{};
@@ -1895,7 +1895,7 @@ uint32_t vulkan_instanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adap
     vkEnumeratePhysicalDevices(inst->handle(), &deviceCount, devices.data());
 
     uint32_t count = std::min(deviceCount, maxAdapters);
-    for (uint32_t i = 0; i < count; i++) {
+    for (uint32_t i = 0; i < count; ++i) {
         adapters[i] = reinterpret_cast<GfxAdapter>(new gfx::vulkan::Adapter(inst, devices[i]));
     }
 
@@ -2152,7 +2152,7 @@ uint32_t vulkan_surfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat*
 
     if (formats && maxFormats > 0) {
         uint32_t copyCount = count < maxFormats ? count : maxFormats;
-        for (uint32_t i = 0; i < copyCount; i++) {
+        for (uint32_t i = 0; i < copyCount; ++i) {
             formats[i] = supportedFormats[i];
         }
     }
@@ -2178,7 +2178,7 @@ uint32_t vulkan_surfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMo
 
     if (presentModes && maxModes > 0) {
         uint32_t copyCount = count < maxModes ? count : maxModes;
-        for (uint32_t i = 0; i < copyCount; i++) {
+        for (uint32_t i = 0; i < copyCount; ++i) {
             presentModes[i] = supportedModes[i];
         }
     }
@@ -2299,7 +2299,7 @@ GfxResult vulkan_swapchainPresentWithSync(GfxSwapchain swapchain, const GfxPrese
     std::vector<VkSemaphore> waitSemaphores;
     if (presentInfo && presentInfo->waitSemaphoreCount > 0) {
         waitSemaphores.reserve(presentInfo->waitSemaphoreCount);
-        for (uint32_t i = 0; i < presentInfo->waitSemaphoreCount; i++) {
+        for (uint32_t i = 0; i < presentInfo->waitSemaphoreCount; ++i) {
             auto* sem = reinterpret_cast<gfx::vulkan::Semaphore*>(presentInfo->waitSemaphores[i]);
             if (sem) {
                 waitSemaphores.push_back(sem->handle());
@@ -2736,7 +2736,7 @@ GfxResult vulkan_queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submit
     // Convert command encoders to command buffers
     std::vector<VkCommandBuffer> commandBuffers;
     commandBuffers.reserve(submitInfo->commandEncoderCount);
-    for (uint32_t i = 0; i < submitInfo->commandEncoderCount; i++) {
+    for (uint32_t i = 0; i < submitInfo->commandEncoderCount; ++i) {
         auto* encoder = reinterpret_cast<gfx::vulkan::CommandEncoder*>(submitInfo->commandEncoders[i]);
         commandBuffers.push_back(encoder->handle());
     }
@@ -2749,7 +2749,7 @@ GfxResult vulkan_queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submit
     waitStages.reserve(submitInfo->waitSemaphoreCount);
 
     bool hasTimelineWait = false;
-    for (uint32_t i = 0; i < submitInfo->waitSemaphoreCount; i++) {
+    for (uint32_t i = 0; i < submitInfo->waitSemaphoreCount; ++i) {
         auto* sem = reinterpret_cast<gfx::vulkan::Semaphore*>(submitInfo->waitSemaphores[i]);
         waitSemaphores.push_back(sem->handle());
         waitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -2769,7 +2769,7 @@ GfxResult vulkan_queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submit
     signalSemaphores.reserve(submitInfo->signalSemaphoreCount);
 
     bool hasTimelineSignal = false;
-    for (uint32_t i = 0; i < submitInfo->signalSemaphoreCount; i++) {
+    for (uint32_t i = 0; i < submitInfo->signalSemaphoreCount; ++i) {
         auto* sem = reinterpret_cast<gfx::vulkan::Semaphore*>(submitInfo->signalSemaphores[i]);
         signalSemaphores.push_back(sem->handle());
 
@@ -2878,7 +2878,7 @@ void vulkan_queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigi
     uint32_t memoryTypeIndex = UINT32_MAX;
     VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
         if ((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
             memoryTypeIndex = i;
             break;

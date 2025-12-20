@@ -737,7 +737,7 @@ GfxResult gfxSwapchainPresentWithSync(GfxSwapchain swapchain, const GfxPresentIn
     
     if (presentInfo && presentInfo->waitSemaphoreCount > 0) {
         nativeSemaphores.reserve(presentInfo->waitSemaphoreCount);
-        for (uint32_t i = 0; i < presentInfo->waitSemaphoreCount; i++) {
+        for (uint32_t i = 0; i < presentInfo->waitSemaphoreCount; ++i) {
             nativeSemaphores.push_back(gfx::native(presentInfo->waitSemaphores[i]));
         }
         nativePresentInfo.waitSemaphores = nativeSemaphores.data();

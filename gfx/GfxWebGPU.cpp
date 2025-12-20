@@ -1142,7 +1142,7 @@ GfxResult webgpu_deviceCreateSwapchain(GfxDevice device, GfxSurface surface,
 
     WGPUTextureFormat format = gfxFormatToWGPUFormat(descriptor->format);
     bool formatSupported = false;
-    for (size_t i = 0; i < capabilities.formatCount; i++) {
+    for (size_t i = 0; i < capabilities.formatCount; ++i) {
         if (capabilities.formats[i] == format) {
             formatSupported = true;
             break;
@@ -1154,7 +1154,7 @@ GfxResult webgpu_deviceCreateSwapchain(GfxDevice device, GfxSurface surface,
 
     WGPUPresentMode presentMode = gfxPresentModeToWGPU(descriptor->presentMode);
     bool presentModeSupported = false;
-    for (size_t i = 0; i < capabilities.presentModeCount; i++) {
+    for (size_t i = 0; i < capabilities.presentModeCount; ++i) {
         if (capabilities.presentModes[i] == presentMode) {
             presentModeSupported = true;
             break;
@@ -1410,7 +1410,7 @@ GfxResult webgpu_deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGrou
     if (descriptor->entryCount > 0 && descriptor->entries) {
         entries.reserve(descriptor->entryCount);
 
-        for (uint32_t i = 0; i < descriptor->entryCount; i++) {
+        for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
             const auto& entry = descriptor->entries[i];
             WGPUBindGroupLayoutEntry wgpuEntry = WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT;
 
@@ -1484,7 +1484,7 @@ GfxResult webgpu_deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescr
     if (descriptor->entryCount > 0 && descriptor->entries) {
         entries.reserve(descriptor->entryCount);
 
-        for (uint32_t i = 0; i < descriptor->entryCount; i++) {
+        for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
             const auto& entry = descriptor->entries[i];
             WGPUBindGroupEntry wgpuEntry = WGPU_BIND_GROUP_ENTRY_INIT;
 
@@ -1555,13 +1555,13 @@ GfxResult webgpu_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPip
         vertexBuffers.reserve(descriptor->vertex.bufferCount);
         allAttributes.reserve(descriptor->vertex.bufferCount);
 
-        for (uint32_t i = 0; i < descriptor->vertex.bufferCount; i++) {
+        for (uint32_t i = 0; i < descriptor->vertex.bufferCount; ++i) {
             const auto& buffer = descriptor->vertex.buffers[i];
 
             std::vector<WGPUVertexAttribute> attributes;
             attributes.reserve(buffer.attributeCount);
 
-            for (uint32_t j = 0; j < buffer.attributeCount; j++) {
+            for (uint32_t j = 0; j < buffer.attributeCount; ++j) {
                 const auto& attr = buffer.attributes[j];
                 WGPUVertexAttribute wgpuAttr = WGPU_VERTEX_ATTRIBUTE_INIT;
                 wgpuAttr.format = gfxFormatToWGPUFormat(attr.format);
@@ -1599,7 +1599,7 @@ GfxResult webgpu_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPip
         if (descriptor->fragment->targetCount > 0) {
             colorTargets.reserve(descriptor->fragment->targetCount);
 
-            for (uint32_t i = 0; i < descriptor->fragment->targetCount; i++) {
+            for (uint32_t i = 0; i < descriptor->fragment->targetCount; ++i) {
                 const auto& target = descriptor->fragment->targets[i];
                 WGPUColorTargetState wgpuTarget = WGPU_COLOR_TARGET_STATE_INIT;
                 wgpuTarget.format = gfxFormatToWGPUFormat(target.format);
@@ -2302,7 +2302,7 @@ GfxResult webgpu_queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submit
     auto* queuePtr = reinterpret_cast<gfx::webgpu::Queue*>(queue);
 
     // WebGPU doesn't support semaphore-based sync - just submit command buffers
-    for (uint32_t i = 0; i < submitInfo->commandEncoderCount; i++) {
+    for (uint32_t i = 0; i < submitInfo->commandEncoderCount; ++i) {
         if (submitInfo->commandEncoders[i]) {
             auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(submitInfo->commandEncoders[i]);
 
@@ -2426,7 +2426,7 @@ GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
     if (colorAttachmentCount > 0 && colorAttachments) {
         wgpuColorAttachments.reserve(colorAttachmentCount);
 
-        for (uint32_t i = 0; i < colorAttachmentCount; i++) {
+        for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
             WGPURenderPassColorAttachment attachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
             if (colorAttachments[i]) {
                 auto* viewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(colorAttachments[i]);

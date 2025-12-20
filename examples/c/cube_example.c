@@ -198,7 +198,7 @@ bool initializeGraphics(CubeApp* app)
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
     printf("[DEBUG] GLFW requires %u extensions:\n", glfwExtensionCount);
-    for (uint32_t i = 0; i < glfwExtensionCount; i++) {
+    for (uint32_t i = 0; i < glfwExtensionCount; ++i) {
         printf("[DEBUG]   - %s\n", glfwExtensions[i]);
     }
 
@@ -333,7 +333,7 @@ bool createSyncObjects(CubeApp* app)
         .signaled = true // Start signaled so first frame doesn't wait
     };
 
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         char label[64];
 
         snprintf(label, sizeof(label), "Image Available Semaphore %d", i);
@@ -428,7 +428,7 @@ bool createRenderingResources(CubeApp* app)
     gfxQueueWriteBuffer(app->queue, app->indexBuffer, 0, indices, sizeof(indices));
 
     // Create uniform buffers (one per frame in flight)
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         char label[64];
         snprintf(label, sizeof(label), "Transform Uniforms Frame %d", i);
 
@@ -467,7 +467,7 @@ bool createRenderingResources(CubeApp* app)
     }
 
     // Create bind groups (one per frame in flight)
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         char label[64];
         snprintf(label, sizeof(label), "Uniform Bind Group Frame %d", i);
 
@@ -801,7 +801,7 @@ void cleanup(CubeApp* app)
     }
 
     // Destroy per-frame resources
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         // Destroy synchronization objects
         if (app->imageAvailableSemaphores[i]) {
             gfxSemaphoreDestroy(app->imageAvailableSemaphores[i]);
@@ -887,8 +887,8 @@ void matrixIdentity(float* matrix)
 void matrixMultiply(float* result, const float* a, const float* b)
 {
     float temp[16];
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
             temp[i * 4 + j] = 0;
             for (int k = 0; k < 4; k++) {
                 temp[i * 4 + j] += a[i * 4 + k] * b[k * 4 + j];
