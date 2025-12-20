@@ -46,14 +46,14 @@ public:
     template<typename T>
     T wrap(GfxBackend backend, T nativeHandle) {
         if (!nativeHandle) return nullptr;
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         m_handles[nativeHandle] = {backend, nativeHandle};
         return nativeHandle;
     }
 
     const GfxBackendAPI* getAPI(void* handle) {
         if (!handle) return nullptr;
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         auto it = m_handles.find(handle);
         if (it == m_handles.end()) return nullptr;
         return getBackendAPI(it->second.m_backend);
@@ -61,7 +61,7 @@ public:
 
     GfxBackend getBackend(void* handle) {
         if (!handle) return GFX_BACKEND_AUTO;
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         auto it = m_handles.find(handle);
         if (it == m_handles.end()) return GFX_BACKEND_AUTO;
         return it->second.m_backend;
@@ -69,7 +69,7 @@ public:
 
     void unwrap(void* handle) {
         if (!handle) return;
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         m_handles.erase(handle);
     }
 
@@ -173,7 +173,7 @@ bool gfxLoadBackend(GfxBackend backend) {
         return false;
     }
     
-    std::lock_guard<std::mutex> lock(gfx::BackendRegistry::getInstance().getMutex());
+    std::scoped_lock lock(gfx::BackendRegistry::getInstance().getMutex());
     return gfxLoadBackendInternal(backend);
 }
 
@@ -212,7 +212,7 @@ void gfxUnloadBackend(GfxBackend backend) {
         return;
     }
     
-    std::lock_guard<std::mutex> lock(gfx::BackendRegistry::getInstance().getMutex());
+    std::scoped_lock lock(gfx::BackendRegistry::getInstance().getMutex());
     gfxUnloadBackendInternal(backend);
 }
 
