@@ -353,8 +353,6 @@ static WGPUSurface createPlatformSurface(WGPUInstance instance, const GfxPlatfor
 namespace gfx::webgpu {
 
 class Instance {
-    WGPUInstance instance_ = nullptr;
-
 public:
     // Prevent copying
     Instance(const Instance&) = delete;
@@ -363,141 +361,141 @@ public:
     Instance(const GfxInstanceDescriptor* descriptor)
     {
         WGPUInstanceDescriptor wgpu_desc = WGPU_INSTANCE_DESCRIPTOR_INIT;
-        instance_ = wgpuCreateInstance(&wgpu_desc);
+        m_instance = wgpuCreateInstance(&wgpu_desc);
     }
 
     ~Instance()
     {
-        if (instance_) {
-            wgpuInstanceRelease(instance_);
+        if (m_instance) {
+            wgpuInstanceRelease(m_instance);
         }
     }
 
-    WGPUInstance handle() const { return instance_; }
+    WGPUInstance handle() const { return m_instance; }
+
+private:
+    WGPUInstance m_instance = nullptr;
 };
 
 class Adapter {
-    WGPUAdapter adapter_ = nullptr;
-    std::string name_;
-
 public:
     // Prevent copying
     Adapter(const Adapter&) = delete;
     Adapter& operator=(const Adapter&) = delete;
 
     Adapter(WGPUAdapter adapter)
-        : adapter_(adapter)
-        , name_("WebGPU Adapter")
+        : m_adapter(adapter)
+        , m_name("WebGPU Adapter")
     {
     }
 
     ~Adapter()
     {
-        if (adapter_) {
-            wgpuAdapterRelease(adapter_);
+        if (m_adapter) {
+            wgpuAdapterRelease(m_adapter);
         }
     }
 
-    WGPUAdapter handle() const { return adapter_; }
-    const char* getName() const { return name_.c_str(); }
+    WGPUAdapter handle() const { return m_adapter; }
+    const char* getName() const { return m_name.c_str(); }
+
+private:
+    WGPUAdapter m_adapter = nullptr;
+    std::string m_name;
 };
 
 class Queue {
-    WGPUQueue queue_ = nullptr;
-
 public:
     // Prevent copying
     Queue(const Queue&) = delete;
     Queue& operator=(const Queue&) = delete;
 
     Queue(WGPUQueue queue)
-        : queue_(queue)
+        : m_queue(queue)
     {
-        if (queue_) {
-            wgpuQueueAddRef(queue_);
+        if (m_queue) {
+            wgpuQueueAddRef(m_queue);
         }
     }
 
     ~Queue()
     {
-        if (queue_) {
-            wgpuQueueRelease(queue_);
+        if (m_queue) {
+            wgpuQueueRelease(m_queue);
         }
     }
 
-    WGPUQueue handle() const { return queue_; }
+    WGPUQueue handle() const { return m_queue; }
+
+private:
+    WGPUQueue m_queue = nullptr;
 };
 
 class Device {
-    WGPUDevice device_ = nullptr;
-    Adapter* adapter_ = nullptr; // Non-owning pointer
-    std::unique_ptr<Queue> queue_;
-
 public:
     // Prevent copying
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
 
     Device(Adapter* adapter, WGPUDevice device)
-        : adapter_(adapter)
-        , device_(device)
+        : m_adapter(adapter)
+        , m_device(device)
     {
-        if (device_) {
-            WGPUQueue wgpu_queue = wgpuDeviceGetQueue(device_);
-            queue_ = std::make_unique<Queue>(wgpu_queue);
+        if (m_device) {
+            WGPUQueue wgpu_queue = wgpuDeviceGetQueue(m_device);
+            m_queue = std::make_unique<Queue>(wgpu_queue);
         }
     }
 
     ~Device()
     {
-        queue_.reset();
-        if (device_) {
-            wgpuDeviceRelease(device_);
+        m_queue.reset();
+        if (m_device) {
+            wgpuDeviceRelease(m_device);
         }
     }
 
-    WGPUDevice handle() const { return device_; }
-    Queue* getQueue() { return queue_.get(); }
-    Adapter* getAdapter() { return adapter_; }
+    WGPUDevice handle() const { return m_device; }
+    Queue* getQueue() { return m_queue.get(); }
+    Adapter* getAdapter() { return m_adapter; }
+
+private:
+    WGPUDevice m_device = nullptr;
+    Adapter* m_adapter = nullptr; // Non-owning pointer
+    std::unique_ptr<Queue> m_queue;
 };
 
 class Buffer {
-    WGPUBuffer buffer_ = nullptr;
-    uint64_t size_ = 0;
-    GfxBufferUsage usage_ = GFX_BUFFER_USAGE_NONE;
-
 public:
     // Prevent copying
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
     Buffer(WGPUBuffer buffer, uint64_t size, GfxBufferUsage usage)
-        : buffer_(buffer)
-        , size_(size)
-        , usage_(usage)
+        : m_buffer(buffer)
+        , m_size(size)
+        , m_usage(usage)
     {
     }
 
     ~Buffer()
     {
-        if (buffer_) {
-            wgpuBufferRelease(buffer_);
+        if (m_buffer) {
+            wgpuBufferRelease(m_buffer);
         }
     }
 
-    WGPUBuffer handle() const { return buffer_; }
-    uint64_t getSize() const { return size_; }
-    GfxBufferUsage getUsage() const { return usage_; }
+    WGPUBuffer handle() const { return m_buffer; }
+    uint64_t getSize() const { return m_size; }
+    GfxBufferUsage getUsage() const { return m_usage; }
+
+private:
+    WGPUBuffer m_buffer = nullptr;
+    uint64_t m_size = 0;
+    GfxBufferUsage m_usage = GFX_BUFFER_USAGE_NONE;
 };
 
 class Texture {
-    WGPUTexture texture_ = nullptr;
-    WGPUExtent3D size_ = {};
-    WGPUTextureFormat format_ = WGPUTextureFormat_Undefined;
-    uint32_t mipLevels_ = 0;
-    uint32_t sampleCount_ = 0;
-    WGPUTextureUsage usage_ = WGPUTextureUsage_None;
-
 public:
     // Prevent copying
     Texture(const Texture&) = delete;
@@ -505,309 +503,320 @@ public:
 
     Texture(WGPUTexture texture, WGPUExtent3D size, WGPUTextureFormat format,
         uint32_t mipLevels, uint32_t sampleCount, WGPUTextureUsage usage)
-        : texture_(texture)
-        , size_(size)
-        , format_(format)
-        , mipLevels_(mipLevels)
-        , sampleCount_(sampleCount)
-        , usage_(usage)
+        : m_texture(texture)
+        , m_size(size)
+        , m_format(format)
+        , m_mipLevels(mipLevels)
+        , m_sampleCount(sampleCount)
+        , m_usage(usage)
     {
     }
 
     ~Texture()
     {
-        if (texture_) {
-            wgpuTextureRelease(texture_);
+        if (m_texture) {
+            wgpuTextureRelease(m_texture);
         }
     }
 
-    WGPUTexture handle() const { return texture_; }
-    WGPUExtent3D getSize() const { return size_; }
-    WGPUTextureFormat getFormat() const { return format_; }
-    uint32_t getMipLevels() const { return mipLevels_; }
-    uint32_t getSampleCount() const { return sampleCount_; }
-    WGPUTextureUsage getUsage() const { return usage_; }
+    WGPUTexture handle() const { return m_texture; }
+    WGPUExtent3D getSize() const { return m_size; }
+    WGPUTextureFormat getFormat() const { return m_format; }
+    uint32_t getMipLevels() const { return m_mipLevels; }
+    uint32_t getSampleCount() const { return m_sampleCount; }
+    WGPUTextureUsage getUsage() const { return m_usage; }
+
+private:
+    WGPUTexture m_texture = nullptr;
+    WGPUExtent3D m_size = {};
+    WGPUTextureFormat m_format = WGPUTextureFormat_Undefined;
+    uint32_t m_mipLevels = 0;
+    uint32_t m_sampleCount = 0;
+    WGPUTextureUsage m_usage = WGPUTextureUsage_None;
 };
 
 class TextureView {
-    WGPUTextureView view_ = nullptr;
-    Texture* texture_ = nullptr; // Non-owning
-
 public:
     // Prevent copying
     TextureView(const TextureView&) = delete;
     TextureView& operator=(const TextureView&) = delete;
 
     TextureView(WGPUTextureView view, Texture* texture = nullptr)
-        : view_(view)
-        , texture_(texture)
+        : m_view(view)
+        , m_texture(texture)
     {
     }
 
     ~TextureView()
     {
-        if (view_) {
-            wgpuTextureViewRelease(view_);
+        if (m_view) {
+            wgpuTextureViewRelease(m_view);
         }
     }
 
-    WGPUTextureView handle() const { return view_; }
-    Texture* getTexture() { return texture_; }
+    WGPUTextureView handle() const { return m_view; }
+    Texture* getTexture() { return m_texture; }
+
+private:
+    WGPUTextureView m_view = nullptr;
+    Texture* m_texture = nullptr; // Non-owning
 };
 
 class Sampler {
-    WGPUSampler sampler_ = nullptr;
-
 public:
     // Prevent copying
     Sampler(const Sampler&) = delete;
     Sampler& operator=(const Sampler&) = delete;
 
     Sampler(WGPUSampler sampler)
-        : sampler_(sampler)
+        : m_sampler(sampler)
     {
     }
 
     ~Sampler()
     {
-        if (sampler_) {
-            wgpuSamplerRelease(sampler_);
+        if (m_sampler) {
+            wgpuSamplerRelease(m_sampler);
         }
     }
 
-    WGPUSampler handle() const { return sampler_; }
+    WGPUSampler handle() const { return m_sampler; }
+
+private:
+    WGPUSampler m_sampler = nullptr;
 };
 
 class Shader {
-    WGPUShaderModule module_ = nullptr;
-
 public:
     // Prevent copying
     Shader(const Shader&) = delete;
     Shader& operator=(const Shader&) = delete;
 
     Shader(WGPUShaderModule module)
-        : module_(module)
+        : m_module(module)
     {
     }
 
     ~Shader()
     {
-        if (module_) {
-            wgpuShaderModuleRelease(module_);
+        if (m_module) {
+            wgpuShaderModuleRelease(m_module);
         }
     }
 
-    WGPUShaderModule handle() const { return module_; }
+    WGPUShaderModule handle() const { return m_module; }
+
+private:
+    WGPUShaderModule m_module = nullptr;
 };
 
 class BindGroupLayout {
-    WGPUBindGroupLayout layout_ = nullptr;
-
 public:
     // Prevent copying
     BindGroupLayout(const BindGroupLayout&) = delete;
     BindGroupLayout& operator=(const BindGroupLayout&) = delete;
 
     BindGroupLayout(WGPUBindGroupLayout layout)
-        : layout_(layout)
+        : m_layout(layout)
     {
     }
 
     ~BindGroupLayout()
     {
-        if (layout_) {
-            wgpuBindGroupLayoutRelease(layout_);
+        if (m_layout) {
+            wgpuBindGroupLayoutRelease(m_layout);
         }
     }
 
-    WGPUBindGroupLayout handle() const { return layout_; }
+    WGPUBindGroupLayout handle() const { return m_layout; }
+
+private:
+    WGPUBindGroupLayout m_layout = nullptr;
 };
 
 class BindGroup {
-    WGPUBindGroup bindGroup_ = nullptr;
-
 public:
     // Prevent copying
     BindGroup(const BindGroup&) = delete;
     BindGroup& operator=(const BindGroup&) = delete;
 
     BindGroup(WGPUBindGroup bindGroup)
-        : bindGroup_(bindGroup)
+        : m_bindGroup(bindGroup)
     {
     }
 
     ~BindGroup()
     {
-        if (bindGroup_) {
-            wgpuBindGroupRelease(bindGroup_);
+        if (m_bindGroup) {
+            wgpuBindGroupRelease(m_bindGroup);
         }
     }
 
-    WGPUBindGroup handle() const { return bindGroup_; }
+    WGPUBindGroup handle() const { return m_bindGroup; }
+
+private:
+    WGPUBindGroup m_bindGroup = nullptr;
 };
 
 class RenderPipeline {
-    WGPURenderPipeline pipeline_ = nullptr;
-
 public:
     // Prevent copying
     RenderPipeline(const RenderPipeline&) = delete;
     RenderPipeline& operator=(const RenderPipeline&) = delete;
 
     RenderPipeline(WGPURenderPipeline pipeline)
-        : pipeline_(pipeline)
+        : m_pipeline(pipeline)
     {
     }
 
     ~RenderPipeline()
     {
-        if (pipeline_) {
-            wgpuRenderPipelineRelease(pipeline_);
+        if (m_pipeline) {
+            wgpuRenderPipelineRelease(m_pipeline);
         }
     }
 
-    WGPURenderPipeline handle() const { return pipeline_; }
+    WGPURenderPipeline handle() const { return m_pipeline; }
+
+private:
+    WGPURenderPipeline m_pipeline = nullptr;
 };
 
 class ComputePipeline {
-    WGPUComputePipeline pipeline_ = nullptr;
-
 public:
     // Prevent copying
     ComputePipeline(const ComputePipeline&) = delete;
     ComputePipeline& operator=(const ComputePipeline&) = delete;
 
     ComputePipeline(WGPUComputePipeline pipeline)
-        : pipeline_(pipeline)
+        : m_pipeline(pipeline)
     {
     }
 
     ~ComputePipeline()
     {
-        if (pipeline_) {
-            wgpuComputePipelineRelease(pipeline_);
+        if (m_pipeline) {
+            wgpuComputePipelineRelease(m_pipeline);
         }
     }
 
-    WGPUComputePipeline handle() const { return pipeline_; }
+    WGPUComputePipeline handle() const { return m_pipeline; }
+
+private:
+    WGPUComputePipeline m_pipeline = nullptr;
 };
 
 class CommandEncoder {
-    WGPUCommandEncoder encoder_ = nullptr;
-
 public:
     // Prevent copying
     CommandEncoder(const CommandEncoder&) = delete;
     CommandEncoder& operator=(const CommandEncoder&) = delete;
 
     CommandEncoder(WGPUCommandEncoder encoder)
-        : encoder_(encoder)
+        : m_encoder(encoder)
     {
     }
 
     ~CommandEncoder()
     {
-        if (encoder_) {
-            wgpuCommandEncoderRelease(encoder_);
+        if (m_encoder) {
+            wgpuCommandEncoderRelease(m_encoder);
         }
     }
 
-    WGPUCommandEncoder handle() const { return encoder_; }
+    WGPUCommandEncoder handle() const { return m_encoder; }
+
+private:
+    WGPUCommandEncoder m_encoder = nullptr;
 };
 
 class RenderPassEncoder {
-    WGPURenderPassEncoder encoder_ = nullptr;
-
 public:
     // Prevent copying
     RenderPassEncoder(const RenderPassEncoder&) = delete;
     RenderPassEncoder& operator=(const RenderPassEncoder&) = delete;
 
     RenderPassEncoder(WGPURenderPassEncoder encoder)
-        : encoder_(encoder)
+        : m_encoder(encoder)
     {
     }
 
     ~RenderPassEncoder()
     {
-        if (encoder_) {
-            wgpuRenderPassEncoderRelease(encoder_);
+        if (m_encoder) {
+            wgpuRenderPassEncoderRelease(m_encoder);
         }
     }
 
-    WGPURenderPassEncoder handle() const { return encoder_; }
+    WGPURenderPassEncoder handle() const { return m_encoder; }
+
+private:
+    WGPURenderPassEncoder m_encoder = nullptr;
 };
 
 class ComputePassEncoder {
-    WGPUComputePassEncoder encoder_ = nullptr;
-
 public:
     // Prevent copying
     ComputePassEncoder(const ComputePassEncoder&) = delete;
     ComputePassEncoder& operator=(const ComputePassEncoder&) = delete;
 
     ComputePassEncoder(WGPUComputePassEncoder encoder)
-        : encoder_(encoder)
+        : m_encoder(encoder)
     {
     }
 
     ~ComputePassEncoder()
     {
-        if (encoder_) {
-            wgpuComputePassEncoderRelease(encoder_);
+        if (m_encoder) {
+            wgpuComputePassEncoderRelease(m_encoder);
         }
     }
 
-    WGPUComputePassEncoder handle() const { return encoder_; }
+    WGPUComputePassEncoder handle() const { return m_encoder; }
+
+private:
+    WGPUComputePassEncoder m_encoder = nullptr;
 };
 
 class Surface {
-    WGPUSurface surface_ = nullptr;
-    uint32_t width_ = 0;
-    uint32_t height_ = 0;
-    GfxPlatformWindowHandle windowHandle_ = {};
-
 public:
     // Prevent copying
     Surface(const Surface&) = delete;
     Surface& operator=(const Surface&) = delete;
 
     Surface(WGPUSurface surface, uint32_t width, uint32_t height, const GfxPlatformWindowHandle& windowHandle)
-        : surface_(surface)
-        , width_(width)
-        , height_(height)
-        , windowHandle_(windowHandle)
+        : m_surface(surface)
+        , m_width(width)
+        , m_height(height)
+        , m_windowHandle(windowHandle)
     {
     }
 
     ~Surface()
     {
-        if (surface_) {
-            wgpuSurfaceRelease(surface_);
+        if (m_surface) {
+            wgpuSurfaceRelease(m_surface);
         }
     }
 
-    WGPUSurface handle() const { return surface_; }
-    uint32_t getWidth() const { return width_; }
-    uint32_t getHeight() const { return height_; }
+    WGPUSurface handle() const { return m_surface; }
+    uint32_t getWidth() const { return m_width; }
+    uint32_t getHeight() const { return m_height; }
     void setSize(uint32_t width, uint32_t height)
     {
-        width_ = width;
-        height_ = height;
+        m_width = width;
+        m_height = height;
     }
-    const GfxPlatformWindowHandle& getWindowHandle() const { return windowHandle_; }
+    const GfxPlatformWindowHandle& getWindowHandle() const { return m_windowHandle; }
+
+private:
+    WGPUSurface m_surface = nullptr;
+    uint32_t m_width = 0;
+    uint32_t m_height = 0;
+    GfxPlatformWindowHandle m_windowHandle = {};
 };
 
 class Swapchain {
-    WGPUSurface surface_ = nullptr; // Non-owning
-    WGPUDevice device_ = nullptr; // Non-owning
-    uint32_t width_ = 0;
-    uint32_t height_ = 0;
-    WGPUTextureFormat format_ = WGPUTextureFormat_Undefined;
-    WGPUPresentMode presentMode_ = WGPUPresentMode_Fifo;
-    uint32_t bufferCount_ = 0;
-
 public:
     // Prevent copying
     Swapchain(const Swapchain&) = delete;
@@ -815,13 +824,13 @@ public:
 
     Swapchain(WGPUSurface surface, WGPUDevice device, uint32_t width, uint32_t height,
         WGPUTextureFormat format, WGPUPresentMode presentMode, uint32_t bufferCount)
-        : surface_(surface)
-        , device_(device)
-        , width_(width)
-        , height_(height)
-        , format_(format)
-        , presentMode_(presentMode)
-        , bufferCount_(bufferCount)
+        : m_surface(surface)
+        , m_device(device)
+        , m_width(width)
+        , m_height(height)
+        , m_format(format)
+        , m_presentMode(presentMode)
+        , m_bufferCount(bufferCount)
     {
     }
 
@@ -830,59 +839,70 @@ public:
         // Don't release surface or device - they're not owned
     }
 
-    WGPUSurface surface() const { return surface_; }
-    WGPUDevice device() const { return device_; }
-    uint32_t getWidth() const { return width_; }
-    uint32_t getHeight() const { return height_; }
-    WGPUTextureFormat getFormat() const { return format_; }
-    uint32_t getBufferCount() const { return bufferCount_; }
+    WGPUSurface surface() const { return m_surface; }
+    WGPUDevice device() const { return m_device; }
+    uint32_t getWidth() const { return m_width; }
+    uint32_t getHeight() const { return m_height; }
+    WGPUTextureFormat getFormat() const { return m_format; }
+    uint32_t getBufferCount() const { return m_bufferCount; }
 
     void setSize(uint32_t width, uint32_t height)
     {
-        width_ = width;
-        height_ = height;
+        m_width = width;
+        m_height = height;
     }
+
+private:
+    WGPUSurface m_surface = nullptr; // Non-owning
+    WGPUDevice m_device = nullptr; // Non-owning
+    uint32_t m_width = 0;
+    uint32_t m_height = 0;
+    WGPUTextureFormat m_format = WGPUTextureFormat_Undefined;
+    WGPUPresentMode m_presentMode = WGPUPresentMode_Fifo;
+    uint32_t m_bufferCount = 0;
 };
 
 class Fence {
-    bool signaled_ = false;
-
 public:
     // Prevent copying
     Fence(const Fence&) = delete;
     Fence& operator=(const Fence&) = delete;
 
     Fence(bool signaled)
-        : signaled_(signaled)
+        : m_signaled(signaled)
     {
     }
 
     ~Fence() = default;
 
-    bool isSignaled() const { return signaled_; }
-    void setSignaled(bool signaled) { signaled_ = signaled; }
+    bool isSignaled() const { return m_signaled; }
+    void setSignaled(bool signaled) { m_signaled = signaled; }
+
+private:
+    bool m_signaled = false;
 };
 
 class Semaphore {
-    GfxSemaphoreType type_ = GFX_SEMAPHORE_TYPE_BINARY;
-    uint64_t value_ = 0;
-
 public:
     // Prevent copying
     Semaphore(const Semaphore&) = delete;
     Semaphore& operator=(const Semaphore&) = delete;
 
     Semaphore(GfxSemaphoreType type, uint64_t value)
-        : type_(type)
-        , value_(value)
+        : m_type(type)
+        , m_value(value)
     {
     }
 
     ~Semaphore() = default;
 
-    GfxSemaphoreType getType() const { return type_; }
-    uint64_t getValue() const { return value_; }
-    void setValue(uint64_t value) { value_ = value; }
+    GfxSemaphoreType getType() const { return m_type; }
+    uint64_t getValue() const { return m_value; }
+    void setValue(uint64_t value) { m_value = value; }
+
+private:
+    GfxSemaphoreType m_type = GFX_SEMAPHORE_TYPE_BINARY;
+    uint64_t m_value = 0;
 };
 
 } // namespace gfx::webgpu
