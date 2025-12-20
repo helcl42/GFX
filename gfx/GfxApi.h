@@ -816,7 +816,7 @@ GFX_API void gfxCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncod
 GFX_API void gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
-    const GfxExtent3D* extent);
+    const GfxExtent3D* extent, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout);
 GFX_API void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount);
 GFX_API void gfxCommandEncoderFinish(GfxCommandEncoder commandEncoder);

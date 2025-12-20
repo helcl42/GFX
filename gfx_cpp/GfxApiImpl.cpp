@@ -598,7 +598,7 @@ public:
     void copyTextureToTexture(
         std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, uint32_t sourceMipLevel,
         std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, uint32_t destinationMipLevel,
-        const Extent3D& extent) override
+        const Extent3D& extent, TextureLayout sourceFinalLayout, TextureLayout destinationFinalLayout) override
     {
         auto src = std::dynamic_pointer_cast<CTextureImpl>(source);
         auto dst = std::dynamic_pointer_cast<CTextureImpl>(destination);
@@ -609,7 +609,7 @@ public:
             gfxCommandEncoderCopyTextureToTexture(m_handle, 
                 src->getHandle(), &cSourceOrigin, sourceMipLevel,
                 dst->getHandle(), &cDestOrigin, destinationMipLevel,
-                &cExtent);
+                &cExtent, static_cast<GfxTextureLayout>(sourceFinalLayout), static_cast<GfxTextureLayout>(destinationFinalLayout));
         }
     }
 

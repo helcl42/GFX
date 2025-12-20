@@ -1077,14 +1077,14 @@ void gfxCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
 void gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
-    const GfxExtent3D* extent) {
+    const GfxExtent3D* extent, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout) {
     if (!commandEncoder || !source || !destination) return;
     auto api = gfx::getAPI(commandEncoder);
     if (api) {
         api->commandEncoderCopyTextureToTexture(gfx::native(commandEncoder),
             gfx::native(source), sourceOrigin, sourceMipLevel,
             gfx::native(destination), destinationOrigin, destinationMipLevel,
-            extent, GFX_TEXTURE_LAYOUT_TRANSFER_SRC, GFX_TEXTURE_LAYOUT_TRANSFER_DST);
+            extent, sourceFinalLayout, destinationFinalLayout);
     }
 }
 

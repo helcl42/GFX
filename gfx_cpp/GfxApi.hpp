@@ -902,7 +902,7 @@ public:
     virtual void copyTextureToTexture(
         std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, uint32_t sourceMipLevel,
         std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, uint32_t destinationMipLevel,
-        const Extent3D& extent)
+        const Extent3D& extent, TextureLayout sourceFinalLayout, TextureLayout destinationFinalLayout)
         = 0;
 
     virtual void pipelineBarrier(const std::vector<TextureBarrier>& textureBarriers) = 0;
