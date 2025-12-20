@@ -431,10 +431,8 @@ public:
         : m_handle(h)
     {
     }
-    ~CRenderPassEncoderImpl() override
-    {
-        // Render pass encoder is an alias to command encoder - do not destroy
-    }
+    // Render pass encoder is an alias to command encoder - do not destroy
+    ~CRenderPassEncoderImpl() override = default;
 
     void setPipeline(std::shared_ptr<RenderPipeline> pipeline) override
     {
@@ -506,10 +504,8 @@ public:
         : m_handle(h)
     {
     }
-    ~CComputePassEncoderImpl() override
-    {
-        // Compute pass encoder is an alias to command encoder - do not destroy
-    }
+    // Compute pass encoder is an alias to command encoder - do not destroy
+    ~CComputePassEncoderImpl() override = default;
 
     void setPipeline(std::shared_ptr<ComputePipeline> pipeline) override
     {
@@ -823,10 +819,8 @@ public:
         : m_handle(h)
     {
     }
-    ~CQueueImpl() override
-    {
-        // Queue is owned by device, do not destroy
-    }
+    // Queue is owned by device, do not destroy
+    ~CQueueImpl() override = default;
 
     void submit(std::shared_ptr<CommandEncoder> commandEncoder) override
     {
