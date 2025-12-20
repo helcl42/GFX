@@ -173,6 +173,60 @@ enum class SemaphoreType {
     Timeline
 };
 
+enum class Result {
+    Success = 0,
+    Error = 1,
+    Timeout = 2,
+    NotReady = 3,
+    SuboptimalKHR = 4,
+    OutOfDateKHR = 5
+};
+
+enum class TextureLayout {
+    Undefined,
+    General,
+    ColorAttachment,
+    DepthStencilAttachment,
+    DepthStencilReadOnly,
+    ShaderReadOnly,
+    TransferSrc,
+    TransferDst,
+    PresentSrc
+};
+
+enum class PipelineStage : uint32_t {
+    None = 0,
+    TopOfPipe = 1 << 0,
+    VertexShader = 1 << 1,
+    FragmentShader = 1 << 2,
+    ComputeShader = 1 << 3,
+    EarlyFragmentTests = 1 << 4,
+    LateFragmentTests = 1 << 5,
+    ColorAttachmentOutput = 1 << 6,
+    Transfer = 1 << 7,
+    BottomOfPipe = 1 << 8,
+    AllGraphics = 1 << 9,
+    AllCommands = 1 << 10
+};
+
+enum class AccessFlags : uint32_t {
+    None = 0,
+    IndirectCommandRead = 1 << 0,
+    IndexRead = 1 << 1,
+    VertexAttributeRead = 1 << 2,
+    UniformRead = 1 << 3,
+    ShaderRead = 1 << 4,
+    ShaderWrite = 1 << 5,
+    ColorAttachmentRead = 1 << 6,
+    ColorAttachmentWrite = 1 << 7,
+    DepthStencilAttachmentRead = 1 << 8,
+    DepthStencilAttachmentWrite = 1 << 9,
+    TransferRead = 1 << 10,
+    TransferWrite = 1 << 11,
+    MemoryRead = 1 << 12,
+    MemoryWrite = 1 << 13
+};
+
 // ============================================================================
 // Utility Classes
 // ============================================================================
@@ -222,12 +276,12 @@ struct Extent3D {
 };
 
 struct Origin3D {
-    uint32_t x = 0;
-    uint32_t y = 0;
-    uint32_t z = 0;
+    int32_t x = 0;
+    int32_t y = 0;
+    int32_t z = 0;
 
     Origin3D() = default;
-    Origin3D(uint32_t px, uint32_t py = 0, uint32_t pz = 0)
+    Origin3D(int32_t px, int32_t py = 0, int32_t pz = 0)
         : x(px)
         , y(py)
         , z(pz)
@@ -239,64 +293,109 @@ struct Origin3D {
 // Platform Abstraction
 // ============================================================================
 
-// Platform-specific window handles with proper typing
+// Common windowing system enum for all platforms
+enum class WindowingSystem {
+    Win32,
+    X11,
+    Wayland,
+    XCB,
+    Cocoa
+};
+
+// Common platform window handle struct with union for all windowing systems
+struct PlatformWindowHandle {
+    WindowingSystem windowingSystem =
 #ifdef _WIN32
-struct PlatformWindowHandle {
-    void* hwnd = nullptr; // HWND - Window handle
-    void* hinstance = nullptr; // HINSTANCE - Application instance
-
-    PlatformWindowHandle() = default;
-    PlatformWindowHandle(void* window, void* instance = nullptr)
-        : hwnd(window)
-        , hinstance(instance)
-    {
-    }
-};
-
-#elif defined(__linux__)
-struct PlatformWindowHandle {
-    void* window = nullptr; // Window (X11) or wl_surface* (Wayland)
-    void* display = nullptr; // Display* (X11) or wl_display* (Wayland)
-    bool isWayland = false; // true for Wayland, false for X11
-
-    PlatformWindowHandle() = default;
-    PlatformWindowHandle(void* win, void* disp, bool wayland = false)
-        : window(win)
-        , display(disp)
-        , isWayland(wayland)
-    {
-    }
-};
-
+        WindowingSystem::Win32;
 #elif defined(__APPLE__)
-struct PlatformWindowHandle {
-    void* nsWindow = nullptr; // NSWindow*
-    void* metalLayer = nullptr; // CAMetalLayer* (optional)
-
-    PlatformWindowHandle() = default;
-    explicit PlatformWindowHandle(void* window, void* layer = nullptr)
-        : nsWindow(window)
-        , metalLayer(layer)
-    {
-    }
-};
-
+        WindowingSystem::Cocoa;
 #else
-// Generic fallback for other platforms
-struct PlatformWindowHandle {
-    void* handle = nullptr;
-    void* display = nullptr;
-    void* extra = nullptr;
+        WindowingSystem::X11;
+#endif
 
-    PlatformWindowHandle() = default;
-    PlatformWindowHandle(void* h, void* d = nullptr, void* e = nullptr)
-        : handle(h)
-        , display(d)
-        , extra(e)
+    union {
+        struct {
+            void* hwnd = nullptr; // HWND - Window handle
+            void* hinstance; // HINSTANCE - Application instance
+        } win32;
+        struct {
+            void* window = nullptr; // Window
+            void* display; // Display*
+        } x11;
+        struct {
+            void* surface; // wl_surface*
+            void* display; // wl_display*
+        } wayland;
+        struct {
+            void* connection; // xcb_connection_t*
+            uint32_t window; // xcb_window_t
+        } xcb;
+        struct {
+            void* nsWindow; // NSWindow*
+            void* metalLayer; // CAMetalLayer* (optional)
+        } cocoa;
+    };
+
+    PlatformWindowHandle()
     {
+#ifdef _WIN32
+        win32.hwnd = nullptr;
+        win32.hinstance = nullptr;
+#elif defined(__APPLE__)
+        cocoa.nsWindow = nullptr;
+        cocoa.metalLayer = nullptr;
+#else
+        x11.window = nullptr;
+        x11.display = nullptr;
+#endif
+    }
+
+    // Factory methods for each windowing system
+    static PlatformWindowHandle makeWin32(void* hwnd, void* hinstance = nullptr)
+    {
+        PlatformWindowHandle h;
+        h.windowingSystem = WindowingSystem::Win32;
+        h.win32.hwnd = hwnd;
+        h.win32.hinstance = hinstance;
+        return h;
+    }
+
+    static PlatformWindowHandle makeX11(void* window, void* display)
+    {
+        PlatformWindowHandle h;
+        h.windowingSystem = WindowingSystem::X11;
+        h.x11.window = window;
+        h.x11.display = display;
+        return h;
+    }
+
+    static PlatformWindowHandle makeWayland(void* surface, void* display)
+    {
+        PlatformWindowHandle h;
+        h.windowingSystem = WindowingSystem::Wayland;
+        h.wayland.surface = surface;
+        h.wayland.display = display;
+        return h;
+    }
+
+    static PlatformWindowHandle makeXCB(void* connection, uint32_t window)
+    {
+        PlatformWindowHandle h;
+        h.windowingSystem = WindowingSystem::XCB;
+        h.xcb.connection = connection;
+        h.xcb.window = window;
+        return h;
+    }
+
+    static PlatformWindowHandle makeCocoa(void* nsWindow, void* metalLayer = nullptr)
+    {
+        PlatformWindowHandle h;
+        h.windowingSystem = WindowingSystem::Cocoa;
+        h.cocoa.nsWindow = nsWindow;
+        h.cocoa.metalLayer = metalLayer;
+        return h;
     }
 };
-#endif
 
 // ============================================================================
 // Forward Declarations
@@ -330,6 +429,7 @@ class Semaphore;
 struct InstanceDescriptor {
     Backend backend = Backend::Auto;
     bool enableValidation = false;
+    bool enabledHeadless = false;
     std::string applicationName = "GfxWrapper Application";
     uint32_t applicationVersion = 1;
 
@@ -571,6 +671,33 @@ struct SubmitInfo {
 
     // Optional fence to signal when all commands complete
     std::shared_ptr<Fence> signalFence;
+
+    // Legacy fields for compatibility (will be removed later)
+    size_t waitSemaphoreCount = 0;
+    size_t signalSemaphoreCount = 0;
+};
+
+struct PresentInfo {
+    // Wait semaphores (must be signaled before presentation)
+    std::vector<std::shared_ptr<Semaphore>> waitSemaphores;
+    std::vector<uint64_t> waitValues; // For timeline semaphores, empty for binary
+
+    // Legacy field for compatibility
+    size_t waitSemaphoreCount = 0;
+};
+
+struct TextureBarrier {
+    std::shared_ptr<Texture> texture;
+    TextureLayout oldLayout = TextureLayout::Undefined;
+    TextureLayout newLayout = TextureLayout::Undefined;
+    PipelineStage srcStageMask = PipelineStage::None;
+    PipelineStage dstStageMask = PipelineStage::None;
+    AccessFlags srcAccessMask = AccessFlags::None;
+    AccessFlags dstAccessMask = AccessFlags::None;
+    uint32_t baseMipLevel = 0;
+    uint32_t mipLevelCount = 1;
+    uint32_t baseArrayLayer = 0;
+    uint32_t arrayLayerCount = 1;
 };
 
 // ============================================================================
@@ -613,6 +740,20 @@ public:
 
     // Check if swapchain needs to be recreated (e.g., window resized, lost device)
     virtual bool needsRecreation() const = 0;
+
+    // Explicit synchronization API
+    // Acquire the next swapchain image with optional synchronization
+    virtual Result acquireNextImage(uint64_t timeout,
+        std::shared_ptr<Semaphore> signalSemaphore,
+        std::shared_ptr<Fence> signalFence,
+        uint32_t* imageIndex)
+        = 0;
+
+    // Get texture view for a specific swapchain image index
+    virtual std::shared_ptr<TextureView> getImageView(uint32_t index) = 0;
+
+    // Present with explicit synchronization
+    virtual Result presentWithSync(const PresentInfo& info) = 0;
 };
 
 // ============================================================================
@@ -657,6 +798,7 @@ public:
     virtual uint32_t getMipLevelCount() const = 0;
     virtual uint32_t getSampleCount() const = 0;
     virtual TextureUsage getUsage() const = 0;
+    virtual TextureLayout getLayout() const = 0;
 
     virtual std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) = 0;
 };
@@ -705,6 +847,8 @@ public:
     virtual void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup) = 0;
     virtual void setVertexBuffer(uint32_t slot, std::shared_ptr<Buffer> buffer, uint64_t offset = 0, uint64_t size = 0) = 0;
     virtual void setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset = 0, uint64_t size = 0) = 0;
+    virtual void setViewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f) = 0;
+    virtual void setScissorRect(int32_t x, int32_t y, uint32_t width, uint32_t height) = 0;
 
     virtual void draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) = 0;
     virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t baseVertex = 0, uint32_t firstInstance = 0) = 0;
@@ -746,14 +890,22 @@ public:
     virtual void copyBufferToTexture(
         std::shared_ptr<Buffer> source, uint64_t sourceOffset, uint32_t bytesPerRow,
         std::shared_ptr<Texture> destination, const Origin3D& origin,
-        const Extent3D& extent, uint32_t mipLevel = 0)
+        const Extent3D& extent, uint32_t mipLevel, TextureLayout finalLayout)
         = 0;
 
     virtual void copyTextureToBuffer(
         std::shared_ptr<Texture> source, const Origin3D& origin, uint32_t mipLevel,
         std::shared_ptr<Buffer> destination, uint64_t destinationOffset, uint32_t bytesPerRow,
+        const Extent3D& extent, TextureLayout finalLayout)
+        = 0;
+
+    virtual void copyTextureToTexture(
+        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, uint32_t sourceMipLevel,
+        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, uint32_t destinationMipLevel,
         const Extent3D& extent)
         = 0;
+
+    virtual void pipelineBarrier(const std::vector<TextureBarrier>& textureBarriers) = 0;
 
     virtual void finish() = 0;
 };
@@ -792,11 +944,19 @@ public:
 
     virtual void submit(std::shared_ptr<CommandEncoder> commandEncoder) = 0;
     virtual void submitWithSync(const SubmitInfo& submitInfo) = 0;
+
+    // Convenience overload for single command encoder
+    virtual void submitWithSync(std::shared_ptr<CommandEncoder> commandEncoder, const SubmitInfo& info)
+    {
+        SubmitInfo fullInfo = info;
+        fullInfo.commandEncoders = { commandEncoder };
+        submitWithSync(fullInfo);
+    }
     virtual void writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size) = 0;
     virtual void writeTexture(
         std::shared_ptr<Texture> texture, const Origin3D& origin, uint32_t mipLevel,
         const void* data, uint64_t dataSize, uint32_t bytesPerRow,
-        const Extent3D& extent)
+        const Extent3D& extent, TextureLayout finalLayout)
         = 0;
     virtual void waitIdle() = 0;
 

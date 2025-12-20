@@ -59,25 +59,97 @@ static GfxTextureUsage cppTextureUsageToCUsage(TextureUsage usage)
     return static_cast<GfxTextureUsage>(static_cast<uint32_t>(usage));
 }
 
+static GfxWindowingSystem cppWindowingSystemToC(WindowingSystem sys)
+{
+    switch (sys) {
+    case WindowingSystem::Win32:
+        return GFX_WINDOWING_SYSTEM_WIN32;
+    case WindowingSystem::X11:
+        return GFX_WINDOWING_SYSTEM_X11;
+    case WindowingSystem::Wayland:
+        return GFX_WINDOWING_SYSTEM_WAYLAND;
+    case WindowingSystem::XCB:
+        return GFX_WINDOWING_SYSTEM_XCB;
+    case WindowingSystem::Cocoa:
+        return GFX_WINDOWING_SYSTEM_COCOA;
+    default:
+        return GFX_WINDOWING_SYSTEM_X11;
+    }
+}
+
+static WindowingSystem cWindowingSystemToCpp(GfxWindowingSystem sys)
+{
+    switch (sys) {
+    case GFX_WINDOWING_SYSTEM_WIN32:
+        return WindowingSystem::Win32;
+    case GFX_WINDOWING_SYSTEM_X11:
+        return WindowingSystem::X11;
+    case GFX_WINDOWING_SYSTEM_WAYLAND:
+        return WindowingSystem::Wayland;
+    case GFX_WINDOWING_SYSTEM_XCB:
+        return WindowingSystem::XCB;
+    case GFX_WINDOWING_SYSTEM_COCOA:
+        return WindowingSystem::Cocoa;
+    default:
+        return WindowingSystem::X11;
+    }
+}
+
 static GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& handle)
 {
-    GfxPlatformWindowHandle cHandle;
-#ifdef _WIN32
-    cHandle.hwnd = handle.hwnd;
-    cHandle.hinstance = handle.hinstance;
-#elif defined(__linux__)
-    cHandle.window = handle.window;
-    cHandle.display = handle.display;
-    cHandle.isWayland = handle.isWayland;
-#elif defined(__APPLE__)
-    cHandle.nsWindow = handle.nsWindow;
-    cHandle.metalLayer = handle.metalLayer;
-#else
-    cHandle.handle = handle.handle;
-    cHandle.display = handle.display;
-    cHandle.extra = handle.extra;
-#endif
+    GfxPlatformWindowHandle cHandle = {};
+    cHandle.windowingSystem = cppWindowingSystemToC(handle.windowingSystem);
+
+    switch (handle.windowingSystem) {
+    case WindowingSystem::Win32:
+        cHandle.win32.hwnd = handle.win32.hwnd;
+        cHandle.win32.hinstance = handle.win32.hinstance;
+        break;
+    case WindowingSystem::X11:
+        cHandle.x11.window = handle.x11.window;
+        cHandle.x11.display = handle.x11.display;
+        break;
+    case WindowingSystem::Wayland:
+        cHandle.wayland.surface = handle.wayland.surface;
+        cHandle.wayland.display = handle.wayland.display;
+        break;
+    case WindowingSystem::XCB:
+        cHandle.xcb.connection = handle.xcb.connection;
+        cHandle.xcb.window = handle.xcb.window;
+        break;
+    case WindowingSystem::Cocoa:
+        cHandle.cocoa.nsWindow = handle.cocoa.nsWindow;
+        cHandle.cocoa.metalLayer = handle.cocoa.metalLayer;
+        break;
+    }
     return cHandle;
+}
+
+static Result cResultToCppResult(GfxResult result)
+{
+    switch (result) {
+    case GFX_RESULT_SUCCESS:
+        return Result::Success;
+    case GFX_RESULT_TIMEOUT:
+        return Result::Timeout;
+    case GFX_RESULT_NOT_READY:
+        return Result::NotReady;
+    case GFX_RESULT_ERROR_OUT_OF_DATE:
+        return Result::OutOfDateKHR;
+    default:
+        return Result::Error;
+    }
+}
+
+// Forward declare implementation classes and helper template
+class CSemaphoreImpl;
+class CFenceImpl;
+
+// Helper template to extract native C handles from C++ wrapper objects
+template <typename CHandle>
+CHandle extractNativeHandle(std::shared_ptr<void> /* unused */)
+{
+    return nullptr; // Default implementation
 }
 
 // ============================================================================
@@ -124,16 +196,18 @@ class CTextureViewImpl : public TextureView {
 private:
     GfxTextureView handle;
     std::shared_ptr<Texture> texture;
+    bool ownsHandle; // False for swapchain texture views
 
 public:
-    explicit CTextureViewImpl(GfxTextureView h, std::shared_ptr<Texture> tex = nullptr)
+    explicit CTextureViewImpl(GfxTextureView h, std::shared_ptr<Texture> tex = nullptr, bool owns = true)
         : handle(h)
         , texture(tex)
+        , ownsHandle(owns)
     {
     }
     ~CTextureViewImpl() override
     {
-        if (handle)
+        if (handle && ownsHandle)
             gfxTextureViewDestroy(handle);
     }
 
@@ -173,6 +247,7 @@ public:
     uint32_t getMipLevelCount() const override { return gfxTextureGetMipLevelCount(handle); }
     uint32_t getSampleCount() const override { return gfxTextureGetSampleCount(handle); }
     TextureUsage getUsage() const override { return static_cast<TextureUsage>(gfxTextureGetUsage(handle)); }
+    TextureLayout getLayout() const override { return static_cast<TextureLayout>(gfxTextureGetLayout(handle)); }
 
     std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) override
     {
@@ -312,8 +387,7 @@ public:
     }
     ~CRenderPassEncoderImpl() override
     {
-        if (handle)
-            gfxRenderPassEncoderDestroy(handle);
+        // Render pass encoder is an alias to command encoder - do not destroy
     }
 
     void setPipeline(std::shared_ptr<RenderPipeline> pipeline) override
@@ -346,6 +420,18 @@ public:
         }
     }
 
+    void setViewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f) override
+    {
+        GfxViewport viewport = { x, y, width, height, minDepth, maxDepth };
+        gfxRenderPassEncoderSetViewport(handle, &viewport);
+    }
+
+    void setScissorRect(int32_t x, int32_t y, uint32_t width, uint32_t height) override
+    {
+        GfxScissorRect scissor = { x, y, width, height };
+        gfxRenderPassEncoderSetScissorRect(handle, &scissor);
+    }
+
     void draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) override
     {
         gfxRenderPassEncoderDraw(handle, vertexCount, instanceCount, firstVertex, firstInstance);
@@ -373,8 +459,7 @@ public:
     }
     ~CComputePassEncoderImpl() override
     {
-        if (handle)
-            gfxComputePassEncoderDestroy(handle);
+        // Compute pass encoder is an alias to command encoder - do not destroy
     }
 
     void setPipeline(std::shared_ptr<ComputePipeline> pipeline) override
@@ -486,7 +571,7 @@ public:
     void copyBufferToTexture(
         std::shared_ptr<Buffer> source, uint64_t sourceOffset, uint32_t bytesPerRow,
         std::shared_ptr<Texture> destination, const Origin3D& origin,
-        const Extent3D& extent, uint32_t mipLevel = 0) override
+        const Extent3D& extent, uint32_t mipLevel, TextureLayout finalLayout) override
     {
         auto src = std::dynamic_pointer_cast<CBufferImpl>(source);
         auto dst = std::dynamic_pointer_cast<CTextureImpl>(destination);
@@ -494,14 +579,14 @@ public:
             GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
             gfxCommandEncoderCopyBufferToTexture(handle, src->getHandle(), sourceOffset, bytesPerRow,
-                dst->getHandle(), &cOrigin, &cExtent, mipLevel);
+                dst->getHandle(), &cOrigin, &cExtent, mipLevel, static_cast<GfxTextureLayout>(finalLayout));
         }
     }
 
     void copyTextureToBuffer(
         std::shared_ptr<Texture> source, const Origin3D& origin, uint32_t mipLevel,
         std::shared_ptr<Buffer> destination, uint64_t destinationOffset, uint32_t bytesPerRow,
-        const Extent3D& extent) override
+        const Extent3D& extent, TextureLayout finalLayout) override
     {
         auto src = std::dynamic_pointer_cast<CTextureImpl>(source);
         auto dst = std::dynamic_pointer_cast<CBufferImpl>(destination);
@@ -509,7 +594,64 @@ public:
             GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
             gfxCommandEncoderCopyTextureToBuffer(handle, src->getHandle(), &cOrigin, mipLevel,
-                dst->getHandle(), destinationOffset, bytesPerRow, &cExtent);
+                dst->getHandle(), destinationOffset, bytesPerRow, &cExtent, static_cast<GfxTextureLayout>(finalLayout));
+        }
+    }
+
+    void copyTextureToTexture(
+        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, uint32_t sourceMipLevel,
+        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, uint32_t destinationMipLevel,
+        const Extent3D& extent) override
+    {
+        auto src = std::dynamic_pointer_cast<CTextureImpl>(source);
+        auto dst = std::dynamic_pointer_cast<CTextureImpl>(destination);
+        if (src && dst) {
+            GfxOrigin3D cSourceOrigin = { sourceOrigin.x, sourceOrigin.y, sourceOrigin.z };
+            GfxOrigin3D cDestOrigin = { destinationOrigin.x, destinationOrigin.y, destinationOrigin.z };
+            GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
+            gfxCommandEncoderCopyTextureToTexture(handle, 
+                src->getHandle(), &cSourceOrigin, sourceMipLevel,
+                dst->getHandle(), &cDestOrigin, destinationMipLevel,
+                &cExtent);
+        }
+    }
+
+    void pipelineBarrier(const std::vector<TextureBarrier>& textureBarriers) override
+    {
+        if (textureBarriers.empty())
+            return;
+
+        std::vector<GfxTextureBarrier> cBarriers;
+        cBarriers.reserve(textureBarriers.size());
+
+        for (const auto& barrier : textureBarriers) {
+            auto tex = std::dynamic_pointer_cast<CTextureImpl>(barrier.texture);
+            if (tex) {
+                GfxTextureBarrier cBarrier{};
+                cBarrier.texture = tex->getHandle();
+                cBarrier.oldLayout = static_cast<GfxTextureLayout>(barrier.oldLayout);
+                cBarrier.newLayout = static_cast<GfxTextureLayout>(barrier.newLayout);
+                cBarrier.srcStageMask = static_cast<GfxPipelineStage>(barrier.srcStageMask);
+                cBarrier.dstStageMask = static_cast<GfxPipelineStage>(barrier.dstStageMask);
+
+                // Auto-deduce access masks if not explicitly set
+                cBarrier.srcAccessMask = (barrier.srcAccessMask == AccessFlags::None)
+                    ? gfxGetAccessFlagsForLayout(cBarrier.oldLayout)
+                    : static_cast<GfxAccessFlags>(barrier.srcAccessMask);
+                cBarrier.dstAccessMask = (barrier.dstAccessMask == AccessFlags::None)
+                    ? gfxGetAccessFlagsForLayout(cBarrier.newLayout)
+                    : static_cast<GfxAccessFlags>(barrier.dstAccessMask);
+
+                cBarrier.baseMipLevel = barrier.baseMipLevel;
+                cBarrier.mipLevelCount = barrier.mipLevelCount;
+                cBarrier.baseArrayLayer = barrier.baseArrayLayer;
+                cBarrier.arrayLayerCount = barrier.arrayLayerCount;
+                cBarriers.push_back(cBarrier);
+            }
+        }
+
+        if (!cBarriers.empty()) {
+            gfxCommandEncoderPipelineBarrier(handle, cBarriers.data(), static_cast<uint32_t>(cBarriers.size()));
         }
     }
 
@@ -533,6 +675,8 @@ public:
         if (handle)
             gfxFenceDestroy(handle);
     }
+
+    GfxFence getHandle() const { return handle; }
 
     FenceStatus getStatus() const override
     {
@@ -590,6 +734,25 @@ public:
     }
 };
 
+// Template specializations for extractNativeHandle (must come after class definitions)
+template <>
+inline GfxSemaphore extractNativeHandle<GfxSemaphore>(std::shared_ptr<void> ptr)
+{
+    if (!ptr)
+        return nullptr;
+    auto impl = std::static_pointer_cast<CSemaphoreImpl>(ptr);
+    return impl->getHandle();
+}
+
+template <>
+inline GfxFence extractNativeHandle<GfxFence>(std::shared_ptr<void> ptr)
+{
+    if (!ptr)
+        return nullptr;
+    auto impl = std::static_pointer_cast<CFenceImpl>(ptr);
+    return impl->getHandle();
+}
+
 class CQueueImpl : public Queue {
 private:
     GfxQueue handle;
@@ -598,6 +761,10 @@ public:
     explicit CQueueImpl(GfxQueue h)
         : handle(h)
     {
+    }
+    ~CQueueImpl() override
+    {
+        // Queue is owned by device, do not destroy
     }
 
     void submit(std::shared_ptr<CommandEncoder> commandEncoder) override
@@ -642,8 +809,10 @@ public:
         if (submitInfo.signalFence) {
             auto fenceImpl = std::dynamic_pointer_cast<CFenceImpl>(submitInfo.signalFence);
             if (fenceImpl) {
-                // Would need to add fence handle access
+                cInfo.signalFence = fenceImpl->getHandle();
             }
+        } else {
+            cInfo.signalFence = nullptr;
         }
 
         gfxQueueSubmitWithSync(handle, &cInfo);
@@ -659,14 +828,14 @@ public:
     void writeTexture(
         std::shared_ptr<Texture> texture, const Origin3D& origin, uint32_t mipLevel,
         const void* data, uint64_t dataSize, uint32_t bytesPerRow,
-        const Extent3D& extent) override
+        const Extent3D& extent, TextureLayout finalLayout) override
     {
         auto impl = std::dynamic_pointer_cast<CTextureImpl>(texture);
         if (impl) {
             GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
             gfxQueueWriteTexture(handle, impl->getHandle(), &cOrigin, mipLevel,
-                data, dataSize, bytesPerRow, &cExtent);
+                data, dataSize, bytesPerRow, &cExtent, static_cast<GfxTextureLayout>(finalLayout));
         }
     }
 
@@ -723,21 +892,30 @@ public:
     {
         GfxPlatformWindowHandle cHandle = gfxSurfaceGetPlatformHandle(handle);
         PlatformWindowHandle result;
-#ifdef _WIN32
-        result.hwnd = cHandle.hwnd;
-        result.hinstance = cHandle.hinstance;
-#elif defined(__linux__)
-        result.window = cHandle.window;
-        result.display = cHandle.display;
-        result.isWayland = cHandle.isWayland;
-#elif defined(__APPLE__)
-        result.nsWindow = cHandle.nsWindow;
-        result.metalLayer = cHandle.metalLayer;
-#else
-        result.handle = cHandle.handle;
-        result.display = cHandle.display;
-        result.extra = cHandle.extra;
-#endif
+        result.windowingSystem = cWindowingSystemToCpp(cHandle.windowingSystem);
+
+        switch (cHandle.windowingSystem) {
+        case GFX_WINDOWING_SYSTEM_WIN32:
+            result.win32.hwnd = cHandle.win32.hwnd;
+            result.win32.hinstance = cHandle.win32.hinstance;
+            break;
+        case GFX_WINDOWING_SYSTEM_X11:
+            result.x11.window = cHandle.x11.window;
+            result.x11.display = cHandle.x11.display;
+            break;
+        case GFX_WINDOWING_SYSTEM_WAYLAND:
+            result.wayland.surface = cHandle.wayland.surface;
+            result.wayland.display = cHandle.wayland.display;
+            break;
+        case GFX_WINDOWING_SYSTEM_XCB:
+            result.xcb.connection = cHandle.xcb.connection;
+            result.xcb.window = cHandle.xcb.window;
+            break;
+        case GFX_WINDOWING_SYSTEM_COCOA:
+            result.cocoa.nsWindow = cHandle.cocoa.nsWindow;
+            result.cocoa.metalLayer = cHandle.cocoa.metalLayer;
+            break;
+        }
         return result;
     }
 };
@@ -767,7 +945,8 @@ public:
         GfxTextureView view = gfxSwapchainGetCurrentTextureView(handle);
         if (!view)
             return nullptr;
-        return std::make_shared<CTextureViewImpl>(view);
+        // Swapchain texture views are owned by the swapchain, not by the wrapper
+        return std::make_shared<CTextureViewImpl>(view, nullptr, false);
     }
 
     void present() override
@@ -783,6 +962,45 @@ public:
     bool needsRecreation() const override
     {
         return gfxSwapchainNeedsRecreation(handle);
+    }
+
+    Result acquireNextImage(uint64_t timeout,
+        std::shared_ptr<Semaphore> signalSemaphore,
+        std::shared_ptr<Fence> signalFence,
+        uint32_t* imageIndex) override
+    {
+        GfxSemaphore cSemaphore = signalSemaphore ? extractNativeHandle<GfxSemaphore>(signalSemaphore) : nullptr;
+        GfxFence cFence = signalFence ? extractNativeHandle<GfxFence>(signalFence) : nullptr;
+
+        GfxResult result = gfxSwapchainAcquireNextImage(handle, timeout, cSemaphore, cFence, imageIndex);
+        return cResultToCppResult(result);
+    }
+
+    std::shared_ptr<TextureView> getImageView(uint32_t index) override
+    {
+        GfxTextureView view = gfxSwapchainGetImageView(handle, index);
+        if (!view)
+            return nullptr;
+        // Swapchain texture views are owned by the swapchain, not by the wrapper
+        return std::make_shared<CTextureViewImpl>(view, nullptr, false);
+    }
+
+    Result presentWithSync(const PresentInfo& info) override
+    {
+        GfxPresentInfo cInfo = {};
+
+        // Convert semaphores
+        std::vector<GfxSemaphore> cWaitSemaphores;
+
+        for (const auto& sem : info.waitSemaphores) {
+            cWaitSemaphores.push_back(extractNativeHandle<GfxSemaphore>(sem));
+        }
+
+        cInfo.waitSemaphores = cWaitSemaphores.empty() ? nullptr : cWaitSemaphores.data();
+        cInfo.waitSemaphoreCount = cWaitSemaphores.size();
+
+        GfxResult result = gfxSwapchainPresentWithSync(handle, &cInfo);
+        return cResultToCppResult(result);
     }
 };
 
@@ -1334,6 +1552,7 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
     GfxInstanceDescriptor cDesc = {};
     cDesc.backend = cBackend;
     cDesc.enableValidation = descriptor.enableValidation;
+    cDesc.enabledHeadless = descriptor.enabledHeadless;
     cDesc.applicationName = descriptor.applicationName.c_str();
     cDesc.applicationVersion = descriptor.applicationVersion;
 

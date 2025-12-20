@@ -9,28 +9,28 @@
 // ============================================================================
 
 #if defined(_WIN32) || defined(__CYGWIN__)
-    #ifdef GFX_BUILDING_DLL
-        // Building the DLL - export symbols
-        #ifdef __GNUC__
-            #define GFX_API __attribute__((dllexport))
-        #else
-            #define GFX_API __declspec(dllexport)
-        #endif
-    #else
-        // Using the DLL - import symbols
-        #ifdef __GNUC__
-            #define GFX_API __attribute__((dllimport))
-        #else
-            #define GFX_API __declspec(dllimport)
-        #endif
-    #endif
+#ifdef GFX_BUILDING_DLL
+// Building the DLL - export symbols
+#ifdef __GNUC__
+#define GFX_API __attribute__((dllexport))
 #else
-    // Non-Windows platforms - use visibility attributes for shared libraries
-    #if defined(__GNUC__) && __GNUC__ >= 4
-        #define GFX_API __attribute__((visibility("default")))
-    #else
-        #define GFX_API
-    #endif
+#define GFX_API __declspec(dllexport)
+#endif
+#else
+// Using the DLL - import symbols
+#ifdef __GNUC__
+#define GFX_API __attribute__((dllimport))
+#else
+#define GFX_API __declspec(dllimport)
+#endif
+#endif
+#else
+// Non-Windows platforms - use visibility attributes for shared libraries
+#if defined(__GNUC__) && __GNUC__ >= 4
+#define GFX_API __attribute__((visibility("default")))
+#else
+#define GFX_API
+#endif
 #endif
 
 #ifdef __cplusplus
@@ -103,6 +103,51 @@ typedef enum {
     GFX_TEXTURE_USAGE_STORAGE_BINDING = 1 << 3,
     GFX_TEXTURE_USAGE_RENDER_ATTACHMENT = 1 << 4
 } GfxTextureUsage;
+
+typedef enum {
+    GFX_TEXTURE_LAYOUT_UNDEFINED, // Initial layout, contents undefined
+    GFX_TEXTURE_LAYOUT_GENERAL, // General purpose, can be used for anything but may be slow
+    GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT, // Optimal for color render target
+    GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT, // Optimal for depth/stencil render target
+    GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_READ_ONLY, // Optimal for reading depth/stencil
+    GFX_TEXTURE_LAYOUT_SHADER_READ_ONLY, // Optimal for sampling in shaders
+    GFX_TEXTURE_LAYOUT_TRANSFER_SRC, // Optimal for copy source
+    GFX_TEXTURE_LAYOUT_TRANSFER_DST, // Optimal for copy destination
+    GFX_TEXTURE_LAYOUT_PRESENT_SRC // Optimal for presentation
+} GfxTextureLayout;
+
+typedef enum {
+    GFX_PIPELINE_STAGE_NONE = 0,
+    GFX_PIPELINE_STAGE_TOP_OF_PIPE = 1 << 0,
+    GFX_PIPELINE_STAGE_VERTEX_SHADER = 1 << 1,
+    GFX_PIPELINE_STAGE_FRAGMENT_SHADER = 1 << 2,
+    GFX_PIPELINE_STAGE_COMPUTE_SHADER = 1 << 3,
+    GFX_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS = 1 << 4,
+    GFX_PIPELINE_STAGE_LATE_FRAGMENT_TESTS = 1 << 5,
+    GFX_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT = 1 << 6,
+    GFX_PIPELINE_STAGE_TRANSFER = 1 << 7,
+    GFX_PIPELINE_STAGE_BOTTOM_OF_PIPE = 1 << 8,
+    GFX_PIPELINE_STAGE_ALL_GRAPHICS = 1 << 9,
+    GFX_PIPELINE_STAGE_ALL_COMMANDS = 1 << 10
+} GfxPipelineStage;
+
+typedef enum {
+    GFX_ACCESS_NONE = 0,
+    GFX_ACCESS_INDIRECT_COMMAND_READ = 1 << 0,
+    GFX_ACCESS_INDEX_READ = 1 << 1,
+    GFX_ACCESS_VERTEX_ATTRIBUTE_READ = 1 << 2,
+    GFX_ACCESS_UNIFORM_READ = 1 << 3,
+    GFX_ACCESS_SHADER_READ = 1 << 4,
+    GFX_ACCESS_SHADER_WRITE = 1 << 5,
+    GFX_ACCESS_COLOR_ATTACHMENT_READ = 1 << 6,
+    GFX_ACCESS_COLOR_ATTACHMENT_WRITE = 1 << 7,
+    GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ = 1 << 8,
+    GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE = 1 << 9,
+    GFX_ACCESS_TRANSFER_READ = 1 << 10,
+    GFX_ACCESS_TRANSFER_WRITE = 1 << 11,
+    GFX_ACCESS_MEMORY_READ = 1 << 12,
+    GFX_ACCESS_MEMORY_WRITE = 1 << 13
+} GfxAccessFlags;
 
 typedef enum {
     GFX_BUFFER_USAGE_NONE = 0,
@@ -184,28 +229,28 @@ typedef enum {
 // Result codes
 typedef enum GfxResult {
     GFX_RESULT_SUCCESS = 0,
-    
+
     // General errors
     GFX_RESULT_ERROR_INVALID_PARAMETER,
     GFX_RESULT_ERROR_OUT_OF_MEMORY,
     GFX_RESULT_ERROR_DEVICE_LOST,
     GFX_RESULT_ERROR_SURFACE_LOST,
     GFX_RESULT_ERROR_OUT_OF_DATE,
-    
+
     // Operation-specific errors
     GFX_RESULT_TIMEOUT,
     GFX_RESULT_NOT_READY,
-    
+
     // Backend errors
     GFX_RESULT_ERROR_BACKEND_NOT_LOADED,
     GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED,
-    
+
     // Unknown/generic
     GFX_RESULT_ERROR_UNKNOWN
 } GfxResult;
 
 // ============================================================================
-// Utility Structures
+// Core Structures
 // ============================================================================
 
 typedef struct {
@@ -222,44 +267,83 @@ typedef struct {
 } GfxExtent3D;
 
 typedef struct {
-    uint32_t x;
-    uint32_t y;
-    uint32_t z;
+    int32_t x;
+    int32_t y;
+    int32_t z;
 } GfxOrigin3D;
+
+typedef struct {
+    float x;
+    float y;
+    float width;
+    float height;
+    float minDepth;
+    float maxDepth;
+} GfxViewport;
+
+typedef struct {
+    int32_t x;
+    int32_t y;
+    uint32_t width;
+    uint32_t height;
+} GfxScissorRect;
+
+// Forward declare GfxTexture for use in GfxTextureBarrier
+typedef struct GfxTexture_T* GfxTexture;
+
+typedef struct {
+    GfxTexture texture;
+    GfxTextureLayout oldLayout;
+    GfxTextureLayout newLayout;
+    GfxPipelineStage srcStageMask;
+    GfxPipelineStage dstStageMask;
+    GfxAccessFlags srcAccessMask;
+    GfxAccessFlags dstAccessMask;
+    uint32_t baseMipLevel;
+    uint32_t mipLevelCount;
+    uint32_t baseArrayLayer;
+    uint32_t arrayLayerCount;
+} GfxTextureBarrier;
 
 // ============================================================================
 // Platform Abstraction
 // ============================================================================
 
-#ifdef _WIN32
-typedef struct {
-    void* hwnd; // HWND - Window handle
-    void* hinstance; // HINSTANCE - Application instance
-} GfxPlatformWindowHandle;
+// Common windowing system enum for all platforms
+typedef enum {
+    GFX_WINDOWING_SYSTEM_WIN32,
+    GFX_WINDOWING_SYSTEM_X11,
+    GFX_WINDOWING_SYSTEM_WAYLAND,
+    GFX_WINDOWING_SYSTEM_XCB,
+    GFX_WINDOWING_SYSTEM_COCOA
+} GfxWindowingSystem;
 
-#elif defined(__linux__)
+// Common platform window handle struct with union for all windowing systems
 typedef struct {
-    void* window; // Window (X11) or wl_surface* (Wayland)
-    void* display; // Display* (X11) or wl_display* (Wayland)
-    bool isWayland; // true for Wayland, false for X11
-    // XCB support (alternative to Xlib)
-    void* xcb_connection; // xcb_connection_t* (XCB)
-    uint32_t xcb_window; // xcb_window_t (XCB)
+    GfxWindowingSystem windowingSystem;
+    union {
+        struct {
+            void* hwnd; // HWND - Window handle
+            void* hinstance; // HINSTANCE - Application instance
+        } win32;
+        struct {
+            void* window; // Window
+            void* display; // Display*
+        } x11;
+        struct {
+            void* surface; // wl_surface*
+            void* display; // wl_display*
+        } wayland;
+        struct {
+            void* connection; // xcb_connection_t*
+            uint32_t window; // xcb_window_t
+        } xcb;
+        struct {
+            void* nsWindow; // NSWindow*
+            void* metalLayer; // CAMetalLayer* (optional)
+        } cocoa;
+    };
 } GfxPlatformWindowHandle;
-
-#elif defined(__APPLE__)
-typedef struct {
-    void* nsWindow; // NSWindow*
-    void* metalLayer; // CAMetalLayer* (optional)
-} GfxPlatformWindowHandle;
-
-#else
-typedef struct {
-    void* handle;
-    void* display;
-    void* extra;
-} GfxPlatformWindowHandle;
-#endif
 
 // ============================================================================
 // Forward Declarations (Opaque Handles)
@@ -308,6 +392,7 @@ typedef enum {
 typedef struct {
     GfxBackend backend;
     bool enableValidation;
+    bool enabledHeadless;
     const char* applicationName;
     uint32_t applicationVersion;
     const char** requiredExtensions;
@@ -572,6 +657,12 @@ typedef struct {
     GfxFence signalFence;
 } GfxSubmitInfo;
 
+typedef struct {
+    // Wait semaphores (rendering must complete before present)
+    GfxSemaphore* waitSemaphores;
+    uint32_t waitSemaphoreCount;
+} GfxPresentInfo;
+
 // ============================================================================
 // API Functions
 // ============================================================================
@@ -630,8 +721,27 @@ GFX_API uint32_t gfxSwapchainGetWidth(GfxSwapchain swapchain);
 GFX_API uint32_t gfxSwapchainGetHeight(GfxSwapchain swapchain);
 GFX_API GfxTextureFormat gfxSwapchainGetFormat(GfxSwapchain swapchain);
 GFX_API uint32_t gfxSwapchainGetBufferCount(GfxSwapchain swapchain);
+
+// Acquire the next swapchain image
+// If imageAvailableSemaphore is provided, it will be signaled when the image is ready
+// Returns the index of the acquired image, or error
+GFX_API GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs,
+    GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex);
+
+// Get texture view for a specific image index
+GFX_API GfxTextureView gfxSwapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex);
+
+// Legacy function - gets current texture view with implicit synchronization
+// For explicit synchronization, use gfxSwapchainAcquireNextImage + gfxSwapchainGetImageView
 GFX_API GfxTextureView gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain);
+
+// Present with explicit synchronization - waits for render completion semaphores
+GFX_API GfxResult gfxSwapchainPresentWithSync(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo);
+
+// Legacy present function with implicit synchronization
+// For explicit synchronization, use gfxSwapchainPresentWithSync
 GFX_API GfxResult gfxSwapchainPresent(GfxSwapchain swapchain);
+
 GFX_API void gfxSwapchainResize(GfxSwapchain swapchain, uint32_t width, uint32_t height);
 GFX_API bool gfxSwapchainNeedsRecreation(GfxSwapchain swapchain);
 
@@ -649,6 +759,7 @@ GFX_API GfxTextureFormat gfxTextureGetFormat(GfxTexture texture);
 GFX_API uint32_t gfxTextureGetMipLevelCount(GfxTexture texture);
 GFX_API uint32_t gfxTextureGetSampleCount(GfxTexture texture);
 GFX_API GfxTextureUsage gfxTextureGetUsage(GfxTexture texture);
+GFX_API GfxTextureLayout gfxTextureGetLayout(GfxTexture texture);
 GFX_API GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView);
 
 // TextureView functions
@@ -678,7 +789,7 @@ GFX_API GfxResult gfxQueueSubmit(GfxQueue queue, GfxCommandEncoder commandEncode
 GFX_API GfxResult gfxQueueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo);
 GFX_API void gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size);
 GFX_API void gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
-    const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent);
+    const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout);
 GFX_API GfxResult gfxQueueWaitIdle(GfxQueue queue);
 
 // CommandEncoder functions
@@ -697,12 +808,21 @@ GFX_API void gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncode
 GFX_API void gfxCommandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
     GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
     GfxTexture destination, const GfxOrigin3D* origin,
-    const GfxExtent3D* extent, uint32_t mipLevel);
+    const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout);
 GFX_API void gfxCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
     GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
+    const GfxExtent3D* extent, GfxTextureLayout finalLayout);
+GFX_API void gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
     const GfxExtent3D* extent);
+GFX_API void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+    const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount);
 GFX_API void gfxCommandEncoderFinish(GfxCommandEncoder commandEncoder);
+
+// Helper function to deduce access flags from texture layout
+GFX_API GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout);
 
 // RenderPassEncoder functions
 GFX_API void gfxRenderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder);
@@ -710,6 +830,8 @@ GFX_API void gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEnco
 GFX_API void gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup);
 GFX_API void gfxRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size);
 GFX_API void gfxRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size);
+GFX_API void gfxRenderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport);
+GFX_API void gfxRenderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor);
 GFX_API void gfxRenderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
 GFX_API void gfxRenderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance);
 GFX_API void gfxRenderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder);
@@ -751,37 +873,78 @@ static inline GfxExtent3D gfxExtent3DMake(uint32_t width, uint32_t height, uint3
     return extent;
 }
 
-static inline GfxOrigin3D gfxOrigin3DMake(uint32_t x, uint32_t y, uint32_t z)
+static inline GfxOrigin3D gfxOrigin3DMake(int32_t x, int32_t y, int32_t z)
 {
     GfxOrigin3D origin = { x, y, z };
     return origin;
 }
 
+// Platform-specific helper functions (defined based on compile target)
 #ifdef _WIN32
 static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMake(void* hwnd, void* hinstance)
 {
-    GfxPlatformWindowHandle handle = { hwnd, hinstance };
-    return handle;
-}
-#elif defined(__linux__)
-static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMake(void* window, void* display, bool isWayland)
-{
-    GfxPlatformWindowHandle handle = { window, display, isWayland, NULL, 0 };
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_WIN32;
+    handle.win32.hwnd = hwnd;
+    handle.win32.hinstance = hinstance;
     return handle;
 }
 #elif defined(__APPLE__)
 static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMake(void* nsWindow, void* metalLayer)
 {
-    GfxPlatformWindowHandle handle = { nsWindow, metalLayer };
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_COCOA;
+    handle.cocoa.nsWindow = nsWindow;
+    handle.cocoa.metalLayer = metalLayer;
     return handle;
 }
-#else
-static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMake(void* handle, void* display, void* extra)
-{
-    GfxPlatformWindowHandle platformHandle = { handle, display, extra };
-    return platformHandle;
-}
 #endif
+
+// Cross-platform helpers available on all platforms
+static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMakeX11(void* window, void* display)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_X11;
+    handle.x11.window = window;
+    handle.x11.display = display;
+    return handle;
+}
+
+static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWayland(void* surface, void* display)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_WAYLAND;
+    handle.wayland.surface = surface;
+    handle.wayland.display = display;
+    return handle;
+}
+
+static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXCB(void* connection, uint32_t window)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_XCB;
+    handle.xcb.connection = connection;
+    handle.xcb.window = window;
+    return handle;
+}
+
+static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWin32(void* hwnd, void* hinstance)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_WIN32;
+    handle.win32.hwnd = hwnd;
+    handle.win32.hinstance = hinstance;
+    return handle;
+}
+
+static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMakeCocoa(void* nsWindow, void* metalLayer)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_COCOA;
+    handle.cocoa.nsWindow = nsWindow;
+    handle.cocoa.metalLayer = metalLayer;
+    return handle;
+}
 
 #ifdef __cplusplus
 }

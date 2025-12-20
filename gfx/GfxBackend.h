@@ -53,7 +53,10 @@ typedef struct {
     uint32_t (*swapchainGetHeight)(GfxSwapchain swapchain);
     GfxTextureFormat (*swapchainGetFormat)(GfxSwapchain swapchain);
     uint32_t (*swapchainGetBufferCount)(GfxSwapchain swapchain);
+    GfxResult (*swapchainAcquireNextImage)(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex);
+    GfxTextureView (*swapchainGetImageView)(GfxSwapchain swapchain, uint32_t imageIndex);
     GfxTextureView (*swapchainGetCurrentTextureView)(GfxSwapchain swapchain);
+    GfxResult (*swapchainPresentWithSync)(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo);
     GfxResult (*swapchainPresent)(GfxSwapchain swapchain);
     void (*swapchainResize)(GfxSwapchain swapchain, uint32_t width, uint32_t height);
     bool (*swapchainNeedsRecreation)(GfxSwapchain swapchain);
@@ -72,6 +75,7 @@ typedef struct {
     uint32_t (*textureGetMipLevelCount)(GfxTexture texture);
     uint32_t (*textureGetSampleCount)(GfxTexture texture);
     GfxTextureUsage (*textureGetUsage)(GfxTexture texture);
+    GfxTextureLayout (*textureGetLayout)(GfxTexture texture);
     GfxResult (*textureCreateView)(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView);
 
     // TextureView functions
@@ -101,7 +105,7 @@ typedef struct {
     GfxResult (*queueSubmitWithSync)(GfxQueue queue, const GfxSubmitInfo* submitInfo);
     void (*queueWriteBuffer)(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size);
     void (*queueWriteTexture)(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
-        const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent);
+        const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout);
     GfxResult (*queueWaitIdle)(GfxQueue queue);
 
     // CommandEncoder functions
@@ -120,11 +124,17 @@ typedef struct {
     void (*commandEncoderCopyBufferToTexture)(GfxCommandEncoder commandEncoder,
         GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
         GfxTexture destination, const GfxOrigin3D* origin,
-        const GfxExtent3D* extent, uint32_t mipLevel);
+        const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout);
     void (*commandEncoderCopyTextureToBuffer)(GfxCommandEncoder commandEncoder,
         GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
         GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
-        const GfxExtent3D* extent);
+        const GfxExtent3D* extent, GfxTextureLayout finalLayout);
+    void (*commandEncoderCopyTextureToTexture)(GfxCommandEncoder commandEncoder,
+        GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
+        GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
+        const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout);
+    void (*commandEncoderPipelineBarrier)(GfxCommandEncoder commandEncoder,
+        const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount);
     void (*commandEncoderFinish)(GfxCommandEncoder commandEncoder);
 
     // RenderPassEncoder functions
@@ -133,6 +143,8 @@ typedef struct {
     void (*renderPassEncoderSetBindGroup)(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup);
     void (*renderPassEncoderSetVertexBuffer)(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size);
     void (*renderPassEncoderSetIndexBuffer)(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size);
+    void (*renderPassEncoderSetViewport)(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport);
+    void (*renderPassEncoderSetScissorRect)(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor);
     void (*renderPassEncoderDraw)(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
     void (*renderPassEncoderDrawIndexed)(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance);
     void (*renderPassEncoderEnd)(GfxRenderPassEncoder renderPassEncoder);

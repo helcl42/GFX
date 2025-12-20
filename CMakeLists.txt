@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(GfxWrapper VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Options
@@ -109,19 +109,19 @@ endif()
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-# C API Library
+# C API Library (implemented in C++)
 set(GFX_C_SOURCES
     gfx/GfxApi.h
     gfx/GfxBackend.h
-    gfx/GfxDispatcher.c
+    gfx/GfxDispatcher.cpp
 )
 
 if(BUILD_VULKAN_BACKEND)
-    list(APPEND GFX_C_SOURCES gfx/GfxVulkan.c)
+    list(APPEND GFX_C_SOURCES gfx/GfxVulkan.cpp)
 endif()
 
 if(BUILD_WEBGPU_BACKEND)
-    list(APPEND GFX_C_SOURCES gfx/GfxWebGPU.c)
+    list(APPEND GFX_C_SOURCES gfx/GfxWebGPU.cpp)
 endif()
 
 # Create library based on BUILD_SHARED_LIBS option

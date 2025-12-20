@@ -8,6 +8,10 @@
 #elif defined(__linux__)
 #define GLFW_EXPOSE_NATIVE_X11
 #include <GLFW/glfw3native.h>
+// X11 headers define "Success" as a macro which conflicts with our enum
+#ifdef Success
+#undef Success
+#endif
 #elif defined(__APPLE__)
 #define GLFW_EXPOSE_NATIVE_COCOA
 #include <GLFW/glfw3native.h>
@@ -25,6 +29,10 @@ using namespace gfx;
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+
+static constexpr size_t MAX_FRAMES_IN_FLIGHT = 3;
+static constexpr uint32_t WINDOW_WIDTH = 800;
+static constexpr uint32_t WINDOW_HEIGHT = 600;
 
 // Vertex structure for cube
 struct Vertex {
@@ -48,6 +56,7 @@ public:
 private:
     bool initializeGLFW();
     bool initializeGraphics();
+    bool createSyncObjects();
     bool createRenderingResources();
     bool createRenderPipeline();
     void updateUniforms();
@@ -82,12 +91,21 @@ private:
 
     std::shared_ptr<Buffer> vertexBuffer;
     std::shared_ptr<Buffer> indexBuffer;
-    std::shared_ptr<Buffer> uniformBuffer;
-    std::shared_ptr<BindGroupLayout> uniformBindGroupLayout;
-    std::shared_ptr<BindGroup> uniformBindGroup;
     std::shared_ptr<Shader> vertexShader;
     std::shared_ptr<Shader> fragmentShader;
     std::shared_ptr<RenderPipeline> renderPipeline;
+    std::shared_ptr<BindGroupLayout> uniformBindGroupLayout;
+
+    // Per-frame resources (for frames in flight)
+    std::array<std::shared_ptr<Buffer>, MAX_FRAMES_IN_FLIGHT> uniformBuffers;
+    std::array<std::shared_ptr<BindGroup>, MAX_FRAMES_IN_FLIGHT> uniformBindGroups;
+    std::array<std::shared_ptr<CommandEncoder>, MAX_FRAMES_IN_FLIGHT> commandEncoders;
+
+    // Per-frame synchronization
+    std::array<std::shared_ptr<Semaphore>, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
+    std::array<std::shared_ptr<Semaphore>, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
+    std::array<std::shared_ptr<Fence>, MAX_FRAMES_IN_FLIGHT> inFlightFences;
+    size_t currentFrame = 0;
 
     // Animation state
     float rotationAngleX = 0.0f;
@@ -102,6 +120,10 @@ bool CubeApp::initialize()
     }
 
     if (!initializeGraphics()) {
+        return false;
+    }
+
+    if (!createSyncObjects()) {
         return false;
     }
 
@@ -127,7 +149,7 @@ bool CubeApp::initializeGLFW()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // No OpenGL context
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    window = glfwCreateWindow(800, 600, "Rotating Cube Example (C++ API)", nullptr, nullptr);
+    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Rotating Cube Example (C++ API)", nullptr, nullptr);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -158,6 +180,7 @@ bool CubeApp::initializeGraphics()
         instanceDesc.applicationName = "Rotating Cube Example (C++)";
         instanceDesc.applicationVersion = 1;
         instanceDesc.enableValidation = true;
+        instanceDesc.enabledHeadless = false;
         instanceDesc.requiredExtensions = extensions;
         instanceDesc.backend = Backend::Auto;
 
@@ -232,6 +255,48 @@ bool CubeApp::initializeGraphics()
     }
 }
 
+bool CubeApp::createSyncObjects()
+{
+    try {
+        // Create synchronization objects for each frame in flight
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            // Create binary semaphores for image availability and render completion
+            SemaphoreDescriptor semDesc{};
+            semDesc.label = "Image Available Semaphore Frame " + std::to_string(i);
+            semDesc.type = SemaphoreType::Binary;
+
+            imageAvailableSemaphores[i] = device->createSemaphore(semDesc);
+            if (!imageAvailableSemaphores[i]) {
+                std::cerr << "Failed to create image available semaphore " << i << std::endl;
+                return false;
+            }
+
+            semDesc.label = "Render Finished Semaphore Frame " + std::to_string(i);
+            renderFinishedSemaphores[i] = device->createSemaphore(semDesc);
+            if (!renderFinishedSemaphores[i]) {
+                std::cerr << "Failed to create render finished semaphore " << i << std::endl;
+                return false;
+            }
+
+            // Create fence (start signaled so first frame doesn't wait)
+            FenceDescriptor fenceDesc{};
+            fenceDesc.label = "In Flight Fence Frame " + std::to_string(i);
+            fenceDesc.signaled = true;
+
+            inFlightFences[i] = device->createFence(fenceDesc);
+            if (!inFlightFences[i]) {
+                std::cerr << "Failed to create in flight fence " << i << std::endl;
+                return false;
+            }
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create sync objects: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 bool CubeApp::createRenderingResources()
 {
     try {
@@ -291,22 +356,24 @@ bool CubeApp::createRenderingResources()
             return false;
         }
 
-        // Create uniform buffer
-        BufferDescriptor uniformBufferDesc{};
-        uniformBufferDesc.label = "Transform Uniforms";
-        uniformBufferDesc.size = sizeof(UniformData);
-        uniformBufferDesc.usage = BufferUsage::Uniform | BufferUsage::CopyDst;
-        uniformBufferDesc.mappedAtCreation = false;
-
-        uniformBuffer = device->createBuffer(uniformBufferDesc);
-        if (!uniformBuffer) {
-            std::cerr << "Failed to create uniform buffer" << std::endl;
-            return false;
-        }
-
         // Upload vertex and index data
         queue->writeBuffer(vertexBuffer, 0, vertices.data(), sizeof(vertices));
         queue->writeBuffer(indexBuffer, 0, indices.data(), sizeof(indices));
+
+        // Create uniform buffers (one per frame in flight)
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            BufferDescriptor uniformBufferDesc{};
+            uniformBufferDesc.label = "Transform Uniforms Frame " + std::to_string(i);
+            uniformBufferDesc.size = sizeof(UniformData);
+            uniformBufferDesc.usage = BufferUsage::Uniform | BufferUsage::CopyDst;
+            uniformBufferDesc.mappedAtCreation = false;
+
+            uniformBuffers[i] = device->createBuffer(uniformBufferDesc);
+            if (!uniformBuffers[i]) {
+                std::cerr << "Failed to create uniform buffer " << i << std::endl;
+                return false;
+            }
+        }
 
         // Create bind group layout for uniforms
         BindGroupLayoutEntry uniformLayoutEntry{
@@ -327,22 +394,24 @@ bool CubeApp::createRenderingResources()
             return false;
         }
 
-        // Create bind group
-        BindGroupEntry uniformEntry{};
-        uniformEntry.binding = 0;
-        uniformEntry.resource = uniformBuffer;
-        uniformEntry.offset = 0;
-        uniformEntry.size = sizeof(UniformData);
+        // Create bind groups (one per frame in flight)
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            BindGroupEntry uniformEntry{};
+            uniformEntry.binding = 0;
+            uniformEntry.resource = uniformBuffers[i];
+            uniformEntry.offset = 0;
+            uniformEntry.size = sizeof(UniformData);
 
-        BindGroupDescriptor uniformBindGroupDesc{};
-        uniformBindGroupDesc.label = "Uniform Bind Group";
-        uniformBindGroupDesc.layout = uniformBindGroupLayout;
-        uniformBindGroupDesc.entries = { uniformEntry };
+            BindGroupDescriptor uniformBindGroupDesc{};
+            uniformBindGroupDesc.label = "Uniform Bind Group Frame " + std::to_string(i);
+            uniformBindGroupDesc.layout = uniformBindGroupLayout;
+            uniformBindGroupDesc.entries = { uniformEntry };
 
-        uniformBindGroup = device->createBindGroup(uniformBindGroupDesc);
-        if (!uniformBindGroup) {
-            std::cerr << "Failed to create uniform bind group" << std::endl;
-            return false;
+            uniformBindGroups[i] = device->createBindGroup(uniformBindGroupDesc);
+            if (!uniformBindGroups[i]) {
+                std::cerr << "Failed to create uniform bind group " << i << std::endl;
+                return false;
+            }
         }
 
         // Load SPIR-V shaders
@@ -381,7 +450,6 @@ bool CubeApp::createRenderingResources()
         // Initialize animation state
         rotationAngleX = 0.0f;
         rotationAngleY = 0.0f;
-        lastTime = glfwGetTime();
 
         // Create render pipeline
         return createRenderPipeline();
@@ -485,24 +553,47 @@ void CubeApp::updateUniforms()
     float aspect = static_cast<float>(width) / static_cast<float>(height);
     matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f);
 
-    // Upload uniform data
-    queue->writeBuffer(uniformBuffer, 0, &uniforms, sizeof(uniforms));
+    // Upload uniform data to current frame's uniform buffer
+    queue->writeBuffer(uniformBuffers[currentFrame], 0, &uniforms, sizeof(uniforms));
 }
 
 void CubeApp::render()
 {
     try {
+        // Wait for this frame's fence to be signaled
+        inFlightFences[currentFrame]->wait(UINT64_MAX);
+        inFlightFences[currentFrame]->reset();
+
+        // Deferred cleanup: destroy the old command encoder for this frame slot
+        // Now that the fence is signaled, we know the GPU is done with it
+        if (commandEncoders[currentFrame]) {
+            commandEncoders[currentFrame].reset();
+        }
+
+        // Acquire next image with explicit synchronization
+        uint32_t imageIndex;
+        auto result = swapchain->acquireNextImage(
+            UINT64_MAX,
+            imageAvailableSemaphores[currentFrame],
+            nullptr,
+            &imageIndex);
+
+        if (result != gfx::Result::Success) {
+            std::cerr << "Failed to acquire next image" << std::endl;
+            return;
+        }
+
         // Update uniform buffer with current transformation matrices
         updateUniforms();
 
-        // Get current backbuffer
-        auto backbuffer = swapchain->getCurrentTextureView();
+        // Get the texture view for the acquired image
+        auto backbuffer = swapchain->getImageView(imageIndex);
         if (!backbuffer) {
             return; // Skip frame if no backbuffer available
         }
 
-        // Create command encoder
-        auto commandEncoder = device->createCommandEncoder("Cube Render");
+        // Create command encoder for this frame
+        auto commandEncoder = device->createCommandEncoder("Cube Render Frame " + std::to_string(currentFrame));
 
         // Begin render pass
         Color clearColor{ 0.1f, 0.2f, 0.3f, 1.0f }; // Dark blue background
@@ -511,9 +602,16 @@ void CubeApp::render()
             { backbuffer },
             { clearColor });
 
-        // Set pipeline, bind groups, and buffers
+        // Set pipeline, bind groups, and buffers (using current frame's bind group)
         renderPass->setPipeline(renderPipeline);
-        renderPass->setBindGroup(0, uniformBindGroup);
+
+        // Set viewport and scissor to fill the entire render target
+        uint32_t swapWidth = swapchain->getWidth();
+        uint32_t swapHeight = swapchain->getHeight();
+        renderPass->setViewport(0.0f, 0.0f, static_cast<float>(swapWidth), static_cast<float>(swapHeight), 0.0f, 1.0f);
+        renderPass->setScissorRect(0, 0, swapWidth, swapHeight);
+
+        renderPass->setBindGroup(0, uniformBindGroups[currentFrame]);
         renderPass->setVertexBuffer(0, vertexBuffer);
         renderPass->setIndexBuffer(indexBuffer, IndexFormat::Uint16);
 
@@ -526,11 +624,31 @@ void CubeApp::render()
         // Finish command encoding
         commandEncoder->finish();
 
-        // Submit command buffer
-        queue->submit(commandEncoder);
+        // Submit with explicit synchronization
+        SubmitInfo submitInfo{};
+        submitInfo.waitSemaphores = { imageAvailableSemaphores[currentFrame] };
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.signalSemaphores = { renderFinishedSemaphores[currentFrame] };
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.signalFence = inFlightFences[currentFrame];
 
-        // Present
-        swapchain->present();
+        queue->submitWithSync(commandEncoder, submitInfo);
+
+        // Present with explicit synchronization
+        PresentInfo presentInfo{};
+        presentInfo.waitSemaphores = { renderFinishedSemaphores[currentFrame] };
+        presentInfo.waitSemaphoreCount = 1;
+
+        result = swapchain->presentWithSync(presentInfo);
+        if (result != gfx::Result::Success) {
+            std::cerr << "Failed to present" << std::endl;
+        }
+
+        // Store the command encoder for deferred cleanup next time we use this frame slot
+        commandEncoders[currentFrame] = commandEncoder;
+
+        // Advance to next frame
+        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     } catch (const std::exception& e) {
         std::cerr << "Render error: " << e.what() << std::endl;
     }
@@ -565,10 +683,10 @@ PlatformWindowHandle CubeApp::extractNativeHandle()
 
 #elif defined(__linux__)
     // Linux: Get X11 Window and Display (assuming X11, not Wayland)
-    handle.window = reinterpret_cast<void*>(glfwGetX11Window(window));
-    handle.display = glfwGetX11Display();
-    handle.isWayland = false; // GLFW typically uses X11
-    std::cout << "Extracted X11 handle: Window=" << handle.window << ", Display=" << handle.display << std::endl;
+    handle.windowingSystem = gfx::WindowingSystem::X11;
+    handle.x11.window = reinterpret_cast<void*>(glfwGetX11Window(window));
+    handle.x11.display = glfwGetX11Display();
+    std::cout << "Extracted X11 handle: Window=" << handle.x11.window << ", Display=" << handle.x11.display << std::endl;
 
 #elif defined(__APPLE__)
     // macOS: Get NSWindow
@@ -604,6 +722,9 @@ void CubeApp::keyCallback(GLFWwindow* window, int key, int scancode, int action,
 
 void CubeApp::run()
 {
+    // Initialize timing for first frame
+    lastTime = glfwGetTime();
+
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -624,18 +745,27 @@ void CubeApp::cleanup()
         device->waitIdle();
     }
 
+    // Clean up per-frame resources
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        commandEncoders[i].reset();
+        inFlightFences[i].reset();
+        renderFinishedSemaphores[i].reset();
+        imageAvailableSemaphores[i].reset();
+        uniformBindGroups[i].reset();
+        uniformBuffers[i].reset();
+    }
+
     // C++ destructors will handle cleanup automatically
     // But we can explicitly reset shared_ptrs if needed
     renderPipeline.reset();
     fragmentShader.reset();
     vertexShader.reset();
-    uniformBindGroup.reset();
     uniformBindGroupLayout.reset();
-    uniformBuffer.reset();
     indexBuffer.reset();
     vertexBuffer.reset();
     swapchain.reset();
     surface.reset();
+    queue.reset();
     device.reset();
     adapter.reset();
     instance.reset();
