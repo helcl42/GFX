@@ -127,6 +127,43 @@ VkImageLayout gfxLayoutToVkImageLayout(GfxTextureLayout layout)
     }
 }
 
+VkImageType gfxTextureTypeToVkImageType(GfxTextureType type)
+{
+    switch (type) {
+    case GFX_TEXTURE_TYPE_1D:
+        return VK_IMAGE_TYPE_1D;
+    case GFX_TEXTURE_TYPE_2D:
+    case GFX_TEXTURE_TYPE_CUBE:
+        return VK_IMAGE_TYPE_2D;
+    case GFX_TEXTURE_TYPE_3D:
+        return VK_IMAGE_TYPE_3D;
+    default:
+        return VK_IMAGE_TYPE_2D;
+    }
+}
+
+VkImageViewType gfxTextureViewTypeToVkImageViewType(GfxTextureViewType type)
+{
+    switch (type) {
+    case GFX_TEXTURE_VIEW_TYPE_1D:
+        return VK_IMAGE_VIEW_TYPE_1D;
+    case GFX_TEXTURE_VIEW_TYPE_2D:
+        return VK_IMAGE_VIEW_TYPE_2D;
+    case GFX_TEXTURE_VIEW_TYPE_3D:
+        return VK_IMAGE_VIEW_TYPE_3D;
+    case GFX_TEXTURE_VIEW_TYPE_CUBE:
+        return VK_IMAGE_VIEW_TYPE_CUBE;
+    case GFX_TEXTURE_VIEW_TYPE_1D_ARRAY:
+        return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+    case GFX_TEXTURE_VIEW_TYPE_2D_ARRAY:
+        return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+    case GFX_TEXTURE_VIEW_TYPE_CUBE_ARRAY:
+        return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+    default:
+        return VK_IMAGE_VIEW_TYPE_2D;
+    }
+}
+
 } // namespace
 
 // ============================================================================
@@ -344,12 +381,6 @@ public:
     Device(Adapter* adapter, const GfxDeviceDescriptor* descriptor)
         : m_adapter(adapter)
     {
-        // TODO in descriptor
-        // - query presentable device when not headless
-        // - pass device override index in
-        // - handle heaadless
-        // - additional extensions
-        // - additional features
         (void)descriptor;
 
         // Queue create info
@@ -622,7 +653,7 @@ public:
         // Create texture view objects (not just VkImageViews)
         m_textureViews.reserve(imageCount);
         for (size_t i = 0; i < imageCount; ++i) {
-            m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], m_format));
+            m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], m_format, nullptr));
         }
 
         // Get present queue (assume queue family 0)
@@ -766,7 +797,7 @@ public:
         // Create new texture views
         m_textureViews.reserve(imageCount);
         for (size_t i = 0; i < imageCount; ++i) {
-            m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], m_format));
+            m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], m_format, nullptr));
         }
 
         // Acquire first image
@@ -1012,12 +1043,21 @@ public:
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.imageType = gfxTextureTypeToVkImageType(descriptor->type);
         imageInfo.extent.width = descriptor->size.width;
         imageInfo.extent.height = descriptor->size.height;
         imageInfo.extent.depth = descriptor->size.depth;
         imageInfo.mipLevels = descriptor->mipLevelCount;
-        imageInfo.arrayLayers = 1;
+        imageInfo.arrayLayers = descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1;
+
+        // Set cube map flag if needed
+        if (descriptor->type == GFX_TEXTURE_TYPE_CUBE) {
+            imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+            // Cube maps must have 6 or 6*N array layers
+            if (imageInfo.arrayLayers < 6) {
+                imageInfo.arrayLayers = 6;
+            }
+        }
         imageInfo.format = gfxFormatToVkFormat(descriptor->format);
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Always create in UNDEFINED, transition explicitly
@@ -1120,14 +1160,14 @@ public:
     TextureView(const TextureView&) = delete;
     TextureView& operator=(const TextureView&) = delete;
 
-    TextureView(VkDevice device, VkImage image, VkFormat format, GfxTexture texture = nullptr)
+    TextureView(VkDevice device, VkImage image, VkFormat format, const GfxTextureViewDescriptor* descriptor, GfxTexture texture = nullptr)
         : m_device(device)
         , m_texture(texture)
     {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = image;
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.viewType = descriptor ? gfxTextureViewTypeToVkImageViewType(descriptor->viewType) : VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.format = format;
         viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -1144,10 +1184,10 @@ public:
             viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         }
 
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = 1;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
+        viewInfo.subresourceRange.baseMipLevel = descriptor ? descriptor->baseMipLevel : 0;
+        viewInfo.subresourceRange.levelCount = descriptor ? descriptor->mipLevelCount : 1;
+        viewInfo.subresourceRange.baseArrayLayer = descriptor ? descriptor->baseArrayLayer : 0;
+        viewInfo.subresourceRange.layerCount = descriptor ? descriptor->arrayLayerCount : 1;
 
         VkResult result = vkCreateImageView(m_device, &viewInfo, nullptr, &m_imageView);
         if (result != VK_SUCCESS) {
@@ -2509,6 +2549,7 @@ GfxResult vulkan_textureCreateView(GfxTexture texture, const GfxTextureViewDescr
             tex->device(),
             tex->handle(),
             format,
+            descriptor,
             texture);
         *outView = reinterpret_cast<GfxTextureView>(view);
         return GFX_RESULT_SUCCESS;

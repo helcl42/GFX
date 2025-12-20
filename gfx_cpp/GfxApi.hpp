@@ -75,6 +75,23 @@ enum class TextureFormat {
     Depth32FloatStencil8
 };
 
+enum class TextureType {
+    Texture1D,
+    Texture2D,
+    Texture3D,
+    TextureCube
+};
+
+enum class TextureViewType {
+    View1D,
+    View2D,
+    View3D,
+    ViewCube,
+    View1DArray,
+    View2DArray,
+    ViewCubeArray
+};
+
 enum class TextureUsage : uint32_t {
     None = 0,
     CopySrc = 1 << 0,
@@ -456,7 +473,9 @@ struct BufferDescriptor {
 
 struct TextureDescriptor {
     std::string label;
+    TextureType type = TextureType::Texture2D;
     Extent3D size;
+    uint32_t arrayLayerCount = 1;
     uint32_t mipLevelCount = 1;
     uint32_t sampleCount = 1;
     TextureFormat format = TextureFormat::Undefined;
@@ -465,6 +484,7 @@ struct TextureDescriptor {
 
 struct TextureViewDescriptor {
     std::string label;
+    TextureViewType viewType = TextureViewType::View2D;
     TextureFormat format = TextureFormat::Undefined;
     uint32_t baseMipLevel = 0;
     uint32_t mipLevelCount = 1;

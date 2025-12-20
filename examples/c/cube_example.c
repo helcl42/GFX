@@ -280,10 +280,12 @@ bool initializeGraphics(CubeApp* app)
     // Create depth texture
     GfxTextureDescriptor depthTextureDesc = {
         .label = "Depth Buffer",
+        .type = GFX_TEXTURE_TYPE_2D,
         .size = {
             .width = WINDOW_WIDTH,
             .height = WINDOW_HEIGHT,
             .depth = 1 },
+        .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = 1,
         .format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT,
@@ -304,6 +306,7 @@ bool initializeGraphics(CubeApp* app)
     // Create depth texture view
     GfxTextureViewDescriptor depthViewDesc = {
         .label = "Depth Buffer View",
+        .viewType = GFX_TEXTURE_VIEW_TYPE_2D,
         .format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT,
         .baseMipLevel = 0,
         .mipLevelCount = 1,

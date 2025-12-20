@@ -96,6 +96,23 @@ typedef enum {
 } GfxTextureFormat;
 
 typedef enum {
+    GFX_TEXTURE_TYPE_1D,
+    GFX_TEXTURE_TYPE_2D,
+    GFX_TEXTURE_TYPE_3D,
+    GFX_TEXTURE_TYPE_CUBE
+} GfxTextureType;
+
+typedef enum {
+    GFX_TEXTURE_VIEW_TYPE_1D,
+    GFX_TEXTURE_VIEW_TYPE_2D,
+    GFX_TEXTURE_VIEW_TYPE_3D,
+    GFX_TEXTURE_VIEW_TYPE_CUBE,
+    GFX_TEXTURE_VIEW_TYPE_1D_ARRAY,
+    GFX_TEXTURE_VIEW_TYPE_2D_ARRAY,
+    GFX_TEXTURE_VIEW_TYPE_CUBE_ARRAY
+} GfxTextureViewType;
+
+typedef enum {
     GFX_TEXTURE_USAGE_NONE = 0,
     GFX_TEXTURE_USAGE_COPY_SRC = 1 << 0,
     GFX_TEXTURE_USAGE_COPY_DST = 1 << 1,
@@ -249,6 +266,32 @@ typedef enum GfxResult {
     GFX_RESULT_ERROR_UNKNOWN
 } GfxResult;
 
+
+// ============================================================================
+// Forward Declarations (Opaque Handles)
+// ============================================================================
+
+typedef struct GfxInstance_T* GfxInstance;
+typedef struct GfxAdapter_T* GfxAdapter;
+typedef struct GfxDevice_T* GfxDevice;
+typedef struct GfxQueue_T* GfxQueue;
+typedef struct GfxBuffer_T* GfxBuffer;
+typedef struct GfxTexture_T* GfxTexture;
+typedef struct GfxTextureView_T* GfxTextureView;
+typedef struct GfxSampler_T* GfxSampler;
+typedef struct GfxShader_T* GfxShader;
+typedef struct GfxRenderPipeline_T* GfxRenderPipeline;
+typedef struct GfxComputePipeline_T* GfxComputePipeline;
+typedef struct GfxCommandEncoder_T* GfxCommandEncoder;
+typedef struct GfxRenderPassEncoder_T* GfxRenderPassEncoder;
+typedef struct GfxComputePassEncoder_T* GfxComputePassEncoder;
+typedef struct GfxBindGroup_T* GfxBindGroup;
+typedef struct GfxBindGroupLayout_T* GfxBindGroupLayout;
+typedef struct GfxSurface_T* GfxSurface;
+typedef struct GfxSwapchain_T* GfxSwapchain;
+typedef struct GfxFence_T* GfxFence;
+typedef struct GfxSemaphore_T* GfxSemaphore;
+
 // ============================================================================
 // Core Structures
 // ============================================================================
@@ -287,9 +330,6 @@ typedef struct {
     uint32_t width;
     uint32_t height;
 } GfxScissorRect;
-
-// Forward declare GfxTexture for use in GfxTextureBarrier
-typedef struct GfxTexture_T* GfxTexture;
 
 typedef struct {
     GfxTexture texture;
@@ -346,31 +386,6 @@ typedef struct {
 } GfxPlatformWindowHandle;
 
 // ============================================================================
-// Forward Declarations (Opaque Handles)
-// ============================================================================
-
-typedef struct GfxInstance_T* GfxInstance;
-typedef struct GfxAdapter_T* GfxAdapter;
-typedef struct GfxDevice_T* GfxDevice;
-typedef struct GfxQueue_T* GfxQueue;
-typedef struct GfxBuffer_T* GfxBuffer;
-typedef struct GfxTexture_T* GfxTexture;
-typedef struct GfxTextureView_T* GfxTextureView;
-typedef struct GfxSampler_T* GfxSampler;
-typedef struct GfxShader_T* GfxShader;
-typedef struct GfxRenderPipeline_T* GfxRenderPipeline;
-typedef struct GfxComputePipeline_T* GfxComputePipeline;
-typedef struct GfxCommandEncoder_T* GfxCommandEncoder;
-typedef struct GfxRenderPassEncoder_T* GfxRenderPassEncoder;
-typedef struct GfxComputePassEncoder_T* GfxComputePassEncoder;
-typedef struct GfxBindGroup_T* GfxBindGroup;
-typedef struct GfxBindGroupLayout_T* GfxBindGroupLayout;
-typedef struct GfxSurface_T* GfxSurface;
-typedef struct GfxSwapchain_T* GfxSwapchain;
-typedef struct GfxFence_T* GfxFence;
-typedef struct GfxSemaphore_T* GfxSemaphore;
-
-// ============================================================================
 // Synchronization Enumerations
 // ============================================================================
 
@@ -399,11 +414,18 @@ typedef struct {
     uint32_t requiredExtensionCount;
 } GfxInstanceDescriptor;
 
+// - list required features Graphics/Compute/Present
+// - pass device override index in ??
 typedef struct {
     GfxPowerPreference powerPreference;
     bool forceFallbackAdapter;
 } GfxAdapterDescriptor;
 
+
+// - query presentable device when not headless
+// - pass device override index in
+// - handle heaadless
+// - additional extensions
 typedef struct {
     const char* label;
     const char** requiredFeatures;
@@ -436,7 +458,9 @@ typedef struct {
 
 typedef struct {
     const char* label;
+    GfxTextureType type;
     GfxExtent3D size;
+    uint32_t arrayLayerCount;
     uint32_t mipLevelCount;
     uint32_t sampleCount;
     GfxTextureFormat format;
@@ -445,6 +469,7 @@ typedef struct {
 
 typedef struct {
     const char* label;
+    GfxTextureViewType viewType;
     GfxTextureFormat format;
     uint32_t baseMipLevel;
     uint32_t mipLevelCount;

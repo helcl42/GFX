@@ -346,6 +346,44 @@ static WGPUSurface createPlatformSurface(WGPUInstance instance, const GfxPlatfor
     }
 }
 
+static WGPUTextureDimension gfxTextureTypeToWGPU(GfxTextureType type)
+{
+    switch (type) {
+    case GFX_TEXTURE_TYPE_1D:
+        return WGPUTextureDimension_1D;
+    case GFX_TEXTURE_TYPE_2D:
+        return WGPUTextureDimension_2D;
+    case GFX_TEXTURE_TYPE_CUBE:
+        return WGPUTextureDimension_2D; // Cube maps are 2D arrays in WebGPU
+    case GFX_TEXTURE_TYPE_3D:
+        return WGPUTextureDimension_3D;
+    default:
+        return WGPUTextureDimension_2D;
+    }
+}
+
+static WGPUTextureViewDimension gfxTextureViewTypeToWGPU(GfxTextureViewType type)
+{
+    switch (type) {
+    case GFX_TEXTURE_VIEW_TYPE_1D:
+        return WGPUTextureViewDimension_1D;
+    case GFX_TEXTURE_VIEW_TYPE_2D:
+        return WGPUTextureViewDimension_2D;
+    case GFX_TEXTURE_VIEW_TYPE_3D:
+        return WGPUTextureViewDimension_3D;
+    case GFX_TEXTURE_VIEW_TYPE_CUBE:
+        return WGPUTextureViewDimension_Cube;
+    case GFX_TEXTURE_VIEW_TYPE_1D_ARRAY:
+        return WGPUTextureViewDimension_1D; // WebGPU doesn't have 1D arrays
+    case GFX_TEXTURE_VIEW_TYPE_2D_ARRAY:
+        return WGPUTextureViewDimension_2DArray;
+    case GFX_TEXTURE_VIEW_TYPE_CUBE_ARRAY:
+        return WGPUTextureViewDimension_CubeArray;
+    default:
+        return WGPUTextureViewDimension_2D;
+    }
+}
+
 // ============================================================================
 // Internal C++ Classes with RAII
 // ============================================================================
@@ -1235,7 +1273,19 @@ GfxResult webgpu_deviceCreateTexture(GfxDevice device, const GfxTextureDescripto
     if (descriptor->label) {
         wgpuDesc.label = gfxStringView(descriptor->label);
     }
-    wgpuDesc.size = { descriptor->size.width, descriptor->size.height, descriptor->size.depth };
+    wgpuDesc.dimension = gfxTextureTypeToWGPU(descriptor->type);
+    
+    // Set size based on texture type
+    uint32_t arrayLayers = descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1;
+    if (descriptor->type == GFX_TEXTURE_TYPE_CUBE) {
+        // Cube maps need 6 or 6*N layers
+        if (arrayLayers < 6) {
+            arrayLayers = 6;
+        }
+    }
+    
+    wgpuDesc.size = { descriptor->size.width, descriptor->size.height, 
+                      descriptor->type == GFX_TEXTURE_TYPE_3D ? descriptor->size.depth : arrayLayers };
     wgpuDesc.mipLevelCount = descriptor->mipLevelCount;
     wgpuDesc.sampleCount = descriptor->sampleCount;
     wgpuDesc.format = gfxFormatToWGPUFormat(descriptor->format);
@@ -2182,6 +2232,7 @@ GfxResult webgpu_textureCreateView(GfxTexture texture, const GfxTextureViewDescr
         if (descriptor->label) {
             wgpuDesc.label = gfxStringView(descriptor->label);
         }
+        wgpuDesc.dimension = gfxTextureViewTypeToWGPU(descriptor->viewType);
         wgpuDesc.format = gfxFormatToWGPUFormat(descriptor->format);
         wgpuDesc.baseMipLevel = descriptor->baseMipLevel;
         wgpuDesc.mipLevelCount = descriptor->mipLevelCount;

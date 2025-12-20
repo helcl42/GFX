@@ -59,6 +59,44 @@ static GfxTextureUsage cppTextureUsageToCUsage(TextureUsage usage)
     return static_cast<GfxTextureUsage>(static_cast<uint32_t>(usage));
 }
 
+static GfxTextureType cppTextureTypeToCType(TextureType type)
+{
+    switch (type) {
+    case TextureType::Texture1D:
+        return GFX_TEXTURE_TYPE_1D;
+    case TextureType::Texture2D:
+        return GFX_TEXTURE_TYPE_2D;
+    case TextureType::Texture3D:
+        return GFX_TEXTURE_TYPE_3D;
+    case TextureType::TextureCube:
+        return GFX_TEXTURE_TYPE_CUBE;
+    default:
+        return GFX_TEXTURE_TYPE_2D;
+    }
+}
+
+static GfxTextureViewType cppTextureViewTypeToCType(TextureViewType type)
+{
+    switch (type) {
+    case TextureViewType::View1D:
+        return GFX_TEXTURE_VIEW_TYPE_1D;
+    case TextureViewType::View2D:
+        return GFX_TEXTURE_VIEW_TYPE_2D;
+    case TextureViewType::View3D:
+        return GFX_TEXTURE_VIEW_TYPE_3D;
+    case TextureViewType::ViewCube:
+        return GFX_TEXTURE_VIEW_TYPE_CUBE;
+    case TextureViewType::View1DArray:
+        return GFX_TEXTURE_VIEW_TYPE_1D_ARRAY;
+    case TextureViewType::View2DArray:
+        return GFX_TEXTURE_VIEW_TYPE_2D_ARRAY;
+    case TextureViewType::ViewCubeArray:
+        return GFX_TEXTURE_VIEW_TYPE_CUBE_ARRAY;
+    default:
+        return GFX_TEXTURE_VIEW_TYPE_2D;
+    }
+}
+
 static GfxWindowingSystem cppWindowingSystemToC(WindowingSystem sys)
 {
     switch (sys) {
@@ -253,6 +291,7 @@ public:
     {
         GfxTextureViewDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
+        cDesc.viewType = cppTextureViewTypeToCType(descriptor.viewType);
         cDesc.format = cppFormatToCFormat(descriptor.format);
         cDesc.baseMipLevel = descriptor.baseMipLevel;
         cDesc.mipLevelCount = descriptor.mipLevelCount;
@@ -1118,7 +1157,9 @@ public:
     {
         GfxTextureDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
+        cDesc.type = cppTextureTypeToCType(descriptor.type);
         cDesc.size = { descriptor.size.width, descriptor.size.height, descriptor.size.depth };
+        cDesc.arrayLayerCount = descriptor.arrayLayerCount;
         cDesc.mipLevelCount = descriptor.mipLevelCount;
         cDesc.sampleCount = descriptor.sampleCount;
         cDesc.format = cppFormatToCFormat(descriptor.format);
