@@ -217,26 +217,26 @@ endif()
 # Examples
 if(BUILD_EXAMPLES)
     # C Cube Example
-    add_executable(cube_example_c examples/c/cube_example.c)
+    add_executable(cube_example_c examples/c/cube/cube_example.c)
     target_link_libraries(cube_example_c gfx_c glfw m)  # Add math library
     if(ENABLE_ASAN AND NOT MSVC)
         target_link_options(cube_example_c PRIVATE -fsanitize=address)
     endif()
     
     # Compile shaders for C example
-    compile_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/shaders/cube.vert)
-    compile_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/shaders/cube.frag)
+    compile_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert)
+    compile_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag)
     
     # C++ Cube Example
-    add_executable(cube_example_cpp examples/cpp/cube_example.cpp)
+    add_executable(cube_example_cpp examples/cpp/cube/cube_example.cpp)
     target_link_libraries(cube_example_cpp gfx_cpp glfw)
     if(ENABLE_ASAN AND NOT MSVC)
         target_link_options(cube_example_cpp PRIVATE -fsanitize=address)
     endif()
     
     # Compile shaders for C++ example (uses same shaders as C example)
-    compile_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/shaders/cube.vert)
-    compile_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/shaders/cube.frag)
+    compile_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert)
+    compile_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag)
 endif()
 
 # Install targets
