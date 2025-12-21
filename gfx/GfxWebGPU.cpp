@@ -296,6 +296,24 @@ WGPUCompareFunction gfxCompareFunctionToWGPU(GfxCompareFunction func)
     }
 }
 
+WGPUTextureSampleType gfxTextureSampleTypeToWGPU(GfxTextureSampleType sampleType)
+{
+    switch (sampleType) {
+    case GFX_TEXTURE_SAMPLE_TYPE_FLOAT:
+        return WGPUTextureSampleType_Float;
+    case GFX_TEXTURE_SAMPLE_TYPE_UNFILTERABLE_FLOAT:
+        return WGPUTextureSampleType_UnfilterableFloat;
+    case GFX_TEXTURE_SAMPLE_TYPE_DEPTH:
+        return WGPUTextureSampleType_Depth;
+    case GFX_TEXTURE_SAMPLE_TYPE_SINT:
+        return WGPUTextureSampleType_Sint;
+    case GFX_TEXTURE_SAMPLE_TYPE_UINT:
+        return WGPUTextureSampleType_Uint;
+    default:
+        return WGPUTextureSampleType_Float;
+    }
+}
+
 } // namespace
 
 // ============================================================================
@@ -1534,14 +1552,14 @@ GfxResult webgpu_deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGrou
                 wgpuEntry.sampler.type = entry.sampler.comparison ? WGPUSamplerBindingType_Comparison : WGPUSamplerBindingType_Filtering;
                 break;
             case GFX_BINDING_TYPE_TEXTURE:
-                wgpuEntry.texture.sampleType = WGPUTextureSampleType_Float;
-                wgpuEntry.texture.viewDimension = WGPUTextureViewDimension_2D;
+                wgpuEntry.texture.sampleType = gfxTextureSampleTypeToWGPU(entry.texture.sampleType);
+                wgpuEntry.texture.viewDimension = gfxTextureViewTypeToWGPU(entry.texture.viewDimension);
                 wgpuEntry.texture.multisampled = entry.texture.multisampled ? WGPU_TRUE : WGPU_FALSE;
                 break;
             case GFX_BINDING_TYPE_STORAGE_TEXTURE:
                 wgpuEntry.storageTexture.access = entry.storageTexture.writeOnly ? WGPUStorageTextureAccess_WriteOnly : WGPUStorageTextureAccess_ReadOnly;
                 wgpuEntry.storageTexture.format = gfxFormatToWGPUFormat(entry.storageTexture.format);
-                wgpuEntry.storageTexture.viewDimension = WGPUTextureViewDimension_2D;
+                wgpuEntry.storageTexture.viewDimension = gfxTextureViewTypeToWGPU(entry.storageTexture.viewDimension);
                 break;
             }
 

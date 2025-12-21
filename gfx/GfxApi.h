@@ -113,6 +113,14 @@ typedef enum {
 } GfxTextureViewType;
 
 typedef enum {
+    GFX_TEXTURE_SAMPLE_TYPE_FLOAT,
+    GFX_TEXTURE_SAMPLE_TYPE_UNFILTERABLE_FLOAT,
+    GFX_TEXTURE_SAMPLE_TYPE_DEPTH,
+    GFX_TEXTURE_SAMPLE_TYPE_SINT,
+    GFX_TEXTURE_SAMPLE_TYPE_UINT
+} GfxTextureSampleType;
+
+typedef enum {
     GFX_TEXTURE_USAGE_NONE = 0,
     GFX_TEXTURE_USAGE_COPY_SRC = 1 << 0,
     GFX_TEXTURE_USAGE_COPY_DST = 1 << 1,
@@ -640,11 +648,14 @@ typedef struct {
     } sampler;
 
     struct {
+        GfxTextureSampleType sampleType;
+        GfxTextureViewType viewDimension;
         bool multisampled;
     } texture;
 
     struct {
         GfxTextureFormat format;
+        GfxTextureViewType viewDimension;
         bool writeOnly;
     } storageTexture;
 } GfxBindGroupLayoutEntry;
