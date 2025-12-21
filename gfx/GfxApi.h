@@ -243,6 +243,16 @@ typedef enum {
     GFX_STENCIL_OPERATION_DECREMENT_WRAP
 } GfxStencilOperation;
 
+typedef enum {
+    GFX_SAMPLE_COUNT_1 = 1,
+    GFX_SAMPLE_COUNT_2 = 2,
+    GFX_SAMPLE_COUNT_4 = 4,
+    GFX_SAMPLE_COUNT_8 = 8,
+    GFX_SAMPLE_COUNT_16 = 16,
+    GFX_SAMPLE_COUNT_32 = 32,
+    GFX_SAMPLE_COUNT_64 = 64
+} GfxSampleCount;
+
 // Result codes
 typedef enum GfxResult {
     GFX_RESULT_SUCCESS = 0,
@@ -475,7 +485,7 @@ typedef struct {
     GfxExtent3D size;
     uint32_t arrayLayerCount;
     uint32_t mipLevelCount;
-    uint32_t sampleCount;
+    GfxSampleCount sampleCount;
     GfxTextureFormat format;
     GfxTextureUsage usage;
 } GfxTextureDescriptor;
@@ -589,7 +599,7 @@ typedef struct {
     GfxFragmentState* fragment; // NULL if not used
     GfxPrimitiveState* primitive;
     GfxDepthStencilState* depthStencil; // NULL if not used
-    uint32_t sampleCount;
+    GfxSampleCount sampleCount;
     // Bind group layouts for the pipeline
     GfxBindGroupLayout* bindGroupLayouts;
     uint32_t bindGroupLayoutCount;
@@ -803,14 +813,13 @@ GFX_API void gfxTextureDestroy(GfxTexture texture);
 GFX_API GfxExtent3D gfxTextureGetSize(GfxTexture texture);
 GFX_API GfxTextureFormat gfxTextureGetFormat(GfxTexture texture);
 GFX_API uint32_t gfxTextureGetMipLevelCount(GfxTexture texture);
-GFX_API uint32_t gfxTextureGetSampleCount(GfxTexture texture);
+GFX_API GfxSampleCount gfxTextureGetSampleCount(GfxTexture texture);
 GFX_API GfxTextureUsage gfxTextureGetUsage(GfxTexture texture);
 GFX_API GfxTextureLayout gfxTextureGetLayout(GfxTexture texture);
 GFX_API GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView);
 
 // TextureView functions
 GFX_API void gfxTextureViewDestroy(GfxTextureView textureView);
-GFX_API GfxTexture gfxTextureViewGetTexture(GfxTextureView textureView);
 
 // Sampler functions
 GFX_API void gfxSamplerDestroy(GfxSampler sampler);
@@ -843,8 +852,10 @@ GFX_API void gfxCommandEncoderDestroy(GfxCommandEncoder commandEncoder);
 GFX_API GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
     const GfxTextureView* colorAttachments, uint32_t colorAttachmentCount,
     const GfxColor* clearColors,
+    const GfxTextureLayout* colorFinalLayouts,
     GfxTextureView depthStencilAttachment,
     float depthClearValue, uint32_t stencilClearValue,
+    GfxTextureLayout depthFinalLayout,
     GfxRenderPassEncoder* outRenderPass);
 GFX_API GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass);
 GFX_API void gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,

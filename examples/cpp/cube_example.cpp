@@ -30,9 +30,12 @@ using namespace gfx;
 #define M_PI 3.14159265358979323846
 #endif
 
-static constexpr size_t MAX_FRAMES_IN_FLIGHT = 3;
 static constexpr uint32_t WINDOW_WIDTH = 800;
 static constexpr uint32_t WINDOW_HEIGHT = 600;
+static constexpr size_t MAX_FRAMES_IN_FLIGHT = 3;
+static constexpr SampleCount MSAA_SAMPLE_COUNT = SampleCount::Count4;
+static constexpr TextureFormat COLOR_FORMAT = TextureFormat::B8G8R8A8UnormSrgb;
+static constexpr TextureFormat DEPTH_FORMAT = TextureFormat::Depth32Float;
 
 // Vertex structure for cube
 struct Vertex {
@@ -95,6 +98,14 @@ private:
     std::shared_ptr<Shader> fragmentShader;
     std::shared_ptr<RenderPipeline> renderPipeline;
     std::shared_ptr<BindGroupLayout> uniformBindGroupLayout;
+
+    // Depth buffer
+    std::shared_ptr<Texture> depthTexture;
+    std::shared_ptr<TextureView> depthTextureView;
+
+    // MSAA color buffer
+    std::shared_ptr<Texture> msaaColorTexture;
+    std::shared_ptr<TextureView> msaaColorTextureView;
 
     // Per-frame resources (for frames in flight)
     std::shared_ptr<Buffer> sharedUniformBuffer; // Single buffer for all frames
@@ -238,14 +249,80 @@ bool CubeApp::initializeGraphics()
         swapchainDesc.label = "Main Swapchain";
         swapchainDesc.width = static_cast<uint32_t>(width);
         swapchainDesc.height = static_cast<uint32_t>(height);
-        swapchainDesc.format = TextureFormat::B8G8R8A8Unorm;
+        swapchainDesc.format = COLOR_FORMAT;
         swapchainDesc.usage = TextureUsage::RenderAttachment;
         swapchainDesc.presentMode = PresentMode::Fifo; // VSync
-        swapchainDesc.bufferCount = 3;
+        swapchainDesc.bufferCount = MAX_FRAMES_IN_FLIGHT;
 
         swapchain = device->createSwapchain(surface, swapchainDesc);
         if (!swapchain) {
             std::cerr << "Failed to create swapchain" << std::endl;
+            return false;
+        }
+
+        // Create depth texture with MSAA
+        TextureDescriptor depthTextureDesc{};
+        depthTextureDesc.label = "Depth Buffer";
+        depthTextureDesc.type = TextureType::Texture2D;
+        depthTextureDesc.size = { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1 };
+        depthTextureDesc.arrayLayerCount = 1;
+        depthTextureDesc.mipLevelCount = 1;
+        depthTextureDesc.sampleCount = MSAA_SAMPLE_COUNT;
+        depthTextureDesc.format = DEPTH_FORMAT;
+        depthTextureDesc.usage = TextureUsage::RenderAttachment;
+
+        depthTexture = device->createTexture(depthTextureDesc);
+        if (!depthTexture) {
+            std::cerr << "Failed to create depth texture" << std::endl;
+            return false;
+        }
+
+        // Create depth texture view
+        TextureViewDescriptor depthViewDesc{};
+        depthViewDesc.label = "Depth Buffer View";
+        depthViewDesc.viewType = TextureViewType::View2D;
+        depthViewDesc.format = DEPTH_FORMAT;
+        depthViewDesc.baseMipLevel = 0;
+        depthViewDesc.mipLevelCount = 1;
+        depthViewDesc.baseArrayLayer = 0;
+        depthViewDesc.arrayLayerCount = 1;
+
+        depthTextureView = depthTexture->createView(depthViewDesc);
+        if (!depthTextureView) {
+            std::cerr << "Failed to create depth texture view" << std::endl;
+            return false;
+        }
+
+        // Create MSAA color texture
+        TextureDescriptor msaaColorTextureDesc{};
+        msaaColorTextureDesc.label = "MSAA Color Buffer";
+        msaaColorTextureDesc.type = TextureType::Texture2D;
+        msaaColorTextureDesc.size = { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1 };
+        msaaColorTextureDesc.arrayLayerCount = 1;
+        msaaColorTextureDesc.mipLevelCount = 1;
+        msaaColorTextureDesc.sampleCount = MSAA_SAMPLE_COUNT;
+        msaaColorTextureDesc.format = COLOR_FORMAT;
+        msaaColorTextureDesc.usage = TextureUsage::RenderAttachment;
+
+        msaaColorTexture = device->createTexture(msaaColorTextureDesc);
+        if (!msaaColorTexture) {
+            std::cerr << "Failed to create MSAA color texture" << std::endl;
+            return false;
+        }
+
+        // Create MSAA color texture view
+        TextureViewDescriptor msaaColorViewDesc{};
+        msaaColorViewDesc.label = "MSAA Color Buffer View";
+        msaaColorViewDesc.viewType = TextureViewType::View2D;
+        msaaColorViewDesc.format = COLOR_FORMAT;
+        msaaColorViewDesc.baseMipLevel = 0;
+        msaaColorViewDesc.mipLevelCount = 1;
+        msaaColorViewDesc.baseArrayLayer = 0;
+        msaaColorViewDesc.arrayLayerCount = 1;
+
+        msaaColorTextureView = msaaColorTexture->createView(msaaColorViewDesc);
+        if (!msaaColorTextureView) {
+            std::cerr << "Failed to create MSAA color texture view" << std::endl;
             return false;
         }
 
@@ -502,12 +579,19 @@ bool CubeApp::createRenderPipeline()
         primitiveState.frontFaceCounterClockwise = false;
         primitiveState.cullBackFace = true; // Enable back-face culling for 3D
 
+        // Depth/stencil state - enable depth testing
+        DepthStencilState depthStencilState{};
+        depthStencilState.format = TextureFormat::Depth32Float;
+        depthStencilState.depthWriteEnabled = true;
+        depthStencilState.depthCompare = CompareFunction::Less;
+
         RenderPipelineDescriptor pipelineDesc{};
         pipelineDesc.label = "Cube Pipeline";
         pipelineDesc.vertex = vertexState;
         pipelineDesc.fragment = fragmentState;
         pipelineDesc.primitive = primitiveState;
-        pipelineDesc.sampleCount = 1;
+        pipelineDesc.depthStencil = depthStencilState;
+        pipelineDesc.sampleCount = MSAA_SAMPLE_COUNT;
         pipelineDesc.bindGroupLayouts = { uniformBindGroupLayout }; // Pass the bind group layout
 
         renderPipeline = device->createRenderPipeline(pipelineDesc);
@@ -604,9 +688,28 @@ void CubeApp::render()
         // Begin render pass
         Color clearColor{ 0.1f, 0.2f, 0.3f, 1.0f }; // Dark blue background
 
+        // Setup color attachments based on MSAA setting
+        std::vector<std::shared_ptr<TextureView>> colorAttachments;
+        std::vector<TextureLayout> finalLayouts;
+
+        if (MSAA_SAMPLE_COUNT == SampleCount::Count1) {
+            // No MSAA: render directly to backbuffer
+            colorAttachments = { backbuffer };
+            finalLayouts = { TextureLayout::PresentSrc };
+        } else {
+            // MSAA: render to MSAA buffer, resolve to backbuffer
+            colorAttachments = { msaaColorTextureView, backbuffer };
+            finalLayouts = { TextureLayout::ColorAttachment, TextureLayout::PresentSrc };
+        }
+
         auto renderPass = commandEncoder->beginRenderPass(
-            { backbuffer },
-            { clearColor });
+            colorAttachments,
+            { clearColor },
+            finalLayouts,
+            depthTextureView,
+            1.0f,
+            0,
+            TextureLayout::DepthStencilAttachment);
 
         // Set pipeline, bind groups, and buffers (using current frame's bind group)
         renderPass->setPipeline(renderPipeline);
@@ -771,6 +874,10 @@ void CubeApp::cleanup()
     uniformBindGroupLayout.reset();
     indexBuffer.reset();
     vertexBuffer.reset();
+    msaaColorTextureView.reset();
+    msaaColorTexture.reset();
+    depthTextureView.reset();
+    depthTexture.reset();
     swapchain.reset();
     surface.reset();
     queue.reset();

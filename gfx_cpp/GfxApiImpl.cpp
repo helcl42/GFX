@@ -49,6 +49,28 @@ static TextureFormat cFormatToCppFormat(GfxTextureFormat format)
     return static_cast<TextureFormat>(format);
 }
 
+static GfxSampleCount cppSampleCountToCCount(SampleCount sampleCount)
+{
+    switch (sampleCount) {
+    case SampleCount::Count1:
+        return GFX_SAMPLE_COUNT_1;
+    case SampleCount::Count2:
+        return GFX_SAMPLE_COUNT_2;
+    case SampleCount::Count4:
+        return GFX_SAMPLE_COUNT_4;
+    case SampleCount::Count8:
+        return GFX_SAMPLE_COUNT_8;
+    case SampleCount::Count16:
+        return GFX_SAMPLE_COUNT_16;
+    case SampleCount::Count32:
+        return GFX_SAMPLE_COUNT_32;
+    case SampleCount::Count64:
+        return GFX_SAMPLE_COUNT_64;
+    default:
+        return GFX_SAMPLE_COUNT_1;
+    }
+}
+
 static GfxBufferUsage cppBufferUsageToCUsage(BufferUsage usage)
 {
     return static_cast<GfxBufferUsage>(static_cast<uint32_t>(usage));
@@ -233,9 +255,8 @@ private:
 
 class CTextureViewImpl : public TextureView {
 public:
-    explicit CTextureViewImpl(GfxTextureView h, std::shared_ptr<Texture> tex = nullptr, bool owns = true)
+    explicit CTextureViewImpl(GfxTextureView h, bool owns = true)
         : m_handle(h)
-        , m_texture(tex)
         , m_ownsHandle(owns)
     {
     }
@@ -248,15 +269,13 @@ public:
 
     GfxTextureView getHandle() const { return m_handle; }
 
-    std::shared_ptr<Texture> getTexture() override { return m_texture; }
-
 private:
     GfxTextureView m_handle;
     std::shared_ptr<Texture> m_texture;
     bool m_ownsHandle; // False for swapchain texture views
 };
 
-class CTextureImpl : public Texture, public std::enable_shared_from_this<CTextureImpl> {
+class CTextureImpl : public Texture {
 public:
     explicit CTextureImpl(GfxTexture h)
         : m_handle(h)
@@ -304,7 +323,7 @@ public:
             throw std::runtime_error("Failed to create texture view");
         }
 
-        return std::make_shared<CTextureViewImpl>(view, shared_from_this());
+        return std::make_shared<CTextureViewImpl>(view, true);
     }
 
 private:
@@ -554,10 +573,11 @@ public:
 
     std::shared_ptr<RenderPassEncoder> beginRenderPass(
         const std::vector<std::shared_ptr<TextureView>>& colorAttachments,
-        const std::vector<Color>& clearColors = {},
+        const std::vector<Color>& clearColors,
+        const std::vector<TextureLayout>& colorFinalLayouts,
         std::shared_ptr<TextureView> depthStencilAttachment = nullptr,
         float depthClearValue = 1.0f,
-        uint32_t stencilClearValue = 0) override
+        uint32_t stencilClearValue = 0, TextureLayout depthFinalLayout = TextureLayout::Undefined) override
     {
         std::vector<GfxTextureView> cColorAttachments;
         for (auto& view : colorAttachments) {
@@ -565,6 +585,11 @@ public:
             if (impl) {
                 cColorAttachments.push_back(impl->getHandle());
             }
+        }
+
+        std::vector<GfxTextureLayout> cColorFinalLayouts;
+        for (auto& layout : colorFinalLayouts) {
+            cColorFinalLayouts.push_back(static_cast<GfxTextureLayout>(layout));
         }
 
         std::vector<GfxColor> cClearColors;
@@ -580,15 +605,19 @@ public:
             }
         }
 
+        GfxTextureLayout cDepthFinalLayout = static_cast<GfxTextureLayout>(depthFinalLayout);
+
         GfxRenderPassEncoder encoder = nullptr;
         GfxResult result = gfxCommandEncoderBeginRenderPass(
             m_handle,
             cColorAttachments.data(),
             static_cast<uint32_t>(cColorAttachments.size()),
             cClearColors.empty() ? nullptr : cClearColors.data(),
+            cColorFinalLayouts.data(),
             cDepthStencil,
             depthClearValue,
             stencilClearValue,
+            cDepthFinalLayout,
             &encoder);
 
         if (result != GFX_RESULT_SUCCESS || !encoder) {
@@ -661,7 +690,7 @@ public:
             GfxOrigin3D cSourceOrigin = { sourceOrigin.x, sourceOrigin.y, sourceOrigin.z };
             GfxOrigin3D cDestOrigin = { destinationOrigin.x, destinationOrigin.y, destinationOrigin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
-            gfxCommandEncoderCopyTextureToTexture(m_handle, 
+            gfxCommandEncoderCopyTextureToTexture(m_handle,
                 src->getHandle(), &cSourceOrigin, sourceMipLevel,
                 dst->getHandle(), &cDestOrigin, destinationMipLevel,
                 &cExtent, static_cast<GfxTextureLayout>(sourceFinalLayout), static_cast<GfxTextureLayout>(destinationFinalLayout));
@@ -1009,7 +1038,7 @@ public:
             return nullptr;
         }
         // Swapchain texture views are owned by the swapchain, not by the wrapper
-        return std::make_shared<CTextureViewImpl>(view, nullptr, false);
+        return std::make_shared<CTextureViewImpl>(view, false);
     }
 
     void present() override
@@ -1046,7 +1075,7 @@ public:
             return nullptr;
         }
         // Swapchain texture views are owned by the swapchain, not by the wrapper
-        return std::make_shared<CTextureViewImpl>(view, nullptr, false);
+        return std::make_shared<CTextureViewImpl>(view, false);
     }
 
     Result presentWithSync(const PresentInfo& info) override
@@ -1155,7 +1184,7 @@ public:
         cDesc.size = { descriptor.size.width, descriptor.size.height, descriptor.size.depth };
         cDesc.arrayLayerCount = descriptor.arrayLayerCount;
         cDesc.mipLevelCount = descriptor.mipLevelCount;
-        cDesc.sampleCount = descriptor.sampleCount;
+        cDesc.sampleCount = cppSampleCountToCCount(descriptor.sampleCount);
         cDesc.format = cppFormatToCFormat(descriptor.format);
         cDesc.usage = cppTextureUsageToCUsage(descriptor.usage);
 
@@ -1453,7 +1482,7 @@ public:
         cDesc.fragment = pFragmentState;
         cDesc.primitive = &cPrimitiveState;
         cDesc.depthStencil = pDepthStencilState;
-        cDesc.sampleCount = descriptor.sampleCount;
+        cDesc.sampleCount = cppSampleCountToCCount(descriptor.sampleCount);
 
         // Convert bind group layouts
         std::vector<GfxBindGroupLayout> cBindGroupLayouts;
@@ -1542,7 +1571,7 @@ public:
     {
         GfxDeviceLimits cLimits;
         gfxDeviceGetLimits(m_handle, &cLimits);
-        
+
         DeviceLimits limits;
         limits.minUniformBufferOffsetAlignment = cLimits.minUniformBufferOffsetAlignment;
         limits.minStorageBufferOffsetAlignment = cLimits.minStorageBufferOffsetAlignment;
@@ -1684,15 +1713,15 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
 
 namespace utils {
 
-uint64_t alignUp(uint64_t value, uint64_t alignment)
-{
-    return gfxAlignUp(value, alignment);
-}
+    uint64_t alignUp(uint64_t value, uint64_t alignment)
+    {
+        return gfxAlignUp(value, alignment);
+    }
 
-uint64_t alignDown(uint64_t value, uint64_t alignment)
-{
-    return gfxAlignDown(value, alignment);
-}
+    uint64_t alignDown(uint64_t value, uint64_t alignment)
+    {
+        return gfxAlignDown(value, alignment);
+    }
 
 } // namespace utils
 

@@ -84,6 +84,48 @@ bool isDepthFormat(VkFormat format)
     return format == VK_FORMAT_D32_SFLOAT || format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D16_UNORM;
 }
 
+GfxTextureFormat vkFormatToGfxFormat(VkFormat format)
+{
+    switch (format) {
+    case VK_FORMAT_R8_UNORM:
+        return GFX_TEXTURE_FORMAT_R8_UNORM;
+    case VK_FORMAT_R8G8_UNORM:
+        return GFX_TEXTURE_FORMAT_R8G8_UNORM;
+    case VK_FORMAT_R8G8B8A8_UNORM:
+        return GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    case VK_FORMAT_R8G8B8A8_SRGB:
+        return GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB;
+    case VK_FORMAT_B8G8R8A8_UNORM:
+        return GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
+    case VK_FORMAT_B8G8R8A8_SRGB:
+        return GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB;
+    case VK_FORMAT_R16_SFLOAT:
+        return GFX_TEXTURE_FORMAT_R16_FLOAT;
+    case VK_FORMAT_R16G16_SFLOAT:
+        return GFX_TEXTURE_FORMAT_R16G16_FLOAT;
+    case VK_FORMAT_R16G16B16A16_SFLOAT:
+        return GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT;
+    case VK_FORMAT_R32_SFLOAT:
+        return GFX_TEXTURE_FORMAT_R32_FLOAT;
+    case VK_FORMAT_R32G32_SFLOAT:
+        return GFX_TEXTURE_FORMAT_R32G32_FLOAT;
+    case VK_FORMAT_R32G32B32_SFLOAT:
+        return GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
+    case VK_FORMAT_R32G32B32A32_SFLOAT:
+        return GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT;
+    case VK_FORMAT_D16_UNORM:
+        return GFX_TEXTURE_FORMAT_DEPTH16_UNORM;
+    case VK_FORMAT_D24_UNORM_S8_UINT:
+        return GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8;
+    case VK_FORMAT_D32_SFLOAT:
+        return GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
+    case VK_FORMAT_D32_SFLOAT_S8_UINT:
+        return GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8;
+    default:
+        return GFX_TEXTURE_FORMAT_UNDEFINED;
+    }
+}
+
 bool hasStencilComponent(VkFormat format)
 {
     return format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D32_SFLOAT_S8_UINT;
@@ -164,6 +206,94 @@ VkImageViewType gfxTextureViewTypeToVkImageViewType(GfxTextureViewType type)
     }
 }
 
+VkSampleCountFlagBits sampleCountToVkSampleCount(GfxSampleCount sampleCount)
+{
+    switch (sampleCount) {
+    case GFX_SAMPLE_COUNT_1:
+        return VK_SAMPLE_COUNT_1_BIT;
+    case GFX_SAMPLE_COUNT_2:
+        return VK_SAMPLE_COUNT_2_BIT;
+    case GFX_SAMPLE_COUNT_4:
+        return VK_SAMPLE_COUNT_4_BIT;
+    case GFX_SAMPLE_COUNT_8:
+        return VK_SAMPLE_COUNT_8_BIT;
+    case GFX_SAMPLE_COUNT_16:
+        return VK_SAMPLE_COUNT_16_BIT;
+    case GFX_SAMPLE_COUNT_32:
+        return VK_SAMPLE_COUNT_32_BIT;
+    case GFX_SAMPLE_COUNT_64:
+        return VK_SAMPLE_COUNT_64_BIT;
+    default:
+        return VK_SAMPLE_COUNT_1_BIT;
+    }
+}
+
+const char* vkResultToString(VkResult result)
+{
+    switch (result) {
+    case VK_SUCCESS:
+        return "VK_SUCCESS";
+    case VK_NOT_READY:
+        return "VK_NOT_READY";
+    case VK_TIMEOUT:
+        return "VK_TIMEOUT";
+    case VK_EVENT_SET:
+        return "VK_EVENT_SET";
+    case VK_EVENT_RESET:
+        return "VK_EVENT_RESET";
+    case VK_INCOMPLETE:
+        return "VK_INCOMPLETE";
+    case VK_ERROR_OUT_OF_HOST_MEMORY:
+        return "VK_ERROR_OUT_OF_HOST_MEMORY";
+    case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+        return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
+    case VK_ERROR_INITIALIZATION_FAILED:
+        return "VK_ERROR_INITIALIZATION_FAILED";
+    case VK_ERROR_DEVICE_LOST:
+        return "VK_ERROR_DEVICE_LOST";
+    case VK_ERROR_MEMORY_MAP_FAILED:
+        return "VK_ERROR_MEMORY_MAP_FAILED";
+    case VK_ERROR_LAYER_NOT_PRESENT:
+        return "VK_ERROR_LAYER_NOT_PRESENT";
+    case VK_ERROR_EXTENSION_NOT_PRESENT:
+        return "VK_ERROR_EXTENSION_NOT_PRESENT";
+    case VK_ERROR_FEATURE_NOT_PRESENT:
+        return "VK_ERROR_FEATURE_NOT_PRESENT";
+    case VK_ERROR_INCOMPATIBLE_DRIVER:
+        return "VK_ERROR_INCOMPATIBLE_DRIVER";
+    case VK_ERROR_TOO_MANY_OBJECTS:
+        return "VK_ERROR_TOO_MANY_OBJECTS";
+    case VK_ERROR_FORMAT_NOT_SUPPORTED:
+        return "VK_ERROR_FORMAT_NOT_SUPPORTED";
+    case VK_ERROR_FRAGMENTED_POOL:
+        return "VK_ERROR_FRAGMENTED_POOL";
+    case VK_ERROR_SURFACE_LOST_KHR:
+        return "VK_ERROR_SURFACE_LOST_KHR";
+    case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:
+        return "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
+    case VK_SUBOPTIMAL_KHR:
+        return "VK_SUBOPTIMAL_KHR";
+    case VK_ERROR_OUT_OF_DATE_KHR:
+        return "VK_ERROR_OUT_OF_DATE_KHR";
+    case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:
+        return "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR";
+    case VK_ERROR_VALIDATION_FAILED_EXT:
+        return "VK_ERROR_VALIDATION_FAILED_EXT";
+    case VK_ERROR_INVALID_SHADER_NV:
+        return "VK_ERROR_INVALID_SHADER_NV";
+    case VK_ERROR_OUT_OF_POOL_MEMORY:
+        return "VK_ERROR_OUT_OF_POOL_MEMORY";
+    case VK_ERROR_INVALID_EXTERNAL_HANDLE:
+        return "VK_ERROR_INVALID_EXTERNAL_HANDLE";
+    case VK_ERROR_FRAGMENTATION:
+        return "VK_ERROR_FRAGMENTATION";
+    case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS:
+        return "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS";
+    default:
+        return "VK_UNKNOWN_ERROR";
+    }
+}
+
 } // namespace
 
 // ============================================================================
@@ -213,7 +343,7 @@ public:
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.pEngineName = "GfxWrapper";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_3;
+        appInfo.apiVersion = VK_API_VERSION_1_0;
 
         VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -239,6 +369,27 @@ public:
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
+        // Check if all requested extensions are available
+        uint32_t availableExtensionCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, nullptr);
+        std::vector<VkExtensionProperties> availableExtensions(availableExtensionCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, availableExtensions.data());
+
+        for (const char* requestedExt : extensions) {
+            bool found = false;
+            for (const auto& availableExt : availableExtensions) {
+                if (strcmp(requestedExt, availableExt.extensionName) == 0) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                std::string errorMsg = "Required Vulkan extension not available: ";
+                errorMsg += requestedExt;
+                throw std::runtime_error(errorMsg);
+            }
+        }
+
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
         createInfo.ppEnabledExtensionNames = extensions.data();
 
@@ -252,7 +403,7 @@ public:
 
         VkResult result = vkCreateInstance(&createInfo, nullptr, &m_instance);
         if (result != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create Vulkan instance");
+            throw std::runtime_error("Failed to create Vulkan instance: " + std::string(vkResultToString(result)));
         }
 
         // Setup debug messenger if validation enabled
@@ -653,7 +804,13 @@ public:
         // Create texture view objects (not just VkImageViews)
         m_textureViews.reserve(imageCount);
         for (size_t i = 0; i < imageCount; ++i) {
-            m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], m_format, nullptr));
+            GfxTextureViewDescriptor viewDesc{};
+            viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
+            viewDesc.format = vkFormatToGfxFormat(m_format);
+            viewDesc.mipLevelCount = 1;
+            viewDesc.baseArrayLayer = 0;
+            viewDesc.arrayLayerCount = 1;
+            m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], VkExtent3D{ m_width, m_height, 1 }, VK_SAMPLE_COUNT_1_BIT, &viewDesc));
         }
 
         // Get present queue (assume queue family 0)
@@ -797,7 +954,13 @@ public:
         // Create new texture views
         m_textureViews.reserve(imageCount);
         for (size_t i = 0; i < imageCount; ++i) {
-            m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], m_format, nullptr));
+            GfxTextureViewDescriptor viewDesc{};
+            viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
+            viewDesc.format = vkFormatToGfxFormat(m_format);
+            viewDesc.mipLevelCount = 1;
+            viewDesc.baseArrayLayer = 0;
+            viewDesc.arrayLayerCount = 1;
+            m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], VkExtent3D{ m_width, m_height, 1 }, VK_SAMPLE_COUNT_1_BIT, &viewDesc));
         }
 
         // Acquire first image
@@ -1088,7 +1251,7 @@ public:
         imageInfo.usage = usage;
 
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageInfo.samples = sampleCountToVkSampleCount(descriptor->sampleCount);
 
         VkResult result = vkCreateImage(m_device, &imageInfo, nullptr, &m_image);
         if (result != VK_SUCCESS) {
@@ -1138,7 +1301,7 @@ public:
     GfxExtent3D getSize() const { return m_size; }
     GfxTextureFormat getFormat() const { return m_format; }
     uint32_t getMipLevelCount() const { return m_mipLevelCount; }
-    uint32_t getSampleCount() const { return m_sampleCount; }
+    GfxSampleCount getSampleCount() const { return m_sampleCount; }
     GfxTextureUsage getUsage() const { return m_usage; }
     GfxTextureLayout getLayout() const { return m_currentLayout; }
     void setLayout(GfxTextureLayout layout) { m_currentLayout = layout; }
@@ -1150,7 +1313,7 @@ private:
     GfxExtent3D m_size;
     GfxTextureFormat m_format;
     uint32_t m_mipLevelCount;
-    uint32_t m_sampleCount;
+    GfxSampleCount m_sampleCount;
     GfxTextureUsage m_usage;
     GfxTextureLayout m_currentLayout = GFX_TEXTURE_LAYOUT_UNDEFINED;
 };
@@ -1160,24 +1323,26 @@ public:
     TextureView(const TextureView&) = delete;
     TextureView& operator=(const TextureView&) = delete;
 
-    TextureView(VkDevice device, VkImage image, VkFormat format, const GfxTextureViewDescriptor* descriptor, GfxTexture texture = nullptr)
+    TextureView(VkDevice device, VkImage image, const VkExtent3D& size, VkSampleCountFlagBits samples, const GfxTextureViewDescriptor* descriptor)
         : m_device(device)
-        , m_texture(texture)
+        , m_size(size)
+        , m_format(gfxFormatToVkFormat(descriptor->format))
+        , m_samples(samples)
     {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = image;
-        viewInfo.viewType = descriptor ? gfxTextureViewTypeToVkImageViewType(descriptor->viewType) : VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = format;
+        viewInfo.viewType = gfxTextureViewTypeToVkImageViewType(descriptor->viewType);
+        viewInfo.format = m_format;
         viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
         // Set aspect mask based on format
-        if (isDepthFormat(format)) {
+        if (isDepthFormat(m_format)) {
             viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            if (hasStencilComponent(format)) {
+            if (hasStencilComponent(m_format)) {
                 viewInfo.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
             }
         } else {
@@ -1203,12 +1368,16 @@ public:
     }
 
     VkImageView handle() const { return m_imageView; }
-    GfxTexture getTexture() const { return m_texture; }
+    VkExtent3D getSize() const { return m_size; }
+    VkFormat getFormat() const { return m_format; }
+    VkSampleCountFlagBits getSamples() const { return m_samples; }
 
 private:
-    VkImageView m_imageView = VK_NULL_HANDLE;
     VkDevice m_device = VK_NULL_HANDLE;
-    GfxTexture m_texture = nullptr;
+    VkExtent3D m_size;
+    VkFormat m_format = VK_FORMAT_UNDEFINED;
+    VkSampleCountFlagBits m_samples = VK_SAMPLE_COUNT_1_BIT;
+    VkImageView m_imageView = VK_NULL_HANDLE;
 };
 
 class Sampler {
@@ -1304,6 +1473,11 @@ public:
         auto* vertShader = reinterpret_cast<Shader*>(descriptor->vertex->module);
         auto* fragShader = descriptor->fragment ? reinterpret_cast<Shader*>(descriptor->fragment->module) : nullptr;
 
+        if (!vertShader || vertShader->handle() == VK_NULL_HANDLE) {
+            vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+            throw std::runtime_error("Invalid vertex shader");
+        }
+
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -1313,6 +1487,10 @@ public:
         VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
         uint32_t stageCount = 1;
         if (fragShader) {
+            if (fragShader->handle() == VK_NULL_HANDLE) {
+                vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+                throw std::runtime_error("Invalid fragment shader");
+            }
             fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
             fragShaderStageInfo.module = fragShader->handle();
@@ -1342,29 +1520,13 @@ public:
                 attribute.binding = i;
                 attribute.location = attr.shaderLocation;
                 attribute.offset = static_cast<uint32_t>(attr.offset);
-
-                // Convert GfxTextureFormat to VkFormat for vertex attributes
-                switch (attr.format) {
-                case GFX_TEXTURE_FORMAT_R32_FLOAT:
-                    attribute.format = VK_FORMAT_R32_SFLOAT;
-                    break;
-                case GFX_TEXTURE_FORMAT_R32G32_FLOAT:
-                    attribute.format = VK_FORMAT_R32G32_SFLOAT;
-                    break;
-                case GFX_TEXTURE_FORMAT_R32G32B32_FLOAT:
-                    attribute.format = VK_FORMAT_R32G32B32_SFLOAT;
-                    break;
-                case GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT:
-                    attribute.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-                    break;
-                default:
-                    attribute.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-                    break;
-                }
+                attribute.format = gfxFormatToVkFormat(attr.format);
 
                 attributes.push_back(attribute);
             }
         }
+
+        VkSampleCountFlagBits vkSampleCount = sampleCountToVkSampleCount(descriptor->sampleCount);
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -1395,7 +1557,7 @@ public:
         // Multisampling
         VkPipelineMultisampleStateCreateInfo multisampling{};
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+        multisampling.rasterizationSamples = vkSampleCount;
 
         // Color blending
         VkPipelineColorBlendAttachmentState colorBlendAttachment{};
@@ -1427,8 +1589,10 @@ public:
         // Create a simple render pass for pipeline creation
         std::vector<VkAttachmentDescription> attachments;
         VkAttachmentDescription colorAttachment{};
+
+        // TODO - iterate all color attachments from descriptor and use thir fomats + sample counts ???
         colorAttachment.format = VK_FORMAT_B8G8R8A8_SRGB;
-        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        colorAttachment.samples = vkSampleCount;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -1443,7 +1607,7 @@ public:
         if (descriptor->depthStencil) {
             VkAttachmentDescription depthAttachment{};
             depthAttachment.format = gfxFormatToVkFormat(descriptor->depthStencil->format);
-            depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+            depthAttachment.samples = vkSampleCount;
             depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -2509,10 +2673,10 @@ uint32_t vulkan_textureGetMipLevelCount(GfxTexture texture)
     return tex->getMipLevelCount();
 }
 
-uint32_t vulkan_textureGetSampleCount(GfxTexture texture)
+GfxSampleCount vulkan_textureGetSampleCount(GfxTexture texture)
 {
     if (!texture) {
-        return 0;
+        return GFX_SAMPLE_COUNT_1;
     }
     auto* tex = reinterpret_cast<gfx::vulkan::Texture*>(texture);
     return tex->getSampleCount();
@@ -2544,13 +2708,14 @@ GfxResult vulkan_textureCreateView(GfxTexture texture, const GfxTextureViewDescr
 
     try {
         auto* tex = reinterpret_cast<gfx::vulkan::Texture*>(texture);
-        VkFormat format = descriptor ? gfxFormatToVkFormat(descriptor->format) : VK_FORMAT_UNDEFINED;
+        GfxExtent3D size = tex->getSize();
+        VkSampleCountFlagBits samples = sampleCountToVkSampleCount(tex->getSampleCount());
         auto* view = new gfx::vulkan::TextureView(
             tex->device(),
             tex->handle(),
-            format,
-            descriptor,
-            texture);
+            VkExtent3D{ size.width, size.height, size.depth },
+            samples,
+            descriptor);
         *outView = reinterpret_cast<GfxTextureView>(view);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -2562,15 +2727,6 @@ GfxResult vulkan_textureCreateView(GfxTexture texture, const GfxTextureViewDescr
 void vulkan_textureViewDestroy(GfxTextureView textureView)
 {
     delete reinterpret_cast<gfx::vulkan::TextureView*>(textureView);
-}
-
-GfxTexture vulkan_textureViewGetTexture(GfxTextureView textureView)
-{
-    if (!textureView) {
-        return nullptr;
-    }
-    auto* view = reinterpret_cast<gfx::vulkan::TextureView*>(textureView);
-    return view->getTexture();
 }
 
 GfxResult vulkan_deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler)
@@ -3106,10 +3262,10 @@ void vulkan_deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
     }
     auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
     auto* adapter = dev->getAdapter();
-    
+
     VkPhysicalDeviceProperties properties;
     vkGetPhysicalDeviceProperties(adapter->handle(), &properties);
-    
+
     outLimits->minUniformBufferOffsetAlignment = properties.limits.minUniformBufferOffsetAlignment;
     outLimits->minStorageBufferOffsetAlignment = properties.limits.minStorageBufferOffsetAlignment;
     outLimits->maxUniformBufferBindingSize = properties.limits.maxUniformBufferRange;
@@ -3145,7 +3301,7 @@ GfxTextureFormat vulkan_swapchainGetFormat(GfxSwapchain swapchain)
         return GFX_TEXTURE_FORMAT_UNDEFINED;
     }
     auto* sc = reinterpret_cast<gfx::vulkan::Swapchain*>(swapchain);
-    return static_cast<GfxTextureFormat>(sc->getFormat());
+    return vkFormatToGfxFormat(sc->getFormat());
 }
 
 uint32_t vulkan_swapchainGetBufferCount(GfxSwapchain swapchain)
@@ -3160,71 +3316,164 @@ uint32_t vulkan_swapchainGetBufferCount(GfxSwapchain swapchain)
 GfxResult vulkan_commandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     const GfxTextureView* colorAttachments, uint32_t colorAttachmentCount,
     const GfxColor* clearColors,
+    const GfxTextureLayout* colorFinalLayouts,
     GfxTextureView depthStencilAttachment,
     float depthClearValue, uint32_t stencilClearValue,
+    GfxTextureLayout depthFinalLayout,
     GfxRenderPassEncoder* outRenderPass)
 {
-
     if (!encoder || !outRenderPass) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
-    if (colorAttachmentCount == 0 || !colorAttachments) {
+
+    // Must have at least one attachment (color or depth)
+    if (colorAttachmentCount == 0 && !depthStencilAttachment) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+
+    // Validate all color attachment views are non-NULL
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
+        if (!colorAttachments[i]) {
+            return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        }
+    }
+
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
+        if (colorFinalLayouts && colorFinalLayouts[i] == GFX_TEXTURE_LAYOUT_UNDEFINED) {
+            return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        }
     }
 
     auto* enc = reinterpret_cast<gfx::vulkan::CommandEncoder*>(encoder);
     VkCommandBuffer cmdBuf = enc->handle();
 
-    // Get the color attachment texture view
-    auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[0]);
+    // Determine framebuffer dimensions from first available attachment with valid texture
+    uint32_t width = 0;
+    uint32_t height = 0;
 
-    // Create render pass
-    std::vector<VkAttachmentDescription> attachments;
-    std::vector<VkAttachmentReference> colorRefs;
-
-    // Color attachment
-    VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = VK_FORMAT_B8G8R8A8_SRGB;
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    attachments.push_back(colorAttachment);
-
-    VkAttachmentReference colorRef{};
-    colorRef.attachment = 0;
-    colorRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    colorRefs.push_back(colorRef);
-
-    // Depth attachment if provided
-    VkAttachmentReference depthRef{};
-    if (depthStencilAttachment) {
-        VkAttachmentDescription depthAttachment{};
-        depthAttachment.format = VK_FORMAT_D32_SFLOAT;
-        depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        attachments.push_back(depthAttachment);
-
-        depthRef.attachment = 1;
-        depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    // Try to get dimensions from color attachments
+    if (colorAttachmentCount > 0 && colorAttachments) {
+        for (uint32_t i = 0; i < colorAttachmentCount && (width == 0 || height == 0); ++i) {
+            auto* view = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i]);
+            VkExtent3D size = view->getSize();
+            width = size.width;
+            height = size.height;
+        }
     }
 
+    // Fall back to depth attachment if no color attachment had valid dimensions
+    if ((width == 0 || height == 0) && depthStencilAttachment) {
+        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment);
+        VkExtent3D size = depthView->getSize();
+        width = size.width;
+        height = size.height;
+    }
+
+    // Build Vulkan attachments and references
+    // Color attachments may come in pairs: [MSAA_Color, Resolve, MSAA_Color, Resolve, ...]
+    std::vector<VkAttachmentDescription> attachments;
+    std::vector<VkAttachmentReference> colorRefs;
+    std::vector<VkAttachmentReference> resolveRefs;
+
+    uint32_t attachmentIndex = 0;
+    uint32_t numColorRefs = 0; // Track actual color attachments (not resolve targets)
+
+    // Process color attachments
+    for (uint32_t i = 0; i < colorAttachmentCount;) {
+        auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i]);
+
+        bool isMSAA = (colorView->getSamples() > VK_SAMPLE_COUNT_1_BIT);
+
+        // Add color attachment
+        VkAttachmentDescription colorAttachment{};
+        colorAttachment.format = colorView->getFormat();
+        colorAttachment.samples = colorView->getSamples();
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        colorAttachment.storeOp = isMSAA ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        colorAttachment.finalLayout = gfxLayoutToVkImageLayout(colorFinalLayouts[i]);
+        attachments.push_back(colorAttachment);
+
+        VkAttachmentReference colorRef{};
+        colorRef.attachment = attachmentIndex++;
+        colorRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorRefs.push_back(colorRef);
+        numColorRefs++;
+
+        ++i;
+
+        // Check if next view is a resolve target
+        bool hasResolve = false;
+        if (isMSAA && i < colorAttachmentCount) {
+            auto* nextView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i]);
+
+            bool isResolveTarget = nextView->getSamples() == VK_SAMPLE_COUNT_1_BIT;
+
+            if (isResolveTarget) {
+                VkAttachmentDescription resolveAttachment{};
+                resolveAttachment.format = nextView->getFormat();
+                resolveAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+                resolveAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                resolveAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                resolveAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                resolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                resolveAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                resolveAttachment.finalLayout = gfxLayoutToVkImageLayout(colorFinalLayouts[i]);
+                attachments.push_back(resolveAttachment);
+
+                VkAttachmentReference resolveRef{};
+                resolveRef.attachment = attachmentIndex++;
+                resolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                resolveRefs.push_back(resolveRef);
+
+                ++i; // Skip resolve target in next iteration
+                hasResolve = true;
+            }
+        }
+
+        // MSAA without resolve needs unused reference
+        if (isMSAA && !hasResolve) {
+            VkAttachmentReference unusedRef{};
+            unusedRef.attachment = VK_ATTACHMENT_UNUSED;
+            unusedRef.layout = VK_IMAGE_LAYOUT_UNDEFINED;
+            resolveRefs.push_back(unusedRef);
+        }
+    }
+
+    // Add depth/stencil attachment if provided
+    VkAttachmentReference depthRef{};
+    bool hasDepth = false;
+
+    if (depthStencilAttachment) {
+        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment);
+
+        VkAttachmentDescription depthAttachment{};
+        depthAttachment.format = depthView->getFormat();
+        depthAttachment.samples = depthView->getSamples();
+        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        depthAttachment.finalLayout = gfxLayoutToVkImageLayout(depthFinalLayout);
+        attachments.push_back(depthAttachment);
+
+        depthRef.attachment = attachmentIndex++;
+        depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        hasDepth = true;
+    }
+
+    // Create subpass
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = static_cast<uint32_t>(colorRefs.size());
-    subpass.pColorAttachments = colorRefs.data();
-    if (depthStencilAttachment) {
-        subpass.pDepthStencilAttachment = &depthRef;
-    }
+    subpass.pColorAttachments = colorRefs.empty() ? nullptr : colorRefs.data();
+    subpass.pResolveAttachments = resolveRefs.empty() ? nullptr : resolveRefs.data();
+    subpass.pDepthStencilAttachment = hasDepth ? &depthRef : nullptr;
 
+    // Create render pass
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -3238,9 +3487,15 @@ GfxResult vulkan_commandEncoderBeginRenderPass(GfxCommandEncoder encoder,
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    // Create framebuffer
+    // Create framebuffer with all views (color + resolve + depth)
     std::vector<VkImageView> fbAttachments;
-    fbAttachments.push_back(colorView->handle());
+    fbAttachments.reserve(colorAttachmentCount + (hasDepth ? 1 : 0));
+
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
+        auto* view = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i]);
+        fbAttachments.push_back(view->handle());
+    }
+
     if (depthStencilAttachment) {
         auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment);
         fbAttachments.push_back(depthView->handle());
@@ -3251,8 +3506,8 @@ GfxResult vulkan_commandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     framebufferInfo.renderPass = renderPass;
     framebufferInfo.attachmentCount = static_cast<uint32_t>(fbAttachments.size());
     framebufferInfo.pAttachments = fbAttachments.data();
-    framebufferInfo.width = 800; // TODO: get from swapchain
-    framebufferInfo.height = 600;
+    framebufferInfo.width = width;
+    framebufferInfo.height = height;
     framebufferInfo.layers = 1;
 
     VkFramebuffer framebuffer;
@@ -3265,26 +3520,47 @@ GfxResult vulkan_commandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     // Track for cleanup
     enc->trackRenderPass(renderPass, framebuffer);
 
+    // Build clear values matching attachment descriptions order
+    std::vector<VkClearValue> clearValues;
+    clearValues.reserve(attachments.size());
+
+    uint32_t clearColorIdx = 0;
+    for (size_t i = 0; i < attachments.size(); ++i) {
+        VkClearValue clearValue{};
+
+        if (isDepthFormat(attachments[i].format)) {
+            // Depth/stencil attachment
+            clearValue.depthStencil = { depthClearValue, stencilClearValue };
+        } else {
+            // Color attachment - check if it's a resolve target
+            bool isPrevMSAA = (i > 0 && attachments[i - 1].samples > VK_SAMPLE_COUNT_1_BIT);
+            bool isResolve = (attachments[i].samples == VK_SAMPLE_COUNT_1_BIT && isPrevMSAA);
+
+            if (isResolve) {
+                // Resolve target doesn't need clear value (loadOp is DONT_CARE)
+                clearValue.color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+            } else {
+                // MSAA or regular color attachment - use provided clear color
+                if (clearColors && clearColorIdx < numColorRefs) {
+                    const GfxColor& color = clearColors[clearColorIdx];
+                    clearValue.color = { { color.r, color.g, color.b, color.a } };
+                    clearColorIdx++;
+                } else {
+                    clearValue.color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+                }
+            }
+        }
+
+        clearValues.push_back(clearValue);
+    }
+
     // Begin render pass
     VkRenderPassBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     beginInfo.renderPass = renderPass;
     beginInfo.framebuffer = framebuffer;
     beginInfo.renderArea.offset = { 0, 0 };
-    beginInfo.renderArea.extent = { 800, 600 };
-
-    std::vector<VkClearValue> clearValues;
-    if (clearColors) {
-        VkClearValue colorClear{};
-        colorClear.color = { { clearColors[0].r, clearColors[0].g, clearColors[0].b, clearColors[0].a } };
-        clearValues.push_back(colorClear);
-    }
-    if (depthStencilAttachment) {
-        VkClearValue depthClear{};
-        depthClear.depthStencil = { depthClearValue, stencilClearValue };
-        clearValues.push_back(depthClear);
-    }
-
+    beginInfo.renderArea.extent = { width, height };
     beginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     beginInfo.pClearValues = clearValues.data();
 
@@ -3816,7 +4092,6 @@ static const GfxBackendAPI vulkanBackendApi = {
     .textureGetLayout = vulkan_textureGetLayout,
     .textureCreateView = vulkan_textureCreateView,
     .textureViewDestroy = vulkan_textureViewDestroy,
-    .textureViewGetTexture = vulkan_textureViewGetTexture,
     .samplerDestroy = vulkan_samplerDestroy,
     .shaderDestroy = vulkan_shaderDestroy,
     .bindGroupLayoutDestroy = vulkan_bindGroupLayoutDestroy,

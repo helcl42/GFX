@@ -23,10 +23,12 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// Window dimensions
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 #define MAX_FRAMES_IN_FLIGHT 3
+#define MSAA_SAMPLE_COUNT GFX_SAMPLE_COUNT_4
+#define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
+#define DEPTH_FORMAT GFX_TEXTURE_FORMAT_DEPTH32_FLOAT
 
 // Vertex structure for cube
 typedef struct {
@@ -61,6 +63,10 @@ typedef struct {
     // Depth buffer
     GfxTexture depthTexture;
     GfxTextureView depthTextureView;
+
+    // MSAA color buffer
+    GfxTexture msaaColorTexture;
+    GfxTextureView msaaColorTextureView;
 
     // Per-frame resources (for frames in flight)
     GfxBuffer sharedUniformBuffer; // Single buffer for all frames
@@ -281,10 +287,10 @@ bool initializeGraphics(CubeApp* app)
         .label = "Main Swapchain",
         .width = WINDOW_WIDTH,
         .height = WINDOW_HEIGHT,
-        .format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM,
+        .format = COLOR_FORMAT,
         .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT,
         .presentMode = GFX_PRESENT_MODE_FIFO,
-        .bufferCount = 2
+        .bufferCount = MAX_FRAMES_IN_FLIGHT
     };
 
     if (gfxDeviceCreateSwapchain(app->device, app->surface, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
@@ -292,7 +298,7 @@ bool initializeGraphics(CubeApp* app)
         return false;
     }
 
-    // Create depth texture
+    // Create depth texture (MSAA must match color attachment)
     GfxTextureDescriptor depthTextureDesc = {
         .label = "Depth Buffer",
         .type = GFX_TEXTURE_TYPE_2D,
@@ -302,8 +308,8 @@ bool initializeGraphics(CubeApp* app)
             .depth = 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
-        .sampleCount = 1,
-        .format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT,
+        .sampleCount = MSAA_SAMPLE_COUNT,
+        .format = DEPTH_FORMAT,
         .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT
     };
 
@@ -312,17 +318,11 @@ bool initializeGraphics(CubeApp* app)
         return false;
     }
 
-    // Create synchronization objects
-    if (!createSyncObjects(app)) {
-        fprintf(stderr, "Failed to create sync objects\n");
-        return false;
-    }
-
     // Create depth texture view
     GfxTextureViewDescriptor depthViewDesc = {
         .label = "Depth Buffer View",
         .viewType = GFX_TEXTURE_VIEW_TYPE_2D,
-        .format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT,
+        .format = DEPTH_FORMAT,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -331,6 +331,48 @@ bool initializeGraphics(CubeApp* app)
 
     if (gfxTextureCreateView(app->depthTexture, &depthViewDesc, &app->depthTextureView) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create depth texture view\n");
+        return false;
+    }
+
+    // Create MSAA color texture (is unused if MSAA_SAMPLE_COUNT == 1)
+    GfxTextureDescriptor msaaColorTextureDesc = {
+        .label = "MSAA Color Buffer",
+        .type = GFX_TEXTURE_TYPE_2D,
+        .size = {
+            .width = WINDOW_WIDTH,
+            .height = WINDOW_HEIGHT,
+            .depth = 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .sampleCount = MSAA_SAMPLE_COUNT,
+        .format = COLOR_FORMAT,
+        .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT
+    };
+
+    if (gfxDeviceCreateTexture(app->device, &msaaColorTextureDesc, &app->msaaColorTexture) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create MSAA color texture\n");
+        return false;
+    }
+
+    // Create MSAA color texture view (is unused if MSAA_SAMPLE_COUNT == 1)
+    GfxTextureViewDescriptor msaaColorViewDesc = {
+        .label = "MSAA Color Buffer View",
+        .viewType = GFX_TEXTURE_VIEW_TYPE_2D,
+        .format = COLOR_FORMAT,
+        .baseMipLevel = 0,
+        .mipLevelCount = 1,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 1
+    };
+
+    if (gfxTextureCreateView(app->msaaColorTexture, &msaaColorViewDesc, &app->msaaColorTextureView) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create MSAA color texture view\n");
+        return false;
+    }
+
+    // Create synchronization objects
+    if (!createSyncObjects(app)) {
+        fprintf(stderr, "Failed to create sync objects\n");
         return false;
     }
 
@@ -595,7 +637,7 @@ bool createRenderPipeline(CubeApp* app)
 
     // Color target state
     GfxColorTargetState colorTarget = {
-        .format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM,
+        .format = COLOR_FORMAT,
         .blend = NULL,
         .writeMask = 0xF // Write all channels
     };
@@ -619,7 +661,7 @@ bool createRenderPipeline(CubeApp* app)
 
     // Depth/stencil state - enable depth testing
     GfxDepthStencilState depthStencilState = {
-        .format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT,
+        .format = DEPTH_FORMAT,
         .depthWriteEnabled = true,
         .depthCompare = GFX_COMPARE_FUNCTION_LESS,
         .stencilFront = {
@@ -645,7 +687,7 @@ bool createRenderPipeline(CubeApp* app)
         .fragment = &fragmentState,
         .primitive = &primitiveState,
         .depthStencil = &depthStencilState,
-        .sampleCount = 1,
+        .sampleCount = MSAA_SAMPLE_COUNT,
         .bindGroupLayouts = bindGroupLayouts,
         .bindGroupLayoutCount = 1
     };
@@ -727,7 +769,7 @@ void render(CubeApp* app)
     // Update animation for this frame
     updateUniforms(app);
 
-    // Get texture view for acquired image
+    // Get texture view for acquired image (for later blit/present)
     GfxTextureView backbuffer = gfxSwapchainGetImageView(app->swapchain, imageIndex);
     if (!backbuffer) {
         fprintf(stderr, "Failed to get swapchain texture view\n");
@@ -742,17 +784,33 @@ void render(CubeApp* app)
     }
 
     // Begin render pass with dark blue clear color
+    // Pass both MSAA color buffer and swapchain image for resolve
+    uint32_t colorAttachmentCount;
+    GfxTextureView colorAttachments[2];
+    GfxTextureLayout finalLayouts[2];
+    if (MSAA_SAMPLE_COUNT == GFX_SAMPLE_COUNT_1) {
+        colorAttachments[0] = backbuffer;
+        finalLayouts[0] = GFX_TEXTURE_LAYOUT_PRESENT_SRC;
+        colorAttachmentCount = 1;
+    } else {
+        colorAttachments[0] = app->msaaColorTextureView;
+        colorAttachments[1] = backbuffer;
+        finalLayouts[0] = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT;
+        finalLayouts[1] = GFX_TEXTURE_LAYOUT_PRESENT_SRC;
+        colorAttachmentCount = 2;
+    }
+
     GfxColor clearColor = { 0.1f, 0.2f, 0.3f, 1.0f };
     GfxRenderPassEncoder renderPass;
     if (gfxCommandEncoderBeginRenderPass(
             encoder,
-            &backbuffer,
-            1,
+            colorAttachments,
+            colorAttachmentCount,
             &clearColor,
+            finalLayouts,
             app->depthTextureView,
             1.0f,
-            0,
-            &renderPass)
+            0, GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT, &renderPass)
         == GFX_RESULT_SUCCESS) {
 
         // Set pipeline
@@ -866,6 +924,12 @@ void cleanup(CubeApp* app)
     }
     if (app->vertexBuffer) {
         gfxBufferDestroy(app->vertexBuffer);
+    }
+    if (app->msaaColorTextureView) {
+        gfxTextureViewDestroy(app->msaaColorTextureView);
+    }
+    if (app->msaaColorTexture) {
+        gfxTextureDestroy(app->msaaColorTexture);
     }
     if (app->depthTextureView) {
         gfxTextureViewDestroy(app->depthTextureView);

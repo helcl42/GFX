@@ -178,6 +178,16 @@ enum class StencilOperation {
     DecrementWrap
 };
 
+enum class SampleCount {
+    Count1 = 1,
+    Count2 = 2,
+    Count4 = 4,
+    Count8 = 8,
+    Count16 = 16,
+    Count32 = 32,
+    Count64 = 64
+};
+
 // Synchronization enums
 enum class FenceStatus {
     Unsignaled,
@@ -477,7 +487,7 @@ struct TextureDescriptor {
     Extent3D size;
     uint32_t arrayLayerCount = 1;
     uint32_t mipLevelCount = 1;
-    uint32_t sampleCount = 1;
+    SampleCount sampleCount = SampleCount::Count1;
     TextureFormat format = TextureFormat::Undefined;
     TextureUsage usage = TextureUsage::None;
 };
@@ -587,7 +597,7 @@ struct RenderPipelineDescriptor {
     std::optional<FragmentState> fragment;
     PrimitiveState primitive;
     std::optional<DepthStencilState> depthStencil;
-    uint32_t sampleCount = 1;
+    SampleCount sampleCount = SampleCount::Count1;
     std::vector<std::shared_ptr<BindGroupLayout>> bindGroupLayouts; // Bind group layouts used by the pipeline
 };
 
@@ -838,7 +848,6 @@ public:
 class TextureView {
 public:
     virtual ~TextureView() = default;
-    virtual std::shared_ptr<Texture> getTexture() = 0;
 };
 
 class Sampler {
@@ -905,10 +914,12 @@ public:
 
     virtual std::shared_ptr<RenderPassEncoder> beginRenderPass(
         const std::vector<std::shared_ptr<TextureView>>& colorAttachments,
-        const std::vector<Color>& clearColors = {},
+        const std::vector<Color>& clearColors,
+        const std::vector<TextureLayout>& colorFinalLayouts,
         std::shared_ptr<TextureView> depthStencilAttachment = nullptr,
         float depthClearValue = 1.0f,
-        uint32_t stencilClearValue = 0)
+        uint32_t stencilClearValue = 0,
+        TextureLayout depthFinalLayout = TextureLayout::Undefined)
         = 0;
 
     virtual std::shared_ptr<ComputePassEncoder> beginComputePass(const std::string& label = "") = 0;

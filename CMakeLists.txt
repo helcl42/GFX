@@ -10,6 +10,7 @@ option(BUILD_EXAMPLES "Build example applications" ON)
 option(BUILD_VULKAN_BACKEND "Build Vulkan backend" ON)
 option(BUILD_WEBGPU_BACKEND "Build WebGPU backend" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
+option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
 
 # Find required packages
 find_package(PkgConfig REQUIRED)
@@ -201,13 +202,16 @@ if(MSVC)
     target_compile_options(gfx_c PRIVATE /W4)
     target_compile_options(gfx_cpp PRIVATE /W4)
 else()
-    # target_compile_options(gfx_c PRIVATE -Wall -Wextra -Wpedantic -g -fsanitize=address -fno-omit-frame-pointer)
-    # target_compile_options(gfx_cpp PRIVATE -Wall -Wextra -Wpedantic -g -fsanitize=address -fno-omit-frame-pointer)
-    # target_link_options(gfx_c PRIVATE -fsanitize=address)
-    # target_link_options(gfx_cpp PRIVATE -fsanitize=address)
-
     target_compile_options(gfx_c PRIVATE -Wall -Wextra -Wpedantic -g)
     target_compile_options(gfx_cpp PRIVATE -Wall -Wextra -Wpedantic -g)
+    
+    # Address Sanitizer (optional)
+    if(ENABLE_ASAN)
+        target_compile_options(gfx_c PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+        target_compile_options(gfx_cpp PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+        target_link_options(gfx_c PRIVATE -fsanitize=address)
+        target_link_options(gfx_cpp PRIVATE -fsanitize=address)
+    endif()
 endif()
 
 # Examples
@@ -215,6 +219,9 @@ if(BUILD_EXAMPLES)
     # C Cube Example
     add_executable(cube_example_c examples/c/cube_example.c)
     target_link_libraries(cube_example_c gfx_c glfw m)  # Add math library
+    if(ENABLE_ASAN AND NOT MSVC)
+        target_link_options(cube_example_c PRIVATE -fsanitize=address)
+    endif()
     
     # Compile shaders for C example
     compile_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/shaders/cube.vert)
@@ -223,6 +230,9 @@ if(BUILD_EXAMPLES)
     # C++ Cube Example
     add_executable(cube_example_cpp examples/cpp/cube_example.cpp)
     target_link_libraries(cube_example_cpp gfx_cpp glfw)
+    if(ENABLE_ASAN AND NOT MSVC)
+        target_link_options(cube_example_cpp PRIVATE -fsanitize=address)
+    endif()
     
     # Compile shaders for C++ example (uses same shaders as C example)
     compile_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/shaders/cube.vert)
@@ -249,6 +259,7 @@ else()
     message(STATUS "  Building STATIC libraries")
 endif()
 message(STATUS "  Build examples: ${BUILD_EXAMPLES}")
+message(STATUS "  Address Sanitizer: ${ENABLE_ASAN}")
 message(STATUS "  Vulkan backend: ${BUILD_VULKAN_BACKEND}")
 message(STATUS "  WebGPU backend: ${BUILD_WEBGPU_BACKEND}")
 if(BUILD_VULKAN_BACKEND)

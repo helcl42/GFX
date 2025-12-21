@@ -74,14 +74,13 @@ typedef struct {
     GfxExtent3D (*textureGetSize)(GfxTexture texture);
     GfxTextureFormat (*textureGetFormat)(GfxTexture texture);
     uint32_t (*textureGetMipLevelCount)(GfxTexture texture);
-    uint32_t (*textureGetSampleCount)(GfxTexture texture);
+    GfxSampleCount (*textureGetSampleCount)(GfxTexture texture);
     GfxTextureUsage (*textureGetUsage)(GfxTexture texture);
     GfxTextureLayout (*textureGetLayout)(GfxTexture texture);
     GfxResult (*textureCreateView)(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView);
 
     // TextureView functions
     void (*textureViewDestroy)(GfxTextureView textureView);
-    GfxTexture (*textureViewGetTexture)(GfxTextureView textureView);
 
     // Sampler functions
     void (*samplerDestroy)(GfxSampler sampler);
@@ -114,8 +113,10 @@ typedef struct {
     GfxResult (*commandEncoderBeginRenderPass)(GfxCommandEncoder commandEncoder,
         const GfxTextureView* colorAttachments, uint32_t colorAttachmentCount,
         const GfxColor* clearColors,
+        const GfxTextureLayout* colorFinalLayouts,
         GfxTextureView depthStencilAttachment,
         float depthClearValue, uint32_t stencilClearValue,
+        GfxTextureLayout depthFinalLayout,
         GfxRenderPassEncoder* outRenderPass);
     GfxResult (*commandEncoderBeginComputePass)(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass);
     void (*commandEncoderCopyBufferToBuffer)(GfxCommandEncoder commandEncoder,

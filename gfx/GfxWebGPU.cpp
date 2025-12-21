@@ -220,6 +220,82 @@ WGPUIndexFormat gfxIndexFormatToWGPU(GfxIndexFormat format)
     }
 }
 
+WGPUBlendOperation gfxBlendOperationToWGPU(GfxBlendOperation operation)
+{
+    switch (operation) {
+    case GFX_BLEND_OPERATION_ADD:
+        return WGPUBlendOperation_Add;
+    case GFX_BLEND_OPERATION_SUBTRACT:
+        return WGPUBlendOperation_Subtract;
+    case GFX_BLEND_OPERATION_REVERSE_SUBTRACT:
+        return WGPUBlendOperation_ReverseSubtract;
+    case GFX_BLEND_OPERATION_MIN:
+        return WGPUBlendOperation_Min;
+    case GFX_BLEND_OPERATION_MAX:
+        return WGPUBlendOperation_Max;
+    default:
+        return WGPUBlendOperation_Add;
+    }
+}
+
+WGPUBlendFactor gfxBlendFactorToWGPU(GfxBlendFactor factor)
+{
+    switch (factor) {
+    case GFX_BLEND_FACTOR_ZERO:
+        return WGPUBlendFactor_Zero;
+    case GFX_BLEND_FACTOR_ONE:
+        return WGPUBlendFactor_One;
+    case GFX_BLEND_FACTOR_SRC:
+        return WGPUBlendFactor_Src;
+    case GFX_BLEND_FACTOR_ONE_MINUS_SRC:
+        return WGPUBlendFactor_OneMinusSrc;
+    case GFX_BLEND_FACTOR_SRC_ALPHA:
+        return WGPUBlendFactor_SrcAlpha;
+    case GFX_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA:
+        return WGPUBlendFactor_OneMinusSrcAlpha;
+    case GFX_BLEND_FACTOR_DST:
+        return WGPUBlendFactor_Dst;
+    case GFX_BLEND_FACTOR_ONE_MINUS_DST:
+        return WGPUBlendFactor_OneMinusDst;
+    case GFX_BLEND_FACTOR_DST_ALPHA:
+        return WGPUBlendFactor_DstAlpha;
+    case GFX_BLEND_FACTOR_ONE_MINUS_DST_ALPHA:
+        return WGPUBlendFactor_OneMinusDstAlpha;
+    case GFX_BLEND_FACTOR_SRC_ALPHA_SATURATED:
+        return WGPUBlendFactor_SrcAlphaSaturated;
+    case GFX_BLEND_FACTOR_CONSTANT:
+        return WGPUBlendFactor_Constant;
+    case GFX_BLEND_FACTOR_ONE_MINUS_CONSTANT:
+        return WGPUBlendFactor_OneMinusConstant;
+    default:
+        return WGPUBlendFactor_Zero;
+    }
+}
+
+WGPUCompareFunction gfxCompareFunctionToWGPU(GfxCompareFunction func)
+{
+    switch (func) {
+    case GFX_COMPARE_FUNCTION_NEVER:
+        return WGPUCompareFunction_Never;
+    case GFX_COMPARE_FUNCTION_LESS:
+        return WGPUCompareFunction_Less;
+    case GFX_COMPARE_FUNCTION_EQUAL:
+        return WGPUCompareFunction_Equal;
+    case GFX_COMPARE_FUNCTION_LESS_EQUAL:
+        return WGPUCompareFunction_LessEqual;
+    case GFX_COMPARE_FUNCTION_GREATER:
+        return WGPUCompareFunction_Greater;
+    case GFX_COMPARE_FUNCTION_NOT_EQUAL:
+        return WGPUCompareFunction_NotEqual;
+    case GFX_COMPARE_FUNCTION_GREATER_EQUAL:
+        return WGPUCompareFunction_GreaterEqual;
+    case GFX_COMPARE_FUNCTION_ALWAYS:
+        return WGPUCompareFunction_Always;
+    default:
+        return WGPUCompareFunction_Always;
+    }
+}
+
 } // namespace
 
 // ============================================================================
@@ -1274,7 +1350,7 @@ GfxResult webgpu_deviceCreateTexture(GfxDevice device, const GfxTextureDescripto
         wgpuDesc.label = gfxStringView(descriptor->label);
     }
     wgpuDesc.dimension = gfxTextureTypeToWGPU(descriptor->type);
-    
+
     // Set size based on texture type
     uint32_t arrayLayers = descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1;
     if (descriptor->type == GFX_TEXTURE_TYPE_CUBE) {
@@ -1283,9 +1359,9 @@ GfxResult webgpu_deviceCreateTexture(GfxDevice device, const GfxTextureDescripto
             arrayLayers = 6;
         }
     }
-    
-    wgpuDesc.size = { descriptor->size.width, descriptor->size.height, 
-                      descriptor->type == GFX_TEXTURE_TYPE_3D ? descriptor->size.depth : arrayLayers };
+
+    wgpuDesc.size = { descriptor->size.width, descriptor->size.height,
+        descriptor->type == GFX_TEXTURE_TYPE_3D ? descriptor->size.depth : arrayLayers };
     wgpuDesc.mipLevelCount = descriptor->mipLevelCount;
     wgpuDesc.sampleCount = descriptor->sampleCount;
     wgpuDesc.format = gfxFormatToWGPUFormat(descriptor->format);
@@ -1373,35 +1449,7 @@ GfxResult webgpu_deviceCreateSampler(GfxDevice device, const GfxSamplerDescripto
     wgpuDesc.maxAnisotropy = descriptor->maxAnisotropy;
 
     if (descriptor->compare) {
-        switch (*descriptor->compare) {
-        case GFX_COMPARE_FUNCTION_NEVER:
-            wgpuDesc.compare = WGPUCompareFunction_Never;
-            break;
-        case GFX_COMPARE_FUNCTION_LESS:
-            wgpuDesc.compare = WGPUCompareFunction_Less;
-            break;
-        case GFX_COMPARE_FUNCTION_EQUAL:
-            wgpuDesc.compare = WGPUCompareFunction_Equal;
-            break;
-        case GFX_COMPARE_FUNCTION_LESS_EQUAL:
-            wgpuDesc.compare = WGPUCompareFunction_LessEqual;
-            break;
-        case GFX_COMPARE_FUNCTION_GREATER:
-            wgpuDesc.compare = WGPUCompareFunction_Greater;
-            break;
-        case GFX_COMPARE_FUNCTION_NOT_EQUAL:
-            wgpuDesc.compare = WGPUCompareFunction_NotEqual;
-            break;
-        case GFX_COMPARE_FUNCTION_GREATER_EQUAL:
-            wgpuDesc.compare = WGPUCompareFunction_GreaterEqual;
-            break;
-        case GFX_COMPARE_FUNCTION_ALWAYS:
-            wgpuDesc.compare = WGPUCompareFunction_Always;
-            break;
-        default:
-            wgpuDesc.compare = WGPUCompareFunction_Undefined;
-            break;
-        }
+        wgpuDesc.compare = gfxCompareFunctionToWGPU(*descriptor->compare);
     }
 
     WGPUSampler wgpuSampler = wgpuDeviceCreateSampler(devicePtr->handle(), &wgpuDesc);
@@ -1659,28 +1707,14 @@ GfxResult webgpu_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPip
                     WGPUBlendState blend = WGPU_BLEND_STATE_INIT;
 
                     // Color blend
-                    switch (target.blend->color.operation) {
-                    case GFX_BLEND_OPERATION_ADD:
-                        blend.color.operation = WGPUBlendOperation_Add;
-                        break;
-                    case GFX_BLEND_OPERATION_SUBTRACT:
-                        blend.color.operation = WGPUBlendOperation_Subtract;
-                        break;
-                    case GFX_BLEND_OPERATION_REVERSE_SUBTRACT:
-                        blend.color.operation = WGPUBlendOperation_ReverseSubtract;
-                        break;
-                    case GFX_BLEND_OPERATION_MIN:
-                        blend.color.operation = WGPUBlendOperation_Min;
-                        break;
-                    case GFX_BLEND_OPERATION_MAX:
-                        blend.color.operation = WGPUBlendOperation_Max;
-                        break;
-                    }
+                    blend.color.operation = gfxBlendOperationToWGPU(target.blend->color.operation);
+                    blend.color.srcFactor = gfxBlendFactorToWGPU(target.blend->color.srcFactor);
+                    blend.color.dstFactor = gfxBlendFactorToWGPU(target.blend->color.dstFactor);
 
-                    // Simplified blend factor mapping
-                    blend.color.srcFactor = WGPUBlendFactor_One;
-                    blend.color.dstFactor = WGPUBlendFactor_Zero;
-                    blend.alpha = blend.color;
+                    // Alpha blend
+                    blend.alpha.operation = gfxBlendOperationToWGPU(target.blend->alpha.operation);
+                    blend.alpha.srcFactor = gfxBlendFactorToWGPU(target.blend->alpha.srcFactor);
+                    blend.alpha.dstFactor = gfxBlendFactorToWGPU(target.blend->alpha.dstFactor);
 
                     blendStates.push_back(blend);
                     wgpuTarget.blend = &blendStates.back();
@@ -1820,11 +1854,11 @@ void webgpu_deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
         return;
     }
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-    
+
     WGPUSupportedLimits limits{};
     limits.nextInChain = nullptr;
     wgpuDeviceGetLimits(devicePtr->handle(), &limits);
-    
+
     outLimits->minUniformBufferOffsetAlignment = limits.limits.minUniformBufferOffsetAlignment;
     outLimits->minStorageBufferOffsetAlignment = limits.limits.minStorageBufferOffsetAlignment;
     outLimits->maxUniformBufferBindingSize = limits.limits.maxUniformBufferBindingSize;
@@ -1932,7 +1966,7 @@ uint32_t webgpu_swapchainGetBufferCount(GfxSwapchain swapchain)
     return reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain)->getBufferCount();
 }
 
-GfxResult webgpu_swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, 
+GfxResult webgpu_swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs,
     GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex)
 {
     if (!swapchain || !outImageIndex) {
@@ -1943,47 +1977,47 @@ GfxResult webgpu_swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t time
     // The surface texture is acquired implicitly when we call wgpuSurfaceGetCurrentTexture
     // For now, we just return image index 0 (WebGPU doesn't expose multiple image indices)
     // The semaphore and fence are noted but WebGPU doesn't support explicit synchronization primitives
-    
+
     (void)timeoutNs;
     (void)imageAvailableSemaphore; // WebGPU doesn't support explicit semaphore signaling
-    
+
     auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
-    
+
     // Get current texture to check status
     WGPUSurfaceTexture surfaceTexture = WGPU_SURFACE_TEXTURE_INIT;
     wgpuSurfaceGetCurrentTexture(swapchainPtr->surface(), &surfaceTexture);
-    
+
     GfxResult result = GFX_RESULT_SUCCESS;
     switch (surfaceTexture.status) {
-        case WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal:
-        case WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal:
-            *outImageIndex = 0; // WebGPU only exposes current image
-            result = GFX_RESULT_SUCCESS;
-            break;
-        case WGPUSurfaceGetCurrentTextureStatus_Timeout:
-            result = GFX_RESULT_TIMEOUT;
-            break;
-        case WGPUSurfaceGetCurrentTextureStatus_Outdated:
-            result = GFX_RESULT_ERROR_OUT_OF_DATE;
-            break;
-        case WGPUSurfaceGetCurrentTextureStatus_Lost:
-            result = GFX_RESULT_ERROR_SURFACE_LOST;
-            break;
-        default:
-            result = GFX_RESULT_ERROR_UNKNOWN;
-            break;
+    case WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal:
+    case WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal:
+        *outImageIndex = 0; // WebGPU only exposes current image
+        result = GFX_RESULT_SUCCESS;
+        break;
+    case WGPUSurfaceGetCurrentTextureStatus_Timeout:
+        result = GFX_RESULT_TIMEOUT;
+        break;
+    case WGPUSurfaceGetCurrentTextureStatus_Outdated:
+        result = GFX_RESULT_ERROR_OUT_OF_DATE;
+        break;
+    case WGPUSurfaceGetCurrentTextureStatus_Lost:
+        result = GFX_RESULT_ERROR_SURFACE_LOST;
+        break;
+    default:
+        result = GFX_RESULT_ERROR_UNKNOWN;
+        break;
     }
-    
+
     if (surfaceTexture.texture) {
         wgpuTextureRelease(surfaceTexture.texture);
     }
-    
+
     // Signal fence if provided (even though WebGPU doesn't truly have fences)
     if (fence && result == GFX_RESULT_SUCCESS) {
         auto* fencePtr = reinterpret_cast<gfx::webgpu::Fence*>(fence);
         fencePtr->setSignaled(true);
     }
-    
+
     return result;
 }
 
@@ -1992,11 +2026,11 @@ GfxTextureView webgpu_swapchainGetImageView(GfxSwapchain swapchain, uint32_t ima
     if (!swapchain) {
         return nullptr;
     }
-    
+
     // WebGPU doesn't expose multiple swapchain images by index
     // Always return the current texture view regardless of index
     (void)imageIndex;
-    
+
     return webgpu_swapchainGetCurrentTextureView(swapchain);
 }
 
@@ -2030,11 +2064,11 @@ GfxResult webgpu_swapchainPresentWithSync(GfxSwapchain swapchain, const GfxPrese
     if (!swapchain) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
-    
+
     // WebGPU doesn't support explicit wait semaphores for present
     // The queue submission already ensures ordering, so we just present
     (void)presentInfo; // Wait semaphores are noted but not used in WebGPU
-    
+
     return webgpu_swapchainPresent(swapchain);
 }
 
@@ -2281,15 +2315,6 @@ void webgpu_textureViewDestroy(GfxTextureView textureView)
     delete reinterpret_cast<gfx::webgpu::TextureView*>(textureView);
 }
 
-GfxTexture webgpu_textureViewGetTexture(GfxTextureView textureView)
-{
-    if (!textureView) {
-        return nullptr;
-    }
-    auto* viewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(textureView);
-    return reinterpret_cast<GfxTexture>(viewPtr->getTexture());
-}
-
 // Sampler functions
 void webgpu_samplerDestroy(GfxSampler sampler)
 {
@@ -2435,7 +2460,7 @@ void webgpu_queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigi
     WGPUExtent3D wgpuExtent = { extent->width, extent->height, extent->depth };
 
     wgpuQueueWriteTexture(queuePtr->handle(), &dest, data, dataSize, &layout, &wgpuExtent);
-    
+
     (void)finalLayout; // WebGPU handles layout transitions automatically
 }
 
@@ -2612,7 +2637,7 @@ void webgpu_commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
     WGPUExtent3D wgpuExtent = { extent->width, extent->height, extent->depth };
 
     wgpuCommandEncoderCopyBufferToTexture(encoderPtr->handle(), &sourceInfo, &destInfo, &wgpuExtent);
-    
+
     (void)finalLayout; // WebGPU handles layout transitions automatically
 }
 
@@ -2642,7 +2667,7 @@ void webgpu_commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
     WGPUExtent3D wgpuExtent = { extent->width, extent->height, extent->depth };
 
     wgpuCommandEncoderCopyTextureToBuffer(encoderPtr->handle(), &sourceInfo, &destInfo, &wgpuExtent);
-    
+
     (void)finalLayout; // WebGPU handles layout transitions automatically
 }
 
@@ -2672,7 +2697,7 @@ void webgpu_commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
     WGPUExtent3D wgpuExtent = { extent->width, extent->height, extent->depth };
 
     wgpuCommandEncoderCopyTextureToTexture(encoderPtr->handle(), &sourceInfo, &destInfo, &wgpuExtent);
-    
+
     (void)srcFinalLayout; // WebGPU handles layout transitions automatically
     (void)dstFinalLayout;
 }
@@ -2761,8 +2786,8 @@ void webgpu_renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder,
     }
 
     auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
-    wgpuRenderPassEncoderSetViewport(encoderPtr->handle(), 
-        viewport->x, viewport->y, viewport->width, viewport->height, 
+    wgpuRenderPassEncoderSetViewport(encoderPtr->handle(),
+        viewport->x, viewport->y, viewport->width, viewport->height,
         viewport->minDepth, viewport->maxDepth);
 }
 
@@ -2774,7 +2799,7 @@ void webgpu_renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncod
     }
 
     auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
-    wgpuRenderPassEncoderSetScissorRect(encoderPtr->handle(), 
+    wgpuRenderPassEncoderSetScissorRect(encoderPtr->handle(),
         scissor->x, scissor->y, scissor->width, scissor->height);
 }
 
@@ -3023,7 +3048,6 @@ static const GfxBackendAPI webGpuBackendApi = {
     .textureGetLayout = webgpu_textureGetLayout,
     .textureCreateView = webgpu_textureCreateView,
     .textureViewDestroy = webgpu_textureViewDestroy,
-    .textureViewGetTexture = webgpu_textureViewGetTexture,
     .samplerDestroy = webgpu_samplerDestroy,
     .shaderDestroy = webgpu_shaderDestroy,
     .bindGroupLayoutDestroy = webgpu_bindGroupLayoutDestroy,
