@@ -750,10 +750,6 @@ class Surface {
 public:
     virtual ~Surface() = default;
 
-    virtual uint32_t getWidth() const = 0;
-    virtual uint32_t getHeight() const = 0;
-    virtual void resize(uint32_t width, uint32_t height) = 0;
-
     // Get supported formats and present modes for this surface
     virtual std::vector<TextureFormat> getSupportedFormats() const = 0;
     virtual std::vector<PresentMode> getSupportedPresentModes() const = 0;
@@ -776,12 +772,6 @@ public:
 
     // Present the current frame
     virtual void present() = 0;
-
-    // Resize the swapchain (recreates internal resources)
-    virtual void resize(uint32_t width, uint32_t height) = 0;
-
-    // Check if swapchain needs to be recreated (e.g., window resized, lost device)
-    virtual bool needsRecreation() const = 0;
 
     // Explicit synchronization API
     // Acquire the next swapchain image with optional synchronization

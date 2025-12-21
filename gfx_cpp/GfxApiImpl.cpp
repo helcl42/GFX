@@ -952,10 +952,6 @@ public:
 
     GfxSurface getHandle() const { return m_handle; }
 
-    uint32_t getWidth() const override { return gfxSurfaceGetWidth(m_handle); }
-    uint32_t getHeight() const override { return gfxSurfaceGetHeight(m_handle); }
-    void resize(uint32_t width, uint32_t height) override { gfxSurfaceResize(m_handle, width, height); }
-
     std::vector<TextureFormat> getSupportedFormats() const override
     {
         GfxTextureFormat formats[16];
@@ -1046,16 +1042,6 @@ public:
         gfxSwapchainPresent(m_handle);
     }
 
-    void resize(uint32_t width, uint32_t height) override
-    {
-        gfxSwapchainResize(m_handle, width, height);
-    }
-
-    bool needsRecreation() const override
-    {
-        return gfxSwapchainNeedsRecreation(m_handle);
-    }
-
     Result acquireNextImage(uint64_t timeout,
         std::shared_ptr<Semaphore> signalSemaphore,
         std::shared_ptr<Fence> signalFence,
@@ -1123,8 +1109,6 @@ public:
         GfxSurfaceDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
         cDesc.windowHandle = cppHandleToCHandle(descriptor.windowHandle);
-        cDesc.width = descriptor.width;
-        cDesc.height = descriptor.height;
 
         GfxSurface surface = nullptr;
         GfxResult result = gfxDeviceCreateSurface(m_handle, &cDesc, &surface);

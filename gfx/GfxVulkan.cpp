@@ -702,8 +702,6 @@ public:
 
     Surface(VkInstance instance, const GfxSurfaceDescriptor* descriptor)
         : m_instance(instance)
-        , m_width(descriptor ? descriptor->width : 0)
-        , m_height(descriptor ? descriptor->height : 0)
         , m_windowHandle(descriptor ? descriptor->windowHandle : GfxPlatformWindowHandle{})
     {
         if (descriptor && descriptor->windowHandle.windowingSystem == GFX_WINDOWING_SYSTEM_X11 && descriptor->windowHandle.x11.display) {
@@ -727,21 +725,11 @@ public:
     }
 
     VkSurfaceKHR handle() const { return m_surface; }
-    uint32_t getWidth() const { return m_width; }
-    uint32_t getHeight() const { return m_height; }
     GfxPlatformWindowHandle getPlatformHandle() const { return m_windowHandle; }
-
-    void resize(uint32_t width, uint32_t height)
-    {
-        m_width = width;
-        m_height = height;
-    }
 
 private:
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;
     VkInstance m_instance = VK_NULL_HANDLE;
-    uint32_t m_width = 0;
-    uint32_t m_height = 0;
     GfxPlatformWindowHandle m_windowHandle;
 };
 
@@ -771,6 +759,24 @@ public:
         VkSurfaceFormatKHR surfaceFormat = formats[0];
         m_format = surfaceFormat.format;
 
+        // Determine actual swapchain extent
+        // If currentExtent is defined, we MUST use it. Otherwise, we can choose within min/max bounds.
+        VkExtent2D actualExtent;
+        if (capabilities.currentExtent.width != UINT32_MAX) {
+            // Window manager is telling us the size - we must use it
+            actualExtent = capabilities.currentExtent;
+            m_width = actualExtent.width;
+            m_height = actualExtent.height;
+        } else {
+            // We can choose the extent within bounds
+            actualExtent.width = std::max(capabilities.minImageExtent.width,
+                std::min(m_width, capabilities.maxImageExtent.width));
+            actualExtent.height = std::max(capabilities.minImageExtent.height,
+                std::min(m_height, capabilities.maxImageExtent.height));
+            m_width = actualExtent.width;
+            m_height = actualExtent.height;
+        }
+
         // Create swapchain
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -781,7 +787,7 @@ public:
         }
         createInfo.imageFormat = m_format;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = { m_width, m_height };
+        createInfo.imageExtent = actualExtent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -882,91 +888,6 @@ public:
         presentInfo.pImageIndices = &m_currentImageIndex;
 
         return vkQueuePresentKHR(m_presentQueue, &presentInfo);
-    }
-
-    void resize(uint32_t newWidth, uint32_t newHeight)
-    {
-        if (newWidth == 0 || newHeight == 0) {
-            return;
-        }
-
-        // Wait for device to be idle
-        vkDeviceWaitIdle(m_device);
-
-        m_width = newWidth;
-        m_height = newHeight;
-
-        // Clean up old texture views
-        m_textureViews.clear();
-
-        // Store old swapchain for recreation
-        VkSwapchainKHR oldSwapchain = m_swapchain;
-
-        // Query surface capabilities
-        VkSurfaceCapabilitiesKHR capabilities;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice, m_surface, &capabilities);
-
-        // Choose format
-        uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount, nullptr);
-        std::vector<VkSurfaceFormatKHR> formats(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount, formats.data());
-
-        VkSurfaceFormatKHR surfaceFormat = formats[0];
-        m_format = surfaceFormat.format;
-
-        // Create new swapchain
-        VkSwapchainCreateInfoKHR createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = m_surface;
-        createInfo.minImageCount = std::min(3u, capabilities.minImageCount + 1);
-        if (capabilities.maxImageCount > 0) {
-            createInfo.minImageCount = std::min(createInfo.minImageCount, capabilities.maxImageCount);
-        }
-        createInfo.imageFormat = m_format;
-        createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = { m_width, m_height };
-        createInfo.imageArrayLayers = 1;
-        createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.preTransform = capabilities.currentTransform;
-        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-        createInfo.clipped = VK_TRUE;
-        createInfo.oldSwapchain = oldSwapchain;
-
-        VkResult result = vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapchain);
-        if (result != VK_SUCCESS) {
-            throw std::runtime_error("Failed to recreate swapchain");
-        }
-
-        // Destroy old swapchain
-        if (oldSwapchain != VK_NULL_HANDLE) {
-            vkDestroySwapchainKHR(m_device, oldSwapchain, nullptr);
-        }
-
-        // Get new swapchain images
-        uint32_t imageCount;
-        vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, nullptr);
-        m_images.resize(imageCount);
-        vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, m_images.data());
-
-        // Create new texture views
-        m_textureViews.reserve(imageCount);
-        for (size_t i = 0; i < imageCount; ++i) {
-            GfxTextureViewDescriptor viewDesc{};
-            viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-            viewDesc.format = vkFormatToGfxFormat(m_format);
-            viewDesc.mipLevelCount = 1;
-            viewDesc.baseArrayLayer = 0;
-            viewDesc.arrayLayerCount = 1;
-            m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], VkExtent3D{ m_width, m_height, 1 }, VK_SAMPLE_COUNT_1_BIT, &viewDesc));
-        }
-
-        // Acquire first image
-        vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, VK_NULL_HANDLE, m_acquireFence, &m_currentImageIndex);
-        vkWaitForFences(m_device, 1, &m_acquireFence, VK_TRUE, UINT64_MAX);
-        vkResetFences(m_device, 1, &m_acquireFence);
     }
 
 private:
@@ -1541,8 +1462,22 @@ public:
         inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
         // Viewport
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = 800.0f; // Placeholder, dynamic state will be used
+        viewport.height = 600.0f; // Placeholder, dynamic state will be used
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+
+        VkRect2D scissorRect{};
+        scissorRect.offset = { 0, 0 };
+        scissorRect.extent = { 800, 600 }; // Placeholder, dynamic state will be used
+
         VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewportState.pViewports = &viewport;
+        viewportState.pScissors = &scissorRect;
         viewportState.viewportCount = 1;
         viewportState.scissorCount = 1;
 
@@ -2310,33 +2245,6 @@ void vulkan_surfaceDestroy(GfxSurface surface)
     delete reinterpret_cast<gfx::vulkan::Surface*>(surface);
 }
 
-uint32_t vulkan_surfaceGetWidth(GfxSurface surface)
-{
-    if (!surface) {
-        return 0;
-    }
-    auto* surf = reinterpret_cast<gfx::vulkan::Surface*>(surface);
-    return surf->getWidth();
-}
-
-uint32_t vulkan_surfaceGetHeight(GfxSurface surface)
-{
-    if (!surface) {
-        return 0;
-    }
-    auto* surf = reinterpret_cast<gfx::vulkan::Surface*>(surface);
-    return surf->getHeight();
-}
-
-void vulkan_surfaceResize(GfxSurface surface, uint32_t width, uint32_t height)
-{
-    if (!surface) {
-        return;
-    }
-    auto* surf = reinterpret_cast<gfx::vulkan::Surface*>(surface);
-    surf->resize(width, height);
-}
-
 uint32_t vulkan_surfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats)
 {
     if (!surface) {
@@ -2537,26 +2445,6 @@ GfxResult vulkan_swapchainPresent(GfxSwapchain swapchain)
     auto* sc = reinterpret_cast<gfx::vulkan::Swapchain*>(swapchain);
     sc->present();
     return GFX_RESULT_SUCCESS;
-}
-
-bool vulkan_swapchainNeedsRecreation(GfxSwapchain swapchain)
-{
-    (void)swapchain;
-    // For now, always return false. Proper implementation would check for VK_ERROR_OUT_OF_DATE_KHR
-    return false;
-}
-
-void vulkan_swapchainResize(GfxSwapchain swapchain, uint32_t width, uint32_t height)
-{
-    if (!swapchain) {
-        return;
-    }
-    auto* sc = reinterpret_cast<gfx::vulkan::Swapchain*>(swapchain);
-    try {
-        sc->resize(width, height);
-    } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to resize swapchain: %s\n", e.what());
-    }
 }
 
 GfxResult vulkan_deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer)
@@ -3915,21 +3803,6 @@ void vulkan_renderPassEncoderDraw(GfxRenderPassEncoder encoder, uint32_t vertexC
     }
     auto* enc = reinterpret_cast<gfx::vulkan::CommandEncoder*>(encoder);
 
-    // Set viewport and scissor (required for dynamic state)
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = 800.0f;
-    viewport.height = 600.0f;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(enc->handle(), 0, 1, &viewport);
-
-    VkRect2D scissor{};
-    scissor.offset = { 0, 0 };
-    scissor.extent = { 800, 600 };
-    vkCmdSetScissor(enc->handle(), 0, 1, &scissor);
-
     VkCommandBuffer cmdBuf = enc->handle();
     vkCmdDraw(cmdBuf, vertexCount, instanceCount, firstVertex, firstInstance);
 }
@@ -3940,21 +3813,6 @@ void vulkan_renderPassEncoderDrawIndexed(GfxRenderPassEncoder encoder, uint32_t 
         return;
     }
     auto* enc = reinterpret_cast<gfx::vulkan::CommandEncoder*>(encoder);
-
-    // Set viewport and scissor (required for dynamic state)
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = 800.0f;
-    viewport.height = 600.0f;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(enc->handle(), 0, 1, &viewport);
-
-    VkRect2D scissor{};
-    scissor.offset = { 0, 0 };
-    scissor.extent = { 800, 600 };
-    vkCmdSetScissor(enc->handle(), 0, 1, &scissor);
 
     VkCommandBuffer cmdBuf = enc->handle();
     vkCmdDrawIndexed(cmdBuf, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
@@ -4060,9 +3918,6 @@ static const GfxBackendAPI vulkanBackendApi = {
     .deviceWaitIdle = vulkan_deviceWaitIdle,
     .deviceGetLimits = vulkan_deviceGetLimits,
     .surfaceDestroy = vulkan_surfaceDestroy,
-    .surfaceGetWidth = vulkan_surfaceGetWidth,
-    .surfaceGetHeight = vulkan_surfaceGetHeight,
-    .surfaceResize = vulkan_surfaceResize,
     .surfaceGetSupportedFormats = vulkan_surfaceGetSupportedFormats,
     .surfaceGetSupportedPresentModes = vulkan_surfaceGetSupportedPresentModes,
     .surfaceGetPlatformHandle = vulkan_surfaceGetPlatformHandle,
@@ -4076,8 +3931,6 @@ static const GfxBackendAPI vulkanBackendApi = {
     .swapchainGetCurrentTextureView = vulkan_swapchainGetCurrentTextureView,
     .swapchainPresentWithSync = vulkan_swapchainPresentWithSync,
     .swapchainPresent = vulkan_swapchainPresent,
-    .swapchainResize = vulkan_swapchainResize,
-    .swapchainNeedsRecreation = vulkan_swapchainNeedsRecreation,
     .bufferDestroy = vulkan_bufferDestroy,
     .bufferGetSize = vulkan_bufferGetSize,
     .bufferGetUsage = vulkan_bufferGetUsage,

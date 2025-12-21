@@ -41,9 +41,6 @@ typedef struct {
 
     // Surface functions
     void (*surfaceDestroy)(GfxSurface surface);
-    uint32_t (*surfaceGetWidth)(GfxSurface surface);
-    uint32_t (*surfaceGetHeight)(GfxSurface surface);
-    void (*surfaceResize)(GfxSurface surface, uint32_t width, uint32_t height);
     uint32_t (*surfaceGetSupportedFormats)(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats);
     uint32_t (*surfaceGetSupportedPresentModes)(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes);
     GfxPlatformWindowHandle (*surfaceGetPlatformHandle)(GfxSurface surface);
@@ -59,8 +56,6 @@ typedef struct {
     GfxTextureView (*swapchainGetCurrentTextureView)(GfxSwapchain swapchain);
     GfxResult (*swapchainPresentWithSync)(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo);
     GfxResult (*swapchainPresent)(GfxSwapchain swapchain);
-    void (*swapchainResize)(GfxSwapchain swapchain, uint32_t width, uint32_t height);
-    bool (*swapchainNeedsRecreation)(GfxSwapchain swapchain);
 
     // Buffer functions
     void (*bufferDestroy)(GfxBuffer buffer);

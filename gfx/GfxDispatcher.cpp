@@ -639,42 +639,6 @@ void gfxComputePassEncoderDestroy(GfxComputePassEncoder computePassEncoder)
     // Do NOT unwrap - it's an alias to the command encoder
 }
 
-// Surface Functions
-uint32_t gfxSurfaceGetWidth(GfxSurface surface)
-{
-    if (!surface) {
-        return 0;
-    }
-    auto api = gfx::getAPI(surface);
-    if (!api) {
-        return 0;
-    }
-    return api->surfaceGetWidth(gfx::native(surface));
-}
-
-uint32_t gfxSurfaceGetHeight(GfxSurface surface)
-{
-    if (!surface) {
-        return 0;
-    }
-    auto api = gfx::getAPI(surface);
-    if (!api) {
-        return 0;
-    }
-    return api->surfaceGetHeight(gfx::native(surface));
-}
-
-void gfxSurfaceResize(GfxSurface surface, uint32_t width, uint32_t height)
-{
-    if (!surface) {
-        return;
-    }
-    auto api = gfx::getAPI(surface);
-    if (api) {
-        api->surfaceResize(gfx::native(surface), width, height);
-    }
-}
-
 uint32_t gfxSurfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats)
 {
     if (!surface) {
@@ -840,29 +804,6 @@ GfxResult gfxSwapchainPresent(GfxSwapchain swapchain)
         return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
     }
     return api->swapchainPresent(gfx::native(swapchain));
-}
-
-void gfxSwapchainResize(GfxSwapchain swapchain, uint32_t width, uint32_t height)
-{
-    if (!swapchain) {
-        return;
-    }
-    auto api = gfx::getAPI(swapchain);
-    if (api) {
-        api->swapchainResize(gfx::native(swapchain), width, height);
-    }
-}
-
-bool gfxSwapchainNeedsRecreation(GfxSwapchain swapchain)
-{
-    if (!swapchain) {
-        return false;
-    }
-    auto api = gfx::getAPI(swapchain);
-    if (!api) {
-        return false;
-    }
-    return api->swapchainNeedsRecreation(gfx::native(swapchain));
 }
 
 // Buffer Functions

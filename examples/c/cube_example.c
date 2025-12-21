@@ -68,6 +68,9 @@ typedef struct {
     GfxTexture msaaColorTexture;
     GfxTextureView msaaColorTextureView;
 
+    uint32_t windowWidth;
+    uint32_t windowHeight;
+
     // Per-frame resources (for frames in flight)
     GfxBuffer sharedUniformBuffer; // Single buffer for all frames
     size_t uniformAlignedSize; // Aligned size per frame
@@ -84,15 +87,16 @@ typedef struct {
     float rotationAngleX;
     float rotationAngleY;
     double lastTime;
-
-    bool shouldClose;
 } CubeApp;
 
 // Function declarations
 static bool initWindow(CubeApp* app);
 static bool initializeGraphics(CubeApp* app);
 static bool createSyncObjects(CubeApp* app);
+static bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height);
+static void cleanupSizeDependentResources(CubeApp* app);
 static bool createRenderingResources(CubeApp* app);
+static void cleanupRenderingResources(CubeApp* app);
 static bool createRenderPipeline(CubeApp* app);
 static void updateUniforms(CubeApp* app);
 static void render(CubeApp* app);
@@ -120,8 +124,9 @@ static void errorCallback(int error, const char* description)
 static void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     CubeApp* app = (CubeApp*)glfwGetWindowUserPointer(window);
-    if (app && app->swapchain) {
-        gfxSwapchainResize(app->swapchain, (uint32_t)width, (uint32_t)height);
+    if (app) {
+        app->windowWidth = (uint32_t)width;
+        app->windowHeight = (uint32_t)height;
     }
 }
 
@@ -134,6 +139,7 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 
 bool initWindow(CubeApp* app)
 {
+
     glfwSetErrorCallback(errorCallback);
 
     if (!glfwInit()) {
@@ -175,10 +181,6 @@ GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_X11;
     handle.x11.display = glfwGetX11Display();
     handle.x11.window = (void*)(uintptr_t)glfwGetX11Window(window);
-
-    printf("[DEBUG] Using X11/Xlib for window surface\n");
-    printf("[DEBUG] Display: %p\n", handle.x11.display);
-    printf("[DEBUG] Window: %lu\n", (unsigned long)(uintptr_t)handle.x11.window);
 
 #elif defined(__APPLE__)
     handle.nsWindow = glfwGetCocoaWindow(window);
@@ -269,12 +271,9 @@ bool initializeGraphics(CubeApp* app)
 
     // Create surface
     GfxPlatformWindowHandle windowHandle = getPlatformWindowHandle(app->window);
-
     GfxSurfaceDescriptor surfaceDesc = {
         .label = "Main Surface",
-        .windowHandle = windowHandle,
-        .width = WINDOW_WIDTH,
-        .height = WINDOW_HEIGHT
+        .windowHandle = windowHandle
     };
 
     if (gfxDeviceCreateSurface(app->device, &surfaceDesc, &app->surface) != GFX_RESULT_SUCCESS) {
@@ -282,11 +281,16 @@ bool initializeGraphics(CubeApp* app)
         return false;
     }
 
+    return true;
+}
+
+bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
+{
     // Create swapchain
     GfxSwapchainDescriptor swapchainDesc = {
         .label = "Main Swapchain",
-        .width = WINDOW_WIDTH,
-        .height = WINDOW_HEIGHT,
+        .width = (uint32_t)width,
+        .height = (uint32_t)height,
         .format = COLOR_FORMAT,
         .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT,
         .presentMode = GFX_PRESENT_MODE_FIFO,
@@ -303,8 +307,8 @@ bool initializeGraphics(CubeApp* app)
         .label = "Depth Buffer",
         .type = GFX_TEXTURE_TYPE_2D,
         .size = {
-            .width = WINDOW_WIDTH,
-            .height = WINDOW_HEIGHT,
+            .width = (uint32_t)width,
+            .height = (uint32_t)height,
             .depth = 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
@@ -339,8 +343,8 @@ bool initializeGraphics(CubeApp* app)
         .label = "MSAA Color Buffer",
         .type = GFX_TEXTURE_TYPE_2D,
         .size = {
-            .width = WINDOW_WIDTH,
-            .height = WINDOW_HEIGHT,
+            .width = (uint32_t)width,
+            .height = (uint32_t)height,
             .depth = 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
@@ -367,12 +371,6 @@ bool initializeGraphics(CubeApp* app)
 
     if (gfxTextureCreateView(app->msaaColorTexture, &msaaColorViewDesc, &app->msaaColorTextureView) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create MSAA color texture view\n");
-        return false;
-    }
-
-    // Create synchronization objects
-    if (!createSyncObjects(app)) {
-        fprintf(stderr, "Failed to create sync objects\n");
         return false;
     }
 
@@ -421,6 +419,71 @@ bool createSyncObjects(CubeApp* app)
     app->currentFrame = 0;
 
     return true;
+}
+
+void cleanupSizeDependentResources(CubeApp* app)
+{
+    // Clean up size-dependent resources
+    if (app->msaaColorTextureView) {
+        gfxTextureViewDestroy(app->msaaColorTextureView);
+        app->msaaColorTextureView = NULL;
+    }
+    if (app->msaaColorTexture) {
+        gfxTextureDestroy(app->msaaColorTexture);
+        app->msaaColorTexture = NULL;
+    }
+    if (app->depthTextureView) {
+        gfxTextureViewDestroy(app->depthTextureView);
+        app->depthTextureView = NULL;
+    }
+    if (app->depthTexture) {
+        gfxTextureDestroy(app->depthTexture);
+        app->depthTexture = NULL;
+    }
+
+    if (app->swapchain) {
+        gfxSwapchainDestroy(app->swapchain);
+        app->swapchain = NULL;
+    }
+}
+
+void cleanupRenderingResources(CubeApp* app)
+{
+    // Clean up size-independent rendering resources
+    if (app->renderPipeline) {
+        gfxRenderPipelineDestroy(app->renderPipeline);
+        app->renderPipeline = NULL;
+    }
+    if (app->fragmentShader) {
+        gfxShaderDestroy(app->fragmentShader);
+        app->fragmentShader = NULL;
+    }
+    if (app->vertexShader) {
+        gfxShaderDestroy(app->vertexShader);
+        app->vertexShader = NULL;
+    }
+    if (app->uniformBindGroupLayout) {
+        gfxBindGroupLayoutDestroy(app->uniformBindGroupLayout);
+        app->uniformBindGroupLayout = NULL;
+    }
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        if (app->uniformBindGroups[i]) {
+            gfxBindGroupDestroy(app->uniformBindGroups[i]);
+            app->uniformBindGroups[i] = NULL;
+        }
+    }
+    if (app->sharedUniformBuffer) {
+        gfxBufferDestroy(app->sharedUniformBuffer);
+        app->sharedUniformBuffer = NULL;
+    }
+    if (app->indexBuffer) {
+        gfxBufferDestroy(app->indexBuffer);
+        app->indexBuffer = NULL;
+    }
+    if (app->vertexBuffer) {
+        gfxBufferDestroy(app->vertexBuffer);
+        app->vertexBuffer = NULL;
+    }
 }
 
 bool createRenderingResources(CubeApp* app)
@@ -732,7 +795,7 @@ void updateUniforms(CubeApp* app)
         0.0f, 1.0f, 0.0f); // up vector
 
     // Create perspective projection matrix
-    float aspect = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
+    float aspect = (float)gfxSwapchainGetWidth(app->swapchain) / (float)gfxSwapchainGetHeight(app->swapchain);
     matrixPerspective(uniforms.projection,
         45.0f * M_PI / 180.0f, // 45 degree FOV
         aspect,
@@ -878,6 +941,12 @@ void cleanup(CubeApp* app)
     if (app->device) {
         gfxDeviceWaitIdle(app->device);
     }
+
+    // Clean up size-dependent resources
+    cleanupSizeDependentResources(app);
+
+    // Clean up rendering resources
+    cleanupRenderingResources(app);
 
     // Destroy per-frame resources
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
@@ -1150,6 +1219,8 @@ int main()
     printf("=== Cube Example with Unified Graphics API (C) ===\n\n");
 
     CubeApp app = { 0 }; // Initialize all members to NULL/0
+    app.windowWidth = WINDOW_WIDTH;
+    app.windowHeight = WINDOW_HEIGHT;
 
     if (!initWindow(&app)) {
         cleanup(&app);
@@ -1157,6 +1228,16 @@ int main()
     }
 
     if (!initializeGraphics(&app)) {
+        cleanup(&app);
+        return -1;
+    }
+
+    if (!createSizeDependentResources(&app, app.windowWidth, app.windowHeight)) {
+        cleanup(&app);
+        return -1;
+    }
+
+    if (!createSyncObjects(&app)) {
         cleanup(&app);
         return -1;
     }
@@ -1174,11 +1255,33 @@ int main()
     printf("Application initialized successfully!\n");
     printf("Press ESC to exit\n\n");
 
+    uint32_t previousWidth = gfxSwapchainGetWidth(app.swapchain);
+    uint32_t previousHeight = gfxSwapchainGetHeight(app.swapchain);
+
     // Main loop
     while (!glfwWindowShouldClose(app.window)) {
         glfwPollEvents();
 
-        // Render frame (updates uniforms internally)
+        // Handle framebuffer resize BEFORE rendering (prevent acquiring image during resize)
+        if (previousWidth != app.windowWidth || previousHeight != app.windowHeight) {
+            // Wait for all in-flight frames to complete
+            gfxDeviceWaitIdle(app.device);
+
+            // Recreate only size-dependent resources (including swapchain)
+            cleanupSizeDependentResources(&app);
+            if (!createSizeDependentResources(&app, app.windowWidth, app.windowHeight)) {
+                fprintf(stderr, "Failed to recreate size-dependent resources after resize\n");
+                break;
+            }
+
+            previousWidth = app.windowWidth;
+            previousHeight = app.windowHeight;
+
+            printf("Window resized: %dx%d\n", gfxSwapchainGetWidth(app.swapchain), gfxSwapchainGetHeight(app.swapchain));
+            continue; // Skip rendering this frame
+        }
+
+        // Render frame (no resize check needed inside since we checked above)
         render(&app);
     }
 

@@ -1251,8 +1251,7 @@ GfxResult webgpu_deviceCreateSurface(GfxDevice device, const GfxSurfaceDescripto
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    auto* surface = new gfx::webgpu::Surface(wgpuSurface, descriptor->width,
-        descriptor->height, descriptor->windowHandle);
+    auto* surface = new gfx::webgpu::Surface(wgpuSurface, descriptor->windowHandle);
     *outSurface = reinterpret_cast<GfxSurface>(surface);
     return GFX_RESULT_SUCCESS;
 }
@@ -1897,30 +1896,6 @@ void webgpu_surfaceDestroy(GfxSurface surface)
     delete reinterpret_cast<gfx::webgpu::Surface*>(surface);
 }
 
-uint32_t webgpu_surfaceGetWidth(GfxSurface surface)
-{
-    if (!surface) {
-        return 0;
-    }
-    return reinterpret_cast<gfx::webgpu::Surface*>(surface)->getWidth();
-}
-
-uint32_t webgpu_surfaceGetHeight(GfxSurface surface)
-{
-    if (!surface) {
-        return 0;
-    }
-    return reinterpret_cast<gfx::webgpu::Surface*>(surface)->getHeight();
-}
-
-void webgpu_surfaceResize(GfxSurface surface, uint32_t width, uint32_t height)
-{
-    if (!surface) {
-        return;
-    }
-    reinterpret_cast<gfx::webgpu::Surface*>(surface)->setSize(width, height);
-}
-
 uint32_t webgpu_surfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats)
 {
     // WebGPU surface capabilities need device - not available at surface level
@@ -2110,60 +2085,6 @@ GfxResult webgpu_swapchainPresent(GfxSwapchain swapchain)
     }
 
     return presentOk ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
-}
-
-void webgpu_swapchainResize(GfxSwapchain swapchain, uint32_t width, uint32_t height)
-{
-    if (!swapchain) {
-        return;
-    }
-
-    auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
-    swapchainPtr->setSize(width, height);
-
-    // Reconfigure surface
-    WGPUSurfaceConfiguration config = WGPU_SURFACE_CONFIGURATION_INIT;
-    config.device = swapchainPtr->device();
-    config.format = swapchainPtr->getFormat();
-    config.usage = WGPUTextureUsage_RenderAttachment;
-    config.width = width;
-    config.height = height;
-    config.presentMode = WGPUPresentMode_Fifo;
-    config.alphaMode = WGPUCompositeAlphaMode_Auto;
-
-    wgpuSurfaceConfigure(swapchainPtr->surface(), &config);
-}
-
-bool webgpu_swapchainNeedsRecreation(GfxSwapchain swapchain)
-{
-    if (!swapchain) {
-        return false;
-    }
-
-    auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
-
-    WGPUSurfaceTexture surfaceTexture = WGPU_SURFACE_TEXTURE_INIT;
-    wgpuSurfaceGetCurrentTexture(swapchainPtr->surface(), &surfaceTexture);
-
-    bool needsRecreation = false;
-    switch (surfaceTexture.status) {
-    case WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal:
-    case WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal:
-        needsRecreation = false;
-        break;
-    case WGPUSurfaceGetCurrentTextureStatus_Timeout:
-    case WGPUSurfaceGetCurrentTextureStatus_Outdated:
-    case WGPUSurfaceGetCurrentTextureStatus_Lost:
-    case WGPUSurfaceGetCurrentTextureStatus_Error:
-        needsRecreation = true;
-        break;
-    }
-
-    if (surfaceTexture.texture) {
-        wgpuTextureRelease(surfaceTexture.texture);
-    }
-
-    return needsRecreation;
 }
 
 // Buffer functions
@@ -3034,9 +2955,6 @@ static const GfxBackendAPI webGpuBackendApi = {
     .deviceWaitIdle = webgpu_deviceWaitIdle,
     .deviceGetLimits = webgpu_deviceGetLimits,
     .surfaceDestroy = webgpu_surfaceDestroy,
-    .surfaceGetWidth = webgpu_surfaceGetWidth,
-    .surfaceGetHeight = webgpu_surfaceGetHeight,
-    .surfaceResize = webgpu_surfaceResize,
     .surfaceGetSupportedFormats = webgpu_surfaceGetSupportedFormats,
     .surfaceGetSupportedPresentModes = webgpu_surfaceGetSupportedPresentModes,
     .surfaceGetPlatformHandle = webgpu_surfaceGetPlatformHandle,
@@ -3050,8 +2968,6 @@ static const GfxBackendAPI webGpuBackendApi = {
     .swapchainGetCurrentTextureView = webgpu_swapchainGetCurrentTextureView,
     .swapchainPresentWithSync = webgpu_swapchainPresentWithSync,
     .swapchainPresent = webgpu_swapchainPresent,
-    .swapchainResize = webgpu_swapchainResize,
-    .swapchainNeedsRecreation = webgpu_swapchainNeedsRecreation,
     .bufferDestroy = webgpu_bufferDestroy,
     .bufferGetSize = webgpu_bufferGetSize,
     .bufferGetUsage = webgpu_bufferGetUsage,

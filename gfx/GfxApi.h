@@ -284,7 +284,6 @@ typedef enum GfxResult {
     GFX_RESULT_ERROR_UNKNOWN
 } GfxResult;
 
-
 // ============================================================================
 // Forward Declarations (Opaque Handles)
 // ============================================================================
@@ -439,7 +438,6 @@ typedef struct {
     bool forceFallbackAdapter;
 } GfxAdapterDescriptor;
 
-
 // Device limits
 typedef struct {
     uint32_t minUniformBufferOffsetAlignment;
@@ -466,8 +464,6 @@ typedef struct {
 typedef struct {
     const char* label;
     GfxPlatformWindowHandle windowHandle;
-    uint32_t width;
-    uint32_t height;
 } GfxSurfaceDescriptor;
 
 typedef struct {
@@ -774,9 +770,6 @@ GFX_API uint64_t gfxAlignDown(uint64_t value, uint64_t alignment);
 
 // Surface functions
 GFX_API void gfxSurfaceDestroy(GfxSurface surface);
-GFX_API uint32_t gfxSurfaceGetWidth(GfxSurface surface);
-GFX_API uint32_t gfxSurfaceGetHeight(GfxSurface surface);
-GFX_API void gfxSurfaceResize(GfxSurface surface, uint32_t width, uint32_t height);
 GFX_API uint32_t gfxSurfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats);
 GFX_API uint32_t gfxSurfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes);
 GFX_API GfxPlatformWindowHandle gfxSurfaceGetPlatformHandle(GfxSurface surface);
@@ -807,10 +800,6 @@ GFX_API GfxResult gfxSwapchainPresentWithSync(GfxSwapchain swapchain, const GfxP
 // Legacy present function with implicit synchronization
 // For explicit synchronization, use gfxSwapchainPresentWithSync
 GFX_API GfxResult gfxSwapchainPresent(GfxSwapchain swapchain);
-
-GFX_API void gfxSwapchainResize(GfxSwapchain swapchain, uint32_t width, uint32_t height);
-// TODO -> remove this
-GFX_API bool gfxSwapchainNeedsRecreation(GfxSwapchain swapchain);
 
 // Buffer functions
 GFX_API void gfxBufferDestroy(GfxBuffer buffer);

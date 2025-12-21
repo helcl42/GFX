@@ -61,10 +61,12 @@ private:
     bool initializeGraphics();
     bool createSyncObjects();
     bool createRenderingResources();
+    void cleanupRenderingResources();
+    bool createSizeDependentResources(uint32_t width, uint32_t height);
+    void cleanupSizeDependentResources();
     bool createRenderPipeline();
     void updateUniforms();
     void render();
-    void recreateSwapchain();
     PlatformWindowHandle extractNativeHandle();
     std::vector<uint8_t> loadBinaryFile(const char* filepath);
 
@@ -107,6 +109,9 @@ private:
     std::shared_ptr<Texture> msaaColorTexture;
     std::shared_ptr<TextureView> msaaColorTextureView;
 
+    uint32_t windowWidth = WINDOW_WIDTH;
+    uint32_t windowHeight = WINDOW_HEIGHT;
+
     // Per-frame resources (for frames in flight)
     std::shared_ptr<Buffer> sharedUniformBuffer; // Single buffer for all frames
     size_t uniformAlignedSize = 0; // Aligned size per frame
@@ -132,6 +137,10 @@ bool CubeApp::initialize()
     }
 
     if (!initializeGraphics()) {
+        return false;
+    }
+
+    if (!createSizeDependentResources(windowWidth, windowHeight)) {
         return false;
     }
 
@@ -161,7 +170,7 @@ bool CubeApp::initializeGLFW()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // No OpenGL context
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Rotating Cube Example (C++ API)", nullptr, nullptr);
+    window = glfwCreateWindow(windowWidth, windowHeight, "Rotating Cube Example (C++ API)", nullptr, nullptr);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -244,6 +253,16 @@ bool CubeApp::initializeGraphics()
             return false;
         }
 
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to initialize graphics: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
+{
+    try {
         // Create swapchain
         SwapchainDescriptor swapchainDesc{};
         swapchainDesc.label = "Main Swapchain";
@@ -251,7 +270,7 @@ bool CubeApp::initializeGraphics()
         swapchainDesc.height = static_cast<uint32_t>(height);
         swapchainDesc.format = COLOR_FORMAT;
         swapchainDesc.usage = TextureUsage::RenderAttachment;
-        swapchainDesc.presentMode = PresentMode::Fifo; // VSync
+        swapchainDesc.presentMode = PresentMode::Fifo;
         swapchainDesc.bufferCount = MAX_FRAMES_IN_FLIGHT;
 
         swapchain = device->createSwapchain(surface, swapchainDesc);
@@ -373,6 +392,33 @@ bool CubeApp::createSyncObjects()
         std::cerr << "Failed to create sync objects: " << e.what() << std::endl;
         return false;
     }
+}
+
+void CubeApp::cleanupSizeDependentResources()
+{
+    // Clean up size-dependent resources
+    msaaColorTextureView.reset();
+    msaaColorTexture.reset();
+    depthTextureView.reset();
+    depthTexture.reset();
+
+    // Also destroy swapchain to fully recreate it
+    swapchain.reset();
+}
+
+void CubeApp::cleanupRenderingResources()
+{
+    // Clean up size-independent rendering resources
+    renderPipeline.reset();
+    fragmentShader.reset();
+    vertexShader.reset();
+    uniformBindGroupLayout.reset();
+    for (auto& bindGroup : uniformBindGroups) {
+        bindGroup.reset();
+    }
+    sharedUniformBuffer.reset();
+    indexBuffer.reset();
+    vertexBuffer.reset();
 }
 
 bool CubeApp::createRenderingResources()
@@ -637,9 +683,7 @@ void CubeApp::updateUniforms()
         0.0f, 1.0f, 0.0f); // up
 
     // Create projection matrix
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-    float aspect = static_cast<float>(width) / static_cast<float>(height);
+    float aspect = (float)swapchain->getWidth() / (float)swapchain->getHeight();
     matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f);
 
     // Upload uniform data to current frame's offset in shared buffer
@@ -763,23 +807,6 @@ void CubeApp::render()
     }
 }
 
-void CubeApp::recreateSwapchain()
-{
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-
-    // Wait if window is minimized
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(window, &width, &height);
-        glfwWaitEvents();
-    }
-
-    // Recreate swapchain with new size
-    swapchain->resize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-
-    std::cout << "Swapchain recreated: " << width << "x" << height << std::endl;
-}
-
 PlatformWindowHandle CubeApp::extractNativeHandle()
 {
     PlatformWindowHandle handle{};
@@ -814,9 +841,10 @@ PlatformWindowHandle CubeApp::extractNativeHandle()
 void CubeApp::framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
     auto* app = static_cast<CubeApp*>(glfwGetWindowUserPointer(window));
-    // The swapchain recreation will be handled in the main loop
-    (void)width;
-    (void)height; // Suppress unused parameter warnings
+    if (app) {
+        app->windowWidth = static_cast<uint32_t>(width);
+        app->windowHeight = static_cast<uint32_t>(height);
+    }
 }
 
 void CubeApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -834,15 +862,32 @@ void CubeApp::run()
     // Initialize timing for first frame
     lastTime = glfwGetTime();
 
+    uint32_t previousWidth = swapchain->getWidth();
+    uint32_t previousHeight = swapchain->getHeight();
+
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        // Handle swapchain recreation if needed
-        if (swapchain && swapchain->needsRecreation()) {
-            recreateSwapchain();
+        if (previousWidth != windowWidth || previousHeight != windowHeight) {
+            // Wait for all in-flight frames to complete
+            device->waitIdle();
+
+            // Recreate only size-dependent resources (including swapchain)
+            cleanupSizeDependentResources();
+            if (!createSizeDependentResources(windowWidth, windowHeight)) {
+                std::cerr << "Failed to recreate size-dependent resources after resize" << std::endl;
+                break;
+            }
+
+            previousWidth = windowWidth;
+            previousHeight = windowHeight;
+
+            std::cout << "Window resized: " << swapchain->getWidth() << "x" << swapchain->getHeight() << std::endl;
+            continue; // Skip rendering this frame
         }
 
+        // Render (no resize check needed inside since we checked above)
         render();
     }
 }
@@ -853,6 +898,12 @@ void CubeApp::cleanup()
     if (device) {
         device->waitIdle();
     }
+
+    // Clean up size-dependent resources
+    cleanupSizeDependentResources();
+
+    // Clean up rendering resources
+    cleanupRenderingResources();
 
     // Clean up per-frame resources
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
