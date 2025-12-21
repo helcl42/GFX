@@ -719,9 +719,9 @@ bool createRenderPipeline(CubeApp* app)
     GfxPrimitiveState primitiveState = {
         .topology = GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         .stripIndexFormat = NULL,
-        .frontFaceCounterClockwise = false, // Clockwise = front-facing
-        .cullBackFace = true, // Enable back-face culling
-        .unclippedDepth = false
+        .frontFace = GFX_FRONT_FACE_CLOCKWISE,
+        .cullMode = GFX_CULL_MODE_BACK, // Enable back-face culling
+        .polygonMode = GFX_POLYGON_MODE_FILL
     };
 
     // Depth/stencil state - enable depth testing

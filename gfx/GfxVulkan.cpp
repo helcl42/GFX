@@ -228,6 +228,48 @@ VkSampleCountFlagBits sampleCountToVkSampleCount(GfxSampleCount sampleCount)
     }
 }
 
+VkCullModeFlags gfxCullModeToVkCullMode(GfxCullMode cullMode)
+{
+    switch (cullMode) {
+    case GFX_CULL_MODE_NONE:
+        return VK_CULL_MODE_NONE;
+    case GFX_CULL_MODE_FRONT:
+        return VK_CULL_MODE_FRONT_BIT;
+    case GFX_CULL_MODE_BACK:
+        return VK_CULL_MODE_BACK_BIT;
+    case GFX_CULL_MODE_FRONT_AND_BACK:
+        return VK_CULL_MODE_FRONT_BIT | VK_CULL_MODE_BACK_BIT;
+    default:
+        return VK_CULL_MODE_NONE;
+    }
+}
+
+VkFrontFace gfxFrontFaceToVkFrontFace(GfxFrontFace frontFace)
+{
+    switch (frontFace) {
+    case GFX_FRONT_FACE_COUNTER_CLOCKWISE:
+        return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    case GFX_FRONT_FACE_CLOCKWISE:
+        return VK_FRONT_FACE_CLOCKWISE;
+    default:
+        return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    }
+}
+
+VkPolygonMode gfxPolygonModeToVkPolygonMode(GfxPolygonMode polygonMode)
+{
+    switch (polygonMode) {
+    case GFX_POLYGON_MODE_FILL:
+        return VK_POLYGON_MODE_FILL;
+    case GFX_POLYGON_MODE_LINE:
+        return VK_POLYGON_MODE_LINE;
+    case GFX_POLYGON_MODE_POINT:
+        return VK_POLYGON_MODE_POINT;
+    default:
+        return VK_POLYGON_MODE_FILL;
+    }
+}
+
 const char* vkResultToString(VkResult result)
 {
     switch (result) {
@@ -1459,11 +1501,12 @@ public:
         // Input assembly
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        inputAssembly.topology = static_cast<VkPrimitiveTopology>(descriptor->primitive->topology);
 
         // Viewport
         VkViewport viewport{};
         viewport.x = 0.0f;
+        inputAssembly.topology = static_cast<VkPrimitiveTopology>(descriptor->primitive->topology);
         viewport.y = 0.0f;
         viewport.width = 800.0f; // Placeholder, dynamic state will be used
         viewport.height = 600.0f; // Placeholder, dynamic state will be used
@@ -1484,10 +1527,10 @@ public:
         // Rasterizer
         VkPipelineRasterizationStateCreateInfo rasterizer{};
         rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+        rasterizer.polygonMode = gfxPolygonModeToVkPolygonMode(descriptor->primitive->polygonMode);
         rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-        rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+        rasterizer.cullMode = gfxCullModeToVkCullMode(descriptor->primitive->cullMode);
+        rasterizer.frontFace = gfxFrontFaceToVkFrontFace(descriptor->primitive->frontFace);
 
         // Multisampling
         VkPipelineMultisampleStateCreateInfo multisampling{};

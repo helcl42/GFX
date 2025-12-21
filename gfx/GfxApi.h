@@ -69,6 +69,24 @@ typedef enum {
 } GfxPrimitiveTopology;
 
 typedef enum {
+    GFX_FRONT_FACE_COUNTER_CLOCKWISE,
+    GFX_FRONT_FACE_CLOCKWISE
+} GfxFrontFace;
+
+typedef enum {
+    GFX_CULL_MODE_NONE,
+    GFX_CULL_MODE_FRONT,
+    GFX_CULL_MODE_BACK,
+    GFX_CULL_MODE_FRONT_AND_BACK
+} GfxCullMode;
+
+typedef enum {
+    GFX_POLYGON_MODE_FILL,
+    GFX_POLYGON_MODE_LINE,
+    GFX_POLYGON_MODE_POINT
+} GfxPolygonMode;
+
+typedef enum {
     GFX_INDEX_FORMAT_UINT16,
     GFX_INDEX_FORMAT_UINT32
 } GfxIndexFormat;
@@ -572,9 +590,9 @@ typedef struct {
 typedef struct {
     GfxPrimitiveTopology topology;
     GfxIndexFormat* stripIndexFormat; // NULL if not used
-    bool frontFaceCounterClockwise;
-    bool cullBackFace;
-    bool unclippedDepth;
+    GfxFrontFace frontFace;
+    GfxCullMode cullMode;
+    GfxPolygonMode polygonMode;
 } GfxPrimitiveState;
 
 typedef struct {

@@ -48,6 +48,24 @@ enum class PrimitiveTopology {
     TriangleStrip
 };
 
+enum class FrontFace {
+    CounterClockwise,
+    Clockwise
+};
+
+enum class CullMode {
+    None,
+    Front,
+    Back,
+    FrontAndBack
+};
+
+enum class PolygonMode {
+    Fill,
+    Line,
+    Point
+};
+
 enum class IndexFormat {
     Uint16,
     Uint32
@@ -566,9 +584,9 @@ struct FragmentState {
 struct PrimitiveState {
     PrimitiveTopology topology = PrimitiveTopology::TriangleList;
     std::optional<IndexFormat> stripIndexFormat;
-    bool frontFaceCounterClockwise = true;
-    bool cullBackFace = false;
-    bool unclippedDepth = false;
+    FrontFace frontFace = FrontFace::CounterClockwise;
+    CullMode cullMode = CullMode::None;
+    PolygonMode polygonMode = PolygonMode::Fill;
 };
 
 struct StencilFaceState {

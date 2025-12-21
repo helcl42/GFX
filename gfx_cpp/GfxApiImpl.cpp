@@ -1416,9 +1416,9 @@ public:
         // Primitive state
         GfxPrimitiveState cPrimitiveState = {};
         cPrimitiveState.topology = static_cast<GfxPrimitiveTopology>(descriptor.primitive.topology);
-        cPrimitiveState.frontFaceCounterClockwise = descriptor.primitive.frontFaceCounterClockwise;
-        cPrimitiveState.cullBackFace = descriptor.primitive.cullBackFace;
-        cPrimitiveState.unclippedDepth = descriptor.primitive.unclippedDepth;
+        cPrimitiveState.frontFace = static_cast<GfxFrontFace>(descriptor.primitive.frontFace);
+        cPrimitiveState.cullMode = static_cast<GfxCullMode>(descriptor.primitive.cullMode);
+        cPrimitiveState.polygonMode = static_cast<GfxPolygonMode>(descriptor.primitive.polygonMode);
 
         GfxIndexFormat cStripIndexFormat;
         if (descriptor.primitive.stripIndexFormat.has_value()) {

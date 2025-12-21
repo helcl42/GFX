@@ -622,8 +622,9 @@ bool CubeApp::createRenderPipeline()
 
         PrimitiveState primitiveState{};
         primitiveState.topology = PrimitiveTopology::TriangleList;
-        primitiveState.frontFaceCounterClockwise = false;
-        primitiveState.cullBackFace = true; // Enable back-face culling for 3D
+        primitiveState.frontFace = FrontFace::Clockwise;
+        primitiveState.cullMode = CullMode::Back; // Enable back-face culling for 3D
+        primitiveState.polygonMode = PolygonMode::Fill;
 
         // Depth/stencil state - enable depth testing
         DepthStencilState depthStencilState{};

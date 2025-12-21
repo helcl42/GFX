@@ -1752,7 +1752,6 @@ GfxResult webgpu_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPip
     primitiveState.topology = gfxPrimitiveTopologyToWGPU(descriptor->primitive.topology);
     primitiveState.frontFace = descriptor->primitive.frontFaceCounterClockwise ? WGPUFrontFace_CCW : WGPUFrontFace_CW;
     primitiveState.cullMode = descriptor->primitive.cullBackFace ? WGPUCullMode_Back : WGPUCullMode_None;
-    primitiveState.unclippedDepth = descriptor->primitive.unclippedDepth ? WGPU_TRUE : WGPU_FALSE;
 
     if (descriptor->primitive.stripIndexFormat) {
         primitiveState.stripIndexFormat = gfxIndexFormatToWGPU(*descriptor->primitive.stripIndexFormat);
