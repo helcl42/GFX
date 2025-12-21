@@ -1521,23 +1521,60 @@ public:
             depthStencil.stencilTestEnable = VK_FALSE;
         }
 
-        // Create a simple render pass for pipeline creation
+        // Create a temporary render pass for pipeline creation using actual formats from descriptor
+        // This render pass must be compatible with the one used during actual rendering
+        // Supports Multiple Render Targets (MRT) with optional MSAA resolve per target
         std::vector<VkAttachmentDescription> attachments;
-        VkAttachmentDescription colorAttachment{};
+        std::vector<VkAttachmentReference> colorAttachmentRefs;
+        std::vector<VkAttachmentReference> resolveAttachmentRefs;
+        bool needsResolve = vkSampleCount > VK_SAMPLE_COUNT_1_BIT;
 
-        // TODO - iterate all color attachments from descriptor and use thir fomats + sample counts ???
-        colorAttachment.format = VK_FORMAT_B8G8R8A8_SRGB;
-        colorAttachment.samples = vkSampleCount;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        attachments.push_back(colorAttachment);
+        // Process all fragment shader color targets (MRT support)
+        if (!descriptor->fragment || descriptor->fragment->targetCount == 0) {
+            vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+            throw std::runtime_error("Fragment shader must define at least one color target");
+        }
 
-        VkAttachmentReference colorAttachmentRef{};
-        colorAttachmentRef.attachment = 0;
-        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        uint32_t targetCount = descriptor->fragment->targetCount;
 
+        for (uint32_t i = 0; i < targetCount; ++i) {
+            VkFormat targetFormat = gfxFormatToVkFormat(descriptor->fragment->targets[i].format);
+
+            // Create color attachment at pipeline sample count
+            VkAttachmentDescription colorAttachment{};
+            colorAttachment.format = targetFormat;
+            colorAttachment.samples = vkSampleCount;
+            colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            colorAttachment.storeOp = needsResolve ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
+            colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachments.push_back(colorAttachment);
+
+            VkAttachmentReference colorAttachmentRef{};
+            colorAttachmentRef.attachment = static_cast<uint32_t>(attachments.size() - 1);
+            colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            colorAttachmentRefs.push_back(colorAttachmentRef);
+
+            // Add resolve attachment if MSAA is enabled
+            // Note: This assumes all color targets get resolved - adjust per-target if needed
+            if (needsResolve) {
+                VkAttachmentDescription resolveAttachment{};
+                resolveAttachment.format = targetFormat;
+                resolveAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+                resolveAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                resolveAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                resolveAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                resolveAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                attachments.push_back(resolveAttachment);
+
+                VkAttachmentReference resolveAttachmentRef{};
+                resolveAttachmentRef.attachment = static_cast<uint32_t>(attachments.size() - 1);
+                resolveAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                resolveAttachmentRefs.push_back(resolveAttachmentRef);
+            }
+        }
+
+        // Add depth attachment if present (always after all color attachments)
         VkAttachmentReference depthAttachmentRef{};
         if (descriptor->depthStencil) {
             VkAttachmentDescription depthAttachment{};
@@ -1551,14 +1588,15 @@ public:
             depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             attachments.push_back(depthAttachment);
 
-            depthAttachmentRef.attachment = 1;
+            depthAttachmentRef.attachment = static_cast<uint32_t>(attachments.size() - 1);
             depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         }
 
         VkSubpassDescription subpass{};
         subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.colorAttachmentCount = 1;
-        subpass.pColorAttachments = &colorAttachmentRef;
+        subpass.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRefs.size());
+        subpass.pColorAttachments = colorAttachmentRefs.data();
+        subpass.pResolveAttachments = needsResolve ? resolveAttachmentRefs.data() : nullptr;
         if (descriptor->depthStencil) {
             subpass.pDepthStencilAttachment = &depthAttachmentRef;
         }

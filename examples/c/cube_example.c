@@ -699,6 +699,8 @@ bool createRenderPipeline(CubeApp* app)
     };
 
     // Color target state
+    // Note: Always 1 target even with MSAA - resolve is handled by render pass, not fragment shader
+    // layout(location = 0) out vec4 outColor;
     GfxColorTargetState colorTarget = {
         .format = COLOR_FORMAT,
         .blend = NULL,
