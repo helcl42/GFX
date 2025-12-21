@@ -328,6 +328,33 @@ typedef struct GfxFence_T* GfxFence;
 typedef struct GfxSemaphore_T* GfxSemaphore;
 
 // ============================================================================
+// Debug Message Types
+// ============================================================================
+
+typedef enum {
+    GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE = 0,
+    GFX_DEBUG_MESSAGE_SEVERITY_INFO = 1,
+    GFX_DEBUG_MESSAGE_SEVERITY_WARNING = 2,
+    GFX_DEBUG_MESSAGE_SEVERITY_ERROR = 3
+} GfxDebugMessageSeverity;
+
+typedef enum {
+    GFX_DEBUG_MESSAGE_TYPE_GENERAL = 0,
+    GFX_DEBUG_MESSAGE_TYPE_VALIDATION = 1,
+    GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE = 2
+} GfxDebugMessageType;
+
+// ============================================================================
+// Debug Callback
+// ============================================================================
+
+typedef void (*GfxDebugCallback)(
+    GfxDebugMessageSeverity severity,
+    GfxDebugMessageType type,
+    const char* message,
+    void* userData);
+
+// ============================================================================
 // Core Structures
 // ============================================================================
 
@@ -752,6 +779,7 @@ GFX_API void gfxUnloadAllBackends(void);
 // Instance functions
 GFX_API GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance);
 GFX_API void gfxInstanceDestroy(GfxInstance instance);
+GFX_API void gfxInstanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData);
 GFX_API GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter);
 GFX_API uint32_t gfxInstanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters);
 

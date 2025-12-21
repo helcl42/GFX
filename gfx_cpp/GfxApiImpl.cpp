@@ -1655,8 +1655,33 @@ public:
         return result;
     }
 
+    void setDebugCallback(DebugCallback callback) override
+    {
+        m_debugCallback = callback;
+        
+        if (callback) {
+            // Set C callback that forwards to C++ callback
+            gfxInstanceSetDebugCallback(m_handle, 
+                [](GfxDebugMessageSeverity severity, GfxDebugMessageType type, 
+                   const char* message, void* userData) {
+                    auto* self = static_cast<CInstanceImpl*>(userData);
+                    if (self && self->m_debugCallback) {
+                        self->m_debugCallback(
+                            static_cast<DebugMessageSeverity>(severity),
+                            static_cast<DebugMessageType>(type),
+                            message
+                        );
+                    }
+                }, 
+                this);
+        } else {
+            gfxInstanceSetDebugCallback(m_handle, nullptr, nullptr);
+        }
+    }
+
 private:
     GfxInstance m_handle;
+    DebugCallback m_debugCallback;
 };
 
 // ============================================================================

@@ -211,6 +211,26 @@ bool CubeApp::initializeGraphics()
             return false;
         }
 
+        // Set debug callback after instance creation
+        instance->setDebugCallback([](DebugMessageSeverity severity, DebugMessageType type, const std::string& message) {
+            const char* severityStr = "";
+            switch (severity) {
+                case DebugMessageSeverity::Verbose: severityStr = "VERBOSE"; break;
+                case DebugMessageSeverity::Info: severityStr = "INFO"; break;
+                case DebugMessageSeverity::Warning: severityStr = "WARNING"; break;
+                case DebugMessageSeverity::Error: severityStr = "ERROR"; break;
+            }
+
+            const char* typeStr = "";
+            switch (type) {
+                case DebugMessageType::General: typeStr = "GENERAL"; break;
+                case DebugMessageType::Validation: typeStr = "VALIDATION"; break;
+                case DebugMessageType::Performance: typeStr = "PERFORMANCE"; break;
+            }
+
+            std::cout << "[" << severityStr << "|" << typeStr << "] " << message << std::endl;
+        });
+
         // Get adapter
         AdapterDescriptor adapterDesc{};
         adapterDesc.powerPreference = PowerPreference::HighPerformance;

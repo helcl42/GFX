@@ -1097,6 +1097,14 @@ void webgpu_instanceDestroy(GfxInstance instance)
     delete reinterpret_cast<gfx::webgpu::Instance*>(instance);
 }
 
+void webgpu_instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData)
+{
+    // TODO: Implement debug callback using WebGPU error handling
+    (void)instance;
+    (void)callback;
+    (void)userData;
+}
+
 GfxResult webgpu_instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor,
     GfxAdapter* outAdapter)
 {
@@ -2930,6 +2938,7 @@ uint64_t webgpu_semaphoreGetValue(GfxSemaphore semaphore)
 static const GfxBackendAPI webGpuBackendApi = {
     .createInstance = webgpu_createInstance,
     .instanceDestroy = webgpu_instanceDestroy,
+    .instanceSetDebugCallback = webgpu_instanceSetDebugCallback,
     .instanceRequestAdapter = webgpu_instanceRequestAdapter,
     .instanceEnumerateAdapters = webgpu_instanceEnumerateAdapters,
     .adapterDestroy = webgpu_adapterDestroy,

@@ -474,14 +474,17 @@ private:
     VkInstance m_instance = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
     bool m_validationEnabled = false;
+    GfxDebugCallback m_userCallback = nullptr;
+    void* m_userCallbackData = nullptr;
 
     void setupDebugMessenger()
     {
         VkDebugUtilsMessengerCreateInfoEXT createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
         createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         createInfo.pfnUserCallback = debugCallback;
+        createInfo.pUserData = this;
 
         auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
             m_instance, "vkCreateDebugUtilsMessengerEXT");
@@ -496,13 +499,38 @@ private:
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData)
     {
-        (void)messageType;
-        (void)pUserData;
+        auto* instance = static_cast<Instance*>(pUserData);
+        if (instance && instance->m_userCallback) {
+            // Map Vulkan severity to Gfx severity
+            GfxDebugMessageSeverity severity = GFX_DEBUG_MESSAGE_SEVERITY_INFO;
+            if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
+                severity = GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE;
+            } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+                severity = GFX_DEBUG_MESSAGE_SEVERITY_INFO;
+            } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+                severity = GFX_DEBUG_MESSAGE_SEVERITY_WARNING;
+            } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+                severity = GFX_DEBUG_MESSAGE_SEVERITY_ERROR;
+            }
 
-        if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-            fprintf(stderr, "[Vulkan] %s\n", pCallbackData->pMessage);
+            // Map Vulkan type to Gfx type
+            GfxDebugMessageType type = GFX_DEBUG_MESSAGE_TYPE_GENERAL;
+            if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) {
+                type = GFX_DEBUG_MESSAGE_TYPE_VALIDATION;
+            } else if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
+                type = GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE;
+            }
+
+            instance->m_userCallback(severity, type, pCallbackData->pMessage, instance->m_userCallbackData);
         }
         return VK_FALSE;
+    }
+
+public:
+    void setDebugCallback(GfxDebugCallback callback, void* userData)
+    {
+        m_userCallback = callback;
+        m_userCallbackData = userData;
     }
 };
 
@@ -2053,6 +2081,15 @@ GfxResult vulkan_createInstance(const GfxInstanceDescriptor* descriptor, GfxInst
 void vulkan_instanceDestroy(GfxInstance instance)
 {
     delete reinterpret_cast<gfx::vulkan::Instance*>(instance);
+}
+
+void vulkan_instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData)
+{
+    if (!instance) {
+        return;
+    }
+    auto* inst = reinterpret_cast<gfx::vulkan::Instance*>(instance);
+    inst->setDebugCallback(callback, userData);
 }
 
 GfxResult vulkan_instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter)
@@ -3975,6 +4012,7 @@ void vulkan_computePassEncoderDestroy(GfxComputePassEncoder encoder)
 static const GfxBackendAPI vulkanBackendApi = {
     .createInstance = vulkan_createInstance,
     .instanceDestroy = vulkan_instanceDestroy,
+    .instanceSetDebugCallback = vulkan_instanceSetDebugCallback,
     .instanceRequestAdapter = vulkan_instanceRequestAdapter,
     .instanceEnumerateAdapters = vulkan_instanceEnumerateAdapters,
     .adapterDestroy = vulkan_adapterDestroy,

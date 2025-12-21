@@ -341,6 +341,17 @@ void gfxInstanceDestroy(GfxInstance instance)
     gfx::unwrap(instance);
 }
 
+void gfxInstanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData)
+{
+    if (!instance) {
+        return;
+    }
+    auto api = gfx::getAPI(instance);
+    if (api && api->instanceSetDebugCallback) {
+        api->instanceSetDebugCallback(gfx::native(instance), callback, userData);
+    }
+}
+
 GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter)
 {
     if (!instance || !outAdapter) {

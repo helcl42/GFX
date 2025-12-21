@@ -11,6 +11,7 @@ typedef struct {
     // Instance functions
     GfxResult (*createInstance)(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance);
     void (*instanceDestroy)(GfxInstance instance);
+    void (*instanceSetDebugCallback)(GfxInstance instance, GfxDebugCallback callback, void* userData);
     GfxResult (*instanceRequestAdapter)(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter);
     uint32_t (*instanceEnumerateAdapters)(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters);
 

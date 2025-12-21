@@ -30,6 +30,26 @@
 #define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
 #define DEPTH_FORMAT GFX_TEXTURE_FORMAT_DEPTH32_FLOAT
 
+// Debug callback function
+static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData) {
+    const char* severityStr = "";
+    switch (severity) {
+        case GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE: severityStr = "VERBOSE"; break;
+        case GFX_DEBUG_MESSAGE_SEVERITY_INFO: severityStr = "INFO"; break;
+        case GFX_DEBUG_MESSAGE_SEVERITY_WARNING: severityStr = "WARNING"; break;
+        case GFX_DEBUG_MESSAGE_SEVERITY_ERROR: severityStr = "ERROR"; break;
+    }
+
+    const char* typeStr = "";
+    switch (type) {
+        case GFX_DEBUG_MESSAGE_TYPE_GENERAL: typeStr = "GENERAL"; break;
+        case GFX_DEBUG_MESSAGE_TYPE_VALIDATION: typeStr = "VALIDATION"; break;
+        case GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE: typeStr = "PERFORMANCE"; break;
+    }
+
+    printf("[%s|%s] %s\n", severityStr, typeStr, message);
+}
+
 // Vertex structure for cube
 typedef struct {
     float position[3];
@@ -226,6 +246,9 @@ bool initializeGraphics(CubeApp* app)
         fprintf(stderr, "Failed to create graphics instance\n");
         return false;
     }
+
+    // Set debug callback after instance creation
+    gfxInstanceSetDebugCallback(app->instance, debugCallback, NULL);
 
     // Get adapter
     GfxAdapterDescriptor adapterDesc = {

@@ -227,6 +227,19 @@ enum class Result {
     OutOfDateKHR = 5
 };
 
+enum class DebugMessageSeverity {
+    Verbose,
+    Info,
+    Warning,
+    Error
+};
+
+enum class DebugMessageType {
+    General,
+    Validation,
+    Performance
+};
+
 enum class TextureLayout {
     Undefined,
     General,
@@ -466,6 +479,15 @@ class Surface;
 class Swapchain;
 class Fence;
 class Semaphore;
+
+// ============================================================================
+// Debug Callback
+// ============================================================================
+
+using DebugCallback = std::function<void(
+    DebugMessageSeverity severity,
+    DebugMessageType type,
+    const std::string& message)>;
 
 // ============================================================================
 // Descriptor Structures
@@ -1067,6 +1089,9 @@ public:
 
     virtual std::shared_ptr<Adapter> requestAdapter(const AdapterDescriptor& descriptor = {}) = 0;
     virtual std::vector<std::shared_ptr<Adapter>> enumerateAdapters() = 0;
+
+    // Set debug callback for validation/error messages (can be set after creation too)
+    virtual void setDebugCallback(DebugCallback callback) = 0;
 };
 
 // ============================================================================
