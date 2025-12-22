@@ -161,35 +161,41 @@ typedef enum {
 
 typedef enum {
     GFX_PIPELINE_STAGE_NONE = 0,
-    GFX_PIPELINE_STAGE_TOP_OF_PIPE = 1 << 0,
-    GFX_PIPELINE_STAGE_VERTEX_SHADER = 1 << 1,
-    GFX_PIPELINE_STAGE_FRAGMENT_SHADER = 1 << 2,
-    GFX_PIPELINE_STAGE_COMPUTE_SHADER = 1 << 3,
-    GFX_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS = 1 << 4,
-    GFX_PIPELINE_STAGE_LATE_FRAGMENT_TESTS = 1 << 5,
-    GFX_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT = 1 << 6,
-    GFX_PIPELINE_STAGE_TRANSFER = 1 << 7,
-    GFX_PIPELINE_STAGE_BOTTOM_OF_PIPE = 1 << 8,
-    GFX_PIPELINE_STAGE_ALL_GRAPHICS = 1 << 9,
-    GFX_PIPELINE_STAGE_ALL_COMMANDS = 1 << 10
+    GFX_PIPELINE_STAGE_TOP_OF_PIPE = 0x00000001,
+    GFX_PIPELINE_STAGE_DRAW_INDIRECT = 0x00000002,
+    GFX_PIPELINE_STAGE_VERTEX_INPUT = 0x00000004,
+    GFX_PIPELINE_STAGE_VERTEX_SHADER = 0x00000008,
+    GFX_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER = 0x00000010,
+    GFX_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER = 0x00000020,
+    GFX_PIPELINE_STAGE_GEOMETRY_SHADER = 0x00000040,
+    GFX_PIPELINE_STAGE_FRAGMENT_SHADER = 0x00000080,
+    GFX_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS = 0x00000100,
+    GFX_PIPELINE_STAGE_LATE_FRAGMENT_TESTS = 0x00000200,
+    GFX_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT = 0x00000400,
+    GFX_PIPELINE_STAGE_COMPUTE_SHADER = 0x00000800,
+    GFX_PIPELINE_STAGE_TRANSFER = 0x00001000,
+    GFX_PIPELINE_STAGE_BOTTOM_OF_PIPE = 0x00002000,
+    GFX_PIPELINE_STAGE_ALL_GRAPHICS = 0x0000FFFF,
+    GFX_PIPELINE_STAGE_ALL_COMMANDS = 0x00010000
 } GfxPipelineStage;
 
 typedef enum {
     GFX_ACCESS_NONE = 0,
-    GFX_ACCESS_INDIRECT_COMMAND_READ = 1 << 0,
-    GFX_ACCESS_INDEX_READ = 1 << 1,
-    GFX_ACCESS_VERTEX_ATTRIBUTE_READ = 1 << 2,
-    GFX_ACCESS_UNIFORM_READ = 1 << 3,
-    GFX_ACCESS_SHADER_READ = 1 << 4,
-    GFX_ACCESS_SHADER_WRITE = 1 << 5,
-    GFX_ACCESS_COLOR_ATTACHMENT_READ = 1 << 6,
-    GFX_ACCESS_COLOR_ATTACHMENT_WRITE = 1 << 7,
-    GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ = 1 << 8,
-    GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE = 1 << 9,
-    GFX_ACCESS_TRANSFER_READ = 1 << 10,
-    GFX_ACCESS_TRANSFER_WRITE = 1 << 11,
-    GFX_ACCESS_MEMORY_READ = 1 << 12,
-    GFX_ACCESS_MEMORY_WRITE = 1 << 13
+    GFX_ACCESS_INDIRECT_COMMAND_READ = 1 << 0,      // 0x01
+    GFX_ACCESS_INDEX_READ = 1 << 1,                  // 0x02
+    GFX_ACCESS_VERTEX_ATTRIBUTE_READ = 1 << 2,       // 0x04
+    GFX_ACCESS_UNIFORM_READ = 1 << 3,                // 0x08
+    GFX_ACCESS_INPUT_ATTACHMENT_READ = 1 << 4,       // 0x10
+    GFX_ACCESS_SHADER_READ = 1 << 5,                 // 0x20
+    GFX_ACCESS_SHADER_WRITE = 1 << 6,                // 0x40
+    GFX_ACCESS_COLOR_ATTACHMENT_READ = 1 << 7,       // 0x80
+    GFX_ACCESS_COLOR_ATTACHMENT_WRITE = 1 << 8,      // 0x100
+    GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ = 1 << 9,   // 0x200
+    GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE = 1 << 10, // 0x400
+    GFX_ACCESS_TRANSFER_READ = 1 << 11,              // 0x800
+    GFX_ACCESS_TRANSFER_WRITE = 1 << 12,             // 0x1000
+    GFX_ACCESS_MEMORY_READ = 1 << 14,                // 0x4000
+    GFX_ACCESS_MEMORY_WRITE = 1 << 15                // 0x8000
 } GfxAccessFlags;
 
 typedef enum {
@@ -658,6 +664,9 @@ typedef struct {
     const char* label;
     GfxShader compute;
     const char* entryPoint;
+    // Bind group layouts for the pipeline
+    GfxBindGroupLayout* bindGroupLayouts;
+    uint32_t bindGroupLayoutCount;
 } GfxComputePipelineDescriptor;
 
 typedef enum {
@@ -923,6 +932,7 @@ GFX_API void gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEnco
 GFX_API void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount);
 GFX_API void gfxCommandEncoderFinish(GfxCommandEncoder commandEncoder);
+GFX_API void gfxCommandEncoderReset(GfxCommandEncoder commandEncoder);
 
 // Helper function to deduce access flags from texture layout
 GFX_API GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout);

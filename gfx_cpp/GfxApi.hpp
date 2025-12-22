@@ -981,6 +981,7 @@ public:
     virtual void pipelineBarrier(const std::vector<TextureBarrier>& textureBarriers) = 0;
 
     virtual void finish() = 0;
+    virtual void reset() = 0;
 };
 
 // ============================================================================

@@ -134,6 +134,7 @@ typedef struct {
     void (*commandEncoderPipelineBarrier)(GfxCommandEncoder commandEncoder,
         const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount);
     void (*commandEncoderFinish)(GfxCommandEncoder commandEncoder);
+    void (*commandEncoderReset)(GfxCommandEncoder commandEncoder);
 
     // RenderPassEncoder functions
     void (*renderPassEncoderDestroy)(GfxRenderPassEncoder renderPassEncoder);

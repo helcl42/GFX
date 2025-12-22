@@ -26,6 +26,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // ============================================================================
@@ -738,6 +739,9 @@ public:
             }
 
             bindings.push_back(binding);
+
+            // Store binding info for later queries
+            m_bindingTypes[entry.binding] = binding.descriptorType;
         }
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -760,9 +764,19 @@ public:
 
     VkDescriptorSetLayout handle() const { return m_layout; }
 
+    VkDescriptorType getBindingType(uint32_t binding) const
+    {
+        auto it = m_bindingTypes.find(binding);
+        if (it != m_bindingTypes.end()) {
+            return it->second;
+        }
+        return VK_DESCRIPTOR_TYPE_MAX_ENUM; // Invalid
+    }
+
 private:
     VkDescriptorSetLayout m_layout = VK_NULL_HANDLE;
     VkDevice m_device = VK_NULL_HANDLE;
+    std::unordered_map<uint32_t, VkDescriptorType> m_bindingTypes;
 };
 
 class Surface {
@@ -1091,97 +1105,6 @@ private:
     GfxBufferUsage m_usage = static_cast<GfxBufferUsage>(0);
 };
 
-class BindGroup {
-public:
-    BindGroup(const BindGroup&) = delete;
-    BindGroup& operator=(const BindGroup&) = delete;
-
-    BindGroup(VkDevice device, const GfxBindGroupDescriptor* descriptor)
-        : m_device(device)
-    {
-        // Create descriptor pool
-        std::vector<VkDescriptorPoolSize> poolSizes;
-        VkDescriptorPoolSize uniformBufferSize{};
-        uniformBufferSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBufferSize.descriptorCount = 10;
-        poolSizes.push_back(uniformBufferSize);
-
-        VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = 10;
-
-        VkResult result = vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_pool);
-        if (result != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create descriptor pool");
-        }
-
-        // Allocate descriptor set
-        auto* layout = reinterpret_cast<BindGroupLayout*>(descriptor->layout);
-        VkDescriptorSetLayout setLayout = layout->handle();
-
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = m_pool;
-        allocInfo.descriptorSetCount = 1;
-        allocInfo.pSetLayouts = &setLayout;
-
-        result = vkAllocateDescriptorSets(m_device, &allocInfo, &m_descriptorSet);
-        if (result != VK_SUCCESS) {
-            throw std::runtime_error("Failed to allocate descriptor set");
-        }
-
-        // Update descriptor set
-        std::vector<VkWriteDescriptorSet> descriptorWrites;
-        std::vector<VkDescriptorBufferInfo> bufferInfos;
-
-        for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
-            const auto& entry = descriptor->entries[i];
-
-            if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_BUFFER) {
-                auto* buffer = reinterpret_cast<Buffer*>(entry.resource.buffer.buffer);
-
-                VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer = buffer->handle();
-                bufferInfo.offset = entry.resource.buffer.offset;
-                bufferInfo.range = entry.resource.buffer.size;
-                bufferInfos.push_back(bufferInfo);
-
-                VkWriteDescriptorSet descriptorWrite{};
-                descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrite.dstSet = m_descriptorSet;
-                descriptorWrite.dstBinding = entry.binding;
-                descriptorWrite.dstArrayElement = 0;
-                descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                descriptorWrite.descriptorCount = 1;
-                descriptorWrite.pBufferInfo = &bufferInfos.back();
-
-                descriptorWrites.push_back(descriptorWrite);
-            }
-        }
-
-        if (!descriptorWrites.empty()) {
-            vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()),
-                descriptorWrites.data(), 0, nullptr);
-        }
-    }
-
-    ~BindGroup()
-    {
-        if (m_pool != VK_NULL_HANDLE) {
-            vkDestroyDescriptorPool(m_device, m_pool, nullptr);
-        }
-    }
-
-    VkDescriptorSet handle() const { return m_descriptorSet; }
-
-private:
-    VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
-    VkDescriptorPool m_pool = VK_NULL_HANDLE;
-};
-
 class Texture {
 public:
     Texture(const Texture&) = delete;
@@ -1294,6 +1217,7 @@ public:
     uint32_t getMipLevelCount() const { return m_mipLevelCount; }
     GfxSampleCount getSampleCount() const { return m_sampleCount; }
     GfxTextureUsage getUsage() const { return m_usage; }
+    GfxTextureUsage usage() const { return m_usage; } // Convenience alias
     GfxTextureLayout getLayout() const { return m_currentLayout; }
     void setLayout(GfxTextureLayout layout) { m_currentLayout = layout; }
 
@@ -1314,11 +1238,12 @@ public:
     TextureView(const TextureView&) = delete;
     TextureView& operator=(const TextureView&) = delete;
 
-    TextureView(VkDevice device, VkImage image, const VkExtent3D& size, VkSampleCountFlagBits samples, const GfxTextureViewDescriptor* descriptor)
+    TextureView(VkDevice device, VkImage image, const VkExtent3D& size, VkSampleCountFlagBits samples, const GfxTextureViewDescriptor* descriptor, Texture* texture = nullptr)
         : m_device(device)
         , m_size(size)
         , m_format(gfxFormatToVkFormat(descriptor->format))
         , m_samples(samples)
+        , m_texture(texture)
     {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1362,6 +1287,7 @@ public:
     VkExtent3D getSize() const { return m_size; }
     VkFormat getFormat() const { return m_format; }
     VkSampleCountFlagBits getSamples() const { return m_samples; }
+    Texture* texture() const { return m_texture; }
 
 private:
     VkDevice m_device = VK_NULL_HANDLE;
@@ -1369,6 +1295,7 @@ private:
     VkFormat m_format = VK_FORMAT_UNDEFINED;
     VkSampleCountFlagBits m_samples = VK_SAMPLE_COUNT_1_BIT;
     VkImageView m_imageView = VK_NULL_HANDLE;
+    Texture* m_texture = nullptr;
 };
 
 class Sampler {
@@ -1431,6 +1358,180 @@ public:
 private:
     VkSampler m_sampler = VK_NULL_HANDLE;
     VkDevice m_device = VK_NULL_HANDLE;
+};
+
+class BindGroup {
+public:
+    BindGroup(const BindGroup&) = delete;
+    BindGroup& operator=(const BindGroup&) = delete;
+
+    BindGroup(VkDevice device, const GfxBindGroupDescriptor* descriptor)
+        : m_device(device)
+    {
+        // Count actual descriptors needed by type
+        auto* layout = reinterpret_cast<BindGroupLayout*>(descriptor->layout);
+        std::unordered_map<VkDescriptorType, uint32_t> descriptorCounts;
+
+        for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
+            const auto& entry = descriptor->entries[i];
+            VkDescriptorType type;
+
+            if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_BUFFER) {
+                type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            } else if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER) {
+                type = VK_DESCRIPTOR_TYPE_SAMPLER;
+            } else if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW) {
+                type = layout->getBindingType(entry.binding);
+            } else {
+                continue;
+            }
+
+            ++descriptorCounts[type];
+        }
+
+        // Create descriptor pool with exact sizes
+        std::vector<VkDescriptorPoolSize> poolSizes;
+        for (const auto& [type, count] : descriptorCounts) {
+            VkDescriptorPoolSize poolSize{};
+            poolSize.type = type;
+            poolSize.descriptorCount = count;
+            poolSizes.push_back(poolSize);
+        }
+
+        VkDescriptorPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+        poolInfo.pPoolSizes = poolSizes.data();
+        poolInfo.maxSets = 1; // Each BindGroup only allocates one descriptor set
+
+        VkResult result = vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_pool);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create descriptor pool");
+        }
+
+        // Allocate descriptor set
+        VkDescriptorSetLayout setLayout = layout->handle();
+
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = m_pool;
+        allocInfo.descriptorSetCount = 1;
+        allocInfo.pSetLayouts = &setLayout;
+
+        result = vkAllocateDescriptorSets(m_device, &allocInfo, &m_descriptorSet);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to allocate descriptor set");
+        }
+
+        // Update descriptor set
+        // Build all the descriptor info arrays first
+        std::vector<VkDescriptorBufferInfo> bufferInfos;
+        std::vector<VkDescriptorImageInfo> imageInfos;
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+
+        // Reserve space to avoid reallocation and pointer invalidation
+        bufferInfos.reserve(descriptor->entryCount);
+        imageInfos.reserve(descriptor->entryCount);
+        descriptorWrites.reserve(descriptor->entryCount);
+
+        // Track indices for buffer and image infos
+        size_t bufferInfoIndex = 0;
+        size_t imageInfoIndex = 0;
+
+        for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
+            const auto& entry = descriptor->entries[i];
+
+            if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_BUFFER) {
+                auto* buffer = reinterpret_cast<Buffer*>(entry.resource.buffer.buffer);
+
+                VkDescriptorBufferInfo bufferInfo{};
+                bufferInfo.buffer = buffer->handle();
+                bufferInfo.offset = entry.resource.buffer.offset;
+                bufferInfo.range = entry.resource.buffer.size;
+                bufferInfos.push_back(bufferInfo);
+
+                VkWriteDescriptorSet descriptorWrite{};
+                descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrite.dstSet = m_descriptorSet;
+                descriptorWrite.dstBinding = entry.binding;
+                descriptorWrite.dstArrayElement = 0;
+                descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                descriptorWrite.descriptorCount = 1;
+                descriptorWrite.pBufferInfo = &bufferInfos[bufferInfoIndex++];
+
+                descriptorWrites.push_back(descriptorWrite);
+            } else if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER) {
+                auto* sampler = reinterpret_cast<Sampler*>(entry.resource.sampler);
+
+                VkDescriptorImageInfo imageInfo{};
+                imageInfo.sampler = sampler->handle();
+                imageInfo.imageView = VK_NULL_HANDLE;
+                imageInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                imageInfos.push_back(imageInfo);
+
+                VkWriteDescriptorSet descriptorWrite{};
+                descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrite.dstSet = m_descriptorSet;
+                descriptorWrite.dstBinding = entry.binding;
+                descriptorWrite.dstArrayElement = 0;
+                descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+                descriptorWrite.descriptorCount = 1;
+                descriptorWrite.pImageInfo = &imageInfos[imageInfoIndex++];
+
+                descriptorWrites.push_back(descriptorWrite);
+            } else if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW) {
+                auto* textureView = reinterpret_cast<TextureView*>(entry.resource.textureView);
+
+                // Query the bind group layout for the correct descriptor type
+                VkDescriptorType descriptorType = layout->getBindingType(entry.binding);
+
+                VkDescriptorImageInfo imageInfo{};
+                imageInfo.sampler = VK_NULL_HANDLE;
+                imageInfo.imageView = textureView->handle();
+
+                // Set image layout based on descriptor type from the layout
+                // Storage images use GENERAL layout
+                // Sampled images use SHADER_READ_ONLY_OPTIMAL layout
+                if (descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+                    imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+                } else {
+                    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                }
+
+                imageInfos.push_back(imageInfo);
+
+                VkWriteDescriptorSet descriptorWrite{};
+                descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrite.dstSet = m_descriptorSet;
+                descriptorWrite.dstBinding = entry.binding;
+                descriptorWrite.dstArrayElement = 0;
+                descriptorWrite.descriptorType = descriptorType;
+                descriptorWrite.descriptorCount = 1;
+                descriptorWrite.pImageInfo = &imageInfos[imageInfoIndex++];
+
+                descriptorWrites.push_back(descriptorWrite);
+            }
+        }
+
+        if (!descriptorWrites.empty()) {
+            vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()),
+                descriptorWrites.data(), 0, nullptr);
+        }
+    }
+
+    ~BindGroup()
+    {
+        if (m_pool != VK_NULL_HANDLE) {
+            vkDestroyDescriptorPool(m_device, m_pool, nullptr);
+        }
+    }
+
+    VkDescriptorSet handle() const { return m_descriptorSet; }
+
+private:
+    VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
+    VkDevice m_device = VK_NULL_HANDLE;
+    VkDescriptorPool m_pool = VK_NULL_HANDLE;
 };
 
 class RenderPipeline {
@@ -1738,11 +1839,19 @@ public:
     ComputePipeline(VkDevice device, const GfxComputePipelineDescriptor* descriptor)
         : m_device(device)
     {
-        // Create pipeline layout (empty for now, bind groups can be added later)
+        // Create pipeline layout
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 0;
-        pipelineLayoutInfo.pSetLayouts = nullptr;
+
+        // Process bind group layouts
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+        for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
+            auto* layout = reinterpret_cast<BindGroupLayout*>(descriptor->bindGroupLayouts[i]);
+            descriptorSetLayouts.push_back(layout->handle());
+        }
+
+        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+        pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
         VkResult result = vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout);
         if (result != VK_SUCCESS) {
@@ -2031,6 +2140,32 @@ public:
         m_renderPasses.push_back(rp);
         m_framebuffers.push_back(fb);
         m_currentRenderPass = rp;
+    }
+
+    void reset()
+    {
+        // Clean up per-frame resources
+        for (auto fb : m_framebuffers) {
+            vkDestroyFramebuffer(m_device, fb, nullptr);
+        }
+        for (auto rp : m_renderPasses) {
+            vkDestroyRenderPass(m_device, rp, nullptr);
+        }
+        m_framebuffers.clear();
+        m_renderPasses.clear();
+        m_currentPipelineLayout = VK_NULL_HANDLE;
+        m_currentRenderPass = VK_NULL_HANDLE;
+
+        // Reset the command pool (this implicitly resets all command buffers)
+        vkResetCommandPool(m_device, m_commandPool, 0);
+
+        // Begin recording again
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
+        m_isRecording = true;
     }
 
     void finish()
@@ -2338,6 +2473,15 @@ void vulkan_commandEncoderFinish(GfxCommandEncoder commandEncoder)
     }
     auto* encoder = reinterpret_cast<gfx::vulkan::CommandEncoder*>(commandEncoder);
     encoder->finish();
+}
+
+void vulkan_commandEncoderReset(GfxCommandEncoder commandEncoder)
+{
+    if (!commandEncoder) {
+        return;
+    }
+    auto* encoder = reinterpret_cast<gfx::vulkan::CommandEncoder*>(commandEncoder);
+    encoder->reset();
 }
 
 GfxResult vulkan_deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface)
@@ -2721,7 +2865,8 @@ GfxResult vulkan_textureCreateView(GfxTexture texture, const GfxTextureViewDescr
             tex->handle(),
             VkExtent3D{ size.width, size.height, size.depth },
             samples,
-            descriptor);
+            descriptor,
+            tex); // Pass texture pointer
         *outView = reinterpret_cast<GfxTextureView>(view);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -4084,6 +4229,7 @@ static const GfxBackendAPI vulkanBackendApi = {
     .commandEncoderCopyTextureToTexture = vulkan_commandEncoderCopyTextureToTexture,
     .commandEncoderPipelineBarrier = vulkan_commandEncoderPipelineBarrier,
     .commandEncoderFinish = vulkan_commandEncoderFinish,
+    .commandEncoderReset = vulkan_commandEncoderReset,
     .renderPassEncoderDestroy = vulkan_renderPassEncoderDestroy,
     .renderPassEncoderSetPipeline = vulkan_renderPassEncoderSetPipeline,
     .renderPassEncoderSetBindGroup = vulkan_renderPassEncoderSetBindGroup,

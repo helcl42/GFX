@@ -31,20 +31,35 @@
 #define DEPTH_FORMAT GFX_TEXTURE_FORMAT_DEPTH32_FLOAT
 
 // Debug callback function
-static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData) {
+static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData)
+{
     const char* severityStr = "";
     switch (severity) {
-        case GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE: severityStr = "VERBOSE"; break;
-        case GFX_DEBUG_MESSAGE_SEVERITY_INFO: severityStr = "INFO"; break;
-        case GFX_DEBUG_MESSAGE_SEVERITY_WARNING: severityStr = "WARNING"; break;
-        case GFX_DEBUG_MESSAGE_SEVERITY_ERROR: severityStr = "ERROR"; break;
+    case GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE:
+        severityStr = "VERBOSE";
+        break;
+    case GFX_DEBUG_MESSAGE_SEVERITY_INFO:
+        severityStr = "INFO";
+        break;
+    case GFX_DEBUG_MESSAGE_SEVERITY_WARNING:
+        severityStr = "WARNING";
+        break;
+    case GFX_DEBUG_MESSAGE_SEVERITY_ERROR:
+        severityStr = "ERROR";
+        break;
     }
 
     const char* typeStr = "";
     switch (type) {
-        case GFX_DEBUG_MESSAGE_TYPE_GENERAL: typeStr = "GENERAL"; break;
-        case GFX_DEBUG_MESSAGE_TYPE_VALIDATION: typeStr = "VALIDATION"; break;
-        case GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE: typeStr = "PERFORMANCE"; break;
+    case GFX_DEBUG_MESSAGE_TYPE_GENERAL:
+        typeStr = "GENERAL";
+        break;
+    case GFX_DEBUG_MESSAGE_TYPE_VALIDATION:
+        typeStr = "VALIDATION";
+        break;
+    case GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE:
+        typeStr = "PERFORMANCE";
+        break;
     }
 
     printf("[%s|%s] %s\n", severityStr, typeStr, message);
@@ -435,6 +450,13 @@ bool createSyncObjects(CubeApp* app)
         fenceDesc.label = label;
         if (gfxDeviceCreateFence(app->device, &fenceDesc, &app->inFlightFences[i]) != GFX_RESULT_SUCCESS) {
             fprintf(stderr, "Failed to create in flight fence %d\n", i);
+            return false;
+        }
+
+        // Create command encoder for this frame
+        snprintf(label, sizeof(label), "Command Encoder %d", i);
+        if (gfxDeviceCreateCommandEncoder(app->device, label, &app->commandEncoders[i]) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create command encoder %d\n", i);
             return false;
         }
     }
@@ -838,12 +860,6 @@ void render(CubeApp* app)
     gfxFenceWait(app->inFlightFences[app->currentFrame], UINT64_MAX);
     gfxFenceReset(app->inFlightFences[app->currentFrame]);
 
-    // Now it's safe to destroy the old command encoder for this frame
-    if (app->commandEncoders[app->currentFrame]) {
-        gfxCommandEncoderDestroy(app->commandEncoders[app->currentFrame]);
-        app->commandEncoders[app->currentFrame] = NULL;
-    }
-
     // Acquire next swapchain image
     uint32_t imageIndex;
     GfxResult result = gfxSwapchainAcquireNextImage(app->swapchain, UINT64_MAX,
@@ -864,12 +880,9 @@ void render(CubeApp* app)
         return;
     }
 
-    // Create command encoder for this frame
-    GfxCommandEncoder encoder;
-    if (gfxDeviceCreateCommandEncoder(app->device, "Frame Commands", &encoder) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create command encoder\n");
-        return;
-    }
+    // Reset command encoder for reuse
+    GfxCommandEncoder encoder = app->commandEncoders[app->currentFrame];
+    gfxCommandEncoderReset(encoder);
 
     // Begin render pass with dark blue clear color
     // Pass both MSAA color buffer and swapchain image for resolve
@@ -952,9 +965,6 @@ void render(CubeApp* app)
     presentInfo.waitSemaphores = &app->renderFinishedSemaphores[app->currentFrame];
     presentInfo.waitSemaphoreCount = 1;
     gfxSwapchainPresentWithSync(app->swapchain, &presentInfo);
-
-    // Store the encoder for this frame (will be destroyed after fence wait)
-    app->commandEncoders[app->currentFrame] = encoder;
 
     // Move to next frame
     app->currentFrame = (app->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

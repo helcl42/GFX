@@ -999,6 +999,17 @@ void gfxCommandEncoderFinish(GfxCommandEncoder commandEncoder)
     }
 }
 
+void gfxCommandEncoderReset(GfxCommandEncoder commandEncoder)
+{
+    if (!commandEncoder) {
+        return;
+    }
+    auto api = gfx::getAPI(commandEncoder);
+    if (api) {
+        api->commandEncoderReset(gfx::native(commandEncoder));
+    }
+}
+
 // Helper function to deduce access flags from texture layout
 GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout)
 {

@@ -215,17 +215,31 @@ bool CubeApp::initializeGraphics()
         instance->setDebugCallback([](DebugMessageSeverity severity, DebugMessageType type, const std::string& message) {
             const char* severityStr = "";
             switch (severity) {
-                case DebugMessageSeverity::Verbose: severityStr = "VERBOSE"; break;
-                case DebugMessageSeverity::Info: severityStr = "INFO"; break;
-                case DebugMessageSeverity::Warning: severityStr = "WARNING"; break;
-                case DebugMessageSeverity::Error: severityStr = "ERROR"; break;
+            case DebugMessageSeverity::Verbose:
+                severityStr = "VERBOSE";
+                break;
+            case DebugMessageSeverity::Info:
+                severityStr = "INFO";
+                break;
+            case DebugMessageSeverity::Warning:
+                severityStr = "WARNING";
+                break;
+            case DebugMessageSeverity::Error:
+                severityStr = "ERROR";
+                break;
             }
 
             const char* typeStr = "";
             switch (type) {
-                case DebugMessageType::General: typeStr = "GENERAL"; break;
-                case DebugMessageType::Validation: typeStr = "VALIDATION"; break;
-                case DebugMessageType::Performance: typeStr = "PERFORMANCE"; break;
+            case DebugMessageType::General:
+                typeStr = "GENERAL";
+                break;
+            case DebugMessageType::Validation:
+                typeStr = "VALIDATION";
+                break;
+            case DebugMessageType::Performance:
+                typeStr = "PERFORMANCE";
+                break;
             }
 
             std::cout << "[" << severityStr << "|" << typeStr << "] " << message << std::endl;
@@ -403,6 +417,13 @@ bool CubeApp::createSyncObjects()
             inFlightFences[i] = device->createFence(fenceDesc);
             if (!inFlightFences[i]) {
                 std::cerr << "Failed to create in flight fence " << i << std::endl;
+                return false;
+            }
+
+            // Create command encoder for this frame
+            commandEncoders[i] = device->createCommandEncoder("Command Encoder Frame " + std::to_string(i));
+            if (!commandEncoders[i]) {
+                std::cerr << "Failed to create command encoder " << i << std::endl;
                 return false;
             }
         }
@@ -719,12 +740,6 @@ void CubeApp::render()
         inFlightFences[currentFrame]->wait(UINT64_MAX);
         inFlightFences[currentFrame]->reset();
 
-        // Deferred cleanup: destroy the old command encoder for this frame slot
-        // Now that the fence is signaled, we know the GPU is done with it
-        if (commandEncoders[currentFrame]) {
-            commandEncoders[currentFrame].reset();
-        }
-
         // Acquire next image with explicit synchronization
         uint32_t imageIndex;
         auto result = swapchain->acquireNextImage(
@@ -746,9 +761,9 @@ void CubeApp::render()
         if (!backbuffer) {
             return; // Skip frame if no backbuffer available
         }
-
-        // Create command encoder for this frame
-        auto commandEncoder = device->createCommandEncoder("Cube Render Frame " + std::to_string(currentFrame));
+        // Reset command encoder for reuse
+        auto commandEncoder = commandEncoders[currentFrame];
+        commandEncoder->reset();
 
         // Begin render pass
         Color clearColor{ 0.1f, 0.2f, 0.3f, 1.0f }; // Dark blue background
@@ -817,9 +832,6 @@ void CubeApp::render()
         if (result != gfx::Result::Success) {
             std::cerr << "Failed to present" << std::endl;
         }
-
-        // Store the command encoder for deferred cleanup next time we use this frame slot
-        commandEncoders[currentFrame] = commandEncoder;
 
         // Advance to next frame
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

@@ -742,6 +742,11 @@ public:
         gfxCommandEncoderFinish(m_handle);
     }
 
+    void reset() override
+    {
+        gfxCommandEncoderReset(m_handle);
+    }
+
 private:
     GfxCommandEncoder m_handle;
 };
