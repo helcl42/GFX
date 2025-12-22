@@ -1238,12 +1238,11 @@ public:
     TextureView(const TextureView&) = delete;
     TextureView& operator=(const TextureView&) = delete;
 
-    TextureView(VkDevice device, VkImage image, const VkExtent3D& size, VkSampleCountFlagBits samples, const GfxTextureViewDescriptor* descriptor, Texture* texture = nullptr)
+    TextureView(VkDevice device, VkImage image, const VkExtent3D& size, VkSampleCountFlagBits samples, const GfxTextureViewDescriptor* descriptor)
         : m_device(device)
         , m_size(size)
         , m_format(gfxFormatToVkFormat(descriptor->format))
         , m_samples(samples)
-        , m_texture(texture)
     {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1287,7 +1286,6 @@ public:
     VkExtent3D getSize() const { return m_size; }
     VkFormat getFormat() const { return m_format; }
     VkSampleCountFlagBits getSamples() const { return m_samples; }
-    Texture* texture() const { return m_texture; }
 
 private:
     VkDevice m_device = VK_NULL_HANDLE;
@@ -1295,7 +1293,6 @@ private:
     VkFormat m_format = VK_FORMAT_UNDEFINED;
     VkSampleCountFlagBits m_samples = VK_SAMPLE_COUNT_1_BIT;
     VkImageView m_imageView = VK_NULL_HANDLE;
-    Texture* m_texture = nullptr;
 };
 
 class Sampler {
@@ -2865,8 +2862,7 @@ GfxResult vulkan_textureCreateView(GfxTexture texture, const GfxTextureViewDescr
             tex->handle(),
             VkExtent3D{ size.width, size.height, size.depth },
             samples,
-            descriptor,
-            tex); // Pass texture pointer
+            descriptor);
         *outView = reinterpret_cast<GfxTextureView>(view);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
