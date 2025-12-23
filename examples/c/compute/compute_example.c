@@ -111,7 +111,6 @@ typedef struct {
 
     uint32_t currentFrame;
     float elapsedTime;
-    bool firstFrame;
 } ComputeApp;
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
@@ -442,6 +441,42 @@ static bool createComputeResources(ComputeApp* app)
         return false;
     }
 
+    // Transition compute texture to SHADER_READ_ONLY layout initially
+    // This way we don't need special handling for the first frame
+    GfxCommandEncoder initEncoder = NULL;
+    if (gfxDeviceCreateCommandEncoder(app->device, "Init Layout Transition", &initEncoder) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create command encoder for initial layout transition\n");
+        return false;
+    }
+
+    gfxCommandEncoderBegin(initEncoder);
+
+    GfxTextureBarrier initBarrier = {
+        .texture = app->computeTexture,
+        .oldLayout = GFX_TEXTURE_LAYOUT_UNDEFINED,
+        .newLayout = GFX_TEXTURE_LAYOUT_SHADER_READ_ONLY,
+        .srcStageMask = GFX_PIPELINE_STAGE_TOP_OF_PIPE,
+        .dstStageMask = GFX_PIPELINE_STAGE_FRAGMENT_SHADER,
+        .srcAccessMask = 0,
+        .dstAccessMask = GFX_ACCESS_SHADER_READ,
+        .baseMipLevel = 0,
+        .mipLevelCount = 1,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 1
+    };
+    gfxCommandEncoderPipelineBarrier(initEncoder, &initBarrier, 1);
+
+    gfxCommandEncoderEnd(initEncoder);
+
+    GfxSubmitInfo submitInfo = {
+        .commandEncoderCount = 1,
+        .commandEncoders = &initEncoder,
+    };
+    gfxQueueSubmitWithSync(app->queue, &submitInfo);
+    gfxDeviceWaitIdle(app->device);
+
+    gfxCommandEncoderDestroy(initEncoder);
+
     printf("Compute resources created successfully\n");
     return true;
 }
@@ -724,11 +759,11 @@ static void drawFrame(ComputeApp* app)
     // Transition compute texture to GENERAL layout for compute shader write
     GfxTextureBarrier readToWriteBarrier = {
         .texture = app->computeTexture,
-        .oldLayout = app->firstFrame ? GFX_TEXTURE_LAYOUT_UNDEFINED : GFX_TEXTURE_LAYOUT_SHADER_READ_ONLY,
+        .oldLayout = GFX_TEXTURE_LAYOUT_SHADER_READ_ONLY,
         .newLayout = GFX_TEXTURE_LAYOUT_GENERAL,
-        .srcStageMask = app->firstFrame ? GFX_PIPELINE_STAGE_TOP_OF_PIPE : GFX_PIPELINE_STAGE_FRAGMENT_SHADER,
+        .srcStageMask = GFX_PIPELINE_STAGE_FRAGMENT_SHADER,
         .dstStageMask = GFX_PIPELINE_STAGE_COMPUTE_SHADER,
-        .srcAccessMask = app->firstFrame ? 0 : GFX_ACCESS_SHADER_READ,
+        .srcAccessMask = GFX_ACCESS_SHADER_READ,
         .dstAccessMask = GFX_ACCESS_SHADER_WRITE,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
@@ -843,8 +878,6 @@ static void drawFrame(ComputeApp* app)
 
     result = gfxSwapchainPresentWithSync(app->swapchain, &presentInfo);
 
-    // TODO ???
-    app->firstFrame = false;
     app->currentFrame = (app->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
@@ -979,7 +1012,6 @@ int main(void)
 
     ComputeApp app = { 0 };
     app.currentFrame = 0;
-    app.firstFrame = true;
 
     if (!initWindow(&app)) {
         return 1;
