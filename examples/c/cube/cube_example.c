@@ -951,7 +951,7 @@ void render(CubeApp* app)
             gfxBufferGetSize(app->indexBuffer));
 
         // Draw CUBE_COUNT cubes at different positions
-        for (int i = 0; i < CUBE_COUNT; i++) {
+        for (int i = 0; i < CUBE_COUNT; ++i) {
             // Bind the specific cube's bind group (no dynamic offsets)
             gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->uniformBindGroups[app->currentFrame][i], NULL, 0);
 

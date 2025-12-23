@@ -542,7 +542,7 @@ static bool createRenderResources(ComputeApp* app)
         .mappedAtCreation = false
     };
 
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         if (gfxDeviceCreateBuffer(app->device, &renderUniformBufferDesc, &app->renderUniformBuffer[i]) != GFX_RESULT_SUCCESS) {
             fprintf(stderr, "Failed to create render uniform buffer %d\n", i);
             return false;
@@ -685,7 +685,7 @@ static bool createSyncObjects(ComputeApp* app)
         .signaled = true
     };
 
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &app->imageAvailableSemaphores[i]) != GFX_RESULT_SUCCESS) {
             fprintf(stderr, "Failed to create image available semaphore\n");
             return false;
@@ -888,7 +888,7 @@ static void cleanup(ComputeApp* app)
     }
 
     // Sync objects
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         if (app->commandEncoders[i]) {
             gfxCommandEncoderDestroy(app->commandEncoders[i]);
         }
@@ -907,7 +907,7 @@ static void cleanup(ComputeApp* app)
     if (app->renderPipeline) {
         gfxRenderPipelineDestroy(app->renderPipeline);
     }
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         if (app->renderBindGroup[i]) {
             gfxBindGroupDestroy(app->renderBindGroup[i]);
         }
@@ -932,7 +932,7 @@ static void cleanup(ComputeApp* app)
     if (app->computePipeline) {
         gfxComputePipelineDestroy(app->computePipeline);
     }
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         if (app->computeBindGroup[i]) {
             gfxBindGroupDestroy(app->computeBindGroup[i]);
         }

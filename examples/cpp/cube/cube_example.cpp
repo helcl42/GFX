@@ -820,7 +820,7 @@ void CubeApp::render()
         renderPass->setIndexBuffer(indexBuffer, IndexFormat::Uint16);
 
         // Draw CUBE_COUNT cubes at different positions
-        for (int i = 0; i < CUBE_COUNT; i++) {
+        for (int i = 0; i < CUBE_COUNT; ++i) {
             // Bind the specific cube's bind group (no dynamic offsets)
             renderPass->setBindGroup(0, uniformBindGroups[currentFrame][i]);
 
