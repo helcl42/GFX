@@ -26,6 +26,7 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 #define MAX_FRAMES_IN_FLIGHT 3
+#define CUBE_COUNT 3
 #define MSAA_SAMPLE_COUNT GFX_SAMPLE_COUNT_4
 #define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
 #define DEPTH_FORMAT GFX_TEXTURE_FORMAT_DEPTH32_FLOAT
@@ -109,7 +110,7 @@ typedef struct {
     // Per-frame resources (for frames in flight)
     GfxBuffer sharedUniformBuffer; // Single buffer for all frames
     size_t uniformAlignedSize; // Aligned size per frame
-    GfxBindGroup uniformBindGroups[MAX_FRAMES_IN_FLIGHT];
+    GfxBindGroup uniformBindGroups[MAX_FRAMES_IN_FLIGHT][CUBE_COUNT]; // 3 cubes per frame
     GfxCommandEncoder commandEncoders[MAX_FRAMES_IN_FLIGHT]; // Track for deferred cleanup
 
     // Per-frame synchronization
@@ -133,7 +134,7 @@ static void cleanupSizeDependentResources(CubeApp* app);
 static bool createRenderingResources(CubeApp* app);
 static void cleanupRenderingResources(CubeApp* app);
 static bool createRenderPipeline(CubeApp* app);
-static void updateUniforms(CubeApp* app);
+static void updateUniforms(CubeApp* app, int cubeIndex);
 static void render(CubeApp* app);
 static void cleanup(CubeApp* app);
 static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window);
@@ -512,9 +513,11 @@ void cleanupRenderingResources(CubeApp* app)
         app->uniformBindGroupLayout = NULL;
     }
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        if (app->uniformBindGroups[i]) {
-            gfxBindGroupDestroy(app->uniformBindGroups[i]);
-            app->uniformBindGroups[i] = NULL;
+        for (int cubeIdx = 0; cubeIdx < 3; ++cubeIdx) {
+            if (app->uniformBindGroups[i][cubeIdx]) {
+                gfxBindGroupDestroy(app->uniformBindGroups[i][cubeIdx]);
+                app->uniformBindGroups[i][cubeIdx] = NULL;
+            }
         }
     }
     if (app->sharedUniformBuffer) {
@@ -601,7 +604,8 @@ bool createRenderingResources(CubeApp* app)
 
     size_t uniformSize = sizeof(UniformData);
     app->uniformAlignedSize = gfxAlignUp(uniformSize, limits.minUniformBufferOffsetAlignment);
-    size_t totalBufferSize = app->uniformAlignedSize * MAX_FRAMES_IN_FLIGHT;
+    // Need space for CUBE_COUNT cubes per frame
+    size_t totalBufferSize = app->uniformAlignedSize * MAX_FRAMES_IN_FLIGHT * CUBE_COUNT;
 
     GfxBufferDescriptor uniformBufferDesc = {
         .label = "Shared Transform Uniforms",
@@ -636,31 +640,33 @@ bool createRenderingResources(CubeApp* app)
         return false;
     }
 
-    // Create bind groups (one per frame in flight) using offsets into shared buffer
+    // Create bind groups (CUBE_COUNT cubes per frame in flight) using offsets into shared buffer
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        char label[64];
-        snprintf(label, sizeof(label), "Uniform Bind Group Frame %d", i);
+        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+            char label[64];
+            snprintf(label, sizeof(label), "Uniform Bind Group Frame %d Cube %d", i, cubeIdx);
 
-        GfxBindGroupEntry uniformEntry = {
-            .binding = 0,
-            .type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER,
-            .resource = {
-                .buffer = {
-                    .buffer = app->sharedUniformBuffer,
-                    .offset = i * app->uniformAlignedSize, // Aligned offset into shared buffer
-                    .size = sizeof(UniformData) } }
-        };
+            GfxBindGroupEntry uniformEntry = {
+                .binding = 0,
+                .type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER,
+                .resource = {
+                    .buffer = {
+                        .buffer = app->sharedUniformBuffer,
+                        .offset = (i * CUBE_COUNT + cubeIdx) * app->uniformAlignedSize,
+                        .size = sizeof(UniformData) } }
+            };
 
-        GfxBindGroupDescriptor uniformBindGroupDesc = {
-            .label = label,
-            .layout = app->uniformBindGroupLayout,
-            .entries = &uniformEntry,
-            .entryCount = 1
-        };
+            GfxBindGroupDescriptor uniformBindGroupDesc = {
+                .label = label,
+                .layout = app->uniformBindGroupLayout,
+                .entries = &uniformEntry,
+                .entryCount = 1
+            };
 
-        if (gfxDeviceCreateBindGroup(app->device, &uniformBindGroupDesc, &app->uniformBindGroups[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create uniform bind group %d\n", i);
-            return false;
+            if (gfxDeviceCreateBindGroup(app->device, &uniformBindGroupDesc, &app->uniformBindGroups[i][cubeIdx]) != GFX_RESULT_SUCCESS) {
+                fprintf(stderr, "Failed to create uniform bind group %d cube %d\n", i, cubeIdx);
+                return false;
+            }
         }
     }
 
@@ -810,34 +816,47 @@ bool createRenderPipeline(CubeApp* app)
     return true;
 }
 
-void updateUniforms(CubeApp* app)
+void updateUniforms(CubeApp* app, int cubeIndex)
 {
     double currentTime = glfwGetTime();
     float deltaTime = (float)(currentTime - app->lastTime);
-    app->lastTime = currentTime;
-
-    // Update rotation angles (both X and Y axes)
-    app->rotationAngleX += 45.0f * deltaTime; // 45 degrees per second around X
-    app->rotationAngleY += 30.0f * deltaTime; // 30 degrees per second around Y
-    if (app->rotationAngleX >= 360.0f) {
-        app->rotationAngleX -= 360.0f;
-    }
-    if (app->rotationAngleY >= 360.0f) {
-        app->rotationAngleY -= 360.0f;
+    
+    // Only update time once per frame (when rendering first cube)
+    if (cubeIndex == 0) {
+        app->lastTime = currentTime;
+        
+        // Update rotation angles (both X and Y axes)
+        app->rotationAngleX += 45.0f * deltaTime; // 45 degrees per second around X
+        app->rotationAngleY += 30.0f * deltaTime; // 30 degrees per second around Y
+        if (app->rotationAngleX >= 360.0f) {
+            app->rotationAngleX -= 360.0f;
+        }
+        if (app->rotationAngleY >= 360.0f) {
+            app->rotationAngleY -= 360.0f;
+        }
     }
 
     UniformData uniforms = { 0 }; // Initialize to zero!
 
     // Create rotation matrices (combine X and Y rotations)
+    // Each cube rotates slightly differently
     float rotX[16], rotY[16], tempModel[16];
-    matrixRotateX(rotX, app->rotationAngleX * M_PI / 180.0f);
-    matrixRotateY(rotY, app->rotationAngleY * M_PI / 180.0f);
+    matrixRotateX(rotX, (app->rotationAngleX + cubeIndex * 30.0f) * M_PI / 180.0f);
+    matrixRotateY(rotY, (app->rotationAngleY + cubeIndex * 45.0f) * M_PI / 180.0f);
     matrixMultiply(tempModel, rotY, rotX);
-    memcpy(uniforms.model, tempModel, sizeof(float) * 16);
+    
+    // Position cubes side by side: left (-3, 0, 0), center (0, 0, 0), right (3, 0, 0)
+    float translation[16];
+    matrixIdentity(translation);
+    translation[12] = (cubeIndex - 1) * 3.0f; // x offset: -3, 0, 3
+    
+    // Apply translation after rotation: model = rotation * translation
+    // This rotates in place, then translates to world position
+    matrixMultiply(uniforms.model, tempModel, translation);
 
-    // Create view matrix (camera positioned at 0, 0, 5 looking at origin)
+    // Create view matrix (camera positioned at 0, 0, 10 looking at origin)
     matrixLookAt(uniforms.view,
-        0.0f, 0.0f, 5.0f, // eye position (match C++)
+        0.0f, 0.0f, 10.0f, // eye position - pulled back to see all 3 cubes
         0.0f, 0.0f, 0.0f, // look at point
         0.0f, 1.0f, 0.0f); // up vector
 
@@ -849,8 +868,9 @@ void updateUniforms(CubeApp* app)
         0.1f, // near plane
         100.0f); // far plane
 
-    // Upload uniform data to current frame's offset in shared buffer
-    size_t offset = app->currentFrame * app->uniformAlignedSize;
+    // Upload uniform data to buffer at aligned offset
+    // Formula: (frame * CUBE_COUNT + cube) * alignedSize
+    size_t offset = (app->currentFrame * CUBE_COUNT + cubeIndex) * app->uniformAlignedSize;
     gfxQueueWriteBuffer(app->queue, app->sharedUniformBuffer, offset, &uniforms, sizeof(uniforms));
 }
 
@@ -870,8 +890,10 @@ void render(CubeApp* app)
         return;
     }
 
-    // Update animation for this frame
-    updateUniforms(app);
+    // Update uniforms for all CUBE_COUNT cubes BEFORE encoding
+    for (int i = 0; i < CUBE_COUNT; i++) {
+        updateUniforms(app, i);
+    }
 
     // Get texture view for acquired image (for later blit/present)
     GfxTextureView backbuffer = gfxSwapchainGetImageView(app->swapchain, imageIndex);
@@ -925,9 +947,6 @@ void render(CubeApp* app)
         gfxRenderPassEncoderSetViewport(renderPass, &viewport);
         gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
 
-        // Set bind group for current frame (no dynamic offsets)
-        gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->uniformBindGroups[app->currentFrame], NULL, 0);
-
         // Set vertex buffer
         gfxRenderPassEncoderSetVertexBuffer(renderPass, 0, app->vertexBuffer, 0,
             gfxBufferGetSize(app->vertexBuffer));
@@ -937,8 +956,14 @@ void render(CubeApp* app)
             GFX_INDEX_FORMAT_UINT16, 0,
             gfxBufferGetSize(app->indexBuffer));
 
-        // Draw indexed (36 indices for the cube)
-        gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
+        // Draw CUBE_COUNT cubes at different positions
+        for (int i = 0; i < CUBE_COUNT; i++) {
+            // Bind the specific cube's bind group (no dynamic offsets)
+            gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->uniformBindGroups[app->currentFrame][i], NULL, 0);
+            
+            // Draw indexed (36 indices for the cube)
+            gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
+        }
 
         // End render pass
         gfxRenderPassEncoderEnd(renderPass);
@@ -1000,8 +1025,10 @@ void cleanup(CubeApp* app)
         if (app->commandEncoders[i]) {
             gfxCommandEncoderDestroy(app->commandEncoders[i]);
         }
-        if (app->uniformBindGroups[i]) {
-            gfxBindGroupDestroy(app->uniformBindGroups[i]);
+        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+            if (app->uniformBindGroups[i][cubeIdx]) {
+                gfxBindGroupDestroy(app->uniformBindGroups[i][cubeIdx]);
+            }
         }
     }
 

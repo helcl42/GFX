@@ -33,6 +33,7 @@ using namespace gfx;
 static constexpr uint32_t WINDOW_WIDTH = 800;
 static constexpr uint32_t WINDOW_HEIGHT = 600;
 static constexpr size_t MAX_FRAMES_IN_FLIGHT = 3;
+static constexpr size_t CUBE_COUNT = 3;
 static constexpr SampleCount MSAA_SAMPLE_COUNT = SampleCount::Count4;
 static constexpr TextureFormat COLOR_FORMAT = TextureFormat::B8G8R8A8UnormSrgb;
 static constexpr TextureFormat DEPTH_FORMAT = TextureFormat::Depth32Float;
@@ -65,7 +66,7 @@ private:
     bool createSizeDependentResources(uint32_t width, uint32_t height);
     void cleanupSizeDependentResources();
     bool createRenderPipeline();
-    void updateUniforms();
+    void updateUniforms(int cubeIndex);
     void render();
     PlatformWindowHandle extractNativeHandle();
     std::vector<uint8_t> loadBinaryFile(const char* filepath);
@@ -113,9 +114,9 @@ private:
     uint32_t windowHeight = WINDOW_HEIGHT;
 
     // Per-frame resources (for frames in flight)
-    std::shared_ptr<Buffer> sharedUniformBuffer; // Single buffer for all frames
-    size_t uniformAlignedSize = 0; // Aligned size per frame
-    std::array<std::shared_ptr<BindGroup>, MAX_FRAMES_IN_FLIGHT> uniformBindGroups;
+    std::shared_ptr<Buffer> sharedUniformBuffer; // Single buffer for all frames and cubes
+    size_t uniformAlignedSize = 0; // Aligned size per uniform buffer
+    std::array<std::array<std::shared_ptr<BindGroup>, CUBE_COUNT>, MAX_FRAMES_IN_FLIGHT> uniformBindGroups;
     std::array<std::shared_ptr<CommandEncoder>, MAX_FRAMES_IN_FLIGHT> commandEncoders;
 
     // Per-frame synchronization
@@ -454,8 +455,10 @@ void CubeApp::cleanupRenderingResources()
     fragmentShader.reset();
     vertexShader.reset();
     uniformBindGroupLayout.reset();
-    for (auto& bindGroup : uniformBindGroups) {
-        bindGroup.reset();
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+            uniformBindGroups[i][cubeIdx].reset();
+        }
     }
     sharedUniformBuffer.reset();
     indexBuffer.reset();
@@ -525,12 +528,12 @@ bool CubeApp::createRenderingResources()
         queue->writeBuffer(vertexBuffer, 0, vertices.data(), sizeof(vertices));
         queue->writeBuffer(indexBuffer, 0, indices.data(), sizeof(indices));
 
-        // Create single large uniform buffer for all frames with proper alignment
+        // Create single large uniform buffer for all frames and cubes with proper alignment
         auto limits = device->getLimits();
 
         size_t uniformSize = sizeof(UniformData);
         uniformAlignedSize = utils::alignUp(uniformSize, limits.minUniformBufferOffsetAlignment);
-        size_t totalBufferSize = uniformAlignedSize * MAX_FRAMES_IN_FLIGHT;
+        size_t totalBufferSize = uniformAlignedSize * MAX_FRAMES_IN_FLIGHT * CUBE_COUNT;
 
         BufferDescriptor uniformBufferDesc{};
         uniformBufferDesc.label = "Shared Transform Uniforms";
@@ -563,23 +566,25 @@ bool CubeApp::createRenderingResources()
             return false;
         }
 
-        // Create bind groups (one per frame in flight) using offsets into shared buffer
+        // Create bind groups (one per frame per cube) using offsets into shared buffer
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-            BindGroupEntry uniformEntry{};
-            uniformEntry.binding = 0;
-            uniformEntry.resource = sharedUniformBuffer;
-            uniformEntry.offset = i * uniformAlignedSize; // Aligned offset into shared buffer
-            uniformEntry.size = sizeof(UniformData);
+            for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+                BindGroupEntry uniformEntry{};
+                uniformEntry.binding = 0;
+                uniformEntry.resource = sharedUniformBuffer;
+                uniformEntry.offset = (i * CUBE_COUNT + cubeIdx) * uniformAlignedSize;
+                uniformEntry.size = sizeof(UniformData);
 
-            BindGroupDescriptor uniformBindGroupDesc{};
-            uniformBindGroupDesc.label = "Uniform Bind Group Frame " + std::to_string(i);
-            uniformBindGroupDesc.layout = uniformBindGroupLayout;
-            uniformBindGroupDesc.entries = { uniformEntry };
+                BindGroupDescriptor uniformBindGroupDesc{};
+                uniformBindGroupDesc.label = "Uniform Bind Group Frame " + std::to_string(i) + " Cube " + std::to_string(cubeIdx);
+                uniformBindGroupDesc.layout = uniformBindGroupLayout;
+                uniformBindGroupDesc.entries = { uniformEntry };
 
-            uniformBindGroups[i] = device->createBindGroup(uniformBindGroupDesc);
-            if (!uniformBindGroups[i]) {
-                std::cerr << "Failed to create uniform bind group " << i << std::endl;
-                return false;
+                uniformBindGroups[i][cubeIdx] = device->createBindGroup(uniformBindGroupDesc);
+                if (!uniformBindGroups[i][cubeIdx]) {
+                    std::cerr << "Failed to create uniform bind group " << i << " cube " << cubeIdx << std::endl;
+                    return false;
+                }
             }
         }
 
@@ -695,41 +700,55 @@ bool CubeApp::createRenderPipeline()
     }
 }
 
-void CubeApp::updateUniforms()
+void CubeApp::updateUniforms(int cubeIndex)
 {
     double currentTime = glfwGetTime();
     float deltaTime = static_cast<float>(currentTime - lastTime);
-    lastTime = currentTime;
-
-    // Update rotation angles (both X and Y axes)
-    rotationAngleX += deltaTime * 45.0f; // 45 degrees per second around X
-    rotationAngleY += deltaTime * 30.0f; // 30 degrees per second around Y
-    if (rotationAngleX >= 360.0f) {
-        rotationAngleX -= 360.0f;
+    
+    // Only update time once per frame (when rendering first cube)
+    if (cubeIndex == 0) {
+        lastTime = currentTime;
+        
+        // Update rotation angles (both X and Y axes)
+        rotationAngleX += deltaTime * 45.0f; // 45 degrees per second around X
+        rotationAngleY += deltaTime * 30.0f; // 30 degrees per second around Y
+        if (rotationAngleX >= 360.0f) {
+            rotationAngleX -= 360.0f;
+        }
+        if (rotationAngleY >= 360.0f) {
+            rotationAngleY -= 360.0f;
+        }
     }
-    if (rotationAngleY >= 360.0f) {
-        rotationAngleY -= 360.0f;
-    }
 
-    UniformData uniforms;
+    UniformData uniforms{};
 
     // Create rotation matrices (combine X and Y rotations)
-    std::array<std::array<float, 4>, 4> rotX, rotY;
-    matrixRotateX(rotX, rotationAngleX * M_PI / 180.0f);
-    matrixRotateY(rotY, rotationAngleY * M_PI / 180.0f);
-    matrixMultiply(uniforms.model, rotY, rotX);
+    // Each cube rotates slightly differently
+    std::array<std::array<float, 4>, 4> rotX, rotY, tempModel, translation;
+    matrixRotateX(rotX, (rotationAngleX + cubeIndex * 30.0f) * M_PI / 180.0f);
+    matrixRotateY(rotY, (rotationAngleY + cubeIndex * 45.0f) * M_PI / 180.0f);
+    matrixMultiply(tempModel, rotY, rotX);
+    
+    // Position cubes side by side: left (-3, 0, 0), center (0, 0, 0), right (3, 0, 0)
+    matrixIdentity(translation);
+    translation[3][0] = (cubeIndex - 1) * 3.0f; // x offset: -3, 0, 3
+    
+    // Apply translation after rotation
+    matrixMultiply(uniforms.model, tempModel, translation);
 
-    // Create view matrix (camera looking at origin from distance)
-    matrixLookAt(uniforms.view, 0.0f, 0.0f, 5.0f, // eye
-        0.0f, 0.0f, 0.0f, // center
-        0.0f, 1.0f, 0.0f); // up
+    // Create view matrix (camera positioned at 0, 0, 10 looking at origin)
+    matrixLookAt(uniforms.view,
+        0.0f, 0.0f, 10.0f, // eye position - pulled back to see all 3 cubes
+        0.0f, 0.0f, 0.0f, // look at point
+        0.0f, 1.0f, 0.0f); // up vector
 
     // Create projection matrix
     float aspect = (float)swapchain->getWidth() / (float)swapchain->getHeight();
     matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f);
 
-    // Upload uniform data to current frame's offset in shared buffer
-    size_t offset = currentFrame * uniformAlignedSize;
+    // Upload uniform data to buffer at aligned offset
+    // Formula: (frame * CUBE_COUNT + cube) * alignedSize
+    size_t offset = (currentFrame * CUBE_COUNT + cubeIndex) * uniformAlignedSize;
     queue->writeBuffer(sharedUniformBuffer, offset, &uniforms, sizeof(uniforms));
 }
 
@@ -753,8 +772,10 @@ void CubeApp::render()
             return;
         }
 
-        // Update uniform buffer with current transformation matrices
-        updateUniforms();
+        // Update uniforms for all CUBE_COUNT cubes BEFORE encoding
+        for (int i = 0; i < CUBE_COUNT; i++) {
+            updateUniforms(i);
+        }
 
         // Get the texture view for the acquired image
         auto backbuffer = swapchain->getImageView(imageIndex);
@@ -800,12 +821,17 @@ void CubeApp::render()
         renderPass->setViewport(0.0f, 0.0f, static_cast<float>(swapWidth), static_cast<float>(swapHeight), 0.0f, 1.0f);
         renderPass->setScissorRect(0, 0, swapWidth, swapHeight);
 
-        renderPass->setBindGroup(0, uniformBindGroups[currentFrame]);
         renderPass->setVertexBuffer(0, vertexBuffer);
         renderPass->setIndexBuffer(indexBuffer, IndexFormat::Uint16);
 
-        // Draw cube (36 indices for 12 triangles)
-        renderPass->drawIndexed(36, 1, 0, 0, 0);
+        // Draw CUBE_COUNT cubes at different positions
+        for (int i = 0; i < CUBE_COUNT; i++) {
+            // Bind the specific cube's bind group (no dynamic offsets)
+            renderPass->setBindGroup(0, uniformBindGroups[currentFrame][i]);
+            
+            // Draw indexed (36 indices for the cube)
+            renderPass->drawIndexed(36, 1, 0, 0, 0);
+        }
 
         // End render pass
         renderPass->end();
@@ -944,7 +970,9 @@ void CubeApp::cleanup()
         inFlightFences[i].reset();
         renderFinishedSemaphores[i].reset();
         imageAvailableSemaphores[i].reset();
-        uniformBindGroups[i].reset();
+        for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+            uniformBindGroups[i][cubeIdx].reset();
+        }
     }
 
     // Destroy shared uniform buffer
