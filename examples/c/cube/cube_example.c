@@ -122,7 +122,6 @@ typedef struct {
     // Animation state
     float rotationAngleX;
     float rotationAngleY;
-    double lastTime;
 } CubeApp;
 
 // Function declarations
@@ -134,7 +133,8 @@ static void cleanupSizeDependentResources(CubeApp* app);
 static bool createRenderingResources(CubeApp* app);
 static void cleanupRenderingResources(CubeApp* app);
 static bool createRenderPipeline(CubeApp* app);
-static void updateUniforms(CubeApp* app, int cubeIndex);
+static void updateCube(CubeApp* app, int cubeIndex);
+static void update(CubeApp* app, float deltaTime);
 static void render(CubeApp* app);
 static void cleanup(CubeApp* app);
 static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window);
@@ -716,7 +716,6 @@ bool createRenderingResources(CubeApp* app)
     // Initialize animation state
     app->rotationAngleX = 0.0f;
     app->rotationAngleY = 0.0f;
-    app->lastTime = glfwGetTime();
 
     return true;
 }
@@ -816,26 +815,8 @@ bool createRenderPipeline(CubeApp* app)
     return true;
 }
 
-void updateUniforms(CubeApp* app, int cubeIndex)
+void updateCube(CubeApp* app, int cubeIndex)
 {
-    double currentTime = glfwGetTime();
-    float deltaTime = (float)(currentTime - app->lastTime);
-    
-    // Only update time once per frame (when rendering first cube)
-    if (cubeIndex == 0) {
-        app->lastTime = currentTime;
-        
-        // Update rotation angles (both X and Y axes)
-        app->rotationAngleX += 45.0f * deltaTime; // 45 degrees per second around X
-        app->rotationAngleY += 30.0f * deltaTime; // 30 degrees per second around Y
-        if (app->rotationAngleX >= 360.0f) {
-            app->rotationAngleX -= 360.0f;
-        }
-        if (app->rotationAngleY >= 360.0f) {
-            app->rotationAngleY -= 360.0f;
-        }
-    }
-
     UniformData uniforms = { 0 }; // Initialize to zero!
 
     // Create rotation matrices (combine X and Y rotations)
@@ -844,12 +825,12 @@ void updateUniforms(CubeApp* app, int cubeIndex)
     matrixRotateX(rotX, (app->rotationAngleX + cubeIndex * 30.0f) * M_PI / 180.0f);
     matrixRotateY(rotY, (app->rotationAngleY + cubeIndex * 45.0f) * M_PI / 180.0f);
     matrixMultiply(tempModel, rotY, rotX);
-    
+
     // Position cubes side by side: left (-3, 0, 0), center (0, 0, 0), right (3, 0, 0)
     float translation[16];
     matrixIdentity(translation);
     translation[12] = (cubeIndex - 1) * 3.0f; // x offset: -3, 0, 3
-    
+
     // Apply translation after rotation: model = rotation * translation
     // This rotates in place, then translates to world position
     matrixMultiply(uniforms.model, tempModel, translation);
@@ -874,6 +855,24 @@ void updateUniforms(CubeApp* app, int cubeIndex)
     gfxQueueWriteBuffer(app->queue, app->sharedUniformBuffer, offset, &uniforms, sizeof(uniforms));
 }
 
+void update(CubeApp* app, float deltaTime)
+{
+    // Update rotation angles (both X and Y axes)
+    app->rotationAngleX += 45.0f * deltaTime; // 45 degrees per second around X
+    app->rotationAngleY += 30.0f * deltaTime; // 30 degrees per second around Y
+    if (app->rotationAngleX >= 360.0f) {
+        app->rotationAngleX -= 360.0f;
+    }
+    if (app->rotationAngleY >= 360.0f) {
+        app->rotationAngleY -= 360.0f;
+    }
+
+    // Update uniforms for each cube
+    for (int i = 0; i < CUBE_COUNT; ++i) {
+        updateCube(app, i);
+    }
+}
+
 void render(CubeApp* app)
 {
     // Wait for previous frame to finish
@@ -888,11 +887,6 @@ void render(CubeApp* app)
     if (result != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to acquire swapchain image\n");
         return;
-    }
-
-    // Update uniforms for all CUBE_COUNT cubes BEFORE encoding
-    for (int i = 0; i < CUBE_COUNT; i++) {
-        updateUniforms(app, i);
     }
 
     // Get texture view for acquired image (for later blit/present)
@@ -960,7 +954,7 @@ void render(CubeApp* app)
         for (int i = 0; i < CUBE_COUNT; i++) {
             // Bind the specific cube's bind group (no dynamic offsets)
             gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->uniformBindGroups[app->currentFrame][i], NULL, 0);
-            
+
             // Draw indexed (36 indices for the cube)
             gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
         }
@@ -1320,6 +1314,8 @@ int main()
     uint32_t previousWidth = gfxSwapchainGetWidth(app.swapchain);
     uint32_t previousHeight = gfxSwapchainGetHeight(app.swapchain);
 
+    float lastTime = (float)glfwGetTime();
+
     // Main loop
     while (!glfwWindowShouldClose(app.window)) {
         glfwPollEvents();
@@ -1343,7 +1339,11 @@ int main()
             continue; // Skip rendering this frame
         }
 
-        // Render frame (no resize check needed inside since we checked above)
+        float currentTime = (float)glfwGetTime();
+        float deltaTime = (float)(currentTime - lastTime);
+        lastTime = currentTime;
+
+        update(&app, deltaTime);
         render(&app);
     }
 

@@ -66,7 +66,8 @@ private:
     bool createSizeDependentResources(uint32_t width, uint32_t height);
     void cleanupSizeDependentResources();
     bool createRenderPipeline();
-    void updateUniforms(int cubeIndex);
+    void updateCube(int cubeIndex);
+    void update(float deltaTime);
     void render();
     PlatformWindowHandle extractNativeHandle();
     std::vector<uint8_t> loadBinaryFile(const char* filepath);
@@ -128,7 +129,6 @@ private:
     // Animation state
     float rotationAngleX = 0.0f;
     float rotationAngleY = 0.0f;
-    double lastTime = 0.0;
 };
 
 bool CubeApp::initialize()
@@ -700,26 +700,8 @@ bool CubeApp::createRenderPipeline()
     }
 }
 
-void CubeApp::updateUniforms(int cubeIndex)
+void CubeApp::updateCube(int cubeIndex)
 {
-    double currentTime = glfwGetTime();
-    float deltaTime = static_cast<float>(currentTime - lastTime);
-    
-    // Only update time once per frame (when rendering first cube)
-    if (cubeIndex == 0) {
-        lastTime = currentTime;
-        
-        // Update rotation angles (both X and Y axes)
-        rotationAngleX += deltaTime * 45.0f; // 45 degrees per second around X
-        rotationAngleY += deltaTime * 30.0f; // 30 degrees per second around Y
-        if (rotationAngleX >= 360.0f) {
-            rotationAngleX -= 360.0f;
-        }
-        if (rotationAngleY >= 360.0f) {
-            rotationAngleY -= 360.0f;
-        }
-    }
-
     UniformData uniforms{};
 
     // Create rotation matrices (combine X and Y rotations)
@@ -728,11 +710,11 @@ void CubeApp::updateUniforms(int cubeIndex)
     matrixRotateX(rotX, (rotationAngleX + cubeIndex * 30.0f) * M_PI / 180.0f);
     matrixRotateY(rotY, (rotationAngleY + cubeIndex * 45.0f) * M_PI / 180.0f);
     matrixMultiply(tempModel, rotY, rotX);
-    
+
     // Position cubes side by side: left (-3, 0, 0), center (0, 0, 0), right (3, 0, 0)
     matrixIdentity(translation);
     translation[3][0] = (cubeIndex - 1) * 3.0f; // x offset: -3, 0, 3
-    
+
     // Apply translation after rotation
     matrixMultiply(uniforms.model, tempModel, translation);
 
@@ -750,6 +732,24 @@ void CubeApp::updateUniforms(int cubeIndex)
     // Formula: (frame * CUBE_COUNT + cube) * alignedSize
     size_t offset = (currentFrame * CUBE_COUNT + cubeIndex) * uniformAlignedSize;
     queue->writeBuffer(sharedUniformBuffer, offset, &uniforms, sizeof(uniforms));
+}
+
+void CubeApp::update(float deltaTime)
+{
+    // Update rotation angles (both X and Y axes)
+    rotationAngleX += deltaTime * 45.0f; // 45 degrees per second around X
+    rotationAngleY += deltaTime * 30.0f; // 30 degrees per second around Y
+    if (rotationAngleX >= 360.0f) {
+        rotationAngleX -= 360.0f;
+    }
+    if (rotationAngleY >= 360.0f) {
+        rotationAngleY -= 360.0f;
+    }
+
+    // Update uniforms for all CUBE_COUNT cubes BEFORE encoding
+    for (int i = 0; i < CUBE_COUNT; ++i) {
+        updateCube(i);
+    }
 }
 
 void CubeApp::render()
@@ -770,11 +770,6 @@ void CubeApp::render()
         if (result != gfx::Result::Success) {
             std::cerr << "Failed to acquire next image" << std::endl;
             return;
-        }
-
-        // Update uniforms for all CUBE_COUNT cubes BEFORE encoding
-        for (int i = 0; i < CUBE_COUNT; i++) {
-            updateUniforms(i);
         }
 
         // Get the texture view for the acquired image
@@ -828,7 +823,7 @@ void CubeApp::render()
         for (int i = 0; i < CUBE_COUNT; i++) {
             // Bind the specific cube's bind group (no dynamic offsets)
             renderPass->setBindGroup(0, uniformBindGroups[currentFrame][i]);
-            
+
             // Draw indexed (36 indices for the cube)
             renderPass->drawIndexed(36, 1, 0, 0, 0);
         }
@@ -918,8 +913,7 @@ void CubeApp::keyCallback(GLFWwindow* window, int key, int scancode, int action,
 
 void CubeApp::run()
 {
-    // Initialize timing for first frame
-    lastTime = glfwGetTime();
+    float lastTime = (float)glfwGetTime();
 
     uint32_t previousWidth = swapchain->getWidth();
     uint32_t previousHeight = swapchain->getHeight();
@@ -946,7 +940,11 @@ void CubeApp::run()
             continue; // Skip rendering this frame
         }
 
-        // Render (no resize check needed inside since we checked above)
+        float currentTime = (float)glfwGetTime();
+        float deltaTime = (float)(currentTime - lastTime);
+        lastTime = currentTime;
+
+        update(deltaTime);
         render();
     }
 }
