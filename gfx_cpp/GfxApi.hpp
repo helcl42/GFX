@@ -254,17 +254,22 @@ enum class TextureLayout {
 
 enum class PipelineStage : uint32_t {
     None = 0,
-    TopOfPipe = 1 << 0,
-    VertexShader = 1 << 1,
-    FragmentShader = 1 << 2,
-    ComputeShader = 1 << 3,
-    EarlyFragmentTests = 1 << 4,
-    LateFragmentTests = 1 << 5,
-    ColorAttachmentOutput = 1 << 6,
-    Transfer = 1 << 7,
-    BottomOfPipe = 1 << 8,
-    AllGraphics = 1 << 9,
-    AllCommands = 1 << 10
+    TopOfPipe = 1 << 0, // 0x00000001
+    DrawIndirect = 1 << 1, // 0x00000002
+    VertexInput = 1 << 2, // 0x00000004
+    VertexShader = 1 << 3, // 0x00000008
+    TessellationControlShader = 1 << 4, // 0x00000010
+    TessellationEvaluationShader = 1 << 5, // 0x00000020
+    GeometryShader = 1 << 6, // 0x00000040
+    FragmentShader = 1 << 7, // 0x00000080
+    EarlyFragmentTests = 1 << 8, // 0x00000100
+    LateFragmentTests = 1 << 9, // 0x00000200
+    ColorAttachmentOutput = 1 << 10, // 0x00000400
+    ComputeShader = 1 << 11, // 0x00000800
+    Transfer = 1 << 12, // 0x00001000
+    BottomOfPipe = 1 << 13, // 0x00002000
+    AllGraphics = 0x0000FFFF,
+    AllCommands = 1 << 16 // 0x00010000
 };
 
 enum class AccessFlags : uint32_t {
@@ -273,16 +278,17 @@ enum class AccessFlags : uint32_t {
     IndexRead = 1 << 1,
     VertexAttributeRead = 1 << 2,
     UniformRead = 1 << 3,
-    ShaderRead = 1 << 4,
-    ShaderWrite = 1 << 5,
-    ColorAttachmentRead = 1 << 6,
-    ColorAttachmentWrite = 1 << 7,
-    DepthStencilAttachmentRead = 1 << 8,
-    DepthStencilAttachmentWrite = 1 << 9,
-    TransferRead = 1 << 10,
-    TransferWrite = 1 << 11,
-    MemoryRead = 1 << 12,
-    MemoryWrite = 1 << 13
+    InputAttachmentRead = 1 << 4,
+    ShaderRead = 1 << 5,
+    ShaderWrite = 1 << 6,
+    ColorAttachmentRead = 1 << 7,
+    ColorAttachmentWrite = 1 << 8,
+    DepthStencilAttachmentRead = 1 << 9,
+    DepthStencilAttachmentWrite = 1 << 10,
+    TransferRead = 1 << 11,
+    TransferWrite = 1 << 12,
+    MemoryRead = 1 << 14,
+    MemoryWrite = 1 << 15
 };
 
 // ============================================================================
@@ -645,6 +651,7 @@ struct ComputePipelineDescriptor {
     std::string label;
     std::shared_ptr<Shader> compute;
     std::string entryPoint = "main";
+    std::vector<std::shared_ptr<BindGroupLayout>> bindGroupLayouts; // Bind group layouts used by the pipeline
 };
 
 struct BindGroupLayoutEntry {

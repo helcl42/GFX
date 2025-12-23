@@ -249,6 +249,16 @@ if(BUILD_EXAMPLES)
     compile_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/generate.comp)
     compile_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/fullscreen.vert)
     compile_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/postprocess.frag)
+    
+    # C++ Compute Example
+    add_executable(compute_example_cpp examples/cpp/compute/compute_example.cpp)
+    target_link_libraries(compute_example_cpp gfx_cpp glfw)
+    if(ENABLE_ASAN AND NOT MSVC)
+        target_link_options(compute_example_cpp PRIVATE -fsanitize=address)
+    endif()
+    
+    # C++ compute example uses the same compiled shaders as C example
+    add_dependencies(compute_example_cpp compute_example_c)
 endif()
 
 # Install targets

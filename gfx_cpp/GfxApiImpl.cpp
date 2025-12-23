@@ -1499,10 +1499,21 @@ public:
             throw std::runtime_error("Invalid shader type");
         }
 
+        // Convert bind group layouts to C handles
+        std::vector<GfxBindGroupLayout> bindGroupLayoutHandles;
+        for (const auto& layout : descriptor.bindGroupLayouts) {
+            auto layoutImpl = std::dynamic_pointer_cast<CBindGroupLayoutImpl>(layout);
+            if (layoutImpl) {
+                bindGroupLayoutHandles.push_back(layoutImpl->getHandle());
+            }
+        }
+
         GfxComputePipelineDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
         cDesc.compute = shaderImpl->getHandle();
         cDesc.entryPoint = descriptor.entryPoint.c_str();
+        cDesc.bindGroupLayouts = bindGroupLayoutHandles.empty() ? nullptr : bindGroupLayoutHandles.data();
+        cDesc.bindGroupLayoutCount = static_cast<uint32_t>(bindGroupLayoutHandles.size());
 
         GfxComputePipeline pipeline = nullptr;
         GfxResult result = gfxDeviceCreateComputePipeline(m_handle, &cDesc, &pipeline);
@@ -1663,12 +1674,10 @@ public:
     void setDebugCallback(DebugCallback callback) override
     {
         m_debugCallback = callback;
-        
+
         if (callback) {
             // Set C callback that forwards to C++ callback
-            gfxInstanceSetDebugCallback(m_handle, 
-                [](GfxDebugMessageSeverity severity, GfxDebugMessageType type, 
-                   const char* message, void* userData) {
+            gfxInstanceSetDebugCallback(m_handle, [](GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData) {
                     auto* self = static_cast<CInstanceImpl*>(userData);
                     if (self && self->m_debugCallback) {
                         self->m_debugCallback(
@@ -1676,9 +1685,7 @@ public:
                             static_cast<DebugMessageType>(type),
                             message
                         );
-                    }
-                }, 
-                this);
+                    } }, this);
         } else {
             gfxInstanceSetDebugCallback(m_handle, nullptr, nullptr);
         }
