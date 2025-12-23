@@ -761,9 +761,9 @@ void CubeApp::render()
         if (!backbuffer) {
             return; // Skip frame if no backbuffer available
         }
-        // Reset command encoder for reuse
+        // Begin command encoder for reuse
         auto commandEncoder = commandEncoders[currentFrame];
-        commandEncoder->reset();
+        commandEncoder->begin();
 
         // Begin render pass
         Color clearColor{ 0.1f, 0.2f, 0.3f, 1.0f }; // Dark blue background
@@ -811,7 +811,7 @@ void CubeApp::render()
         renderPass->end();
 
         // Finish command encoding
-        commandEncoder->finish();
+        commandEncoder->end();
 
         // Submit with explicit synchronization
         SubmitInfo submitInfo{};

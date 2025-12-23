@@ -988,25 +988,25 @@ void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     }
 }
 
-void gfxCommandEncoderFinish(GfxCommandEncoder commandEncoder)
+void gfxCommandEncoderEnd(GfxCommandEncoder commandEncoder)
 {
     if (!commandEncoder) {
         return;
     }
     auto api = gfx::getAPI(commandEncoder);
     if (api) {
-        api->commandEncoderFinish(gfx::native(commandEncoder));
+        api->commandEncoderEnd(gfx::native(commandEncoder));
     }
 }
 
-void gfxCommandEncoderReset(GfxCommandEncoder commandEncoder)
+void gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder)
 {
     if (!commandEncoder) {
         return;
     }
     auto api = gfx::getAPI(commandEncoder);
     if (api) {
-        api->commandEncoderReset(gfx::native(commandEncoder));
+        api->commandEncoderBegin(gfx::native(commandEncoder));
     }
 }
 

@@ -880,9 +880,9 @@ void render(CubeApp* app)
         return;
     }
 
-    // Reset command encoder for reuse
+    // Begin command encoder for reuse
     GfxCommandEncoder encoder = app->commandEncoders[app->currentFrame];
-    gfxCommandEncoderReset(encoder);
+    gfxCommandEncoderBegin(encoder);
 
     // Begin render pass with dark blue clear color
     // Pass both MSAA color buffer and swapchain image for resolve
@@ -946,7 +946,7 @@ void render(CubeApp* app)
     }
 
     // Finish command encoding
-    gfxCommandEncoderFinish(encoder);
+    gfxCommandEncoderEnd(encoder);
 
     // Submit commands with synchronization
     GfxSubmitInfo submitInfo = { 0 };

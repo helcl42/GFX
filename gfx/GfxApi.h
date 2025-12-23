@@ -931,8 +931,8 @@ GFX_API void gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEnco
     const GfxExtent3D* extent, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout);
 GFX_API void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount);
-GFX_API void gfxCommandEncoderFinish(GfxCommandEncoder commandEncoder);
-GFX_API void gfxCommandEncoderReset(GfxCommandEncoder commandEncoder);
+GFX_API void gfxCommandEncoderEnd(GfxCommandEncoder commandEncoder);
+GFX_API void gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder);
 
 // Helper function to deduce access flags from texture layout
 GFX_API GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout);

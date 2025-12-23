@@ -737,14 +737,14 @@ public:
         }
     }
 
-    void finish() override
+    void end() override
     {
-        gfxCommandEncoderFinish(m_handle);
+        gfxCommandEncoderEnd(m_handle);
     }
 
-    void reset() override
+    void begin() override
     {
-        gfxCommandEncoderReset(m_handle);
+        gfxCommandEncoderBegin(m_handle);
     }
 
 private:

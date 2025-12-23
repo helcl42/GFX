@@ -2463,7 +2463,7 @@ void vulkan_commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
         static_cast<uint32_t>(imageBarriers.size()), imageBarriers.data());
 }
 
-void vulkan_commandEncoderFinish(GfxCommandEncoder commandEncoder)
+void vulkan_commandEncoderEnd(GfxCommandEncoder commandEncoder)
 {
     if (!commandEncoder) {
         return;
@@ -2472,7 +2472,7 @@ void vulkan_commandEncoderFinish(GfxCommandEncoder commandEncoder)
     encoder->finish();
 }
 
-void vulkan_commandEncoderReset(GfxCommandEncoder commandEncoder)
+void vulkan_commandEncoderBegin(GfxCommandEncoder commandEncoder)
 {
     if (!commandEncoder) {
         return;
@@ -4224,8 +4224,8 @@ static const GfxBackendAPI vulkanBackendApi = {
     .commandEncoderCopyTextureToBuffer = vulkan_commandEncoderCopyTextureToBuffer,
     .commandEncoderCopyTextureToTexture = vulkan_commandEncoderCopyTextureToTexture,
     .commandEncoderPipelineBarrier = vulkan_commandEncoderPipelineBarrier,
-    .commandEncoderFinish = vulkan_commandEncoderFinish,
-    .commandEncoderReset = vulkan_commandEncoderReset,
+    .commandEncoderEnd = vulkan_commandEncoderEnd,
+    .commandEncoderBegin = vulkan_commandEncoderBegin,
     .renderPassEncoderDestroy = vulkan_renderPassEncoderDestroy,
     .renderPassEncoderSetPipeline = vulkan_renderPassEncoderSetPipeline,
     .renderPassEncoderSetBindGroup = vulkan_renderPassEncoderSetBindGroup,

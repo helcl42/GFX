@@ -2658,7 +2658,7 @@ void webgpu_commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     (void)textureBarrierCount;
 }
 
-void webgpu_commandEncoderFinish(GfxCommandEncoder commandEncoder)
+void webgpu_commandEncoderEnd(GfxCommandEncoder commandEncoder)
 {
     // Handled in queueSubmit
 }
@@ -3009,7 +3009,7 @@ static const GfxBackendAPI webGpuBackendApi = {
     .commandEncoderCopyTextureToBuffer = webgpu_commandEncoderCopyTextureToBuffer,
     .commandEncoderCopyTextureToTexture = webgpu_commandEncoderCopyTextureToTexture,
     .commandEncoderPipelineBarrier = webgpu_commandEncoderPipelineBarrier,
-    .commandEncoderFinish = webgpu_commandEncoderFinish,
+    .commandEncoderEnd = webgpu_commandEncoderEnd,
     .renderPassEncoderDestroy = webgpu_renderPassEncoderDestroy,
     .renderPassEncoderSetPipeline = webgpu_renderPassEncoderSetPipeline,
     .renderPassEncoderSetBindGroup = webgpu_renderPassEncoderSetBindGroup,
