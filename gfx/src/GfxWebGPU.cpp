@@ -1,5 +1,5 @@
 #include "../dependencies/include/webgpu/webgpu.h"
-#include "GfxApi.h"
+#include <gfx/GfxApi.h>
 #include "GfxBackend.h"
 
 #include <cassert>

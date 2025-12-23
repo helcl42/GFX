@@ -107,22 +107,19 @@ elseif(UNIX)
     endif()
 endif()
 
-# Include directories
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
 # C API Library (implemented in C++)
 set(GFX_C_SOURCES
-    gfx/GfxApi.h
-    gfx/GfxBackend.h
-    gfx/GfxDispatcher.cpp
+    gfx/include/gfx/GfxApi.h
+    gfx/src/GfxBackend.h
+    gfx/src/GfxDispatcher.cpp
 )
 
 if(BUILD_VULKAN_BACKEND)
-    list(APPEND GFX_C_SOURCES gfx/GfxVulkan.cpp)
+    list(APPEND GFX_C_SOURCES gfx/src/GfxVulkan.cpp)
 endif()
 
 if(BUILD_WEBGPU_BACKEND)
-    list(APPEND GFX_C_SOURCES gfx/GfxWebGPU.cpp)
+    list(APPEND GFX_C_SOURCES gfx/src/GfxWebGPU.cpp)
 endif()
 
 # Create library based on BUILD_SHARED_LIBS option
@@ -139,7 +136,13 @@ else()
     add_library(gfx_c STATIC ${GFX_C_SOURCES})
 endif()
 
-target_include_directories(gfx_c PUBLIC gfx/)
+target_include_directories(gfx_c 
+    PUBLIC 
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/gfx/include>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/gfx/src
+)
 
 # Link Vulkan if available
 if(BUILD_VULKAN_BACKEND)
@@ -161,8 +164,8 @@ target_link_libraries(gfx_c PUBLIC ${PLATFORM_LIBS})
 
 # C++ API Library
 set(GFX_CPP_SOURCES
-    gfx_cpp/GfxApi.hpp
-    gfx_cpp/GfxApiImpl.cpp  # Single unified C++ wrapper for all backends
+    gfx_cpp/include/gfx_cpp/GfxApi.hpp
+    gfx_cpp/src/GfxApiImpl.cpp  # Single unified C++ wrapper for all backends
 )
 
 # Create library based on BUILD_SHARED_LIBS option
@@ -177,14 +180,19 @@ else()
     add_library(gfx_cpp STATIC ${GFX_CPP_SOURCES})
 endif()
 
-target_include_directories(gfx_cpp PUBLIC gfx_cpp/)
+target_include_directories(gfx_cpp 
+    PUBLIC 
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/gfx_cpp/include>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/gfx_cpp/src
+)
 target_link_libraries(gfx_cpp PUBLIC gfx_c)  # Link to C API library
 
 # Link Vulkan if available
 if(BUILD_VULKAN_BACKEND)
     target_link_libraries(gfx_cpp PUBLIC Vulkan::Vulkan)
     target_compile_definitions(gfx_cpp PUBLIC GFX_ENABLE_VULKAN=1)
-    target_include_directories(gfx_cpp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 # Link WebGPU if available
@@ -268,8 +276,8 @@ install(TARGETS gfx_c gfx_cpp
     RUNTIME DESTINATION bin
 )
 
-install(FILES gfx/GfxApi.h DESTINATION include/gfx)
-install(FILES gfx_cpp/GfxApi.hpp DESTINATION include/gfx)
+install(FILES gfx/include/gfx/GfxApi.h DESTINATION include/gfx)
+install(FILES gfx_cpp/include/gfx_cpp/GfxApi.hpp DESTINATION include/gfx_cpp)
 
 # Print configuration summary
 message(STATUS "")

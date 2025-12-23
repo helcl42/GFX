@@ -1,4 +1,4 @@
-#include "GfxApi.hpp"
+#include <gfx_cpp/GfxApi.hpp>
 #include <GLFW/glfw3.h>
 
 // Include platform-specific GLFW headers to get native handles
