@@ -237,6 +237,18 @@ if(BUILD_EXAMPLES)
     # Compile shaders for C++ example (uses same shaders as C example)
     compile_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert)
     compile_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag)
+    
+    # C Compute Example
+    add_executable(compute_example_c examples/c/compute/compute_example.c)
+    target_link_libraries(compute_example_c gfx_c glfw m)
+    if(ENABLE_ASAN AND NOT MSVC)
+        target_link_options(compute_example_c PRIVATE -fsanitize=address)
+    endif()
+    
+    # Compile shaders for compute example
+    compile_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/generate.comp)
+    compile_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/fullscreen.vert)
+    compile_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/postprocess.frag)
 endif()
 
 # Install targets
