@@ -64,11 +64,13 @@ static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType 
     printf("[%s|%s] %s\n", severityStr, typeStr, message);
 }
 
-// Push constants for compute and render
 typedef struct {
     float time;
+} ComputeUniformData;
+
+typedef struct {
     float postProcessStrength;
-} PushConstants;
+} RenderUniformData;
 
 typedef struct {
     GLFWwindow* window;
@@ -86,15 +88,17 @@ typedef struct {
     GfxShader computeShader;
     GfxComputePipeline computePipeline;
     GfxBindGroupLayout computeBindGroupLayout;
-    GfxBindGroup computeBindGroup;
+    GfxBindGroup computeBindGroup[MAX_FRAMES_IN_FLIGHT];
+    GfxBuffer computeUniformBuffer[MAX_FRAMES_IN_FLIGHT];
 
     // Render resources (fullscreen quad)
     GfxShader vertexShader;
     GfxShader fragmentShader;
     GfxRenderPipeline renderPipeline;
     GfxBindGroupLayout renderBindGroupLayout;
-    GfxBindGroup renderBindGroup;
     GfxSampler sampler;
+    GfxBindGroup renderBindGroup[MAX_FRAMES_IN_FLIGHT];
+    GfxBuffer renderUniformBuffer[MAX_FRAMES_IN_FLIGHT];
 
     uint32_t windowWidth;
     uint32_t windowHeight;
@@ -339,20 +343,35 @@ static bool createComputeResources(ComputeApp* app)
     }
     free(computeCode);
 
-    // Create compute bind group layout
-    GfxBindGroupLayoutEntry computeLayoutEntry = {
-        .binding = 0,
-        .visibility = GFX_SHADER_STAGE_COMPUTE,
-        .type = GFX_BINDING_TYPE_STORAGE_TEXTURE,
-        .storageTexture = {
-            .format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM,
-            .writeOnly = true,
+    // Create compute uniform buffers (one per frame in flight)
+    GfxBufferDescriptor computeUniformBufferDesc = {
+        .size = sizeof(ComputeUniformData),
+        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST,
+        .mappedAtCreation = false
+    };
+
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        if (gfxDeviceCreateBuffer(app->device, &computeUniformBufferDesc, &app->computeUniformBuffer[i]) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create compute uniform buffer %d\n", i);
+            return false;
         }
+    }
+
+    // Create compute bind group layout
+    GfxBindGroupLayoutEntry computeLayoutEntries[2] = {
+        { .binding = 0,
+            .visibility = GFX_SHADER_STAGE_COMPUTE,
+            .type = GFX_BINDING_TYPE_STORAGE_TEXTURE,
+            .storageTexture = {
+                .format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM,
+                .writeOnly = true,
+            } },
+        { .binding = 1, .visibility = GFX_SHADER_STAGE_COMPUTE, .type = GFX_BINDING_TYPE_BUFFER, .buffer = { .hasDynamicOffset = false, .minBindingSize = sizeof(ComputeUniformData) } }
     };
 
     GfxBindGroupLayoutDescriptor computeLayoutDesc = {
-        .entryCount = 1,
-        .entries = &computeLayoutEntry
+        .entryCount = 2,
+        .entries = computeLayoutEntries
     };
 
     if (gfxDeviceCreateBindGroupLayout(app->device, &computeLayoutDesc, &app->computeBindGroupLayout) != GFX_RESULT_SUCCESS) {
@@ -360,22 +379,31 @@ static bool createComputeResources(ComputeApp* app)
         return false;
     }
 
-    // Create compute bind group
-    GfxBindGroupEntry computeEntry = {
-        .binding = 0,
-        .type = GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW,
-        .resource = { .textureView = app->computeTextureView }
-    };
+    // Create compute bind groups (one per frame in flight)
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        GfxBindGroupEntry computeEntries[2] = {
+            { .binding = 0,
+                .type = GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW,
+                .resource = { .textureView = app->computeTextureView } },
+            { .binding = 1,
+                .type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER,
+                .resource = {
+                    .buffer = {
+                        .buffer = app->computeUniformBuffer[i],
+                        .offset = 0,
+                        .size = sizeof(ComputeUniformData) } } }
+        };
 
-    GfxBindGroupDescriptor computeBindGroupDesc = {
-        .layout = app->computeBindGroupLayout,
-        .entryCount = 1,
-        .entries = &computeEntry
-    };
+        GfxBindGroupDescriptor computeBindGroupDesc = {
+            .layout = app->computeBindGroupLayout,
+            .entryCount = 2,
+            .entries = computeEntries
+        };
 
-    if (gfxDeviceCreateBindGroup(app->device, &computeBindGroupDesc, &app->computeBindGroup) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create compute bind group\n");
-        return false;
+        if (gfxDeviceCreateBindGroup(app->device, &computeBindGroupDesc, &app->computeBindGroup[i]) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create compute bind group %d\n", i);
+            return false;
+        }
     }
 
     // Create compute pipeline
@@ -449,8 +477,22 @@ static bool createRenderResources(ComputeApp* app)
         return false;
     }
 
+    // Create render uniform buffers (one per frame in flight)
+    GfxBufferDescriptor renderUniformBufferDesc = {
+        .size = sizeof(RenderUniformData),
+        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST,
+        .mappedAtCreation = false
+    };
+
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        if (gfxDeviceCreateBuffer(app->device, &renderUniformBufferDesc, &app->renderUniformBuffer[i]) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create render uniform buffer %d\n", i);
+            return false;
+        }
+    }
+
     // Create render bind group layout
-    GfxBindGroupLayoutEntry renderLayoutEntries[2] = {
+    GfxBindGroupLayoutEntry renderLayoutEntries[3] = {
         { .binding = 0,
             .visibility = GFX_SHADER_STAGE_FRAGMENT,
             .type = GFX_BINDING_TYPE_SAMPLER,
@@ -458,11 +500,17 @@ static bool createRenderResources(ComputeApp* app)
         { .binding = 1,
             .visibility = GFX_SHADER_STAGE_FRAGMENT,
             .type = GFX_BINDING_TYPE_TEXTURE,
-            .texture = { .multisampled = false } }
+            .texture = { .multisampled = false } },
+        { .binding = 2,
+            .visibility = GFX_SHADER_STAGE_FRAGMENT,
+            .type = GFX_BINDING_TYPE_BUFFER,
+            .buffer = {
+                .hasDynamicOffset = false,
+                .minBindingSize = sizeof(RenderUniformData) } }
     };
 
     GfxBindGroupLayoutDescriptor renderLayoutDesc = {
-        .entryCount = 2,
+        .entryCount = 3,
         .entries = renderLayoutEntries
     };
 
@@ -471,25 +519,34 @@ static bool createRenderResources(ComputeApp* app)
         return false;
     }
 
-    // Create render bind group
-    GfxBindGroupEntry renderEntries[2] = {
-        { .binding = 0,
-            .type = GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER,
-            .resource = { .sampler = app->sampler } },
-        { .binding = 1,
-            .type = GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW,
-            .resource = { .textureView = app->computeTextureView } }
-    };
+    // Create render bind groups (one per frame in flight)
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        GfxBindGroupEntry renderEntries[3] = {
+            { .binding = 0,
+                .type = GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER,
+                .resource = { .sampler = app->sampler } },
+            { .binding = 1,
+                .type = GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW,
+                .resource = { .textureView = app->computeTextureView } },
+            { .binding = 2,
+                .type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER,
+                .resource = {
+                    .buffer = {
+                        .buffer = app->renderUniformBuffer[i],
+                        .offset = 0,
+                        .size = sizeof(RenderUniformData) } } }
+        };
 
-    GfxBindGroupDescriptor renderBindGroupDesc = {
-        .layout = app->renderBindGroupLayout,
-        .entryCount = 2,
-        .entries = renderEntries
-    };
+        GfxBindGroupDescriptor renderBindGroupDesc = {
+            .layout = app->renderBindGroupLayout,
+            .entryCount = 3,
+            .entries = renderEntries
+        };
 
-    if (gfxDeviceCreateBindGroup(app->device, &renderBindGroupDesc, &app->renderBindGroup) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create render bind group\n");
-        return false;
+        if (gfxDeviceCreateBindGroup(app->device, &renderBindGroupDesc, &app->renderBindGroup[i]) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create render bind group %d\n", i);
+            return false;
+        }
     }
 
     // Create render pipeline
@@ -599,6 +656,18 @@ static void drawFrame(ComputeApp* app)
 
     float time = getTime();
 
+    // Update compute uniforms for current frame
+    ComputeUniformData computeUniforms = {
+        .time = time
+    };
+    gfxQueueWriteBuffer(app->queue, app->computeUniformBuffer[frameIndex], 0, &computeUniforms, sizeof(computeUniforms));
+
+    // Update render uniforms for current frame
+    RenderUniformData renderUniforms = {
+        .postProcessStrength = 0.5f + 0.5f * sinf(time * 0.5f) // Animate strength
+    };
+    gfxQueueWriteBuffer(app->queue, app->renderUniformBuffer[frameIndex], 0, &renderUniforms, sizeof(renderUniforms));
+
     // Begin command encoder for reuse
     GfxCommandEncoder encoder = app->commandEncoders[frameIndex];
     gfxCommandEncoderBegin(encoder);
@@ -627,7 +696,7 @@ static void drawFrame(ComputeApp* app)
     }
 
     gfxComputePassEncoderSetPipeline(computePass, app->computePipeline);
-    gfxComputePassEncoderSetBindGroup(computePass, 0, app->computeBindGroup, NULL, 0);
+    gfxComputePassEncoderSetBindGroup(computePass, 0, app->computeBindGroup[frameIndex], NULL, 0);
 
     // Dispatch compute (16x16 local size, so divide by 16)
     // Uses fixed compute texture resolution, sampler will upscale/downscale to window
@@ -677,7 +746,7 @@ static void drawFrame(ComputeApp* app)
     }
 
     gfxRenderPassEncoderSetPipeline(renderPass, app->renderPipeline);
-    gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->renderBindGroup, NULL, 0);
+    gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->renderBindGroup[frameIndex], NULL, 0);
 
     GfxViewport viewport = {
         .x = 0.0f,
@@ -755,8 +824,13 @@ static void cleanup(ComputeApp* app)
     if (app->renderPipeline) {
         gfxRenderPipelineDestroy(app->renderPipeline);
     }
-    if (app->renderBindGroup) {
-        gfxBindGroupDestroy(app->renderBindGroup);
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        if (app->renderBindGroup[i]) {
+            gfxBindGroupDestroy(app->renderBindGroup[i]);
+        }
+        if (app->renderUniformBuffer[i]) {
+            gfxBufferDestroy(app->renderUniformBuffer[i]);
+        }
     }
     if (app->renderBindGroupLayout) {
         gfxBindGroupLayoutDestroy(app->renderBindGroupLayout);
@@ -775,8 +849,13 @@ static void cleanup(ComputeApp* app)
     if (app->computePipeline) {
         gfxComputePipelineDestroy(app->computePipeline);
     }
-    if (app->computeBindGroup) {
-        gfxBindGroupDestroy(app->computeBindGroup);
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        if (app->computeBindGroup[i]) {
+            gfxBindGroupDestroy(app->computeBindGroup[i]);
+        }
+        if (app->computeUniformBuffer[i]) {
+            gfxBufferDestroy(app->computeUniformBuffer[i]);
+        }
     }
     if (app->computeBindGroupLayout) {
         gfxBindGroupLayoutDestroy(app->computeBindGroupLayout);

@@ -5,22 +5,26 @@ layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout(binding = 0, rgba8) uniform writeonly image2D outputImage;
 
+layout(binding = 1) uniform ComputeUniforms {
+    float time;
+} ubo;
+
 void main() {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
     ivec2 size = imageSize(outputImage);
     
     vec2 uv = vec2(texelCoord) / vec2(size);
     
-    // Create static pattern (time removed since we can't use push constants easily)
-    float wave1 = sin(uv.x * 10.0) * 0.5 + 0.5;
-    float wave2 = cos(uv.y * 10.0) * 0.5 + 0.5;
+    // Create animated pattern using time
+    float wave1 = sin(uv.x * 10.0 + ubo.time * 2.0) * 0.5 + 0.5;
+    float wave2 = cos(uv.y * 10.0 + ubo.time * 1.5) * 0.5 + 0.5;
     float pattern = wave1 * wave2;
     
-    // Color based on position and pattern
+    // Color based on position, pattern, and time
     vec3 color = vec3(
         pattern * uv.x,
-        pattern * uv.y,
-        pattern * (1.0 - uv.x)
+        pattern * uv.y * (0.5 + 0.5 * sin(ubo.time)),
+        pattern * (1.0 - uv.x) * (0.5 + 0.5 * cos(ubo.time))
     );
     
     imageStore(outputImage, texelCoord, vec4(color, 1.0));
