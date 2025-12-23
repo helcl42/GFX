@@ -1,4 +1,4 @@
-#include <gfx/GfxApi.h>
+#include <gfx/Gfx.h>
 #include "GfxBackend.h"
 
 // Platform-specific Vulkan extensions

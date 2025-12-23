@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gfx/GfxApi.h>
+#include <gfx/Gfx.h>
 
 #ifdef __cplusplus
 extern "C" {

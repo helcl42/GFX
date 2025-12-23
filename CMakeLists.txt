@@ -109,7 +109,7 @@ endif()
 
 # C API Library (implemented in C++)
 set(GFX_C_SOURCES
-    gfx/include/gfx/GfxApi.h
+    gfx/include/gfx/Gfx.h
     gfx/src/GfxBackend.h
     gfx/src/GfxDispatcher.cpp
 )
@@ -164,7 +164,7 @@ target_link_libraries(gfx_c PUBLIC ${PLATFORM_LIBS})
 
 # C++ API Library
 set(GFX_CPP_SOURCES
-    gfx_cpp/include/gfx_cpp/GfxApi.hpp
+    gfx_cpp/include/gfx_cpp/Gfx.hpp
     gfx_cpp/src/GfxApiImpl.cpp  # Single unified C++ wrapper for all backends
 )
 
@@ -276,8 +276,8 @@ install(TARGETS gfx_c gfx_cpp
     RUNTIME DESTINATION bin
 )
 
-install(FILES gfx/include/gfx/GfxApi.h DESTINATION include/gfx)
-install(FILES gfx_cpp/include/gfx_cpp/GfxApi.hpp DESTINATION include/gfx_cpp)
+install(FILES gfx/include/gfx/Gfx.h DESTINATION include/gfx)
+install(FILES gfx_cpp/include/gfx_cpp/Gfx.hpp DESTINATION include/gfx_cpp)
 
 # Print configuration summary
 message(STATUS "")

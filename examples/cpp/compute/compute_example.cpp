@@ -1,4 +1,4 @@
-#include <gfx_cpp/GfxApi.hpp>
+#include <gfx_cpp/Gfx.hpp>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
