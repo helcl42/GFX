@@ -1042,11 +1042,6 @@ public:
         return std::make_shared<CTextureViewImpl>(view, false);
     }
 
-    void present() override
-    {
-        gfxSwapchainPresent(m_handle);
-    }
-
     Result acquireNextImage(uint64_t timeout,
         std::shared_ptr<Semaphore> signalSemaphore,
         std::shared_ptr<Fence> signalFence,
@@ -1069,7 +1064,7 @@ public:
         return std::make_shared<CTextureViewImpl>(view, false);
     }
 
-    Result presentWithSync(const PresentInfo& info) override
+    Result present(const PresentInfo& info) override
     {
         GfxPresentInfo cInfo = {};
 
@@ -1083,7 +1078,7 @@ public:
         cInfo.waitSemaphores = cWaitSemaphores.empty() ? nullptr : cWaitSemaphores.data();
         cInfo.waitSemaphoreCount = cWaitSemaphores.size();
 
-        GfxResult result = gfxSwapchainPresentWithSync(m_handle, &cInfo);
+        GfxResult result = gfxSwapchainPresent(m_handle, &cInfo);
         return cResultToCppResult(result);
     }
 

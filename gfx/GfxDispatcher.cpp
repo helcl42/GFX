@@ -779,7 +779,7 @@ GfxTextureView gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain)
     return api->swapchainGetCurrentTextureView(gfx::native(swapchain));
 }
 
-GfxResult gfxSwapchainPresentWithSync(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo)
+GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo)
 {
     if (!swapchain) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
@@ -802,19 +802,7 @@ GfxResult gfxSwapchainPresentWithSync(GfxSwapchain swapchain, const GfxPresentIn
         nativePresentInfo.waitSemaphoreCount = presentInfo->waitSemaphoreCount;
     }
 
-    return api->swapchainPresentWithSync(gfx::native(swapchain), presentInfo ? &nativePresentInfo : nullptr);
-}
-
-GfxResult gfxSwapchainPresent(GfxSwapchain swapchain)
-{
-    if (!swapchain) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
-    }
-    auto api = gfx::getAPI(swapchain);
-    if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
-    }
-    return api->swapchainPresent(gfx::native(swapchain));
+    return api->swapchainPresent(gfx::native(swapchain), presentInfo ? &nativePresentInfo : nullptr);
 }
 
 // Buffer Functions

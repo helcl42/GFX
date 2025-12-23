@@ -835,26 +835,11 @@ GFX_API uint32_t gfxSwapchainGetWidth(GfxSwapchain swapchain);
 GFX_API uint32_t gfxSwapchainGetHeight(GfxSwapchain swapchain);
 GFX_API GfxTextureFormat gfxSwapchainGetFormat(GfxSwapchain swapchain);
 GFX_API uint32_t gfxSwapchainGetBufferCount(GfxSwapchain swapchain);
-
-// Acquire the next swapchain image
-// If imageAvailableSemaphore is provided, it will be signaled when the image is ready
-// Returns the index of the acquired image, or error
 GFX_API GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs,
     GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex);
-
-// Get texture view for a specific image index
 GFX_API GfxTextureView gfxSwapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex);
-
-// Legacy function - gets current texture view with implicit synchronization
-// For explicit synchronization, use gfxSwapchainAcquireNextImage + gfxSwapchainGetImageView
 GFX_API GfxTextureView gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain);
-
-// Present with explicit synchronization - waits for render completion semaphores
-GFX_API GfxResult gfxSwapchainPresentWithSync(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo);
-
-// Legacy present function with implicit synchronization
-// For explicit synchronization, use gfxSwapchainPresentWithSync
-GFX_API GfxResult gfxSwapchainPresent(GfxSwapchain swapchain);
+GFX_API GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo);
 
 // Buffer functions
 GFX_API void gfxBufferDestroy(GfxBuffer buffer);

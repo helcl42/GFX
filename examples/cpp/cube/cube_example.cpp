@@ -849,7 +849,7 @@ void CubeApp::render()
         presentInfo.waitSemaphores = { renderFinishedSemaphores[currentFrame] };
         presentInfo.waitSemaphoreCount = 1;
 
-        result = swapchain->presentWithSync(presentInfo);
+        result = swapchain->present(presentInfo);
         if (result != gfx::Result::Success) {
             std::cerr << "Failed to present" << std::endl;
         }

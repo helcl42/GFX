@@ -983,7 +983,7 @@ void render(CubeApp* app)
     GfxPresentInfo presentInfo = { 0 };
     presentInfo.waitSemaphores = &app->renderFinishedSemaphores[app->currentFrame];
     presentInfo.waitSemaphoreCount = 1;
-    gfxSwapchainPresentWithSync(app->swapchain, &presentInfo);
+    gfxSwapchainPresent(app->swapchain, &presentInfo);
 
     // Move to next frame
     app->currentFrame = (app->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

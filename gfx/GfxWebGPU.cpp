@@ -2059,7 +2059,7 @@ GfxTextureView webgpu_swapchainGetCurrentTextureView(GfxSwapchain swapchain)
     return reinterpret_cast<GfxTextureView>(view);
 }
 
-GfxResult webgpu_swapchainPresentWithSync(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo)
+GfxResult webgpu_swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo)
 {
     if (!swapchain) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
@@ -2068,15 +2068,6 @@ GfxResult webgpu_swapchainPresentWithSync(GfxSwapchain swapchain, const GfxPrese
     // WebGPU doesn't support explicit wait semaphores for present
     // The queue submission already ensures ordering, so we just present
     (void)presentInfo; // Wait semaphores are noted but not used in WebGPU
-
-    return webgpu_swapchainPresent(swapchain);
-}
-
-GfxResult webgpu_swapchainPresent(GfxSwapchain swapchain)
-{
-    if (!swapchain) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
-    }
 
     auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
     wgpuSurfacePresent(swapchainPtr->surface());
@@ -2974,7 +2965,6 @@ static const GfxBackendAPI webGpuBackendApi = {
     .swapchainAcquireNextImage = webgpu_swapchainAcquireNextImage,
     .swapchainGetImageView = webgpu_swapchainGetImageView,
     .swapchainGetCurrentTextureView = webgpu_swapchainGetCurrentTextureView,
-    .swapchainPresentWithSync = webgpu_swapchainPresentWithSync,
     .swapchainPresent = webgpu_swapchainPresent,
     .bufferDestroy = webgpu_bufferDestroy,
     .bufferGetSize = webgpu_bufferGetSize,

@@ -876,7 +876,7 @@ static void drawFrame(ComputeApp* app)
         .waitSemaphores = &app->renderFinishedSemaphores[frameIndex]
     };
 
-    result = gfxSwapchainPresentWithSync(app->swapchain, &presentInfo);
+    result = gfxSwapchainPresent(app->swapchain, &presentInfo);
 
     app->currentFrame = (app->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }

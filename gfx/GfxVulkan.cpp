@@ -906,11 +906,6 @@ public:
         // Get present queue (assume queue family 0)
         vkGetDeviceQueue(m_device, 0, 0, &m_presentQueue);
 
-        // Create fence for acquire (used internally by legacy present function)
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        vkCreateFence(m_device, &fenceInfo, nullptr, &m_acquireFence);
-
         // Don't pre-acquire an image - let explicit acquire handle it
         m_currentImageIndex = 0;
     }
@@ -918,9 +913,6 @@ public:
     ~Swapchain()
     {
         // TextureView objects will be automatically destroyed by unique_ptr
-        if (m_acquireFence != VK_NULL_HANDLE) {
-            vkDestroyFence(m_device, m_acquireFence, nullptr);
-        }
         if (m_swapchain != VK_NULL_HANDLE) {
             vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
         }
@@ -944,24 +936,7 @@ public:
         return result;
     }
 
-    void present()
-    {
-        VkPresentInfoKHR presentInfo{};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.waitSemaphoreCount = 0;
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = &m_swapchain;
-        presentInfo.pImageIndices = &m_currentImageIndex;
-
-        vkQueuePresentKHR(m_presentQueue, &presentInfo);
-
-        // Acquire next image for next frame
-        vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, VK_NULL_HANDLE, m_acquireFence, &m_currentImageIndex);
-        vkWaitForFences(m_device, 1, &m_acquireFence, VK_TRUE, UINT64_MAX);
-        vkResetFences(m_device, 1, &m_acquireFence);
-    }
-
-    VkResult presentWithSync(const std::vector<VkSemaphore>& waitSemaphores)
+    VkResult present(const std::vector<VkSemaphore>& waitSemaphores)
     {
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -986,7 +961,6 @@ private:
     uint32_t m_width = 0;
     uint32_t m_height = 0;
     uint32_t m_currentImageIndex = 0;
-    VkFence m_acquireFence = VK_NULL_HANDLE;
 };
 
 class Buffer {
@@ -2659,7 +2633,7 @@ GfxTextureView vulkan_swapchainGetCurrentTextureView(GfxSwapchain swapchain)
     return reinterpret_cast<GfxTextureView>(sc->getCurrentTextureView());
 }
 
-GfxResult vulkan_swapchainPresentWithSync(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo)
+GfxResult vulkan_swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo)
 {
     if (!swapchain) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
@@ -2678,7 +2652,7 @@ GfxResult vulkan_swapchainPresentWithSync(GfxSwapchain swapchain, const GfxPrese
         }
     }
 
-    VkResult result = sc->presentWithSync(waitSemaphores);
+    VkResult result = sc->present(waitSemaphores);
 
     switch (result) {
     case VK_SUCCESS:
@@ -2694,16 +2668,6 @@ GfxResult vulkan_swapchainPresentWithSync(GfxSwapchain swapchain, const GfxPrese
     default:
         return GFX_RESULT_ERROR_UNKNOWN;
     }
-}
-
-GfxResult vulkan_swapchainPresent(GfxSwapchain swapchain)
-{
-    if (!swapchain) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
-    }
-    auto* sc = reinterpret_cast<gfx::vulkan::Swapchain*>(swapchain);
-    sc->present();
-    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult vulkan_deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer)
@@ -4189,7 +4153,6 @@ static const GfxBackendAPI vulkanBackendApi = {
     .swapchainAcquireNextImage = vulkan_swapchainAcquireNextImage,
     .swapchainGetImageView = vulkan_swapchainGetImageView,
     .swapchainGetCurrentTextureView = vulkan_swapchainGetCurrentTextureView,
-    .swapchainPresentWithSync = vulkan_swapchainPresentWithSync,
     .swapchainPresent = vulkan_swapchainPresent,
     .bufferDestroy = vulkan_bufferDestroy,
     .bufferGetSize = vulkan_bufferGetSize,

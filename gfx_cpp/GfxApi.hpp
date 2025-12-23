@@ -818,10 +818,6 @@ public:
     virtual std::shared_ptr<TextureView> getCurrentTextureView() = 0;
 
     // Present the current frame
-    virtual void present() = 0;
-
-    // Explicit synchronization API
-    // Acquire the next swapchain image with optional synchronization
     virtual Result acquireNextImage(uint64_t timeout,
         std::shared_ptr<Semaphore> signalSemaphore,
         std::shared_ptr<Fence> signalFence,
@@ -832,7 +828,7 @@ public:
     virtual std::shared_ptr<TextureView> getImageView(uint32_t index) = 0;
 
     // Present with explicit synchronization
-    virtual Result presentWithSync(const PresentInfo& info) = 0;
+    virtual Result present(const PresentInfo& info) = 0;
 };
 
 // ============================================================================

@@ -838,7 +838,7 @@ void ComputeApp::drawFrame()
         presentInfo.waitSemaphores = { renderFinishedSemaphores[frameIndex] };
         presentInfo.waitSemaphoreCount = 1;
 
-        result = swapchain->presentWithSync(presentInfo);
+        result = swapchain->present(presentInfo);
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     } catch (const std::exception& e) {

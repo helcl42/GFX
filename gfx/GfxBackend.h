@@ -55,8 +55,7 @@ typedef struct {
     GfxResult (*swapchainAcquireNextImage)(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex);
     GfxTextureView (*swapchainGetImageView)(GfxSwapchain swapchain, uint32_t imageIndex);
     GfxTextureView (*swapchainGetCurrentTextureView)(GfxSwapchain swapchain);
-    GfxResult (*swapchainPresentWithSync)(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo);
-    GfxResult (*swapchainPresent)(GfxSwapchain swapchain);
+    GfxResult (*swapchainPresent)(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo);
 
     // Buffer functions
     void (*bufferDestroy)(GfxBuffer buffer);
