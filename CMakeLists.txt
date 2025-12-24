@@ -109,7 +109,7 @@ endif()
 
 # C API Library (implemented in C++)
 set(GFX_C_SOURCES
-    gfx/include/gfx/Gfx.h
+    gfx/include/gfx/gfx.h
     gfx/src/GfxBackend.h
     gfx/src/GfxDispatcher.cpp
 )
@@ -276,7 +276,7 @@ install(TARGETS gfx_c gfx_cpp
     RUNTIME DESTINATION bin
 )
 
-install(FILES gfx/include/gfx/Gfx.h DESTINATION include/gfx)
+install(FILES gfx/include/gfx/gfx.h DESTINATION include/gfx)
 install(FILES gfx_cpp/include/gfx_cpp/Gfx.hpp DESTINATION include/gfx_cpp)
 
 # Print configuration summary

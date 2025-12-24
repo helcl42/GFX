@@ -1,4 +1,4 @@
-#include <gfx/Gfx.h>
+#include <gfx/gfx.h>
 #include "GfxBackend.h"
 #include <mutex>
 #include <unordered_map>
