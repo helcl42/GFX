@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(BUILD_EXAMPLES "Build example applications" ON)
 option(BUILD_VULKAN_BACKEND "Build Vulkan backend" ON)
 option(BUILD_WEBGPU_BACKEND "Build WebGPU backend" ON)
-option(BUILD_SHARED_LIBS "Build shared libraries instead of static" OFF)
+option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
 option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
 
 # Find required packages
@@ -124,19 +124,19 @@ endif()
 
 # Create library based on BUILD_SHARED_LIBS option
 if(BUILD_SHARED_LIBS)
-    add_library(gfx_c SHARED ${GFX_C_SOURCES})
+    add_library(gfx SHARED ${GFX_C_SOURCES})
     # Set version information for shared library
-    set_target_properties(gfx_c PROPERTIES
+    set_target_properties(gfx PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION ${PROJECT_VERSION_MAJOR}
     )
     # Define GFX_BUILDING_DLL when building the shared library
-    target_compile_definitions(gfx_c PRIVATE GFX_BUILDING_DLL)
+    target_compile_definitions(gfx PRIVATE GFX_BUILDING_DLL)
 else()
-    add_library(gfx_c STATIC ${GFX_C_SOURCES})
+    add_library(gfx STATIC ${GFX_C_SOURCES})
 endif()
 
-target_include_directories(gfx_c 
+target_include_directories(gfx 
     PUBLIC 
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/gfx/include>
         $<INSTALL_INTERFACE:include>
@@ -146,21 +146,21 @@ target_include_directories(gfx_c
 
 # Link Vulkan if available
 if(BUILD_VULKAN_BACKEND)
-    target_link_libraries(gfx_c PUBLIC Vulkan::Vulkan)
-    target_compile_definitions(gfx_c PUBLIC GFX_ENABLE_VULKAN=1)
+    target_link_libraries(gfx PUBLIC Vulkan::Vulkan)
+    target_compile_definitions(gfx PUBLIC GFX_ENABLE_VULKAN=1)
     # Don't include bundled headers - use system Vulkan headers instead
 endif()
 
 # Link WebGPU if available
 if(BUILD_WEBGPU_BACKEND)
-    target_link_libraries(gfx_c PUBLIC ${WEBGPU_LIBRARY})
-    target_include_directories(gfx_c PUBLIC ${WEBGPU_INCLUDE_DIR})
-    target_include_directories(gfx_c PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/include)
-    target_compile_definitions(gfx_c PUBLIC GFX_ENABLE_WEBGPU=1)
+    target_link_libraries(gfx PUBLIC ${WEBGPU_LIBRARY})
+    target_include_directories(gfx PUBLIC ${WEBGPU_INCLUDE_DIR})
+    target_include_directories(gfx PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/include)
+    target_compile_definitions(gfx PUBLIC GFX_ENABLE_WEBGPU=1)
 endif()
 
 # Link platform libraries
-target_link_libraries(gfx_c PUBLIC ${PLATFORM_LIBS})
+target_link_libraries(gfx PUBLIC ${PLATFORM_LIBS})
 
 # C++ API Library
 set(GFX_CPP_SOURCES
@@ -187,7 +187,7 @@ target_include_directories(gfx_cpp
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/gfx_cpp/src
 )
-target_link_libraries(gfx_cpp PUBLIC gfx_c)  # Link to C API library
+target_link_libraries(gfx_cpp PUBLIC gfx)  # Link to C API library
 
 # Link Vulkan if available
 if(BUILD_VULKAN_BACKEND)
@@ -207,17 +207,17 @@ target_link_libraries(gfx_cpp PUBLIC ${PLATFORM_LIBS})
 
 # Compiler flags
 if(MSVC)
-    target_compile_options(gfx_c PRIVATE /W4)
+    target_compile_options(gfx PRIVATE /W4)
     target_compile_options(gfx_cpp PRIVATE /W4)
 else()
-    target_compile_options(gfx_c PRIVATE -Wall -Wextra -Wpedantic -g)
+    target_compile_options(gfx PRIVATE -Wall -Wextra -Wpedantic -g)
     target_compile_options(gfx_cpp PRIVATE -Wall -Wextra -Wpedantic -g)
     
     # Address Sanitizer (optional)
     if(ENABLE_ASAN)
-        target_compile_options(gfx_c PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+        target_compile_options(gfx PRIVATE -fsanitize=address -fno-omit-frame-pointer)
         target_compile_options(gfx_cpp PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-        target_link_options(gfx_c PRIVATE -fsanitize=address)
+        target_link_options(gfx PRIVATE -fsanitize=address)
         target_link_options(gfx_cpp PRIVATE -fsanitize=address)
     endif()
 endif()
@@ -226,7 +226,7 @@ endif()
 if(BUILD_EXAMPLES)
     # C Cube Example
     add_executable(cube_example_c examples/c/cube/cube_example.c)
-    target_link_libraries(cube_example_c gfx_c glfw m)  # Add math library
+    target_link_libraries(cube_example_c gfx glfw m)  # Add math library
     if(ENABLE_ASAN AND NOT MSVC)
         target_link_options(cube_example_c PRIVATE -fsanitize=address)
     endif()
@@ -248,7 +248,7 @@ if(BUILD_EXAMPLES)
     
     # C Compute Example
     add_executable(compute_example_c examples/c/compute/compute_example.c)
-    target_link_libraries(compute_example_c gfx_c glfw m)
+    target_link_libraries(compute_example_c gfx glfw m)
     if(ENABLE_ASAN AND NOT MSVC)
         target_link_options(compute_example_c PRIVATE -fsanitize=address)
     endif()
@@ -270,7 +270,7 @@ if(BUILD_EXAMPLES)
 endif()
 
 # Install targets
-install(TARGETS gfx_c gfx_cpp
+install(TARGETS gfx gfx_cpp
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
