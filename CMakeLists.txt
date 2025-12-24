@@ -110,16 +110,16 @@ endif()
 # C API Library (implemented in C++)
 set(GFX_C_SOURCES
     gfx/include/gfx/gfx.h
-    gfx/src/GfxBackend.h
-    gfx/src/GfxDispatcher.cpp
+    gfx/src/backend/GfxBackend.h
+    gfx/src/api/GfxDispatcher.cpp
 )
 
 if(BUILD_VULKAN_BACKEND)
-    list(APPEND GFX_C_SOURCES gfx/src/GfxVulkan.cpp)
+    list(APPEND GFX_C_SOURCES gfx/src/backend/vulkan/GfxVulkan.cpp)
 endif()
 
 if(BUILD_WEBGPU_BACKEND)
-    list(APPEND GFX_C_SOURCES gfx/src/GfxWebGPU.cpp)
+    list(APPEND GFX_C_SOURCES gfx/src/backend/webgpu/GfxWebGPU.cpp)
 endif()
 
 # Create library based on BUILD_SHARED_LIBS option
@@ -165,7 +165,7 @@ target_link_libraries(gfx PUBLIC ${PLATFORM_LIBS})
 # C++ API Library
 set(GFX_CPP_SOURCES
     gfx_cpp/include/gfx_cpp/Gfx.hpp
-    gfx_cpp/src/GfxApiImpl.cpp  # Single unified C++ wrapper for all backends
+    gfx_cpp/src/GfxImpl.cpp  # Single unified C++ wrapper for all backends
 )
 
 # Create library based on BUILD_SHARED_LIBS option

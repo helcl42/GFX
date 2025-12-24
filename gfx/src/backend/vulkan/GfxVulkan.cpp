@@ -1,5 +1,6 @@
+#include "../GfxBackend.h"
+
 #include <gfx/gfx.h>
-#include "GfxBackend.h"
 
 // Platform-specific Vulkan extensions
 #ifdef _WIN32

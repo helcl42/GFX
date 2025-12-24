@@ -1,5 +1,7 @@
 #include <gfx/gfx.h>
-#include "GfxBackend.h"
+
+#include "backend/GfxBackend.h"
+
 #include <mutex>
 #include <unordered_map>
 #include <vector>
