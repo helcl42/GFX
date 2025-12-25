@@ -447,12 +447,16 @@ bool ComputeApp::createComputeResources()
             initEncoder->pipelineBarrier({ initBarrier });
             initEncoder->end();
 
+            FenceDescriptor initFenceDesc{};
+            initFenceDesc.signaled = false;
+            auto initFence = device->createFence(initFenceDesc);
+
             SubmitInfo submitInfo{};
             submitInfo.commandEncoders = { initEncoder };
+            submitInfo.signalFence = initFence;
 
             queue->submit(submitInfo);
-            // TODO - sync with fence?
-            device->waitIdle();
+            initFence->wait(UINT64_MAX);
         }
 
         std::cout << "Compute resources created successfully" << std::endl;

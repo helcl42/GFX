@@ -3273,14 +3273,20 @@ void vulkan_queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigi
     // End and submit
     vkEndCommandBuffer(commandBuffer);
 
+    // Create fence for synchronization
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFence fence = VK_NULL_HANDLE;
+    vkCreateFence(device, &fenceInfo, nullptr, &fence);
+
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(q->handle(), 1, &submitInfo, VK_NULL_HANDLE);
-    // TODO - use a fence and wait properly
-    vkQueueWaitIdle(q->handle());
+    vkQueueSubmit(q->handle(), 1, &submitInfo, fence);
+    vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+    vkDestroyFence(device, fence, nullptr);
 
     // Cleanup
     vkDestroyCommandPool(device, commandPool, nullptr);
