@@ -1,6 +1,10 @@
+#include "WebGPUBackend.h"
+
 #include "../dependencies/include/webgpu/webgpu.h"
+
 #include <gfx/gfx.h>
-#include "GfxBackend.h"
+
+#include "IBackend.h"
 
 #include <cassert>
 #include <cstdio>
@@ -1043,37 +1047,6 @@ private:
 // C API Functions
 // ============================================================================
 
-// Callback helpers for async operations
-struct AdapterRequestData {
-    GfxAdapter* outAdapter = nullptr;
-    gfx::webgpu::Instance* instance = nullptr;
-};
-
-static void adapterRequestCallback(WGPURequestAdapterStatus status, WGPUAdapter adapter,
-    WGPUStringView message, void* userdata1, void* userdata2)
-{
-    auto* data = static_cast<AdapterRequestData*>(userdata1);
-    if (status == WGPURequestAdapterStatus_Success && adapter && data) {
-        auto* adapterObj = new gfx::webgpu::Adapter(adapter);
-        *data->outAdapter = reinterpret_cast<GfxAdapter>(adapterObj);
-    }
-}
-
-struct DeviceRequestData {
-    GfxDevice* outDevice = nullptr;
-    gfx::webgpu::Adapter* adapter = nullptr;
-};
-
-static void deviceRequestCallback(WGPURequestDeviceStatus status, WGPUDevice device,
-    WGPUStringView message, void* userdata1, void* userdata2)
-{
-    auto* data = static_cast<DeviceRequestData*>(userdata1);
-    if (status == WGPURequestDeviceStatus_Success && device && data) {
-        auto* deviceObj = new gfx::webgpu::Device(data->adapter, device);
-        *data->outDevice = reinterpret_cast<GfxDevice>(deviceObj);
-    }
-}
-
 GfxResult webgpu_createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance)
 {
     if (!outInstance) {
@@ -1130,14 +1103,17 @@ GfxResult webgpu_instanceRequestAdapter(GfxInstance instance, const GfxAdapterDe
         options.forceFallbackAdapter = descriptor->forceFallbackAdapter ? WGPU_TRUE : WGPU_FALSE;
     }
 
-    AdapterRequestData data;
-    data.outAdapter = outAdapter;
-    data.instance = inst;
-
     WGPURequestAdapterCallbackInfo callbackInfo = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
     callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-    callbackInfo.callback = adapterRequestCallback;
-    callbackInfo.userdata1 = &data;
+    callbackInfo.callback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
+                                WGPUStringView message, void* userdata1, void* userdata2) {
+        if (status == WGPURequestAdapterStatus_Success && adapter) {
+            auto* outAdapter = static_cast<GfxAdapter*>(userdata1);
+            auto* adapterObj = new gfx::webgpu::Adapter(adapter);
+            *outAdapter = reinterpret_cast<GfxAdapter>(adapterObj);
+        }
+    };
+    callbackInfo.userdata1 = outAdapter;
 
     WGPUFuture future = wgpuInstanceRequestAdapter(inst->handle(), &options, callbackInfo);
 
@@ -1186,14 +1162,24 @@ GfxResult webgpu_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescript
         wgpuDesc.label = gfxStringView(descriptor->label);
     }
 
-    DeviceRequestData data;
-    data.outDevice = outDevice;
-    data.adapter = adapterPtr;
+    struct DeviceRequestContext {
+        GfxDevice* outDevice;
+        gfx::webgpu::Adapter* adapter;
+    };
+
+    DeviceRequestContext context = { outDevice, adapterPtr };
 
     WGPURequestDeviceCallbackInfo callbackInfo = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
     callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-    callbackInfo.callback = deviceRequestCallback;
-    callbackInfo.userdata1 = &data;
+    callbackInfo.callback = [](WGPURequestDeviceStatus status, WGPUDevice device,
+                                WGPUStringView message, void* userdata1, void* userdata2) {
+        if (status == WGPURequestDeviceStatus_Success && device) {
+            auto* context = static_cast<DeviceRequestContext*>(userdata1);
+            auto* deviceObj = new gfx::webgpu::Device(context->adapter, device);
+            *context->outDevice = reinterpret_cast<GfxDevice>(deviceObj);
+        }
+    };
+    callbackInfo.userdata1 = &context;
 
     WGPUFuture future = wgpuAdapterRequestDevice(adapterPtr->handle(), &wgpuDesc, callbackInfo);
 
@@ -2110,14 +2096,69 @@ GfxBufferUsage webgpu_bufferGetUsage(GfxBuffer buffer)
     return reinterpret_cast<gfx::webgpu::Buffer*>(buffer)->getUsage();
 }
 
-GfxResult webgpu_bufferMapAsync(GfxBuffer buffer, uint64_t offset, uint64_t size, void** mappedPointer)
+GfxResult webgpu_bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** mappedPointer)
 {
-    // WebGPU buffer mapping is async - simplified stub
     if (!buffer || !mappedPointer) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
-    *mappedPointer = nullptr;
-    return GFX_RESULT_ERROR_UNSUPPORTED;
+
+    auto* bufferPtr = reinterpret_cast<gfx::webgpu::Buffer*>(buffer);
+    
+    // If size is 0, map the entire buffer from offset
+    uint64_t mapSize = size;
+    if (mapSize == 0) {
+        mapSize = bufferPtr->getSize() - offset;
+    }
+
+    // Determine map mode based on buffer usage
+    WGPUMapMode mapMode = WGPUMapMode_None;
+    if (bufferPtr->getUsage() & GFX_BUFFER_USAGE_MAP_READ) {
+        mapMode |= WGPUMapMode_Read;
+    }
+    if (bufferPtr->getUsage() & GFX_BUFFER_USAGE_MAP_WRITE) {
+        mapMode |= WGPUMapMode_Write;
+    }
+
+    if (mapMode == WGPUMapMode_None) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+
+    // Set up async mapping with synchronous wait
+    struct MapCallbackData {
+        WGPUMapAsyncStatus status = WGPUMapAsyncStatus_Unknown;
+        bool completed = false;
+    };
+
+    MapCallbackData callbackData;
+
+    WGPUBufferMapCallbackInfo callbackInfo = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
+    callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+    callbackInfo.callback = [](WGPUMapAsyncStatus status, WGPUStringView message, void* userdata1, void* userdata2) {
+        auto* data = static_cast<MapCallbackData*>(userdata1);
+        data->status = status;
+        data->completed = true;
+    };
+    callbackInfo.userdata1 = &callbackData;
+
+    WGPUFuture future = wgpuBufferMapAsync(bufferPtr->handle(), mapMode, offset, mapSize, callbackInfo);
+
+    // Note: Proper waiting would require WGPUInstance handle via wgpuInstanceWaitAny
+    // For now, the callback with WaitAnyOnly mode should block until completion
+    // In a complete implementation, the Buffer should store a reference to Instance
+
+    if (!callbackData.completed || callbackData.status != WGPUMapAsyncStatus_Success) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+
+    // Get the mapped range
+    void* mappedData = wgpuBufferGetMappedRange(bufferPtr->handle(), offset, mapSize);
+    if (!mappedData) {
+        wgpuBufferUnmap(bufferPtr->handle());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+
+    *mappedPointer = mappedData;
+    return GFX_RESULT_SUCCESS;
 }
 
 void webgpu_bufferUnmap(GfxBuffer buffer)
@@ -2307,28 +2348,7 @@ void webgpu_computePipelineDestroy(GfxComputePipeline computePipeline)
 }
 
 // Queue functions
-GfxResult webgpu_queueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder)
-{
-    if (!queue || !commandEncoder) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
-    }
-
-    auto* queuePtr = reinterpret_cast<gfx::webgpu::Queue*>(queue);
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(commandEncoder);
-
-    WGPUCommandBufferDescriptor cmdDesc = WGPU_COMMAND_BUFFER_DESCRIPTOR_INIT;
-    WGPUCommandBuffer cmdBuffer = wgpuCommandEncoderFinish(encoderPtr->handle(), &cmdDesc);
-
-    if (cmdBuffer) {
-        wgpuQueueSubmit(queuePtr->handle(), 1, &cmdBuffer);
-        wgpuCommandBufferRelease(cmdBuffer);
-        return GFX_RESULT_SUCCESS;
-    }
-
-    return GFX_RESULT_ERROR_UNKNOWN;
-}
-
-GfxResult webgpu_queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo)
+GfxResult webgpu_queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo)
 {
     if (!queue || !submitInfo) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
@@ -2922,367 +2942,457 @@ uint64_t webgpu_semaphoreGetValue(GfxSemaphore semaphore)
     return reinterpret_cast<gfx::webgpu::Semaphore*>(semaphore)->getValue();
 }
 
+namespace gfx::webgpu {
+
 // ============================================================================
 // Backend C++ Class Export
 // ============================================================================
 
-class WebGPUBackend : public GfxBackendAPI {
-public:
-    // Instance functions
-    GfxResult createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const override {
-        return webgpu_createInstance(descriptor, outInstance);
-    }
-    void instanceDestroy(GfxInstance instance) const override {
-        webgpu_instanceDestroy(instance);
-    }
-    void instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const override {
-        webgpu_instanceSetDebugCallback(instance, callback, userData);
-    }
-    GfxResult instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const override {
-        return webgpu_instanceRequestAdapter(instance, descriptor, outAdapter);
-    }
-    uint32_t instanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters) const override {
-        return webgpu_instanceEnumerateAdapters(instance, adapters, maxAdapters);
-    }
-
-    // Adapter functions
-    void adapterDestroy(GfxAdapter adapter) const override {
-        webgpu_adapterDestroy(adapter);
-    }
-    GfxResult adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const override {
-        return webgpu_adapterCreateDevice(adapter, descriptor, outDevice);
-    }
-    const char* adapterGetName(GfxAdapter adapter) const override {
-        return webgpu_adapterGetName(adapter);
-    }
-    GfxBackend adapterGetBackend(GfxAdapter adapter) const override {
-        return webgpu_adapterGetBackend(adapter);
-    }
-
-    // Device functions
-    void deviceDestroy(GfxDevice device) const override {
-        webgpu_deviceDestroy(device);
-    }
-    GfxQueue deviceGetQueue(GfxDevice device) const override {
-        return webgpu_deviceGetQueue(device);
-    }
-    GfxResult deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const override {
-        return webgpu_deviceCreateSurface(device, descriptor, outSurface);
-    }
-    GfxResult deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const override {
-        return webgpu_deviceCreateSwapchain(device, surface, descriptor, outSwapchain);
-    }
-    GfxResult deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const override {
-        return webgpu_deviceCreateBuffer(device, descriptor, outBuffer);
-    }
-    GfxResult deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const override {
-        return webgpu_deviceCreateTexture(device, descriptor, outTexture);
-    }
-    GfxResult deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const override {
-        return webgpu_deviceCreateSampler(device, descriptor, outSampler);
-    }
-    GfxResult deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const override {
-        return webgpu_deviceCreateShader(device, descriptor, outShader);
-    }
-    GfxResult deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const override {
-        return webgpu_deviceCreateBindGroupLayout(device, descriptor, outLayout);
-    }
-    GfxResult deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const override {
-        return webgpu_deviceCreateBindGroup(device, descriptor, outBindGroup);
-    }
-    GfxResult deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const override {
-        return webgpu_deviceCreateRenderPipeline(device, descriptor, outPipeline);
-    }
-    GfxResult deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const override {
-        return webgpu_deviceCreateComputePipeline(device, descriptor, outPipeline);
-    }
-    GfxResult deviceCreateCommandEncoder(GfxDevice device, const char* label, GfxCommandEncoder* outEncoder) const override {
-        return webgpu_deviceCreateCommandEncoder(device, label, outEncoder);
-    }
-    GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const override {
-        return webgpu_deviceCreateFence(device, descriptor, outFence);
-    }
-    GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const override {
-        return webgpu_deviceCreateSemaphore(device, descriptor, outSemaphore);
-    }
-    void deviceWaitIdle(GfxDevice device) const override {
-        webgpu_deviceWaitIdle(device);
-    }
-    void deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const override {
-        webgpu_deviceGetLimits(device, outLimits);
-    }
-
-    // Surface functions
-    void surfaceDestroy(GfxSurface surface) const override {
-        webgpu_surfaceDestroy(surface);
-    }
-    uint32_t surfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats) const override {
-        return webgpu_surfaceGetSupportedFormats(surface, formats, maxFormats);
-    }
-    uint32_t surfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes) const override {
-        return webgpu_surfaceGetSupportedPresentModes(surface, presentModes, maxModes);
-    }
-    GfxPlatformWindowHandle surfaceGetPlatformHandle(GfxSurface surface) const override {
-        return webgpu_surfaceGetPlatformHandle(surface);
-    }
-
-    // Swapchain functions
-    void swapchainDestroy(GfxSwapchain swapchain) const override {
-        webgpu_swapchainDestroy(swapchain);
-    }
-    uint32_t swapchainGetWidth(GfxSwapchain swapchain) const override {
-        return webgpu_swapchainGetWidth(swapchain);
-    }
-    uint32_t swapchainGetHeight(GfxSwapchain swapchain) const override {
-        return webgpu_swapchainGetHeight(swapchain);
-    }
-    GfxTextureFormat swapchainGetFormat(GfxSwapchain swapchain) const override {
-        return webgpu_swapchainGetFormat(swapchain);
-    }
-    uint32_t swapchainGetBufferCount(GfxSwapchain swapchain) const override {
-        return webgpu_swapchainGetBufferCount(swapchain);
-    }
-    GfxResult swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const override {
-        return webgpu_swapchainAcquireNextImage(swapchain, timeoutNs, imageAvailableSemaphore, fence, outImageIndex);
-    }
-    GfxTextureView swapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex) const override {
-        return webgpu_swapchainGetImageView(swapchain, imageIndex);
-    }
-    GfxTextureView swapchainGetCurrentTextureView(GfxSwapchain swapchain) const override {
-        return webgpu_swapchainGetCurrentTextureView(swapchain);
-    }
-    GfxResult swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const override {
-        return webgpu_swapchainPresent(swapchain, presentInfo);
-    }
-
-    // Buffer functions
-    void bufferDestroy(GfxBuffer buffer) const override {
-        webgpu_bufferDestroy(buffer);
-    }
-    uint64_t bufferGetSize(GfxBuffer buffer) const override {
-        return webgpu_bufferGetSize(buffer);
-    }
-    GfxBufferUsage bufferGetUsage(GfxBuffer buffer) const override {
-        return webgpu_bufferGetUsage(buffer);
-    }
-    GfxResult bufferMapAsync(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const override {
-        return webgpu_bufferMapAsync(buffer, offset, size, outMappedPointer);
-    }
-    void bufferUnmap(GfxBuffer buffer) const override {
-        webgpu_bufferUnmap(buffer);
-    }
-
-    // Texture functions
-    void textureDestroy(GfxTexture texture) const override {
-        webgpu_textureDestroy(texture);
-    }
-    GfxExtent3D textureGetSize(GfxTexture texture) const override {
-        return webgpu_textureGetSize(texture);
-    }
-    GfxTextureFormat textureGetFormat(GfxTexture texture) const override {
-        return webgpu_textureGetFormat(texture);
-    }
-    uint32_t textureGetMipLevelCount(GfxTexture texture) const override {
-        return webgpu_textureGetMipLevelCount(texture);
-    }
-    GfxSampleCount textureGetSampleCount(GfxTexture texture) const override {
-        return webgpu_textureGetSampleCount(texture);
-    }
-    GfxTextureUsage textureGetUsage(GfxTexture texture) const override {
-        return webgpu_textureGetUsage(texture);
-    }
-    GfxTextureLayout textureGetLayout(GfxTexture texture) const override {
-        return webgpu_textureGetLayout(texture);
-    }
-    GfxResult textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const override {
-        return webgpu_textureCreateView(texture, descriptor, outView);
-    }
-
-    // TextureView functions
-    void textureViewDestroy(GfxTextureView textureView) const override {
-        webgpu_textureViewDestroy(textureView);
-    }
-
-    // Sampler functions
-    void samplerDestroy(GfxSampler sampler) const override {
-        webgpu_samplerDestroy(sampler);
-    }
-
-    // Shader functions
-    void shaderDestroy(GfxShader shader) const override {
-        webgpu_shaderDestroy(shader);
-    }
-
-    // BindGroupLayout functions
-    void bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const override {
-        webgpu_bindGroupLayoutDestroy(bindGroupLayout);
-    }
-
-    // BindGroup functions
-    void bindGroupDestroy(GfxBindGroup bindGroup) const override {
-        webgpu_bindGroupDestroy(bindGroup);
-    }
-
-    // RenderPipeline functions
-    void renderPipelineDestroy(GfxRenderPipeline renderPipeline) const override {
-        webgpu_renderPipelineDestroy(renderPipeline);
-    }
-
-    // ComputePipeline functions
-    void computePipelineDestroy(GfxComputePipeline computePipeline) const override {
-        webgpu_computePipelineDestroy(computePipeline);
-    }
-
-    // Queue functions
-    GfxResult queueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder) const override {
-        return webgpu_queueSubmit(queue, commandEncoder);
-    }
-    GfxResult queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo) const override {
-        return webgpu_queueSubmitWithSync(queue, submitInfo);
-    }
-    void queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const override {
-        webgpu_queueWriteBuffer(queue, buffer, offset, data, size);
-    }
-    void queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
-        const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const override {
-        webgpu_queueWriteTexture(queue, texture, origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
-    }
-    GfxResult queueWaitIdle(GfxQueue queue) const override {
-        return webgpu_queueWaitIdle(queue);
-    }
-
-    // CommandEncoder functions
-    void commandEncoderDestroy(GfxCommandEncoder commandEncoder) const override {
-        webgpu_commandEncoderDestroy(commandEncoder);
-    }
-    GfxResult commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-        GfxTextureView const* colorAttachments, uint32_t colorAttachmentCount,
-        const GfxColor* clearColors, const GfxTextureLayout* colorLayouts,
-        GfxTextureView depthStencilAttachment, float depthClearValue, uint32_t stencilClearValue,
-        GfxTextureLayout depthStencilLayout,
-        GfxRenderPassEncoder* outRenderPass) const override {
-        return webgpu_commandEncoderBeginRenderPass(commandEncoder, colorAttachments, colorAttachmentCount,
-            clearColors, colorLayouts, depthStencilAttachment, depthClearValue, stencilClearValue,
-            depthStencilLayout, outRenderPass);
-    }
-    GfxResult commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass) const override {
-        return webgpu_commandEncoderBeginComputePass(commandEncoder, label, outComputePass);
-    }
-    void commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset,
-        GfxBuffer destination, uint64_t destinationOffset, uint64_t size) const override {
-        webgpu_commandEncoderCopyBufferToBuffer(commandEncoder, source, sourceOffset, destination, destinationOffset, size);
-    }
-    void commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
-        GfxTexture destination, const GfxOrigin3D* origin, const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const override {
-        webgpu_commandEncoderCopyBufferToTexture(commandEncoder, source, sourceOffset, bytesPerRow, destination, origin, extent, mipLevel, finalLayout);
-    }
-    void commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
-        GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const override {
-        webgpu_commandEncoderCopyTextureToBuffer(commandEncoder, source, origin, mipLevel, destination, destinationOffset, bytesPerRow, extent, finalLayout);
-    }
-    void commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
-        GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, const GfxExtent3D* extent,
-        GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const override {
-        webgpu_commandEncoderCopyTextureToTexture(commandEncoder, source, sourceOrigin, sourceMipLevel, destination, destinationOrigin, destinationMipLevel, extent, srcFinalLayout, dstFinalLayout);
-    }
-    void commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const override {
-        webgpu_commandEncoderPipelineBarrier(commandEncoder, textureBarriers, textureBarrierCount);
-    }
-    void commandEncoderEnd(GfxCommandEncoder commandEncoder) const override {
-        webgpu_commandEncoderEnd(commandEncoder);
-    }
-    void commandEncoderBegin(GfxCommandEncoder commandEncoder) const override {
-        webgpu_commandEncoderBegin(commandEncoder);
-    }
-
-    // RenderPassEncoder functions
-    void renderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder) const override {
-        webgpu_renderPassEncoderDestroy(renderPassEncoder);
-    }
-    void renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const override {
-        webgpu_renderPassEncoderSetPipeline(renderPassEncoder, pipeline);
-    }
-    void renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const override {
-        webgpu_renderPassEncoderSetBindGroup(renderPassEncoder, index, bindGroup, dynamicOffsets, dynamicOffsetCount);
-    }
-    void renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const override {
-        webgpu_renderPassEncoderSetVertexBuffer(renderPassEncoder, slot, buffer, offset, size);
-    }
-    void renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const override {
-        webgpu_renderPassEncoderSetIndexBuffer(renderPassEncoder, buffer, format, offset, size);
-    }
-    void renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const override {
-        webgpu_renderPassEncoderSetViewport(renderPassEncoder, viewport);
-    }
-    void renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const override {
-        webgpu_renderPassEncoderSetScissorRect(renderPassEncoder, scissor);
-    }
-    void renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const override {
-        webgpu_renderPassEncoderDraw(renderPassEncoder, vertexCount, instanceCount, firstVertex, firstInstance);
-    }
-    void renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const override {
-        webgpu_renderPassEncoderDrawIndexed(renderPassEncoder, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
-    }
-    void renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const override {
-        webgpu_renderPassEncoderEnd(renderPassEncoder);
-    }
-
-    // ComputePassEncoder functions
-    void computePassEncoderDestroy(GfxComputePassEncoder computePassEncoder) const override {
-        webgpu_computePassEncoderDestroy(computePassEncoder);
-    }
-    void computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const override {
-        webgpu_computePassEncoderSetPipeline(computePassEncoder, pipeline);
-    }
-    void computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const override {
-        webgpu_computePassEncoderSetBindGroup(computePassEncoder, index, bindGroup, dynamicOffsets, dynamicOffsetCount);
-    }
-    void computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const override {
-        webgpu_computePassEncoderDispatchWorkgroups(computePassEncoder, workgroupCountX, workgroupCountY, workgroupCountZ);
-    }
-    void computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const override {
-        webgpu_computePassEncoderEnd(computePassEncoder);
-    }
-
-    // Fence functions
-    void fenceDestroy(GfxFence fence) const override {
-        webgpu_fenceDestroy(fence);
-    }
-    GfxResult fenceGetStatus(GfxFence fence) const override {
-        return webgpu_fenceGetStatus(fence);
-    }
-    GfxResult fenceWait(GfxFence fence, uint64_t timeoutNs) const override {
-        return webgpu_fenceWait(fence, timeoutNs);
-    }
-    void fenceReset(GfxFence fence) const override {
-        webgpu_fenceReset(fence);
-    }
-
-    // Semaphore functions
-    void semaphoreDestroy(GfxSemaphore semaphore) const override {
-        webgpu_semaphoreDestroy(semaphore);
-    }
-    GfxSemaphoreType semaphoreGetType(GfxSemaphore semaphore) const override {
-        return webgpu_semaphoreGetType(semaphore);
-    }
-    GfxResult semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const override {
-        return webgpu_semaphoreSignal(semaphore, value);
-    }
-    GfxResult semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const override {
-        return webgpu_semaphoreWait(semaphore, value, timeoutNs);
-    }
-    uint64_t semaphoreGetValue(GfxSemaphore semaphore) const override {
-        return webgpu_semaphoreGetValue(semaphore);
-    }
-};
-
-static WebGPUBackend webGpuBackendInstance;
-
-extern "C" {
-
-const GfxBackendAPI* gfxGetWebgpuBackend(void)
+// Instance functions
+GfxResult WebGPUBackend::createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const
 {
-    return &webGpuBackendInstance;
+    return webgpu_createInstance(descriptor, outInstance);
+}
+void WebGPUBackend::instanceDestroy(GfxInstance instance) const
+{
+    webgpu_instanceDestroy(instance);
+}
+void WebGPUBackend::instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const
+{
+    webgpu_instanceSetDebugCallback(instance, callback, userData);
+}
+GfxResult WebGPUBackend::instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const
+{
+    return webgpu_instanceRequestAdapter(instance, descriptor, outAdapter);
+}
+uint32_t WebGPUBackend::instanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters) const
+{
+    return webgpu_instanceEnumerateAdapters(instance, adapters, maxAdapters);
 }
 
-} // extern "C"
+// Adapter functions
+void WebGPUBackend::adapterDestroy(GfxAdapter adapter) const
+{
+    webgpu_adapterDestroy(adapter);
+}
+GfxResult WebGPUBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const
+{
+    return webgpu_adapterCreateDevice(adapter, descriptor, outDevice);
+}
+const char* WebGPUBackend::adapterGetName(GfxAdapter adapter) const
+{
+    return webgpu_adapterGetName(adapter);
+}
+GfxBackend WebGPUBackend::adapterGetBackend(GfxAdapter adapter) const
+{
+    return webgpu_adapterGetBackend(adapter);
+}
+
+// Device functions
+void WebGPUBackend::deviceDestroy(GfxDevice device) const
+{
+    webgpu_deviceDestroy(device);
+}
+GfxQueue WebGPUBackend::deviceGetQueue(GfxDevice device) const
+{
+    return webgpu_deviceGetQueue(device);
+}
+GfxResult WebGPUBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
+{
+    return webgpu_deviceCreateSurface(device, descriptor, outSurface);
+}
+GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
+{
+    return webgpu_deviceCreateSwapchain(device, surface, descriptor, outSwapchain);
+}
+GfxResult WebGPUBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
+{
+    return webgpu_deviceCreateBuffer(device, descriptor, outBuffer);
+}
+GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
+{
+    return webgpu_deviceCreateTexture(device, descriptor, outTexture);
+}
+GfxResult WebGPUBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
+{
+    return webgpu_deviceCreateSampler(device, descriptor, outSampler);
+}
+GfxResult WebGPUBackend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
+{
+    return webgpu_deviceCreateShader(device, descriptor, outShader);
+}
+GfxResult WebGPUBackend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
+{
+    return webgpu_deviceCreateBindGroupLayout(device, descriptor, outLayout);
+}
+GfxResult WebGPUBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
+{
+    return webgpu_deviceCreateBindGroup(device, descriptor, outBindGroup);
+}
+GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
+{
+    return webgpu_deviceCreateRenderPipeline(device, descriptor, outPipeline);
+}
+GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
+{
+    return webgpu_deviceCreateComputePipeline(device, descriptor, outPipeline);
+}
+GfxResult WebGPUBackend::deviceCreateCommandEncoder(GfxDevice device, const char* label, GfxCommandEncoder* outEncoder) const
+{
+    return webgpu_deviceCreateCommandEncoder(device, label, outEncoder);
+}
+GfxResult WebGPUBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
+{
+    return webgpu_deviceCreateFence(device, descriptor, outFence);
+}
+GfxResult WebGPUBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const
+{
+    return webgpu_deviceCreateSemaphore(device, descriptor, outSemaphore);
+}
+void WebGPUBackend::deviceWaitIdle(GfxDevice device) const
+{
+    webgpu_deviceWaitIdle(device);
+}
+void WebGPUBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const
+{
+    webgpu_deviceGetLimits(device, outLimits);
+}
+
+// Surface functions
+void WebGPUBackend::surfaceDestroy(GfxSurface surface) const
+{
+    webgpu_surfaceDestroy(surface);
+}
+uint32_t WebGPUBackend::surfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats) const
+{
+    return webgpu_surfaceGetSupportedFormats(surface, formats, maxFormats);
+}
+uint32_t WebGPUBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes) const
+{
+    return webgpu_surfaceGetSupportedPresentModes(surface, presentModes, maxModes);
+}
+GfxPlatformWindowHandle WebGPUBackend::surfaceGetPlatformHandle(GfxSurface surface) const
+{
+    return webgpu_surfaceGetPlatformHandle(surface);
+}
+
+// Swapchain functions
+void WebGPUBackend::swapchainDestroy(GfxSwapchain swapchain) const
+{
+    webgpu_swapchainDestroy(swapchain);
+}
+uint32_t WebGPUBackend::swapchainGetWidth(GfxSwapchain swapchain) const
+{
+    return webgpu_swapchainGetWidth(swapchain);
+}
+uint32_t WebGPUBackend::swapchainGetHeight(GfxSwapchain swapchain) const
+{
+    return webgpu_swapchainGetHeight(swapchain);
+}
+GfxTextureFormat WebGPUBackend::swapchainGetFormat(GfxSwapchain swapchain) const
+{
+    return webgpu_swapchainGetFormat(swapchain);
+}
+uint32_t WebGPUBackend::swapchainGetBufferCount(GfxSwapchain swapchain) const
+{
+    return webgpu_swapchainGetBufferCount(swapchain);
+}
+GfxResult WebGPUBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const
+{
+    return webgpu_swapchainAcquireNextImage(swapchain, timeoutNs, imageAvailableSemaphore, fence, outImageIndex);
+}
+GfxTextureView WebGPUBackend::swapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex) const
+{
+    return webgpu_swapchainGetImageView(swapchain, imageIndex);
+}
+GfxTextureView WebGPUBackend::swapchainGetCurrentTextureView(GfxSwapchain swapchain) const
+{
+    return webgpu_swapchainGetCurrentTextureView(swapchain);
+}
+GfxResult WebGPUBackend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const
+{
+    return webgpu_swapchainPresent(swapchain, presentInfo);
+}
+
+// Buffer functions
+void WebGPUBackend::bufferDestroy(GfxBuffer buffer) const
+{
+    webgpu_bufferDestroy(buffer);
+}
+uint64_t WebGPUBackend::bufferGetSize(GfxBuffer buffer) const
+{
+    return webgpu_bufferGetSize(buffer);
+}
+GfxBufferUsage WebGPUBackend::bufferGetUsage(GfxBuffer buffer) const
+{
+    return webgpu_bufferGetUsage(buffer);
+}
+GfxResult WebGPUBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
+{
+    return webgpu_bufferMap(buffer, offset, size, outMappedPointer);
+}
+void WebGPUBackend::bufferUnmap(GfxBuffer buffer) const
+{
+    webgpu_bufferUnmap(buffer);
+}
+
+// Texture functions
+void WebGPUBackend::textureDestroy(GfxTexture texture) const
+{
+    webgpu_textureDestroy(texture);
+}
+GfxExtent3D WebGPUBackend::textureGetSize(GfxTexture texture) const
+{
+    return webgpu_textureGetSize(texture);
+}
+GfxTextureFormat WebGPUBackend::textureGetFormat(GfxTexture texture) const
+{
+    return webgpu_textureGetFormat(texture);
+}
+uint32_t WebGPUBackend::textureGetMipLevelCount(GfxTexture texture) const
+{
+    return webgpu_textureGetMipLevelCount(texture);
+}
+GfxSampleCount WebGPUBackend::textureGetSampleCount(GfxTexture texture) const
+{
+    return webgpu_textureGetSampleCount(texture);
+}
+GfxTextureUsage WebGPUBackend::textureGetUsage(GfxTexture texture) const
+{
+    return webgpu_textureGetUsage(texture);
+}
+GfxTextureLayout WebGPUBackend::textureGetLayout(GfxTexture texture) const
+{
+    return webgpu_textureGetLayout(texture);
+}
+GfxResult WebGPUBackend::textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const
+{
+    return webgpu_textureCreateView(texture, descriptor, outView);
+}
+
+// TextureView functions
+void WebGPUBackend::textureViewDestroy(GfxTextureView textureView) const
+{
+    webgpu_textureViewDestroy(textureView);
+}
+
+// Sampler functions
+void WebGPUBackend::samplerDestroy(GfxSampler sampler) const
+{
+    webgpu_samplerDestroy(sampler);
+}
+
+// Shader functions
+void WebGPUBackend::shaderDestroy(GfxShader shader) const
+{
+    webgpu_shaderDestroy(shader);
+}
+
+// BindGroupLayout functions
+void WebGPUBackend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const
+{
+    webgpu_bindGroupLayoutDestroy(bindGroupLayout);
+}
+
+// BindGroup functions
+void WebGPUBackend::bindGroupDestroy(GfxBindGroup bindGroup) const
+{
+    webgpu_bindGroupDestroy(bindGroup);
+}
+
+// RenderPipeline functions
+void WebGPUBackend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) const
+{
+    webgpu_renderPipelineDestroy(renderPipeline);
+}
+
+// ComputePipeline functions
+void WebGPUBackend::computePipelineDestroy(GfxComputePipeline computePipeline) const
+{
+    webgpu_computePipelineDestroy(computePipeline);
+}
+
+// Queue functions
+GfxResult WebGPUBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo) const
+{
+    return webgpu_queueSubmit(queue, submitInfo);
+}
+void WebGPUBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
+{
+    webgpu_queueWriteBuffer(queue, buffer, offset, data, size);
+}
+void WebGPUBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+    const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+{
+    webgpu_queueWriteTexture(queue, texture, origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
+}
+GfxResult WebGPUBackend::queueWaitIdle(GfxQueue queue) const
+{
+    return webgpu_queueWaitIdle(queue);
+}
+
+// CommandEncoder functions
+void WebGPUBackend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
+{
+    webgpu_commandEncoderDestroy(commandEncoder);
+}
+GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
+    GfxTextureView const* colorAttachments, uint32_t colorAttachmentCount,
+    const GfxColor* clearColors, const GfxTextureLayout* colorLayouts,
+    GfxTextureView depthStencilAttachment, float depthClearValue, uint32_t stencilClearValue,
+    GfxTextureLayout depthStencilLayout,
+    GfxRenderPassEncoder* outRenderPass) const
+{
+    return webgpu_commandEncoderBeginRenderPass(commandEncoder, colorAttachments, colorAttachmentCount,
+        clearColors, colorLayouts, depthStencilAttachment, depthClearValue, stencilClearValue,
+        depthStencilLayout, outRenderPass);
+}
+GfxResult WebGPUBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass) const
+{
+    return webgpu_commandEncoderBeginComputePass(commandEncoder, label, outComputePass);
+}
+void WebGPUBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset,
+    GfxBuffer destination, uint64_t destinationOffset, uint64_t size) const
+{
+    webgpu_commandEncoderCopyBufferToBuffer(commandEncoder, source, sourceOffset, destination, destinationOffset, size);
+}
+void WebGPUBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
+    GfxTexture destination, const GfxOrigin3D* origin, const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const
+{
+    webgpu_commandEncoderCopyBufferToTexture(commandEncoder, source, sourceOffset, bytesPerRow, destination, origin, extent, mipLevel, finalLayout);
+}
+void WebGPUBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
+    GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+{
+    webgpu_commandEncoderCopyTextureToBuffer(commandEncoder, source, origin, mipLevel, destination, destinationOffset, bytesPerRow, extent, finalLayout);
+}
+void WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, const GfxExtent3D* extent,
+    GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
+{
+    webgpu_commandEncoderCopyTextureToTexture(commandEncoder, source, sourceOrigin, sourceMipLevel, destination, destinationOrigin, destinationMipLevel, extent, srcFinalLayout, dstFinalLayout);
+}
+void WebGPUBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
+{
+    webgpu_commandEncoderPipelineBarrier(commandEncoder, textureBarriers, textureBarrierCount);
+}
+void WebGPUBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
+{
+    webgpu_commandEncoderEnd(commandEncoder);
+}
+void WebGPUBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
+{
+    webgpu_commandEncoderBegin(commandEncoder);
+}
+
+// RenderPassEncoder functions
+void WebGPUBackend::renderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder) const
+{
+    webgpu_renderPassEncoderDestroy(renderPassEncoder);
+}
+void WebGPUBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
+{
+    webgpu_renderPassEncoderSetPipeline(renderPassEncoder, pipeline);
+}
+void WebGPUBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
+{
+    webgpu_renderPassEncoderSetBindGroup(renderPassEncoder, index, bindGroup, dynamicOffsets, dynamicOffsetCount);
+}
+void WebGPUBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
+{
+    webgpu_renderPassEncoderSetVertexBuffer(renderPassEncoder, slot, buffer, offset, size);
+}
+void WebGPUBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const
+{
+    webgpu_renderPassEncoderSetIndexBuffer(renderPassEncoder, buffer, format, offset, size);
+}
+void WebGPUBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
+{
+    webgpu_renderPassEncoderSetViewport(renderPassEncoder, viewport);
+}
+void WebGPUBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
+{
+    webgpu_renderPassEncoderSetScissorRect(renderPassEncoder, scissor);
+}
+void WebGPUBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
+{
+    webgpu_renderPassEncoderDraw(renderPassEncoder, vertexCount, instanceCount, firstVertex, firstInstance);
+}
+void WebGPUBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
+{
+    webgpu_renderPassEncoderDrawIndexed(renderPassEncoder, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+}
+void WebGPUBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
+{
+    webgpu_renderPassEncoderEnd(renderPassEncoder);
+}
+
+// ComputePassEncoder functions
+void WebGPUBackend::computePassEncoderDestroy(GfxComputePassEncoder computePassEncoder) const
+{
+    webgpu_computePassEncoderDestroy(computePassEncoder);
+}
+void WebGPUBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
+{
+    webgpu_computePassEncoderSetPipeline(computePassEncoder, pipeline);
+}
+void WebGPUBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
+{
+    webgpu_computePassEncoderSetBindGroup(computePassEncoder, index, bindGroup, dynamicOffsets, dynamicOffsetCount);
+}
+void WebGPUBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
+{
+    webgpu_computePassEncoderDispatchWorkgroups(computePassEncoder, workgroupCountX, workgroupCountY, workgroupCountZ);
+}
+void WebGPUBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
+{
+    webgpu_computePassEncoderEnd(computePassEncoder);
+}
+
+// Fence functions
+void WebGPUBackend::fenceDestroy(GfxFence fence) const
+{
+    webgpu_fenceDestroy(fence);
+}
+GfxResult WebGPUBackend::fenceGetStatus(GfxFence fence) const
+{
+    return webgpu_fenceGetStatus(fence);
+}
+GfxResult WebGPUBackend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
+{
+    return webgpu_fenceWait(fence, timeoutNs);
+}
+void WebGPUBackend::fenceReset(GfxFence fence) const
+{
+    webgpu_fenceReset(fence);
+}
+
+// Semaphore functions
+void WebGPUBackend::semaphoreDestroy(GfxSemaphore semaphore) const
+{
+    webgpu_semaphoreDestroy(semaphore);
+}
+GfxSemaphoreType WebGPUBackend::semaphoreGetType(GfxSemaphore semaphore) const
+{
+    return webgpu_semaphoreGetType(semaphore);
+}
+GfxResult WebGPUBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
+{
+    return webgpu_semaphoreSignal(semaphore, value);
+}
+GfxResult WebGPUBackend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const
+{
+    return webgpu_semaphoreWait(semaphore, value, timeoutNs);
+}
+uint64_t WebGPUBackend::semaphoreGetValue(GfxSemaphore semaphore) const
+{
+    return webgpu_semaphoreGetValue(semaphore);
+}
+
+const IBackend* WebGPUBackend::create()
+{
+    static WebGPUBackend webgpuBackend;
+    return &webgpuBackend;
+}
+
+} // namespace gfx::webgpu

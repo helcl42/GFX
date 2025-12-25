@@ -1,6 +1,4 @@
-#include "../GfxBackend.h"
-
-#include <gfx/gfx.h>
+#include "VulkanBackend.h"
 
 // Platform-specific Vulkan extensions
 #ifdef _WIN32
@@ -2167,8 +2165,6 @@ private:
 // C API Implementation - Thin Wrappers
 // ============================================================================
 
-extern "C" {
-
 GfxResult vulkan_createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance)
 {
     if (!descriptor || !outInstance) {
@@ -3014,27 +3010,7 @@ uint64_t vulkan_semaphoreGetValue(GfxSemaphore semaphore)
     return s->getValue();
 }
 
-GfxResult vulkan_queueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder)
-{
-    if (!queue || !commandEncoder) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
-    }
-
-    auto* q = reinterpret_cast<gfx::vulkan::Queue*>(queue);
-    auto* encoder = reinterpret_cast<gfx::vulkan::CommandEncoder*>(commandEncoder);
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    VkCommandBuffer cmdBuf = encoder->handle();
-    submitInfo.pCommandBuffers = &cmdBuf;
-
-    vkQueueSubmit(q->handle(), 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(q->handle());
-    return GFX_RESULT_SUCCESS;
-}
-
-GfxResult vulkan_queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo)
+GfxResult vulkan_queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo)
 {
     if (!queue || !submitInfo) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
@@ -3126,16 +3102,17 @@ GfxResult vulkan_queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submit
     return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
-// Stub implementations for missing functions to satisfy GfxBackendAPI
-static GfxResult vulkan_bufferMapAsync_stub(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer)
+static GfxResult vulkan_bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer)
 {
+    if (!buffer || !outMappedPointer) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+
     (void)offset;
     (void)size;
-    if (buffer && outMappedPointer) {
-        *outMappedPointer = vulkan_bufferMap(buffer);
-        return GFX_RESULT_SUCCESS;
-    }
-    return GFX_RESULT_ERROR_INVALID_PARAMETER;
+
+    *outMappedPointer = vulkan_bufferMap(buffer);
+    return GFX_RESULT_SUCCESS;
 }
 
 void vulkan_queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size)
@@ -3302,6 +3279,7 @@ void vulkan_queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigi
     submitInfo.pCommandBuffers = &commandBuffer;
 
     vkQueueSubmit(q->handle(), 1, &submitInfo, VK_NULL_HANDLE);
+    // TODO - use a fence and wait properly
     vkQueueWaitIdle(q->handle());
 
     // Cleanup
@@ -4114,470 +4092,463 @@ void vulkan_computePassEncoderDestroy(GfxComputePassEncoder encoder)
     (void)encoder;
 }
 
-// Vulkan backend implementation
-class VulkanBackend : public GfxBackendAPI {
-public:
-    // Instance functions
-    GfxResult createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const override
-    {
-        return vulkan_createInstance(descriptor, outInstance);
-    }
-    void instanceDestroy(GfxInstance instance) const override
-    {
-        vulkan_instanceDestroy(instance);
-    }
-    void instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const override
-    {
-        vulkan_instanceSetDebugCallback(instance, callback, userData);
-    }
-    GfxResult instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const override
-    {
-        return vulkan_instanceRequestAdapter(instance, descriptor, outAdapter);
-    }
-    uint32_t instanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters) const override
-    {
-        return vulkan_instanceEnumerateAdapters(instance, adapters, maxAdapters);
-    }
+namespace gfx::vulkan {
 
-    // Adapter functions
-    void adapterDestroy(GfxAdapter adapter) const override
-    {
-        vulkan_adapterDestroy(adapter);
-    }
-    GfxResult adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const override
-    {
-        return vulkan_adapterCreateDevice(adapter, descriptor, outDevice);
-    }
-    const char* adapterGetName(GfxAdapter adapter) const override
-    {
-        return vulkan_adapterGetName(adapter);
-    }
-    GfxBackend adapterGetBackend(GfxAdapter adapter) const override
-    {
-        return vulkan_adapterGetBackend(adapter);
-    }
-
-    // Device functions
-    void deviceDestroy(GfxDevice device) const override
-    {
-        vulkan_deviceDestroy(device);
-    }
-    GfxQueue deviceGetQueue(GfxDevice device) const override
-    {
-        return vulkan_deviceGetQueue(device);
-    }
-    GfxResult deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const override
-    {
-        return vulkan_deviceCreateSurface(device, descriptor, outSurface);
-    }
-    GfxResult deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const override
-    {
-        return vulkan_deviceCreateSwapchain(device, surface, descriptor, outSwapchain);
-    }
-    GfxResult deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const override
-    {
-        return vulkan_deviceCreateBuffer(device, descriptor, outBuffer);
-    }
-    GfxResult deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const override
-    {
-        return vulkan_deviceCreateTexture(device, descriptor, outTexture);
-    }
-    GfxResult deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const override
-    {
-        return vulkan_deviceCreateSampler(device, descriptor, outSampler);
-    }
-    GfxResult deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const override
-    {
-        return vulkan_deviceCreateShader(device, descriptor, outShader);
-    }
-    GfxResult deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const override
-    {
-        return vulkan_deviceCreateBindGroupLayout(device, descriptor, outLayout);
-    }
-    GfxResult deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const override
-    {
-        return vulkan_deviceCreateBindGroup(device, descriptor, outBindGroup);
-    }
-    GfxResult deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const override
-    {
-        return vulkan_deviceCreateRenderPipeline(device, descriptor, outPipeline);
-    }
-    GfxResult deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const override
-    {
-        return vulkan_deviceCreateComputePipeline(device, descriptor, outPipeline);
-    }
-    GfxResult deviceCreateCommandEncoder(GfxDevice device, const char* label, GfxCommandEncoder* outEncoder) const override
-    {
-        return vulkan_deviceCreateCommandEncoder(device, label, outEncoder);
-    }
-    GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const override
-    {
-        return vulkan_deviceCreateFence(device, descriptor, outFence);
-    }
-    GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const override
-    {
-        return vulkan_deviceCreateSemaphore(device, descriptor, outSemaphore);
-    }
-    void deviceWaitIdle(GfxDevice device) const override
-    {
-        vulkan_deviceWaitIdle(device);
-    }
-    void deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const override
-    {
-        vulkan_deviceGetLimits(device, outLimits);
-    }
-
-    // Surface functions
-    void surfaceDestroy(GfxSurface surface) const override
-    {
-        vulkan_surfaceDestroy(surface);
-    }
-    uint32_t surfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats) const override
-    {
-        return vulkan_surfaceGetSupportedFormats(surface, formats, maxFormats);
-    }
-    uint32_t surfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes) const override
-    {
-        return vulkan_surfaceGetSupportedPresentModes(surface, presentModes, maxModes);
-    }
-    GfxPlatformWindowHandle surfaceGetPlatformHandle(GfxSurface surface) const override
-    {
-        return vulkan_surfaceGetPlatformHandle(surface);
-    }
-
-    // Swapchain functions
-    void swapchainDestroy(GfxSwapchain swapchain) const override
-    {
-        vulkan_swapchainDestroy(swapchain);
-    }
-    uint32_t swapchainGetWidth(GfxSwapchain swapchain) const override
-    {
-        return vulkan_swapchainGetWidth(swapchain);
-    }
-    uint32_t swapchainGetHeight(GfxSwapchain swapchain) const override
-    {
-        return vulkan_swapchainGetHeight(swapchain);
-    }
-    GfxTextureFormat swapchainGetFormat(GfxSwapchain swapchain) const override
-    {
-        return vulkan_swapchainGetFormat(swapchain);
-    }
-    uint32_t swapchainGetBufferCount(GfxSwapchain swapchain) const override
-    {
-        return vulkan_swapchainGetBufferCount(swapchain);
-    }
-    GfxResult swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const override
-    {
-        return vulkan_swapchainAcquireNextImage(swapchain, timeoutNs, imageAvailableSemaphore, fence, outImageIndex);
-    }
-    GfxTextureView swapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex) const override
-    {
-        return vulkan_swapchainGetImageView(swapchain, imageIndex);
-    }
-    GfxTextureView swapchainGetCurrentTextureView(GfxSwapchain swapchain) const override
-    {
-        return vulkan_swapchainGetCurrentTextureView(swapchain);
-    }
-    GfxResult swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const override
-    {
-        return vulkan_swapchainPresent(swapchain, presentInfo);
-    }
-
-    // Buffer functions
-    void bufferDestroy(GfxBuffer buffer) const override
-    {
-        vulkan_bufferDestroy(buffer);
-    }
-    uint64_t bufferGetSize(GfxBuffer buffer) const override
-    {
-        return vulkan_bufferGetSize(buffer);
-    }
-    GfxBufferUsage bufferGetUsage(GfxBuffer buffer) const override
-    {
-        return vulkan_bufferGetUsage(buffer);
-    }
-    GfxResult bufferMapAsync(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const override
-    {
-        return vulkan_bufferMapAsync_stub(buffer, offset, size, outMappedPointer);
-    }
-    void bufferUnmap(GfxBuffer buffer) const override
-    {
-        vulkan_bufferUnmap(buffer);
-    }
-
-    // Texture functions
-    void textureDestroy(GfxTexture texture) const override
-    {
-        vulkan_textureDestroy(texture);
-    }
-    GfxExtent3D textureGetSize(GfxTexture texture) const override
-    {
-        return vulkan_textureGetSize(texture);
-    }
-    GfxTextureFormat textureGetFormat(GfxTexture texture) const override
-    {
-        return vulkan_textureGetFormat(texture);
-    }
-    uint32_t textureGetMipLevelCount(GfxTexture texture) const override
-    {
-        return vulkan_textureGetMipLevelCount(texture);
-    }
-    GfxSampleCount textureGetSampleCount(GfxTexture texture) const override
-    {
-        return vulkan_textureGetSampleCount(texture);
-    }
-    GfxTextureUsage textureGetUsage(GfxTexture texture) const override
-    {
-        return vulkan_textureGetUsage(texture);
-    }
-    GfxTextureLayout textureGetLayout(GfxTexture texture) const override
-    {
-        return vulkan_textureGetLayout(texture);
-    }
-    GfxResult textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const override
-    {
-        return vulkan_textureCreateView(texture, descriptor, outView);
-    }
-
-    // TextureView functions
-    void textureViewDestroy(GfxTextureView textureView) const override
-    {
-        vulkan_textureViewDestroy(textureView);
-    }
-
-    // Sampler functions
-    void samplerDestroy(GfxSampler sampler) const override
-    {
-        vulkan_samplerDestroy(sampler);
-    }
-
-    // Shader functions
-    void shaderDestroy(GfxShader shader) const override
-    {
-        vulkan_shaderDestroy(shader);
-    }
-
-    // BindGroupLayout functions
-    void bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const override
-    {
-        vulkan_bindGroupLayoutDestroy(bindGroupLayout);
-    }
-
-    // BindGroup functions
-    void bindGroupDestroy(GfxBindGroup bindGroup) const override
-    {
-        vulkan_bindGroupDestroy(bindGroup);
-    }
-
-    // RenderPipeline functions
-    void renderPipelineDestroy(GfxRenderPipeline renderPipeline) const override
-    {
-        vulkan_renderPipelineDestroy(renderPipeline);
-    }
-
-    // ComputePipeline functions
-    void computePipelineDestroy(GfxComputePipeline computePipeline) const override
-    {
-        vulkan_computePipelineDestroy(computePipeline);
-    }
-
-    // Queue functions
-    GfxResult queueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder) const override
-    {
-        return vulkan_queueSubmit(queue, commandEncoder);
-    }
-    GfxResult queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo) const override
-    {
-        return vulkan_queueSubmitWithSync(queue, submitInfo);
-    }
-    void queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const override
-    {
-        vulkan_queueWriteBuffer(queue, buffer, offset, data, size);
-    }
-    void queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
-        const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const override
-    {
-        vulkan_queueWriteTexture(queue, texture, origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
-    }
-    GfxResult queueWaitIdle(GfxQueue queue) const override
-    {
-        return vulkan_queueWaitIdle(queue);
-    }
-
-    // CommandEncoder functions
-    void commandEncoderDestroy(GfxCommandEncoder commandEncoder) const override
-    {
-        vulkan_commandEncoderDestroy(commandEncoder);
-    }
-    GfxResult commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-        const GfxTextureView* colorAttachments, uint32_t colorAttachmentCount,
-        const GfxColor* clearColors,
-        const GfxTextureLayout* colorFinalLayouts,
-        GfxTextureView depthStencilAttachment,
-        float depthClearValue, uint32_t stencilClearValue,
-        GfxTextureLayout depthFinalLayout,
-        GfxRenderPassEncoder* outRenderPass) const override
-    {
-        return vulkan_commandEncoderBeginRenderPass(commandEncoder, colorAttachments, colorAttachmentCount,
-            clearColors, colorFinalLayouts, depthStencilAttachment, depthClearValue, stencilClearValue,
-            depthFinalLayout, outRenderPass);
-    }
-    GfxResult commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass) const override
-    {
-        return vulkan_commandEncoderBeginComputePass(commandEncoder, label, outComputePass);
-    }
-    void commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
-        GfxBuffer source, uint64_t sourceOffset,
-        GfxBuffer destination, uint64_t destinationOffset,
-        uint64_t size) const override
-    {
-        vulkan_commandEncoderCopyBufferToBuffer(commandEncoder, source, sourceOffset, destination, destinationOffset, size);
-    }
-    void commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
-        GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
-        GfxTexture destination, const GfxOrigin3D* origin,
-        const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const override
-    {
-        vulkan_commandEncoderCopyBufferToTexture(commandEncoder, source, sourceOffset, bytesPerRow, destination, origin, extent, mipLevel, finalLayout);
-    }
-    void commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
-        GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
-        GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
-        const GfxExtent3D* extent, GfxTextureLayout finalLayout) const override
-    {
-        vulkan_commandEncoderCopyTextureToBuffer(commandEncoder, source, origin, mipLevel, destination, destinationOffset, bytesPerRow, extent, finalLayout);
-    }
-    void commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
-        GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
-        GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
-        const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const override
-    {
-        vulkan_commandEncoderCopyTextureToTexture(commandEncoder, source, sourceOrigin, sourceMipLevel, destination, destinationOrigin, destinationMipLevel, extent, srcFinalLayout, dstFinalLayout);
-    }
-    void commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
-        const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const override
-    {
-        vulkan_commandEncoderPipelineBarrier(commandEncoder, textureBarriers, textureBarrierCount);
-    }
-    void commandEncoderEnd(GfxCommandEncoder commandEncoder) const override
-    {
-        vulkan_commandEncoderEnd(commandEncoder);
-    }
-    void commandEncoderBegin(GfxCommandEncoder commandEncoder) const override
-    {
-        vulkan_commandEncoderBegin(commandEncoder);
-    }
-
-    // RenderPassEncoder functions
-    void renderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder) const override
-    {
-        vulkan_renderPassEncoderDestroy(renderPassEncoder);
-    }
-    void renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const override
-    {
-        vulkan_renderPassEncoderSetPipeline(renderPassEncoder, pipeline);
-    }
-    void renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const override
-    {
-        vulkan_renderPassEncoderSetBindGroup(renderPassEncoder, index, bindGroup, dynamicOffsets, dynamicOffsetCount);
-    }
-    void renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const override
-    {
-        vulkan_renderPassEncoderSetVertexBuffer(renderPassEncoder, slot, buffer, offset, size);
-    }
-    void renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const override
-    {
-        vulkan_renderPassEncoderSetIndexBuffer(renderPassEncoder, buffer, format, offset, size);
-    }
-    void renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const override
-    {
-        vulkan_renderPassEncoderSetViewport(renderPassEncoder, viewport);
-    }
-    void renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const override
-    {
-        vulkan_renderPassEncoderSetScissorRect(renderPassEncoder, scissor);
-    }
-    void renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const override
-    {
-        vulkan_renderPassEncoderDraw(renderPassEncoder, vertexCount, instanceCount, firstVertex, firstInstance);
-    }
-    void renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const override
-    {
-        vulkan_renderPassEncoderDrawIndexed(renderPassEncoder, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
-    }
-    void renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const override
-    {
-        vulkan_renderPassEncoderEnd(renderPassEncoder);
-    }
-
-    // ComputePassEncoder functions
-    void computePassEncoderDestroy(GfxComputePassEncoder computePassEncoder) const override
-    {
-        vulkan_computePassEncoderDestroy(computePassEncoder);
-    }
-    void computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const override
-    {
-        vulkan_computePassEncoderSetPipeline(computePassEncoder, pipeline);
-    }
-    void computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const override
-    {
-        vulkan_computePassEncoderSetBindGroup(computePassEncoder, index, bindGroup, dynamicOffsets, dynamicOffsetCount);
-    }
-    void computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const override
-    {
-        vulkan_computePassEncoderDispatchWorkgroups(computePassEncoder, workgroupCountX, workgroupCountY, workgroupCountZ);
-    }
-    void computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const override
-    {
-        vulkan_computePassEncoderEnd(computePassEncoder);
-    }
-
-    // Fence functions
-    void fenceDestroy(GfxFence fence) const override
-    {
-        vulkan_fenceDestroy(fence);
-    }
-    GfxResult fenceGetStatus(GfxFence fence, bool* isSignaled) const override
-    {
-        return vulkan_fenceGetStatus(fence, isSignaled);
-    }
-    GfxResult fenceWait(GfxFence fence, uint64_t timeoutNs) const override
-    {
-        return vulkan_fenceWait(fence, timeoutNs);
-    }
-    void fenceReset(GfxFence fence) const override
-    {
-        vulkan_fenceReset(fence);
-    }
-
-    // Semaphore functions
-    void semaphoreDestroy(GfxSemaphore semaphore) const override
-    {
-        vulkan_semaphoreDestroy(semaphore);
-    }
-    GfxSemaphoreType semaphoreGetType(GfxSemaphore semaphore) const override
-    {
-        return vulkan_semaphoreGetType(semaphore);
-    }
-    GfxResult semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const override
-    {
-        return vulkan_semaphoreSignal(semaphore, value);
-    }
-    GfxResult semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const override
-    {
-        return vulkan_semaphoreWait(semaphore, value, timeoutNs);
-    }
-    uint64_t semaphoreGetValue(GfxSemaphore semaphore) const override
-    {
-        return vulkan_semaphoreGetValue(semaphore);
-    }
-};
-
-static VulkanBackend vulkanBackend;
-
-const GfxBackendAPI* gfxGetVulkanBackendNew(void)
+// Instance functions
+GfxResult VulkanBackend::createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const
 {
+    return vulkan_createInstance(descriptor, outInstance);
+}
+void VulkanBackend::instanceDestroy(GfxInstance instance) const
+{
+    vulkan_instanceDestroy(instance);
+}
+void VulkanBackend::instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const
+{
+    vulkan_instanceSetDebugCallback(instance, callback, userData);
+}
+GfxResult VulkanBackend::instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const
+{
+    return vulkan_instanceRequestAdapter(instance, descriptor, outAdapter);
+}
+uint32_t VulkanBackend::instanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters) const
+{
+    return vulkan_instanceEnumerateAdapters(instance, adapters, maxAdapters);
+}
+
+// Adapter functions
+void VulkanBackend::adapterDestroy(GfxAdapter adapter) const
+{
+    vulkan_adapterDestroy(adapter);
+}
+GfxResult VulkanBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const
+{
+    return vulkan_adapterCreateDevice(adapter, descriptor, outDevice);
+}
+const char* VulkanBackend::adapterGetName(GfxAdapter adapter) const
+{
+    return vulkan_adapterGetName(adapter);
+}
+GfxBackend VulkanBackend::adapterGetBackend(GfxAdapter adapter) const
+{
+    return vulkan_adapterGetBackend(adapter);
+}
+
+// Device functions
+void VulkanBackend::deviceDestroy(GfxDevice device) const
+{
+    vulkan_deviceDestroy(device);
+}
+GfxQueue VulkanBackend::deviceGetQueue(GfxDevice device) const
+{
+    return vulkan_deviceGetQueue(device);
+}
+GfxResult VulkanBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
+{
+    return vulkan_deviceCreateSurface(device, descriptor, outSurface);
+}
+GfxResult VulkanBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
+{
+    return vulkan_deviceCreateSwapchain(device, surface, descriptor, outSwapchain);
+}
+GfxResult VulkanBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
+{
+    return vulkan_deviceCreateBuffer(device, descriptor, outBuffer);
+}
+GfxResult VulkanBackend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
+{
+    return vulkan_deviceCreateTexture(device, descriptor, outTexture);
+}
+GfxResult VulkanBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
+{
+    return vulkan_deviceCreateSampler(device, descriptor, outSampler);
+}
+GfxResult VulkanBackend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
+{
+    return vulkan_deviceCreateShader(device, descriptor, outShader);
+}
+GfxResult VulkanBackend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
+{
+    return vulkan_deviceCreateBindGroupLayout(device, descriptor, outLayout);
+}
+GfxResult VulkanBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
+{
+    return vulkan_deviceCreateBindGroup(device, descriptor, outBindGroup);
+}
+GfxResult VulkanBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
+{
+    return vulkan_deviceCreateRenderPipeline(device, descriptor, outPipeline);
+}
+GfxResult VulkanBackend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
+{
+    return vulkan_deviceCreateComputePipeline(device, descriptor, outPipeline);
+}
+GfxResult VulkanBackend::deviceCreateCommandEncoder(GfxDevice device, const char* label, GfxCommandEncoder* outEncoder) const
+{
+    return vulkan_deviceCreateCommandEncoder(device, label, outEncoder);
+}
+GfxResult VulkanBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
+{
+    return vulkan_deviceCreateFence(device, descriptor, outFence);
+}
+GfxResult VulkanBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const
+{
+    return vulkan_deviceCreateSemaphore(device, descriptor, outSemaphore);
+}
+void VulkanBackend::deviceWaitIdle(GfxDevice device) const
+{
+    vulkan_deviceWaitIdle(device);
+}
+void VulkanBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const
+{
+    vulkan_deviceGetLimits(device, outLimits);
+}
+
+// Surface functions
+void VulkanBackend::surfaceDestroy(GfxSurface surface) const
+{
+    vulkan_surfaceDestroy(surface);
+}
+uint32_t VulkanBackend::surfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats) const
+{
+    return vulkan_surfaceGetSupportedFormats(surface, formats, maxFormats);
+}
+uint32_t VulkanBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes) const
+{
+    return vulkan_surfaceGetSupportedPresentModes(surface, presentModes, maxModes);
+}
+GfxPlatformWindowHandle VulkanBackend::surfaceGetPlatformHandle(GfxSurface surface) const
+{
+    return vulkan_surfaceGetPlatformHandle(surface);
+}
+
+// Swapchain functions
+void VulkanBackend::swapchainDestroy(GfxSwapchain swapchain) const
+{
+    vulkan_swapchainDestroy(swapchain);
+}
+uint32_t VulkanBackend::swapchainGetWidth(GfxSwapchain swapchain) const
+{
+    return vulkan_swapchainGetWidth(swapchain);
+}
+uint32_t VulkanBackend::swapchainGetHeight(GfxSwapchain swapchain) const
+{
+    return vulkan_swapchainGetHeight(swapchain);
+}
+GfxTextureFormat VulkanBackend::swapchainGetFormat(GfxSwapchain swapchain) const
+{
+    return vulkan_swapchainGetFormat(swapchain);
+}
+uint32_t VulkanBackend::swapchainGetBufferCount(GfxSwapchain swapchain) const
+{
+    return vulkan_swapchainGetBufferCount(swapchain);
+}
+GfxResult VulkanBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const
+{
+    return vulkan_swapchainAcquireNextImage(swapchain, timeoutNs, imageAvailableSemaphore, fence, outImageIndex);
+}
+GfxTextureView VulkanBackend::swapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex) const
+{
+    return vulkan_swapchainGetImageView(swapchain, imageIndex);
+}
+GfxTextureView VulkanBackend::swapchainGetCurrentTextureView(GfxSwapchain swapchain) const
+{
+    return vulkan_swapchainGetCurrentTextureView(swapchain);
+}
+GfxResult VulkanBackend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const
+{
+    return vulkan_swapchainPresent(swapchain, presentInfo);
+}
+
+// Buffer functions
+void VulkanBackend::bufferDestroy(GfxBuffer buffer) const
+{
+    vulkan_bufferDestroy(buffer);
+}
+uint64_t VulkanBackend::bufferGetSize(GfxBuffer buffer) const
+{
+    return vulkan_bufferGetSize(buffer);
+}
+GfxBufferUsage VulkanBackend::bufferGetUsage(GfxBuffer buffer) const
+{
+    return vulkan_bufferGetUsage(buffer);
+}
+GfxResult VulkanBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
+{
+    return vulkan_bufferMap(buffer, offset, size, outMappedPointer);
+}
+void VulkanBackend::bufferUnmap(GfxBuffer buffer) const
+{
+    vulkan_bufferUnmap(buffer);
+}
+
+// Texture functions
+void VulkanBackend::textureDestroy(GfxTexture texture) const
+{
+    vulkan_textureDestroy(texture);
+}
+GfxExtent3D VulkanBackend::textureGetSize(GfxTexture texture) const
+{
+    return vulkan_textureGetSize(texture);
+}
+GfxTextureFormat VulkanBackend::textureGetFormat(GfxTexture texture) const
+{
+    return vulkan_textureGetFormat(texture);
+}
+uint32_t VulkanBackend::textureGetMipLevelCount(GfxTexture texture) const
+{
+    return vulkan_textureGetMipLevelCount(texture);
+}
+GfxSampleCount VulkanBackend::textureGetSampleCount(GfxTexture texture) const
+{
+    return vulkan_textureGetSampleCount(texture);
+}
+GfxTextureUsage VulkanBackend::textureGetUsage(GfxTexture texture) const
+{
+    return vulkan_textureGetUsage(texture);
+}
+GfxTextureLayout VulkanBackend::textureGetLayout(GfxTexture texture) const
+{
+    return vulkan_textureGetLayout(texture);
+}
+GfxResult VulkanBackend::textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const
+{
+    return vulkan_textureCreateView(texture, descriptor, outView);
+}
+
+// TextureView functions
+void VulkanBackend::textureViewDestroy(GfxTextureView textureView) const
+{
+    vulkan_textureViewDestroy(textureView);
+}
+
+// Sampler functions
+void VulkanBackend::samplerDestroy(GfxSampler sampler) const
+{
+    vulkan_samplerDestroy(sampler);
+}
+
+// Shader functions
+void VulkanBackend::shaderDestroy(GfxShader shader) const
+{
+    vulkan_shaderDestroy(shader);
+}
+
+// BindGroupLayout functions
+void VulkanBackend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const
+{
+    vulkan_bindGroupLayoutDestroy(bindGroupLayout);
+}
+
+// BindGroup functions
+void VulkanBackend::bindGroupDestroy(GfxBindGroup bindGroup) const
+{
+    vulkan_bindGroupDestroy(bindGroup);
+}
+
+// RenderPipeline functions
+void VulkanBackend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) const
+{
+    vulkan_renderPipelineDestroy(renderPipeline);
+}
+
+// ComputePipeline functions
+void VulkanBackend::computePipelineDestroy(GfxComputePipeline computePipeline) const
+{
+    vulkan_computePipelineDestroy(computePipeline);
+}
+
+// Queue functions
+GfxResult VulkanBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo) const
+{
+    return vulkan_queueSubmit(queue, submitInfo);
+}
+void VulkanBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
+{
+    vulkan_queueWriteBuffer(queue, buffer, offset, data, size);
+}
+void VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+    const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+{
+    vulkan_queueWriteTexture(queue, texture, origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
+}
+GfxResult VulkanBackend::queueWaitIdle(GfxQueue queue) const
+{
+    return vulkan_queueWaitIdle(queue);
+}
+
+// CommandEncoder functions
+void VulkanBackend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
+{
+    vulkan_commandEncoderDestroy(commandEncoder);
+}
+GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
+    const GfxTextureView* colorAttachments, uint32_t colorAttachmentCount,
+    const GfxColor* clearColors,
+    const GfxTextureLayout* colorFinalLayouts,
+    GfxTextureView depthStencilAttachment,
+    float depthClearValue, uint32_t stencilClearValue,
+    GfxTextureLayout depthFinalLayout,
+    GfxRenderPassEncoder* outRenderPass) const
+{
+    return vulkan_commandEncoderBeginRenderPass(commandEncoder, colorAttachments, colorAttachmentCount,
+        clearColors, colorFinalLayouts, depthStencilAttachment, depthClearValue, stencilClearValue,
+        depthFinalLayout, outRenderPass);
+}
+GfxResult VulkanBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass) const
+{
+    return vulkan_commandEncoderBeginComputePass(commandEncoder, label, outComputePass);
+}
+void VulkanBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
+    GfxBuffer source, uint64_t sourceOffset,
+    GfxBuffer destination, uint64_t destinationOffset,
+    uint64_t size) const
+{
+    vulkan_commandEncoderCopyBufferToBuffer(commandEncoder, source, sourceOffset, destination, destinationOffset, size);
+}
+void VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
+    GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
+    GfxTexture destination, const GfxOrigin3D* origin,
+    const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const
+{
+    vulkan_commandEncoderCopyBufferToTexture(commandEncoder, source, sourceOffset, bytesPerRow, destination, origin, extent, mipLevel, finalLayout);
+}
+void VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
+    GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
+    GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
+    const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+{
+    vulkan_commandEncoderCopyTextureToBuffer(commandEncoder, source, origin, mipLevel, destination, destinationOffset, bytesPerRow, extent, finalLayout);
+}
+void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
+    const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
+{
+    vulkan_commandEncoderCopyTextureToTexture(commandEncoder, source, sourceOrigin, sourceMipLevel, destination, destinationOrigin, destinationMipLevel, extent, srcFinalLayout, dstFinalLayout);
+}
+void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+    const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
+{
+    vulkan_commandEncoderPipelineBarrier(commandEncoder, textureBarriers, textureBarrierCount);
+}
+void VulkanBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
+{
+    vulkan_commandEncoderEnd(commandEncoder);
+}
+void VulkanBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
+{
+    vulkan_commandEncoderBegin(commandEncoder);
+}
+
+// RenderPassEncoder functions
+void VulkanBackend::renderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder) const
+{
+    vulkan_renderPassEncoderDestroy(renderPassEncoder);
+}
+void VulkanBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
+{
+    vulkan_renderPassEncoderSetPipeline(renderPassEncoder, pipeline);
+}
+void VulkanBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
+{
+    vulkan_renderPassEncoderSetBindGroup(renderPassEncoder, index, bindGroup, dynamicOffsets, dynamicOffsetCount);
+}
+void VulkanBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
+{
+    vulkan_renderPassEncoderSetVertexBuffer(renderPassEncoder, slot, buffer, offset, size);
+}
+void VulkanBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const
+{
+    vulkan_renderPassEncoderSetIndexBuffer(renderPassEncoder, buffer, format, offset, size);
+}
+void VulkanBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
+{
+    vulkan_renderPassEncoderSetViewport(renderPassEncoder, viewport);
+}
+void VulkanBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
+{
+    vulkan_renderPassEncoderSetScissorRect(renderPassEncoder, scissor);
+}
+void VulkanBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
+{
+    vulkan_renderPassEncoderDraw(renderPassEncoder, vertexCount, instanceCount, firstVertex, firstInstance);
+}
+void VulkanBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
+{
+    vulkan_renderPassEncoderDrawIndexed(renderPassEncoder, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+}
+void VulkanBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
+{
+    vulkan_renderPassEncoderEnd(renderPassEncoder);
+}
+
+// ComputePassEncoder functions
+void VulkanBackend::computePassEncoderDestroy(GfxComputePassEncoder computePassEncoder) const
+{
+    vulkan_computePassEncoderDestroy(computePassEncoder);
+}
+void VulkanBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
+{
+    vulkan_computePassEncoderSetPipeline(computePassEncoder, pipeline);
+}
+void VulkanBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
+{
+    vulkan_computePassEncoderSetBindGroup(computePassEncoder, index, bindGroup, dynamicOffsets, dynamicOffsetCount);
+}
+void VulkanBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
+{
+    vulkan_computePassEncoderDispatchWorkgroups(computePassEncoder, workgroupCountX, workgroupCountY, workgroupCountZ);
+}
+void VulkanBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
+{
+    vulkan_computePassEncoderEnd(computePassEncoder);
+}
+
+// Fence functions
+void VulkanBackend::fenceDestroy(GfxFence fence) const
+{
+    vulkan_fenceDestroy(fence);
+}
+GfxResult VulkanBackend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
+{
+    return vulkan_fenceGetStatus(fence, isSignaled);
+}
+GfxResult VulkanBackend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
+{
+    return vulkan_fenceWait(fence, timeoutNs);
+}
+void VulkanBackend::fenceReset(GfxFence fence) const
+{
+    vulkan_fenceReset(fence);
+}
+
+// Semaphore functions
+void VulkanBackend::semaphoreDestroy(GfxSemaphore semaphore) const
+{
+    vulkan_semaphoreDestroy(semaphore);
+}
+GfxSemaphoreType VulkanBackend::semaphoreGetType(GfxSemaphore semaphore) const
+{
+    return vulkan_semaphoreGetType(semaphore);
+}
+GfxResult VulkanBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
+{
+    return vulkan_semaphoreSignal(semaphore, value);
+}
+GfxResult VulkanBackend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const
+{
+    return vulkan_semaphoreWait(semaphore, value, timeoutNs);
+}
+uint64_t VulkanBackend::semaphoreGetValue(GfxSemaphore semaphore) const
+{
+    return vulkan_semaphoreGetValue(semaphore);
+}
+
+const IBackend* VulkanBackend::create()
+{
+    static VulkanBackend vulkanBackend;
     return &vulkanBackend;
 }
 
-} // extern "C"
+} // namespace gfx::vulkan

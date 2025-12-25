@@ -450,7 +450,8 @@ bool ComputeApp::createComputeResources()
             SubmitInfo submitInfo{};
             submitInfo.commandEncoders = { initEncoder };
 
-            queue->submitWithSync(initEncoder, submitInfo);
+            queue->submit(submitInfo);
+            // TODO - sync with fence?
             device->waitIdle();
         }
 
@@ -825,18 +826,16 @@ void ComputeApp::drawFrame()
 
         // Submit
         SubmitInfo submitInfo{};
+        submitInfo.commandEncoders = { encoder };
         submitInfo.waitSemaphores = { imageAvailableSemaphores[frameIndex] };
-        submitInfo.waitSemaphoreCount = 1;
         submitInfo.signalSemaphores = { renderFinishedSemaphores[frameIndex] };
-        submitInfo.signalSemaphoreCount = 1;
         submitInfo.signalFence = inFlightFences[frameIndex];
 
-        queue->submitWithSync(encoder, submitInfo);
+        queue->submit(submitInfo);
 
         // Present
         PresentInfo presentInfo{};
         presentInfo.waitSemaphores = { renderFinishedSemaphores[frameIndex] };
-        presentInfo.waitSemaphoreCount = 1;
 
         result = swapchain->present(presentInfo);
 

@@ -1,5 +1,5 @@
-#include <gfx_cpp/Gfx.hpp>
 #include <GLFW/glfw3.h>
+#include <gfx_cpp/Gfx.hpp>
 
 // Include platform-specific GLFW headers to get native handles
 #ifdef _WIN32
@@ -836,18 +836,16 @@ void CubeApp::render()
 
         // Submit with explicit synchronization
         SubmitInfo submitInfo{};
+        submitInfo.commandEncoders = { commandEncoder };
         submitInfo.waitSemaphores = { imageAvailableSemaphores[currentFrame] };
-        submitInfo.waitSemaphoreCount = 1;
         submitInfo.signalSemaphores = { renderFinishedSemaphores[currentFrame] };
-        submitInfo.signalSemaphoreCount = 1;
         submitInfo.signalFence = inFlightFences[currentFrame];
 
-        queue->submitWithSync(commandEncoder, submitInfo);
+        queue->submit(submitInfo);
 
         // Present with explicit synchronization
         PresentInfo presentInfo{};
         presentInfo.waitSemaphores = { renderFinishedSemaphores[currentFrame] };
-        presentInfo.waitSemaphoreCount = 1;
 
         result = swapchain->present(presentInfo);
         if (result != gfx::Result::Success) {

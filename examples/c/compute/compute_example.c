@@ -472,7 +472,7 @@ static bool createComputeResources(ComputeApp* app)
         .commandEncoderCount = 1,
         .commandEncoders = &initEncoder,
     };
-    gfxQueueSubmitWithSync(app->queue, &submitInfo);
+    gfxQueueSubmit(app->queue, &submitInfo);
     gfxDeviceWaitIdle(app->device);
 
     gfxCommandEncoderDestroy(initEncoder);
@@ -868,7 +868,7 @@ static void drawFrame(ComputeApp* app)
         .signalFence = app->inFlightFences[frameIndex]
     };
 
-    gfxQueueSubmitWithSync(app->queue, &submitInfo);
+    gfxQueueSubmit(app->queue, &submitInfo);
 
     // Present
     GfxPresentInfo presentInfo = {

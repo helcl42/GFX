@@ -1,7 +1,12 @@
-#include <gfx/gfx.h>
+#include "backend/BackendManager.h"
+#ifdef GFX_ENABLE_VULKAN
+#include "backend/vulkan/VulkanBackend.h"
+#endif
+#ifdef GFX_ENABLE_WEBGPU
+#include "backend/webgpu/WebGPUBackend.h"
+#endif
 
-#include "backend/GfxBackendManager.h"
-#include "backend/GfxBackend.h"
+#include <gfx/gfx.h>
 
 #include <vector>
 
@@ -11,10 +16,6 @@
 
 extern "C" {
 
-// Forward declarations for backend getters
-extern const GfxBackendAPI* gfxGetVulkanBackendNew(void);
-extern const GfxBackendAPI* gfxGetWebGPUBackend(void);
-
 // Backend Loading - helper without lock
 static bool gfxLoadBackendInternal(GfxBackend backend)
 {
@@ -22,20 +23,20 @@ static bool gfxLoadBackendInternal(GfxBackend backend)
         return false;
     }
 
-    auto& registry = gfx::GfxBackendManager::getInstance();
-    auto backends = registry.getBackends();
-    auto refCounts = registry.getRefCounts();
+    auto& manager = gfx::BackendManager::getInstance();
+    auto backends = manager.getBackends();
+    auto refCounts = manager.getRefCounts();
 
     if (!backends[backend]) {
         switch (backend) {
 #ifdef GFX_ENABLE_VULKAN
         case GFX_BACKEND_VULKAN:
-            backends[backend] = gfxGetVulkanBackendNew();
+            backends[backend] = gfx::vulkan::VulkanBackend::create();
             break;
 #endif
 #ifdef GFX_ENABLE_WEBGPU
         case GFX_BACKEND_WEBGPU:
-            backends[backend] = gfxGetWebGPUBackend();
+            backends[backend] = gfx::webgpu::WebGPUBackend::create();
             break;
 #endif
         default:
@@ -69,14 +70,14 @@ bool gfxLoadBackend(GfxBackend backend)
         return false;
     }
 
-    std::scoped_lock lock(gfx::GfxBackendManager::getInstance().getMutex());
+    std::scoped_lock lock(gfx::BackendManager::getInstance().getMutex());
     return gfxLoadBackendInternal(backend);
 }
 
 static void gfxUnloadBackendInternal(GfxBackend backend)
 {
     if (backend >= 0 && backend < GFX_BACKEND_AUTO) {
-        auto& registry = gfx::GfxBackendManager::getInstance();
+        auto& registry = gfx::BackendManager::getInstance();
         auto backends = registry.getBackends();
         auto refCounts = registry.getRefCounts();
 
@@ -93,7 +94,7 @@ void gfxUnloadBackend(GfxBackend backend)
 {
     if (backend == GFX_BACKEND_AUTO) {
         // Unload the first loaded backend without holding lock
-        auto& registry = gfx::GfxBackendManager::getInstance();
+        auto& registry = gfx::BackendManager::getInstance();
         auto backends = registry.getBackends();
 #ifdef GFX_ENABLE_VULKAN
         if (backends[GFX_BACKEND_VULKAN]) {
@@ -110,7 +111,7 @@ void gfxUnloadBackend(GfxBackend backend)
         return;
     }
 
-    std::scoped_lock lock(gfx::GfxBackendManager::getInstance().getMutex());
+    std::scoped_lock lock(gfx::BackendManager::getInstance().getMutex());
     gfxUnloadBackendInternal(backend);
 }
 
@@ -132,7 +133,7 @@ bool gfxLoadAllBackends(void)
 
 void gfxUnloadAllBackends(void)
 {
-    auto& registry = gfx::GfxBackendManager::getInstance();
+    auto& registry = gfx::BackendManager::getInstance();
     auto refCounts = registry.getRefCounts();
 #ifdef GFX_ENABLE_VULKAN
     while (refCounts[GFX_BACKEND_VULKAN] > 0) {
@@ -156,7 +157,7 @@ GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance
     *outInstance = nullptr;
 
     GfxBackend backend = descriptor->backend;
-    auto& registry = gfx::GfxBackendManager::getInstance();
+    auto& registry = gfx::BackendManager::getInstance();
     auto backends = registry.getBackends();
 
     if (backend == GFX_BACKEND_AUTO) {
@@ -462,13 +463,6 @@ DESTROY_FUNC(CommandEncoder, commandEncoder)
 DESTROY_FUNC(Fence, fence)
 DESTROY_FUNC(Semaphore, semaphore)
 
-// Queue is owned by device - don't destroy it separately
-void gfxQueueDestroy(GfxQueue queue)
-{
-    // Queue is owned by device, do nothing
-    (void)queue;
-}
-
 // Render/Compute pass encoders are just aliases to command encoder - don't unwrap them
 void gfxRenderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder)
 {
@@ -674,7 +668,7 @@ GfxBufferUsage gfxBufferGetUsage(GfxBuffer buffer)
     return api->bufferGetUsage(gfx::native(buffer));
 }
 
-GfxResult gfxBufferMapAsync(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer)
+GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer)
 {
     if (!buffer || !outMappedPointer) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
@@ -683,7 +677,7 @@ GfxResult gfxBufferMapAsync(GfxBuffer buffer, uint64_t offset, uint64_t size, vo
     if (!api) {
         return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
     }
-    return api->bufferMapAsync(gfx::native(buffer), offset, size, outMappedPointer);
+    return api->bufferMap(gfx::native(buffer), offset, size, outMappedPointer);
 }
 
 void gfxBufferUnmap(GfxBuffer buffer)
@@ -793,18 +787,51 @@ GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescripto
 }
 
 // Queue Functions
-GfxResult gfxQueueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder)
+GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo)
 {
-    if (!queue || !commandEncoder) {
+    if (!queue || !submitInfo) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
     auto api = gfx::getAPI(queue);
     if (!api) {
         return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
     }
-    return api->queueSubmit(
-        gfx::native(queue),
-        gfx::native(commandEncoder));
+    return api->queueSubmit(gfx::native(queue), submitInfo);
+}
+
+void gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size)
+{
+    if (!queue || !buffer) {
+        return;
+    }
+    auto api = gfx::getAPI(queue);
+    if (api) {
+        api->queueWriteBuffer(gfx::native(queue), gfx::native(buffer), offset, data, size);
+    }
+}
+
+void gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+    const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout)
+{
+    if (!queue || !texture) {
+        return;
+    }
+    auto api = gfx::getAPI(queue);
+    if (api) {
+        api->queueWriteTexture(gfx::native(queue), gfx::native(texture), origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
+    }
+}
+
+GfxResult gfxQueueWaitIdle(GfxQueue queue)
+{
+    if (!queue) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+    auto api = gfx::getAPI(queue);
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
+    return api->queueWaitIdle(gfx::native(queue));
 }
 
 // Command Encoder Functions
@@ -839,33 +866,6 @@ void gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder)
     auto api = gfx::getAPI(commandEncoder);
     if (api) {
         api->commandEncoderBegin(gfx::native(commandEncoder));
-    }
-}
-
-// Helper function to deduce access flags from texture layout
-GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout)
-{
-    switch (layout) {
-    case GFX_TEXTURE_LAYOUT_UNDEFINED:
-        return GFX_ACCESS_NONE;
-    case GFX_TEXTURE_LAYOUT_GENERAL:
-        return static_cast<GfxAccessFlags>(GFX_ACCESS_MEMORY_READ | GFX_ACCESS_MEMORY_WRITE);
-    case GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT:
-        return static_cast<GfxAccessFlags>(GFX_ACCESS_COLOR_ATTACHMENT_READ | GFX_ACCESS_COLOR_ATTACHMENT_WRITE);
-    case GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT:
-        return static_cast<GfxAccessFlags>(GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ | GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE);
-    case GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_READ_ONLY:
-        return GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ;
-    case GFX_TEXTURE_LAYOUT_SHADER_READ_ONLY:
-        return GFX_ACCESS_SHADER_READ;
-    case GFX_TEXTURE_LAYOUT_TRANSFER_SRC:
-        return GFX_ACCESS_TRANSFER_READ;
-    case GFX_TEXTURE_LAYOUT_TRANSFER_DST:
-        return GFX_ACCESS_TRANSFER_WRITE;
-    case GFX_TEXTURE_LAYOUT_PRESENT_SRC:
-        return GFX_ACCESS_MEMORY_READ;
-    default:
-        return GFX_ACCESS_NONE;
     }
 }
 
@@ -1143,54 +1143,6 @@ void gfxFenceReset(GfxFence fence)
     }
 }
 
-// Additional Queue Functions
-GfxResult gfxQueueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo)
-{
-    if (!queue || !submitInfo) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
-    }
-    auto api = gfx::getAPI(queue);
-    if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
-    }
-    return api->queueSubmitWithSync(gfx::native(queue), submitInfo);
-}
-
-void gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size)
-{
-    if (!queue || !buffer) {
-        return;
-    }
-    auto api = gfx::getAPI(queue);
-    if (api) {
-        api->queueWriteBuffer(gfx::native(queue), gfx::native(buffer), offset, data, size);
-    }
-}
-
-void gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
-    const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout)
-{
-    if (!queue || !texture) {
-        return;
-    }
-    auto api = gfx::getAPI(queue);
-    if (api) {
-        api->queueWriteTexture(gfx::native(queue), gfx::native(texture), origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
-    }
-}
-
-GfxResult gfxQueueWaitIdle(GfxQueue queue)
-{
-    if (!queue) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
-    }
-    auto api = gfx::getAPI(queue);
-    if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
-    }
-    return api->queueWaitIdle(gfx::native(queue));
-}
-
 // CommandEncoder Copy Functions
 void gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
     GfxBuffer source, uint64_t sourceOffset,
@@ -1307,6 +1259,33 @@ GfxResult gfxSemaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t time
         return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
     }
     return api->semaphoreWait(gfx::native(semaphore), value, timeoutNs);
+}
+
+// Helper function to deduce access flags from texture layout
+GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout)
+{
+    switch (layout) {
+    case GFX_TEXTURE_LAYOUT_UNDEFINED:
+        return GFX_ACCESS_NONE;
+    case GFX_TEXTURE_LAYOUT_GENERAL:
+        return static_cast<GfxAccessFlags>(GFX_ACCESS_MEMORY_READ | GFX_ACCESS_MEMORY_WRITE);
+    case GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT:
+        return static_cast<GfxAccessFlags>(GFX_ACCESS_COLOR_ATTACHMENT_READ | GFX_ACCESS_COLOR_ATTACHMENT_WRITE);
+    case GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT:
+        return static_cast<GfxAccessFlags>(GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ | GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE);
+    case GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_READ_ONLY:
+        return GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ;
+    case GFX_TEXTURE_LAYOUT_SHADER_READ_ONLY:
+        return GFX_ACCESS_SHADER_READ;
+    case GFX_TEXTURE_LAYOUT_TRANSFER_SRC:
+        return GFX_ACCESS_TRANSFER_READ;
+    case GFX_TEXTURE_LAYOUT_TRANSFER_DST:
+        return GFX_ACCESS_TRANSFER_WRITE;
+    case GFX_TEXTURE_LAYOUT_PRESENT_SRC:
+        return GFX_ACCESS_MEMORY_READ;
+    default:
+        return GFX_ACCESS_NONE;
+    }
 }
 
 uint64_t gfxAlignUp(uint64_t value, uint64_t alignment)

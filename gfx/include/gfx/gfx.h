@@ -839,7 +839,7 @@ GFX_API GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentIn
 GFX_API void gfxBufferDestroy(GfxBuffer buffer);
 GFX_API uint64_t gfxBufferGetSize(GfxBuffer buffer);
 GFX_API GfxBufferUsage gfxBufferGetUsage(GfxBuffer buffer);
-GFX_API GfxResult gfxBufferMapAsync(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer);
+GFX_API GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer);
 GFX_API void gfxBufferUnmap(GfxBuffer buffer);
 
 // Texture functions
@@ -874,8 +874,7 @@ GFX_API void gfxRenderPipelineDestroy(GfxRenderPipeline renderPipeline);
 GFX_API void gfxComputePipelineDestroy(GfxComputePipeline computePipeline);
 
 // Queue functions
-GFX_API GfxResult gfxQueueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder);
-GFX_API GfxResult gfxQueueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo);
+GFX_API GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo);
 GFX_API void gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size);
 GFX_API void gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
     const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout);
@@ -912,9 +911,6 @@ GFX_API void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount);
 GFX_API void gfxCommandEncoderEnd(GfxCommandEncoder commandEncoder);
 GFX_API void gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder);
-
-// Helper function to deduce access flags from texture layout
-GFX_API GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout);
 
 // RenderPassEncoder functions
 GFX_API void gfxRenderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder);
@@ -957,6 +953,9 @@ GFX_API uint64_t gfxSemaphoreGetValue(GfxSemaphore semaphore);
 // ============================================================================
 // Utility Functions
 // ============================================================================
+
+// Helper function to deduce access flags from texture layout
+GFX_API GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout);
 
 // Alignment helper functions
 // Use these to align buffer offsets/sizes to device requirements:

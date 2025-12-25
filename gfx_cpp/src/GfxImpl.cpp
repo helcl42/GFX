@@ -234,10 +234,10 @@ public:
     uint64_t getSize() const override { return gfxBufferGetSize(m_handle); }
     BufferUsage getUsage() const override { return static_cast<BufferUsage>(gfxBufferGetUsage(m_handle)); }
 
-    void* mapAsync(uint64_t offset = 0, uint64_t size = 0) override
+    void* map(uint64_t offset = 0, uint64_t size = 0) override
     {
         void* mappedPointer = nullptr;
-        GfxResult result = gfxBufferMapAsync(m_handle, offset, size, &mappedPointer);
+        GfxResult result = gfxBufferMap(m_handle, offset, size, &mappedPointer);
         if (result != GFX_RESULT_SUCCESS) {
             return nullptr;
         }
@@ -856,15 +856,7 @@ public:
     // Queue is owned by device, do not destroy
     ~CQueueImpl() override = default;
 
-    void submit(std::shared_ptr<CommandEncoder> commandEncoder) override
-    {
-        auto impl = std::dynamic_pointer_cast<CCommandEncoderImpl>(commandEncoder);
-        if (impl) {
-            gfxQueueSubmit(m_handle, impl->getHandle());
-        }
-    }
-
-    void submitWithSync(const SubmitInfo& submitInfo) override
+    void submit(const SubmitInfo& submitInfo) override
     {
         // Convert C++ structures to C
         std::vector<GfxCommandEncoder> cEncoders;
@@ -908,7 +900,7 @@ public:
             cInfo.signalFence = nullptr;
         }
 
-        gfxQueueSubmitWithSync(m_handle, &cInfo);
+        gfxQueueSubmit(m_handle, &cInfo);
     }
 
     void writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size) override

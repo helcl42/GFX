@@ -977,7 +977,7 @@ void render(CubeApp* app)
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.signalFence = app->inFlightFences[app->currentFrame];
 
-    gfxQueueSubmitWithSync(app->queue, &submitInfo);
+    gfxQueueSubmit(app->queue, &submitInfo);
 
     // Present with synchronization
     GfxPresentInfo presentInfo = { 0 };

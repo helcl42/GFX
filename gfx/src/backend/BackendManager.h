@@ -2,7 +2,7 @@
 
 #include <gfx/gfx.h>
 
-#include "GfxBackend.h"
+#include "IBackend.h"
 
 #include <mutex>
 #include <unordered_map>
@@ -11,26 +11,26 @@ namespace gfx {
 
 // Handle metadata stores backend info
 struct HandleMeta {
-    GfxBackend m_backend;
-    void* m_nativeHandle;
+    GfxBackend backend;
+    void* nativeHandle;
 };
 
 // Singleton class to manage backend state
-class GfxBackendManager {
+class BackendManager {
 public:
-    static GfxBackendManager& getInstance()
+    static BackendManager& getInstance()
     {
-        static GfxBackendManager instance;
+        static BackendManager instance;
         return instance;
     }
 
     // Delete copy and move constructors/assignments
-    GfxBackendManager(const GfxBackendManager&) = delete;
-    GfxBackendManager& operator=(const GfxBackendManager&) = delete;
-    GfxBackendManager(GfxBackendManager&&) = delete;
-    GfxBackendManager& operator=(GfxBackendManager&&) = delete;
+    BackendManager(const BackendManager&) = delete;
+    BackendManager& operator=(const BackendManager&) = delete;
+    BackendManager(BackendManager&&) = delete;
+    BackendManager& operator=(BackendManager&&) = delete;
 
-    const GfxBackendAPI* getBackendAPI(GfxBackend backend)
+    const IBackend* getBackendAPI(GfxBackend backend)
     {
         if (backend >= 0 && backend < GFX_BACKEND_AUTO) {
             return m_backends[backend];
@@ -49,7 +49,7 @@ public:
         return nativeHandle;
     }
 
-    const GfxBackendAPI* getAPI(void* handle)
+    const IBackend* getAPI(void* handle)
     {
         if (!handle) {
             return nullptr;
@@ -59,7 +59,7 @@ public:
         if (it == m_handles.end()) {
             return nullptr;
         }
-        return getBackendAPI(it->second.m_backend);
+        return getBackendAPI(it->second.backend);
     }
 
     GfxBackend getBackend(void* handle)
@@ -72,7 +72,7 @@ public:
         if (it == m_handles.end()) {
             return GFX_BACKEND_AUTO;
         }
-        return it->second.m_backend;
+        return it->second.backend;
     }
 
     void unwrap(void* handle)
@@ -85,11 +85,11 @@ public:
     }
 
     std::mutex& getMutex() { return m_mutex; }
-    const GfxBackendAPI** getBackends() { return m_backends; }
+    const IBackend** getBackends() { return m_backends; }
     int* getRefCounts() { return m_refCounts; }
 
 private:
-    GfxBackendManager()
+    BackendManager()
     {
         for (int i = 0; i < 3; ++i) {
             m_backends[i] = nullptr;
@@ -97,34 +97,34 @@ private:
         }
     }
 
-    ~GfxBackendManager() = default;
+    ~BackendManager() = default;
 
-    const GfxBackendAPI* m_backends[3];
+    const IBackend* m_backends[3];
     int m_refCounts[3];
     std::mutex m_mutex;
     std::unordered_map<void*, HandleMeta> m_handles;
 };
 
 // Convenience inline functions for backward compatibility
-inline const GfxBackendAPI* getBackendAPI(GfxBackend backend)
+inline const IBackend* getBackendAPI(GfxBackend backend)
 {
-    return GfxBackendManager::getInstance().getBackendAPI(backend);
+    return BackendManager::getInstance().getBackendAPI(backend);
 }
 
 template <typename T>
 inline T wrap(GfxBackend backend, T nativeHandle)
 {
-    return GfxBackendManager::getInstance().wrap(backend, nativeHandle);
+    return BackendManager::getInstance().wrap(backend, nativeHandle);
 }
 
-inline const GfxBackendAPI* getAPI(void* handle)
+inline const IBackend* getAPI(void* handle)
 {
-    return GfxBackendManager::getInstance().getAPI(handle);
+    return BackendManager::getInstance().getAPI(handle);
 }
 
 inline GfxBackend getBackend(void* handle)
 {
-    return GfxBackendManager::getInstance().getBackend(handle);
+    return BackendManager::getInstance().getBackend(handle);
 }
 
 // Native handle passthrough - template preserves type automatically
@@ -136,7 +136,7 @@ inline T native(T handle)
 
 inline void unwrap(void* handle)
 {
-    GfxBackendManager::getInstance().unwrap(handle);
+    BackendManager::getInstance().unwrap(handle);
 }
 
 } // namespace gfx

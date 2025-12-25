@@ -110,16 +110,16 @@ endif()
 # C API Library (implemented in C++)
 set(GFX_C_SOURCES
     gfx/include/gfx/gfx.h
-    gfx/src/backend/GfxBackend.h
+    gfx/src/backend/IBackend.h
     gfx/src/api/GfxDispatcher.cpp
 )
 
 if(BUILD_VULKAN_BACKEND)
-    list(APPEND GFX_C_SOURCES gfx/src/backend/vulkan/GfxVulkan.cpp)
+    list(APPEND GFX_C_SOURCES gfx/src/backend/vulkan/VulkanBackend.cpp)
 endif()
 
 if(BUILD_WEBGPU_BACKEND)
-    list(APPEND GFX_C_SOURCES gfx/src/backend/webgpu/GfxWebGPU.cpp)
+    list(APPEND GFX_C_SOURCES gfx/src/backend/webgpu/WebGPUBackend.cpp)
 endif()
 
 # Create library based on BUILD_SHARED_LIBS option

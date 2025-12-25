@@ -2,10 +2,11 @@
 
 #include <gfx/gfx.h>
 
+namespace gfx {
 // Backend interface - each backend implements this
-class GfxBackendAPI {
+class IBackend {
 public:
-    virtual ~GfxBackendAPI() = default;
+    virtual ~IBackend() = default;
 
     // Instance functions
     virtual GfxResult createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const = 0;
@@ -60,7 +61,7 @@ public:
     virtual void bufferDestroy(GfxBuffer buffer) const = 0;
     virtual uint64_t bufferGetSize(GfxBuffer buffer) const = 0;
     virtual GfxBufferUsage bufferGetUsage(GfxBuffer buffer) const = 0;
-    virtual GfxResult bufferMapAsync(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const = 0;
+    virtual GfxResult bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const = 0;
     virtual void bufferUnmap(GfxBuffer buffer) const = 0;
 
     // Texture functions
@@ -95,11 +96,11 @@ public:
     virtual void computePipelineDestroy(GfxComputePipeline computePipeline) const = 0;
 
     // Queue functions
-    virtual GfxResult queueSubmit(GfxQueue queue, GfxCommandEncoder commandEncoder) const = 0;
-    virtual GfxResult queueSubmitWithSync(GfxQueue queue, const GfxSubmitInfo* submitInfo) const = 0;
+    virtual GfxResult queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo) const = 0;
     virtual void queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const = 0;
     virtual void queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
-        const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const = 0;
+        const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+        = 0;
     virtual GfxResult queueWaitIdle(GfxQueue queue) const = 0;
 
     // CommandEncoder functions
@@ -111,26 +112,32 @@ public:
         GfxTextureView depthStencilAttachment,
         float depthClearValue, uint32_t stencilClearValue,
         GfxTextureLayout depthFinalLayout,
-        GfxRenderPassEncoder* outRenderPass) const = 0;
+        GfxRenderPassEncoder* outRenderPass) const
+        = 0;
     virtual GfxResult commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass) const = 0;
     virtual void commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
         GfxBuffer source, uint64_t sourceOffset,
         GfxBuffer destination, uint64_t destinationOffset,
-        uint64_t size) const = 0;
+        uint64_t size) const
+        = 0;
     virtual void commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
         GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
         GfxTexture destination, const GfxOrigin3D* origin,
-        const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const = 0;
+        const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const
+        = 0;
     virtual void commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
         GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
         GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
-        const GfxExtent3D* extent, GfxTextureLayout finalLayout) const = 0;
+        const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+        = 0;
     virtual void commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
         GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
         GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
-        const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const = 0;
+        const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
+        = 0;
     virtual void commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
-        const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const = 0;
+        const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
+        = 0;
     virtual void commandEncoderEnd(GfxCommandEncoder commandEncoder) const = 0;
     virtual void commandEncoderBegin(GfxCommandEncoder commandEncoder) const = 0;
 
@@ -166,9 +173,4 @@ public:
     virtual GfxResult semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const = 0;
     virtual uint64_t semaphoreGetValue(GfxSemaphore semaphore) const = 0;
 };
-
-// Backend registration - returns the backend implementation
-extern "C" {
-extern const GfxBackendAPI* gfxGetVulkanBackendNew(void);
-extern const GfxBackendAPI* gfxGetWebGPUBackend(void);
-}
+} // namespace gfx

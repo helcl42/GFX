@@ -760,19 +760,12 @@ struct SubmitInfo {
 
     // Optional fence to signal when all commands complete
     std::shared_ptr<Fence> signalFence;
-
-    // Legacy fields for compatibility (will be removed later)
-    size_t waitSemaphoreCount = 0;
-    size_t signalSemaphoreCount = 0;
 };
 
 struct PresentInfo {
     // Wait semaphores (must be signaled before presentation)
     std::vector<std::shared_ptr<Semaphore>> waitSemaphores;
     std::vector<uint64_t> waitValues; // For timeline semaphores, empty for binary
-
-    // Legacy field for compatibility
-    size_t waitSemaphoreCount = 0;
 };
 
 struct TextureBarrier {
@@ -843,20 +836,20 @@ public:
     virtual BufferUsage getUsage() const = 0;
 
     // Mapping functions
-    virtual void* mapAsync(uint64_t offset = 0, uint64_t size = 0) = 0;
+    virtual void* map(uint64_t offset = 0, uint64_t size = 0) = 0;
     virtual void unmap() = 0;
 
     // Convenience functions
     template <typename T>
     T* map(uint64_t offset = 0)
     {
-        return static_cast<T*>(mapAsync(offset, sizeof(T)));
+        return static_cast<T*>(map(offset, sizeof(T)));
     }
 
     template <typename T>
     void write(const std::vector<T>& data, uint64_t offset = 0)
     {
-        void* ptr = mapAsync(offset, data.size() * sizeof(T));
+        void* ptr = map(offset, data.size() * sizeof(T));
         if (ptr) {
             std::memcpy(ptr, data.data(), data.size() * sizeof(T));
             unmap();
@@ -1019,16 +1012,7 @@ class Queue {
 public:
     virtual ~Queue() = default;
 
-    virtual void submit(std::shared_ptr<CommandEncoder> commandEncoder) = 0;
-    virtual void submitWithSync(const SubmitInfo& submitInfo) = 0;
-
-    // Convenience overload for single command encoder
-    virtual void submitWithSync(std::shared_ptr<CommandEncoder> commandEncoder, const SubmitInfo& info)
-    {
-        SubmitInfo fullInfo = info;
-        fullInfo.commandEncoders = { commandEncoder };
-        submitWithSync(fullInfo);
-    }
+    virtual void submit(const SubmitInfo& submitInfo) = 0;
     virtual void writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size) = 0;
     virtual void writeTexture(
         std::shared_ptr<Texture> texture, const Origin3D& origin, uint32_t mipLevel,
