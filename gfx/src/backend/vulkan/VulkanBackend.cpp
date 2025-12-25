@@ -3844,6 +3844,23 @@ void vulkan_commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
 
     VkCommandBuffer cmdBuf = enc->handle();
 
+    // For 2D textures and arrays, extent->depth represents layer count
+    // For 3D textures, it represents actual depth
+    uint32_t layerCount = extent->depth;
+    uint32_t copyDepth = extent->depth;
+
+    // Check if source is a 3D texture (depth > 1 and not an array)
+    GfxExtent3D srcSize = srcTex->getSize();
+    bool is3DTexture = (srcSize.depth > 1);
+
+    if (!is3DTexture) {
+        // For 2D/array textures, extent->depth is layer count, actual depth is 1
+        copyDepth = 1;
+    } else {
+        // For 3D textures, there are no array layers
+        layerCount = 1;
+    }
+
     // Transition source image to transfer src optimal
     VkImageMemoryBarrier barriers[2] = {};
     barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -3855,8 +3872,8 @@ void vulkan_commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
     barriers[0].subresourceRange.aspectMask = getImageAspectMask(gfxFormatToVkFormat(srcTex->getFormat()));
     barriers[0].subresourceRange.baseMipLevel = sourceMipLevel;
     barriers[0].subresourceRange.levelCount = 1;
-    barriers[0].subresourceRange.baseArrayLayer = 0;
-    barriers[0].subresourceRange.layerCount = 1;
+    barriers[0].subresourceRange.baseArrayLayer = sourceOrigin->z;
+    barriers[0].subresourceRange.layerCount = layerCount;
     barriers[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
     barriers[0].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
@@ -3870,8 +3887,8 @@ void vulkan_commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
     barriers[1].subresourceRange.aspectMask = getImageAspectMask(gfxFormatToVkFormat(dstTex->getFormat()));
     barriers[1].subresourceRange.baseMipLevel = destinationMipLevel;
     barriers[1].subresourceRange.levelCount = 1;
-    barriers[1].subresourceRange.baseArrayLayer = 0;
-    barriers[1].subresourceRange.layerCount = 1;
+    barriers[1].subresourceRange.baseArrayLayer = destinationOrigin->z;
+    barriers[1].subresourceRange.layerCount = layerCount;
     barriers[1].srcAccessMask = 0;
     barriers[1].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
@@ -3883,15 +3900,15 @@ void vulkan_commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
     VkImageCopy region{};
     region.srcSubresource.aspectMask = getImageAspectMask(gfxFormatToVkFormat(srcTex->getFormat()));
     region.srcSubresource.mipLevel = sourceMipLevel;
-    region.srcSubresource.baseArrayLayer = 0;
-    region.srcSubresource.layerCount = 1;
-    region.srcOffset = { sourceOrigin->x, sourceOrigin->y, sourceOrigin->z };
+    region.srcSubresource.baseArrayLayer = is3DTexture ? 0 : sourceOrigin->z;
+    region.srcSubresource.layerCount = layerCount;
+    region.srcOffset = { sourceOrigin->x, sourceOrigin->y, is3DTexture ? sourceOrigin->z : 0 };
     region.dstSubresource.aspectMask = getImageAspectMask(gfxFormatToVkFormat(dstTex->getFormat()));
     region.dstSubresource.mipLevel = destinationMipLevel;
-    region.dstSubresource.baseArrayLayer = 0;
-    region.dstSubresource.layerCount = 1;
-    region.dstOffset = { destinationOrigin->x, destinationOrigin->y, destinationOrigin->z };
-    region.extent = { extent->width, extent->height, extent->depth };
+    region.dstSubresource.baseArrayLayer = is3DTexture ? 0 : destinationOrigin->z;
+    region.dstSubresource.layerCount = layerCount;
+    region.dstOffset = { destinationOrigin->x, destinationOrigin->y, is3DTexture ? destinationOrigin->z : 0 };
+    region.extent = { extent->width, extent->height, copyDepth };
 
     vkCmdCopyImage(cmdBuf, srcTex->handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         dstTex->handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);

@@ -2669,15 +2669,20 @@ void webgpu_commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
     auto* srcPtr = reinterpret_cast<gfx::webgpu::Texture*>(source);
     auto* dstPtr = reinterpret_cast<gfx::webgpu::Texture*>(destination);
 
+    // For 2D textures and arrays, extent->depth represents layer count
+    // For 3D textures, it represents actual depth
+    WGPUExtent3D srcSize = srcPtr->getSize();
+    bool is3DTexture = (srcSize.depthOrArrayLayers > 1 && srcSize.height > 1);
+    
     WGPUTexelCopyTextureInfo sourceInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     sourceInfo.texture = srcPtr->handle();
     sourceInfo.mipLevel = sourceMipLevel;
-    sourceInfo.origin = { sourceOrigin->x, sourceOrigin->y, sourceOrigin->z };
+    sourceInfo.origin = { sourceOrigin->x, sourceOrigin->y, is3DTexture ? sourceOrigin->z : 0 };
 
     WGPUTexelCopyTextureInfo destInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     destInfo.texture = dstPtr->handle();
     destInfo.mipLevel = destinationMipLevel;
-    destInfo.origin = { destinationOrigin->x, destinationOrigin->y, destinationOrigin->z };
+    destInfo.origin = { destinationOrigin->x, destinationOrigin->y, is3DTexture ? destinationOrigin->z : 0 };
 
     WGPUExtent3D wgpuExtent = { extent->width, extent->height, extent->depth };
 
