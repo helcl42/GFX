@@ -1,160 +1,19 @@
 #include <gfx/gfx.h>
 
+#include "backend/BackendManager.h"
 #include "backend/GfxBackend.h"
 
-#include <mutex>
-#include <unordered_map>
 #include <vector>
-
-// Forward declarations for backend getters
-extern "C" {
-extern const GfxBackendAPI* gfxGetVulkanBackendNew(void);
-extern const GfxBackendAPI* gfxGetWebGPUBackend(void);
-}
-
-// ============================================================================
-// Type-Safe Handle System - No void* casting, cleaner design
-// ============================================================================
-
-namespace gfx {
-
-// Handle metadata stores backend info
-struct HandleMeta {
-    GfxBackend m_backend;
-    void* m_nativeHandle;
-};
-
-// Singleton class to manage backend state
-class BackendManager {
-public:
-    static BackendManager& getInstance()
-    {
-        static BackendManager instance;
-        return instance;
-    }
-
-    // Delete copy and move constructors/assignments
-    BackendManager(const BackendManager&) = delete;
-    BackendManager& operator=(const BackendManager&) = delete;
-    BackendManager(BackendManager&&) = delete;
-    BackendManager& operator=(BackendManager&&) = delete;
-
-    const GfxBackendAPI* getBackendAPI(GfxBackend backend)
-    {
-        if (backend >= 0 && backend < GFX_BACKEND_AUTO) {
-            return m_backends[backend];
-        }
-        return nullptr;
-    }
-
-    template <typename T>
-    T wrap(GfxBackend backend, T nativeHandle)
-    {
-        if (!nativeHandle) {
-            return nullptr;
-        }
-        std::scoped_lock lock(m_mutex);
-        m_handles[nativeHandle] = { backend, nativeHandle };
-        return nativeHandle;
-    }
-
-    const GfxBackendAPI* getAPI(void* handle)
-    {
-        if (!handle) {
-            return nullptr;
-        }
-        std::scoped_lock lock(m_mutex);
-        auto it = m_handles.find(handle);
-        if (it == m_handles.end()) {
-            return nullptr;
-        }
-        return getBackendAPI(it->second.m_backend);
-    }
-
-    GfxBackend getBackend(void* handle)
-    {
-        if (!handle) {
-            return GFX_BACKEND_AUTO;
-        }
-        std::scoped_lock lock(m_mutex);
-        auto it = m_handles.find(handle);
-        if (it == m_handles.end()) {
-            return GFX_BACKEND_AUTO;
-        }
-        return it->second.m_backend;
-    }
-
-    void unwrap(void* handle)
-    {
-        if (!handle) {
-            return;
-        }
-        std::scoped_lock lock(m_mutex);
-        m_handles.erase(handle);
-    }
-
-    std::mutex& getMutex() { return m_mutex; }
-    const GfxBackendAPI** getBackends() { return m_backends; }
-    int* getRefCounts() { return m_refCounts; }
-
-private:
-    BackendManager()
-    {
-        for (int i = 0; i < 3; ++i) {
-            m_backends[i] = nullptr;
-            m_refCounts[i] = 0;
-        }
-    }
-
-    ~BackendManager() = default;
-
-    const GfxBackendAPI* m_backends[3];
-    int m_refCounts[3];
-    std::mutex m_mutex;
-    std::unordered_map<void*, HandleMeta> m_handles;
-};
-
-// Convenience inline functions for backward compatibility
-inline const GfxBackendAPI* getBackendAPI(GfxBackend backend)
-{
-    return BackendManager::getInstance().getBackendAPI(backend);
-}
-
-template <typename T>
-inline T wrap(GfxBackend backend, T nativeHandle)
-{
-    return BackendManager::getInstance().wrap(backend, nativeHandle);
-}
-
-inline const GfxBackendAPI* getAPI(void* handle)
-{
-    return BackendManager::getInstance().getAPI(handle);
-}
-
-inline GfxBackend getBackend(void* handle)
-{
-    return BackendManager::getInstance().getBackend(handle);
-}
-
-// Native handle passthrough - template preserves type automatically
-template <typename T>
-inline T native(T handle)
-{
-    return handle;
-}
-
-inline void unwrap(void* handle)
-{
-    BackendManager::getInstance().unwrap(handle);
-}
-
-} // namespace gfx
 
 // ============================================================================
 // C API Implementation
 // ============================================================================
 
 extern "C" {
+
+// Forward declarations for backend getters
+extern const GfxBackendAPI* gfxGetVulkanBackendNew(void);
+extern const GfxBackendAPI* gfxGetWebGPUBackend(void);
 
 // Backend Loading - helper without lock
 static bool gfxLoadBackendInternal(GfxBackend backend)
@@ -163,7 +22,7 @@ static bool gfxLoadBackendInternal(GfxBackend backend)
         return false;
     }
 
-    auto& registry = gfx::BackendManager::getInstance();
+    auto& registry = gfx::GfxBackendManager::getInstance();
     auto backends = registry.getBackends();
     auto refCounts = registry.getRefCounts();
 
@@ -210,19 +69,19 @@ bool gfxLoadBackend(GfxBackend backend)
         return false;
     }
 
-    std::scoped_lock lock(gfx::BackendManager::getInstance().getMutex());
+    std::scoped_lock lock(gfx::GfxBackendManager::getInstance().getMutex());
     return gfxLoadBackendInternal(backend);
 }
 
 static void gfxUnloadBackendInternal(GfxBackend backend)
 {
     if (backend >= 0 && backend < GFX_BACKEND_AUTO) {
-        auto& registry = gfx::BackendManager::getInstance();
+        auto& registry = gfx::GfxBackendManager::getInstance();
         auto backends = registry.getBackends();
         auto refCounts = registry.getRefCounts();
 
         if (backends[backend] && refCounts[backend] > 0) {
-            refCounts[backend]--;
+            --refCounts[backend];
             if (refCounts[backend] == 0) {
                 backends[backend] = nullptr;
             }
@@ -234,7 +93,7 @@ void gfxUnloadBackend(GfxBackend backend)
 {
     if (backend == GFX_BACKEND_AUTO) {
         // Unload the first loaded backend without holding lock
-        auto& registry = gfx::BackendManager::getInstance();
+        auto& registry = gfx::GfxBackendManager::getInstance();
         auto backends = registry.getBackends();
 #ifdef GFX_ENABLE_VULKAN
         if (backends[GFX_BACKEND_VULKAN]) {
@@ -251,7 +110,7 @@ void gfxUnloadBackend(GfxBackend backend)
         return;
     }
 
-    std::scoped_lock lock(gfx::BackendManager::getInstance().getMutex());
+    std::scoped_lock lock(gfx::GfxBackendManager::getInstance().getMutex());
     gfxUnloadBackendInternal(backend);
 }
 
@@ -273,7 +132,7 @@ bool gfxLoadAllBackends(void)
 
 void gfxUnloadAllBackends(void)
 {
-    auto& registry = gfx::BackendManager::getInstance();
+    auto& registry = gfx::GfxBackendManager::getInstance();
     auto refCounts = registry.getRefCounts();
 #ifdef GFX_ENABLE_VULKAN
     while (refCounts[GFX_BACKEND_VULKAN] > 0) {
@@ -297,7 +156,7 @@ GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance
     *outInstance = nullptr;
 
     GfxBackend backend = descriptor->backend;
-    auto& registry = gfx::BackendManager::getInstance();
+    auto& registry = gfx::GfxBackendManager::getInstance();
     auto backends = registry.getBackends();
 
     if (backend == GFX_BACKEND_AUTO) {
@@ -349,7 +208,7 @@ void gfxInstanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback
         return;
     }
     auto api = gfx::getAPI(instance);
-    if (api && api->instanceSetDebugCallback) {
+    if (api) {
         api->instanceSetDebugCallback(gfx::native(instance), callback, userData);
     }
 }
