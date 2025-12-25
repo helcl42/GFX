@@ -1,6 +1,6 @@
 #include <gfx/gfx.h>
 
-#include "backend/BackendManager.h"
+#include "backend/GfxBackendManager.h"
 #include "backend/GfxBackend.h"
 
 #include <vector>
