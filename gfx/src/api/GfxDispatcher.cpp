@@ -815,7 +815,7 @@ void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
         return;
     }
     auto api = gfx::getAPI(commandEncoder);
-    if (api && api->commandEncoderPipelineBarrier) {
+    if (api) {
         api->commandEncoderPipelineBarrier(gfx::native(commandEncoder), textureBarriers, textureBarrierCount);
     }
 }
