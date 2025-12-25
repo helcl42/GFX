@@ -519,8 +519,9 @@ public:
     Adapter(const Adapter&) = delete;
     Adapter& operator=(const Adapter&) = delete;
 
-    Adapter(WGPUAdapter adapter)
+    Adapter(WGPUAdapter adapter, Instance* instance)
         : m_adapter(adapter)
+        , m_instance(instance)
         , m_name("WebGPU Adapter")
     {
     }
@@ -534,9 +535,11 @@ public:
 
     WGPUAdapter handle() const { return m_adapter; }
     const char* getName() const { return m_name.c_str(); }
+    Instance* getInstance() const { return m_instance; }
 
 private:
     WGPUAdapter m_adapter = nullptr;
+    Instance* m_instance = nullptr; // Non-owning
     std::string m_name;
 };
 
@@ -546,8 +549,9 @@ public:
     Queue(const Queue&) = delete;
     Queue& operator=(const Queue&) = delete;
 
-    Queue(WGPUQueue queue)
+    Queue(WGPUQueue queue, Device* device)
         : m_queue(queue)
+        , m_device(device)
     {
         if (m_queue) {
             wgpuQueueAddRef(m_queue);
@@ -562,9 +566,11 @@ public:
     }
 
     WGPUQueue handle() const { return m_queue; }
+    Device* getDevice() const { return m_device; }
 
 private:
     WGPUQueue m_queue = nullptr;
+    Device* m_device = nullptr; // Non-owning pointer to parent device
 };
 
 class Device {
@@ -579,7 +585,7 @@ public:
     {
         if (m_device) {
             WGPUQueue wgpu_queue = wgpuDeviceGetQueue(m_device);
-            m_queue = std::make_unique<Queue>(wgpu_queue);
+            m_queue = std::make_unique<Queue>(wgpu_queue, this);
         }
     }
 
@@ -607,10 +613,11 @@ public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
-    Buffer(WGPUBuffer buffer, uint64_t size, GfxBufferUsage usage)
+    Buffer(WGPUBuffer buffer, uint64_t size, GfxBufferUsage usage, Device* device)
         : m_buffer(buffer)
         , m_size(size)
         , m_usage(usage)
+        , m_device(device)
     {
     }
 
@@ -624,11 +631,13 @@ public:
     WGPUBuffer handle() const { return m_buffer; }
     uint64_t getSize() const { return m_size; }
     GfxBufferUsage getUsage() const { return m_usage; }
+    Device* getDevice() const { return m_device; }
 
 private:
     WGPUBuffer m_buffer = nullptr;
     uint64_t m_size = 0;
     GfxBufferUsage m_usage = GFX_BUFFER_USAGE_NONE;
+    Device* m_device = nullptr; // Non-owning pointer to parent device
 };
 
 class Texture {
@@ -1108,12 +1117,22 @@ GfxResult webgpu_instanceRequestAdapter(GfxInstance instance, const GfxAdapterDe
     callbackInfo.callback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
                                 WGPUStringView message, void* userdata1, void* userdata2) {
         if (status == WGPURequestAdapterStatus_Success && adapter) {
-            auto* outAdapter = static_cast<GfxAdapter*>(userdata1);
-            auto* adapterObj = new gfx::webgpu::Adapter(adapter);
-            *outAdapter = reinterpret_cast<GfxAdapter>(adapterObj);
+            struct Context {
+                GfxAdapter* outAdapter;
+                gfx::webgpu::Instance* instance;
+            };
+            auto* context = static_cast<Context*>(userdata1);
+            auto* adapterObj = new gfx::webgpu::Adapter(adapter, context->instance);
+            *context->outAdapter = reinterpret_cast<GfxAdapter>(adapterObj);
         }
     };
-    callbackInfo.userdata1 = outAdapter;
+
+    struct {
+        GfxAdapter* outAdapter;
+        gfx::webgpu::Instance* instance;
+    } context = { outAdapter, inst };
+
+    callbackInfo.userdata1 = &context;
 
     WGPUFuture future = wgpuInstanceRequestAdapter(inst->handle(), &options, callbackInfo);
 
@@ -1183,8 +1202,12 @@ GfxResult webgpu_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescript
 
     WGPUFuture future = wgpuAdapterRequestDevice(adapterPtr->handle(), &wgpuDesc, callbackInfo);
 
-    // Note: Would need instance handle for proper waiting - simplified here
-    // wgpuInstanceWaitAny(instance, 1, &waitInfo, UINT64_MAX);
+    // Properly wait for the device creation to complete
+    if (adapterPtr->getInstance()) {
+        WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
+        waitInfo.future = future;
+        wgpuInstanceWaitAny(adapterPtr->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
+    }
 
     return *outDevice ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
@@ -1342,7 +1365,7 @@ GfxResult webgpu_deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor*
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    auto* buffer = new gfx::webgpu::Buffer(wgpuBuffer, descriptor->size, descriptor->usage);
+    auto* buffer = new gfx::webgpu::Buffer(wgpuBuffer, descriptor->size, descriptor->usage, devicePtr);
     *outBuffer = reinterpret_cast<GfxBuffer>(buffer);
     return GFX_RESULT_SUCCESS;
 }
@@ -2142,9 +2165,12 @@ GfxResult webgpu_bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, voi
 
     WGPUFuture future = wgpuBufferMapAsync(bufferPtr->handle(), mapMode, offset, mapSize, callbackInfo);
 
-    // Note: Proper waiting would require WGPUInstance handle via wgpuInstanceWaitAny
-    // For now, the callback with WaitAnyOnly mode should block until completion
-    // In a complete implementation, the Buffer should store a reference to Instance
+    // Properly wait for the mapping to complete
+    if (bufferPtr->getDevice() && bufferPtr->getDevice()->getAdapter() && bufferPtr->getDevice()->getAdapter()->getInstance()) {
+        WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
+        waitInfo.future = future;
+        wgpuInstanceWaitAny(bufferPtr->getDevice()->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
+    }
 
     if (!callbackData.completed || callbackData.status != WGPUMapAsyncStatus_Success) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -2443,10 +2469,12 @@ GfxResult webgpu_queueWaitIdle(GfxQueue queue)
 
     WGPUFuture future = wgpuQueueOnSubmittedWorkDone(queuePtr->handle(), callbackInfo);
 
-    // Note: To properly wait, we would need the WGPUInstance handle
-    // Since we don't have it here, this is a best-effort synchronization
-    // In a complete implementation, the Queue should store a reference to Instance
-    // For now, the callback with WaitAnyOnly mode will block until work completes
+    // Properly wait for the queue work to complete
+    if (queuePtr->getDevice() && queuePtr->getDevice()->getAdapter() && queuePtr->getDevice()->getAdapter()->getInstance()) {
+        WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
+        waitInfo.future = future;
+        wgpuInstanceWaitAny(queuePtr->getDevice()->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
+    }
 
     return workDone ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
