@@ -434,23 +434,6 @@ void gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
     }
 }
 
-// Alignment helper functions
-uint64_t gfxAlignUp(uint64_t value, uint64_t alignment)
-{
-    if (alignment == 0) {
-        return value;
-    }
-    return (value + alignment - 1) & ~(alignment - 1);
-}
-
-uint64_t gfxAlignDown(uint64_t value, uint64_t alignment)
-{
-    if (alignment == 0) {
-        return value;
-    }
-    return value & ~(alignment - 1);
-}
-
 // Macro for simple destroy functions
 #define DESTROY_FUNC(TypeName, typeName)                   \
     void gfx##TypeName##Destroy(Gfx##TypeName typeName)    \
@@ -1324,6 +1307,67 @@ GfxResult gfxSemaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t time
         return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
     }
     return api->semaphoreWait(gfx::native(semaphore), value, timeoutNs);
+}
+
+uint64_t gfxAlignUp(uint64_t value, uint64_t alignment)
+{
+    if (alignment == 0) {
+        return value;
+    }
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
+uint64_t gfxAlignDown(uint64_t value, uint64_t alignment)
+{
+    if (alignment == 0) {
+        return value;
+    }
+    return value & ~(alignment - 1);
+}
+
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeX11(void* window, void* display)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_X11;
+    handle.x11.window = window;
+    handle.x11.display = display;
+    return handle;
+}
+
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWayland(void* surface, void* display)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_WAYLAND;
+    handle.wayland.surface = surface;
+    handle.wayland.display = display;
+    return handle;
+}
+
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXCB(void* connection, uint32_t window)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_XCB;
+    handle.xcb.connection = connection;
+    handle.xcb.window = window;
+    return handle;
+}
+
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWin32(void* hwnd, void* hinstance)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_WIN32;
+    handle.win32.hwnd = hwnd;
+    handle.win32.hinstance = hinstance;
+    return handle;
+}
+
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeCocoa(void* nsWindow, void* metalLayer)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_COCOA;
+    handle.cocoa.nsWindow = nsWindow;
+    handle.cocoa.metalLayer = metalLayer;
+    return handle;
 }
 
 } // extern "C"

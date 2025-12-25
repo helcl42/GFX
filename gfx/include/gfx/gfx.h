@@ -817,12 +817,6 @@ GFX_API GfxResult gfxDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreD
 GFX_API void gfxDeviceWaitIdle(GfxDevice device);
 GFX_API void gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
 
-// Alignment helper functions
-// Use these to align buffer offsets/sizes to device requirements:
-// Example: uint64_t alignedOffset = gfxAlignUp(offset, limits.minUniformBufferOffsetAlignment);
-GFX_API uint64_t gfxAlignUp(uint64_t value, uint64_t alignment);
-GFX_API uint64_t gfxAlignDown(uint64_t value, uint64_t alignment);
-
 // Surface functions
 GFX_API void gfxSurfaceDestroy(GfxSurface surface);
 GFX_API uint32_t gfxSurfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats);
@@ -964,91 +958,18 @@ GFX_API uint64_t gfxSemaphoreGetValue(GfxSemaphore semaphore);
 // Utility Functions
 // ============================================================================
 
-// Helper functions for creating common structures
-static inline GfxColor gfxColorMake(float r, float g, float b, float a)
-{
-    GfxColor color = { r, g, b, a };
-    return color;
-}
-
-static inline GfxExtent3D gfxExtent3DMake(uint32_t width, uint32_t height, uint32_t depth)
-{
-    GfxExtent3D extent = { width, height, depth };
-    return extent;
-}
-
-static inline GfxOrigin3D gfxOrigin3DMake(int32_t x, int32_t y, int32_t z)
-{
-    GfxOrigin3D origin = { x, y, z };
-    return origin;
-}
-
-// Platform-specific helper functions (defined based on compile target)
-#ifdef _WIN32
-static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMake(void* hwnd, void* hinstance)
-{
-    GfxPlatformWindowHandle handle = {};
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_WIN32;
-    handle.win32.hwnd = hwnd;
-    handle.win32.hinstance = hinstance;
-    return handle;
-}
-#elif defined(__APPLE__)
-static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMake(void* nsWindow, void* metalLayer)
-{
-    GfxPlatformWindowHandle handle = {};
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_COCOA;
-    handle.cocoa.nsWindow = nsWindow;
-    handle.cocoa.metalLayer = metalLayer;
-    return handle;
-}
-#endif
+// Alignment helper functions
+// Use these to align buffer offsets/sizes to device requirements:
+// Example: uint64_t alignedOffset = gfxAlignUp(offset, limits.minUniformBufferOffsetAlignment);
+GFX_API uint64_t gfxAlignUp(uint64_t value, uint64_t alignment);
+GFX_API uint64_t gfxAlignDown(uint64_t value, uint64_t alignment);
 
 // Cross-platform helpers available on all platforms
-static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMakeX11(void* window, void* display)
-{
-    GfxPlatformWindowHandle handle = {};
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_X11;
-    handle.x11.window = window;
-    handle.x11.display = display;
-    return handle;
-}
-
-static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWayland(void* surface, void* display)
-{
-    GfxPlatformWindowHandle handle = {};
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_WAYLAND;
-    handle.wayland.surface = surface;
-    handle.wayland.display = display;
-    return handle;
-}
-
-static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXCB(void* connection, uint32_t window)
-{
-    GfxPlatformWindowHandle handle = {};
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_XCB;
-    handle.xcb.connection = connection;
-    handle.xcb.window = window;
-    return handle;
-}
-
-static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWin32(void* hwnd, void* hinstance)
-{
-    GfxPlatformWindowHandle handle = {};
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_WIN32;
-    handle.win32.hwnd = hwnd;
-    handle.win32.hinstance = hinstance;
-    return handle;
-}
-
-static inline GfxPlatformWindowHandle gfxPlatformWindowHandleMakeCocoa(void* nsWindow, void* metalLayer)
-{
-    GfxPlatformWindowHandle handle = {};
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_COCOA;
-    handle.cocoa.nsWindow = nsWindow;
-    handle.cocoa.metalLayer = metalLayer;
-    return handle;
-}
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeX11(void* window, void* display);
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWayland(void* surface, void* display);
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXCB(void* connection, uint32_t window);
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWin32(void* hwnd, void* hinstance);
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeCocoa(void* nsWindow, void* metalLayer);
 
 #ifdef __cplusplus
 }
