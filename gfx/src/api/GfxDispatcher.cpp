@@ -25,19 +25,19 @@ struct HandleMeta {
 };
 
 // Singleton class to manage backend state
-class BackendRegistry {
+class BackendManager {
 public:
-    static BackendRegistry& getInstance()
+    static BackendManager& getInstance()
     {
-        static BackendRegistry instance;
+        static BackendManager instance;
         return instance;
     }
 
     // Delete copy and move constructors/assignments
-    BackendRegistry(const BackendRegistry&) = delete;
-    BackendRegistry& operator=(const BackendRegistry&) = delete;
-    BackendRegistry(BackendRegistry&&) = delete;
-    BackendRegistry& operator=(BackendRegistry&&) = delete;
+    BackendManager(const BackendManager&) = delete;
+    BackendManager& operator=(const BackendManager&) = delete;
+    BackendManager(BackendManager&&) = delete;
+    BackendManager& operator=(BackendManager&&) = delete;
 
     const GfxBackendAPI* getBackendAPI(GfxBackend backend)
     {
@@ -98,7 +98,7 @@ public:
     int* getRefCounts() { return m_refCounts; }
 
 private:
-    BackendRegistry()
+    BackendManager()
     {
         for (int i = 0; i < 3; ++i) {
             m_backends[i] = nullptr;
@@ -106,7 +106,7 @@ private:
         }
     }
 
-    ~BackendRegistry() = default;
+    ~BackendManager() = default;
 
     const GfxBackendAPI* m_backends[3];
     int m_refCounts[3];
@@ -117,23 +117,23 @@ private:
 // Convenience inline functions for backward compatibility
 inline const GfxBackendAPI* getBackendAPI(GfxBackend backend)
 {
-    return BackendRegistry::getInstance().getBackendAPI(backend);
+    return BackendManager::getInstance().getBackendAPI(backend);
 }
 
 template <typename T>
 inline T wrap(GfxBackend backend, T nativeHandle)
 {
-    return BackendRegistry::getInstance().wrap(backend, nativeHandle);
+    return BackendManager::getInstance().wrap(backend, nativeHandle);
 }
 
 inline const GfxBackendAPI* getAPI(void* handle)
 {
-    return BackendRegistry::getInstance().getAPI(handle);
+    return BackendManager::getInstance().getAPI(handle);
 }
 
 inline GfxBackend getBackend(void* handle)
 {
-    return BackendRegistry::getInstance().getBackend(handle);
+    return BackendManager::getInstance().getBackend(handle);
 }
 
 // Native handle passthrough - template preserves type automatically
@@ -145,7 +145,7 @@ inline T native(T handle)
 
 inline void unwrap(void* handle)
 {
-    BackendRegistry::getInstance().unwrap(handle);
+    BackendManager::getInstance().unwrap(handle);
 }
 
 } // namespace gfx
@@ -163,7 +163,7 @@ static bool gfxLoadBackendInternal(GfxBackend backend)
         return false;
     }
 
-    auto& registry = gfx::BackendRegistry::getInstance();
+    auto& registry = gfx::BackendManager::getInstance();
     auto backends = registry.getBackends();
     auto refCounts = registry.getRefCounts();
 
@@ -210,14 +210,14 @@ bool gfxLoadBackend(GfxBackend backend)
         return false;
     }
 
-    std::scoped_lock lock(gfx::BackendRegistry::getInstance().getMutex());
+    std::scoped_lock lock(gfx::BackendManager::getInstance().getMutex());
     return gfxLoadBackendInternal(backend);
 }
 
 static void gfxUnloadBackendInternal(GfxBackend backend)
 {
     if (backend >= 0 && backend < GFX_BACKEND_AUTO) {
-        auto& registry = gfx::BackendRegistry::getInstance();
+        auto& registry = gfx::BackendManager::getInstance();
         auto backends = registry.getBackends();
         auto refCounts = registry.getRefCounts();
 
@@ -234,7 +234,7 @@ void gfxUnloadBackend(GfxBackend backend)
 {
     if (backend == GFX_BACKEND_AUTO) {
         // Unload the first loaded backend without holding lock
-        auto& registry = gfx::BackendRegistry::getInstance();
+        auto& registry = gfx::BackendManager::getInstance();
         auto backends = registry.getBackends();
 #ifdef GFX_ENABLE_VULKAN
         if (backends[GFX_BACKEND_VULKAN]) {
@@ -251,7 +251,7 @@ void gfxUnloadBackend(GfxBackend backend)
         return;
     }
 
-    std::scoped_lock lock(gfx::BackendRegistry::getInstance().getMutex());
+    std::scoped_lock lock(gfx::BackendManager::getInstance().getMutex());
     gfxUnloadBackendInternal(backend);
 }
 
@@ -273,7 +273,7 @@ bool gfxLoadAllBackends(void)
 
 void gfxUnloadAllBackends(void)
 {
-    auto& registry = gfx::BackendRegistry::getInstance();
+    auto& registry = gfx::BackendManager::getInstance();
     auto refCounts = registry.getRefCounts();
 #ifdef GFX_ENABLE_VULKAN
     while (refCounts[GFX_BACKEND_VULKAN] > 0) {
@@ -297,7 +297,7 @@ GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance
     *outInstance = nullptr;
 
     GfxBackend backend = descriptor->backend;
-    auto& registry = gfx::BackendRegistry::getInstance();
+    auto& registry = gfx::BackendManager::getInstance();
     auto backends = registry.getBackends();
 
     if (backend == GFX_BACKEND_AUTO) {
