@@ -890,16 +890,28 @@ public:
         m_images.resize(imageCount);
         vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, m_images.data());
 
-        // Create texture view objects (not just VkImageViews)
+        m_textures.reserve(imageCount);
         m_textureViews.reserve(imageCount);
         for (size_t i = 0; i < imageCount; ++i) {
+            // Create non-owning Texture wrapper for swapchain image
+            GfxTextureDescriptor textureDesc{};
+            textureDesc.type = GFX_TEXTURE_TYPE_2D;
+            textureDesc.size = { m_width, m_height, 1 };
+            textureDesc.format = vkFormatToGfxFormat(m_format);
+            textureDesc.mipLevelCount = 1;
+            textureDesc.arrayLayerCount = 1;
+            textureDesc.sampleCount = GFX_SAMPLE_COUNT_1;
+            textureDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
+            m_textures.push_back(std::make_unique<Texture>(m_device, m_images[i], &textureDesc));
+
+            // Create TextureView for the texture
             GfxTextureViewDescriptor viewDesc{};
             viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-            viewDesc.format = vkFormatToGfxFormat(m_format);
+            viewDesc.format = GFX_TEXTURE_FORMAT_UNDEFINED; // Use texture's format
             viewDesc.mipLevelCount = 1;
             viewDesc.baseArrayLayer = 0;
             viewDesc.arrayLayerCount = 1;
-            m_textureViews.push_back(std::make_unique<TextureView>(m_device, m_images[i], VkExtent3D{ m_width, m_height, 1 }, VK_SAMPLE_COUNT_1_BIT, &viewDesc));
+            m_textureViews.push_back(std::make_unique<TextureView>(m_textures[i].get(), &viewDesc));
         }
 
         // Get present queue (assume queue family 0)
@@ -911,7 +923,7 @@ public:
 
     ~Swapchain()
     {
-        // TextureView objects will be automatically destroyed by unique_ptr
+        // Texture and TextureView objects will be automatically destroyed by unique_ptr
         if (m_swapchain != VK_NULL_HANDLE) {
             vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
         }
@@ -919,6 +931,8 @@ public:
 
     VkSwapchainKHR handle() const { return m_swapchain; }
     uint32_t getImageCount() const { return static_cast<uint32_t>(m_images.size()); }
+    Texture* getTexture(uint32_t index) const { return m_textures[index].get(); }
+    Texture* getCurrentTexture() const { return m_textures[m_currentImageIndex].get(); }
     TextureView* getTextureView(uint32_t index) const { return m_textureViews[index].get(); }
     TextureView* getCurrentTextureView() const { return m_textureViews[m_currentImageIndex].get(); }
     VkFormat getFormat() const { return m_format; }
@@ -955,6 +969,7 @@ private:
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;
     VkQueue m_presentQueue = VK_NULL_HANDLE;
     std::vector<VkImage> m_images;
+    std::vector<std::unique_ptr<Texture>> m_textures;
     std::vector<std::unique_ptr<TextureView>> m_textureViews;
     VkFormat m_format = VK_FORMAT_UNDEFINED;
     uint32_t m_width = 0;
@@ -1083,6 +1098,7 @@ public:
     Texture(const Texture&) = delete;
     Texture& operator=(const Texture&) = delete;
 
+    // Owning constructor - creates and manages VkImage and memory
     Texture(VkDevice device, VkPhysicalDevice physicalDevice, const GfxTextureDescriptor* descriptor)
         : m_device(device)
         , m_size(descriptor->size)
@@ -1090,6 +1106,7 @@ public:
         , m_mipLevelCount(descriptor->mipLevelCount)
         , m_sampleCount(descriptor->sampleCount)
         , m_usage(descriptor->usage)
+        , m_ownsResources(true)
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1173,13 +1190,28 @@ public:
         vkBindImageMemory(m_device, m_image, m_memory, 0);
     }
 
+    // Non-owning constructor - wraps an existing VkImage (e.g., from swapchain)
+    Texture(VkDevice device, VkImage image, const GfxTextureDescriptor* descriptor)
+        : m_image(image)
+        , m_device(device)
+        , m_size(descriptor->size)
+        , m_format(descriptor->format)
+        , m_mipLevelCount(descriptor->mipLevelCount)
+        , m_sampleCount(descriptor->sampleCount)
+        , m_usage(descriptor->usage)
+        , m_ownsResources(false)
+    {
+    }
+
     ~Texture()
     {
-        if (m_memory != VK_NULL_HANDLE) {
-            vkFreeMemory(m_device, m_memory, nullptr);
-        }
-        if (m_image != VK_NULL_HANDLE) {
-            vkDestroyImage(m_device, m_image, nullptr);
+        if (m_ownsResources) {
+            if (m_memory != VK_NULL_HANDLE) {
+                vkFreeMemory(m_device, m_memory, nullptr);
+            }
+            if (m_image != VK_NULL_HANDLE) {
+                vkDestroyImage(m_device, m_image, nullptr);
+            }
         }
     }
 
@@ -1190,7 +1222,6 @@ public:
     uint32_t getMipLevelCount() const { return m_mipLevelCount; }
     GfxSampleCount getSampleCount() const { return m_sampleCount; }
     GfxTextureUsage getUsage() const { return m_usage; }
-    GfxTextureUsage usage() const { return m_usage; } // Convenience alias
     GfxTextureLayout getLayout() const { return m_currentLayout; }
     void setLayout(GfxTextureLayout layout) { m_currentLayout = layout; }
 
@@ -1204,6 +1235,7 @@ private:
     GfxSampleCount m_sampleCount;
     GfxTextureUsage m_usage;
     GfxTextureLayout m_currentLayout = GFX_TEXTURE_LAYOUT_UNDEFINED;
+    bool m_ownsResources = true;
 };
 
 class TextureView {
@@ -1211,26 +1243,28 @@ public:
     TextureView(const TextureView&) = delete;
     TextureView& operator=(const TextureView&) = delete;
 
-    TextureView(VkDevice device, VkImage image, const VkExtent3D& size, VkSampleCountFlagBits samples, const GfxTextureViewDescriptor* descriptor)
-        : m_device(device)
-        , m_size(size)
-        , m_format(gfxFormatToVkFormat(descriptor->format))
-        , m_samples(samples)
+    TextureView(Texture* texture, const GfxTextureViewDescriptor* descriptor)
+        : m_device(texture->device())
+        , m_texture(texture)
     {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = image;
+        viewInfo.image = texture->handle();
         viewInfo.viewType = gfxTextureViewTypeToVkImageViewType(descriptor->viewType);
-        viewInfo.format = m_format;
+        // Use texture's format if not explicitly specified in descriptor
+        m_format = (descriptor->format == GFX_TEXTURE_FORMAT_UNDEFINED)
+            ? texture->getFormat()
+            : descriptor->format;
+        viewInfo.format = gfxFormatToVkFormat(m_format);
         viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
         // Set aspect mask based on format
-        if (isDepthFormat(m_format)) {
+        if (isDepthFormat(viewInfo.format)) {
             viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            if (hasStencilComponent(m_format)) {
+            if (hasStencilComponent(viewInfo.format)) {
                 viewInfo.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
             }
         } else {
@@ -1256,16 +1290,14 @@ public:
     }
 
     VkImageView handle() const { return m_imageView; }
-    VkExtent3D getSize() const { return m_size; }
-    VkFormat getFormat() const { return m_format; }
-    VkSampleCountFlagBits getSamples() const { return m_samples; }
+    Texture* getTexture() const { return m_texture; }
+    VkFormat getFormat() const { return gfxFormatToVkFormat(m_format); }
 
 private:
     VkDevice m_device = VK_NULL_HANDLE;
-    VkExtent3D m_size;
-    VkFormat m_format = VK_FORMAT_UNDEFINED;
-    VkSampleCountFlagBits m_samples = VK_SAMPLE_COUNT_1_BIT;
+    Texture* m_texture = nullptr;
     VkImageView m_imageView = VK_NULL_HANDLE;
+    GfxTextureFormat m_format; // View format (may differ from texture format)
 };
 
 class Sampler {
@@ -2901,14 +2933,7 @@ GfxResult VulkanBackend::textureCreateView(GfxTexture texture, const GfxTextureV
 
     try {
         auto* tex = reinterpret_cast<gfx::vulkan::Texture*>(texture);
-        GfxExtent3D size = tex->getSize();
-        VkSampleCountFlagBits samples = sampleCountToVkSampleCount(tex->getSampleCount());
-        auto* view = new gfx::vulkan::TextureView(
-            tex->device(),
-            tex->handle(),
-            VkExtent3D{ size.width, size.height, size.depth },
-            samples,
-            descriptor);
+        auto* view = new gfx::vulkan::TextureView(tex, descriptor);
         *outView = reinterpret_cast<GfxTextureView>(view);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -3293,7 +3318,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     if (colorAttachmentCount > 0 && colorAttachments) {
         for (uint32_t i = 0; i < colorAttachmentCount && (width == 0 || height == 0); ++i) {
             auto* view = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
-            VkExtent3D size = view->getSize();
+            auto size = view->getTexture()->getSize();
             width = size.width;
             height = size.height;
         }
@@ -3302,7 +3327,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     // Fall back to depth attachment if no color attachment had valid dimensions
     if ((width == 0 || height == 0) && depthStencilAttachment) {
         auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment->view);
-        VkExtent3D size = depthView->getSize();
+        auto size = depthView->getTexture()->getSize();
         width = size.width;
         height = size.height;
     }
@@ -3319,13 +3344,14 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     // Process color attachments
     for (uint32_t i = 0; i < colorAttachmentCount;) {
         auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
+        VkSampleCountFlagBits samples = sampleCountToVkSampleCount(colorView->getTexture()->getSampleCount());
 
-        bool isMSAA = (colorView->getSamples() > VK_SAMPLE_COUNT_1_BIT);
+        bool isMSAA = (samples > VK_SAMPLE_COUNT_1_BIT);
 
         // Add color attachment
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = colorView->getFormat();
-        colorAttachment.samples = colorView->getSamples();
+        colorAttachment.samples = samples;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         colorAttachment.storeOp = isMSAA ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -3347,7 +3373,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         if (isMSAA && i < colorAttachmentCount) {
             auto* nextView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
 
-            bool isResolveTarget = nextView->getSamples() == VK_SAMPLE_COUNT_1_BIT;
+            bool isResolveTarget = nextView->getTexture()->getSampleCount() == GFX_SAMPLE_COUNT_1;
 
             if (isResolveTarget) {
                 VkAttachmentDescription resolveAttachment{};
@@ -3389,7 +3415,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = depthView->getFormat();
-        depthAttachment.samples = depthView->getSamples();
+        depthAttachment.samples = sampleCountToVkSampleCount(depthView->getTexture()->getSampleCount());
         depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
