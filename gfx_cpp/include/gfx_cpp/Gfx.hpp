@@ -768,6 +768,16 @@ struct PresentInfo {
     std::vector<uint64_t> waitValues; // For timeline semaphores, empty for binary
 };
 
+struct BufferBarrier {
+    std::shared_ptr<Buffer> buffer;
+    PipelineStage srcStageMask = PipelineStage::None;
+    PipelineStage dstStageMask = PipelineStage::None;
+    AccessFlags srcAccessMask = AccessFlags::None;
+    AccessFlags dstAccessMask = AccessFlags::None;
+    uint64_t offset = 0;
+    uint64_t size = 0;  // 0 means whole buffer
+};
+
 struct TextureBarrier {
     std::shared_ptr<Texture> texture;
     TextureLayout oldLayout = TextureLayout::Undefined;
@@ -974,7 +984,9 @@ public:
         const Extent3D& extent, TextureLayout sourceFinalLayout, TextureLayout destinationFinalLayout)
         = 0;
 
-    virtual void pipelineBarrier(const std::vector<TextureBarrier>& textureBarriers) = 0;
+    virtual void pipelineBarrier(
+        const std::vector<BufferBarrier>& bufferBarriers = {},
+        const std::vector<TextureBarrier>& textureBarriers = {}) = 0;
 
     virtual void end() = 0;
     virtual void begin() = 0;

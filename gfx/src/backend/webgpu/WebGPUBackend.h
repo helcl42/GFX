@@ -121,7 +121,9 @@ public:
     void commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
         GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, const GfxExtent3D* extent,
         GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const override;
-    void commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const override;
+    void commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+        const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
+        const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const override;
     void commandEncoderEnd(GfxCommandEncoder commandEncoder) const override;
     void commandEncoderBegin(GfxCommandEncoder commandEncoder) const override;
 

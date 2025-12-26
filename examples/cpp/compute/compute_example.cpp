@@ -444,7 +444,7 @@ bool ComputeApp::createComputeResources()
                 .arrayLayerCount = 1
             };
 
-            initEncoder->pipelineBarrier({ initBarrier });
+            initEncoder->pipelineBarrier({}, { initBarrier });
             initEncoder->end();
 
             FenceDescriptor initFenceDesc{};
@@ -766,7 +766,7 @@ void ComputeApp::drawFrame()
             .baseArrayLayer = 0,
             .arrayLayerCount = 1
         };
-        encoder->pipelineBarrier({ readToWriteBarrier });
+        encoder->pipelineBarrier({}, { readToWriteBarrier });
 
         // Compute pass: Generate pattern
         auto computePass = encoder->beginComputePass("Generate Pattern");
@@ -793,7 +793,7 @@ void ComputeApp::drawFrame()
             .baseArrayLayer = 0,
             .arrayLayerCount = 1
         };
-        encoder->pipelineBarrier({ computeToReadBarrier });
+        encoder->pipelineBarrier({}, { computeToReadBarrier });
 
         // Render pass: Post-process and display
         auto swapchainView = swapchain->getImageView(imageIndex);

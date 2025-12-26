@@ -3776,14 +3776,22 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
 }
 
 void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+    const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
 {
-    if (!commandEncoder || !textureBarriers || textureBarrierCount == 0) {
+    if (!commandEncoder) {
+        return;
+    }
+
+    if (bufferBarrierCount == 0 && textureBarrierCount == 0) {
         return;
     }
 
     auto* encoder = reinterpret_cast<gfx::vulkan::CommandEncoder*>(commandEncoder);
     VkCommandBuffer cmdBuffer = encoder->handle();
+
+    std::vector<VkBufferMemoryBarrier> bufferMemoryBarriers;
+    bufferMemoryBarriers.reserve(bufferBarrierCount);
 
     std::vector<VkImageMemoryBarrier> imageBarriers;
     imageBarriers.reserve(textureBarrierCount);
@@ -3791,6 +3799,27 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
     // Combine pipeline stages from all barriers
     VkPipelineStageFlags srcStage = 0;
     VkPipelineStageFlags dstStage = 0;
+
+    // Process buffer barriers
+    for (uint32_t i = 0; i < bufferBarrierCount; ++i) {
+        const auto& barrier = bufferBarriers[i];
+        auto* buffer = reinterpret_cast<gfx::vulkan::Buffer*>(barrier.buffer);
+
+        VkBufferMemoryBarrier vkBarrier{};
+        vkBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        vkBarrier.buffer = buffer->handle();
+        vkBarrier.offset = barrier.offset;
+        vkBarrier.size = barrier.size == 0 ? VK_WHOLE_SIZE : barrier.size;
+        vkBarrier.srcAccessMask = static_cast<VkAccessFlags>(barrier.srcAccessMask);
+        vkBarrier.dstAccessMask = static_cast<VkAccessFlags>(barrier.dstAccessMask);
+        vkBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        vkBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+        bufferMemoryBarriers.push_back(vkBarrier);
+
+        srcStage |= static_cast<VkPipelineStageFlags>(barrier.srcStageMask);
+        dstStage |= static_cast<VkPipelineStageFlags>(barrier.dstStageMask);
+    }
 
     for (uint32_t i = 0; i < textureBarrierCount; ++i) {
         const auto& barrier = textureBarriers[i];
@@ -3843,8 +3872,10 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
         dstStage,
         0,
         0, nullptr, // Memory barriers
-        0, nullptr, // Buffer barriers
-        static_cast<uint32_t>(imageBarriers.size()), imageBarriers.data());
+        static_cast<uint32_t>(bufferMemoryBarriers.size()), 
+        bufferMemoryBarriers.empty() ? nullptr : bufferMemoryBarriers.data(),
+        static_cast<uint32_t>(imageBarriers.size()), 
+        imageBarriers.empty() ? nullptr : imageBarriers.data());
 }
 
 void VulkanBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const

@@ -697,14 +697,34 @@ public:
         }
     }
 
-    void pipelineBarrier(const std::vector<TextureBarrier>& textureBarriers) override
+    void pipelineBarrier(
+        const std::vector<BufferBarrier>& bufferBarriers = {},
+        const std::vector<TextureBarrier>& textureBarriers = {}) override
     {
-        if (textureBarriers.empty()) {
+        if (bufferBarriers.empty() && textureBarriers.empty()) {
             return;
         }
 
-        std::vector<GfxTextureBarrier> cBarriers;
-        cBarriers.reserve(textureBarriers.size());
+        std::vector<GfxBufferBarrier> cBufferBarriers;
+        cBufferBarriers.reserve(bufferBarriers.size());
+
+        for (const auto& barrier : bufferBarriers) {
+            auto buf = std::dynamic_pointer_cast<CBufferImpl>(barrier.buffer);
+            if (buf) {
+                GfxBufferBarrier cBarrier{};
+                cBarrier.buffer = buf->getHandle();
+                cBarrier.srcStageMask = static_cast<GfxPipelineStage>(barrier.srcStageMask);
+                cBarrier.dstStageMask = static_cast<GfxPipelineStage>(barrier.dstStageMask);
+                cBarrier.srcAccessMask = static_cast<GfxAccessFlags>(barrier.srcAccessMask);
+                cBarrier.dstAccessMask = static_cast<GfxAccessFlags>(barrier.dstAccessMask);
+                cBarrier.offset = barrier.offset;
+                cBarrier.size = barrier.size;
+                cBufferBarriers.push_back(cBarrier);
+            }
+        }
+
+        std::vector<GfxTextureBarrier> cTextureBarriers;
+        cTextureBarriers.reserve(textureBarriers.size());
 
         for (const auto& barrier : textureBarriers) {
             auto tex = std::dynamic_pointer_cast<CTextureImpl>(barrier.texture);
@@ -728,12 +748,16 @@ public:
                 cBarrier.mipLevelCount = barrier.mipLevelCount;
                 cBarrier.baseArrayLayer = barrier.baseArrayLayer;
                 cBarrier.arrayLayerCount = barrier.arrayLayerCount;
-                cBarriers.push_back(cBarrier);
+                cTextureBarriers.push_back(cBarrier);
             }
         }
 
-        if (!cBarriers.empty()) {
-            gfxCommandEncoderPipelineBarrier(m_handle, cBarriers.data(), static_cast<uint32_t>(cBarriers.size()));
+        if (!cBufferBarriers.empty() || !cTextureBarriers.empty()) {
+            gfxCommandEncoderPipelineBarrier(m_handle,
+                cBufferBarriers.empty() ? nullptr : cBufferBarriers.data(),
+                static_cast<uint32_t>(cBufferBarriers.size()),
+                cTextureBarriers.empty() ? nullptr : cTextureBarriers.data(),
+                static_cast<uint32_t>(cTextureBarriers.size()));
         }
     }
 

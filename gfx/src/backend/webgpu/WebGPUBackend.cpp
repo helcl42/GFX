@@ -2693,11 +2693,14 @@ void webgpu_commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
 }
 
 void webgpu_commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+    const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount)
 {
     // WebGPU handles synchronization and layout transitions automatically
     // This is a no-op for WebGPU backend
     (void)commandEncoder;
+    (void)bufferBarriers;
+    (void)bufferBarrierCount;
     (void)textureBarriers;
     (void)textureBarrierCount;
 }
@@ -3305,9 +3308,11 @@ void WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
 {
     webgpu_commandEncoderCopyTextureToTexture(commandEncoder, source, sourceOrigin, sourceMipLevel, destination, destinationOrigin, destinationMipLevel, extent, srcFinalLayout, dstFinalLayout);
 }
-void WebGPUBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
+void WebGPUBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+    const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
+    const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
 {
-    webgpu_commandEncoderPipelineBarrier(commandEncoder, textureBarriers, textureBarrierCount);
+    webgpu_commandEncoderPipelineBarrier(commandEncoder, bufferBarriers, bufferBarrierCount, textureBarriers, textureBarrierCount);
 }
 void WebGPUBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
 {

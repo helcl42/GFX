@@ -464,7 +464,7 @@ static bool createComputeResources(ComputeApp* app)
         .baseArrayLayer = 0,
         .arrayLayerCount = 1
     };
-    gfxCommandEncoderPipelineBarrier(initEncoder, &initBarrier, 1);
+    gfxCommandEncoderPipelineBarrier(initEncoder, NULL, 0, &initBarrier, 1);
 
     gfxCommandEncoderEnd(initEncoder);
 
@@ -770,7 +770,7 @@ static void drawFrame(ComputeApp* app)
         .baseArrayLayer = 0,
         .arrayLayerCount = 1
     };
-    gfxCommandEncoderPipelineBarrier(encoder, &readToWriteBarrier, 1);
+    gfxCommandEncoderPipelineBarrier(encoder, NULL, 0, &readToWriteBarrier, 1);
 
     // --- COMPUTE PASS: Generate pattern ---
     GfxComputePassEncoder computePass = NULL;
@@ -804,7 +804,7 @@ static void drawFrame(ComputeApp* app)
         .baseArrayLayer = 0,
         .arrayLayerCount = 1
     };
-    gfxCommandEncoderPipelineBarrier(encoder, &computeToReadBarrier, 1);
+    gfxCommandEncoderPipelineBarrier(encoder, NULL, 0, &computeToReadBarrier, 1);
 
     // --- RENDER PASS: Post-process and display ---
     GfxTextureView swapchainView = gfxSwapchainGetCurrentTextureView(app->swapchain);

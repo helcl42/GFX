@@ -136,6 +136,7 @@ public:
         const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
         = 0;
     virtual void commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+        const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
         const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
         = 0;
     virtual void commandEncoderEnd(GfxCommandEncoder commandEncoder) const = 0;
