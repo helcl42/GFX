@@ -698,11 +698,24 @@ public:
     }
 
     void pipelineBarrier(
+        const std::vector<MemoryBarrier>& memoryBarriers = {},
         const std::vector<BufferBarrier>& bufferBarriers = {},
         const std::vector<TextureBarrier>& textureBarriers = {}) override
     {
-        if (bufferBarriers.empty() && textureBarriers.empty()) {
+        if (memoryBarriers.empty() && bufferBarriers.empty() && textureBarriers.empty()) {
             return;
+        }
+
+        std::vector<GfxMemoryBarrier> cMemoryBarriers;
+        cMemoryBarriers.reserve(memoryBarriers.size());
+
+        for (const auto& barrier : memoryBarriers) {
+            GfxMemoryBarrier cBarrier{};
+            cBarrier.srcStageMask = static_cast<GfxPipelineStage>(barrier.srcStageMask);
+            cBarrier.dstStageMask = static_cast<GfxPipelineStage>(barrier.dstStageMask);
+            cBarrier.srcAccessMask = static_cast<GfxAccessFlags>(barrier.srcAccessMask);
+            cBarrier.dstAccessMask = static_cast<GfxAccessFlags>(barrier.dstAccessMask);
+            cMemoryBarriers.push_back(cBarrier);
         }
 
         std::vector<GfxBufferBarrier> cBufferBarriers;
@@ -752,8 +765,10 @@ public:
             }
         }
 
-        if (!cBufferBarriers.empty() || !cTextureBarriers.empty()) {
+        if (!cMemoryBarriers.empty() || !cBufferBarriers.empty() || !cTextureBarriers.empty()) {
             gfxCommandEncoderPipelineBarrier(m_handle,
+                cMemoryBarriers.empty() ? nullptr : cMemoryBarriers.data(),
+                static_cast<uint32_t>(cMemoryBarriers.size()),
                 cBufferBarriers.empty() ? nullptr : cBufferBarriers.data(),
                 static_cast<uint32_t>(cBufferBarriers.size()),
                 cTextureBarriers.empty() ? nullptr : cTextureBarriers.data(),

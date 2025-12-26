@@ -768,6 +768,13 @@ struct PresentInfo {
     std::vector<uint64_t> waitValues; // For timeline semaphores, empty for binary
 };
 
+struct MemoryBarrier {
+    PipelineStage srcStageMask = PipelineStage::None;
+    PipelineStage dstStageMask = PipelineStage::None;
+    AccessFlags srcAccessMask = AccessFlags::None;
+    AccessFlags dstAccessMask = AccessFlags::None;
+};
+
 struct BufferBarrier {
     std::shared_ptr<Buffer> buffer;
     PipelineStage srcStageMask = PipelineStage::None;
@@ -985,6 +992,7 @@ public:
         = 0;
 
     virtual void pipelineBarrier(
+        const std::vector<MemoryBarrier>& memoryBarriers = {},
         const std::vector<BufferBarrier>& bufferBarriers = {},
         const std::vector<TextureBarrier>& textureBarriers = {}) = 0;
 

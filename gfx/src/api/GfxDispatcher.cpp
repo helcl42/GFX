@@ -836,6 +836,7 @@ GfxResult gfxQueueWaitIdle(GfxQueue queue)
 
 // Command Encoder Functions
 void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+    const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
     const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount)
 {
@@ -844,7 +845,7 @@ void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     }
     auto api = gfx::getAPI(commandEncoder);
     if (api) {
-        api->commandEncoderPipelineBarrier(gfx::native(commandEncoder), bufferBarriers, bufferBarrierCount, textureBarriers, textureBarrierCount);
+        api->commandEncoderPipelineBarrier(gfx::native(commandEncoder), memoryBarriers, memoryBarrierCount, bufferBarriers, bufferBarrierCount, textureBarriers, textureBarrierCount);
     }
 }
 

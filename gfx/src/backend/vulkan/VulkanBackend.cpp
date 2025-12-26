@@ -3776,6 +3776,7 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
 }
 
 void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+    const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
     const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
 {
@@ -3783,12 +3784,15 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
         return;
     }
 
-    if (bufferBarrierCount == 0 && textureBarrierCount == 0) {
+    if (memoryBarrierCount == 0 && bufferBarrierCount == 0 && textureBarrierCount == 0) {
         return;
     }
 
     auto* encoder = reinterpret_cast<gfx::vulkan::CommandEncoder*>(commandEncoder);
     VkCommandBuffer cmdBuffer = encoder->handle();
+
+    std::vector<VkMemoryBarrier> memBarriers;
+    memBarriers.reserve(memoryBarrierCount);
 
     std::vector<VkBufferMemoryBarrier> bufferMemoryBarriers;
     bufferMemoryBarriers.reserve(bufferBarrierCount);
@@ -3799,6 +3803,21 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
     // Combine pipeline stages from all barriers
     VkPipelineStageFlags srcStage = 0;
     VkPipelineStageFlags dstStage = 0;
+
+    // Process memory barriers
+    for (uint32_t i = 0; i < memoryBarrierCount; ++i) {
+        const auto& barrier = memoryBarriers[i];
+
+        VkMemoryBarrier vkBarrier{};
+        vkBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        vkBarrier.srcAccessMask = static_cast<VkAccessFlags>(barrier.srcAccessMask);
+        vkBarrier.dstAccessMask = static_cast<VkAccessFlags>(barrier.dstAccessMask);
+
+        memBarriers.push_back(vkBarrier);
+
+        srcStage |= static_cast<VkPipelineStageFlags>(barrier.srcStageMask);
+        dstStage |= static_cast<VkPipelineStageFlags>(barrier.dstStageMask);
+    }
 
     // Process buffer barriers
     for (uint32_t i = 0; i < bufferBarrierCount; ++i) {
@@ -3871,7 +3890,8 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
         srcStage,
         dstStage,
         0,
-        0, nullptr, // Memory barriers
+        static_cast<uint32_t>(memBarriers.size()),
+        memBarriers.empty() ? nullptr : memBarriers.data(),
         static_cast<uint32_t>(bufferMemoryBarriers.size()), 
         bufferMemoryBarriers.empty() ? nullptr : bufferMemoryBarriers.data(),
         static_cast<uint32_t>(imageBarriers.size()), 

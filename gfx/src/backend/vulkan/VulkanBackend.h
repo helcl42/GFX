@@ -129,6 +129,7 @@ public:
         GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
         const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const override;
     void commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+        const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
         const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
         const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const override;
     void commandEncoderEnd(GfxCommandEncoder commandEncoder) const override;

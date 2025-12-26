@@ -400,6 +400,13 @@ typedef struct {
 } GfxScissorRect;
 
 typedef struct {
+    GfxPipelineStage srcStageMask;
+    GfxPipelineStage dstStageMask;
+    GfxAccessFlags srcAccessMask;
+    GfxAccessFlags dstAccessMask;
+} GfxMemoryBarrier;
+
+typedef struct {
     GfxBuffer buffer;
     GfxPipelineStage srcStageMask;
     GfxPipelineStage dstStageMask;
@@ -918,6 +925,7 @@ GFX_API void gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEnco
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
     const GfxExtent3D* extent, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout);
 GFX_API void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+    const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
     const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount);
 GFX_API void gfxCommandEncoderEnd(GfxCommandEncoder commandEncoder);
