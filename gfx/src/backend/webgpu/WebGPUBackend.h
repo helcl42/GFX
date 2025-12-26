@@ -3,7 +3,7 @@
 
 #include <gfx/gfx.h>
 
-#include "IBackend.h"
+#include "../IBackend.h"
 
 namespace gfx::webgpu {
 // WebGPU backend implementation
@@ -148,7 +148,7 @@ public:
 
     // Fence functions
     void fenceDestroy(GfxFence fence) const override;
-    GfxResult fenceGetStatus(GfxFence fence) const override;
+    GfxResult fenceGetStatus(GfxFence fence, bool* isSignaled) const override;
     GfxResult fenceWait(GfxFence fence, uint64_t timeoutNs) const override;
     void fenceReset(GfxFence fence) const override;
 

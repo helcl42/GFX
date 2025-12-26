@@ -1,10 +1,10 @@
 #include "WebGPUBackend.h"
 
-#include "../dependencies/include/webgpu/webgpu.h"
+#include <webgpu/webgpu.h>
 
 #include <gfx/gfx.h>
 
-#include "IBackend.h"
+#include "../IBackend.h"
 
 #include <cassert>
 #include <cstdio>
@@ -542,6 +542,8 @@ private:
     Instance* m_instance = nullptr; // Non-owning
     std::string m_name;
 };
+
+class Device; // Forward declaration
 
 class Queue {
 public:
@@ -2237,7 +2239,7 @@ uint32_t webgpu_textureGetSampleCount(GfxTexture texture)
     if (!texture) {
         return 0;
     }
-    return reinterpret_cast<gfx::webgpu::Texture*>(texture)->getSampleCount();
+    return static_cast<uint32_t>(reinterpret_cast<gfx::webgpu::Texture*>(texture)->getSampleCount());
 }
 
 GfxTextureUsage webgpu_textureGetUsage(GfxTexture texture)
@@ -3193,7 +3195,7 @@ uint32_t WebGPUBackend::textureGetMipLevelCount(GfxTexture texture) const
 }
 GfxSampleCount WebGPUBackend::textureGetSampleCount(GfxTexture texture) const
 {
-    return webgpu_textureGetSampleCount(texture);
+    return static_cast<GfxSampleCount>(webgpu_textureGetSampleCount(texture));
 }
 GfxTextureUsage WebGPUBackend::textureGetUsage(GfxTexture texture) const
 {
@@ -3318,7 +3320,9 @@ void WebGPUBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
 }
 void WebGPUBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
 {
-    webgpu_commandEncoderBegin(commandEncoder);
+    // WebGPU command encoders don't have an explicit begin call
+    // They are ready to use immediately after creation
+    (void)commandEncoder;
 }
 
 // RenderPassEncoder functions
@@ -3390,9 +3394,9 @@ void WebGPUBackend::fenceDestroy(GfxFence fence) const
 {
     webgpu_fenceDestroy(fence);
 }
-GfxResult WebGPUBackend::fenceGetStatus(GfxFence fence) const
+GfxResult WebGPUBackend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
 {
-    return webgpu_fenceGetStatus(fence);
+    return webgpu_fenceGetStatus(fence, isSignaled);
 }
 GfxResult WebGPUBackend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
 {
