@@ -799,6 +799,29 @@ struct TextureBarrier {
     uint32_t arrayLayerCount = 1;
 };
 
+struct ColorAttachment {
+    std::shared_ptr<TextureView> view;
+    Color clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+    TextureLayout finalLayout = TextureLayout::Undefined;
+};
+
+struct DepthStencilAttachment {
+    std::shared_ptr<TextureView> view;
+    float depthClearValue = 1.0f;
+    uint32_t stencilClearValue = 0;
+    TextureLayout finalLayout = TextureLayout::Undefined;
+};
+
+struct RenderPassDescriptor {
+    std::string label;
+    std::vector<ColorAttachment> colorAttachments;
+    DepthStencilAttachment* depthStencilAttachment = nullptr; // nullptr if not used
+};
+
+struct ComputePassDescriptor {
+    std::string label;
+};
+
 // ============================================================================
 // Surface and Swapchain Classes
 // ============================================================================
@@ -955,17 +978,9 @@ class CommandEncoder {
 public:
     virtual ~CommandEncoder() = default;
 
-    virtual std::shared_ptr<RenderPassEncoder> beginRenderPass(
-        const std::vector<std::shared_ptr<TextureView>>& colorAttachments,
-        const std::vector<Color>& clearColors,
-        const std::vector<TextureLayout>& colorFinalLayouts,
-        std::shared_ptr<TextureView> depthStencilAttachment = nullptr,
-        float depthClearValue = 1.0f,
-        uint32_t stencilClearValue = 0,
-        TextureLayout depthFinalLayout = TextureLayout::Undefined)
-        = 0;
+    virtual std::shared_ptr<RenderPassEncoder> beginRenderPass(const RenderPassDescriptor& descriptor) = 0;
 
-    virtual std::shared_ptr<ComputePassEncoder> beginComputePass(const std::string& label = "") = 0;
+    virtual std::shared_ptr<ComputePassEncoder> beginComputePass(const ComputePassDescriptor& descriptor) = 0;
 
     virtual void copyBufferToBuffer(
         std::shared_ptr<Buffer> source, uint64_t sourceOffset,

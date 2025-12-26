@@ -571,54 +571,45 @@ public:
 
     GfxCommandEncoder getHandle() const { return m_handle; }
 
-    std::shared_ptr<RenderPassEncoder> beginRenderPass(
-        const std::vector<std::shared_ptr<TextureView>>& colorAttachments,
-        const std::vector<Color>& clearColors,
-        const std::vector<TextureLayout>& colorFinalLayouts,
-        std::shared_ptr<TextureView> depthStencilAttachment = nullptr,
-        float depthClearValue = 1.0f,
-        uint32_t stencilClearValue = 0, TextureLayout depthFinalLayout = TextureLayout::Undefined) override
+    std::shared_ptr<RenderPassEncoder> beginRenderPass(const RenderPassDescriptor& descriptor) override
     {
-        std::vector<GfxTextureView> cColorAttachments;
-        for (auto& view : colorAttachments) {
-            auto impl = std::dynamic_pointer_cast<CTextureViewImpl>(view);
-            if (impl) {
-                cColorAttachments.push_back(impl->getHandle());
+        // Convert C++ descriptor to C descriptor
+        std::vector<GfxColorAttachment> cColorAttachments;
+        cColorAttachments.reserve(descriptor.colorAttachments.size());
+        
+        for (const auto& colorAttachment : descriptor.colorAttachments) {
+            GfxColorAttachment cAttachment{};
+            auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(colorAttachment.view);
+            if (viewImpl) {
+                cAttachment.view = viewImpl->getHandle();
             }
+            cAttachment.clearColor = { colorAttachment.clearColor.r, colorAttachment.clearColor.g, 
+                                       colorAttachment.clearColor.b, colorAttachment.clearColor.a };
+            cAttachment.finalLayout = static_cast<GfxTextureLayout>(colorAttachment.finalLayout);
+            cColorAttachments.push_back(cAttachment);
         }
 
-        std::vector<GfxTextureLayout> cColorFinalLayouts;
-        for (auto& layout : colorFinalLayouts) {
-            cColorFinalLayouts.push_back(static_cast<GfxTextureLayout>(layout));
-        }
-
-        std::vector<GfxColor> cClearColors;
-        for (auto& color : clearColors) {
-            cClearColors.push_back({ color.r, color.g, color.b, color.a });
-        }
-
-        GfxTextureView cDepthStencil = nullptr;
-        if (depthStencilAttachment) {
-            auto impl = std::dynamic_pointer_cast<CTextureViewImpl>(depthStencilAttachment);
-            if (impl) {
-                cDepthStencil = impl->getHandle();
+        GfxDepthStencilAttachment cDepthStencil{};
+        GfxDepthStencilAttachment* cDepthStencilPtr = nullptr;
+        if (descriptor.depthStencilAttachment) {
+            auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(descriptor.depthStencilAttachment->view);
+            if (viewImpl) {
+                cDepthStencil.view = viewImpl->getHandle();
             }
+            cDepthStencil.depthClearValue = descriptor.depthStencilAttachment->depthClearValue;
+            cDepthStencil.stencilClearValue = descriptor.depthStencilAttachment->stencilClearValue;
+            cDepthStencil.finalLayout = static_cast<GfxTextureLayout>(descriptor.depthStencilAttachment->finalLayout);
+            cDepthStencilPtr = &cDepthStencil;
         }
 
-        GfxTextureLayout cDepthFinalLayout = static_cast<GfxTextureLayout>(depthFinalLayout);
+        GfxRenderPassDescriptor cDescriptor{};
+        cDescriptor.label = descriptor.label.c_str();
+        cDescriptor.colorAttachments = cColorAttachments.data();
+        cDescriptor.colorAttachmentCount = static_cast<uint32_t>(cColorAttachments.size());
+        cDescriptor.depthStencilAttachment = cDepthStencilPtr;
 
         GfxRenderPassEncoder encoder = nullptr;
-        GfxResult result = gfxCommandEncoderBeginRenderPass(
-            m_handle,
-            cColorAttachments.data(),
-            static_cast<uint32_t>(cColorAttachments.size()),
-            cClearColors.empty() ? nullptr : cClearColors.data(),
-            cColorFinalLayouts.data(),
-            cDepthStencil,
-            depthClearValue,
-            stencilClearValue,
-            cDepthFinalLayout,
-            &encoder);
+        GfxResult result = gfxCommandEncoderBeginRenderPass(m_handle, &cDescriptor, &encoder);
 
         if (result != GFX_RESULT_SUCCESS || !encoder) {
             throw std::runtime_error("Failed to begin render pass");
@@ -626,10 +617,13 @@ public:
         return std::make_shared<CRenderPassEncoderImpl>(encoder);
     }
 
-    std::shared_ptr<ComputePassEncoder> beginComputePass(const std::string& label = "") override
+    std::shared_ptr<ComputePassEncoder> beginComputePass(const ComputePassDescriptor& descriptor) override
     {
+        GfxComputePassDescriptor cDesc = {};
+        cDesc.label = descriptor.label.c_str();
+
         GfxComputePassEncoder encoder = nullptr;
-        GfxResult result = gfxCommandEncoderBeginComputePass(m_handle, label.c_str(), &encoder);
+        GfxResult result = gfxCommandEncoderBeginComputePass(m_handle, &cDesc, &encoder);
         if (result != GFX_RESULT_SUCCESS || !encoder) {
             throw std::runtime_error("Failed to begin compute pass");
         }

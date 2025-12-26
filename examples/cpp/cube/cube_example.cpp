@@ -784,28 +784,40 @@ void CubeApp::render()
         // Begin render pass
         Color clearColor{ 0.1f, 0.2f, 0.3f, 1.0f }; // Dark blue background
 
-        // Setup color attachments based on MSAA setting
-        std::vector<std::shared_ptr<TextureView>> colorAttachments;
-        std::vector<TextureLayout> finalLayouts;
+        // Setup render pass descriptor based on MSAA setting
+        RenderPassDescriptor renderPassDesc;
+        renderPassDesc.label = "Main Render Pass";
+        
+        DepthStencilAttachment depthAttachment;
+        depthAttachment.view = depthTextureView;
+        depthAttachment.depthClearValue = 1.0f;
+        depthAttachment.stencilClearValue = 0;
+        depthAttachment.finalLayout = TextureLayout::DepthStencilAttachment;
 
         if (MSAA_SAMPLE_COUNT == SampleCount::Count1) {
             // No MSAA: render directly to backbuffer
-            colorAttachments = { backbuffer };
-            finalLayouts = { TextureLayout::PresentSrc };
+            ColorAttachment colorAttachment;
+            colorAttachment.view = backbuffer;
+            colorAttachment.clearColor = clearColor;
+            colorAttachment.finalLayout = TextureLayout::PresentSrc;
+            renderPassDesc.colorAttachments = { colorAttachment };
         } else {
             // MSAA: render to MSAA buffer, resolve to backbuffer
-            colorAttachments = { msaaColorTextureView, backbuffer };
-            finalLayouts = { TextureLayout::ColorAttachment, TextureLayout::PresentSrc };
+            ColorAttachment msaaAttachment;
+            msaaAttachment.view = msaaColorTextureView;
+            msaaAttachment.clearColor = clearColor;
+            msaaAttachment.finalLayout = TextureLayout::ColorAttachment;
+            
+            ColorAttachment resolveAttachment;
+            resolveAttachment.view = backbuffer;
+            resolveAttachment.clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+            resolveAttachment.finalLayout = TextureLayout::PresentSrc;
+            
+            renderPassDesc.colorAttachments = { msaaAttachment, resolveAttachment };
         }
+        renderPassDesc.depthStencilAttachment = &depthAttachment;
 
-        auto renderPass = commandEncoder->beginRenderPass(
-            colorAttachments,
-            { clearColor },
-            finalLayouts,
-            depthTextureView,
-            1.0f,
-            0,
-            TextureLayout::DepthStencilAttachment);
+        auto renderPass = commandEncoder->beginRenderPass(renderPassDesc);
 
         // Set pipeline, bind groups, and buffers (using current frame's bind group)
         renderPass->setPipeline(renderPipeline);

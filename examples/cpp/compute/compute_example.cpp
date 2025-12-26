@@ -769,7 +769,9 @@ void ComputeApp::drawFrame()
         encoder->pipelineBarrier({}, {}, { readToWriteBarrier });
 
         // Compute pass: Generate pattern
-        auto computePass = encoder->beginComputePass("Generate Pattern");
+        ComputePassDescriptor computePassDesc;
+        computePassDesc.label = "Generate Pattern";
+        auto computePass = encoder->beginComputePass(computePassDesc);
         computePass->setPipeline(computePipeline);
         computePass->setBindGroup(0, computeBindGroups[frameIndex]);
 
@@ -801,16 +803,18 @@ void ComputeApp::drawFrame()
             return;
         }
 
-        Color clearColor{ 0.0f, 0.0f, 0.0f, 1.0f };
+        RenderPassDescriptor renderPassDesc;
+        renderPassDesc.label = "Fullscreen Render Pass";
+        
+        ColorAttachment colorAttachment;
+        colorAttachment.view = swapchainView;
+        colorAttachment.clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+        colorAttachment.finalLayout = TextureLayout::PresentSrc;
+        
+        renderPassDesc.colorAttachments = { colorAttachment };
+        renderPassDesc.depthStencilAttachment = nullptr;
 
-        auto renderPass = encoder->beginRenderPass(
-            { swapchainView },
-            { clearColor },
-            { TextureLayout::PresentSrc },
-            nullptr,
-            0.0f,
-            0,
-            TextureLayout::Undefined);
+        auto renderPass = encoder->beginRenderPass(renderPassDesc);
 
         renderPass->setPipeline(renderPipeline);
         renderPass->setBindGroup(0, renderBindGroups[frameIndex]);

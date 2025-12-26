@@ -872,15 +872,10 @@ void gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder)
 }
 
 GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
-    const GfxTextureView* colorAttachments, uint32_t colorAttachmentCount,
-    const GfxColor* clearColors,
-    const GfxTextureLayout* colorFinalLayouts,
-    GfxTextureView depthStencilAttachment,
-    float depthClearValue, uint32_t stencilClearValue,
-    GfxTextureLayout depthFinalLayout,
+    const GfxRenderPassDescriptor* descriptor,
     GfxRenderPassEncoder* outEncoder)
 {
-    if (!encoder || !outEncoder) {
+    if (!encoder || !outEncoder || !descriptor) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
     *outEncoder = nullptr;
@@ -893,12 +888,7 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     GfxRenderPassEncoder nativePass = nullptr;
     GfxResult result = api->commandEncoderBeginRenderPass(
         gfx::native(encoder),
-        colorAttachments, colorAttachmentCount,
-        clearColors,
-        colorFinalLayouts,
-        depthStencilAttachment,
-        depthClearValue, stencilClearValue,
-        depthFinalLayout,
+        descriptor,
         &nativePass);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
@@ -908,9 +898,9 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const char* label, GfxComputePassEncoder* outEncoder)
+GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const GfxComputePassDescriptor* descriptor, GfxComputePassEncoder* outEncoder)
 {
-    if (!encoder || !outEncoder) {
+    if (!encoder || !descriptor || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
     *outEncoder = nullptr;
@@ -921,7 +911,7 @@ GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const cha
 
     GfxBackend backend = gfx::getBackend(encoder);
     GfxComputePassEncoder nativePass = nullptr;
-    GfxResult result = api->commandEncoderBeginComputePass(gfx::native(encoder), label, &nativePass);
+    GfxResult result = api->commandEncoderBeginComputePass(gfx::native(encoder), descriptor, &nativePass);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }

@@ -426,6 +426,30 @@ typedef struct {
     uint32_t arrayLayerCount;
 } GfxTextureBarrier;
 
+typedef struct {
+    GfxTextureView view;
+    GfxColor clearColor;
+    GfxTextureLayout finalLayout;
+} GfxColorAttachment;
+
+typedef struct {
+    GfxTextureView view;
+    float depthClearValue;
+    uint32_t stencilClearValue;
+    GfxTextureLayout finalLayout;
+} GfxDepthStencilAttachment;
+
+typedef struct {
+    const char* label;
+    const GfxColorAttachment* colorAttachments;
+    uint32_t colorAttachmentCount;
+    const GfxDepthStencilAttachment* depthStencilAttachment; // NULL if not used
+} GfxRenderPassDescriptor;
+
+typedef struct {
+    const char* label;
+} GfxComputePassDescriptor;
+
 // ============================================================================
 // Platform Abstraction
 // ============================================================================
@@ -896,14 +920,11 @@ GFX_API GfxResult gfxQueueWaitIdle(GfxQueue queue);
 // CommandEncoder functions
 GFX_API void gfxCommandEncoderDestroy(GfxCommandEncoder commandEncoder);
 GFX_API GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-    const GfxTextureView* colorAttachments, uint32_t colorAttachmentCount,
-    const GfxColor* clearColors,
-    const GfxTextureLayout* colorFinalLayouts,
-    GfxTextureView depthStencilAttachment,
-    float depthClearValue, uint32_t stencilClearValue,
-    GfxTextureLayout depthFinalLayout,
+    const GfxRenderPassDescriptor* descriptor,
     GfxRenderPassEncoder* outRenderPass);
-GFX_API GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass);
+GFX_API GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder commandEncoder,
+    const GfxComputePassDescriptor* descriptor,
+    GfxComputePassEncoder* outComputePass);
 GFX_API void gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
     GfxBuffer source, uint64_t sourceOffset,
     GfxBuffer destination, uint64_t destinationOffset,

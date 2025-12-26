@@ -3252,17 +3252,17 @@ void VulkanBackend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) cons
 }
 
 GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-    const GfxTextureView* colorAttachments, uint32_t colorAttachmentCount,
-    const GfxColor* clearColors,
-    const GfxTextureLayout* colorFinalLayouts,
-    GfxTextureView depthStencilAttachment,
-    float depthClearValue, uint32_t stencilClearValue,
-    GfxTextureLayout depthFinalLayout,
+    const GfxRenderPassDescriptor* descriptor,
     GfxRenderPassEncoder* outRenderPass) const
 {
-    if (!commandEncoder || !outRenderPass) {
+    if (!commandEncoder || !outRenderPass || !descriptor) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
+
+    // Extract parameters from descriptor
+    const GfxColorAttachment* colorAttachments = descriptor->colorAttachments;
+    uint32_t colorAttachmentCount = descriptor->colorAttachmentCount;
+    const GfxDepthStencilAttachment* depthStencilAttachment = descriptor->depthStencilAttachment;
 
     // Must have at least one attachment (color or depth)
     if (colorAttachmentCount == 0 && !depthStencilAttachment) {
@@ -3271,13 +3271,13 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
     // Validate all color attachment views are non-NULL
     for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-        if (!colorAttachments[i]) {
+        if (!colorAttachments[i].view) {
             return GFX_RESULT_ERROR_INVALID_PARAMETER;
         }
     }
 
     for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-        if (colorFinalLayouts && colorFinalLayouts[i] == GFX_TEXTURE_LAYOUT_UNDEFINED) {
+        if (colorAttachments[i].finalLayout == GFX_TEXTURE_LAYOUT_UNDEFINED) {
             return GFX_RESULT_ERROR_INVALID_PARAMETER;
         }
     }
@@ -3292,7 +3292,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     // Try to get dimensions from color attachments
     if (colorAttachmentCount > 0 && colorAttachments) {
         for (uint32_t i = 0; i < colorAttachmentCount && (width == 0 || height == 0); ++i) {
-            auto* view = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i]);
+            auto* view = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
             VkExtent3D size = view->getSize();
             width = size.width;
             height = size.height;
@@ -3301,7 +3301,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
     // Fall back to depth attachment if no color attachment had valid dimensions
     if ((width == 0 || height == 0) && depthStencilAttachment) {
-        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment);
+        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment->view);
         VkExtent3D size = depthView->getSize();
         width = size.width;
         height = size.height;
@@ -3318,7 +3318,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
     // Process color attachments
     for (uint32_t i = 0; i < colorAttachmentCount;) {
-        auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i]);
+        auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
 
         bool isMSAA = (colorView->getSamples() > VK_SAMPLE_COUNT_1_BIT);
 
@@ -3331,21 +3331,21 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = gfxLayoutToVkImageLayout(colorFinalLayouts[i]);
+        colorAttachment.finalLayout = gfxLayoutToVkImageLayout(colorAttachments[i].finalLayout);
         attachments.push_back(colorAttachment);
 
         VkAttachmentReference colorRef{};
         colorRef.attachment = attachmentIndex++;
         colorRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorRefs.push_back(colorRef);
-        numColorRefs++;
+        ++numColorRefs;
 
         ++i;
 
         // Check if next view is a resolve target
         bool hasResolve = false;
         if (isMSAA && i < colorAttachmentCount) {
-            auto* nextView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i]);
+            auto* nextView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
 
             bool isResolveTarget = nextView->getSamples() == VK_SAMPLE_COUNT_1_BIT;
 
@@ -3358,7 +3358,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
                 resolveAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 resolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
                 resolveAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                resolveAttachment.finalLayout = gfxLayoutToVkImageLayout(colorFinalLayouts[i]);
+                resolveAttachment.finalLayout = gfxLayoutToVkImageLayout(colorAttachments[i].finalLayout);
                 attachments.push_back(resolveAttachment);
 
                 VkAttachmentReference resolveRef{};
@@ -3385,7 +3385,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     bool hasDepth = false;
 
     if (depthStencilAttachment) {
-        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment);
+        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment->view);
 
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = depthView->getFormat();
@@ -3395,7 +3395,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        depthAttachment.finalLayout = gfxLayoutToVkImageLayout(depthFinalLayout);
+        depthAttachment.finalLayout = gfxLayoutToVkImageLayout(depthStencilAttachment->finalLayout);
         attachments.push_back(depthAttachment);
 
         depthRef.attachment = attachmentIndex++;
@@ -3430,12 +3430,12 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     fbAttachments.reserve(colorAttachmentCount + (hasDepth ? 1 : 0));
 
     for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-        auto* view = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i]);
+        auto* view = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
         fbAttachments.push_back(view->handle());
     }
 
     if (depthStencilAttachment) {
-        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment);
+        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment->view);
         fbAttachments.push_back(depthView->handle());
     }
 
@@ -3468,7 +3468,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
         if (isDepthFormat(attachments[i].format)) {
             // Depth/stencil attachment
-            clearValue.depthStencil = { depthClearValue, stencilClearValue };
+            clearValue.depthStencil = { depthStencilAttachment->depthClearValue, depthStencilAttachment->stencilClearValue };
         } else {
             // Color attachment - check if it's a resolve target
             bool isPrevMSAA = (i > 0 && attachments[i - 1].samples > VK_SAMPLE_COUNT_1_BIT);
@@ -3479,8 +3479,8 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
                 clearValue.color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
             } else {
                 // MSAA or regular color attachment - use provided clear color
-                if (clearColors && clearColorIdx < numColorRefs) {
-                    const GfxColor& color = clearColors[clearColorIdx];
+                if (clearColorIdx < numColorRefs) {
+                    const GfxColor& color = colorAttachments[clearColorIdx].clearColor;
                     clearValue.color = { { color.r, color.g, color.b, color.a } };
                     clearColorIdx++;
                 } else {
@@ -3508,9 +3508,9 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass) const
+GfxResult VulkanBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassDescriptor* descriptor, GfxComputePassEncoder* outComputePass) const
 {
-    if (!commandEncoder || !outComputePass) {
+    if (!commandEncoder || !descriptor || !outComputePass) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
@@ -3518,7 +3518,7 @@ GfxResult VulkanBackend::commandEncoderBeginComputePass(GfxCommandEncoder comman
     // We just return the command encoder cast to a compute pass encoder
     *outComputePass = reinterpret_cast<GfxComputePassEncoder>(commandEncoder);
 
-    (void)label; // Unused for now
+    (void)descriptor->label; // Unused for now
     return GFX_RESULT_SUCCESS;
 }
 
@@ -3892,9 +3892,9 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
         0,
         static_cast<uint32_t>(memBarriers.size()),
         memBarriers.empty() ? nullptr : memBarriers.data(),
-        static_cast<uint32_t>(bufferMemoryBarriers.size()), 
+        static_cast<uint32_t>(bufferMemoryBarriers.size()),
         bufferMemoryBarriers.empty() ? nullptr : bufferMemoryBarriers.data(),
-        static_cast<uint32_t>(imageBarriers.size()), 
+        static_cast<uint32_t>(imageBarriers.size()),
         imageBarriers.empty() ? nullptr : imageBarriers.data());
 }
 

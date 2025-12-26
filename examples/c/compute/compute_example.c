@@ -773,8 +773,11 @@ static void drawFrame(ComputeApp* app)
     gfxCommandEncoderPipelineBarrier(encoder, NULL, 0, NULL, 0, &readToWriteBarrier, 1);
 
     // --- COMPUTE PASS: Generate pattern ---
+    GfxComputePassDescriptor computePassDesc = {
+        .label = "Generate Pattern"
+    };
     GfxComputePassEncoder computePass = NULL;
-    if (gfxCommandEncoderBeginComputePass(encoder, "Generate Pattern", &computePass) != GFX_RESULT_SUCCESS) {
+    if (gfxCommandEncoderBeginComputePass(encoder, &computePassDesc, &computePass) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to begin compute pass\n");
         return;
     }
@@ -809,22 +812,21 @@ static void drawFrame(ComputeApp* app)
     // --- RENDER PASS: Post-process and display ---
     GfxTextureView swapchainView = gfxSwapchainGetCurrentTextureView(app->swapchain);
 
-    GfxColor clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-    GfxTextureLayout finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC;
+    GfxColorAttachment colorAttachment = {
+        .view = swapchainView,
+        .clearColor = { 0.0f, 0.0f, 0.0f, 1.0f },
+        .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
+    };
+
+    GfxRenderPassDescriptor renderPassDesc = {
+        .label = "Fullscreen Render Pass",
+        .colorAttachments = &colorAttachment,
+        .colorAttachmentCount = 1,
+        .depthStencilAttachment = NULL
+    };
 
     GfxRenderPassEncoder renderPass = NULL;
-    if (gfxCommandEncoderBeginRenderPass(
-            encoder,
-            &swapchainView,
-            1,
-            &clearColor,
-            &finalLayout,
-            NULL,
-            0.0f,
-            0,
-            GFX_TEXTURE_LAYOUT_UNDEFINED,
-            &renderPass)
-        != GFX_RESULT_SUCCESS) {
+    if (gfxCommandEncoderBeginRenderPass(encoder, &renderPassDesc, &renderPass) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to begin render pass\n");
         return;
     }

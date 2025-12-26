@@ -902,33 +902,40 @@ void render(CubeApp* app)
 
     // Begin render pass with dark blue clear color
     // Pass both MSAA color buffer and swapchain image for resolve
+    GfxColorAttachment colorAttachments[2];
     uint32_t colorAttachmentCount;
-    GfxTextureView colorAttachments[2];
-    GfxTextureLayout finalLayouts[2];
+    
     if (MSAA_SAMPLE_COUNT == GFX_SAMPLE_COUNT_1) {
-        colorAttachments[0] = backbuffer;
-        finalLayouts[0] = GFX_TEXTURE_LAYOUT_PRESENT_SRC;
+        colorAttachments[0].view = backbuffer;
+        colorAttachments[0].clearColor = (GfxColor){ 0.1f, 0.2f, 0.3f, 1.0f };
+        colorAttachments[0].finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC;
         colorAttachmentCount = 1;
     } else {
-        colorAttachments[0] = app->msaaColorTextureView;
-        colorAttachments[1] = backbuffer;
-        finalLayouts[0] = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT;
-        finalLayouts[1] = GFX_TEXTURE_LAYOUT_PRESENT_SRC;
+        colorAttachments[0].view = app->msaaColorTextureView;
+        colorAttachments[0].clearColor = (GfxColor){ 0.1f, 0.2f, 0.3f, 1.0f };
+        colorAttachments[0].finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT;
+        colorAttachments[1].view = backbuffer;
+        colorAttachments[1].clearColor = (GfxColor){ 0.0f, 0.0f, 0.0f, 0.0f };
+        colorAttachments[1].finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC;
         colorAttachmentCount = 2;
     }
 
-    GfxColor clearColor = { 0.1f, 0.2f, 0.3f, 1.0f };
+    GfxDepthStencilAttachment depthAttachment = {
+        .view = app->depthTextureView,
+        .depthClearValue = 1.0f,
+        .stencilClearValue = 0,
+        .finalLayout = GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT
+    };
+
+    GfxRenderPassDescriptor renderPassDesc = {
+        .label = "Main Render Pass",
+        .colorAttachments = colorAttachments,
+        .colorAttachmentCount = colorAttachmentCount,
+        .depthStencilAttachment = &depthAttachment
+    };
+
     GfxRenderPassEncoder renderPass;
-    if (gfxCommandEncoderBeginRenderPass(
-            encoder,
-            colorAttachments,
-            colorAttachmentCount,
-            &clearColor,
-            finalLayouts,
-            app->depthTextureView,
-            1.0f,
-            0, GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT, &renderPass)
-        == GFX_RESULT_SUCCESS) {
+    if (gfxCommandEncoderBeginRenderPass(encoder, &renderPassDesc, &renderPass) == GFX_RESULT_SUCCESS) {
 
         // Set pipeline
         gfxRenderPassEncoderSetPipeline(renderPass, app->renderPipeline);

@@ -106,12 +106,11 @@ public:
     // CommandEncoder functions
     void commandEncoderDestroy(GfxCommandEncoder commandEncoder) const override;
     GfxResult commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-        GfxTextureView const* colorAttachments, uint32_t colorAttachmentCount,
-        const GfxColor* clearColors, const GfxTextureLayout* colorLayouts,
-        GfxTextureView depthStencilAttachment, float depthClearValue, uint32_t stencilClearValue,
-        GfxTextureLayout depthStencilLayout,
+        const GfxRenderPassDescriptor* descriptor,
         GfxRenderPassEncoder* outRenderPass) const override;
-    GfxResult commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass) const override;
+    GfxResult commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder,
+        const GfxComputePassDescriptor* descriptor,
+        GfxComputePassEncoder* outComputePass) const override;
     void commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset,
         GfxBuffer destination, uint64_t destinationOffset, uint64_t size) const override;
     void commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,

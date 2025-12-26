@@ -2489,19 +2489,19 @@ void webgpu_commandEncoderDestroy(GfxCommandEncoder commandEncoder)
 }
 
 GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-    const GfxTextureView* colorAttachments,
-    uint32_t colorAttachmentCount,
-    const GfxColor* clearColors,
-    GfxTextureView depthStencilAttachment,
-    float depthClearValue,
-    uint32_t stencilClearValue,
+    const GfxRenderPassDescriptor* descriptor,
     GfxRenderPassEncoder* outEncoder)
 {
-    if (!commandEncoder || !outEncoder) {
+    if (!commandEncoder || !outEncoder || !descriptor) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
     auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(commandEncoder);
+
+    // Extract parameters from descriptor
+    const GfxColorAttachment* colorAttachments = descriptor->colorAttachments;
+    uint32_t colorAttachmentCount = descriptor->colorAttachmentCount;
+    const GfxDepthStencilAttachment* depthStencilAttachment = descriptor->depthStencilAttachment;
 
     WGPURenderPassDescriptor wgpuDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
 
@@ -2511,15 +2511,14 @@ GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
 
         for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
             WGPURenderPassColorAttachment attachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
-            if (colorAttachments[i]) {
-                auto* viewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(colorAttachments[i]);
+            if (colorAttachments[i].view) {
+                auto* viewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(colorAttachments[i].view);
                 attachment.view = viewPtr->handle();
                 attachment.loadOp = WGPULoadOp_Clear;
                 attachment.storeOp = WGPUStoreOp_Store;
 
-                if (clearColors) {
-                    attachment.clearValue = { clearColors[i].r, clearColors[i].g,
-                        clearColors[i].b, clearColors[i].a };
+                const GfxColor& color = colorAttachments[i].clearColor;
+                attachment.clearValue = { color.r, color.g, color.b, color.a };
                 }
             }
             wgpuColorAttachments.push_back(attachment);
@@ -2531,14 +2530,14 @@ GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
 
     WGPURenderPassDepthStencilAttachment wgpuDepthStencil = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
     if (depthStencilAttachment) {
-        auto* viewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(depthStencilAttachment);
+        auto* viewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(depthStencilAttachment->view);
         wgpuDepthStencil.view = viewPtr->handle();
         wgpuDepthStencil.depthLoadOp = WGPULoadOp_Clear;
         wgpuDepthStencil.depthStoreOp = WGPUStoreOp_Store;
-        wgpuDepthStencil.depthClearValue = depthClearValue;
+        wgpuDepthStencil.depthClearValue = depthStencilAttachment->depthClearValue;
         wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Clear;
         wgpuDepthStencil.stencilStoreOp = WGPUStoreOp_Store;
-        wgpuDepthStencil.stencilClearValue = stencilClearValue;
+        wgpuDepthStencil.stencilClearValue = depthStencilAttachment->stencilClearValue;
 
         wgpuDesc.depthStencilAttachment = &wgpuDepthStencil;
     }
@@ -2553,18 +2552,18 @@ GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult webgpu_commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label,
+GfxResult webgpu_commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassDescriptor* descriptor,
     GfxComputePassEncoder* outEncoder)
 {
-    if (!commandEncoder || !outEncoder) {
+    if (!commandEncoder || !descriptor || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
     auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(commandEncoder);
 
     WGPUComputePassDescriptor wgpuDesc = WGPU_COMPUTE_PASS_DESCRIPTOR_INIT;
-    if (label) {
-        wgpuDesc.label = gfxStringView(label);
+    if (descriptor->label) {
+        wgpuDesc.label = gfxStringView(descriptor->label);
     }
 
     WGPUComputePassEncoder wgpuEncoder = wgpuCommandEncoderBeginComputePass(encoderPtr->handle(), &wgpuDesc);
@@ -3276,19 +3275,14 @@ void WebGPUBackend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) cons
     webgpu_commandEncoderDestroy(commandEncoder);
 }
 GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-    GfxTextureView const* colorAttachments, uint32_t colorAttachmentCount,
-    const GfxColor* clearColors, const GfxTextureLayout* colorLayouts,
-    GfxTextureView depthStencilAttachment, float depthClearValue, uint32_t stencilClearValue,
-    GfxTextureLayout depthStencilLayout,
+    const GfxRenderPassDescriptor* descriptor,
     GfxRenderPassEncoder* outRenderPass) const
 {
-    return webgpu_commandEncoderBeginRenderPass(commandEncoder, colorAttachments, colorAttachmentCount,
-        clearColors, colorLayouts, depthStencilAttachment, depthClearValue, stencilClearValue,
-        depthStencilLayout, outRenderPass);
+    return webgpu_commandEncoderBeginRenderPass(commandEncoder, descriptor, outRenderPass);
 }
-GfxResult WebGPUBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass) const
+GfxResult WebGPUBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassDescriptor* descriptor, GfxComputePassEncoder* outComputePass) const
 {
-    return webgpu_commandEncoderBeginComputePass(commandEncoder, label, outComputePass);
+    return webgpu_commandEncoderBeginComputePass(commandEncoder, descriptor, outComputePass);
 }
 void WebGPUBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset,
     GfxBuffer destination, uint64_t destinationOffset, uint64_t size) const

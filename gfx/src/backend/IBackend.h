@@ -106,15 +106,13 @@ public:
     // CommandEncoder functions
     virtual void commandEncoderDestroy(GfxCommandEncoder commandEncoder) const = 0;
     virtual GfxResult commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-        const GfxTextureView* colorAttachments, uint32_t colorAttachmentCount,
-        const GfxColor* clearColors,
-        const GfxTextureLayout* colorFinalLayouts,
-        GfxTextureView depthStencilAttachment,
-        float depthClearValue, uint32_t stencilClearValue,
-        GfxTextureLayout depthFinalLayout,
+        const GfxRenderPassDescriptor* descriptor,
         GfxRenderPassEncoder* outRenderPass) const
         = 0;
-    virtual GfxResult commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const char* label, GfxComputePassEncoder* outComputePass) const = 0;
+    virtual GfxResult commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder,
+        const GfxComputePassDescriptor* descriptor,
+        GfxComputePassEncoder* outComputePass) const
+        = 0;
     virtual void commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
         GfxBuffer source, uint64_t sourceOffset,
         GfxBuffer destination, uint64_t destinationOffset,
