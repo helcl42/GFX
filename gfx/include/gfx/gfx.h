@@ -308,6 +308,19 @@ typedef enum GfxResult {
     GFX_RESULT_ERROR_UNKNOWN
 } GfxResult;
 
+typedef enum {
+    GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE = 0,
+    GFX_DEBUG_MESSAGE_SEVERITY_INFO = 1,
+    GFX_DEBUG_MESSAGE_SEVERITY_WARNING = 2,
+    GFX_DEBUG_MESSAGE_SEVERITY_ERROR = 3
+} GfxDebugMessageSeverity;
+
+typedef enum {
+    GFX_DEBUG_MESSAGE_TYPE_GENERAL = 0,
+    GFX_DEBUG_MESSAGE_TYPE_VALIDATION = 1,
+    GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE = 2
+} GfxDebugMessageType;
+
 // ============================================================================
 // Forward Declarations (Opaque Handles)
 // ============================================================================
@@ -334,24 +347,7 @@ typedef struct GfxFence_T* GfxFence;
 typedef struct GfxSemaphore_T* GfxSemaphore;
 
 // ============================================================================
-// Debug Message Types
-// ============================================================================
-
-typedef enum {
-    GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE = 0,
-    GFX_DEBUG_MESSAGE_SEVERITY_INFO = 1,
-    GFX_DEBUG_MESSAGE_SEVERITY_WARNING = 2,
-    GFX_DEBUG_MESSAGE_SEVERITY_ERROR = 3
-} GfxDebugMessageSeverity;
-
-typedef enum {
-    GFX_DEBUG_MESSAGE_TYPE_GENERAL = 0,
-    GFX_DEBUG_MESSAGE_TYPE_VALIDATION = 1,
-    GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE = 2
-} GfxDebugMessageType;
-
-// ============================================================================
-// Debug Callback
+// Callback Function Types
 // ============================================================================
 
 typedef void (*GfxDebugCallback)(
