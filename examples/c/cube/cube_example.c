@@ -30,7 +30,7 @@
 #define MSAA_SAMPLE_COUNT GFX_SAMPLE_COUNT_4
 #define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
 #define DEPTH_FORMAT GFX_TEXTURE_FORMAT_DEPTH32_FLOAT
-#define GFX_BACKEND_API GFX_BACKEND_VULKAN
+#define GFX_BACKEND_API GFX_BACKEND_WEBGPU
 
 // Debug callback function
 static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData)
@@ -148,7 +148,7 @@ void matrixMultiply(float* result, const float* a, const float* b);
 void matrixRotateX(float* matrix, float angle);
 void matrixRotateY(float* matrix, float angle);
 void matrixRotateZ(float* matrix, float angle);
-void matrixPerspective(float* matrix, float fov, float aspect, float near, float far);
+void matrixPerspective(float* matrix, float fov, float aspect, float near, float far, GfxBackend backend);
 void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ,
     float centerX, float centerY, float centerZ,
     float upX, float upY, float upZ);
@@ -677,7 +677,7 @@ bool createRenderingResources(CubeApp* app)
     size_t vertexShaderSize, fragmentShaderSize;
     void* vertexShaderCode = NULL;
     void* fragmentShaderCode = NULL;
-    
+
     GfxBackend backend = gfxAdapterGetBackend(app->adapter);
     if (backend == GFX_BACKEND_WEBGPU) {
         // Load WGSL shaders for WebGPU
@@ -786,7 +786,7 @@ bool createRenderPipeline(CubeApp* app)
     GfxPrimitiveState primitiveState = {
         .topology = GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         .stripIndexFormat = NULL,
-        .frontFace = GFX_FRONT_FACE_CLOCKWISE,
+        .frontFace = GFX_FRONT_FACE_COUNTER_CLOCKWISE,
         .cullMode = GFX_CULL_MODE_BACK, // Enable back-face culling
         .polygonMode = GFX_POLYGON_MODE_FILL
     };
@@ -859,12 +859,14 @@ void updateCube(CubeApp* app, int cubeIndex)
         0.0f, 1.0f, 0.0f); // up vector
 
     // Create perspective projection matrix
+    GfxBackend backend = gfxAdapterGetBackend(app->adapter);
     float aspect = (float)gfxSwapchainGetWidth(app->swapchain) / (float)gfxSwapchainGetHeight(app->swapchain);
     matrixPerspective(uniforms.projection,
         45.0f * M_PI / 180.0f, // 45 degree FOV
         aspect,
         0.1f, // near plane
-        100.0f); // far plane
+        100.0f, // far plane
+        backend); // Adjust for clip space differences
 
     // Upload uniform data to buffer at aligned offset
     // Formula: (frame * CUBE_COUNT + cube) * alignedSize
@@ -922,7 +924,7 @@ void render(CubeApp* app)
     //     fprintf(stderr, "Failed to create command encoder\n");
     //     return;
     // }
-    
+
     GfxCommandEncoder encoder = app->commandEncoders[app->currentFrame];
     gfxCommandEncoderBegin(encoder);
 
@@ -932,36 +934,36 @@ void render(CubeApp* app)
 
     GfxColorAttachment colorAttachments[2];
     uint32_t colorAttachmentCount;
-    
+
     if (MSAA_SAMPLE_COUNT == GFX_SAMPLE_COUNT_1) {
         colorAttachments[0].view = backbuffer;
         colorAttachments[0].resolveView = NULL;
         colorAttachments[0].loadOp = GFX_LOAD_OP_CLEAR;
         colorAttachments[0].storeOp = GFX_STORE_OP_STORE;
-        colorAttachments[0].resolveLoadOp = GFX_LOAD_OP_DONT_CARE;  // Unused but must be initialized
-        colorAttachments[0].resolveStoreOp = GFX_STORE_OP_STORE;    // Unused but must be initialized
+        colorAttachments[0].resolveLoadOp = GFX_LOAD_OP_DONT_CARE; // Unused but must be initialized
+        colorAttachments[0].resolveStoreOp = GFX_STORE_OP_STORE; // Unused but must be initialized
         colorAttachments[0].clearColor = clearColor;
         colorAttachments[0].finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC;
-        colorAttachments[0].resolveFinalLayout = GFX_TEXTURE_LAYOUT_UNDEFINED;  // Unused but must be initialized
+        colorAttachments[0].resolveFinalLayout = GFX_TEXTURE_LAYOUT_UNDEFINED; // Unused but must be initialized
         colorAttachmentCount = 1;
     } else {
         colorAttachments[0].view = app->msaaColorTextureView;
-        colorAttachments[0].resolveView = backbuffer;  // Resolve MSAA to backbuffer
+        colorAttachments[0].resolveView = backbuffer; // Resolve MSAA to backbuffer
         colorAttachments[0].loadOp = GFX_LOAD_OP_CLEAR;
-        colorAttachments[0].storeOp = GFX_STORE_OP_DONT_CARE;  // MSAA buffer doesn't need to be stored
-        colorAttachments[0].resolveLoadOp = GFX_LOAD_OP_DONT_CARE;  // Don't care about resolve target before resolve
-        colorAttachments[0].resolveStoreOp = GFX_STORE_OP_STORE;  // Store the resolved result
+        colorAttachments[0].storeOp = GFX_STORE_OP_DONT_CARE; // MSAA buffer doesn't need to be stored
+        colorAttachments[0].resolveLoadOp = GFX_LOAD_OP_DONT_CARE; // Don't care about resolve target before resolve
+        colorAttachments[0].resolveStoreOp = GFX_STORE_OP_STORE; // Store the resolved result
         colorAttachments[0].clearColor = clearColor;
-        colorAttachments[0].finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT;  // MSAA attachment layout
-        colorAttachments[0].resolveFinalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC;  // Resolve target layout
-        colorAttachmentCount = 1;  // Only 1 attachment now, with resolve target
+        colorAttachments[0].finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT; // MSAA attachment layout
+        colorAttachments[0].resolveFinalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC; // Resolve target layout
+        colorAttachmentCount = 1; // Only 1 attachment now, with resolve target
     }
 
     GfxDepthStencilAttachment depthAttachment = {
         .view = app->depthTextureView,
         .resolveView = NULL,
         .depthLoadOp = GFX_LOAD_OP_CLEAR,
-        .depthStoreOp = GFX_STORE_OP_DONT_CARE,  // Depth buffer contents not needed after render
+        .depthStoreOp = GFX_STORE_OP_DONT_CARE, // Depth buffer contents not needed after render
         .stencilLoadOp = GFX_LOAD_OP_DONT_CARE,
         .stencilStoreOp = GFX_STORE_OP_DONT_CARE,
         .depthClearValue = 1.0f,
@@ -1195,14 +1197,18 @@ void matrixRotateZ(float* matrix, float angle)
     matrix[5] = c;
 }
 
-void matrixPerspective(float* matrix, float fov, float aspect, float near, float far)
+void matrixPerspective(float* matrix, float fov, float aspect, float near, float far, GfxBackend backend)
 {
     memset(matrix, 0, 16 * sizeof(float));
 
     float f = 1.0f / tanf(fov / 2.0f);
 
     matrix[0] = f / aspect;
-    matrix[5] = f;
+    if (backend == GFX_BACKEND_WEBGPU) {
+        matrix[5] = f;
+    } else {
+        matrix[5] = -f; // Invert Y for Vulkan
+    }
     matrix[10] = (far + near) / (near - far);
     matrix[11] = -1.0f;
     matrix[14] = (2.0f * far * near) / (near - far);
@@ -1358,7 +1364,7 @@ static void* loadTextFile(const char* filepath, size_t* outSize)
 
     // Null-terminate for text files
     buffer[fileSize] = '\0';
-    
+
     // Return size including null terminator for shader code
     *outSize = fileSize + 1;
     return buffer;
