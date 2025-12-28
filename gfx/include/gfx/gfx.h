@@ -436,9 +436,11 @@ typedef struct {
 
 typedef struct {
     GfxTextureView view;
+    GfxTextureView resolveView; // Optional: for MSAA resolve, set to nullptr if not used
     float depthClearValue;
     uint32_t stencilClearValue;
     GfxTextureLayout finalLayout;
+    GfxTextureLayout resolveFinalLayout; // Layout for resolve target (when resolveView is set)
 } GfxDepthStencilAttachment;
 
 typedef struct {

@@ -813,9 +813,11 @@ struct ColorAttachment {
 
 struct DepthStencilAttachment {
     std::shared_ptr<TextureView> view;
+    std::shared_ptr<TextureView> resolveView; // Optional: for MSAA resolve
     float depthClearValue = 1.0f;
     uint32_t stencilClearValue = 0;
     TextureLayout finalLayout = TextureLayout::Undefined;
+    TextureLayout resolveFinalLayout = TextureLayout::Undefined; // Layout for resolve target
 };
 
 struct RenderPassDescriptor {
