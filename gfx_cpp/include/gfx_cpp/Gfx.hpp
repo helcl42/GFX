@@ -735,6 +735,10 @@ struct SemaphoreDescriptor {
     uint64_t initialValue = 0; // For timeline semaphores, ignored for binary
 };
 
+struct CommandEncoderDescriptor {
+    std::string label;
+};
+
 struct DeviceLimits {
     uint64_t minUniformBufferOffsetAlignment = 0;
     uint64_t minStorageBufferOffsetAlignment = 0;
@@ -1089,7 +1093,7 @@ public:
     virtual std::shared_ptr<RenderPipeline> createRenderPipeline(const RenderPipelineDescriptor& descriptor) = 0;
     virtual std::shared_ptr<ComputePipeline> createComputePipeline(const ComputePipelineDescriptor& descriptor) = 0;
 
-    virtual std::shared_ptr<CommandEncoder> createCommandEncoder(const std::string& label = "") = 0;
+    virtual std::shared_ptr<CommandEncoder> createCommandEncoder(const CommandEncoderDescriptor& descriptor = {}) = 0;
 
     // Synchronization objects
     virtual std::shared_ptr<Fence> createFence(const FenceDescriptor& descriptor = {}) = 0;

@@ -444,7 +444,8 @@ static bool createComputeResources(ComputeApp* app)
     // Transition compute texture to SHADER_READ_ONLY layout initially
     // This way we don't need special handling for the first frame
     GfxCommandEncoder initEncoder = NULL;
-    if (gfxDeviceCreateCommandEncoder(app->device, "Init Layout Transition", &initEncoder) != GFX_RESULT_SUCCESS) {
+    GfxCommandEncoderDescriptor initEncoderDesc = { .label = "Init Layout Transition" };
+    if (gfxDeviceCreateCommandEncoder(app->device, &initEncoderDesc, &initEncoder) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create command encoder for initial layout transition\n");
         return false;
     }
@@ -704,7 +705,8 @@ static bool createSyncObjects(ComputeApp* app)
         // Create command encoder for this frame
         char label[64];
         snprintf(label, sizeof(label), "Command Encoder %d", i);
-        if (gfxDeviceCreateCommandEncoder(app->device, label, &app->commandEncoders[i]) != GFX_RESULT_SUCCESS) {
+        GfxCommandEncoderDescriptor encoderDesc = { .label = label };
+        if (gfxDeviceCreateCommandEncoder(app->device, &encoderDesc, &app->commandEncoders[i]) != GFX_RESULT_SUCCESS) {
             fprintf(stderr, "Failed to create command encoder %d\n", i);
             return false;
         }

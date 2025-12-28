@@ -2519,9 +2519,9 @@ GfxResult VulkanBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
     }
 }
 
-GfxResult VulkanBackend::deviceCreateCommandEncoder(GfxDevice device, const char* label, GfxCommandEncoder* outEncoder) const
+GfxResult VulkanBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
 {
-    if (!device || !outEncoder) {
+    if (!device || !descriptor || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
@@ -2537,7 +2537,7 @@ GfxResult VulkanBackend::deviceCreateCommandEncoder(GfxDevice device, const char
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    (void)label; // Unused for now
+    (void)descriptor->label; // Unused for now
 }
 
 GfxResult VulkanBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const

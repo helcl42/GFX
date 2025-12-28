@@ -391,9 +391,9 @@ GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const G
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const char* label, GfxCommandEncoder* outEncoder)
+GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder)
 {
-    if (!device || !outEncoder) {
+    if (!device || !descriptor || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
     *outEncoder = nullptr;
@@ -404,7 +404,7 @@ GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const char* label, Gfx
 
     GfxBackend backend = gfx::getBackend(device);
     GfxCommandEncoder nativeEncoder = nullptr;
-    GfxResult result = api->deviceCreateCommandEncoder(gfx::native(device), label, &nativeEncoder);
+    GfxResult result = api->deviceCreateCommandEncoder(gfx::native(device), descriptor, &nativeEncoder);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }

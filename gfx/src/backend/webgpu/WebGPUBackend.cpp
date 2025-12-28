@@ -2071,18 +2071,18 @@ GfxResult webgpu_deviceCreateComputePipeline(GfxDevice device, const GfxComputeP
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult webgpu_deviceCreateCommandEncoder(GfxDevice device, const char* label,
+GfxResult webgpu_deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor,
     GfxCommandEncoder* outEncoder)
 {
-    if (!device || !outEncoder) {
+    if (!device || !descriptor || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
 
     WGPUCommandEncoderDescriptor wgpuDesc = WGPU_COMMAND_ENCODER_DESCRIPTOR_INIT;
-    if (label) {
-        wgpuDesc.label = gfxStringView(label);
+    if (descriptor->label) {
+        wgpuDesc.label = gfxStringView(descriptor->label);
     }
 
     WGPUCommandEncoder wgpuEncoder = wgpuDeviceCreateCommandEncoder(devicePtr->handle(), &wgpuDesc);
@@ -3419,9 +3419,9 @@ GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
 {
     return webgpu_deviceCreateComputePipeline(device, descriptor, outPipeline);
 }
-GfxResult WebGPUBackend::deviceCreateCommandEncoder(GfxDevice device, const char* label, GfxCommandEncoder* outEncoder) const
+GfxResult WebGPUBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
 {
-    return webgpu_deviceCreateCommandEncoder(device, label, outEncoder);
+    return webgpu_deviceCreateCommandEncoder(device, descriptor, outEncoder);
 }
 GfxResult WebGPUBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
 {

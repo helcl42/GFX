@@ -426,7 +426,7 @@ bool ComputeApp::createComputeResources()
         }
 
         // Transition compute texture to SHADER_READ_ONLY layout initially
-        auto initEncoder = device->createCommandEncoder("Init Layout Transition");
+        auto initEncoder = device->createCommandEncoder({"Init Layout Transition"});
         if (initEncoder) {
             initEncoder->begin();
 
@@ -668,7 +668,7 @@ bool ComputeApp::createSyncObjects()
                 return false;
             }
 
-            commandEncoders[i] = device->createCommandEncoder("Command Encoder " + std::to_string(i));
+            commandEncoders[i] = device->createCommandEncoder({"Command Encoder " + std::to_string(i)});
             if (!commandEncoders[i]) {
                 std::cerr << "Failed to create command encoder " << i << std::endl;
                 return false;

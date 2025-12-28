@@ -1554,10 +1554,13 @@ public:
         return std::make_shared<CComputePipelineImpl>(pipeline);
     }
 
-    std::shared_ptr<CommandEncoder> createCommandEncoder(const std::string& label = "") override
+    std::shared_ptr<CommandEncoder> createCommandEncoder(const CommandEncoderDescriptor& descriptor = {}) override
     {
+        GfxCommandEncoderDescriptor cDesc = {};
+        cDesc.label = descriptor.label.c_str();
+
         GfxCommandEncoder encoder = nullptr;
-        GfxResult result = gfxDeviceCreateCommandEncoder(m_handle, label.c_str(), &encoder);
+        GfxResult result = gfxDeviceCreateCommandEncoder(m_handle, &cDesc, &encoder);
         if (result != GFX_RESULT_SUCCESS || !encoder) {
             throw std::runtime_error("Failed to create command encoder");
         }

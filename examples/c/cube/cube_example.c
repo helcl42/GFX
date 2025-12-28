@@ -458,7 +458,8 @@ bool createSyncObjects(CubeApp* app)
 
         // Create command encoder for this frame
         snprintf(label, sizeof(label), "Command Encoder %d", i);
-        if (gfxDeviceCreateCommandEncoder(app->device, label, &app->commandEncoders[i]) != GFX_RESULT_SUCCESS) {
+        GfxCommandEncoderDescriptor encoderDesc = { .label = label };
+        if (gfxDeviceCreateCommandEncoder(app->device, &encoderDesc, &app->commandEncoders[i]) != GFX_RESULT_SUCCESS) {
             fprintf(stderr, "Failed to create command encoder %d\n", i);
             return false;
         }
