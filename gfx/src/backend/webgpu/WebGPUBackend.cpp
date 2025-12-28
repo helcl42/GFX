@@ -2140,10 +2140,35 @@ GfxResult webgpu_deviceCreateComputePipeline(GfxDevice device, const GfxComputeP
         wgpuDesc.label = gfxStringView(descriptor->label);
     }
 
+    // Create pipeline layout if bind group layouts are provided
+    WGPUPipelineLayout pipelineLayout = nullptr;
+    if (descriptor->bindGroupLayoutCount > 0 && descriptor->bindGroupLayouts) {
+        std::vector<WGPUBindGroupLayout> wgpuBindGroupLayouts;
+        wgpuBindGroupLayouts.reserve(descriptor->bindGroupLayoutCount);
+
+        for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
+            auto* layout = reinterpret_cast<gfx::webgpu::BindGroupLayout*>(descriptor->bindGroupLayouts[i]);
+            wgpuBindGroupLayouts.push_back(layout->handle());
+        }
+
+        WGPUPipelineLayoutDescriptor layoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
+        layoutDesc.bindGroupLayouts = wgpuBindGroupLayouts.data();
+        layoutDesc.bindGroupLayoutCount = static_cast<uint32_t>(wgpuBindGroupLayouts.size());
+
+        pipelineLayout = wgpuDeviceCreatePipelineLayout(devicePtr->handle(), &layoutDesc);
+        wgpuDesc.layout = pipelineLayout;
+    }
+
     wgpuDesc.compute.module = shader->handle();
     wgpuDesc.compute.entryPoint = gfxStringView(descriptor->entryPoint);
 
     WGPUComputePipeline wgpuPipeline = wgpuDeviceCreateComputePipeline(devicePtr->handle(), &wgpuDesc);
+
+    // Release the pipeline layout if we created one (pipeline holds its own reference)
+    if (pipelineLayout) {
+        wgpuPipelineLayoutRelease(pipelineLayout);
+    }
+
     if (!wgpuPipeline) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
