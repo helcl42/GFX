@@ -938,8 +938,11 @@ void render(CubeApp* app)
         colorAttachments[0].resolveView = NULL;
         colorAttachments[0].loadOp = GFX_LOAD_OP_CLEAR;
         colorAttachments[0].storeOp = GFX_STORE_OP_STORE;
+        colorAttachments[0].resolveLoadOp = GFX_LOAD_OP_DONT_CARE;  // Unused but must be initialized
+        colorAttachments[0].resolveStoreOp = GFX_STORE_OP_STORE;    // Unused but must be initialized
         colorAttachments[0].clearColor = clearColor;
         colorAttachments[0].finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC;
+        colorAttachments[0].resolveFinalLayout = GFX_TEXTURE_LAYOUT_UNDEFINED;  // Unused but must be initialized
         colorAttachmentCount = 1;
     } else {
         colorAttachments[0].view = app->msaaColorTextureView;

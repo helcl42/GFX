@@ -3387,7 +3387,10 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         colorAttachment.storeOp = gfxStoreOpToVkStoreOp(colorAttachments[i].storeOp);
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        // Use UNDEFINED if we're clearing or don't care, otherwise preserve contents with COLOR_ATTACHMENT_OPTIMAL
+        colorAttachment.initialLayout = (colorAttachments[i].loadOp == GFX_LOAD_OP_LOAD) 
+            ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL 
+            : VK_IMAGE_LAYOUT_UNDEFINED;
         colorAttachment.finalLayout = gfxLayoutToVkImageLayout(colorAttachments[i].finalLayout);
         attachments.push_back(colorAttachment);
 
@@ -3409,7 +3412,10 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
             resolveAttachment.storeOp = gfxStoreOpToVkStoreOp(colorAttachments[i].resolveStoreOp);
             resolveAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             resolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            resolveAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            // Use UNDEFINED if we're clearing or don't care, otherwise preserve contents with COLOR_ATTACHMENT_OPTIMAL
+            resolveAttachment.initialLayout = (colorAttachments[i].resolveLoadOp == GFX_LOAD_OP_LOAD) 
+                ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL 
+                : VK_IMAGE_LAYOUT_UNDEFINED;
             resolveAttachment.finalLayout = gfxLayoutToVkImageLayout(colorAttachments[i].resolveFinalLayout);
             attachments.push_back(resolveAttachment);
 
@@ -3444,7 +3450,11 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         depthAttachment.storeOp = gfxStoreOpToVkStoreOp(depthStencilAttachment->depthStoreOp);
         depthAttachment.stencilLoadOp = gfxLoadOpToVkLoadOp(depthStencilAttachment->stencilLoadOp);
         depthAttachment.stencilStoreOp = gfxStoreOpToVkStoreOp(depthStencilAttachment->stencilStoreOp);
-        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        // Use UNDEFINED if we're clearing or don't care about both depth AND stencil, otherwise preserve contents
+        depthAttachment.initialLayout = (depthStencilAttachment->depthLoadOp == GFX_LOAD_OP_LOAD || 
+                                         depthStencilAttachment->stencilLoadOp == GFX_LOAD_OP_LOAD)
+            ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL 
+            : VK_IMAGE_LAYOUT_UNDEFINED;
         depthAttachment.finalLayout = gfxLayoutToVkImageLayout(depthStencilAttachment->finalLayout);
         attachments.push_back(depthAttachment);
 
