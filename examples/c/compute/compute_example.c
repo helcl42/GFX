@@ -29,6 +29,7 @@
 #define COMPUTE_TEXTURE_HEIGHT 600
 #define MAX_FRAMES_IN_FLIGHT 3
 #define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
+#define GFX_BACKEND_API GFX_BACKEND_WEBGPU
 
 // Debug callback function
 static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData)
@@ -129,34 +130,92 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
     }
 }
 
-static bool readShaderFile(const char* filename, char** outCode, size_t* outSize)
+// Helper function to load binary files (SPIR-V shaders)
+static void* loadBinaryFile(const char* filepath, size_t* outSize)
 {
-    FILE* file = fopen(filename, "rb");
+    FILE* file = fopen(filepath, "rb");
     if (!file) {
-        fprintf(stderr, "Failed to open shader file: %s\n", filename);
-        return false;
+        fprintf(stderr, "Failed to open file: %s\n", filepath);
+        return NULL;
     }
 
+    // Get file size
     fseek(file, 0, SEEK_END);
-    size_t size = ftell(file);
+    long fileSize = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    *outCode = (char*)malloc(size);
-    if (!*outCode) {
+    if (fileSize <= 0) {
+        fprintf(stderr, "Invalid file size for: %s\n", filepath);
         fclose(file);
-        return false;
+        return NULL;
     }
 
-    size_t read = fread(*outCode, 1, size, file);
+    // Allocate buffer
+    void* buffer = malloc(fileSize);
+    if (!buffer) {
+        fprintf(stderr, "Failed to allocate memory for file: %s\n", filepath);
+        fclose(file);
+        return NULL;
+    }
+
+    // Read file
+    size_t bytesRead = fread(buffer, 1, fileSize, file);
     fclose(file);
 
-    if (read != size) {
-        free(*outCode);
-        return false;
+    if (bytesRead != (size_t)fileSize) {
+        fprintf(stderr, "Failed to read complete file: %s\n", filepath);
+        free(buffer);
+        return NULL;
     }
 
-    *outSize = size;
-    return true;
+    *outSize = fileSize;
+    return buffer;
+}
+
+// Helper function to load text files (WGSL shaders)
+static void* loadTextFile(const char* filepath, size_t* outSize)
+{
+    FILE* file = fopen(filepath, "r");
+    if (!file) {
+        fprintf(stderr, "Failed to open file: %s\n", filepath);
+        return NULL;
+    }
+
+    // Get file size
+    fseek(file, 0, SEEK_END);
+    long fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    if (fileSize <= 0) {
+        fprintf(stderr, "Invalid file size for: %s\n", filepath);
+        fclose(file);
+        return NULL;
+    }
+
+    // Allocate buffer with extra byte for null terminator
+    char* buffer = (char*)malloc(fileSize + 1);
+    if (!buffer) {
+        fprintf(stderr, "Failed to allocate memory for file: %s\n", filepath);
+        fclose(file);
+        return NULL;
+    }
+
+    // Read file
+    size_t bytesRead = fread(buffer, 1, fileSize, file);
+    fclose(file);
+
+    if (bytesRead != (size_t)fileSize) {
+        fprintf(stderr, "Failed to read complete file: %s\n", filepath);
+        free(buffer);
+        return NULL;
+    }
+
+    // Null-terminate for text files
+    buffer[fileSize] = '\0';
+    
+    // Return size including null terminator for shader code
+    *outSize = fileSize + 1;
+    return buffer;
 }
 
 static bool initWindow(ComputeApp* app)
@@ -189,7 +248,7 @@ static bool initWindow(ComputeApp* app)
 static bool initGraphics(ComputeApp* app)
 {
     printf("Loading graphics backend...\n");
-    if (!gfxLoadBackend(GFX_BACKEND_AUTO)) {
+    if (!gfxLoadBackend(GFX_BACKEND_API)) {
         fprintf(stderr, "Failed to load any graphics backend\n");
         return false;
     }
@@ -200,7 +259,7 @@ static bool initGraphics(ComputeApp* app)
 
     // Create graphics instance
     GfxInstanceDescriptor instanceDesc = {
-        .backend = GFX_BACKEND_AUTO,
+        .backend = GFX_BACKEND_API,
         .enableValidation = true,
         .enabledHeadless = false,
         .applicationName = "Compute Example (C)",
@@ -327,11 +386,24 @@ static bool createComputeResources(ComputeApp* app)
         return false;
     }
 
-    // Load compute shader
-    char* computeCode = NULL;
+    // Load compute shader based on backend
+    void* computeCode = NULL;
     size_t computeSize = 0;
-    if (!readShaderFile("generate.comp.spv", &computeCode, &computeSize)) {
-        return false;
+    GfxBackend backend = gfxAdapterGetBackend(app->adapter);
+    if (backend == GFX_BACKEND_WEBGPU) {
+        // Load WGSL shader for WebGPU
+        computeCode = loadTextFile("shaders/generate.comp.wgsl", &computeSize);
+        if (!computeCode) {
+            fprintf(stderr, "Failed to load WGSL compute shader\n");
+            return false;
+        }
+    } else {
+        // Load SPIR-V shader for Vulkan
+        computeCode = loadBinaryFile("generate.comp.spv", &computeSize);
+        if (!computeCode) {
+            fprintf(stderr, "Failed to load SPIR-V compute shader\n");
+            return false;
+        }
     }
 
     GfxShaderDescriptor computeShaderDesc = {
@@ -369,6 +441,7 @@ static bool createComputeResources(ComputeApp* app)
             .type = GFX_BINDING_TYPE_STORAGE_TEXTURE,
             .storageTexture = {
                 .format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM,
+                .viewDimension = GFX_TEXTURE_VIEW_TYPE_2D,
                 .writeOnly = true,
             },
         },
@@ -484,11 +557,24 @@ static bool createComputeResources(ComputeApp* app)
 
 static bool createRenderResources(ComputeApp* app)
 {
-    // Load shaders
-    char* vertexCode = NULL;
+    // Load shaders based on backend
+    void* vertexCode = NULL;
     size_t vertexSize = 0;
-    if (!readShaderFile("fullscreen.vert.spv", &vertexCode, &vertexSize)) {
-        return false;
+    GfxBackend backend = gfxAdapterGetBackend(app->adapter);
+    if (backend == GFX_BACKEND_WEBGPU) {
+        // Load WGSL shader for WebGPU
+        vertexCode = loadTextFile("shaders/fullscreen.vert.wgsl", &vertexSize);
+        if (!vertexCode) {
+            fprintf(stderr, "Failed to load WGSL vertex shader\n");
+            return false;
+        }
+    } else {
+        // Load SPIR-V shader for Vulkan
+        vertexCode = loadBinaryFile("fullscreen.vert.spv", &vertexSize);
+        if (!vertexCode) {
+            fprintf(stderr, "Failed to load SPIR-V vertex shader\n");
+            return false;
+        }
     }
 
     GfxShaderDescriptor vertexShaderDesc = {
@@ -504,10 +590,22 @@ static bool createRenderResources(ComputeApp* app)
     }
     free(vertexCode);
 
-    char* fragmentCode = NULL;
+    void* fragmentCode = NULL;
     size_t fragmentSize = 0;
-    if (!readShaderFile("postprocess.frag.spv", &fragmentCode, &fragmentSize)) {
-        return false;
+    if (backend == GFX_BACKEND_WEBGPU) {
+        // Load WGSL shader for WebGPU
+        fragmentCode = loadTextFile("shaders/postprocess.frag.wgsl", &fragmentSize);
+        if (!fragmentCode) {
+            fprintf(stderr, "Failed to load WGSL fragment shader\n");
+            return false;
+        }
+    } else {
+        // Load SPIR-V shader for Vulkan
+        fragmentCode = loadBinaryFile("postprocess.frag.spv", &fragmentSize);
+        if (!fragmentCode) {
+            fprintf(stderr, "Failed to load SPIR-V fragment shader\n");
+            return false;
+        }
     }
 
     GfxShaderDescriptor fragmentShaderDesc = {
@@ -528,7 +626,8 @@ static bool createRenderResources(ComputeApp* app)
         .magFilter = GFX_FILTER_MODE_LINEAR,
         .minFilter = GFX_FILTER_MODE_LINEAR,
         .addressModeU = GFX_ADDRESS_MODE_CLAMP_TO_EDGE,
-        .addressModeV = GFX_ADDRESS_MODE_CLAMP_TO_EDGE
+        .addressModeV = GFX_ADDRESS_MODE_CLAMP_TO_EDGE,
+        .maxAnisotropy = 1
     };
 
     if (gfxDeviceCreateSampler(app->device, &samplerDesc, &app->sampler) != GFX_RESULT_SUCCESS) {
@@ -565,6 +664,8 @@ static bool createRenderResources(ComputeApp* app)
             .visibility = GFX_SHADER_STAGE_FRAGMENT,
             .type = GFX_BINDING_TYPE_TEXTURE,
             .texture = {
+                .sampleType = GFX_TEXTURE_SAMPLE_TYPE_FLOAT,
+                .viewDimension = GFX_TEXTURE_VIEW_TYPE_2D,
                 .multisampled = false,
             },
         },
