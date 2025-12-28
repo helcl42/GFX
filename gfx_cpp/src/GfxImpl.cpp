@@ -1096,7 +1096,8 @@ public:
         if (!view) {
             return nullptr;
         }
-        // Swapchain texture views are owned by the swapchain, not by the wrapper
+        // Swapchain texture views are now cached by the backend (both Vulkan and WebGPU)
+        // The view is owned by the swapchain, not by this wrapper
         return std::make_shared<CTextureViewImpl>(view, false);
     }
 

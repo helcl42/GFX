@@ -30,7 +30,7 @@
 #define MSAA_SAMPLE_COUNT GFX_SAMPLE_COUNT_4
 #define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
 #define DEPTH_FORMAT GFX_TEXTURE_FORMAT_DEPTH32_FLOAT
-#define GFX_BACKEND_API GFX_BACKEND_WEBGPU
+#define GFX_BACKEND_API GFX_BACKEND_VULKAN
 
 // Debug callback function
 static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData)
@@ -1033,9 +1033,6 @@ void render(CubeApp* app)
     presentInfo.waitSemaphores = &app->renderFinishedSemaphores[app->currentFrame];
     presentInfo.waitSemaphoreCount = 1;
     gfxSwapchainPresent(app->swapchain, &presentInfo);
-
-    // Poll device for async operations (needed for WebGPU/Dawn backend)
-    gfxDevicePoll(app->device);
 
     // Move to next frame
     app->currentFrame = (app->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

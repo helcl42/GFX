@@ -1144,6 +1144,11 @@ public:
 
     ~Swapchain()
     {
+        // Release cached view if any
+        if (m_currentView) {
+            delete m_currentView;
+            m_currentView = nullptr;
+        }
         // Release cached texture if any
         if (m_currentTexture) {
             wgpuTextureRelease(m_currentTexture);
@@ -1173,8 +1178,25 @@ public:
             wgpuTextureRelease(m_currentTexture);
         }
         m_currentTexture = texture;
+
+        // Also clear the cached view when texture changes
+        if (m_currentView) {
+            delete m_currentView;
+            m_currentView = nullptr;
+        }
     }
     WGPUTexture getCurrentTexture() const { return m_currentTexture; }
+
+    // Cache texture view so it can be reused and cleaned up automatically
+    void setCurrentView(gfx::webgpu::TextureView* view)
+    {
+        // Release old view if any
+        if (m_currentView) {
+            delete m_currentView;
+        }
+        m_currentView = view;
+    }
+    gfx::webgpu::TextureView* getCurrentView() const { return m_currentView; }
 
 private:
     WGPUSurface m_surface = nullptr; // Non-owning
@@ -1185,6 +1207,7 @@ private:
     WGPUPresentMode m_presentMode = WGPUPresentMode_Fifo;
     uint32_t m_bufferCount = 0;
     WGPUTexture m_currentTexture = nullptr; // Cache current texture between acquire and present
+    gfx::webgpu::TextureView* m_currentView = nullptr; // Cache current texture view
 };
 
 class Fence {
@@ -1394,6 +1417,51 @@ static void onDeviceRequested(WGPURequestDeviceStatus status, WGPUDevice device,
     (void)userdata2; // Unused
 }
 
+static void uncapturedErrorCallback(WGPUDevice const*, WGPUErrorType type, WGPUStringView message, void*, void*)
+{
+    const char* errorType = "Unknown";
+    switch (type) {
+    case WGPUErrorType_Validation:
+        errorType = "Validation";
+        break;
+    case WGPUErrorType_OutOfMemory:
+        errorType = "OutOfMemory";
+        break;
+    case WGPUErrorType_Internal:
+        errorType = "Internal";
+        break;
+    default:
+        break;
+    }
+    fprintf(stderr, "[WebGPU ERROR - %s]: %.*s\n",
+        errorType, (int)message.length, message.data);
+}
+
+static void deviceLostCallback(WGPUDevice const*, WGPUDeviceLostReason reason, WGPUStringView message, void*, void*)
+{
+    const char* reasonStr = "Unknown";
+    switch (reason) {
+    case WGPUDeviceLostReason_Unknown:
+        reasonStr = "Unknown";
+        break;
+    case WGPUDeviceLostReason_Destroyed:
+        reasonStr = "Destroyed";
+        break;
+    case WGPUDeviceLostReason_CallbackCancelled:
+        reasonStr = "CallbackCancelled";
+        break;
+    case WGPUDeviceLostReason_FailedCreation:
+        reasonStr = "FailedCreation";
+        break;
+    default:
+        break;
+    }
+    if (message.data && message.length > 0) {
+        fprintf(stderr, "[WebGPU Device Lost - %s]: %.*s\n",
+            reasonStr, (int)message.length, message.data);
+    }
+}
+
 GfxResult webgpu_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor,
     GfxDevice* outDevice)
 {
@@ -1404,27 +1472,15 @@ GfxResult webgpu_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescript
     auto* adapterPtr = reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
 
     WGPUUncapturedErrorCallbackInfo errorCallbackInfo = WGPU_UNCAPTURED_ERROR_CALLBACK_INFO_INIT;
-    errorCallbackInfo.callback = [](WGPUDevice const*, WGPUErrorType type, WGPUStringView message, void*, void*) {
-        const char* errorType = "Unknown";
-        switch (type) {
-        case WGPUErrorType_Validation:
-            errorType = "Validation";
-            break;
-        case WGPUErrorType_OutOfMemory:
-            errorType = "OutOfMemory";
-            break;
-        case WGPUErrorType_Internal:
-            errorType = "Internal";
-            break;
-        default:
-            break;
-        }
-        fprintf(stderr, "[WebGPU ERROR - %s]: %.*s\n",
-            errorType, (int)message.length, message.data);
-    };
+    errorCallbackInfo.callback = uncapturedErrorCallback;
+
+    WGPUDeviceLostCallbackInfo deviceLostCallbackInfo = WGPU_DEVICE_LOST_CALLBACK_INFO_INIT;
+    deviceLostCallbackInfo.mode = WGPUCallbackMode_AllowSpontaneous;
+    deviceLostCallbackInfo.callback = deviceLostCallback;
 
     WGPUDeviceDescriptor wgpuDesc = WGPU_DEVICE_DESCRIPTOR_INIT;
     wgpuDesc.uncapturedErrorCallbackInfo = errorCallbackInfo;
+    wgpuDesc.deviceLostCallbackInfo = deviceLostCallbackInfo;
     if (descriptor && descriptor->label) {
         wgpuDesc.label = gfxStringView(descriptor->label);
     }
@@ -2351,6 +2407,11 @@ GfxTextureView webgpu_swapchainGetCurrentTextureView(GfxSwapchain swapchain)
 
     auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
 
+    // Return cached view if already created
+    if (swapchainPtr->getCurrentView()) {
+        return reinterpret_cast<GfxTextureView>(swapchainPtr->getCurrentView());
+    }
+
     // Use the cached texture from acquire - don't call wgpuSurfaceGetCurrentTexture again!
     // Dawn expects GetCurrentTexture to be called only ONCE per frame
     WGPUTexture texture = swapchainPtr->getCurrentTexture();
@@ -2367,7 +2428,9 @@ GfxTextureView webgpu_swapchainGetCurrentTextureView(GfxSwapchain swapchain)
         return nullptr;
     }
 
+    // Cache the view in the swapchain - it will be destroyed on next acquire or swapchain destruction
     auto* view = new gfx::webgpu::TextureView(wgpuView, nullptr);
+    swapchainPtr->setCurrentView(view);
     return reinterpret_cast<GfxTextureView>(view);
 }
 
@@ -2390,6 +2453,12 @@ GfxResult webgpu_swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* 
 
     // Release the cached texture after presenting
     swapchainPtr->setCurrentTexture(nullptr);
+
+    // Process events after present to handle async operations
+    // This is backend-specific and should be transparent to the client
+    WGPUAdapter adapter = wgpuDeviceGetAdapter(swapchainPtr->device());
+    WGPUInstance instance = wgpuAdapterGetInstance(adapter);
+    wgpuInstanceProcessEvents(instance);
 
     return GFX_RESULT_SUCCESS;
 }
@@ -2417,6 +2486,18 @@ GfxBufferUsage webgpu_bufferGetUsage(GfxBuffer buffer)
         return GFX_BUFFER_USAGE_NONE;
     }
     return reinterpret_cast<gfx::webgpu::Buffer*>(buffer)->getUsage();
+}
+
+struct MapCallbackData {
+    WGPUMapAsyncStatus status = WGPUMapAsyncStatus_Error;
+    bool completed = false;
+};
+
+static void bufferMapCallback(WGPUMapAsyncStatus status, WGPUStringView, void* userdata1, void*)
+{
+    auto* data = static_cast<MapCallbackData*>(userdata1);
+    data->status = status;
+    data->completed = true;
 }
 
 GfxResult webgpu_bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** mappedPointer)
@@ -2447,20 +2528,11 @@ GfxResult webgpu_bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, voi
     }
 
     // Set up async mapping with synchronous wait
-    struct MapCallbackData {
-        WGPUMapAsyncStatus status = WGPUMapAsyncStatus_Error;
-        bool completed = false;
-    };
-
     MapCallbackData callbackData;
 
     WGPUBufferMapCallbackInfo callbackInfo = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
     callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-    callbackInfo.callback = [](WGPUMapAsyncStatus status, WGPUStringView message, void* userdata1, void* userdata2) {
-        auto* data = static_cast<MapCallbackData*>(userdata1);
-        data->status = status;
-        data->completed = true;
-    };
+    callbackInfo.callback = bufferMapCallback;
     callbackInfo.userdata1 = &callbackData;
 
     WGPUFuture future = wgpuBufferMapAsync(bufferPtr->handle(), mapMode, offset, mapSize, callbackInfo);
@@ -2708,14 +2780,16 @@ GfxResult webgpu_queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo)
     if (submitInfo->signalFence) {
         auto* fencePtr = reinterpret_cast<gfx::webgpu::Fence*>(submitInfo->signalFence);
 
-        WGPUQueueWorkDoneCallbackInfo callbackInfo = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
-        callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-        callbackInfo.callback = [](WGPUQueueWorkDoneStatus status, WGPUStringView message, void* userdata1, void* userdata2) {
+        static auto fenceSignalCallback = [](WGPUQueueWorkDoneStatus status, WGPUStringView, void* userdata1, void*) {
             auto* fence = static_cast<gfx::webgpu::Fence*>(userdata1);
             if (status == WGPUQueueWorkDoneStatus_Success) {
                 fence->setSignaled(true);
             }
         };
+
+        WGPUQueueWorkDoneCallbackInfo callbackInfo = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
+        callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+        callbackInfo.callback = fenceSignalCallback;
         callbackInfo.userdata1 = fencePtr;
 
         WGPUFuture future = wgpuQueueOnSubmittedWorkDone(queuePtr->handle(), callbackInfo);
@@ -2779,15 +2853,17 @@ GfxResult webgpu_queueWaitIdle(GfxQueue queue)
     auto* queuePtr = reinterpret_cast<gfx::webgpu::Queue*>(queue);
 
     // Submit empty command to ensure all previous work is queued
-    bool workDone = false;
-    WGPUQueueWorkDoneCallbackInfo callbackInfo = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
-    callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-    callbackInfo.callback = [](WGPUQueueWorkDoneStatus status, WGPUStringView message, void* userdata1, void* userdata2) {
+    static auto queueWorkDoneCallback = [](WGPUQueueWorkDoneStatus status, WGPUStringView, void* userdata1, void*) {
         bool* done = static_cast<bool*>(userdata1);
         if (status == WGPUQueueWorkDoneStatus_Success) {
             *done = true;
         }
     };
+
+    bool workDone = false;
+    WGPUQueueWorkDoneCallbackInfo callbackInfo = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
+    callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+    callbackInfo.callback = queueWorkDoneCallback;
     callbackInfo.userdata1 = &workDone;
 
     WGPUFuture future = wgpuQueueOnSubmittedWorkDone(queuePtr->handle(), callbackInfo);
