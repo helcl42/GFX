@@ -817,6 +817,8 @@ static void drawFrame(ComputeApp* app)
     GfxColorAttachment colorAttachment = {
         .view = swapchainView,
         .resolveView = NULL,
+        .loadOp = GFX_LOAD_OP_CLEAR,
+        .storeOp = GFX_STORE_OP_STORE,
         .clearColor = { 0.0f, 0.0f, 0.0f, 1.0f },
         .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
     };

@@ -240,6 +240,17 @@ enum class DebugMessageType {
     Performance
 };
 
+enum class LoadOp {
+    Load,     // Load existing contents
+    Clear,    // Clear to specified clear value
+    DontCare  // Don't care about initial contents (better performance on tiled GPUs)
+};
+
+enum class StoreOp {
+    Store,    // Store contents after render pass
+    DontCare  // Don't care about contents after render pass (better performance for transient attachments)
+};
+
 enum class TextureLayout {
     Undefined,
     General,
@@ -806,6 +817,10 @@ struct TextureBarrier {
 struct ColorAttachment {
     std::shared_ptr<TextureView> view;
     std::shared_ptr<TextureView> resolveView = nullptr;
+    LoadOp loadOp = LoadOp::Clear;
+    StoreOp storeOp = StoreOp::Store;
+    LoadOp resolveLoadOp = LoadOp::DontCare;   // Load operation for resolve target
+    StoreOp resolveStoreOp = StoreOp::Store;   // Store operation for resolve target
     Color clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
     TextureLayout finalLayout = TextureLayout::Undefined;
     TextureLayout resolveFinalLayout = TextureLayout::Undefined;
@@ -814,6 +829,14 @@ struct ColorAttachment {
 struct DepthStencilAttachment {
     std::shared_ptr<TextureView> view;
     std::shared_ptr<TextureView> resolveView; // Optional: for MSAA resolve
+    LoadOp depthLoadOp = LoadOp::Clear;
+    StoreOp depthStoreOp = StoreOp::Store;
+    LoadOp stencilLoadOp = LoadOp::Clear;
+    StoreOp stencilStoreOp = StoreOp::Store;
+    LoadOp depthResolveLoadOp = LoadOp::DontCare;     // Load operation for depth resolve target
+    StoreOp depthResolveStoreOp = StoreOp::Store;     // Store operation for depth resolve target
+    LoadOp stencilResolveLoadOp = LoadOp::DontCare;   // Load operation for stencil resolve target
+    StoreOp stencilResolveStoreOp = StoreOp::Store;   // Store operation for stencil resolve target
     float depthClearValue = 1.0f;
     uint32_t stencilClearValue = 0;
     TextureLayout finalLayout = TextureLayout::Undefined;

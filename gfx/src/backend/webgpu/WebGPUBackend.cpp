@@ -135,6 +135,32 @@ bool formatHasStencil(GfxTextureFormat format)
     }
 }
 
+WGPULoadOp gfxLoadOpToWGPULoadOp(GfxLoadOp loadOp)
+{
+    switch (loadOp) {
+    case GFX_LOAD_OP_LOAD:
+        return WGPULoadOp_Load;
+    case GFX_LOAD_OP_CLEAR:
+        return WGPULoadOp_Clear;
+    case GFX_LOAD_OP_DONT_CARE:
+        return WGPULoadOp_Undefined;
+    default:
+        return WGPULoadOp_Undefined;
+    }
+}
+
+WGPUStoreOp gfxStoreOpToWGPUStoreOp(GfxStoreOp storeOp)
+{
+    switch (storeOp) {
+    case GFX_STORE_OP_STORE:
+        return WGPUStoreOp_Store;
+    case GFX_STORE_OP_DONT_CARE:
+        return WGPUStoreOp_Discard;
+    default:
+        return WGPUStoreOp_Discard;
+    }
+}
+
 WGPUBufferUsage gfxBufferUsageToWGPU(GfxBufferUsage usage)
 {
     WGPUBufferUsage wgpu_usage = WGPUBufferUsage_None;
@@ -2811,8 +2837,8 @@ GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
             if (colorAttachments[i].view) {
                 auto* viewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(colorAttachments[i].view);
                 attachment.view = viewPtr->handle();
-                attachment.loadOp = WGPULoadOp_Clear;
-                attachment.storeOp = WGPUStoreOp_Store;
+                attachment.loadOp = gfxLoadOpToWGPULoadOp(colorAttachments[i].loadOp);
+                attachment.storeOp = gfxStoreOpToWGPUStoreOp(colorAttachments[i].storeOp);
 
                 const GfxColor& color = colorAttachments[i].clearColor;
                 attachment.clearValue = { color.r, color.g, color.b, color.a };
@@ -2860,8 +2886,8 @@ GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
     if (depthStencilAttachment) {
         auto* viewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(depthStencilAttachment->view);
         wgpuDepthStencil.view = viewPtr->handle();
-        wgpuDepthStencil.depthLoadOp = WGPULoadOp_Clear;
-        wgpuDepthStencil.depthStoreOp = WGPUStoreOp_Store;
+        wgpuDepthStencil.depthLoadOp = gfxLoadOpToWGPULoadOp(depthStencilAttachment->depthLoadOp);
+        wgpuDepthStencil.depthStoreOp = gfxStoreOpToWGPUStoreOp(depthStencilAttachment->depthStoreOp);
         wgpuDepthStencil.depthClearValue = depthStencilAttachment->depthClearValue;
 
         // Only set stencil operations for formats that have a stencil aspect
@@ -2869,8 +2895,8 @@ GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
         WGPUTextureFormat wgpuFormat = viewPtr->getTexture()->getFormat();
         GfxTextureFormat format = wgpuFormatToGfxFormat(wgpuFormat);
         if (formatHasStencil(format)) {
-            wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Clear;
-            wgpuDepthStencil.stencilStoreOp = WGPUStoreOp_Store;
+            wgpuDepthStencil.stencilLoadOp = gfxLoadOpToWGPULoadOp(depthStencilAttachment->stencilLoadOp);
+            wgpuDepthStencil.stencilStoreOp = gfxStoreOpToWGPUStoreOp(depthStencilAttachment->stencilStoreOp);
             wgpuDepthStencil.stencilClearValue = depthStencilAttachment->stencilClearValue;
         } else {
             wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Undefined;

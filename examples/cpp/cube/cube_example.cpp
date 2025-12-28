@@ -790,6 +790,11 @@ void CubeApp::render()
         
         DepthStencilAttachment depthAttachment;
         depthAttachment.view = depthTextureView;
+        depthAttachment.resolveView = nullptr;
+        depthAttachment.depthLoadOp = LoadOp::Clear;
+        depthAttachment.depthStoreOp = StoreOp::DontCare;  // Depth buffer contents not needed after render
+        depthAttachment.stencilLoadOp = LoadOp::DontCare;
+        depthAttachment.stencilStoreOp = StoreOp::DontCare;
         depthAttachment.depthClearValue = 1.0f;
         depthAttachment.stencilClearValue = 0;
         depthAttachment.finalLayout = TextureLayout::DepthStencilAttachment;
@@ -799,6 +804,8 @@ void CubeApp::render()
             ColorAttachment colorAttachment;
             colorAttachment.view = backbuffer;
             colorAttachment.resolveView = nullptr;
+            colorAttachment.loadOp = LoadOp::Clear;
+            colorAttachment.storeOp = StoreOp::Store;
             colorAttachment.clearColor = clearColor;
             colorAttachment.finalLayout = TextureLayout::PresentSrc;
             renderPassDesc.colorAttachments = { colorAttachment };
@@ -807,6 +814,10 @@ void CubeApp::render()
             ColorAttachment msaaAttachment;
             msaaAttachment.view = msaaColorTextureView;
             msaaAttachment.resolveView = backbuffer;  // Resolve to backbuffer
+            msaaAttachment.loadOp = LoadOp::Clear;
+            msaaAttachment.storeOp = StoreOp::DontCare;  // MSAA buffer doesn't need to be stored
+            msaaAttachment.resolveLoadOp = LoadOp::DontCare;  // Don't care about resolve target before resolve
+            msaaAttachment.resolveStoreOp = StoreOp::Store;  // Store the resolved result
             msaaAttachment.clearColor = clearColor;
             msaaAttachment.finalLayout = TextureLayout::ColorAttachment;  // MSAA attachment layout
             msaaAttachment.resolveFinalLayout = TextureLayout::PresentSrc;  // Resolve target layout

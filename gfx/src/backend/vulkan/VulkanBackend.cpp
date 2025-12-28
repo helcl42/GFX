@@ -84,6 +84,32 @@ bool isDepthFormat(VkFormat format)
     return format == VK_FORMAT_D32_SFLOAT || format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D16_UNORM;
 }
 
+VkAttachmentLoadOp gfxLoadOpToVkLoadOp(GfxLoadOp loadOp)
+{
+    switch (loadOp) {
+    case GFX_LOAD_OP_LOAD:
+        return VK_ATTACHMENT_LOAD_OP_LOAD;
+    case GFX_LOAD_OP_CLEAR:
+        return VK_ATTACHMENT_LOAD_OP_CLEAR;
+    case GFX_LOAD_OP_DONT_CARE:
+        return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    default:
+        return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    }
+}
+
+VkAttachmentStoreOp gfxStoreOpToVkStoreOp(GfxStoreOp storeOp)
+{
+    switch (storeOp) {
+    case GFX_STORE_OP_STORE:
+        return VK_ATTACHMENT_STORE_OP_STORE;
+    case GFX_STORE_OP_DONT_CARE:
+        return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    default:
+        return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    }
+}
+
 GfxTextureFormat vkFormatToGfxFormat(VkFormat format)
 {
     switch (format) {
@@ -3357,8 +3383,8 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = colorView->getFormat();
         colorAttachment.samples = samples;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        colorAttachment.storeOp = isMSAA ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachment.loadOp = gfxLoadOpToVkLoadOp(colorAttachments[i].loadOp);
+        colorAttachment.storeOp = gfxStoreOpToVkStoreOp(colorAttachments[i].storeOp);
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -3379,8 +3405,8 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
             VkAttachmentDescription resolveAttachment{};
             resolveAttachment.format = resolveView->getFormat();
             resolveAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-            resolveAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            resolveAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            resolveAttachment.loadOp = gfxLoadOpToVkLoadOp(colorAttachments[i].resolveLoadOp);
+            resolveAttachment.storeOp = gfxStoreOpToVkStoreOp(colorAttachments[i].resolveStoreOp);
             resolveAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             resolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             resolveAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -3414,10 +3440,10 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = depthView->getFormat();
         depthAttachment.samples = sampleCountToVkSampleCount(depthView->getTexture()->getSampleCount());
-        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.loadOp = gfxLoadOpToVkLoadOp(depthStencilAttachment->depthLoadOp);
+        depthAttachment.storeOp = gfxStoreOpToVkStoreOp(depthStencilAttachment->depthStoreOp);
+        depthAttachment.stencilLoadOp = gfxLoadOpToVkLoadOp(depthStencilAttachment->stencilLoadOp);
+        depthAttachment.stencilStoreOp = gfxStoreOpToVkStoreOp(depthStencilAttachment->stencilStoreOp);
         depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         depthAttachment.finalLayout = gfxLayoutToVkImageLayout(depthStencilAttachment->finalLayout);
         attachments.push_back(depthAttachment);

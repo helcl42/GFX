@@ -321,6 +321,17 @@ typedef enum {
     GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE = 2
 } GfxDebugMessageType;
 
+typedef enum {
+    GFX_LOAD_OP_LOAD,      // Load existing contents
+    GFX_LOAD_OP_CLEAR,     // Clear to specified clear value
+    GFX_LOAD_OP_DONT_CARE  // Don't care about initial contents (better performance on tiled GPUs)
+} GfxLoadOp;
+
+typedef enum {
+    GFX_STORE_OP_STORE,     // Store contents after render pass
+    GFX_STORE_OP_DONT_CARE  // Don't care about contents after render pass (better performance for transient attachments)
+} GfxStoreOp;
+
 // ============================================================================
 // Forward Declarations (Opaque Handles)
 // ============================================================================
@@ -429,6 +440,10 @@ typedef struct {
 typedef struct {
     GfxTextureView view;
     GfxTextureView resolveView; // Optional: for MSAA resolve, set to nullptr if not used
+    GfxLoadOp loadOp;
+    GfxStoreOp storeOp;
+    GfxLoadOp resolveLoadOp;   // Load operation for resolve target
+    GfxStoreOp resolveStoreOp; // Store operation for resolve target
     GfxColor clearColor;
     GfxTextureLayout finalLayout;
     GfxTextureLayout resolveFinalLayout; // Layout for resolve target (when resolveView is set)
@@ -437,6 +452,14 @@ typedef struct {
 typedef struct {
     GfxTextureView view;
     GfxTextureView resolveView; // Optional: for MSAA resolve, set to nullptr if not used
+    GfxLoadOp depthLoadOp;
+    GfxStoreOp depthStoreOp;
+    GfxLoadOp stencilLoadOp;
+    GfxStoreOp stencilStoreOp;
+    GfxLoadOp depthResolveLoadOp;     // Load operation for depth resolve target
+    GfxStoreOp depthResolveStoreOp;   // Store operation for depth resolve target
+    GfxLoadOp stencilResolveLoadOp;   // Load operation for stencil resolve target
+    GfxStoreOp stencilResolveStoreOp; // Store operation for stencil resolve target
     float depthClearValue;
     uint32_t stencilClearValue;
     GfxTextureLayout finalLayout;
