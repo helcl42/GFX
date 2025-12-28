@@ -428,8 +428,10 @@ typedef struct {
 
 typedef struct {
     GfxTextureView view;
+    GfxTextureView resolveView; // Optional: for MSAA resolve, set to nullptr if not used
     GfxColor clearColor;
     GfxTextureLayout finalLayout;
+    GfxTextureLayout resolveFinalLayout; // Layout for resolve target (when resolveView is set)
 } GfxColorAttachment;
 
 typedef struct {
@@ -852,6 +854,7 @@ GFX_API GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const char* la
 GFX_API GfxResult gfxDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence);
 GFX_API GfxResult gfxDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore);
 GFX_API void gfxDeviceWaitIdle(GfxDevice device);
+GFX_API void gfxDevicePoll(GfxDevice device);  // Poll device for async operations (needed for some backends)
 GFX_API void gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
 
 // Surface functions

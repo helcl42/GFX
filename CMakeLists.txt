@@ -64,27 +64,37 @@ endfunction()
 
 # WebGPU (Dawn)
 if(BUILD_WEBGPU_BACKEND)
-    # Try to find WebGPU/Dawn
-    find_path(WEBGPU_INCLUDE_DIR webgpu.h
-        PATHS
-            /usr/local/include
-            /usr/include
-            /opt/homebrew/include
-    )
+    # Use Dawn from specific location as subdirectory
+    set(DAWN_ROOT "/home/lhelcl/Dev/webgpu-cross-platform-app/dawn")
     
-    find_library(WEBGPU_LIBRARY
-        NAMES webgpu dawn_native dawn_proc webgpu_dawn
-        PATHS
-            /usr/local/lib
-            /usr/lib
-            /opt/homebrew/lib
-    )
-    
-    if(WEBGPU_INCLUDE_DIR AND WEBGPU_LIBRARY)
-        message(STATUS "Found WebGPU: ${WEBGPU_LIBRARY}")
+    if(EXISTS "${DAWN_ROOT}/CMakeLists.txt")
+        message(STATUS "Adding Dawn from: ${DAWN_ROOT}")
+        
+        # Save our BUILD_SHARED_LIBS setting
+        set(GFXWRAPPER_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+        
+        # Dawn build options - Dawn requires BUILD_SHARED_LIBS=OFF
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+        set(DAWN_FETCH_DEPENDENCIES ON CACHE BOOL "" FORCE)
+        set(DAWN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+        set(DAWN_USE_X11 ON CACHE BOOL "" FORCE)
+        set(DAWN_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+        set(DAWN_ENABLE_VULKAN ON CACHE BOOL "" FORCE)  # Enable Vulkan for native rendering
+        set(DAWN_ENABLE_METAL OFF CACHE BOOL "" FORCE)
+        set(DAWN_ENABLE_D3D11 OFF CACHE BOOL "" FORCE)
+        set(DAWN_ENABLE_D3D12 OFF CACHE BOOL "" FORCE)
+        
+        add_subdirectory(${DAWN_ROOT} ${CMAKE_BINARY_DIR}/dawn EXCLUDE_FROM_ALL)
+        
+        # Restore our BUILD_SHARED_LIBS setting
+        set(BUILD_SHARED_LIBS ${GFXWRAPPER_BUILD_SHARED_LIBS} CACHE BOOL "" FORCE)
+        
+        set(WEBGPU_INCLUDE_DIR "${DAWN_ROOT}/include")
         set(WEBGPU_FOUND TRUE)
+        message(STATUS "WebGPU enabled via Dawn subdirectory")
+        message(STATUS "WebGPU include dir: ${WEBGPU_INCLUDE_DIR}")
     else()
-        message(WARNING "WebGPU/Dawn not found - WebGPU backend will be disabled")
+        message(WARNING "Dawn directory not found at ${DAWN_ROOT} - WebGPU backend will be disabled")
         set(BUILD_WEBGPU_BACKEND OFF)
     endif()
 endif()
@@ -153,7 +163,7 @@ endif()
 
 # Link WebGPU if available
 if(BUILD_WEBGPU_BACKEND)
-    target_link_libraries(gfx PUBLIC ${WEBGPU_LIBRARY})
+    target_link_libraries(gfx PUBLIC webgpu_dawn)
     target_include_directories(gfx PUBLIC ${WEBGPU_INCLUDE_DIR})
     target_include_directories(gfx PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/include)
     target_compile_definitions(gfx PUBLIC GFX_ENABLE_WEBGPU=1)

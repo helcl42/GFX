@@ -801,8 +801,10 @@ struct TextureBarrier {
 
 struct ColorAttachment {
     std::shared_ptr<TextureView> view;
+    std::shared_ptr<TextureView> resolveView = nullptr;
     Color clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
     TextureLayout finalLayout = TextureLayout::Undefined;
+    TextureLayout resolveFinalLayout = TextureLayout::Undefined;
 };
 
 struct DepthStencilAttachment {

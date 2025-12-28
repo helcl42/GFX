@@ -124,6 +124,17 @@ GfxTextureFormat wgpuFormatToGfxFormat(WGPUTextureFormat format)
     }
 }
 
+bool formatHasStencil(GfxTextureFormat format)
+{
+    switch (format) {
+    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8:
+    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8:
+        return true;
+    default:
+        return false;
+    }
+}
+
 WGPUBufferUsage gfxBufferUsageToWGPU(GfxBufferUsage usage)
 {
     WGPUBufferUsage wgpu_usage = WGPUBufferUsage_None;
@@ -194,6 +205,30 @@ WGPUPresentMode gfxPresentModeToWGPU(GfxPresentMode mode)
     }
 }
 
+WGPUAddressMode gfxAddressModeToWGPU(GfxAddressMode mode)
+{
+    switch (mode) {
+    case GFX_ADDRESS_MODE_REPEAT:
+        return WGPUAddressMode_Repeat;
+    case GFX_ADDRESS_MODE_MIRROR_REPEAT:
+        return WGPUAddressMode_MirrorRepeat;
+    case GFX_ADDRESS_MODE_CLAMP_TO_EDGE:
+        return WGPUAddressMode_ClampToEdge;
+    default:
+        return WGPUAddressMode_ClampToEdge;
+    }
+}
+
+WGPUFilterMode gfxFilterModeToWGPU(GfxFilterMode mode)
+{
+    return (mode == GFX_FILTER_MODE_LINEAR) ? WGPUFilterMode_Linear : WGPUFilterMode_Nearest;
+}
+
+WGPUMipmapFilterMode gfxMipmapFilterModeToWGPU(GfxFilterMode mode)
+{
+    return (mode == GFX_FILTER_MODE_LINEAR) ? WGPUMipmapFilterMode_Linear : WGPUMipmapFilterMode_Nearest;
+}
+
 WGPUPrimitiveTopology gfxPrimitiveTopologyToWGPU(GfxPrimitiveTopology topology)
 {
     switch (topology) {
@@ -209,6 +244,25 @@ WGPUPrimitiveTopology gfxPrimitiveTopologyToWGPU(GfxPrimitiveTopology topology)
         return WGPUPrimitiveTopology_TriangleStrip;
     default:
         return WGPUPrimitiveTopology_TriangleList;
+    }
+}
+
+WGPUFrontFace gfxFrontFaceToWGPU(GfxFrontFace frontFace)
+{
+    return (frontFace == GFX_FRONT_FACE_COUNTER_CLOCKWISE) ? WGPUFrontFace_CCW : WGPUFrontFace_CW;
+}
+
+WGPUCullMode gfxCullModeToWGPU(GfxCullMode cullMode)
+{
+    switch (cullMode) {
+    case GFX_CULL_MODE_NONE:
+        return WGPUCullMode_None;
+    case GFX_CULL_MODE_FRONT:
+        return WGPUCullMode_Front;
+    case GFX_CULL_MODE_BACK:
+        return WGPUCullMode_Back;
+    default:
+        return WGPUCullMode_None;
     }
 }
 
@@ -300,6 +354,30 @@ WGPUCompareFunction gfxCompareFunctionToWGPU(GfxCompareFunction func)
     }
 }
 
+WGPUStencilOperation gfxStencilOperationToWGPU(GfxStencilOperation op)
+{
+    switch (op) {
+    case GFX_STENCIL_OPERATION_KEEP:
+        return WGPUStencilOperation_Keep;
+    case GFX_STENCIL_OPERATION_ZERO:
+        return WGPUStencilOperation_Zero;
+    case GFX_STENCIL_OPERATION_REPLACE:
+        return WGPUStencilOperation_Replace;
+    case GFX_STENCIL_OPERATION_INVERT:
+        return WGPUStencilOperation_Invert;
+    case GFX_STENCIL_OPERATION_INCREMENT_CLAMP:
+        return WGPUStencilOperation_IncrementClamp;
+    case GFX_STENCIL_OPERATION_DECREMENT_CLAMP:
+        return WGPUStencilOperation_DecrementClamp;
+    case GFX_STENCIL_OPERATION_INCREMENT_WRAP:
+        return WGPUStencilOperation_IncrementWrap;
+    case GFX_STENCIL_OPERATION_DECREMENT_WRAP:
+        return WGPUStencilOperation_DecrementWrap;
+    default:
+        return WGPUStencilOperation_Keep;
+    }
+}
+
 WGPUTextureSampleType gfxTextureSampleTypeToWGPU(GfxTextureSampleType sampleType)
 {
     switch (sampleType) {
@@ -315,6 +393,30 @@ WGPUTextureSampleType gfxTextureSampleTypeToWGPU(GfxTextureSampleType sampleType
         return WGPUTextureSampleType_Uint;
     default:
         return WGPUTextureSampleType_Float;
+    }
+}
+
+WGPUVertexFormat gfxFormatToWGPUVertexFormat(GfxTextureFormat format)
+{
+    switch (format) {
+    case GFX_TEXTURE_FORMAT_R32_FLOAT:
+        return WGPUVertexFormat_Float32;
+    case GFX_TEXTURE_FORMAT_R32G32_FLOAT:
+        return WGPUVertexFormat_Float32x2;
+    case GFX_TEXTURE_FORMAT_R32G32B32_FLOAT:
+        return WGPUVertexFormat_Float32x3;
+    case GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT:
+        return WGPUVertexFormat_Float32x4;
+    case GFX_TEXTURE_FORMAT_R16G16_FLOAT:
+        return WGPUVertexFormat_Float16x2;
+    case GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT:
+        return WGPUVertexFormat_Float16x4;
+    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM:
+        return WGPUVertexFormat_Unorm8x4;
+    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB:
+        return WGPUVertexFormat_Unorm8x4;
+    default:
+        return static_cast<WGPUVertexFormat>(0); // Return 0 for undefined
     }
 }
 
@@ -430,15 +532,21 @@ static WGPUSurface createPlatformSurface(WGPUInstance instance, const GfxPlatfor
     }
 
     switch (handle->windowingSystem) {
+#ifdef _WIN32
     case GFX_WINDOWING_SYSTEM_WIN32:
         return createSurfaceWin32(instance, handle);
+#endif
+#ifdef __linux__
     case GFX_WINDOWING_SYSTEM_WAYLAND:
         return createSurfaceWayland(instance, handle);
     case GFX_WINDOWING_SYSTEM_X11:
     case GFX_WINDOWING_SYSTEM_XCB:
         return createSurfaceX11(instance, handle);
+#endif
+#ifdef __APPLE__
     case GFX_WINDOWING_SYSTEM_COCOA:
         return createSurfaceMetal(instance, handle);
+#endif
     default:
         return nullptr;
     }
@@ -496,7 +604,14 @@ public:
 
     Instance(const GfxInstanceDescriptor* descriptor)
     {
+        // Request TimedWaitAny feature for proper async callback handling
+        static const WGPUInstanceFeatureName requiredFeatures[] = {
+            WGPUInstanceFeatureName_TimedWaitAny
+        };
+
         WGPUInstanceDescriptor wgpu_desc = WGPU_INSTANCE_DESCRIPTOR_INIT;
+        wgpu_desc.requiredFeatureCount = 1;
+        wgpu_desc.requiredFeatures = requiredFeatures;
         m_instance = wgpuCreateInstance(&wgpu_desc);
     }
 
@@ -859,8 +974,10 @@ public:
     CommandEncoder(const CommandEncoder&) = delete;
     CommandEncoder& operator=(const CommandEncoder&) = delete;
 
-    CommandEncoder(WGPUCommandEncoder encoder)
-        : m_encoder(encoder)
+    CommandEncoder(WGPUDevice device, WGPUCommandEncoder encoder)
+        : m_device(device)
+        , m_encoder(encoder)
+        , m_finished(false)
     {
     }
 
@@ -873,8 +990,37 @@ public:
 
     WGPUCommandEncoder handle() const { return m_encoder; }
 
+    void markFinished() { m_finished = true; }
+    bool isFinished() const { return m_finished; }
+
+    // Recreate the encoder if it has been finished
+    bool recreateIfNeeded()
+    {
+        if (!m_finished) {
+            return true; // Already valid
+        }
+
+        // Release old encoder
+        if (m_encoder) {
+            wgpuCommandEncoderRelease(m_encoder);
+            m_encoder = nullptr;
+        }
+
+        // Create new encoder
+        WGPUCommandEncoderDescriptor desc = WGPU_COMMAND_ENCODER_DESCRIPTOR_INIT;
+        m_encoder = wgpuDeviceCreateCommandEncoder(m_device, &desc);
+        if (!m_encoder) {
+            return false;
+        }
+
+        m_finished = false;
+        return true;
+    }
+
 private:
+    WGPUDevice m_device = nullptr;
     WGPUCommandEncoder m_encoder = nullptr;
+    bool m_finished = false;
 };
 
 class RenderPassEncoder {
@@ -931,10 +1077,8 @@ public:
     Surface(const Surface&) = delete;
     Surface& operator=(const Surface&) = delete;
 
-    Surface(WGPUSurface surface, uint32_t width, uint32_t height, const GfxPlatformWindowHandle& windowHandle)
+    Surface(WGPUSurface surface, const GfxPlatformWindowHandle& windowHandle)
         : m_surface(surface)
-        , m_width(width)
-        , m_height(height)
         , m_windowHandle(windowHandle)
     {
     }
@@ -947,19 +1091,10 @@ public:
     }
 
     WGPUSurface handle() const { return m_surface; }
-    uint32_t getWidth() const { return m_width; }
-    uint32_t getHeight() const { return m_height; }
-    void setSize(uint32_t width, uint32_t height)
-    {
-        m_width = width;
-        m_height = height;
-    }
     const GfxPlatformWindowHandle& getWindowHandle() const { return m_windowHandle; }
 
 private:
     WGPUSurface m_surface = nullptr;
-    uint32_t m_width = 0;
-    uint32_t m_height = 0;
     GfxPlatformWindowHandle m_windowHandle = {};
 };
 
@@ -983,6 +1118,11 @@ public:
 
     ~Swapchain()
     {
+        // Release cached texture if any
+        if (m_currentTexture) {
+            wgpuTextureRelease(m_currentTexture);
+            m_currentTexture = nullptr;
+        }
         // Don't release surface or device - they're not owned
     }
 
@@ -999,6 +1139,17 @@ public:
         m_height = height;
     }
 
+    // Cache the current texture so it persists across view creation and present
+    void setCurrentTexture(WGPUTexture texture)
+    {
+        // Release old texture if any
+        if (m_currentTexture) {
+            wgpuTextureRelease(m_currentTexture);
+        }
+        m_currentTexture = texture;
+    }
+    WGPUTexture getCurrentTexture() const { return m_currentTexture; }
+
 private:
     WGPUSurface m_surface = nullptr; // Non-owning
     WGPUDevice m_device = nullptr; // Non-owning
@@ -1007,6 +1158,7 @@ private:
     WGPUTextureFormat m_format = WGPUTextureFormat_Undefined;
     WGPUPresentMode m_presentMode = WGPUPresentMode_Fifo;
     uint32_t m_bufferCount = 0;
+    WGPUTexture m_currentTexture = nullptr; // Cache current texture between acquire and present
 };
 
 class Fence {
@@ -1089,6 +1241,31 @@ void webgpu_instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback call
     (void)userData;
 }
 
+// Static callback for adapter request
+static void onAdapterRequested(WGPURequestAdapterStatus status, WGPUAdapter adapter,
+    WGPUStringView message, void* userdata1, void* userdata2)
+{
+    struct AdapterRequestContext {
+        GfxAdapter* outAdapter;
+        gfx::webgpu::Instance* instance;
+        bool completed;
+        WGPURequestAdapterStatus status;
+    };
+
+    auto* ctx = static_cast<AdapterRequestContext*>(userdata1);
+    ctx->status = status;
+    ctx->completed = true;
+
+    if (status == WGPURequestAdapterStatus_Success && adapter) {
+        auto* adapterObj = new gfx::webgpu::Adapter(adapter, ctx->instance);
+        *ctx->outAdapter = reinterpret_cast<GfxAdapter>(adapterObj);
+    } else if (message.data) {
+        fprintf(stderr, "Error: Failed to request adapter: %.*s\n",
+            (int)message.length, message.data);
+    }
+    (void)userdata2; // Unused
+}
+
 GfxResult webgpu_instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor,
     GfxAdapter* outAdapter)
 {
@@ -1114,33 +1291,30 @@ GfxResult webgpu_instanceRequestAdapter(GfxInstance instance, const GfxAdapterDe
         options.forceFallbackAdapter = descriptor->forceFallbackAdapter ? WGPU_TRUE : WGPU_FALSE;
     }
 
-    WGPURequestAdapterCallbackInfo callbackInfo = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
-    callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-    callbackInfo.callback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
-                                WGPUStringView message, void* userdata1, void* userdata2) {
-        if (status == WGPURequestAdapterStatus_Success && adapter) {
-            struct Context {
-                GfxAdapter* outAdapter;
-                gfx::webgpu::Instance* instance;
-            };
-            auto* context = static_cast<Context*>(userdata1);
-            auto* adapterObj = new gfx::webgpu::Adapter(adapter, context->instance);
-            *context->outAdapter = reinterpret_cast<GfxAdapter>(adapterObj);
-        }
-    };
-
-    struct {
+    // Use a struct to track callback completion
+    struct AdapterRequestContext {
         GfxAdapter* outAdapter;
         gfx::webgpu::Instance* instance;
-    } context = { outAdapter, inst };
+        bool completed;
+        WGPURequestAdapterStatus status;
+    } context = { outAdapter, inst, false, WGPURequestAdapterStatus_Error };
 
+    WGPURequestAdapterCallbackInfo callbackInfo = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
+    callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+    callbackInfo.callback = onAdapterRequested;
     callbackInfo.userdata1 = &context;
 
     WGPUFuture future = wgpuInstanceRequestAdapter(inst->handle(), &options, callbackInfo);
 
+    // Use WaitAny to properly wait for the callback
     WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
     waitInfo.future = future;
     wgpuInstanceWaitAny(inst->handle(), 1, &waitInfo, UINT64_MAX);
+
+    if (!context.completed) {
+        fprintf(stderr, "Error: Adapter request timed out\n");
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 
     return *outAdapter ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
@@ -1169,6 +1343,31 @@ void webgpu_adapterDestroy(GfxAdapter adapter)
     delete reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
 }
 
+// Static callback for device request
+static void onDeviceRequested(WGPURequestDeviceStatus status, WGPUDevice device,
+    WGPUStringView message, void* userdata1, void* userdata2)
+{
+    struct DeviceRequestContext {
+        GfxDevice* outDevice;
+        gfx::webgpu::Adapter* adapter;
+        bool completed;
+        WGPURequestDeviceStatus status;
+    };
+
+    auto* ctx = static_cast<DeviceRequestContext*>(userdata1);
+    ctx->status = status;
+    ctx->completed = true;
+
+    if (status == WGPURequestDeviceStatus_Success && device) {
+        auto* deviceObj = new gfx::webgpu::Device(ctx->adapter, device);
+        *ctx->outDevice = reinterpret_cast<GfxDevice>(deviceObj);
+    } else if (message.data) {
+        fprintf(stderr, "Error: Failed to request device: %.*s\n",
+            (int)message.length, message.data);
+    }
+    (void)userdata2; // Unused
+}
+
 GfxResult webgpu_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor,
     GfxDevice* outDevice)
 {
@@ -1178,7 +1377,28 @@ GfxResult webgpu_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescript
 
     auto* adapterPtr = reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
 
+    WGPUUncapturedErrorCallbackInfo errorCallbackInfo = WGPU_UNCAPTURED_ERROR_CALLBACK_INFO_INIT;
+    errorCallbackInfo.callback = [](WGPUDevice const*, WGPUErrorType type, WGPUStringView message, void*, void*) {
+        const char* errorType = "Unknown";
+        switch (type) {
+        case WGPUErrorType_Validation:
+            errorType = "Validation";
+            break;
+        case WGPUErrorType_OutOfMemory:
+            errorType = "OutOfMemory";
+            break;
+        case WGPUErrorType_Internal:
+            errorType = "Internal";
+            break;
+        default:
+            break;
+        }
+        fprintf(stderr, "[WebGPU ERROR - %s]: %.*s\n",
+            errorType, (int)message.length, message.data);
+    };
+
     WGPUDeviceDescriptor wgpuDesc = WGPU_DEVICE_DESCRIPTOR_INIT;
+    wgpuDesc.uncapturedErrorCallbackInfo = errorCallbackInfo;
     if (descriptor && descriptor->label) {
         wgpuDesc.label = gfxStringView(descriptor->label);
     }
@@ -1186,29 +1406,27 @@ GfxResult webgpu_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescript
     struct DeviceRequestContext {
         GfxDevice* outDevice;
         gfx::webgpu::Adapter* adapter;
-    };
-
-    DeviceRequestContext context = { outDevice, adapterPtr };
+        bool completed;
+        WGPURequestDeviceStatus status;
+    } context = { outDevice, adapterPtr, false, WGPURequestDeviceStatus_Error };
 
     WGPURequestDeviceCallbackInfo callbackInfo = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
     callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-    callbackInfo.callback = [](WGPURequestDeviceStatus status, WGPUDevice device,
-                                WGPUStringView message, void* userdata1, void* userdata2) {
-        if (status == WGPURequestDeviceStatus_Success && device) {
-            auto* context = static_cast<DeviceRequestContext*>(userdata1);
-            auto* deviceObj = new gfx::webgpu::Device(context->adapter, device);
-            *context->outDevice = reinterpret_cast<GfxDevice>(deviceObj);
-        }
-    };
+    callbackInfo.callback = onDeviceRequested;
     callbackInfo.userdata1 = &context;
 
     WGPUFuture future = wgpuAdapterRequestDevice(adapterPtr->handle(), &wgpuDesc, callbackInfo);
 
-    // Properly wait for the device creation to complete
+    // Use WaitAny to properly wait for the callback
     if (adapterPtr->getInstance()) {
         WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
         waitInfo.future = future;
         wgpuInstanceWaitAny(adapterPtr->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
+    }
+
+    if (!context.completed) {
+        fprintf(stderr, "Error: Device request timed out\n");
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
 
     return *outDevice ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
@@ -1254,17 +1472,18 @@ GfxResult webgpu_deviceCreateSurface(GfxDevice device, const GfxSurfaceDescripto
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
 
-    // Need instance for surface creation - would need to store it in device
-    // For now, create temporary instance
-    WGPUInstanceDescriptor instDesc = WGPU_INSTANCE_DESCRIPTOR_INIT;
-    WGPUInstance tempInst = wgpuCreateInstance(&instDesc);
+    // Get the instance from the device's adapter
+    WGPUInstance inst = nullptr;
+    if (devicePtr->getAdapter() && devicePtr->getAdapter()->getInstance()) {
+        inst = devicePtr->getAdapter()->getInstance()->handle();
+    }
 
-    if (!tempInst) {
+    if (!inst) {
+        fprintf(stderr, "Error: Cannot create surface - no instance available\\n");
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    WGPUSurface wgpuSurface = createPlatformSurface(tempInst, &descriptor->windowHandle);
-    wgpuInstanceRelease(tempInst);
+    WGPUSurface wgpuSurface = createPlatformSurface(inst, &descriptor->windowHandle);
 
     if (!wgpuSurface) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -1288,7 +1507,7 @@ GfxResult webgpu_deviceCreateSwapchain(GfxDevice device, GfxSurface surface,
 
     // Get surface capabilities
     WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
-    wgpuSurfaceGetCapabilities(surfacePtr->handle(), devicePtr->handle(), &capabilities);
+    wgpuSurfaceGetCapabilities(surfacePtr->handle(), devicePtr->getAdapter()->handle(), &capabilities);
 
     WGPUTextureFormat format = gfxFormatToWGPUFormat(descriptor->format);
     bool formatSupported = false;
@@ -1331,15 +1550,15 @@ GfxResult webgpu_deviceCreateSwapchain(GfxDevice device, GfxSurface surface,
         format, presentMode, descriptor->bufferCount);
     *outSwapchain = reinterpret_cast<GfxSwapchain>(swapchain);
 
-    // Free capabilities
+    // Free capabilities using delete[] since Dawn uses new[] to allocate
     if (capabilities.formats) {
-        free((void*)capabilities.formats);
+        delete[] capabilities.formats;
     }
     if (capabilities.presentModes) {
-        free((void*)capabilities.presentModes);
+        delete[] capabilities.presentModes;
     }
     if (capabilities.alphaModes) {
-        free((void*)capabilities.alphaModes);
+        delete[] capabilities.alphaModes;
     }
 
     return GFX_RESULT_SUCCESS;
@@ -1430,55 +1649,14 @@ GfxResult webgpu_deviceCreateSampler(GfxDevice device, const GfxSamplerDescripto
     }
 
     // Convert address modes
-    switch (descriptor->addressModeU) {
-    case GFX_ADDRESS_MODE_REPEAT:
-        wgpuDesc.addressModeU = WGPUAddressMode_Repeat;
-        break;
-    case GFX_ADDRESS_MODE_MIRROR_REPEAT:
-        wgpuDesc.addressModeU = WGPUAddressMode_MirrorRepeat;
-        break;
-    case GFX_ADDRESS_MODE_CLAMP_TO_EDGE:
-        wgpuDesc.addressModeU = WGPUAddressMode_ClampToEdge;
-        break;
-    default:
-        wgpuDesc.addressModeU = WGPUAddressMode_ClampToEdge;
-        break;
-    }
-
-    switch (descriptor->addressModeV) {
-    case GFX_ADDRESS_MODE_REPEAT:
-        wgpuDesc.addressModeV = WGPUAddressMode_Repeat;
-        break;
-    case GFX_ADDRESS_MODE_MIRROR_REPEAT:
-        wgpuDesc.addressModeV = WGPUAddressMode_MirrorRepeat;
-        break;
-    case GFX_ADDRESS_MODE_CLAMP_TO_EDGE:
-        wgpuDesc.addressModeV = WGPUAddressMode_ClampToEdge;
-        break;
-    default:
-        wgpuDesc.addressModeV = WGPUAddressMode_ClampToEdge;
-        break;
-    }
-
-    switch (descriptor->addressModeW) {
-    case GFX_ADDRESS_MODE_REPEAT:
-        wgpuDesc.addressModeW = WGPUAddressMode_Repeat;
-        break;
-    case GFX_ADDRESS_MODE_MIRROR_REPEAT:
-        wgpuDesc.addressModeW = WGPUAddressMode_MirrorRepeat;
-        break;
-    case GFX_ADDRESS_MODE_CLAMP_TO_EDGE:
-        wgpuDesc.addressModeW = WGPUAddressMode_ClampToEdge;
-        break;
-    default:
-        wgpuDesc.addressModeW = WGPUAddressMode_ClampToEdge;
-        break;
-    }
+    wgpuDesc.addressModeU = gfxAddressModeToWGPU(descriptor->addressModeU);
+    wgpuDesc.addressModeV = gfxAddressModeToWGPU(descriptor->addressModeV);
+    wgpuDesc.addressModeW = gfxAddressModeToWGPU(descriptor->addressModeW);
 
     // Convert filter modes
-    wgpuDesc.magFilter = (descriptor->magFilter == GFX_FILTER_MODE_LINEAR) ? WGPUFilterMode_Linear : WGPUFilterMode_Nearest;
-    wgpuDesc.minFilter = (descriptor->minFilter == GFX_FILTER_MODE_LINEAR) ? WGPUFilterMode_Linear : WGPUFilterMode_Nearest;
-    wgpuDesc.mipmapFilter = (descriptor->mipmapFilter == GFX_FILTER_MODE_LINEAR) ? WGPUMipmapFilterMode_Linear : WGPUMipmapFilterMode_Nearest;
+    wgpuDesc.magFilter = gfxFilterModeToWGPU(descriptor->magFilter);
+    wgpuDesc.minFilter = gfxFilterModeToWGPU(descriptor->minFilter);
+    wgpuDesc.mipmapFilter = gfxMipmapFilterModeToWGPU(descriptor->mipmapFilter);
 
     wgpuDesc.lodMinClamp = descriptor->lodMinClamp;
     wgpuDesc.lodMaxClamp = descriptor->lodMaxClamp;
@@ -1512,9 +1690,24 @@ GfxResult webgpu_deviceCreateShader(GfxDevice device, const GfxShaderDescriptor*
         wgpuDesc.label = gfxStringView(descriptor->label);
     }
 
-    WGPUShaderSourceWGSL wgslSource = WGPU_SHADER_SOURCE_WGSL_INIT;
-    wgslSource.code = gfxStringView(descriptor->code);
-    wgpuDesc.nextInChain = (WGPUChainedStruct*)&wgslSource;
+    // Check if the shader code is SPIR-V (binary) or WGSL (text)
+    // SPIR-V always starts with magic number 0x07230203
+    const uint32_t* codeU32 = static_cast<const uint32_t*>(descriptor->code);
+    const uint32_t spirvMagic = 0x07230203;
+
+    if (descriptor->codeSize >= 4 && codeU32[0] == spirvMagic) {
+        // SPIR-V shader
+        WGPUShaderSourceSPIRV spirvSource = WGPU_SHADER_SOURCE_SPIRV_INIT;
+        spirvSource.code = codeU32;
+        spirvSource.codeSize = descriptor->codeSize / sizeof(uint32_t);
+        wgpuDesc.nextInChain = (WGPUChainedStruct*)&spirvSource;
+    } else {
+        // WGSL shader (text)
+        const char* wgslCode = static_cast<const char*>(descriptor->code);
+        WGPUShaderSourceWGSL wgslSource = WGPU_SHADER_SOURCE_WGSL_INIT;
+        wgslSource.code = gfxStringView(wgslCode);
+        wgpuDesc.nextInChain = (WGPUChainedStruct*)&wgslSource;
+    }
 
     WGPUShaderModule wgpuModule = wgpuDeviceCreateShaderModule(devicePtr->handle(), &wgpuDesc);
     if (!wgpuModule) {
@@ -1675,22 +1868,43 @@ GfxResult webgpu_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPip
         wgpuDesc.label = gfxStringView(descriptor->label);
     }
 
+    // Create pipeline layout if bind group layouts are provided
+    WGPUPipelineLayout pipelineLayout = nullptr;
+    if (descriptor->bindGroupLayoutCount > 0 && descriptor->bindGroupLayouts) {
+        std::vector<WGPUBindGroupLayout> wgpuBindGroupLayouts;
+        wgpuBindGroupLayouts.reserve(descriptor->bindGroupLayoutCount);
+
+        for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
+            auto* layout = reinterpret_cast<gfx::webgpu::BindGroupLayout*>(descriptor->bindGroupLayouts[i]);
+            wgpuBindGroupLayouts.push_back(layout->handle());
+        }
+
+        WGPUPipelineLayoutDescriptor layoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
+        layoutDesc.bindGroupLayouts = wgpuBindGroupLayouts.data();
+        layoutDesc.bindGroupLayoutCount = static_cast<uint32_t>(wgpuBindGroupLayouts.size());
+
+        pipelineLayout = wgpuDeviceCreatePipelineLayout(devicePtr->handle(), &layoutDesc);
+        wgpuDesc.layout = pipelineLayout;
+    }
+
     // Vertex state
-    auto* vertexShader = reinterpret_cast<gfx::webgpu::Shader*>(descriptor->vertex.module);
+    auto* vertexShader = reinterpret_cast<gfx::webgpu::Shader*>(descriptor->vertex->module);
     WGPUVertexState vertexState = WGPU_VERTEX_STATE_INIT;
     vertexState.module = vertexShader->handle();
-    vertexState.entryPoint = gfxStringView(descriptor->vertex.entryPoint);
+    vertexState.entryPoint = gfxStringView(descriptor->vertex->entryPoint);
+
+    fprintf(stderr, "[WebGPU] Creating pipeline - vertex entry: '%s'\n", descriptor->vertex->entryPoint ? descriptor->vertex->entryPoint : "NULL");
 
     // Convert vertex buffers
     std::vector<WGPUVertexBufferLayout> vertexBuffers;
     std::vector<std::vector<WGPUVertexAttribute>> allAttributes;
 
-    if (descriptor->vertex.bufferCount > 0) {
-        vertexBuffers.reserve(descriptor->vertex.bufferCount);
-        allAttributes.reserve(descriptor->vertex.bufferCount);
+    if (descriptor->vertex->bufferCount > 0) {
+        vertexBuffers.reserve(descriptor->vertex->bufferCount);
+        allAttributes.reserve(descriptor->vertex->bufferCount);
 
-        for (uint32_t i = 0; i < descriptor->vertex.bufferCount; ++i) {
-            const auto& buffer = descriptor->vertex.buffers[i];
+        for (uint32_t i = 0; i < descriptor->vertex->bufferCount; ++i) {
+            const auto& buffer = descriptor->vertex->buffers[i];
 
             std::vector<WGPUVertexAttribute> attributes;
             attributes.reserve(buffer.attributeCount);
@@ -1698,7 +1912,7 @@ GfxResult webgpu_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPip
             for (uint32_t j = 0; j < buffer.attributeCount; ++j) {
                 const auto& attr = buffer.attributes[j];
                 WGPUVertexAttribute wgpuAttr = WGPU_VERTEX_ATTRIBUTE_INIT;
-                wgpuAttr.format = gfxFormatToWGPUFormat(attr.format);
+                wgpuAttr.format = gfxFormatToWGPUVertexFormat(attr.format);
                 wgpuAttr.offset = attr.offset;
                 wgpuAttr.shaderLocation = attr.shaderLocation;
                 attributes.push_back(wgpuAttr);
@@ -1729,6 +1943,8 @@ GfxResult webgpu_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPip
         auto* fragmentShader = reinterpret_cast<gfx::webgpu::Shader*>(descriptor->fragment->module);
         fragmentState.module = fragmentShader->handle();
         fragmentState.entryPoint = gfxStringView(descriptor->fragment->entryPoint);
+
+        fprintf(stderr, "[WebGPU] Creating pipeline - fragment entry: '%s'\n", descriptor->fragment->entryPoint ? descriptor->fragment->entryPoint : "NULL");
 
         if (descriptor->fragment->targetCount > 0) {
             colorTargets.reserve(descriptor->fragment->targetCount);
@@ -1768,15 +1984,43 @@ GfxResult webgpu_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPip
 
     // Primitive state
     WGPUPrimitiveState primitiveState = WGPU_PRIMITIVE_STATE_INIT;
-    primitiveState.topology = gfxPrimitiveTopologyToWGPU(descriptor->primitive.topology);
-    primitiveState.frontFace = descriptor->primitive.frontFaceCounterClockwise ? WGPUFrontFace_CCW : WGPUFrontFace_CW;
-    primitiveState.cullMode = descriptor->primitive.cullBackFace ? WGPUCullMode_Back : WGPUCullMode_None;
+    primitiveState.topology = gfxPrimitiveTopologyToWGPU(descriptor->primitive->topology);
+    primitiveState.frontFace = gfxFrontFaceToWGPU(descriptor->primitive->frontFace);
+    primitiveState.cullMode = gfxCullModeToWGPU(descriptor->primitive->cullMode);
 
-    if (descriptor->primitive.stripIndexFormat) {
-        primitiveState.stripIndexFormat = gfxIndexFormatToWGPU(*descriptor->primitive.stripIndexFormat);
+    if (descriptor->primitive->stripIndexFormat) {
+        primitiveState.stripIndexFormat = gfxIndexFormatToWGPU(*descriptor->primitive->stripIndexFormat);
     }
 
     wgpuDesc.primitive = primitiveState;
+
+    // Depth/stencil state (optional)
+    WGPUDepthStencilState depthStencilState = WGPU_DEPTH_STENCIL_STATE_INIT;
+    if (descriptor->depthStencil) {
+        depthStencilState.format = gfxFormatToWGPUFormat(descriptor->depthStencil->format);
+        depthStencilState.depthWriteEnabled = descriptor->depthStencil->depthWriteEnabled ? WGPUOptionalBool_True : WGPUOptionalBool_False;
+        depthStencilState.depthCompare = gfxCompareFunctionToWGPU(descriptor->depthStencil->depthCompare);
+
+        // Stencil front
+        depthStencilState.stencilFront.compare = gfxCompareFunctionToWGPU(descriptor->depthStencil->stencilFront.compare);
+        depthStencilState.stencilFront.failOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.failOp);
+        depthStencilState.stencilFront.depthFailOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.depthFailOp);
+        depthStencilState.stencilFront.passOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.passOp);
+
+        // Stencil back
+        depthStencilState.stencilBack.compare = gfxCompareFunctionToWGPU(descriptor->depthStencil->stencilBack.compare);
+        depthStencilState.stencilBack.failOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.failOp);
+        depthStencilState.stencilBack.depthFailOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.depthFailOp);
+        depthStencilState.stencilBack.passOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.passOp);
+
+        depthStencilState.stencilReadMask = descriptor->depthStencil->stencilReadMask;
+        depthStencilState.stencilWriteMask = descriptor->depthStencil->stencilWriteMask;
+        depthStencilState.depthBias = descriptor->depthStencil->depthBias;
+        depthStencilState.depthBiasSlopeScale = descriptor->depthStencil->depthBiasSlopeScale;
+        depthStencilState.depthBiasClamp = descriptor->depthStencil->depthBiasClamp;
+
+        wgpuDesc.depthStencil = &depthStencilState;
+    }
 
     // Multisample state
     WGPUMultisampleState multisampleState = WGPU_MULTISAMPLE_STATE_INIT;
@@ -1784,6 +2028,12 @@ GfxResult webgpu_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPip
     wgpuDesc.multisample = multisampleState;
 
     WGPURenderPipeline wgpuPipeline = wgpuDeviceCreateRenderPipeline(devicePtr->handle(), &wgpuDesc);
+
+    // Release the pipeline layout if we created one (pipeline holds its own reference)
+    if (pipelineLayout) {
+        wgpuPipelineLayoutRelease(pipelineLayout);
+    }
+
     if (!wgpuPipeline) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
@@ -1840,7 +2090,7 @@ GfxResult webgpu_deviceCreateCommandEncoder(GfxDevice device, const char* label,
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    auto* encoder = new gfx::webgpu::CommandEncoder(wgpuEncoder);
+    auto* encoder = new gfx::webgpu::CommandEncoder(devicePtr->handle(), wgpuEncoder);
     *outEncoder = reinterpret_cast<GfxCommandEncoder>(encoder);
     return GFX_RESULT_SUCCESS;
 }
@@ -1883,26 +2133,35 @@ void webgpu_deviceWaitIdle(GfxDevice device)
     }
 }
 
+void webgpu_devicePoll(GfxDevice device)
+{
+    if (!device) {
+        return;
+    }
+    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+
+    // Call ProcessEvents on the instance to handle async operations
+    if (devicePtr->getAdapter() && devicePtr->getAdapter()->getInstance()) {
+        wgpuInstanceProcessEvents(devicePtr->getAdapter()->getInstance()->handle());
+    }
+}
+
 void webgpu_deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
 {
     if (!device || !outLimits) {
         return;
     }
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
-    WGPUSupportedLimits limits{};
-    limits.nextInChain = nullptr;
-    wgpuDeviceGetLimits(devicePtr->handle(), &limits);
-
-    outLimits->minUniformBufferOffsetAlignment = limits.limits.minUniformBufferOffsetAlignment;
-    outLimits->minStorageBufferOffsetAlignment = limits.limits.minStorageBufferOffsetAlignment;
-    outLimits->maxUniformBufferBindingSize = limits.limits.maxUniformBufferBindingSize;
-    outLimits->maxStorageBufferBindingSize = limits.limits.maxStorageBufferBindingSize;
-    outLimits->maxBufferSize = limits.limits.maxBufferSize;
-    outLimits->maxTextureDimension1D = limits.limits.maxTextureDimension1D;
-    outLimits->maxTextureDimension2D = limits.limits.maxTextureDimension2D;
-    outLimits->maxTextureDimension3D = limits.limits.maxTextureDimension3D;
-    outLimits->maxTextureArrayLayers = limits.limits.maxTextureArrayLayers;
+    // WebGPU backend doesn't fully implement device limits yet
+    // Set reasonable defaults for now
+    outLimits->minUniformBufferOffsetAlignment = 256;
+    outLimits->minStorageBufferOffsetAlignment = 256;
+    outLimits->maxUniformBufferBindingSize = 65536;
+    outLimits->maxStorageBufferBindingSize = 134217728; // 128MB
+    outLimits->maxBufferSize = 268435456; // 256MB
+    outLimits->maxTextureDimension1D = 8192;
+    outLimits->maxTextureDimension2D = 8192;
+    outLimits->maxTextureDimension3D = 2048;
+    outLimits->maxTextureArrayLayers = 256;
 }
 
 // Surface functions
@@ -1994,7 +2253,7 @@ GfxResult webgpu_swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t time
 
     auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
 
-    // Get current texture to check status
+    // Get current texture - cache it for the frame
     WGPUSurfaceTexture surfaceTexture = WGPU_SURFACE_TEXTURE_INIT;
     wgpuSurfaceGetCurrentTexture(swapchainPtr->surface(), &surfaceTexture);
 
@@ -2003,24 +2262,34 @@ GfxResult webgpu_swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t time
     case WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal:
     case WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal:
         *outImageIndex = 0; // WebGPU only exposes current image
+        // Cache the texture - it will be released after present
+        swapchainPtr->setCurrentTexture(surfaceTexture.texture);
         result = GFX_RESULT_SUCCESS;
         break;
     case WGPUSurfaceGetCurrentTextureStatus_Timeout:
         result = GFX_RESULT_TIMEOUT;
+        if (surfaceTexture.texture) {
+            wgpuTextureRelease(surfaceTexture.texture);
+        }
         break;
     case WGPUSurfaceGetCurrentTextureStatus_Outdated:
         result = GFX_RESULT_ERROR_OUT_OF_DATE;
+        if (surfaceTexture.texture) {
+            wgpuTextureRelease(surfaceTexture.texture);
+        }
         break;
     case WGPUSurfaceGetCurrentTextureStatus_Lost:
         result = GFX_RESULT_ERROR_SURFACE_LOST;
+        if (surfaceTexture.texture) {
+            wgpuTextureRelease(surfaceTexture.texture);
+        }
         break;
     default:
         result = GFX_RESULT_ERROR_UNKNOWN;
+        if (surfaceTexture.texture) {
+            wgpuTextureRelease(surfaceTexture.texture);
+        }
         break;
-    }
-
-    if (surfaceTexture.texture) {
-        wgpuTextureRelease(surfaceTexture.texture);
     }
 
     // Signal fence if provided (even though WebGPU doesn't truly have fences)
@@ -2031,6 +2300,9 @@ GfxResult webgpu_swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t time
 
     return result;
 }
+
+// Forward declaration
+GfxTextureView webgpu_swapchainGetCurrentTextureView(GfxSwapchain swapchain);
 
 GfxTextureView webgpu_swapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex)
 {
@@ -2053,16 +2325,19 @@ GfxTextureView webgpu_swapchainGetCurrentTextureView(GfxSwapchain swapchain)
 
     auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
 
-    WGPUSurfaceTexture surfaceTexture = WGPU_SURFACE_TEXTURE_INIT;
-    wgpuSurfaceGetCurrentTexture(swapchainPtr->surface(), &surfaceTexture);
-
-    if (surfaceTexture.status != WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal || !surfaceTexture.texture) {
+    // Use the cached texture from acquire - don't call wgpuSurfaceGetCurrentTexture again!
+    // Dawn expects GetCurrentTexture to be called only ONCE per frame
+    WGPUTexture texture = swapchainPtr->getCurrentTexture();
+    if (!texture) {
+        fprintf(stderr, "[WebGPU] No cached texture available! Call AcquireNextImage first.\\n");
         return nullptr;
     }
 
-    WGPUTextureView wgpuView = wgpuTextureCreateView(surfaceTexture.texture, nullptr);
+    // Create texture view with nullptr descriptor - let Dawn infer the format from texture
+    // This matches the working Dawn app behavior
+    WGPUTextureView wgpuView = wgpuTextureCreateView(texture, nullptr);
     if (!wgpuView) {
-        wgpuTextureRelease(surfaceTexture.texture);
+        fprintf(stderr, "[WebGPU] Failed to create texture view\\n");
         return nullptr;
     }
 
@@ -2081,19 +2356,16 @@ GfxResult webgpu_swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* 
     (void)presentInfo; // Wait semaphores are noted but not used in WebGPU
 
     auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
+
+    fprintf(stderr, "[WebGPU] Presenting surface\\n");
+
+    // Present the surface - Dawn will present the texture we have been rendering to
     wgpuSurfacePresent(swapchainPtr->surface());
 
-    // Check if presentation succeeded by checking surface status
-    WGPUSurfaceTexture surfaceTexture = WGPU_SURFACE_TEXTURE_INIT;
-    wgpuSurfaceGetCurrentTexture(swapchainPtr->surface(), &surfaceTexture);
+    // Release the cached texture after presenting
+    swapchainPtr->setCurrentTexture(nullptr);
 
-    bool presentOk = (surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal || surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal);
-
-    if (surfaceTexture.texture) {
-        wgpuTextureRelease(surfaceTexture.texture);
-    }
-
-    return presentOk ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
+    return GFX_RESULT_SUCCESS;
 }
 
 // Buffer functions
@@ -2128,7 +2400,7 @@ GfxResult webgpu_bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, voi
     }
 
     auto* bufferPtr = reinterpret_cast<gfx::webgpu::Buffer*>(buffer);
-    
+
     // If size is 0, map the entire buffer from offset
     uint64_t mapSize = size;
     if (mapSize == 0) {
@@ -2150,7 +2422,7 @@ GfxResult webgpu_bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, voi
 
     // Set up async mapping with synchronous wait
     struct MapCallbackData {
-        WGPUMapAsyncStatus status = WGPUMapAsyncStatus_Unknown;
+        WGPUMapAsyncStatus status = WGPUMapAsyncStatus_Error;
         bool completed = false;
     };
 
@@ -2214,7 +2486,7 @@ GfxExtent3D webgpu_textureGetSize(GfxTexture texture)
     }
     auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
     WGPUExtent3D size = texturePtr->getSize();
-    return { size.width, size.height, size.depth };
+    return { size.width, size.height, size.depthOrArrayLayers };
 }
 
 GfxTextureFormat webgpu_textureGetFormat(GfxTexture texture)
@@ -2251,7 +2523,7 @@ GfxTextureUsage webgpu_textureGetUsage(GfxTexture texture)
     auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
     WGPUTextureUsage wgpuUsage = texturePtr->getUsage();
 
-    GfxTextureUsage usage = GFX_TEXTURE_USAGE_NONE;
+    uint32_t usage = GFX_TEXTURE_USAGE_NONE;
     if (wgpuUsage & WGPUTextureUsage_CopySrc) {
         usage |= GFX_TEXTURE_USAGE_COPY_SRC;
     }
@@ -2268,7 +2540,7 @@ GfxTextureUsage webgpu_textureGetUsage(GfxTexture texture)
         usage |= GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     }
 
-    return usage;
+    return static_cast<GfxTextureUsage>(usage);
 }
 
 GfxTextureLayout webgpu_textureGetLayout(GfxTexture texture)
@@ -2385,6 +2657,7 @@ GfxResult webgpu_queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo)
     auto* queuePtr = reinterpret_cast<gfx::webgpu::Queue*>(queue);
 
     // WebGPU doesn't support semaphore-based sync - just submit command buffers
+    fprintf(stderr, "[WebGPU DEBUG] Queue submit: %u command encoders\n", submitInfo->commandEncoderCount);
     for (uint32_t i = 0; i < submitInfo->commandEncoderCount; ++i) {
         if (submitInfo->commandEncoders[i]) {
             auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(submitInfo->commandEncoders[i]);
@@ -2393,18 +2666,40 @@ GfxResult webgpu_queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo)
             WGPUCommandBuffer cmdBuffer = wgpuCommandEncoderFinish(encoderPtr->handle(), &cmdDesc);
 
             if (cmdBuffer) {
+                fprintf(stderr, "[WebGPU DEBUG] Submitting command buffer %u: %p\n", i, (void*)cmdBuffer);
                 wgpuQueueSubmit(queuePtr->handle(), 1, &cmdBuffer);
                 wgpuCommandBufferRelease(cmdBuffer);
+
+                // Mark encoder as finished so it will be recreated on next Begin()
+                encoderPtr->markFinished();
             } else {
                 return GFX_RESULT_ERROR_UNKNOWN;
             }
         }
     }
 
-    // Signal fence if provided
+    // Signal fence if provided - use queue work done to wait for GPU completion
     if (submitInfo->signalFence) {
         auto* fencePtr = reinterpret_cast<gfx::webgpu::Fence*>(submitInfo->signalFence);
-        fencePtr->setSignaled(true);
+
+        WGPUQueueWorkDoneCallbackInfo callbackInfo = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
+        callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+        callbackInfo.callback = [](WGPUQueueWorkDoneStatus status, WGPUStringView message, void* userdata1, void* userdata2) {
+            auto* fence = static_cast<gfx::webgpu::Fence*>(userdata1);
+            if (status == WGPUQueueWorkDoneStatus_Success) {
+                fence->setSignaled(true);
+            }
+        };
+        callbackInfo.userdata1 = fencePtr;
+
+        WGPUFuture future = wgpuQueueOnSubmittedWorkDone(queuePtr->handle(), callbackInfo);
+
+        // Wait for the fence to be signaled (GPU work done)
+        if (queuePtr->getDevice() && queuePtr->getDevice()->getAdapter() && queuePtr->getDevice()->getAdapter()->getInstance()) {
+            WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
+            waitInfo.future = future;
+            wgpuInstanceWaitAny(queuePtr->getDevice()->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
+        }
     }
 
     return GFX_RESULT_SUCCESS;
@@ -2521,13 +2816,44 @@ GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
 
                 const GfxColor& color = colorAttachments[i].clearColor;
                 attachment.clearValue = { color.r, color.g, color.b, color.a };
+
+                // Check sample count for MSAA validation
+                uint32_t sampleCount = 1;
+                if (viewPtr->getTexture()) {
+                    sampleCount = viewPtr->getTexture()->getSampleCount();
+                }
+
+                fprintf(stderr, "[WebGPU] Color attachment %u: view=%p, samples=%u, loadOp=%d, storeOp=%d, clear=(%.2f,%.2f,%.2f,%.2f)\n",
+                    i, attachment.view, sampleCount, attachment.loadOp, attachment.storeOp,
+                    color.r, color.g, color.b, color.a);
+
+                // WebGPU MSAA handling: check if this attachment has a resolve target
+                if (colorAttachments[i].resolveView) {
+                    auto* resolveViewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(colorAttachments[i].resolveView);
+                    attachment.resolveTarget = resolveViewPtr->handle();
+
+                    uint32_t resolveSampleCount = 1;
+                    if (resolveViewPtr->getTexture()) {
+                        resolveSampleCount = resolveViewPtr->getTexture()->getSampleCount();
+                    }
+
+                    fprintf(stderr, "[WebGPU] Color attachment %u has resolve target: %p (samples=%u)\n",
+                        i, attachment.resolveTarget, resolveSampleCount);
+
+                    // Validate MSAA configuration
+                    if (sampleCount <= 1) {
+                        fprintf(stderr, "[WebGPU WARNING] Resolve target specified but source has sampleCount=%u (should be > 1)\n", sampleCount);
+                    }
+                    if (resolveSampleCount != 1) {
+                        fprintf(stderr, "[WebGPU WARNING] Resolve target has sampleCount=%u (should be 1)\n", resolveSampleCount);
+                    }
                 }
             }
             wgpuColorAttachments.push_back(attachment);
         }
 
         wgpuDesc.colorAttachments = wgpuColorAttachments.data();
-        wgpuDesc.colorAttachmentCount = colorAttachmentCount;
+        wgpuDesc.colorAttachmentCount = static_cast<uint32_t>(wgpuColorAttachments.size());
     }
 
     WGPURenderPassDepthStencilAttachment wgpuDepthStencil = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
@@ -2537,9 +2863,20 @@ GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
         wgpuDepthStencil.depthLoadOp = WGPULoadOp_Clear;
         wgpuDepthStencil.depthStoreOp = WGPUStoreOp_Store;
         wgpuDepthStencil.depthClearValue = depthStencilAttachment->depthClearValue;
-        wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Clear;
-        wgpuDepthStencil.stencilStoreOp = WGPUStoreOp_Store;
-        wgpuDepthStencil.stencilClearValue = depthStencilAttachment->stencilClearValue;
+
+        // Only set stencil operations for formats that have a stencil aspect
+        // For depth-only formats (Depth16Unorm, Depth24Plus, Depth32Float), we must set to Undefined
+        WGPUTextureFormat wgpuFormat = viewPtr->getTexture()->getFormat();
+        GfxTextureFormat format = wgpuFormatToGfxFormat(wgpuFormat);
+        if (formatHasStencil(format)) {
+            wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Clear;
+            wgpuDepthStencil.stencilStoreOp = WGPUStoreOp_Store;
+            wgpuDepthStencil.stencilClearValue = depthStencilAttachment->stencilClearValue;
+        } else {
+            wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Undefined;
+            wgpuDepthStencil.stencilStoreOp = WGPUStoreOp_Undefined;
+            wgpuDepthStencil.stencilClearValue = 0;
+        }
 
         wgpuDesc.depthStencilAttachment = &wgpuDepthStencil;
     }
@@ -2674,7 +3011,7 @@ void webgpu_commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
     // For 3D textures, it represents actual depth
     WGPUExtent3D srcSize = srcPtr->getSize();
     bool is3DTexture = (srcSize.depthOrArrayLayers > 1 && srcSize.height > 1);
-    
+
     WGPUTexelCopyTextureInfo sourceInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     sourceInfo.texture = srcPtr->handle();
     sourceInfo.mipLevel = sourceMipLevel;
@@ -2918,6 +3255,11 @@ GfxResult webgpu_fenceWait(GfxFence fence, uint64_t timeoutNs)
     }
 
     auto* fencePtr = reinterpret_cast<gfx::webgpu::Fence*>(fence);
+
+    // Fence is already properly signaled by queueSubmit after GPU work completes
+    // Just check the status
+    (void)timeoutNs; // Timeout is handled in queueSubmit
+
     return fencePtr->isSignaled() ? GFX_RESULT_SUCCESS : GFX_RESULT_TIMEOUT;
 }
 
@@ -3092,6 +3434,10 @@ GfxResult WebGPUBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaph
 void WebGPUBackend::deviceWaitIdle(GfxDevice device) const
 {
     webgpu_deviceWaitIdle(device);
+}
+void WebGPUBackend::devicePoll(GfxDevice device) const
+{
+    webgpu_devicePoll(device);
 }
 void WebGPUBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const
 {
@@ -3320,9 +3666,16 @@ void WebGPUBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
 }
 void WebGPUBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
 {
-    // WebGPU command encoders don't have an explicit begin call
-    // They are ready to use immediately after creation
-    (void)commandEncoder;
+    if (!commandEncoder) {
+        return;
+    }
+
+    auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(commandEncoder);
+
+    // WebGPU encoders can't be reused after Finish() - recreate if needed
+    if (!encoderPtr->recreateIfNeeded()) {
+        fprintf(stderr, "[WebGPU ERROR] Failed to recreate command encoder\n");
+    }
 }
 
 // RenderPassEncoder functions

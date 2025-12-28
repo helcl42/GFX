@@ -424,6 +424,17 @@ void gfxDeviceWaitIdle(GfxDevice device)
     }
 }
 
+void gfxDevicePoll(GfxDevice device)
+{
+    if (!device) {
+        return;
+    }
+    auto api = gfx::getAPI(device);
+    if (api) {
+        api->devicePoll(gfx::native(device));
+    }
+}
+
 void gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
 {
     if (!device || !outLimits) {

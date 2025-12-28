@@ -798,6 +798,7 @@ void CubeApp::render()
             // No MSAA: render directly to backbuffer
             ColorAttachment colorAttachment;
             colorAttachment.view = backbuffer;
+            colorAttachment.resolveView = nullptr;
             colorAttachment.clearColor = clearColor;
             colorAttachment.finalLayout = TextureLayout::PresentSrc;
             renderPassDesc.colorAttachments = { colorAttachment };
@@ -805,15 +806,12 @@ void CubeApp::render()
             // MSAA: render to MSAA buffer, resolve to backbuffer
             ColorAttachment msaaAttachment;
             msaaAttachment.view = msaaColorTextureView;
+            msaaAttachment.resolveView = backbuffer;  // Resolve to backbuffer
             msaaAttachment.clearColor = clearColor;
-            msaaAttachment.finalLayout = TextureLayout::ColorAttachment;
+            msaaAttachment.finalLayout = TextureLayout::ColorAttachment;  // MSAA attachment layout
+            msaaAttachment.resolveFinalLayout = TextureLayout::PresentSrc;  // Resolve target layout
             
-            ColorAttachment resolveAttachment;
-            resolveAttachment.view = backbuffer;
-            resolveAttachment.clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
-            resolveAttachment.finalLayout = TextureLayout::PresentSrc;
-            
-            renderPassDesc.colorAttachments = { msaaAttachment, resolveAttachment };
+            renderPassDesc.colorAttachments = { msaaAttachment };
         }
         renderPassDesc.depthStencilAttachment = &depthAttachment;
 

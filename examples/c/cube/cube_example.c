@@ -30,6 +30,7 @@
 #define MSAA_SAMPLE_COUNT GFX_SAMPLE_COUNT_4
 #define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
 #define DEPTH_FORMAT GFX_TEXTURE_FORMAT_DEPTH32_FLOAT
+#define GFX_BACKEND_API GFX_BACKEND_WEBGPU
 
 // Debug callback function
 static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData)
@@ -139,6 +140,7 @@ static void render(CubeApp* app);
 static void cleanup(CubeApp* app);
 static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window);
 static void* loadBinaryFile(const char* filepath, size_t* outSize);
+static void* loadTextFile(const char* filepath, size_t* outSize);
 
 // Matrix math function declarations
 void matrixIdentity(float* matrix);
@@ -232,7 +234,7 @@ bool initializeGraphics(CubeApp* app)
     // Load the graphics backend BEFORE creating an instance
     // This is now decoupled - you load the backend API once at startup
     printf("Loading graphics backend...\n");
-    if (!gfxLoadBackend(GFX_BACKEND_AUTO)) {
+    if (!gfxLoadBackend(GFX_BACKEND_API)) {
         fprintf(stderr, "Failed to load any graphics backend\n");
         return false;
     }
@@ -249,7 +251,7 @@ bool initializeGraphics(CubeApp* app)
 
     // Create graphics instance
     GfxInstanceDescriptor instanceDesc = {
-        .backend = GFX_BACKEND_AUTO,
+        .backend = GFX_BACKEND_API,
         .enableValidation = true,
         .enabledHeadless = false,
         .applicationName = "Cube Example (C)",
@@ -670,14 +672,28 @@ bool createRenderingResources(CubeApp* app)
         }
     }
 
-    // Load SPIR-V shaders
+    // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
     size_t vertexShaderSize, fragmentShaderSize;
-    void* vertexShaderCode = loadBinaryFile("cube.vert.spv", &vertexShaderSize);
-    void* fragmentShaderCode = loadBinaryFile("cube.frag.spv", &fragmentShaderSize);
-
-    if (!vertexShaderCode || !fragmentShaderCode) {
-        fprintf(stderr, "Failed to load SPIR-V shaders\n");
-        return false;
+    void* vertexShaderCode = NULL;
+    void* fragmentShaderCode = NULL;
+    
+    GfxBackend backend = gfxAdapterGetBackend(app->adapter);
+    if (backend == GFX_BACKEND_WEBGPU) {
+        // Load WGSL shaders for WebGPU
+        vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl", &vertexShaderSize);
+        fragmentShaderCode = loadTextFile("shaders/cube.frag.wgsl", &fragmentShaderSize);
+        if (!vertexShaderCode || !fragmentShaderCode) {
+            fprintf(stderr, "Failed to load WGSL shaders\n");
+            return false;
+        }
+    } else {
+        // Load SPIR-V shaders for Vulkan
+        vertexShaderCode = loadBinaryFile("cube.vert.spv", &vertexShaderSize);
+        fragmentShaderCode = loadBinaryFile("cube.frag.spv", &fragmentShaderSize);
+        if (!vertexShaderCode || !fragmentShaderCode) {
+            fprintf(stderr, "Failed to load SPIR-V shaders\n");
+            return false;
+        }
     }
 
     // Create vertex shader
@@ -896,28 +912,39 @@ void render(CubeApp* app)
         return;
     }
 
-    // Begin command encoder for reuse
+    // // For WebGPU: Destroy old encoder and create a new one each frame
+    // // (WebGPU encoders cannot be reused after finishing)
+    // if (app->commandEncoders[app->currentFrame]) {
+    //     gfxCommandEncoderDestroy(app->commandEncoders[app->currentFrame]);
+    // }
+    // if (gfxDeviceCreateCommandEncoder(app->device, NULL, &app->commandEncoders[app->currentFrame]) != GFX_RESULT_SUCCESS) {
+    //     fprintf(stderr, "Failed to create command encoder\n");
+    //     return;
+    // }
+    
     GfxCommandEncoder encoder = app->commandEncoders[app->currentFrame];
     gfxCommandEncoderBegin(encoder);
 
     // Begin render pass with dark blue clear color
     // Pass both MSAA color buffer and swapchain image for resolve
+    GfxColor clearColor = (GfxColor){ 0.1f, 0.2f, 0.3f, 1.0f };
+
     GfxColorAttachment colorAttachments[2];
     uint32_t colorAttachmentCount;
     
     if (MSAA_SAMPLE_COUNT == GFX_SAMPLE_COUNT_1) {
         colorAttachments[0].view = backbuffer;
-        colorAttachments[0].clearColor = (GfxColor){ 0.1f, 0.2f, 0.3f, 1.0f };
+        colorAttachments[0].resolveView = NULL;
+        colorAttachments[0].clearColor = clearColor;
         colorAttachments[0].finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC;
         colorAttachmentCount = 1;
     } else {
         colorAttachments[0].view = app->msaaColorTextureView;
-        colorAttachments[0].clearColor = (GfxColor){ 0.1f, 0.2f, 0.3f, 1.0f };
-        colorAttachments[0].finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT;
-        colorAttachments[1].view = backbuffer;
-        colorAttachments[1].clearColor = (GfxColor){ 0.0f, 0.0f, 0.0f, 0.0f };
-        colorAttachments[1].finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC;
-        colorAttachmentCount = 2;
+        colorAttachments[0].resolveView = backbuffer;  // Resolve MSAA to backbuffer
+        colorAttachments[0].clearColor = clearColor;
+        colorAttachments[0].finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT;  // MSAA attachment layout
+        colorAttachments[0].resolveFinalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC;  // Resolve target layout
+        colorAttachmentCount = 1;  // Only 1 attachment now, with resolve target
     }
 
     GfxDepthStencilAttachment depthAttachment = {
@@ -991,6 +1018,9 @@ void render(CubeApp* app)
     presentInfo.waitSemaphores = &app->renderFinishedSemaphores[app->currentFrame];
     presentInfo.waitSemaphoreCount = 1;
     gfxSwapchainPresent(app->swapchain, &presentInfo);
+
+    // Poll device for async operations (needed for WebGPU/Dawn backend)
+    gfxDevicePoll(app->device);
 
     // Move to next frame
     app->currentFrame = (app->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -1087,7 +1117,7 @@ void cleanup(CubeApp* app)
 
     // Unload the backend API after destroying all instances
     printf("Unloading graphics backend...\n");
-    gfxUnloadBackend(GFX_BACKEND_AUTO);
+    gfxUnloadBackend(GFX_BACKEND_API);
 
     // Destroy window
     if (app->window) {
@@ -1274,6 +1304,51 @@ static void* loadBinaryFile(const char* filepath, size_t* outSize)
     }
 
     *outSize = fileSize;
+    return buffer;
+}
+
+static void* loadTextFile(const char* filepath, size_t* outSize)
+{
+    FILE* file = fopen(filepath, "r");
+    if (!file) {
+        fprintf(stderr, "Failed to open file: %s\n", filepath);
+        return NULL;
+    }
+
+    // Get file size
+    fseek(file, 0, SEEK_END);
+    long fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    if (fileSize <= 0) {
+        fprintf(stderr, "Invalid file size for: %s\n", filepath);
+        fclose(file);
+        return NULL;
+    }
+
+    // Allocate buffer with extra byte for null terminator
+    char* buffer = (char*)malloc(fileSize + 1);
+    if (!buffer) {
+        fprintf(stderr, "Failed to allocate memory for file: %s\n", filepath);
+        fclose(file);
+        return NULL;
+    }
+
+    // Read file
+    size_t bytesRead = fread(buffer, 1, fileSize, file);
+    fclose(file);
+
+    if (bytesRead != (size_t)fileSize) {
+        fprintf(stderr, "Failed to read complete file: %s\n", filepath);
+        free(buffer);
+        return NULL;
+    }
+
+    // Null-terminate for text files
+    buffer[fileSize] = '\0';
+    
+    // Return size including null terminator for shader code
+    *outSize = fileSize + 1;
     return buffer;
 }
 

@@ -2583,6 +2583,12 @@ void VulkanBackend::deviceWaitIdle(GfxDevice device) const
     vkDeviceWaitIdle(dev->handle());
 }
 
+void VulkanBackend::devicePoll(GfxDevice device) const
+{
+    // Vulkan doesn't need polling - commands execute immediately
+    (void)device;
+}
+
 void VulkanBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const
 {
     if (!device || !outLimits) {
@@ -3333,7 +3339,6 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     }
 
     // Build Vulkan attachments and references
-    // Color attachments may come in pairs: [MSAA_Color, Resolve, MSAA_Color, Resolve, ...]
     std::vector<VkAttachmentDescription> attachments;
     std::vector<VkAttachmentReference> colorRefs;
     std::vector<VkAttachmentReference> resolveRefs;
@@ -3342,7 +3347,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     uint32_t numColorRefs = 0; // Track actual color attachments (not resolve targets)
 
     // Process color attachments
-    for (uint32_t i = 0; i < colorAttachmentCount;) {
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
         auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
         VkSampleCountFlagBits samples = sampleCountToVkSampleCount(colorView->getTexture()->getSampleCount());
 
@@ -3366,35 +3371,28 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         colorRefs.push_back(colorRef);
         ++numColorRefs;
 
-        ++i;
-
-        // Check if next view is a resolve target
+        // Check if this attachment has a resolve target (use the resolveView field)
         bool hasResolve = false;
-        if (isMSAA && i < colorAttachmentCount) {
-            auto* nextView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
+        if (colorAttachments[i].resolveView) {
+            auto* resolveView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].resolveView);
 
-            bool isResolveTarget = nextView->getTexture()->getSampleCount() == GFX_SAMPLE_COUNT_1;
+            VkAttachmentDescription resolveAttachment{};
+            resolveAttachment.format = resolveView->getFormat();
+            resolveAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+            resolveAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            resolveAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            resolveAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            resolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            resolveAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            resolveAttachment.finalLayout = gfxLayoutToVkImageLayout(colorAttachments[i].resolveFinalLayout);
+            attachments.push_back(resolveAttachment);
 
-            if (isResolveTarget) {
-                VkAttachmentDescription resolveAttachment{};
-                resolveAttachment.format = nextView->getFormat();
-                resolveAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-                resolveAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-                resolveAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-                resolveAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-                resolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-                resolveAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                resolveAttachment.finalLayout = gfxLayoutToVkImageLayout(colorAttachments[i].finalLayout);
-                attachments.push_back(resolveAttachment);
+            VkAttachmentReference resolveRef{};
+            resolveRef.attachment = attachmentIndex++;
+            resolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            resolveRefs.push_back(resolveRef);
 
-                VkAttachmentReference resolveRef{};
-                resolveRef.attachment = attachmentIndex++;
-                resolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                resolveRefs.push_back(resolveRef);
-
-                ++i; // Skip resolve target in next iteration
-                hasResolve = true;
-            }
+            hasResolve = true;
         }
 
         // MSAA without resolve needs unused reference
@@ -3451,13 +3449,20 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    // Create framebuffer with all views (color + resolve + depth)
+    // Create framebuffer with all views (color + resolve + depth) in same order as attachments
     std::vector<VkImageView> fbAttachments;
-    fbAttachments.reserve(colorAttachmentCount + (hasDepth ? 1 : 0));
+    fbAttachments.reserve(attachments.size());
 
     for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-        auto* view = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
-        fbAttachments.push_back(view->handle());
+        // Add color attachment
+        auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
+        fbAttachments.push_back(colorView->handle());
+        
+        // Add resolve target if present
+        if (colorAttachments[i].resolveView) {
+            auto* resolveView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].resolveView);
+            fbAttachments.push_back(resolveView->handle());
+        }
     }
 
     if (depthStencilAttachment) {

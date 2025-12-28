@@ -576,16 +576,27 @@ public:
         // Convert C++ descriptor to C descriptor
         std::vector<GfxColorAttachment> cColorAttachments;
         cColorAttachments.reserve(descriptor.colorAttachments.size());
-        
         for (const auto& colorAttachment : descriptor.colorAttachments) {
             GfxColorAttachment cAttachment{};
             auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(colorAttachment.view);
             if (viewImpl) {
                 cAttachment.view = viewImpl->getHandle();
             }
-            cAttachment.clearColor = { colorAttachment.clearColor.r, colorAttachment.clearColor.g, 
-                                       colorAttachment.clearColor.b, colorAttachment.clearColor.a };
+
+            // Handle resolve target if present
+            if (colorAttachment.resolveView) {
+                auto resolveImpl = std::dynamic_pointer_cast<CTextureViewImpl>(colorAttachment.resolveView);
+                if (resolveImpl) {
+                    cAttachment.resolveView = resolveImpl->getHandle();
+                }
+            } else {
+                cAttachment.resolveView = nullptr;
+            }
+
+            cAttachment.clearColor = { colorAttachment.clearColor.r, colorAttachment.clearColor.g,
+                colorAttachment.clearColor.b, colorAttachment.clearColor.a };
             cAttachment.finalLayout = static_cast<GfxTextureLayout>(colorAttachment.finalLayout);
+            cAttachment.resolveFinalLayout = static_cast<GfxTextureLayout>(colorAttachment.resolveFinalLayout);
             cColorAttachments.push_back(cAttachment);
         }
 

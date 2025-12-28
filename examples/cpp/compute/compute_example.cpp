@@ -808,6 +808,7 @@ void ComputeApp::drawFrame()
         
         ColorAttachment colorAttachment;
         colorAttachment.view = swapchainView;
+        colorAttachment.resolveView = nullptr;
         colorAttachment.clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
         colorAttachment.finalLayout = TextureLayout::PresentSrc;
         
