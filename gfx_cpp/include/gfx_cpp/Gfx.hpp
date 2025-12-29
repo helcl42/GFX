@@ -814,33 +814,45 @@ struct TextureBarrier {
     uint32_t arrayLayerCount = 1;
 };
 
-struct ColorAttachment {
-    std::shared_ptr<TextureView> view;
-    std::shared_ptr<TextureView> resolveView = nullptr;
+struct ColorAttachmentOps {
     LoadOp loadOp = LoadOp::Clear;
     StoreOp storeOp = StoreOp::Store;
-    LoadOp resolveLoadOp = LoadOp::DontCare;   // Load operation for resolve target
-    StoreOp resolveStoreOp = StoreOp::Store;   // Store operation for resolve target
     Color clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+};
+
+struct ColorAttachmentTarget {
+    std::shared_ptr<TextureView> view;
+    ColorAttachmentOps ops;
     TextureLayout finalLayout = TextureLayout::Undefined;
-    TextureLayout resolveFinalLayout = TextureLayout::Undefined;
+};
+
+struct ColorAttachment {
+    ColorAttachmentTarget target;
+    ColorAttachmentTarget* resolveTarget = nullptr;
+};
+
+struct DepthAttachmentOps {
+    LoadOp loadOp = LoadOp::Clear;
+    StoreOp storeOp = StoreOp::Store;
+    float clearValue = 1.0f;
+};
+
+struct StencilAttachmentOps {
+    LoadOp loadOp = LoadOp::Clear;
+    StoreOp storeOp = StoreOp::Store;
+    uint32_t clearValue = 0;
+};
+
+struct DepthStencilAttachmentTarget {
+    std::shared_ptr<TextureView> view;
+    DepthAttachmentOps* depthOps = nullptr;   // Optional: set to nullptr if not used
+    StencilAttachmentOps* stencilOps = nullptr; // Optional: set to nullptr if not used
+    TextureLayout finalLayout = TextureLayout::Undefined;
 };
 
 struct DepthStencilAttachment {
-    std::shared_ptr<TextureView> view;
-    std::shared_ptr<TextureView> resolveView; // Optional: for MSAA resolve
-    LoadOp depthLoadOp = LoadOp::Clear;
-    StoreOp depthStoreOp = StoreOp::Store;
-    LoadOp stencilLoadOp = LoadOp::Clear;
-    StoreOp stencilStoreOp = StoreOp::Store;
-    LoadOp depthResolveLoadOp = LoadOp::DontCare;     // Load operation for depth resolve target
-    StoreOp depthResolveStoreOp = StoreOp::Store;     // Store operation for depth resolve target
-    LoadOp stencilResolveLoadOp = LoadOp::DontCare;   // Load operation for stencil resolve target
-    StoreOp stencilResolveStoreOp = StoreOp::Store;   // Store operation for stencil resolve target
-    float depthClearValue = 1.0f;
-    uint32_t stencilClearValue = 0;
-    TextureLayout finalLayout = TextureLayout::Undefined;
-    TextureLayout resolveFinalLayout = TextureLayout::Undefined; // Layout for resolve target
+    DepthStencilAttachmentTarget target;
+    DepthStencilAttachmentTarget* resolveTarget = nullptr;
 };
 
 struct RenderPassDescriptor {

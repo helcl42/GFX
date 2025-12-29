@@ -37,6 +37,7 @@ static constexpr size_t CUBE_COUNT = 3;
 static constexpr SampleCount MSAA_SAMPLE_COUNT = SampleCount::Count4;
 static constexpr TextureFormat COLOR_FORMAT = TextureFormat::B8G8R8A8UnormSrgb;
 static constexpr TextureFormat DEPTH_FORMAT = TextureFormat::Depth32Float;
+static constexpr Backend BACKEND_API = Backend::WebGPU;
 
 // Vertex structure for cube
 struct Vertex {
@@ -204,7 +205,7 @@ bool CubeApp::initializeGraphics()
         instanceDesc.enableValidation = true;
         instanceDesc.enabledHeadless = false;
         instanceDesc.requiredExtensions = extensions;
-        instanceDesc.backend = Backend::Auto;
+        instanceDesc.backend = BACKEND_API;
 
         instance = createInstance(instanceDesc);
         if (!instance) {
@@ -422,7 +423,7 @@ bool CubeApp::createSyncObjects()
             }
 
             // Create command encoder for this frame
-            commandEncoders[i] = device->createCommandEncoder({"Command Encoder Frame " + std::to_string(i)});
+            commandEncoders[i] = device->createCommandEncoder({ "Command Encoder Frame " + std::to_string(i) });
             if (!commandEncoders[i]) {
                 std::cerr << "Failed to create command encoder " << i << std::endl;
                 return false;
@@ -668,7 +669,7 @@ bool CubeApp::createRenderPipeline()
 
         PrimitiveState primitiveState{};
         primitiveState.topology = PrimitiveTopology::TriangleList;
-        primitiveState.frontFace = FrontFace::Clockwise;
+        primitiveState.frontFace = FrontFace::CounterClockwise;
         primitiveState.cullMode = CullMode::Back; // Enable back-face culling for 3D
         primitiveState.polygonMode = PolygonMode::Fill;
 
@@ -787,43 +788,55 @@ void CubeApp::render()
         // Setup render pass descriptor based on MSAA setting
         RenderPassDescriptor renderPassDesc;
         renderPassDesc.label = "Main Render Pass";
-        
+
+        DepthAttachmentOps depthOps;
+        depthOps.loadOp = LoadOp::Clear;
+        depthOps.storeOp = StoreOp::DontCare;
+        depthOps.clearValue = 1.0f;
+
+        DepthStencilAttachmentTarget depthTarget;
+        depthTarget.view = depthTextureView;
+        depthTarget.depthOps = &depthOps;
+        depthTarget.stencilOps = nullptr; // No stencil
+        depthTarget.finalLayout = TextureLayout::DepthStencilAttachment;
+
         DepthStencilAttachment depthAttachment;
-        depthAttachment.view = depthTextureView;
-        depthAttachment.resolveView = nullptr;
-        depthAttachment.depthLoadOp = LoadOp::Clear;
-        depthAttachment.depthStoreOp = StoreOp::DontCare;  // Depth buffer contents not needed after render
-        depthAttachment.stencilLoadOp = LoadOp::DontCare;
-        depthAttachment.stencilStoreOp = StoreOp::DontCare;
-        depthAttachment.depthClearValue = 1.0f;
-        depthAttachment.stencilClearValue = 0;
-        depthAttachment.finalLayout = TextureLayout::DepthStencilAttachment;
+        depthAttachment.target = depthTarget;
+        depthAttachment.resolveTarget = nullptr;
+
+        // Declare targets outside if/else scope to avoid dangling pointers
+        ColorAttachmentTarget colorTargets[2];
+        ColorAttachment colorAttachment;
 
         if (MSAA_SAMPLE_COUNT == SampleCount::Count1) {
             // No MSAA: render directly to backbuffer
-            ColorAttachment colorAttachment;
-            colorAttachment.view = backbuffer;
-            colorAttachment.resolveView = nullptr;
-            colorAttachment.loadOp = LoadOp::Clear;
-            colorAttachment.storeOp = StoreOp::Store;
-            colorAttachment.clearColor = clearColor;
-            colorAttachment.finalLayout = TextureLayout::PresentSrc;
-            renderPassDesc.colorAttachments = { colorAttachment };
+            colorTargets[0].view = backbuffer;
+            colorTargets[0].ops.loadOp = LoadOp::Clear;
+            colorTargets[0].ops.storeOp = StoreOp::Store;
+            colorTargets[0].ops.clearColor = clearColor;
+            colorTargets[0].finalLayout = TextureLayout::PresentSrc;
+            
+            colorAttachment.target = colorTargets[0];
+            colorAttachment.resolveTarget = nullptr;
         } else {
             // MSAA: render to MSAA buffer, resolve to backbuffer
-            ColorAttachment msaaAttachment;
-            msaaAttachment.view = msaaColorTextureView;
-            msaaAttachment.resolveView = backbuffer;  // Resolve to backbuffer
-            msaaAttachment.loadOp = LoadOp::Clear;
-            msaaAttachment.storeOp = StoreOp::DontCare;  // MSAA buffer doesn't need to be stored
-            msaaAttachment.resolveLoadOp = LoadOp::DontCare;  // Don't care about resolve target before resolve
-            msaaAttachment.resolveStoreOp = StoreOp::Store;  // Store the resolved result
-            msaaAttachment.clearColor = clearColor;
-            msaaAttachment.finalLayout = TextureLayout::ColorAttachment;  // MSAA attachment layout
-            msaaAttachment.resolveFinalLayout = TextureLayout::PresentSrc;  // Resolve target layout
+            colorTargets[0].view = msaaColorTextureView;
+            colorTargets[0].ops.loadOp = LoadOp::Clear;
+            colorTargets[0].ops.storeOp = StoreOp::DontCare; // MSAA buffer doesn't need to be stored
+            colorTargets[0].ops.clearColor = clearColor;
+            colorTargets[0].finalLayout = TextureLayout::ColorAttachment;
             
-            renderPassDesc.colorAttachments = { msaaAttachment };
+            colorTargets[1].view = backbuffer;
+            colorTargets[1].ops.loadOp = LoadOp::DontCare; // Don't care about resolve target before resolve
+            colorTargets[1].ops.storeOp = StoreOp::Store; // Store the resolved result
+            colorTargets[1].ops.clearColor = clearColor;
+            colorTargets[1].finalLayout = TextureLayout::PresentSrc;
+            
+            colorAttachment.target = colorTargets[0];
+            colorAttachment.resolveTarget = &colorTargets[1];
         }
+        
+        renderPassDesc.colorAttachments = { colorAttachment };
         renderPassDesc.depthStencilAttachment = &depthAttachment;
 
         auto renderPass = commandEncoder->beginRenderPass(renderPassDesc);

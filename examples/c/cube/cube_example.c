@@ -932,48 +932,71 @@ void render(CubeApp* app)
     // Pass both MSAA color buffer and swapchain image for resolve
     GfxColor clearColor = (GfxColor){ 0.1f, 0.2f, 0.3f, 1.0f };
 
-    GfxColorAttachment colorAttachments[2];
+    GfxColorAttachmentTarget colorTargets[2];
+    GfxColorAttachment colorAttachment;
     uint32_t colorAttachmentCount;
 
     if (MSAA_SAMPLE_COUNT == GFX_SAMPLE_COUNT_1) {
-        colorAttachments[0].view = backbuffer;
-        colorAttachments[0].resolveView = NULL;
-        colorAttachments[0].loadOp = GFX_LOAD_OP_CLEAR;
-        colorAttachments[0].storeOp = GFX_STORE_OP_STORE;
-        colorAttachments[0].resolveLoadOp = GFX_LOAD_OP_DONT_CARE; // Unused but must be initialized
-        colorAttachments[0].resolveStoreOp = GFX_STORE_OP_STORE; // Unused but must be initialized
-        colorAttachments[0].clearColor = clearColor;
-        colorAttachments[0].finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC;
-        colorAttachments[0].resolveFinalLayout = GFX_TEXTURE_LAYOUT_UNDEFINED; // Unused but must be initialized
+        colorTargets[0] = (GfxColorAttachmentTarget){
+            .view = backbuffer,
+            .ops = {
+                .loadOp = GFX_LOAD_OP_CLEAR,
+                .storeOp = GFX_STORE_OP_STORE,
+                .clearColor = clearColor
+            },
+            .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
+        };
+        colorAttachment = (GfxColorAttachment){
+            .target = colorTargets[0],
+            .resolveTarget = NULL
+        };
         colorAttachmentCount = 1;
     } else {
-        colorAttachments[0].view = app->msaaColorTextureView;
-        colorAttachments[0].resolveView = backbuffer; // Resolve MSAA to backbuffer
-        colorAttachments[0].loadOp = GFX_LOAD_OP_CLEAR;
-        colorAttachments[0].storeOp = GFX_STORE_OP_DONT_CARE; // MSAA buffer doesn't need to be stored
-        colorAttachments[0].resolveLoadOp = GFX_LOAD_OP_DONT_CARE; // Don't care about resolve target before resolve
-        colorAttachments[0].resolveStoreOp = GFX_STORE_OP_STORE; // Store the resolved result
-        colorAttachments[0].clearColor = clearColor;
-        colorAttachments[0].finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT; // MSAA attachment layout
-        colorAttachments[0].resolveFinalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC; // Resolve target layout
-        colorAttachmentCount = 1; // Only 1 attachment now, with resolve target
+        colorTargets[0] = (GfxColorAttachmentTarget){
+            .view = app->msaaColorTextureView,
+            .ops = {
+                .loadOp = GFX_LOAD_OP_CLEAR,
+                .storeOp = GFX_STORE_OP_DONT_CARE, // MSAA buffer doesn't need to be stored
+                .clearColor = clearColor
+            },
+            .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
+        };
+        colorTargets[1] = (GfxColorAttachmentTarget){
+            .view = backbuffer,
+            .ops = {
+                .loadOp = GFX_LOAD_OP_DONT_CARE, // Don't care about resolve target before resolve
+                .storeOp = GFX_STORE_OP_STORE, // Store the resolved result
+                .clearColor = clearColor
+            },
+            .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
+        };
+        colorAttachment = (GfxColorAttachment){
+            .target = colorTargets[0],
+            .resolveTarget = &colorTargets[1]
+        };
+        colorAttachmentCount = 1;
     }
 
-    GfxDepthStencilAttachment depthAttachment = {
+    GfxDepthAttachmentOps depthOps = {
+        .loadOp = GFX_LOAD_OP_CLEAR,
+        .storeOp = GFX_STORE_OP_DONT_CARE, // Depth buffer contents not needed after render
+        .clearValue = 1.0f
+    };
+    
+    GfxDepthStencilAttachmentTarget depthTarget = {
         .view = app->depthTextureView,
-        .resolveView = NULL,
-        .depthLoadOp = GFX_LOAD_OP_CLEAR,
-        .depthStoreOp = GFX_STORE_OP_DONT_CARE, // Depth buffer contents not needed after render
-        .stencilLoadOp = GFX_LOAD_OP_DONT_CARE,
-        .stencilStoreOp = GFX_STORE_OP_DONT_CARE,
-        .depthClearValue = 1.0f,
-        .stencilClearValue = 0,
+        .depthOps = &depthOps,
+        .stencilOps = NULL, // No stencil
         .finalLayout = GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT
+    };
+
+    GfxDepthStencilAttachment depthAttachment = {
+            .target = depthTarget,
     };
 
     GfxRenderPassDescriptor renderPassDesc = {
         .label = "Main Render Pass",
-        .colorAttachments = colorAttachments,
+        .colorAttachments = &colorAttachment,
         .colorAttachmentCount = colorAttachmentCount,
         .depthStencilAttachment = &depthAttachment
     };

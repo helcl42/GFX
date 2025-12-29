@@ -574,42 +574,86 @@ public:
     std::shared_ptr<RenderPassEncoder> beginRenderPass(const RenderPassDescriptor& descriptor) override
     {
         // Convert C++ descriptor to C descriptor
+        std::vector<GfxColorAttachmentTarget> cColorTargets;
+        std::vector<GfxColorAttachmentTarget> cResolveTargets;
         std::vector<GfxColorAttachment> cColorAttachments;
+        
+        cColorTargets.reserve(descriptor.colorAttachments.size());
         cColorAttachments.reserve(descriptor.colorAttachments.size());
+        
         for (const auto& colorAttachment : descriptor.colorAttachments) {
-            GfxColorAttachment cAttachment{};
-            auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(colorAttachment.view);
+            // Main target
+            GfxColorAttachmentTarget cTarget{};
+            auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(colorAttachment.target.view);
             if (viewImpl) {
-                cAttachment.view = viewImpl->getHandle();
+                cTarget.view = viewImpl->getHandle();
             }
+            cTarget.ops.loadOp = static_cast<GfxLoadOp>(colorAttachment.target.ops.loadOp);
+            cTarget.ops.storeOp = static_cast<GfxStoreOp>(colorAttachment.target.ops.storeOp);
+            cTarget.ops.clearColor = { colorAttachment.target.ops.clearColor.r, colorAttachment.target.ops.clearColor.g,
+                colorAttachment.target.ops.clearColor.b, colorAttachment.target.ops.clearColor.a };
+            cTarget.finalLayout = static_cast<GfxTextureLayout>(colorAttachment.target.finalLayout);
+            cColorTargets.push_back(cTarget);
+
+            GfxColorAttachment cAttachment{};
+            cAttachment.target = cColorTargets.back();
 
             // Handle resolve target if present
-            if (colorAttachment.resolveView) {
-                auto resolveImpl = std::dynamic_pointer_cast<CTextureViewImpl>(colorAttachment.resolveView);
+            if (colorAttachment.resolveTarget) {
+                GfxColorAttachmentTarget cResolveTarget{};
+                auto resolveImpl = std::dynamic_pointer_cast<CTextureViewImpl>(colorAttachment.resolveTarget->view);
                 if (resolveImpl) {
-                    cAttachment.resolveView = resolveImpl->getHandle();
+                    cResolveTarget.view = resolveImpl->getHandle();
                 }
+                cResolveTarget.ops.loadOp = static_cast<GfxLoadOp>(colorAttachment.resolveTarget->ops.loadOp);
+                cResolveTarget.ops.storeOp = static_cast<GfxStoreOp>(colorAttachment.resolveTarget->ops.storeOp);
+                cResolveTarget.ops.clearColor = { colorAttachment.resolveTarget->ops.clearColor.r, colorAttachment.resolveTarget->ops.clearColor.g,
+                    colorAttachment.resolveTarget->ops.clearColor.b, colorAttachment.resolveTarget->ops.clearColor.a };
+                cResolveTarget.finalLayout = static_cast<GfxTextureLayout>(colorAttachment.resolveTarget->finalLayout);
+                cResolveTargets.push_back(cResolveTarget);
+                cAttachment.resolveTarget = &cResolveTargets.back();
             } else {
-                cAttachment.resolveView = nullptr;
+                cAttachment.resolveTarget = nullptr;
             }
 
-            cAttachment.clearColor = { colorAttachment.clearColor.r, colorAttachment.clearColor.g,
-                colorAttachment.clearColor.b, colorAttachment.clearColor.a };
-            cAttachment.finalLayout = static_cast<GfxTextureLayout>(colorAttachment.finalLayout);
-            cAttachment.resolveFinalLayout = static_cast<GfxTextureLayout>(colorAttachment.resolveFinalLayout);
             cColorAttachments.push_back(cAttachment);
         }
 
+        GfxDepthAttachmentOps cDepthOps{};
+        GfxStencilAttachmentOps cStencilOps{};
+        GfxDepthStencilAttachmentTarget cDepthTarget{};
         GfxDepthStencilAttachment cDepthStencil{};
         GfxDepthStencilAttachment* cDepthStencilPtr = nullptr;
+        
         if (descriptor.depthStencilAttachment) {
-            auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(descriptor.depthStencilAttachment->view);
+            auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(descriptor.depthStencilAttachment->target.view);
             if (viewImpl) {
-                cDepthStencil.view = viewImpl->getHandle();
+                cDepthTarget.view = viewImpl->getHandle();
             }
-            cDepthStencil.depthClearValue = descriptor.depthStencilAttachment->depthClearValue;
-            cDepthStencil.stencilClearValue = descriptor.depthStencilAttachment->stencilClearValue;
-            cDepthStencil.finalLayout = static_cast<GfxTextureLayout>(descriptor.depthStencilAttachment->finalLayout);
+            
+            // Handle depth ops if present
+            if (descriptor.depthStencilAttachment->target.depthOps) {
+                cDepthOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->target.depthOps->loadOp);
+                cDepthOps.storeOp = static_cast<GfxStoreOp>(descriptor.depthStencilAttachment->target.depthOps->storeOp);
+                cDepthOps.clearValue = descriptor.depthStencilAttachment->target.depthOps->clearValue;
+                cDepthTarget.depthOps = &cDepthOps;
+            } else {
+                cDepthTarget.depthOps = nullptr;
+            }
+            
+            // Handle stencil ops if present
+            if (descriptor.depthStencilAttachment->target.stencilOps) {
+                cStencilOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->target.stencilOps->loadOp);
+                cStencilOps.storeOp = static_cast<GfxStoreOp>(descriptor.depthStencilAttachment->target.stencilOps->storeOp);
+                cStencilOps.clearValue = descriptor.depthStencilAttachment->target.stencilOps->clearValue;
+                cDepthTarget.stencilOps = &cStencilOps;
+            } else {
+                cDepthTarget.stencilOps = nullptr;
+            }
+            
+            cDepthTarget.finalLayout = static_cast<GfxTextureLayout>(descriptor.depthStencilAttachment->target.finalLayout);
+            cDepthStencil.target = cDepthTarget;
+            cDepthStencil.resolveTarget = nullptr; // TODO: handle resolve if needed
             cDepthStencilPtr = &cDepthStencil;
         }
 

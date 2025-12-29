@@ -426,7 +426,7 @@ bool ComputeApp::createComputeResources()
         }
 
         // Transition compute texture to SHADER_READ_ONLY layout initially
-        auto initEncoder = device->createCommandEncoder({"Init Layout Transition"});
+        auto initEncoder = device->createCommandEncoder({ "Init Layout Transition" });
         if (initEncoder) {
             initEncoder->begin();
 
@@ -668,7 +668,7 @@ bool ComputeApp::createSyncObjects()
                 return false;
             }
 
-            commandEncoders[i] = device->createCommandEncoder({"Command Encoder " + std::to_string(i)});
+            commandEncoders[i] = device->createCommandEncoder({ "Command Encoder " + std::to_string(i) });
             if (!commandEncoders[i]) {
                 std::cerr << "Failed to create command encoder " << i << std::endl;
                 return false;
@@ -805,15 +805,18 @@ void ComputeApp::drawFrame()
 
         RenderPassDescriptor renderPassDesc;
         renderPassDesc.label = "Fullscreen Render Pass";
-        
+
+        ColorAttachmentTarget colorTarget;
+        colorTarget.view = swapchainView;
+        colorTarget.ops.loadOp = LoadOp::Clear;
+        colorTarget.ops.storeOp = StoreOp::Store;
+        colorTarget.ops.clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+        colorTarget.finalLayout = TextureLayout::PresentSrc;
+
         ColorAttachment colorAttachment;
-        colorAttachment.view = swapchainView;
-        colorAttachment.resolveView = nullptr;
-        colorAttachment.loadOp = LoadOp::Clear;
-        colorAttachment.storeOp = StoreOp::Store;
-        colorAttachment.clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-        colorAttachment.finalLayout = TextureLayout::PresentSrc;
-        
+        colorAttachment.target = colorTarget;
+        colorAttachment.resolveTarget = nullptr;
+
         renderPassDesc.colorAttachments = { colorAttachment };
         renderPassDesc.depthStencilAttachment = nullptr;
 

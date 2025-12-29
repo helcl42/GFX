@@ -29,7 +29,7 @@
 #define COMPUTE_TEXTURE_HEIGHT 600
 #define MAX_FRAMES_IN_FLIGHT 3
 #define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
-#define GFX_BACKEND_API GFX_BACKEND_WEBGPU
+#define GFX_BACKEND_API GFX_BACKEND_VULKAN
 
 // Debug callback function
 static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData)
@@ -915,16 +915,19 @@ static void drawFrame(ComputeApp* app)
     // --- RENDER PASS: Post-process and display ---
     GfxTextureView swapchainView = gfxSwapchainGetCurrentTextureView(app->swapchain);
 
-    GfxColorAttachment colorAttachment = {
+    GfxColorAttachmentTarget colorTarget = {
         .view = swapchainView,
-        .resolveView = NULL,
-        .loadOp = GFX_LOAD_OP_CLEAR,
-        .storeOp = GFX_STORE_OP_STORE,
-        .resolveLoadOp = GFX_LOAD_OP_DONT_CARE,  // Unused but must be initialized
-        .resolveStoreOp = GFX_STORE_OP_STORE,    // Unused but must be initialized
-        .clearColor = { 0.0f, 0.0f, 0.0f, 1.0f },
-        .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC,
-        .resolveFinalLayout = GFX_TEXTURE_LAYOUT_UNDEFINED  // Unused but must be initialized
+        .ops = {
+            .loadOp = GFX_LOAD_OP_CLEAR,
+            .storeOp = GFX_STORE_OP_STORE,
+            .clearColor = { 0.0f, 0.0f, 0.0f, 1.0f }
+        },
+        .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
+    };
+
+    GfxColorAttachment colorAttachment = {
+        .target = colorTarget,
+        .resolveTarget = NULL
     };
 
     GfxRenderPassDescriptor renderPassDesc = {

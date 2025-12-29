@@ -438,32 +438,44 @@ typedef struct {
 } GfxTextureBarrier;
 
 typedef struct {
-    GfxTextureView view;
-    GfxTextureView resolveView; // Optional: for MSAA resolve, set to nullptr if not used
     GfxLoadOp loadOp;
     GfxStoreOp storeOp;
-    GfxLoadOp resolveLoadOp;   // Load operation for resolve target
-    GfxStoreOp resolveStoreOp; // Store operation for resolve target
     GfxColor clearColor;
-    GfxTextureLayout finalLayout;
-    GfxTextureLayout resolveFinalLayout; // Layout for resolve target (when resolveView is set)
-} GfxColorAttachment;
+} GfxColorAttachmentOps;
 
 typedef struct {
     GfxTextureView view;
-    GfxTextureView resolveView; // Optional: for MSAA resolve, set to nullptr if not used
-    GfxLoadOp depthLoadOp;
-    GfxStoreOp depthStoreOp;
-    GfxLoadOp stencilLoadOp;
-    GfxStoreOp stencilStoreOp;
-    GfxLoadOp depthResolveLoadOp;     // Load operation for depth resolve target
-    GfxStoreOp depthResolveStoreOp;   // Store operation for depth resolve target
-    GfxLoadOp stencilResolveLoadOp;   // Load operation for stencil resolve target
-    GfxStoreOp stencilResolveStoreOp; // Store operation for stencil resolve target
-    float depthClearValue;
-    uint32_t stencilClearValue;
+    GfxColorAttachmentOps ops;
     GfxTextureLayout finalLayout;
-    GfxTextureLayout resolveFinalLayout; // Layout for resolve target (when resolveView is set)
+} GfxColorAttachmentTarget;
+
+typedef struct {
+    GfxColorAttachmentTarget target;
+    GfxColorAttachmentTarget* resolveTarget; // Optional: set to nullptr if not used
+} GfxColorAttachment;
+
+typedef struct {
+    GfxLoadOp loadOp;
+    GfxStoreOp storeOp;
+    float clearValue;
+} GfxDepthAttachmentOps;
+
+typedef struct {
+    GfxLoadOp loadOp;
+    GfxStoreOp storeOp;
+    uint32_t clearValue;
+} GfxStencilAttachmentOps;
+
+typedef struct {
+    GfxTextureView view;
+    GfxDepthAttachmentOps* depthOps;   // Optional: set to nullptr if not used
+    GfxStencilAttachmentOps* stencilOps; // Optional: set to nullptr if not used
+    GfxTextureLayout finalLayout;
+} GfxDepthStencilAttachmentTarget;
+
+typedef struct {
+    GfxDepthStencilAttachmentTarget target;
+    GfxDepthStencilAttachmentTarget* resolveTarget; // Optional: set to nullptr if not used
 } GfxDepthStencilAttachment;
 
 typedef struct {

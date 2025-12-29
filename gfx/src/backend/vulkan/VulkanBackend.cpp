@@ -3326,15 +3326,15 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    // Validate all color attachment views are non-NULL
+    // Validate all color attachments have valid targets
     for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-        if (!colorAttachments[i].view) {
+        if (!colorAttachments[i].target.view) {
             return GFX_RESULT_ERROR_INVALID_PARAMETER;
         }
     }
 
     for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-        if (colorAttachments[i].finalLayout == GFX_TEXTURE_LAYOUT_UNDEFINED) {
+        if (colorAttachments[i].target.finalLayout == GFX_TEXTURE_LAYOUT_UNDEFINED) {
             return GFX_RESULT_ERROR_INVALID_PARAMETER;
         }
     }
@@ -3349,7 +3349,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     // Try to get dimensions from color attachments
     if (colorAttachmentCount > 0 && colorAttachments) {
         for (uint32_t i = 0; i < colorAttachmentCount && (width == 0 || height == 0); ++i) {
-            auto* view = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
+            auto* view = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].target.view);
             auto size = view->getTexture()->getSize();
             width = size.width;
             height = size.height;
@@ -3358,7 +3358,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
     // Fall back to depth attachment if no color attachment had valid dimensions
     if ((width == 0 || height == 0) && depthStencilAttachment) {
-        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment->view);
+        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment->target.view);
         auto size = depthView->getTexture()->getSize();
         width = size.width;
         height = size.height;
@@ -3374,7 +3374,8 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
     // Process color attachments
     for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-        auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
+        const GfxColorAttachmentTarget* target = &colorAttachments[i].target;
+        auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(target->view);
         VkSampleCountFlagBits samples = sampleCountToVkSampleCount(colorView->getTexture()->getSampleCount());
 
         bool isMSAA = (samples > VK_SAMPLE_COUNT_1_BIT);
@@ -3383,15 +3384,15 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = colorView->getFormat();
         colorAttachment.samples = samples;
-        colorAttachment.loadOp = gfxLoadOpToVkLoadOp(colorAttachments[i].loadOp);
-        colorAttachment.storeOp = gfxStoreOpToVkStoreOp(colorAttachments[i].storeOp);
+        colorAttachment.loadOp = gfxLoadOpToVkLoadOp(target->ops.loadOp);
+        colorAttachment.storeOp = gfxStoreOpToVkStoreOp(target->ops.storeOp);
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         // Use UNDEFINED if we're clearing or don't care, otherwise preserve contents with COLOR_ATTACHMENT_OPTIMAL
-        colorAttachment.initialLayout = (colorAttachments[i].loadOp == GFX_LOAD_OP_LOAD) 
+        colorAttachment.initialLayout = (target->ops.loadOp == GFX_LOAD_OP_LOAD) 
             ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL 
             : VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = gfxLayoutToVkImageLayout(colorAttachments[i].finalLayout);
+        colorAttachment.finalLayout = gfxLayoutToVkImageLayout(target->finalLayout);
         attachments.push_back(colorAttachment);
 
         VkAttachmentReference colorRef{};
@@ -3400,23 +3401,24 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         colorRefs.push_back(colorRef);
         ++numColorRefs;
 
-        // Check if this attachment has a resolve target (use the resolveView field)
+        // Check if this attachment has a resolve target
         bool hasResolve = false;
-        if (colorAttachments[i].resolveView) {
-            auto* resolveView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].resolveView);
+        if (colorAttachments[i].resolveTarget) {
+            const GfxColorAttachmentTarget* resolveTarget = colorAttachments[i].resolveTarget;
+            auto* resolveView = reinterpret_cast<gfx::vulkan::TextureView*>(resolveTarget->view);
 
             VkAttachmentDescription resolveAttachment{};
             resolveAttachment.format = resolveView->getFormat();
             resolveAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-            resolveAttachment.loadOp = gfxLoadOpToVkLoadOp(colorAttachments[i].resolveLoadOp);
-            resolveAttachment.storeOp = gfxStoreOpToVkStoreOp(colorAttachments[i].resolveStoreOp);
+            resolveAttachment.loadOp = gfxLoadOpToVkLoadOp(resolveTarget->ops.loadOp);
+            resolveAttachment.storeOp = gfxStoreOpToVkStoreOp(resolveTarget->ops.storeOp);
             resolveAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             resolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             // Use UNDEFINED if we're clearing or don't care, otherwise preserve contents with COLOR_ATTACHMENT_OPTIMAL
-            resolveAttachment.initialLayout = (colorAttachments[i].resolveLoadOp == GFX_LOAD_OP_LOAD) 
+            resolveAttachment.initialLayout = (resolveTarget->ops.loadOp == GFX_LOAD_OP_LOAD) 
                 ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL 
                 : VK_IMAGE_LAYOUT_UNDEFINED;
-            resolveAttachment.finalLayout = gfxLayoutToVkImageLayout(colorAttachments[i].resolveFinalLayout);
+            resolveAttachment.finalLayout = gfxLayoutToVkImageLayout(resolveTarget->finalLayout);
             attachments.push_back(resolveAttachment);
 
             VkAttachmentReference resolveRef{};
@@ -3441,21 +3443,38 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     bool hasDepth = false;
 
     if (depthStencilAttachment) {
-        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment->view);
+        const GfxDepthStencilAttachmentTarget* target = &depthStencilAttachment->target;
+        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(target->view);
 
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = depthView->getFormat();
         depthAttachment.samples = sampleCountToVkSampleCount(depthView->getTexture()->getSampleCount());
-        depthAttachment.loadOp = gfxLoadOpToVkLoadOp(depthStencilAttachment->depthLoadOp);
-        depthAttachment.storeOp = gfxStoreOpToVkStoreOp(depthStencilAttachment->depthStoreOp);
-        depthAttachment.stencilLoadOp = gfxLoadOpToVkLoadOp(depthStencilAttachment->stencilLoadOp);
-        depthAttachment.stencilStoreOp = gfxStoreOpToVkStoreOp(depthStencilAttachment->stencilStoreOp);
+        
+        // Handle depth operations (required if depth pointer is set)
+        if (target->depthOps) {
+            depthAttachment.loadOp = gfxLoadOpToVkLoadOp(target->depthOps->loadOp);
+            depthAttachment.storeOp = gfxStoreOpToVkStoreOp(target->depthOps->storeOp);
+        } else {
+            depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        }
+        
+        // Handle stencil operations (required if stencil pointer is set)
+        if (target->stencilOps) {
+            depthAttachment.stencilLoadOp = gfxLoadOpToVkLoadOp(target->stencilOps->loadOp);
+            depthAttachment.stencilStoreOp = gfxStoreOpToVkStoreOp(target->stencilOps->storeOp);
+        } else {
+            depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        }
+        
         // Use UNDEFINED if we're clearing or don't care about both depth AND stencil, otherwise preserve contents
-        depthAttachment.initialLayout = (depthStencilAttachment->depthLoadOp == GFX_LOAD_OP_LOAD || 
-                                         depthStencilAttachment->stencilLoadOp == GFX_LOAD_OP_LOAD)
+        bool loadDepth = (target->depthOps && target->depthOps->loadOp == GFX_LOAD_OP_LOAD);
+        bool loadStencil = (target->stencilOps && target->stencilOps->loadOp == GFX_LOAD_OP_LOAD);
+        depthAttachment.initialLayout = (loadDepth || loadStencil)
             ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL 
             : VK_IMAGE_LAYOUT_UNDEFINED;
-        depthAttachment.finalLayout = gfxLayoutToVkImageLayout(depthStencilAttachment->finalLayout);
+        depthAttachment.finalLayout = gfxLayoutToVkImageLayout(target->finalLayout);
         attachments.push_back(depthAttachment);
 
         depthRef.attachment = attachmentIndex++;
@@ -3491,18 +3510,18 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
     for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
         // Add color attachment
-        auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].view);
+        auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].target.view);
         fbAttachments.push_back(colorView->handle());
         
         // Add resolve target if present
-        if (colorAttachments[i].resolveView) {
-            auto* resolveView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].resolveView);
+        if (colorAttachments[i].resolveTarget) {
+            auto* resolveView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].resolveTarget->view);
             fbAttachments.push_back(resolveView->handle());
         }
     }
 
     if (depthStencilAttachment) {
-        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment->view);
+        auto* depthView = reinterpret_cast<gfx::vulkan::TextureView*>(depthStencilAttachment->target.view);
         fbAttachments.push_back(depthView->handle());
     }
 
@@ -3535,7 +3554,9 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
         if (isDepthFormat(attachments[i].format)) {
             // Depth/stencil attachment
-            clearValue.depthStencil = { depthStencilAttachment->depthClearValue, depthStencilAttachment->stencilClearValue };
+            float depthClear = (depthStencilAttachment->target.depthOps) ? depthStencilAttachment->target.depthOps->clearValue : 1.0f;
+            uint32_t stencilClear = (depthStencilAttachment->target.stencilOps) ? depthStencilAttachment->target.stencilOps->clearValue : 0;
+            clearValue.depthStencil = { depthClear, stencilClear };
         } else {
             // Color attachment - check if it's a resolve target
             bool isPrevMSAA = (i > 0 && attachments[i - 1].samples > VK_SAMPLE_COUNT_1_BIT);
@@ -3547,7 +3568,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
             } else {
                 // MSAA or regular color attachment - use provided clear color
                 if (clearColorIdx < numColorRefs) {
-                    const GfxColor& color = colorAttachments[clearColorIdx].clearColor;
+                    const GfxColor& color = colorAttachments[clearColorIdx].target.ops.clearColor;
                     clearValue.color = { { color.r, color.g, color.b, color.a } };
                     clearColorIdx++;
                 } else {
