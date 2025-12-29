@@ -62,6 +62,31 @@ function(compile_shader target shader_source)
     target_sources(${target} PRIVATE ${shader_output})
 endfunction()
 
+# Function to compile WGSL shaders to SPIR-V using tint
+function(compile_wgsl_shader target shader_source)
+    if(NOT BUILD_WEBGPU_BACKEND)
+        message(WARNING "Cannot compile WGSL shader ${shader_source} - WebGPU backend not enabled")
+        return()
+    endif()
+    
+    get_filename_component(shader_name ${shader_source} NAME_WE)
+    get_filename_component(shader_ext ${shader_source} EXT)
+    # Remove .wgsl extension and add .spv
+    string(REGEX REPLACE "\\.wgsl$" "" shader_base "${shader_name}${shader_ext}")
+    set(shader_output "${CMAKE_CURRENT_BINARY_DIR}/${shader_base}.spv")
+    
+    add_custom_command(
+        OUTPUT ${shader_output}
+        COMMAND ${CMAKE_BINARY_DIR}/dawn/tint ${shader_source} -o ${shader_output} --format spirv
+        DEPENDS ${shader_source} tint
+        COMMENT "Compiling WGSL shader: ${shader_name}${shader_ext} -> ${shader_base}.spv"
+        VERBATIM
+    )
+    
+    # Add the output to the target's dependencies
+    target_sources(${target} PRIVATE ${shader_output})
+endfunction()
+
 # WebGPU (Dawn)
 if(BUILD_WEBGPU_BACKEND)
     # Use Dawn from specific location as subdirectory
@@ -83,6 +108,7 @@ if(BUILD_WEBGPU_BACKEND)
         set(DAWN_ENABLE_METAL OFF CACHE BOOL "" FORCE)
         set(DAWN_ENABLE_D3D11 OFF CACHE BOOL "" FORCE)
         set(DAWN_ENABLE_D3D12 OFF CACHE BOOL "" FORCE)
+        set(TINT_BUILD_CMD_TOOLS ON CACHE BOOL "" FORCE)  # Build tint command-line tool
         
         add_subdirectory(${DAWN_ROOT} ${CMAKE_BINARY_DIR}/dawn EXCLUDE_FROM_ALL)
         
@@ -241,9 +267,21 @@ if(BUILD_EXAMPLES)
         target_link_options(cube_example_c PRIVATE -fsanitize=address)
     endif()
     
-    # Compile shaders for C example
-    compile_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert)
-    compile_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag)
+    # Compile WGSL shaders to SPIR-V for C example
+    compile_wgsl_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl)
+    compile_wgsl_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl)
+    
+    # Copy WGSL shaders to build directory for WebGPU runtime loading
+    add_custom_command(TARGET cube_example_c POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl
+            ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.wgsl
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl
+            ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
+        COMMENT "Copying WGSL shaders for WebGPU runtime"
+    )
     
     # C++ Cube Example
     add_executable(cube_example_cpp examples/cpp/cube/cube_example.cpp)
@@ -252,9 +290,21 @@ if(BUILD_EXAMPLES)
         target_link_options(cube_example_cpp PRIVATE -fsanitize=address)
     endif()
     
-    # Compile shaders for C++ example (uses same shaders as C example)
-    compile_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert)
-    compile_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag)
+    # Compile WGSL shaders to SPIR-V for C++ example (shares with C example)
+    compile_wgsl_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl)
+    compile_wgsl_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl)
+    
+    # Copy WGSL shaders for WebGPU runtime loading (same command as C example)
+    add_custom_command(TARGET cube_example_cpp POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl
+            ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.wgsl
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl
+            ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
+        COMMENT "Copying WGSL shaders for WebGPU runtime"
+    )
     
     # C Compute Example
     add_executable(compute_example_c examples/c/compute/compute_example.c)
@@ -263,10 +313,25 @@ if(BUILD_EXAMPLES)
         target_link_options(compute_example_c PRIVATE -fsanitize=address)
     endif()
     
-    # Compile shaders for compute example
-    compile_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/generate.comp)
-    compile_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/fullscreen.vert)
-    compile_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/postprocess.frag)
+    # Compile WGSL shaders to SPIR-V for compute example
+    compile_wgsl_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/generate.comp.wgsl)
+    compile_wgsl_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/fullscreen.vert.wgsl)
+    compile_wgsl_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/postprocess.frag.wgsl)
+    
+    # Copy WGSL shaders to build directory for WebGPU runtime loading
+    add_custom_command(TARGET compute_example_c POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/generate.comp.wgsl
+            ${CMAKE_CURRENT_BINARY_DIR}/shaders/generate.comp.wgsl
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/fullscreen.vert.wgsl
+            ${CMAKE_CURRENT_BINARY_DIR}/shaders/fullscreen.vert.wgsl
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/postprocess.frag.wgsl
+            ${CMAKE_CURRENT_BINARY_DIR}/shaders/postprocess.frag.wgsl
+        COMMENT "Copying WGSL shaders for WebGPU runtime"
+    )
     
     # C++ Compute Example
     add_executable(compute_example_cpp examples/cpp/compute/compute_example.cpp)
