@@ -147,6 +147,7 @@ endif()
 set(GFX_C_SOURCES
     gfx/include/gfx/gfx.h
     gfx/src/backend/IBackend.h
+    gfx/src/backend/BackendFactory.cpp
     gfx/src/api/GfxDispatcher.cpp
 )
 

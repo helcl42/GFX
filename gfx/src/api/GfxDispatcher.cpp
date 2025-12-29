@@ -1,10 +1,5 @@
 #include "backend/BackendManager.h"
-#ifdef GFX_ENABLE_VULKAN
-#include "backend/vulkan/VulkanBackend.h"
-#endif
-#ifdef GFX_ENABLE_WEBGPU
-#include "backend/webgpu/WebGPUBackend.h"
-#endif
+#include "backend/BackendFactory.h"
 
 #include <gfx/gfx.h>
 
@@ -16,47 +11,9 @@
 
 extern "C" {
 
-// Backend Loading - helper without lock
-static bool gfxLoadBackendInternal(GfxBackend backend)
-{
-    if (backend < 0 || backend >= GFX_BACKEND_AUTO) {
-        return false;
-    }
-
-    auto& manager = gfx::BackendManager::getInstance();
-    auto backends = manager.getBackends();
-    auto refCounts = manager.getRefCounts();
-
-    if (!backends[backend]) {
-        switch (backend) {
-#ifdef GFX_ENABLE_VULKAN
-        case GFX_BACKEND_VULKAN:
-            backends[backend] = gfx::vulkan::VulkanBackend::create();
-            break;
-#endif
-#ifdef GFX_ENABLE_WEBGPU
-        case GFX_BACKEND_WEBGPU:
-            backends[backend] = gfx::webgpu::WebGPUBackend::create();
-            break;
-#endif
-        default:
-            return false;
-        }
-
-        if (!backends[backend]) {
-            return false;
-        }
-        refCounts[backend] = 0;
-    }
-
-    refCounts[backend]++;
-    return true;
-}
-
 bool gfxLoadBackend(GfxBackend backend)
 {
     if (backend == GFX_BACKEND_AUTO) {
-        // Try backends without holding lock during recursion
 #ifdef GFX_ENABLE_VULKAN
         if (gfxLoadBackend(GFX_BACKEND_VULKAN)) {
             return true;
@@ -70,40 +27,39 @@ bool gfxLoadBackend(GfxBackend backend)
         return false;
     }
 
-    std::scoped_lock lock(gfx::BackendManager::getInstance().getMutex());
-    return gfxLoadBackendInternal(backend);
-}
-
-static void gfxUnloadBackendInternal(GfxBackend backend)
-{
-    if (backend >= 0 && backend < GFX_BACKEND_AUTO) {
-        auto& registry = gfx::BackendManager::getInstance();
-        auto backends = registry.getBackends();
-        auto refCounts = registry.getRefCounts();
-
-        if (backends[backend] && refCounts[backend] > 0) {
-            --refCounts[backend];
-            if (refCounts[backend] == 0) {
-                backends[backend] = nullptr;
-            }
-        }
+    if (backend < 0 || backend >= GFX_BACKEND_AUTO) {
+        return false;
     }
+
+    auto& manager = gfx::BackendManager::getInstance();
+
+    // Check if backend needs to be created
+    if (!manager.getBackendAPI(backend)) {
+        const gfx::IBackend* backendImpl = gfx::BackendFactory::createBackend(backend);
+        if (!backendImpl) {
+            return false;
+        }
+        
+        return manager.loadBackend(backend, backendImpl);
+    }
+
+    // Backend already loaded, just increment refcount
+    return manager.loadBackend(backend, manager.getBackendAPI(backend));
 }
 
 void gfxUnloadBackend(GfxBackend backend)
 {
     if (backend == GFX_BACKEND_AUTO) {
-        // Unload the first loaded backend without holding lock
-        auto& registry = gfx::BackendManager::getInstance();
-        auto backends = registry.getBackends();
+        // Unload the first loaded backend
+        auto& manager = gfx::BackendManager::getInstance();
 #ifdef GFX_ENABLE_VULKAN
-        if (backends[GFX_BACKEND_VULKAN]) {
+        if (manager.getBackendAPI(GFX_BACKEND_VULKAN)) {
             gfxUnloadBackend(GFX_BACKEND_VULKAN);
             return;
         }
 #endif
 #ifdef GFX_ENABLE_WEBGPU
-        if (backends[GFX_BACKEND_WEBGPU]) {
+        if (manager.getBackendAPI(GFX_BACKEND_WEBGPU)) {
             gfxUnloadBackend(GFX_BACKEND_WEBGPU);
             return;
         }
@@ -111,8 +67,9 @@ void gfxUnloadBackend(GfxBackend backend)
         return;
     }
 
-    std::scoped_lock lock(gfx::BackendManager::getInstance().getMutex());
-    gfxUnloadBackendInternal(backend);
+    if (backend >= 0 && backend < GFX_BACKEND_AUTO) {
+        gfx::BackendManager::getInstance().unloadBackend(backend);
+    }
 }
 
 bool gfxLoadAllBackends(void)
@@ -133,15 +90,14 @@ bool gfxLoadAllBackends(void)
 
 void gfxUnloadAllBackends(void)
 {
-    auto& registry = gfx::BackendManager::getInstance();
-    auto refCounts = registry.getRefCounts();
+    auto& manager = gfx::BackendManager::getInstance();
 #ifdef GFX_ENABLE_VULKAN
-    while (refCounts[GFX_BACKEND_VULKAN] > 0) {
+    while (manager.getBackendAPI(GFX_BACKEND_VULKAN)) {
         gfxUnloadBackend(GFX_BACKEND_VULKAN);
     }
 #endif
 #ifdef GFX_ENABLE_WEBGPU
-    while (refCounts[GFX_BACKEND_WEBGPU] > 0) {
+    while (manager.getBackendAPI(GFX_BACKEND_WEBGPU)) {
         gfxUnloadBackend(GFX_BACKEND_WEBGPU);
     }
 #endif
@@ -157,17 +113,16 @@ GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance
     *outInstance = nullptr;
 
     GfxBackend backend = descriptor->backend;
-    auto& registry = gfx::BackendManager::getInstance();
-    auto backends = registry.getBackends();
+    auto& manager = gfx::BackendManager::getInstance();
 
     if (backend == GFX_BACKEND_AUTO) {
 #ifdef GFX_ENABLE_VULKAN
-        if (backends[GFX_BACKEND_VULKAN]) {
+        if (manager.getBackendAPI(GFX_BACKEND_VULKAN)) {
             backend = GFX_BACKEND_VULKAN;
         }
 #endif
 #ifdef GFX_ENABLE_WEBGPU
-        if (backend == GFX_BACKEND_AUTO && backends[GFX_BACKEND_WEBGPU]) {
+        if (backend == GFX_BACKEND_AUTO && manager.getBackendAPI(GFX_BACKEND_WEBGPU)) {
             backend = GFX_BACKEND_WEBGPU;
         }
 #endif

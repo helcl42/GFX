@@ -84,14 +84,52 @@ public:
         m_handles.erase(handle);
     }
 
-    std::mutex& getMutex() { return m_mutex; }
-    const IBackend** getBackends() { return m_backends; }
-    int* getRefCounts() { return m_refCounts; }
+    // Backend loading/unloading with internal reference counting
+    bool loadBackend(GfxBackend backend, const IBackend* backendImpl)
+    {
+        std::scoped_lock lock(m_mutex);
+        return loadBackendInternal(backend, backendImpl);
+    }
+
+    void unloadBackend(GfxBackend backend)
+    {
+        std::scoped_lock lock(m_mutex);
+        unloadBackendInternal(backend);
+    }
 
 private:
+    // Internal methods for use when mutex is already locked
+    bool loadBackendInternal(GfxBackend backend, const IBackend* backendImpl)
+    {
+        if (backend < 0 || backend >= GFX_BACKEND_AUTO) {
+            return false;
+        }
+        
+        if (!m_backends[backend]) {
+            m_backends[backend] = backendImpl;
+            m_refCounts[backend] = 0;
+        }
+        m_refCounts[backend]++;
+        return true;
+    }
+
+    void unloadBackendInternal(GfxBackend backend)
+    {
+        if (backend < 0 || backend >= GFX_BACKEND_AUTO) {
+            return;
+        }
+        
+        if (m_backends[backend] && m_refCounts[backend] > 0) {
+            --m_refCounts[backend];
+            if (m_refCounts[backend] == 0) {
+                m_backends[backend] = nullptr;
+            }
+        }
+    }
+
     BackendManager()
     {
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < GFX_BACKEND_AUTO; ++i) {
             m_backends[i] = nullptr;
             m_refCounts[i] = 0;
         }
@@ -99,8 +137,8 @@ private:
 
     ~BackendManager() = default;
 
-    const IBackend* m_backends[3];
-    int m_refCounts[3];
+    const IBackend* m_backends[GFX_BACKEND_AUTO];
+    int m_refCounts[GFX_BACKEND_AUTO];
     std::mutex m_mutex;
     std::unordered_map<void*, HandleMeta> m_handles;
 };
