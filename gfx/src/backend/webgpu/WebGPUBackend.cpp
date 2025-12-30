@@ -696,16 +696,13 @@ public:
         : m_queue(queue)
         , m_device(device)
     {
-        if (m_queue) {
-            wgpuQueueAddRef(m_queue);
-        }
+        // Don't add ref - emdawnwebgpu doesn't provide wgpuQueueAddRef
+        // The queue is owned by the device and automatically destroyed with it
     }
 
     ~Queue()
     {
-        if (m_queue) {
-            wgpuQueueRelease(m_queue);
-        }
+        // Don't release - emdawnwebgpu doesn't provide wgpuQueueRelease
     }
 
     WGPUQueue handle() const { return m_queue; }
@@ -726,10 +723,15 @@ public:
         : m_adapter(adapter)
         , m_device(device)
     {
-        if (m_device) {
-            WGPUQueue wgpu_queue = wgpuDeviceGetQueue(m_device);
-            m_queue = std::make_unique<Queue>(wgpu_queue, this);
+        if (!m_device) {
+            throw std::runtime_error("Invalid WGPUDevice provided to Device constructor");
         }
+
+        WGPUQueue wgpuQueue = wgpuDeviceGetQueue(m_device);
+        if (!wgpuQueue) {
+            throw std::runtime_error("Failed to get default queue from WGPUDevice");
+        }
+        m_queue = std::make_unique<Queue>(wgpuQueue, this);
     }
 
     ~Device()
@@ -1279,7 +1281,15 @@ void webgpu_instanceDestroy(GfxInstance instance)
     if (!instance) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::Instance*>(instance);
+
+    // Process any remaining events before destroying the instance
+    // This ensures all pending callbacks are completed
+    auto* inst = reinterpret_cast<gfx::webgpu::Instance*>(instance);
+    if (inst->handle()) {
+        wgpuInstanceProcessEvents(inst->handle());
+    }
+
+    delete inst;
 }
 
 void webgpu_instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData)
@@ -2083,20 +2093,25 @@ GfxResult webgpu_deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPip
         depthStencilState.depthWriteEnabled = descriptor->depthStencil->depthWriteEnabled ? WGPUOptionalBool_True : WGPUOptionalBool_False;
         depthStencilState.depthCompare = gfxCompareFunctionToWGPU(descriptor->depthStencil->depthCompare);
 
-        // Stencil front
-        depthStencilState.stencilFront.compare = gfxCompareFunctionToWGPU(descriptor->depthStencil->stencilFront.compare);
-        depthStencilState.stencilFront.failOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.failOp);
-        depthStencilState.stencilFront.depthFailOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.depthFailOp);
-        depthStencilState.stencilFront.passOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.passOp);
+        // Only configure stencil ops for formats that have a stencil aspect
+        // For depth-only formats, the INIT macro sets sensible defaults (Always/Keep)
+        if (formatHasStencil(descriptor->depthStencil->format)) {
+            // Stencil front
+            depthStencilState.stencilFront.compare = gfxCompareFunctionToWGPU(descriptor->depthStencil->stencilFront.compare);
+            depthStencilState.stencilFront.failOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.failOp);
+            depthStencilState.stencilFront.depthFailOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.depthFailOp);
+            depthStencilState.stencilFront.passOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.passOp);
 
-        // Stencil back
-        depthStencilState.stencilBack.compare = gfxCompareFunctionToWGPU(descriptor->depthStencil->stencilBack.compare);
-        depthStencilState.stencilBack.failOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.failOp);
-        depthStencilState.stencilBack.depthFailOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.depthFailOp);
-        depthStencilState.stencilBack.passOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.passOp);
+            // Stencil back
+            depthStencilState.stencilBack.compare = gfxCompareFunctionToWGPU(descriptor->depthStencil->stencilBack.compare);
+            depthStencilState.stencilBack.failOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.failOp);
+            depthStencilState.stencilBack.depthFailOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.depthFailOp);
+            depthStencilState.stencilBack.passOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.passOp);
 
-        depthStencilState.stencilReadMask = descriptor->depthStencil->stencilReadMask;
-        depthStencilState.stencilWriteMask = descriptor->depthStencil->stencilWriteMask;
+            depthStencilState.stencilReadMask = descriptor->depthStencil->stencilReadMask;
+            depthStencilState.stencilWriteMask = descriptor->depthStencil->stencilWriteMask;
+        }
+
         depthStencilState.depthBias = descriptor->depthStencil->depthBias;
         depthStencilState.depthBiasSlopeScale = descriptor->depthStencil->depthBiasSlopeScale;
         depthStencilState.depthBiasClamp = descriptor->depthStencil->depthBiasClamp;
@@ -2226,6 +2241,15 @@ GfxResult webgpu_deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescr
     return GFX_RESULT_SUCCESS;
 }
 
+static void queueWorkDoneCallback(WGPUQueueWorkDoneStatus status, WGPUStringView message, void* userdata1, void* userdata2)
+{
+    (void)status;
+    (void)message;
+    (void)userdata1;
+    (void)userdata2;
+    // Nothing to do - we just needed a valid callback for Dawn
+}
+
 void webgpu_deviceWaitIdle(GfxDevice device)
 {
     if (!device) {
@@ -2233,11 +2257,11 @@ void webgpu_deviceWaitIdle(GfxDevice device)
     }
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
 
-    if (devicePtr->getQueue()) {
-        WGPUQueueWorkDoneCallbackInfo callbackInfo = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
-        callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-        wgpuQueueOnSubmittedWorkDone(devicePtr->getQueue()->handle(), callbackInfo);
-    }
+    // Device always has valid queue, adapter, and instance
+    WGPUQueueWorkDoneCallbackInfo callbackInfo = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
+    callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+    callbackInfo.callback = queueWorkDoneCallback;
+    WGPUFuture future = wgpuQueueOnSubmittedWorkDone(devicePtr->getQueue()->handle(), callbackInfo);
 }
 
 void webgpu_devicePoll(GfxDevice device)
@@ -2248,9 +2272,7 @@ void webgpu_devicePoll(GfxDevice device)
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
 
     // Call ProcessEvents on the instance to handle async operations
-    if (devicePtr->getAdapter() && devicePtr->getAdapter()->getInstance()) {
-        wgpuInstanceProcessEvents(devicePtr->getAdapter()->getInstance()->handle());
-    }
+    wgpuInstanceProcessEvents(devicePtr->getAdapter()->getInstance()->handle());
 }
 
 void webgpu_deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
@@ -2479,11 +2501,6 @@ GfxResult webgpu_swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* 
     // Release the cached texture after presenting
     swapchainPtr->setCurrentTexture(nullptr);
 
-    // Process events after present to handle async operations
-    // This is backend-specific and should be transparent to the client
-    WGPUAdapter adapter = wgpuDeviceGetAdapter(swapchainPtr->device());
-    WGPUInstance instance = wgpuAdapterGetInstance(adapter);
-    wgpuInstanceProcessEvents(instance);
 
     return GFX_RESULT_SUCCESS;
 }
@@ -2857,7 +2874,7 @@ void webgpu_queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigi
     WGPUTexelCopyTextureInfo dest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     dest.texture = texturePtr->handle();
     dest.mipLevel = mipLevel;
-    dest.origin = { origin->x, origin->y, origin->z };
+    dest.origin = { static_cast<uint32_t>(origin->x), static_cast<uint32_t>(origin->y), static_cast<uint32_t>(origin->z) };
 
     WGPUTexelCopyBufferLayout layout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
     layout.bytesPerRow = bytesPerRow;
@@ -2943,7 +2960,6 @@ GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
 
                 const GfxColor& color = colorAttachments[i].target.ops.clearColor;
                 attachment.clearValue = { color.r, color.g, color.b, color.a };
-
                 // Check sample count for MSAA validation
                 uint32_t sampleCount = 1;
                 if (viewPtr->getTexture()) {
@@ -2988,7 +3004,7 @@ GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
         const GfxDepthStencilAttachmentTarget* target = &depthStencilAttachment->target;
         auto* viewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(target->view);
         wgpuDepthStencil.view = viewPtr->handle();
-        
+
         // Handle depth operations if depth pointer is set
         if (target->depthOps) {
             wgpuDepthStencil.depthLoadOp = gfxLoadOpToWGPULoadOp(target->depthOps->loadOp);
@@ -3097,7 +3113,7 @@ void webgpu_commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
     WGPUTexelCopyTextureInfo destInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     destInfo.texture = dstPtr->handle();
     destInfo.mipLevel = mipLevel;
-    destInfo.origin = { origin->x, origin->y, origin->z };
+    destInfo.origin = { static_cast<uint32_t>(origin->x), static_cast<uint32_t>(origin->y), static_cast<uint32_t>(origin->z) };
 
     WGPUExtent3D wgpuExtent = { extent->width, extent->height, extent->depth };
 
@@ -3122,7 +3138,7 @@ void webgpu_commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
     WGPUTexelCopyTextureInfo sourceInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     sourceInfo.texture = srcPtr->handle();
     sourceInfo.mipLevel = mipLevel;
-    sourceInfo.origin = { origin->x, origin->y, origin->z };
+    sourceInfo.origin = { static_cast<uint32_t>(origin->x), static_cast<uint32_t>(origin->y), static_cast<uint32_t>(origin->z) };
 
     WGPUTexelCopyBufferInfo destInfo = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
     destInfo.buffer = dstPtr->handle();
@@ -3157,12 +3173,12 @@ void webgpu_commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
     WGPUTexelCopyTextureInfo sourceInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     sourceInfo.texture = srcPtr->handle();
     sourceInfo.mipLevel = sourceMipLevel;
-    sourceInfo.origin = { sourceOrigin->x, sourceOrigin->y, is3DTexture ? sourceOrigin->z : 0 };
+    sourceInfo.origin = { static_cast<uint32_t>(sourceOrigin->x), static_cast<uint32_t>(sourceOrigin->y), static_cast<uint32_t>(is3DTexture ? sourceOrigin->z : 0) };
 
     WGPUTexelCopyTextureInfo destInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     destInfo.texture = dstPtr->handle();
     destInfo.mipLevel = destinationMipLevel;
-    destInfo.origin = { destinationOrigin->x, destinationOrigin->y, is3DTexture ? destinationOrigin->z : 0 };
+    destInfo.origin = { static_cast<uint32_t>(destinationOrigin->x), static_cast<uint32_t>(destinationOrigin->y), static_cast<uint32_t>(is3DTexture ? destinationOrigin->z : 0) };
 
     WGPUExtent3D wgpuExtent = { extent->width, extent->height, extent->depth };
 
