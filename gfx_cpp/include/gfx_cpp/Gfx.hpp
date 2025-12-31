@@ -206,6 +206,11 @@ enum class SampleCount {
     Count64 = 64
 };
 
+enum class ShaderSourceType {
+    WGSL,   // WGSL text source (for WebGPU)
+    SPIRV   // SPIR-V binary (for Vulkan)
+};
+
 // Synchronization enums
 enum class FenceStatus {
     Unsignaled,
@@ -575,6 +580,7 @@ struct SamplerDescriptor {
 
 struct ShaderDescriptor {
     std::string label;
+    ShaderSourceType sourceType = ShaderSourceType::SPIRV; // Default to SPIR-V for compatibility
     std::string code;
     std::string entryPoint = "main";
 };

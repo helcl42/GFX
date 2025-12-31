@@ -386,11 +386,13 @@ static bool createComputeResources(ComputeApp* app)
         return false;
     }
 
+    GfxShaderSourceType sourceType;
     // Load compute shader based on backend
     void* computeCode = NULL;
     size_t computeSize = 0;
     GfxBackend backend = gfxAdapterGetBackend(app->adapter);
     if (backend == GFX_BACKEND_WEBGPU) {
+        sourceType = GFX_SHADER_SOURCE_WGSL;
         // Load WGSL shader for WebGPU
         computeCode = loadTextFile("shaders/generate.comp.wgsl", &computeSize);
         if (!computeCode) {
@@ -398,6 +400,7 @@ static bool createComputeResources(ComputeApp* app)
             return false;
         }
     } else {
+        sourceType = GFX_SHADER_SOURCE_SPIRV;
         // Load SPIR-V shader for Vulkan
         computeCode = loadBinaryFile("generate.comp.spv", &computeSize);
         if (!computeCode) {
@@ -407,6 +410,7 @@ static bool createComputeResources(ComputeApp* app)
     }
 
     GfxShaderDescriptor computeShaderDesc = {
+        .sourceType = sourceType,
         .code = computeCode,
         .codeSize = computeSize,
         .entryPoint = "main"
@@ -557,11 +561,13 @@ static bool createComputeResources(ComputeApp* app)
 
 static bool createRenderResources(ComputeApp* app)
 {
+    GfxShaderSourceType vertexSourceType;
     // Load shaders based on backend
     void* vertexCode = NULL;
     size_t vertexSize = 0;
     GfxBackend backend = gfxAdapterGetBackend(app->adapter);
     if (backend == GFX_BACKEND_WEBGPU) {
+        vertexSourceType = GFX_SHADER_SOURCE_WGSL;
         // Load WGSL shader for WebGPU
         vertexCode = loadTextFile("shaders/fullscreen.vert.wgsl", &vertexSize);
         if (!vertexCode) {
@@ -569,6 +575,7 @@ static bool createRenderResources(ComputeApp* app)
             return false;
         }
     } else {
+        vertexSourceType = GFX_SHADER_SOURCE_SPIRV;
         // Load SPIR-V shader for Vulkan
         vertexCode = loadBinaryFile("fullscreen.vert.spv", &vertexSize);
         if (!vertexCode) {
@@ -578,6 +585,7 @@ static bool createRenderResources(ComputeApp* app)
     }
 
     GfxShaderDescriptor vertexShaderDesc = {
+        .sourceType = vertexSourceType,
         .code = vertexCode,
         .codeSize = vertexSize,
         .entryPoint = "main"
@@ -590,9 +598,11 @@ static bool createRenderResources(ComputeApp* app)
     }
     free(vertexCode);
 
+    GfxShaderSourceType fragmentSourceType;
     void* fragmentCode = NULL;
     size_t fragmentSize = 0;
     if (backend == GFX_BACKEND_WEBGPU) {
+        fragmentSourceType = GFX_SHADER_SOURCE_WGSL;
         // Load WGSL shader for WebGPU
         fragmentCode = loadTextFile("shaders/postprocess.frag.wgsl", &fragmentSize);
         if (!fragmentCode) {
@@ -600,6 +610,7 @@ static bool createRenderResources(ComputeApp* app)
             return false;
         }
     } else {
+        fragmentSourceType = GFX_SHADER_SOURCE_SPIRV;
         // Load SPIR-V shader for Vulkan
         fragmentCode = loadBinaryFile("postprocess.frag.spv", &fragmentSize);
         if (!fragmentCode) {
@@ -609,6 +620,7 @@ static bool createRenderResources(ComputeApp* app)
     }
 
     GfxShaderDescriptor fragmentShaderDesc = {
+        .sourceType = fragmentSourceType,
         .code = fragmentCode,
         .codeSize = fragmentSize,
         .entryPoint = "main"

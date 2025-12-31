@@ -1774,13 +1774,10 @@ GfxResult webgpu_deviceCreateShader(GfxDevice device, const GfxShaderDescriptor*
         wgpuDesc.label = gfxStringView(descriptor->label);
     }
 
-    // Check if the shader code is SPIR-V (binary) or WGSL (text)
-    // SPIR-V always starts with magic number 0x07230203
-    const uint32_t* codeU32 = static_cast<const uint32_t*>(descriptor->code);
-    const uint32_t spirvMagic = 0x07230203;
-
-    if (descriptor->codeSize >= 4 && codeU32[0] == spirvMagic) {
-        // SPIR-V shader
+    // Use explicit source type from descriptor
+    if (descriptor->sourceType == GFX_SHADER_SOURCE_SPIRV) {
+        // SPIR-V shader (binary)
+        const uint32_t* codeU32 = static_cast<const uint32_t*>(descriptor->code);
         WGPUShaderSourceSPIRV spirvSource = WGPU_SHADER_SOURCE_SPIRV_INIT;
         spirvSource.code = codeU32;
         spirvSource.codeSize = descriptor->codeSize / sizeof(uint32_t);

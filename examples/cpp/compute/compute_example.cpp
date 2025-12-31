@@ -320,11 +320,14 @@ bool ComputeApp::createComputeResources()
 
         // Load compute shader (WGSL for WebGPU, SPIR-V for Vulkan)
         Backend backend = adapter->getBackend();
+        ShaderSourceType shaderSourceType;
         std::string computeShaderCode;
 
         if (backend == Backend::WebGPU) {
+            shaderSourceType = ShaderSourceType::WGSL;
             computeShaderCode = loadTextFile("shaders/generate.comp.wgsl");
         } else {
+            shaderSourceType = ShaderSourceType::SPIRV;
             auto spirv = loadBinaryFile("generate.comp.spv");
             computeShaderCode = std::string(reinterpret_cast<const char*>(spirv.data()), spirv.size());
         }
@@ -336,6 +339,7 @@ bool ComputeApp::createComputeResources()
 
         ShaderDescriptor computeShaderDesc{};
         computeShaderDesc.label = "Compute Shader";
+        computeShaderDesc.sourceType = shaderSourceType;
         computeShaderDesc.code = computeShaderCode;
         computeShaderDesc.entryPoint = "main";
 
@@ -474,12 +478,15 @@ bool ComputeApp::createRenderResources()
     try {
         // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
         Backend backend = adapter->getBackend();
+        ShaderSourceType shaderSourceType;
         std::string vertexShaderCode, fragmentShaderCode;
 
         if (backend == Backend::WebGPU) {
+            shaderSourceType = ShaderSourceType::WGSL;
             vertexShaderCode = loadTextFile("shaders/fullscreen.vert.wgsl");
             fragmentShaderCode = loadTextFile("shaders/postprocess.frag.wgsl");
         } else {
+            shaderSourceType = ShaderSourceType::SPIRV;
             auto vertexSpirv = loadBinaryFile("fullscreen.vert.spv");
             auto fragmentSpirv = loadBinaryFile("postprocess.frag.spv");
             vertexShaderCode = std::string(reinterpret_cast<const char*>(vertexSpirv.data()), vertexSpirv.size());
@@ -493,6 +500,7 @@ bool ComputeApp::createRenderResources()
 
         ShaderDescriptor vertexShaderDesc{};
         vertexShaderDesc.label = "Vertex Shader";
+        vertexShaderDesc.sourceType = shaderSourceType;
         vertexShaderDesc.code = vertexShaderCode;
         vertexShaderDesc.entryPoint = "main";
 
@@ -504,6 +512,7 @@ bool ComputeApp::createRenderResources()
 
         ShaderDescriptor fragmentShaderDesc{};
         fragmentShaderDesc.label = "Fragment Shader";
+        fragmentShaderDesc.sourceType = shaderSourceType;
         fragmentShaderDesc.code = fragmentShaderCode;
         fragmentShaderDesc.entryPoint = "main";
 

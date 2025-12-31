@@ -285,6 +285,11 @@ typedef enum {
     GFX_SAMPLE_COUNT_64 = 64
 } GfxSampleCount;
 
+typedef enum {
+    GFX_SHADER_SOURCE_WGSL,   // WGSL text source (for WebGPU)
+    GFX_SHADER_SOURCE_SPIRV   // SPIR-V binary (for Vulkan)
+} GfxShaderSourceType;
+
 // Result codes
 typedef enum GfxResult {
     GFX_RESULT_SUCCESS = 0,
@@ -647,8 +652,9 @@ typedef struct {
 
 typedef struct {
     const char* label;
-    const void* code; // Shader code - can be WGSL source (const char*) or SPIR-V binary (uint32_t*)
-    size_t codeSize; // Size in bytes - for SPIR-V binary, or 0 for null-terminated WGSL string
+    GfxShaderSourceType sourceType; // Explicitly specify WGSL or SPIR-V
+    const void* code; // Shader code - WGSL source (const char*) or SPIR-V binary (uint32_t*)
+    size_t codeSize; // Size in bytes - for SPIR-V: byte count, for WGSL: strlen or 0 for null-terminated
     const char* entryPoint;
 } GfxShaderDescriptor;
 

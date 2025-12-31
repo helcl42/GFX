@@ -592,10 +592,12 @@ bool CubeApp::createRenderingResources()
 
         // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
         Backend backend = adapter->getBackend();
+        ShaderSourceType shaderSourceType;
         std::string vertexShaderCode;
         std::string fragmentShaderCode;
 
         if (backend == Backend::WebGPU) {
+            shaderSourceType = ShaderSourceType::WGSL;
             // Load WGSL shaders for WebGPU
             vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl");
             fragmentShaderCode = loadTextFile("shaders/cube.frag.wgsl");
@@ -604,6 +606,7 @@ bool CubeApp::createRenderingResources()
                 return false;
             }
         } else {
+            shaderSourceType = ShaderSourceType::SPIRV;
             // Load SPIR-V shaders for Vulkan
             auto vertexSpirv = loadBinaryFile("cube.vert.spv");
             auto fragmentSpirv = loadBinaryFile("cube.frag.spv");
@@ -618,6 +621,7 @@ bool CubeApp::createRenderingResources()
         // Create vertex shader
         ShaderDescriptor vertexShaderDesc{};
         vertexShaderDesc.label = "Cube Vertex Shader";
+        vertexShaderDesc.sourceType = shaderSourceType;
         vertexShaderDesc.code = vertexShaderCode;
         vertexShaderDesc.entryPoint = "main";
 
@@ -630,6 +634,7 @@ bool CubeApp::createRenderingResources()
         // Create fragment shader
         ShaderDescriptor fragmentShaderDesc{};
         fragmentShaderDesc.label = "Cube Fragment Shader";
+        fragmentShaderDesc.sourceType = shaderSourceType;
         fragmentShaderDesc.code = fragmentShaderCode;
         fragmentShaderDesc.entryPoint = "main";
 

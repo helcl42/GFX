@@ -682,8 +682,10 @@ bool createRenderingResources(CubeApp* app)
     void* vertexShaderCode = NULL;
     void* fragmentShaderCode = NULL;
 
+    GfxShaderSourceType sourceType;
     GfxBackend backend = gfxAdapterGetBackend(app->adapter);
     if (backend == GFX_BACKEND_WEBGPU) {
+        sourceType = GFX_SHADER_SOURCE_WGSL;
         // Load WGSL shaders for WebGPU
         vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl", &vertexShaderSize);
         fragmentShaderCode = loadTextFile("shaders/cube.frag.wgsl", &fragmentShaderSize);
@@ -692,6 +694,7 @@ bool createRenderingResources(CubeApp* app)
             return false;
         }
     } else {
+        sourceType = GFX_SHADER_SOURCE_SPIRV;
         // Load SPIR-V shaders for Vulkan
         vertexShaderCode = loadBinaryFile("cube.vert.spv", &vertexShaderSize);
         fragmentShaderCode = loadBinaryFile("cube.frag.spv", &fragmentShaderSize);
@@ -704,6 +707,7 @@ bool createRenderingResources(CubeApp* app)
     // Create vertex shader
     GfxShaderDescriptor vertexShaderDesc = {
         .label = "Cube Vertex Shader",
+        .sourceType = sourceType,
         .code = vertexShaderCode,
         .codeSize = vertexShaderSize,
         .entryPoint = "main"
@@ -719,6 +723,7 @@ bool createRenderingResources(CubeApp* app)
     // Create fragment shader
     GfxShaderDescriptor fragmentShaderDesc = {
         .label = "Cube Fragment Shader",
+        .sourceType = sourceType,
         .code = fragmentShaderCode,
         .codeSize = fragmentShaderSize,
         .entryPoint = "main"

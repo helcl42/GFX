@@ -1295,6 +1295,7 @@ public:
     {
         GfxShaderDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
+        cDesc.sourceType = static_cast<GfxShaderSourceType>(descriptor.sourceType);
         cDesc.code = descriptor.code.c_str();
         cDesc.codeSize = descriptor.code.size(); // Set the actual binary size
         cDesc.entryPoint = descriptor.entryPoint.c_str();
