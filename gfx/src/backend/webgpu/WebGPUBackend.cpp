@@ -1642,16 +1642,8 @@ GfxResult webgpu_deviceCreateSwapchain(GfxDevice device, GfxSurface surface,
         format, presentMode, descriptor->bufferCount);
     *outSwapchain = reinterpret_cast<GfxSwapchain>(swapchain);
 
-    // Free capabilities using delete[] since Dawn uses new[] to allocate
-    if (capabilities.formats) {
-        delete[] capabilities.formats;
-    }
-    if (capabilities.presentModes) {
-        delete[] capabilities.presentModes;
-    }
-    if (capabilities.alphaModes) {
-        delete[] capabilities.alphaModes;
-    }
+    // Free capabilities using the proper WebGPU function
+    wgpuSurfaceCapabilitiesFreeMembers(capabilities);
 
     return GFX_RESULT_SUCCESS;
 }
