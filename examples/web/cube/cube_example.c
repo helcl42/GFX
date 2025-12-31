@@ -6,6 +6,15 @@
 #if defined(__EMSCRIPTEN__)
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+#else
+#ifdef _WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#elif defined(__linux__)
+#define GLFW_EXPOSE_NATIVE_X11
+#elif defined(__APPLE__)
+#define GLFW_EXPOSE_NATIVE_COCOA
+#endif
+#include <GLFW/glfw3native.h>
 #endif
 
 #include <math.h>
@@ -27,121 +36,1243 @@
 #define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
 #define DEPTH_FORMAT GFX_TEXTURE_FORMAT_DEPTH32_FLOAT
 
-// Vertex data structure
+#if defined(__EMSCRIPTEN__)
+#define GFX_BACKEND_API GFX_BACKEND_WEBGPU
+#else
+// here we can choose between VULKAN, WEBGPU
+#define GFX_BACKEND_API GFX_BACKEND_VULKAN
+#endif
+
+// Debug callback function
+static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData)
+{
+    const char* severityStr = "";
+    switch (severity) {
+    case GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE:
+        severityStr = "VERBOSE";
+        break;
+    case GFX_DEBUG_MESSAGE_SEVERITY_INFO:
+        severityStr = "INFO";
+        break;
+    case GFX_DEBUG_MESSAGE_SEVERITY_WARNING:
+        severityStr = "WARNING";
+        break;
+    case GFX_DEBUG_MESSAGE_SEVERITY_ERROR:
+        severityStr = "ERROR";
+        break;
+    }
+
+    const char* typeStr = "";
+    switch (type) {
+    case GFX_DEBUG_MESSAGE_TYPE_GENERAL:
+        typeStr = "GENERAL";
+        break;
+    case GFX_DEBUG_MESSAGE_TYPE_VALIDATION:
+        typeStr = "VALIDATION";
+        break;
+    case GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE:
+        typeStr = "PERFORMANCE";
+        break;
+    }
+
+    printf("[%s|%s] %s\n", severityStr, typeStr, message);
+}
+
+// Vertex structure for cube
 typedef struct {
     float position[3];
     float color[3];
 } Vertex;
 
-// Uniform buffer data
+// Uniform buffer structure for transformations
 typedef struct {
-    float model[16];
-    float view[16];
-    float projection[16];
+    float model[16]; // Model matrix
+    float view[16]; // View matrix
+    float projection[16]; // Projection matrix
 } UniformData;
 
-// Application state
 typedef struct {
     GLFWwindow* window;
-    
+
     GfxInstance instance;
     GfxAdapter adapter;
     GfxDevice device;
     GfxQueue queue;
     GfxSurface surface;
     GfxSwapchain swapchain;
-    GfxTextureFormat swapchainFormat; // Actual format (may differ from requested)
-    
+
     GfxBuffer vertexBuffer;
     GfxBuffer indexBuffer;
-    GfxBuffer sharedUniformBuffer;
-    size_t uniformAlignedSize;
-    
-    GfxTexture depthTexture;
-    GfxTextureView depthTextureView;
-    
-    GfxTexture msaaColorTexture;
-    GfxTextureView msaaColorTextureView;
-    
-    uint32_t windowWidth;
-    uint32_t windowHeight;
-    
     GfxShader vertexShader;
     GfxShader fragmentShader;
-    
-    GfxBindGroupLayout bindGroupLayout;
-    GfxBindGroup bindGroups[MAX_FRAMES_IN_FLIGHT][CUBE_COUNT];
-    GfxRenderPipeline pipeline;
-    
-    GfxCommandEncoder commandEncoders[MAX_FRAMES_IN_FLIGHT];
-    
-    // Per-frame synchronization (WebGPU backend provides no-op implementations)
+    GfxRenderPipeline renderPipeline;
+    GfxBindGroupLayout uniformBindGroupLayout;
+
+    // Depth buffer
+    GfxTexture depthTexture;
+    GfxTextureView depthTextureView;
+
+    // MSAA color buffer
+    GfxTexture msaaColorTexture;
+    GfxTextureView msaaColorTextureView;
+
+    uint32_t windowWidth;
+    uint32_t windowHeight;
+
+    // Per-frame resources (for frames in flight)
+    GfxBuffer sharedUniformBuffer; // Single buffer for all frames
+    size_t uniformAlignedSize; // Aligned size per frame
+    GfxBindGroup uniformBindGroups[MAX_FRAMES_IN_FLIGHT][CUBE_COUNT]; // 3 cubes per frame
+    GfxCommandEncoder commandEncoders[MAX_FRAMES_IN_FLIGHT]; // Track for deferred cleanup
+
+    // Per-frame synchronization
     GfxSemaphore imageAvailableSemaphores[MAX_FRAMES_IN_FLIGHT];
     GfxSemaphore renderFinishedSemaphores[MAX_FRAMES_IN_FLIGHT];
     GfxFence inFlightFences[MAX_FRAMES_IN_FLIGHT];
-    
     uint32_t currentFrame;
+
+    // Animation state
     float rotationAngleX;
     float rotationAngleY;
-    bool running;
 } CubeApp;
 
-// Cube vertices (position + color)
-static const Vertex vertices[] = {
-    // Front face (red)
-    {{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{-0.5f,  0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}},
-    
-    // Back face (green)
-    {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f,  0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{ 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-    
-    // Top face (blue)
-    {{-0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
-    {{ 0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
-    {{ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}},
-    {{-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}},
-    
-    // Bottom face (yellow)
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 0.0f}},
-    {{ 0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 0.0f}},
-    {{ 0.5f, -0.5f,  0.5f}, {1.0f, 1.0f, 0.0f}},
-    {{-0.5f, -0.5f,  0.5f}, {1.0f, 1.0f, 0.0f}},
-    
-    // Right face (magenta)
-    {{ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 1.0f}},
-    {{ 0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}},
-    {{ 0.5f,  0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}},
-    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f, 1.0f}},
-    
-    // Left face (cyan)
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 1.0f}},
-    {{-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f, 1.0f}},
-    {{-0.5f,  0.5f,  0.5f}, {0.0f, 1.0f, 1.0f}},
-    {{-0.5f,  0.5f, -0.5f}, {0.0f, 1.0f, 1.0f}},
-};
+// Function declarations
+static bool initWindow(CubeApp* app);
+static bool initializeGraphics(CubeApp* app);
+static bool createSyncObjects(CubeApp* app);
+static bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height);
+static void cleanupSizeDependentResources(CubeApp* app);
+static bool createRenderingResources(CubeApp* app);
+static void cleanupRenderingResources(CubeApp* app);
+static bool createRenderPipeline(CubeApp* app);
+static void updateCube(CubeApp* app, int cubeIndex);
+static void update(CubeApp* app, float deltaTime);
+static void render(CubeApp* app);
+static void cleanup(CubeApp* app);
+static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window);
+static void* loadBinaryFile(const char* filepath, size_t* outSize);
+static void* loadTextFile(const char* filepath, size_t* outSize);
 
-// Cube indices
-static const uint16_t indices[] = {
-    0,  1,  2,  0,  2,  3,   // Front
-    4,  5,  6,  4,  6,  7,   // Back
-    8,  9,  10, 8,  10, 11,  // Top
-    12, 13, 14, 12, 14, 15,  // Bottom
-    16, 17, 18, 16, 18, 19,  // Right
-    20, 21, 22, 20, 22, 23,  // Left
-};
+// Matrix math function declarations
+void matrixIdentity(float* matrix);
+void matrixMultiply(float* result, const float* a, const float* b);
+void matrixRotateX(float* matrix, float angle);
+void matrixRotateY(float* matrix, float angle);
+void matrixRotateZ(float* matrix, float angle);
+void matrixPerspective(float* matrix, float fov, float aspect, float near, float far, GfxBackend backend);
+void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ,
+    float centerX, float centerY, float centerZ,
+    float upX, float upY, float upZ);
 
-// Matrix math helpers (from native example)
-static void matrixIdentity(float* matrix) {
+// GLFW callbacks
+static void errorCallback(int error, const char* description)
+{
+    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+}
+
+static void framebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+    CubeApp* app = (CubeApp*)glfwGetWindowUserPointer(window);
+    if (app) {
+        app->windowWidth = (uint32_t)width;
+        app->windowHeight = (uint32_t)height;
+    }
+}
+
+static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+}
+
+bool initWindow(CubeApp* app)
+{
+
+    glfwSetErrorCallback(errorCallback);
+
+    if (!glfwInit()) {
+        fprintf(stderr, "Failed to initialize GLFW\n");
+        return false;
+    }
+
+    // Don't create OpenGL context
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
+    app->window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT,
+        "Cube Example - Unified Graphics API",
+        NULL, NULL);
+
+    if (!app->window) {
+        fprintf(stderr, "Failed to create GLFW window\n");
+        glfwTerminate();
+        return false;
+    }
+
+    app->windowWidth = WINDOW_WIDTH;
+    app->windowHeight = WINDOW_HEIGHT;
+
+    glfwSetWindowUserPointer(app->window, app);
+    glfwSetFramebufferSizeCallback(app->window, framebufferSizeCallback);
+    glfwSetKeyCallback(app->window, keyCallback);
+
+    return true;
+}
+
+GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
+{
+    GfxPlatformWindowHandle handle = { 0 };
+#if defined(__EMSCRIPTEN__)
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_EMSCRIPTEN;
+    handle.emscripten.canvasSelector = "#canvas";
+
+#else
+#ifdef _WIN32
+    handle.hwnd = glfwGetWin32Window(window);
+    handle.hinstance = GetModuleHandle(NULL);
+
+#elif defined(__linux__)
+    // Force using Xlib instead of XCB to avoid driver hang
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_X11;
+    handle.x11.display = glfwGetX11Display();
+    handle.x11.window = (void*)(uintptr_t)glfwGetX11Window(window);
+
+#elif defined(__APPLE__)
+    handle.nsWindow = glfwGetCocoaWindow(window);
+    // Metal layer will be created automatically by the graphics API
+    handle.metalLayer = NULL;
+#endif
+#endif
+
+    return handle;
+}
+
+bool initializeGraphics(CubeApp* app)
+{
+    // Load the graphics backend BEFORE creating an instance
+    // This is now decoupled - you load the backend API once at startup
+    printf("Loading graphics backend...\n");
+    if (!gfxLoadBackend(GFX_BACKEND_API)) {
+        fprintf(stderr, "Failed to load any graphics backend\n");
+        return false;
+    }
+    printf("Graphics backend loaded successfully!\n");
+
+#if defined(__EMSCRIPTEN__)
+    // Create graphics instance
+    GfxInstanceDescriptor instanceDesc = {
+        .backend = GFX_BACKEND_API,
+        .enableValidation = true,
+        .enabledHeadless = false,
+        .applicationName = "Cube Example (C)",
+        .applicationVersion = 1,
+        .requiredExtensions = NULL,
+        .requiredExtensionCount = 0
+    };
+#else
+    // Get required Vulkan extensions from GLFW
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    printf("[DEBUG] GLFW requires %u extensions:\n", glfwExtensionCount);
+    for (uint32_t i = 0; i < glfwExtensionCount; ++i) {
+        printf("[DEBUG]   - %s\n", glfwExtensions[i]);
+    }
+
+    // Create graphics instance
+    GfxInstanceDescriptor instanceDesc = {
+        .backend = GFX_BACKEND_API,
+        .enableValidation = true,
+        .enabledHeadless = false,
+        .applicationName = "Cube Example (C)",
+        .applicationVersion = 1,
+        .requiredExtensions = glfwExtensions,
+        .requiredExtensionCount = glfwExtensionCount
+    };
+#endif
+
+    if (gfxCreateInstance(&instanceDesc, &app->instance) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create graphics instance\n");
+        return false;
+    }
+
+    // Set debug callback after instance creation
+    gfxInstanceSetDebugCallback(app->instance, debugCallback, NULL);
+
+    // Get adapter
+    GfxAdapterDescriptor adapterDesc = {
+        .powerPreference = GFX_POWER_PREFERENCE_HIGH_PERFORMANCE,
+        .forceFallbackAdapter = false
+    };
+
+    if (gfxInstanceRequestAdapter(app->instance, &adapterDesc, &app->adapter) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to get graphics adapter\n");
+        return false;
+    }
+
+    printf("Using adapter: %s\n", gfxAdapterGetName(app->adapter));
+    printf("Backend: %s\n", gfxAdapterGetBackend(app->adapter) == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU");
+
+    // Create device
+    GfxDeviceDescriptor deviceDesc = {
+        .label = "Main Device",
+        .requiredFeatures = NULL,
+        .requiredFeatureCount = 0
+    };
+
+    if (gfxAdapterCreateDevice(app->adapter, &deviceDesc, &app->device) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create device\n");
+        return false;
+    }
+
+    // Query and print device limits
+    GfxDeviceLimits limits;
+    gfxDeviceGetLimits(app->device, &limits);
+    printf("Device Limits:\n");
+    printf("  Min Uniform Buffer Offset Alignment: %u bytes\n", limits.minUniformBufferOffsetAlignment);
+    printf("  Min Storage Buffer Offset Alignment: %u bytes\n", limits.minStorageBufferOffsetAlignment);
+    printf("  Max Uniform Buffer Binding Size: %u bytes\n", limits.maxUniformBufferBindingSize);
+    printf("  Max Storage Buffer Binding Size: %u bytes\n", limits.maxStorageBufferBindingSize);
+    printf("  Max Buffer Size: %llu bytes\n", (unsigned long long)limits.maxBufferSize);
+    printf("  Max Texture Dimension 1D: %u\n", limits.maxTextureDimension1D);
+    printf("  Max Texture Dimension 2D: %u\n", limits.maxTextureDimension2D);
+    printf("  Max Texture Dimension 3D: %u\n", limits.maxTextureDimension3D);
+    printf("  Max Texture Array Layers: %u\n", limits.maxTextureArrayLayers);
+
+    app->queue = gfxDeviceGetQueue(app->device);
+
+    // Create surface
+    GfxPlatformWindowHandle windowHandle = getPlatformWindowHandle(app->window);
+    GfxSurfaceDescriptor surfaceDesc = {
+        .label = "Main Surface",
+        .windowHandle = windowHandle
+    };
+
+    if (gfxDeviceCreateSurface(app->device, &surfaceDesc, &app->surface) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create surface\n");
+        return false;
+    }
+
+    return true;
+}
+
+bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
+{
+    // Create swapchain
+    GfxSwapchainDescriptor swapchainDesc = {
+        .label = "Main Swapchain",
+        .width = (uint32_t)width,
+        .height = (uint32_t)height,
+        .format = COLOR_FORMAT,
+        .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT,
+        .presentMode = GFX_PRESENT_MODE_FIFO,
+        .bufferCount = MAX_FRAMES_IN_FLIGHT
+    };
+
+    if (gfxDeviceCreateSwapchain(app->device, app->surface, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create swapchain\n");
+        return false;
+    }
+
+    // Query the actual swapchain format (may differ from requested format on web)
+    GfxTextureFormat swapchainFormat = gfxSwapchainGetFormat(app->swapchain);
+    fprintf(stderr, "[INFO] Requested format: %d, Actual swapchain format: %d\n", COLOR_FORMAT, swapchainFormat);
+
+    // Create depth texture (MSAA must match color attachment)
+    GfxTextureDescriptor depthTextureDesc = {
+        .label = "Depth Buffer",
+        .type = GFX_TEXTURE_TYPE_2D,
+        .size = {
+            .width = (uint32_t)width,
+            .height = (uint32_t)height,
+            .depth = 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .sampleCount = MSAA_SAMPLE_COUNT,
+        .format = DEPTH_FORMAT,
+        .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT
+    };
+
+    if (gfxDeviceCreateTexture(app->device, &depthTextureDesc, &app->depthTexture) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create depth texture\n");
+        return false;
+    }
+
+    // Create depth texture view
+    GfxTextureViewDescriptor depthViewDesc = {
+        .label = "Depth Buffer View",
+        .viewType = GFX_TEXTURE_VIEW_TYPE_2D,
+        .format = DEPTH_FORMAT,
+        .baseMipLevel = 0,
+        .mipLevelCount = 1,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 1
+    };
+
+    if (gfxTextureCreateView(app->depthTexture, &depthViewDesc, &app->depthTextureView) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create depth texture view\n");
+        return false;
+    }
+
+    // Create MSAA color texture (is unused if MSAA_SAMPLE_COUNT == 1)
+    GfxTextureDescriptor msaaColorTextureDesc = {
+        .label = "MSAA Color Buffer",
+        .type = GFX_TEXTURE_TYPE_2D,
+        .size = {
+            .width = (uint32_t)width,
+            .height = (uint32_t)height,
+            .depth = 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .sampleCount = MSAA_SAMPLE_COUNT,
+        .format = gfxSwapchainGetFormat(app->swapchain),
+        .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT
+    };
+
+    if (gfxDeviceCreateTexture(app->device, &msaaColorTextureDesc, &app->msaaColorTexture) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create MSAA color texture\n");
+        return false;
+    }
+
+    // Create MSAA color texture view (is unused if MSAA_SAMPLE_COUNT == 1)
+    GfxTextureViewDescriptor msaaColorViewDesc = {
+        .label = "MSAA Color Buffer View",
+        .viewType = GFX_TEXTURE_VIEW_TYPE_2D,
+        .format = gfxSwapchainGetFormat(app->swapchain),
+        .baseMipLevel = 0,
+        .mipLevelCount = 1,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 1
+    };
+
+    if (gfxTextureCreateView(app->msaaColorTexture, &msaaColorViewDesc, &app->msaaColorTextureView) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create MSAA color texture view\n");
+        return false;
+    }
+
+    return true;
+}
+
+bool createSyncObjects(CubeApp* app)
+{
+    // Create semaphores and fences for each frame in flight
+    GfxSemaphoreDescriptor semaphoreDesc = {
+        .label = "Semaphore",
+        .type = GFX_SEMAPHORE_TYPE_BINARY,
+        .initialValue = 0
+    };
+
+    GfxFenceDescriptor fenceDesc = {
+        .label = "Fence",
+        .signaled = true // Start signaled so first frame doesn't wait
+    };
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        char label[64];
+
+        snprintf(label, sizeof(label), "Image Available Semaphore %d", i);
+        semaphoreDesc.label = label;
+        if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &app->imageAvailableSemaphores[i]) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create image available semaphore %d\n", i);
+            return false;
+        }
+
+        snprintf(label, sizeof(label), "Render Finished Semaphore %d", i);
+        semaphoreDesc.label = label;
+        if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &app->renderFinishedSemaphores[i]) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create render finished semaphore %d\n", i);
+            return false;
+        }
+
+        snprintf(label, sizeof(label), "In Flight Fence %d", i);
+        fenceDesc.label = label;
+        if (gfxDeviceCreateFence(app->device, &fenceDesc, &app->inFlightFences[i]) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create in flight fence %d\n", i);
+            return false;
+        }
+
+        // Create command encoder for this frame
+        snprintf(label, sizeof(label), "Command Encoder %d", i);
+        GfxCommandEncoderDescriptor encoderDesc = { .label = label };
+        if (gfxDeviceCreateCommandEncoder(app->device, &encoderDesc, &app->commandEncoders[i]) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create command encoder %d\n", i);
+            return false;
+        }
+    }
+
+    app->currentFrame = 0;
+
+    return true;
+}
+
+void cleanupSizeDependentResources(CubeApp* app)
+{
+    // Clean up size-dependent resources
+    if (app->msaaColorTextureView) {
+        gfxTextureViewDestroy(app->msaaColorTextureView);
+        app->msaaColorTextureView = NULL;
+    }
+    if (app->msaaColorTexture) {
+        gfxTextureDestroy(app->msaaColorTexture);
+        app->msaaColorTexture = NULL;
+    }
+    if (app->depthTextureView) {
+        gfxTextureViewDestroy(app->depthTextureView);
+        app->depthTextureView = NULL;
+    }
+    if (app->depthTexture) {
+        gfxTextureDestroy(app->depthTexture);
+        app->depthTexture = NULL;
+    }
+
+    if (app->swapchain) {
+        gfxSwapchainDestroy(app->swapchain);
+        app->swapchain = NULL;
+    }
+}
+
+void cleanupRenderingResources(CubeApp* app)
+{
+    // Clean up size-independent rendering resources
+    if (app->renderPipeline) {
+        gfxRenderPipelineDestroy(app->renderPipeline);
+        app->renderPipeline = NULL;
+    }
+    if (app->fragmentShader) {
+        gfxShaderDestroy(app->fragmentShader);
+        app->fragmentShader = NULL;
+    }
+    if (app->vertexShader) {
+        gfxShaderDestroy(app->vertexShader);
+        app->vertexShader = NULL;
+    }
+    if (app->uniformBindGroupLayout) {
+        gfxBindGroupLayoutDestroy(app->uniformBindGroupLayout);
+        app->uniformBindGroupLayout = NULL;
+    }
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        for (int cubeIdx = 0; cubeIdx < 3; ++cubeIdx) {
+            if (app->uniformBindGroups[i][cubeIdx]) {
+                gfxBindGroupDestroy(app->uniformBindGroups[i][cubeIdx]);
+                app->uniformBindGroups[i][cubeIdx] = NULL;
+            }
+        }
+    }
+    if (app->sharedUniformBuffer) {
+        gfxBufferDestroy(app->sharedUniformBuffer);
+        app->sharedUniformBuffer = NULL;
+    }
+    if (app->indexBuffer) {
+        gfxBufferDestroy(app->indexBuffer);
+        app->indexBuffer = NULL;
+    }
+    if (app->vertexBuffer) {
+        gfxBufferDestroy(app->vertexBuffer);
+        app->vertexBuffer = NULL;
+    }
+}
+
+bool createRenderingResources(CubeApp* app)
+{
+    // Create cube vertices (8 vertices for a cube)
+    Vertex vertices[] = {
+        // Front face
+        { { -1.0f, -1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } }, // 0: Bottom-left
+        { { 1.0f, -1.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } }, // 1: Bottom-right
+        { { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 1.0f } }, // 2: Top-right
+        { { -1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } }, // 3: Top-left
+
+        // Back face
+        { { -1.0f, -1.0f, -1.0f }, { 1.0f, 0.0f, 1.0f } }, // 4: Bottom-left
+        { { 1.0f, -1.0f, -1.0f }, { 0.0f, 1.0f, 1.0f } }, // 5: Bottom-right
+        { { 1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f } }, // 6: Top-right
+        { { -1.0f, 1.0f, -1.0f }, { 0.5f, 0.5f, 0.5f } } // 7: Top-left
+    };
+
+    // Create cube indices (36 indices for 12 triangles)
+    // All faces wound clockwise when viewed from outside
+    uint16_t indices[] = {
+        // Front face (Z+) - vertices 0,1,2,3
+        0, 1, 2, 2, 3, 0,
+        // Back face (Z-) - vertices 4,5,6,7 - FIXED
+        5, 4, 7, 7, 6, 5,
+        // Left face (X-) - vertices 4,0,3,7
+        4, 0, 3, 3, 7, 4,
+        // Right face (X+) - vertices 1,5,6,2
+        1, 5, 6, 6, 2, 1,
+        // Top face (Y+) - vertices 3,2,6,7
+        3, 2, 6, 6, 7, 3,
+        // Bottom face (Y-) - vertices 4,5,1,0
+        4, 5, 1, 1, 0, 4
+    };
+
+    // Create vertex buffer
+    GfxBufferDescriptor vertexBufferDesc = {
+        .label = "Cube Vertices",
+        .size = sizeof(vertices),
+        .usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST,
+        .mappedAtCreation = false
+    };
+
+    if (gfxDeviceCreateBuffer(app->device, &vertexBufferDesc, &app->vertexBuffer) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create vertex buffer\n");
+        return false;
+    }
+
+    // Create index buffer
+    GfxBufferDescriptor indexBufferDesc = {
+        .label = "Cube Indices",
+        .size = sizeof(indices),
+        .usage = GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_COPY_DST,
+        .mappedAtCreation = false
+    };
+
+    if (gfxDeviceCreateBuffer(app->device, &indexBufferDesc, &app->indexBuffer) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create index buffer\n");
+        return false;
+    }
+
+    // Upload vertex and index data
+    gfxQueueWriteBuffer(app->queue, app->vertexBuffer, 0, vertices, sizeof(vertices));
+    gfxQueueWriteBuffer(app->queue, app->indexBuffer, 0, indices, sizeof(indices));
+
+    // Create single large uniform buffer for all frames with proper alignment
+    GfxDeviceLimits limits;
+    gfxDeviceGetLimits(app->device, &limits);
+
+    size_t uniformSize = sizeof(UniformData);
+    app->uniformAlignedSize = gfxAlignUp(uniformSize, limits.minUniformBufferOffsetAlignment);
+    // Need space for CUBE_COUNT cubes per frame
+    size_t totalBufferSize = app->uniformAlignedSize * MAX_FRAMES_IN_FLIGHT * CUBE_COUNT;
+
+    GfxBufferDescriptor uniformBufferDesc = {
+        .label = "Shared Transform Uniforms",
+        .size = totalBufferSize,
+        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST,
+        .mappedAtCreation = false
+    };
+
+    if (gfxDeviceCreateBuffer(app->device, &uniformBufferDesc, &app->sharedUniformBuffer) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create shared uniform buffer\n");
+        return false;
+    }
+
+    // Create bind group layout for uniforms
+    GfxBindGroupLayoutEntry uniformLayoutEntry = {
+        .binding = 0,
+        .visibility = GFX_SHADER_STAGE_VERTEX,
+        .type = GFX_BINDING_TYPE_BUFFER,
+        .buffer = {
+            .hasDynamicOffset = false,
+            .minBindingSize = sizeof(UniformData) }
+    };
+
+    GfxBindGroupLayoutDescriptor uniformLayoutDesc = {
+        .label = "Uniform Bind Group Layout",
+        .entries = &uniformLayoutEntry,
+        .entryCount = 1
+    };
+
+    if (gfxDeviceCreateBindGroupLayout(app->device, &uniformLayoutDesc, &app->uniformBindGroupLayout) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create uniform bind group layout\n");
+        return false;
+    }
+
+    // Create bind groups (CUBE_COUNT cubes per frame in flight) using offsets into shared buffer
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+            char label[64];
+            snprintf(label, sizeof(label), "Uniform Bind Group Frame %d Cube %d", i, cubeIdx);
+
+            GfxBindGroupEntry uniformEntry = {
+                .binding = 0,
+                .type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER,
+                .resource = {
+                    .buffer = {
+                        .buffer = app->sharedUniformBuffer,
+                        .offset = (i * CUBE_COUNT + cubeIdx) * app->uniformAlignedSize,
+                        .size = sizeof(UniformData) } }
+            };
+
+            GfxBindGroupDescriptor uniformBindGroupDesc = {
+                .label = label,
+                .layout = app->uniformBindGroupLayout,
+                .entries = &uniformEntry,
+                .entryCount = 1
+            };
+
+            if (gfxDeviceCreateBindGroup(app->device, &uniformBindGroupDesc, &app->uniformBindGroups[i][cubeIdx]) != GFX_RESULT_SUCCESS) {
+                fprintf(stderr, "Failed to create uniform bind group %d cube %d\n", i, cubeIdx);
+                return false;
+            }
+        }
+    }
+
+#if defined(__EMSCRIPTEN__)
+    // Shader code (WGSL)
+    static const char* vertexShaderSource = "struct Uniforms {\n"
+                                            "    model: mat4x4<f32>,\n"
+                                            "    view: mat4x4<f32>,\n"
+                                            "    projection: mat4x4<f32>,\n"
+                                            "}\n"
+                                            "@group(0) @binding(0) var<uniform> uniforms: Uniforms;\n"
+                                            "\n"
+                                            "struct VertexInput {\n"
+                                            "    @location(0) position: vec3<f32>,\n"
+                                            "    @location(1) color: vec3<f32>,\n"
+                                            "}\n"
+                                            "\n"
+                                            "struct VertexOutput {\n"
+                                            "    @builtin(position) position: vec4<f32>,\n"
+                                            "    @location(0) color: vec3<f32>,\n"
+                                            "}\n"
+                                            "\n"
+                                            "@vertex\n"
+                                            "fn main(input: VertexInput) -> VertexOutput {\n"
+                                            "    var output: VertexOutput;\n"
+                                            "    let worldPos = uniforms.model * vec4<f32>(input.position, 1.0);\n"
+                                            "    let viewPos = uniforms.view * worldPos;\n"
+                                            "    output.position = uniforms.projection * viewPos;\n"
+                                            "    output.color = input.color;\n"
+                                            "    return output;\n"
+                                            "}\n";
+
+    static const char* fragmentShaderSource = "struct FragmentInput {\n"
+                                              "    @location(0) color: vec3<f32>,\n"
+                                              "}\n"
+                                              "\n"
+                                              "@fragment\n"
+                                              "fn main(input: FragmentInput) -> @location(0) vec4<f32> {\n"
+                                              "    return vec4<f32>(input.color, 1.0);\n"
+                                              "}\n";
+
+    // Create shaders from source strings (WGSL)
+    GfxShaderDescriptor vertexShaderDesc = {
+        .label = "Cube Vertex Shader",
+        .sourceType = GFX_SHADER_SOURCE_WGSL,
+        .code = (const uint8_t*)vertexShaderSource,
+        .codeSize = strlen(vertexShaderSource),
+        .entryPoint = "main"
+    };
+
+    if (gfxDeviceCreateShader(app->device, &vertexShaderDesc, &app->vertexShader) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create vertex shader\n");
+        return false;
+    }
+
+    GfxShaderDescriptor fragmentShaderDesc = {
+        .label = "Cube Fragment Shader",
+        .sourceType = GFX_SHADER_SOURCE_WGSL,
+        .code = (const uint8_t*)fragmentShaderSource,
+        .codeSize = strlen(fragmentShaderSource),
+        .entryPoint = "main"
+    };
+
+    if (gfxDeviceCreateShader(app->device, &fragmentShaderDesc, &app->fragmentShader) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create fragment shader\n");
+        return false;
+    }
+
+#else
+
+    // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
+    size_t vertexShaderSize, fragmentShaderSize;
+    void* vertexShaderCode = NULL;
+    void* fragmentShaderCode = NULL;
+
+    GfxShaderSourceType sourceType;
+    GfxBackend backend = gfxAdapterGetBackend(app->adapter);
+    if (backend == GFX_BACKEND_WEBGPU) {
+        sourceType = GFX_SHADER_SOURCE_WGSL;
+        // Load WGSL shaders for WebGPU
+        vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl", &vertexShaderSize);
+        fragmentShaderCode = loadTextFile("shaders/cube.frag.wgsl", &fragmentShaderSize);
+        if (!vertexShaderCode || !fragmentShaderCode) {
+            fprintf(stderr, "Failed to load WGSL shaders\n");
+            return false;
+        }
+    } else {
+        sourceType = GFX_SHADER_SOURCE_SPIRV;
+        // Load SPIR-V shaders for Vulkan
+        vertexShaderCode = loadBinaryFile("cube.vert.spv", &vertexShaderSize);
+        fragmentShaderCode = loadBinaryFile("cube.frag.spv", &fragmentShaderSize);
+        if (!vertexShaderCode || !fragmentShaderCode) {
+            fprintf(stderr, "Failed to load SPIR-V shaders\n");
+            return false;
+        }
+    }
+
+    // Create vertex shader
+    GfxShaderDescriptor vertexShaderDesc = {
+        .label = "Cube Vertex Shader",
+        .sourceType = sourceType,
+        .code = vertexShaderCode,
+        .codeSize = vertexShaderSize,
+        .entryPoint = "main"
+    };
+
+    if (gfxDeviceCreateShader(app->device, &vertexShaderDesc, &app->vertexShader) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create vertex shader\n");
+        free(vertexShaderCode);
+        free(fragmentShaderCode);
+        return false;
+    }
+
+    // Create fragment shader
+    GfxShaderDescriptor fragmentShaderDesc = {
+        .label = "Cube Fragment Shader",
+        .sourceType = sourceType,
+        .code = fragmentShaderCode,
+        .codeSize = fragmentShaderSize,
+        .entryPoint = "main"
+    };
+
+    if (gfxDeviceCreateShader(app->device, &fragmentShaderDesc, &app->fragmentShader) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create fragment shader\n");
+        free(vertexShaderCode);
+        free(fragmentShaderCode);
+        return false;
+    }
+
+    free(vertexShaderCode);
+    free(fragmentShaderCode);
+
+#endif
+
+    // Initialize animation state
+    app->rotationAngleX = 0.0f;
+    app->rotationAngleY = 0.0f;
+
+    return true;
+}
+
+bool createRenderPipeline(CubeApp* app)
+{
+    // Define vertex attributes
+    GfxVertexAttribute attributes[] = {
+        { .format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT,
+            .offset = offsetof(Vertex, position),
+            .shaderLocation = 0 },
+        { .format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT,
+            .offset = offsetof(Vertex, color),
+            .shaderLocation = 1 }
+    };
+
+    // Define vertex buffer layout
+    GfxVertexBufferLayout vertexBufferLayout = {
+        .arrayStride = sizeof(Vertex),
+        .attributes = attributes,
+        .attributeCount = 2,
+        .stepModeInstance = false
+    };
+
+    // Vertex state
+    GfxVertexState vertexState = {
+        .module = app->vertexShader,
+        .entryPoint = "main",
+        .buffers = &vertexBufferLayout,
+        .bufferCount = 1
+    };
+
+    // Color target state
+    // Note: Always 1 target even with MSAA - resolve is handled by render pass, not fragment shader
+    // layout(location = 0) out vec4 outColor;
+    // Use actual swapchain format (may differ from requested format on web)
+    GfxColorTargetState colorTarget = {
+        .format = gfxSwapchainGetFormat(app->swapchain),
+        .blend = NULL,
+        .writeMask = GFX_COLOR_WRITE_MASK_ALL
+    };
+
+    // Fragment state
+    GfxFragmentState fragmentState = {
+        .module = app->fragmentShader,
+        .entryPoint = "main",
+        .targets = &colorTarget,
+        .targetCount = 1
+    };
+
+    // Primitive state
+    GfxPrimitiveState primitiveState = {
+        .topology = GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .stripIndexFormat = NULL,
+        .frontFace = GFX_FRONT_FACE_COUNTER_CLOCKWISE,
+        .cullMode = GFX_CULL_MODE_BACK, // Enable back-face culling
+        .polygonMode = GFX_POLYGON_MODE_FILL
+    };
+
+    // Depth/stencil state - enable depth testing
+    GfxDepthStencilState depthStencilState = {
+        .format = DEPTH_FORMAT,
+        .depthWriteEnabled = true,
+        .depthCompare = GFX_COMPARE_FUNCTION_LESS,
+        .stencilFront = {
+            .compare = GFX_COMPARE_FUNCTION_ALWAYS,
+            .failOp = GFX_STENCIL_OPERATION_KEEP,
+            .depthFailOp = GFX_STENCIL_OPERATION_KEEP,
+            .passOp = GFX_STENCIL_OPERATION_KEEP },
+        .stencilBack = { .compare = GFX_COMPARE_FUNCTION_ALWAYS, .failOp = GFX_STENCIL_OPERATION_KEEP, .depthFailOp = GFX_STENCIL_OPERATION_KEEP, .passOp = GFX_STENCIL_OPERATION_KEEP },
+        .stencilReadMask = 0xFF,
+        .stencilWriteMask = 0xFF,
+        .depthBias = 0,
+        .depthBiasSlopeScale = 0.0f,
+        .depthBiasClamp = 0.0f
+    };
+
+    // Create render pipeline
+    // Create array with the bind group layout pointer
+    GfxBindGroupLayout bindGroupLayouts[] = { app->uniformBindGroupLayout };
+
+    GfxRenderPipelineDescriptor pipelineDesc = {
+        .label = "Cube Render Pipeline",
+        .vertex = &vertexState,
+        .fragment = &fragmentState,
+        .primitive = &primitiveState,
+        .depthStencil = &depthStencilState,
+        .sampleCount = MSAA_SAMPLE_COUNT,
+        .bindGroupLayouts = bindGroupLayouts,
+        .bindGroupLayoutCount = 1
+    };
+
+    if (gfxDeviceCreateRenderPipeline(app->device, &pipelineDesc, &app->renderPipeline) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create render pipeline\n");
+        return false;
+    }
+
+    return true;
+}
+
+void updateCube(CubeApp* app, int cubeIndex)
+{
+    UniformData uniforms = { 0 }; // Initialize to zero!
+
+    // Create rotation matrices (combine X and Y rotations)
+    // Each cube rotates slightly differently
+    float rotX[16], rotY[16], tempModel[16];
+    matrixRotateX(rotX, (app->rotationAngleX + cubeIndex * 30.0f) * M_PI / 180.0f);
+    matrixRotateY(rotY, (app->rotationAngleY + cubeIndex * 45.0f) * M_PI / 180.0f);
+    matrixMultiply(tempModel, rotY, rotX);
+
+    // Position cubes side by side: left (-3, 0, 0), center (0, 0, 0), right (3, 0, 0)
+    float translation[16];
+    matrixIdentity(translation);
+    translation[12] = (cubeIndex - 1) * 3.0f; // x offset: -3, 0, 3
+
+    // Apply translation after rotation: model = rotation * translation
+    // This rotates in place, then translates to world position
+    matrixMultiply(uniforms.model, tempModel, translation);
+
+    // Create view matrix (camera positioned at 0, 0, 10 looking at origin)
+    matrixLookAt(uniforms.view,
+        0.0f, 0.0f, 10.0f, // eye position - pulled back to see all 3 cubes
+        0.0f, 0.0f, 0.0f, // look at point
+        0.0f, 1.0f, 0.0f); // up vector
+
+    // Create perspective projection matrix
+    GfxBackend backend = gfxAdapterGetBackend(app->adapter);
+    float aspect = (float)gfxSwapchainGetWidth(app->swapchain) / (float)gfxSwapchainGetHeight(app->swapchain);
+    matrixPerspective(uniforms.projection,
+        45.0f * M_PI / 180.0f, // 45 degree FOV
+        aspect,
+        0.1f, // near plane
+        100.0f, // far plane
+        backend); // Adjust for clip space differences
+
+    // Upload uniform data to buffer at aligned offset
+    // Formula: (frame * CUBE_COUNT + cube) * alignedSize
+    size_t offset = (app->currentFrame * CUBE_COUNT + cubeIndex) * app->uniformAlignedSize;
+    gfxQueueWriteBuffer(app->queue, app->sharedUniformBuffer, offset, &uniforms, sizeof(uniforms));
+}
+
+void update(CubeApp* app, float deltaTime)
+{
+    // Update rotation angles (both X and Y axes)
+    app->rotationAngleX += 45.0f * deltaTime; // 45 degrees per second around X
+    app->rotationAngleY += 30.0f * deltaTime; // 30 degrees per second around Y
+    if (app->rotationAngleX >= 360.0f) {
+        app->rotationAngleX -= 360.0f;
+    }
+    if (app->rotationAngleY >= 360.0f) {
+        app->rotationAngleY -= 360.0f;
+    }
+
+    // Update uniforms for each cube
+    for (int i = 0; i < CUBE_COUNT; ++i) {
+        updateCube(app, i);
+    }
+}
+
+void render(CubeApp* app)
+{
+    // Wait for previous frame to finish
+    gfxFenceWait(app->inFlightFences[app->currentFrame], UINT64_MAX);
+    gfxFenceReset(app->inFlightFences[app->currentFrame]);
+
+    // Acquire next swapchain image
+    uint32_t imageIndex;
+    GfxResult result = gfxSwapchainAcquireNextImage(app->swapchain, UINT64_MAX,
+        app->imageAvailableSemaphores[app->currentFrame], NULL, &imageIndex);
+
+    if (result != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to acquire swapchain image\n");
+        return;
+    }
+
+    // Get texture view for acquired image (for later blit/present)
+    GfxTextureView backbuffer = gfxSwapchainGetImageView(app->swapchain, imageIndex);
+    if (!backbuffer) {
+        fprintf(stderr, "Failed to get swapchain texture view\n");
+        return;
+    }
+
+    GfxCommandEncoder encoder = app->commandEncoders[app->currentFrame];
+    gfxCommandEncoderBegin(encoder);
+
+    // Begin render pass with dark blue clear color
+    // Pass both MSAA color buffer and swapchain image for resolve
+    GfxColor clearColor = (GfxColor){ 0.1f, 0.2f, 0.3f, 1.0f };
+
+    GfxColorAttachmentTarget colorTargets[2];
+    GfxColorAttachment colorAttachment;
+    uint32_t colorAttachmentCount;
+
+    if (MSAA_SAMPLE_COUNT == GFX_SAMPLE_COUNT_1) {
+        colorTargets[0] = (GfxColorAttachmentTarget){
+            .view = backbuffer,
+            .ops = {
+                .loadOp = GFX_LOAD_OP_CLEAR,
+                .storeOp = GFX_STORE_OP_STORE,
+                .clearColor = clearColor,
+            },
+            .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
+        };
+        colorAttachment = (GfxColorAttachment){
+            .target = colorTargets[0],
+            .resolveTarget = NULL
+        };
+        colorAttachmentCount = 1;
+    } else {
+        colorTargets[0] = (GfxColorAttachmentTarget){
+            .view = app->msaaColorTextureView,
+            .ops = {
+                .loadOp = GFX_LOAD_OP_CLEAR,
+                .storeOp = GFX_STORE_OP_DONT_CARE, // MSAA buffer doesn't need to be stored
+                .clearColor = clearColor,
+            },
+            .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
+        };
+        colorTargets[1] = (GfxColorAttachmentTarget){
+            .view = backbuffer,
+            .ops = {
+                .loadOp = GFX_LOAD_OP_DONT_CARE, // Don't care about resolve target before resolve
+                .storeOp = GFX_STORE_OP_STORE, // Store the resolved result
+                .clearColor = clearColor,
+            },
+            .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
+        };
+        colorAttachment = (GfxColorAttachment){
+            .target = colorTargets[0],
+            .resolveTarget = &colorTargets[1]
+        };
+        colorAttachmentCount = 1;
+    }
+
+    GfxDepthAttachmentOps depthOps = {
+        .loadOp = GFX_LOAD_OP_CLEAR,
+        .storeOp = GFX_STORE_OP_DONT_CARE, // Depth buffer contents not needed after render
+        .clearValue = 1.0f
+    };
+
+    GfxDepthStencilAttachmentTarget depthTarget = {
+        .view = app->depthTextureView,
+        .depthOps = &depthOps,
+        .stencilOps = NULL, // No stencil
+        .finalLayout = GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT
+    };
+
+    GfxDepthStencilAttachment depthAttachment = {
+        .target = depthTarget,
+    };
+
+    GfxRenderPassDescriptor renderPassDesc = {
+        .label = "Main Render Pass",
+        .colorAttachments = &colorAttachment,
+        .colorAttachmentCount = colorAttachmentCount,
+        .depthStencilAttachment = &depthAttachment
+    };
+
+    GfxRenderPassEncoder renderPass;
+    if (gfxCommandEncoderBeginRenderPass(encoder, &renderPassDesc, &renderPass) == GFX_RESULT_SUCCESS) {
+
+        // Set pipeline
+        gfxRenderPassEncoderSetPipeline(renderPass, app->renderPipeline);
+
+        // Set viewport and scissor to fill the entire render target
+        uint32_t swapWidth = gfxSwapchainGetWidth(app->swapchain);
+        uint32_t swapHeight = gfxSwapchainGetHeight(app->swapchain);
+        GfxViewport viewport = { 0.0f, 0.0f, (float)swapWidth, (float)swapHeight, 0.0f, 1.0f };
+        GfxScissorRect scissor = { 0, 0, swapWidth, swapHeight };
+        gfxRenderPassEncoderSetViewport(renderPass, &viewport);
+        gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
+
+        // Set vertex buffer
+        gfxRenderPassEncoderSetVertexBuffer(renderPass, 0, app->vertexBuffer, 0,
+            gfxBufferGetSize(app->vertexBuffer));
+
+        // Set index buffer
+        gfxRenderPassEncoderSetIndexBuffer(renderPass, app->indexBuffer,
+            GFX_INDEX_FORMAT_UINT16, 0,
+            gfxBufferGetSize(app->indexBuffer));
+
+        // Draw CUBE_COUNT cubes at different positions
+        for (int i = 0; i < CUBE_COUNT; ++i) {
+            // Bind the specific cube's bind group (no dynamic offsets)
+            gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->uniformBindGroups[app->currentFrame][i], NULL, 0);
+
+            // Draw indexed (36 indices for the cube)
+            gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
+        }
+
+        // End render pass
+        gfxRenderPassEncoderEnd(renderPass);
+        gfxRenderPassEncoderDestroy(renderPass);
+    }
+
+    // Finish command encoding
+    gfxCommandEncoderEnd(encoder);
+
+    // Submit commands with synchronization
+    GfxSubmitInfo submitInfo = { 0 };
+    submitInfo.commandEncoders = &encoder;
+    submitInfo.commandEncoderCount = 1;
+    submitInfo.waitSemaphores = &app->imageAvailableSemaphores[app->currentFrame];
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.signalSemaphores = &app->renderFinishedSemaphores[app->currentFrame];
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.signalFence = app->inFlightFences[app->currentFrame];
+
+    gfxQueueSubmit(app->queue, &submitInfo);
+
+    // Present with synchronization
+    GfxPresentInfo presentInfo = { 0 };
+    presentInfo.waitSemaphores = &app->renderFinishedSemaphores[app->currentFrame];
+    presentInfo.waitSemaphoreCount = 1;
+    gfxSwapchainPresent(app->swapchain, &presentInfo);
+
+    // Move to next frame
+    app->currentFrame = (app->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void cleanup(CubeApp* app)
+{
+    // Wait for device to finish
+    if (app->device) {
+        gfxDeviceWaitIdle(app->device);
+    }
+
+    // Clean up size-dependent resources
+    cleanupSizeDependentResources(app);
+
+    // Clean up rendering resources
+    cleanupRenderingResources(app);
+
+    // Destroy per-frame resources
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        // Destroy synchronization objects
+        if (app->imageAvailableSemaphores[i]) {
+            gfxSemaphoreDestroy(app->imageAvailableSemaphores[i]);
+        }
+        if (app->renderFinishedSemaphores[i]) {
+            gfxSemaphoreDestroy(app->renderFinishedSemaphores[i]);
+        }
+        if (app->inFlightFences[i]) {
+            gfxFenceDestroy(app->inFlightFences[i]);
+        }
+
+        // Destroy per-frame resources
+        if (app->commandEncoders[i]) {
+            gfxCommandEncoderDestroy(app->commandEncoders[i]);
+        }
+        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+            if (app->uniformBindGroups[i][cubeIdx]) {
+                gfxBindGroupDestroy(app->uniformBindGroups[i][cubeIdx]);
+            }
+        }
+    }
+
+    // Destroy shared uniform buffer
+    if (app->sharedUniformBuffer) {
+        gfxBufferDestroy(app->sharedUniformBuffer);
+    }
+
+    // Destroy graphics resources
+    if (app->renderPipeline) {
+        gfxRenderPipelineDestroy(app->renderPipeline);
+    }
+    if (app->fragmentShader) {
+        gfxShaderDestroy(app->fragmentShader);
+    }
+    if (app->vertexShader) {
+        gfxShaderDestroy(app->vertexShader);
+    }
+    if (app->uniformBindGroupLayout) {
+        gfxBindGroupLayoutDestroy(app->uniformBindGroupLayout);
+    }
+    if (app->indexBuffer) {
+        gfxBufferDestroy(app->indexBuffer);
+    }
+    if (app->vertexBuffer) {
+        gfxBufferDestroy(app->vertexBuffer);
+    }
+    if (app->msaaColorTextureView) {
+        gfxTextureViewDestroy(app->msaaColorTextureView);
+    }
+    if (app->msaaColorTexture) {
+        gfxTextureDestroy(app->msaaColorTexture);
+    }
+    if (app->depthTextureView) {
+        gfxTextureViewDestroy(app->depthTextureView);
+    }
+    if (app->depthTexture) {
+        gfxTextureDestroy(app->depthTexture);
+    }
+    if (app->swapchain) {
+        gfxSwapchainDestroy(app->swapchain);
+    }
+    if (app->surface) {
+        gfxSurfaceDestroy(app->surface);
+    }
+    if (app->device) {
+        gfxDeviceDestroy(app->device);
+    }
+    if (app->adapter) {
+        gfxAdapterDestroy(app->adapter);
+    }
+    if (app->instance) {
+        gfxInstanceDestroy(app->instance);
+    }
+
+    // Unload the backend API after destroying all instances
+    printf("Unloading graphics backend...\n");
+    gfxUnloadBackend(GFX_BACKEND_API);
+
+    // Destroy window
+    if (app->window) {
+        glfwDestroyWindow(app->window);
+    }
+    glfwTerminate();
+}
+
+// Matrix math utility functions
+void matrixIdentity(float* matrix)
+{
     memset(matrix, 0, 16 * sizeof(float));
     matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.0f;
 }
 
-static void matrixMultiply(float* result, const float* a, const float* b) {
+void matrixMultiply(float* result, const float* a, const float* b)
+{
     float temp[16];
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
@@ -154,7 +1285,8 @@ static void matrixMultiply(float* result, const float* a, const float* b) {
     memcpy(result, temp, sizeof(float) * 16);
 }
 
-static void matrixRotateX(float* matrix, float angle) {
+void matrixRotateX(float* matrix, float angle)
+{
     float c = cosf(angle);
     float s = sinf(angle);
 
@@ -165,7 +1297,8 @@ static void matrixRotateX(float* matrix, float angle) {
     matrix[10] = c;
 }
 
-static void matrixRotateY(float* matrix, float angle) {
+void matrixRotateY(float* matrix, float angle)
+{
     float c = cosf(angle);
     float s = sinf(angle);
 
@@ -176,7 +1309,20 @@ static void matrixRotateY(float* matrix, float angle) {
     matrix[10] = c;
 }
 
-static void matrixPerspective(float* matrix, float fov, float aspect, float near, float far, GfxBackend backend) {
+void matrixRotateZ(float* matrix, float angle)
+{
+    float c = cosf(angle);
+    float s = sinf(angle);
+
+    matrixIdentity(matrix);
+    matrix[0] = c;
+    matrix[1] = -s;
+    matrix[4] = s;
+    matrix[5] = c;
+}
+
+void matrixPerspective(float* matrix, float fov, float aspect, float near, float far, GfxBackend backend)
+{
     memset(matrix, 0, 16 * sizeof(float));
 
     float f = 1.0f / tanf(fov / 2.0f);
@@ -192,9 +1338,10 @@ static void matrixPerspective(float* matrix, float fov, float aspect, float near
     matrix[14] = (2.0f * far * near) / (near - far);
 }
 
-static void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ,
+void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ,
     float centerX, float centerY, float centerZ,
-    float upX, float upY, float upZ) {
+    float upX, float upY, float upZ)
+{
     const float epsilon = 1e-6f;
 
     // Calculate forward vector
@@ -260,757 +1407,91 @@ static void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ,
     matrix[15] = 1.0f;
 }
 
-// Shader code (WGSL)
-static const char* vertexShaderSource = 
-    "struct Uniforms {\n"
-    "    model: mat4x4<f32>,\n"
-    "    view: mat4x4<f32>,\n"
-    "    projection: mat4x4<f32>,\n"
-    "}\n"
-    "@group(0) @binding(0) var<uniform> uniforms: Uniforms;\n"
-    "\n"
-    "struct VertexInput {\n"
-    "    @location(0) position: vec3<f32>,\n"
-    "    @location(1) color: vec3<f32>,\n"
-    "}\n"
-    "\n"
-    "struct VertexOutput {\n"
-    "    @builtin(position) position: vec4<f32>,\n"
-    "    @location(0) color: vec3<f32>,\n"
-    "}\n"
-    "\n"
-    "@vertex\n"
-    "fn main(input: VertexInput) -> VertexOutput {\n"
-    "    var output: VertexOutput;\n"
-    "    let worldPos = uniforms.model * vec4<f32>(input.position, 1.0);\n"
-    "    let viewPos = uniforms.view * worldPos;\n"
-    "    output.position = uniforms.projection * viewPos;\n"
-    "    output.color = input.color;\n"
-    "    return output;\n"
-    "}\n";
-
-static const char* fragmentShaderSource =
-    "struct FragmentInput {\n"
-    "    @location(0) color: vec3<f32>,\n"
-    "}\n"
-    "\n"
-    "@fragment\n"
-    "fn main(input: FragmentInput) -> @location(0) vec4<f32> {\n"
-    "    return vec4<f32>(input.color, 1.0);\n"
-    "}\n";
-
-// Function declarations
-static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-static bool initWindow(CubeApp* app);
-static bool initializeGraphics(CubeApp* app);
-static bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height);
-static bool createSyncObjects(CubeApp* app);
-static bool createRenderingResources(CubeApp* app);
-static bool createRenderPipeline(CubeApp* app);
-static void cleanupSizeDependentResources(CubeApp* app);
-static void cleanupRenderingResources(CubeApp* app);
-
-static void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
-    CubeApp* app = (CubeApp*)glfwGetWindowUserPointer(window);
-    if (app) {
-        app->windowWidth = (uint32_t)width;
-        app->windowHeight = (uint32_t)height;
+// Helper function to load binary files (SPIR-V shaders)
+static void* loadBinaryFile(const char* filepath, size_t* outSize)
+{
+    FILE* file = fopen(filepath, "rb");
+    if (!file) {
+        fprintf(stderr, "Failed to open file: %s\n", filepath);
+        return NULL;
     }
+
+    // Get file size
+    fseek(file, 0, SEEK_END);
+    long fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    if (fileSize <= 0) {
+        fprintf(stderr, "Invalid file size for: %s\n", filepath);
+        fclose(file);
+        return NULL;
+    }
+
+    // Allocate buffer
+    void* buffer = malloc(fileSize);
+    if (!buffer) {
+        fprintf(stderr, "Failed to allocate memory for file: %s\n", filepath);
+        fclose(file);
+        return NULL;
+    }
+
+    // Read file
+    size_t bytesRead = fread(buffer, 1, fileSize, file);
+    fclose(file);
+
+    if (bytesRead != (size_t)fileSize) {
+        fprintf(stderr, "Failed to read complete file: %s\n", filepath);
+        free(buffer);
+        return NULL;
+    }
+
+    *outSize = fileSize;
+    return buffer;
 }
 
-static bool initWindow(CubeApp* app) {
-    // Initialize GLFW
-    if (!glfwInit()) {
-        fprintf(stderr, "Failed to initialize GLFW\n");
-        return false;
-    }
-    
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    
-    app->window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "WebGPU Cube Example", NULL, NULL);
-    if (!app->window) {
-        fprintf(stderr, "Failed to create window\n");
-        glfwTerminate();
-        return false;
-    }
-    
-    app->windowWidth = WINDOW_WIDTH;
-    app->windowHeight = WINDOW_HEIGHT;
-    
-    glfwSetWindowUserPointer(app->window, app);
-    glfwSetFramebufferSizeCallback(app->window, framebufferSizeCallback);
-    
-    return true;
-}
-
-static bool initializeGraphics(CubeApp* app) {
-    printf("Initializing graphics...\n");
-    
-    // Load backend
-    if (!gfxLoadBackend(GFX_BACKEND_WEBGPU)) {
-        fprintf(stderr, "Failed to load WebGPU backend\n");
-        return false;
-    }
-    
-    // Create instance
-    GfxInstanceDescriptor instanceDesc = {
-        .backend = GFX_BACKEND_WEBGPU,
-    };
-    
-    if (gfxCreateInstance(&instanceDesc, &app->instance) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create instance\n");
-        return false;
-    }
-    
-    // Request adapter
-    GfxAdapterDescriptor adapterDesc = {
-        .powerPreference = GFX_POWER_PREFERENCE_HIGH_PERFORMANCE,
-    };
-    
-    if (gfxInstanceRequestAdapter(app->instance, &adapterDesc, &app->adapter) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to request adapter\n");
-        return false;
-    }
-    
-    printf("Adapter: %s\n", gfxAdapterGetName(app->adapter));
-    
-    // Create device
-    GfxDeviceDescriptor deviceDesc = {
-        .label = "Main Device",
-    };
-    
-    if (gfxAdapterCreateDevice(app->adapter, &deviceDesc, &app->device) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create device\n");
-        return false;
-    }
-    
-    printf("Device created\n");
-    
-    app->queue = gfxDeviceGetQueue(app->device);
-    
-    printf("Queue obtained\n");
-    
-    // Create surface
-#if defined(__EMSCRIPTEN__)
-    // For Emscripten, use the canvas selector
-    GfxPlatformWindowHandle windowHandle = gfxPlatformWindowHandleMakeEmscripten("#canvas");
-#else
-#ifdef _WIN32
-    HWND hwnd = glfwGetWin32Window(app->window);
-    GfxPlatformWindowHandle windowHandle = gfxPlatformWindowHandleMakeWin32(hwnd, GetModuleHandle(NULL));
-#elif defined(__linux__)
-    Display* display = glfwGetX11Display();
-    Window window = glfwGetX11Window(app->window);
-    GfxPlatformWindowHandle windowHandle = gfxPlatformWindowHandleMakeX11((void*)(uintptr_t)window, display);
-#elif defined(__APPLE__)
-    void* nsWindow = glfwGetCocoaWindow(app->window);
-    GfxPlatformWindowHandle windowHandle = gfxPlatformWindowHandleMakeCocoa(nsWindow, NULL);
-#endif
-#endif
-    
-    GfxSurfaceDescriptor surfaceDesc = {
-        .windowHandle = windowHandle,
-    };
-    
-    if (gfxDeviceCreateSurface(app->device, &surfaceDesc, &app->surface) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create surface\n");
-        return false;
-    }
-    
-    printf("Surface created\n");
-    
-    return true;
-}
-
-static bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height) {
-    // Create swapchain
-    GfxSwapchainDescriptor swapchainDesc = {
-        .width = width,
-        .height = height,
-        .format = COLOR_FORMAT,
-        .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT,
-        .presentMode = GFX_PRESENT_MODE_FIFO,
-        .bufferCount = 2,
-    };
-    
-    if (gfxDeviceCreateSwapchain(app->device, app->surface, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create swapchain\n");
-        return false;
-    }
-    
-    printf("Swapchain created\n");
-    
-    // Query the actual swapchain format (may differ from requested format on web)
-    app->swapchainFormat = gfxSwapchainGetFormat(app->swapchain);
-    fprintf(stderr, "[INFO] Requested format: %d, Actual swapchain format: %d\n", COLOR_FORMAT, app->swapchainFormat);
-    
-    // Create depth texture
-    GfxTextureDescriptor depthTextureDesc = {
-        .label = "Depth Texture",
-        .type = GFX_TEXTURE_TYPE_2D,
-        .size = {width, height, 1},
-        .format = DEPTH_FORMAT,
-        .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT,
-        .mipLevelCount = 1,
-        .sampleCount = MSAA_SAMPLE_COUNT,
-        .arrayLayerCount = 1,
-    };
-    
-    if (gfxDeviceCreateTexture(app->device, &depthTextureDesc, &app->depthTexture) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create depth texture\n");
-        return false;
-    }
-    
-    if (gfxTextureCreateView(app->depthTexture, NULL, &app->depthTextureView) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create depth texture view\n");
-        return false;
-    }
-    
-    // Create MSAA color texture (is unused if MSAA_SAMPLE_COUNT == 1)
-    GfxTextureDescriptor msaaColorTextureDesc = {
-        .label = "MSAA Color Buffer",
-        .type = GFX_TEXTURE_TYPE_2D,
-        .size = {width, height, 1},
-        .format = app->swapchainFormat,
-        .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT,
-        .mipLevelCount = 1,
-        .sampleCount = MSAA_SAMPLE_COUNT,
-        .arrayLayerCount = 1,
-    };
-    
-    if (gfxDeviceCreateTexture(app->device, &msaaColorTextureDesc, &app->msaaColorTexture) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create MSAA color texture\n");
-        return false;
-    }
-    
-    // Create MSAA color texture view (is unused if MSAA_SAMPLE_COUNT == 1)
-    GfxTextureViewDescriptor msaaColorViewDesc = {
-        .label = "MSAA Color Buffer View",
-        .viewType = GFX_TEXTURE_VIEW_TYPE_2D,
-        .format = app->swapchainFormat,
-        .baseMipLevel = 0,
-        .mipLevelCount = 1,
-        .baseArrayLayer = 0,
-        .arrayLayerCount = 1
-    };
-    
-    if (gfxTextureCreateView(app->msaaColorTexture, &msaaColorViewDesc, &app->msaaColorTextureView) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create MSAA color texture view\n");
-        return false;
-    }
-    
-    return true;
-}
-
-static bool createSyncObjects(CubeApp* app) {
-    // Create synchronization objects (WebGPU backend provides no-op implementations)
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        char label[64];
-        
-        snprintf(label, sizeof(label), "Image Available Semaphore %d", i);
-        GfxSemaphoreDescriptor semaphoreDesc = { .label = label };
-        if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &app->imageAvailableSemaphores[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create image available semaphore %d\n", i);
-            return false;
-        }
-        
-        snprintf(label, sizeof(label), "Render Finished Semaphore %d", i);
-        semaphoreDesc.label = label;
-        if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &app->renderFinishedSemaphores[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create render finished semaphore %d\n", i);
-            return false;
-        }
-        
-        snprintf(label, sizeof(label), "In Flight Fence %d", i);
-        GfxFenceDescriptor fenceDesc = { .label = label, .signaled = true };
-        if (gfxDeviceCreateFence(app->device, &fenceDesc, &app->inFlightFences[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create in flight fence %d\n", i);
-            return false;
-        }
-        
-        // Create command encoder for this frame
-        snprintf(label, sizeof(label), "Command Encoder Frame %d", i);
-        GfxCommandEncoderDescriptor encoderDesc = { .label = label };
-        if (gfxDeviceCreateCommandEncoder(app->device, &encoderDesc, &app->commandEncoders[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create command encoder %d\n", i);
-            return false;
-        }
-    }
-    
-    app->currentFrame = 0;
-    
-    return true;
-}
-
-static bool createRenderingResources(CubeApp* app) {
-    // Create vertex buffer
-    GfxBufferDescriptor vertexBufferDesc = {
-        .label = "Vertex Buffer",
-        .size = sizeof(vertices),
-        .usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST,
-        .mappedAtCreation = false,
-    };
-    
-    if (gfxDeviceCreateBuffer(app->device, &vertexBufferDesc, &app->vertexBuffer) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create vertex buffer\n");
-        return false;
-    }
-    
-    gfxQueueWriteBuffer(app->queue, app->vertexBuffer, 0, vertices, sizeof(vertices));
-    
-    // Create index buffer
-    GfxBufferDescriptor indexBufferDesc = {
-        .label = "Index Buffer",
-        .size = sizeof(indices),
-        .usage = GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_COPY_DST,
-        .mappedAtCreation = false,
-    };
-    
-    if (gfxDeviceCreateBuffer(app->device, &indexBufferDesc, &app->indexBuffer) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create index buffer\n");
-        return false;
-    }
-    
-    gfxQueueWriteBuffer(app->queue, app->indexBuffer, 0, indices, sizeof(indices));
-    
-    // Create shared uniform buffer with proper alignment for all frames
-    GfxDeviceLimits limits;
-    gfxDeviceGetLimits(app->device, &limits);
-    
-    size_t uniformSize = sizeof(UniformData);
-    app->uniformAlignedSize = gfxAlignUp(uniformSize, limits.minUniformBufferOffsetAlignment);
-    size_t totalBufferSize = app->uniformAlignedSize * MAX_FRAMES_IN_FLIGHT * CUBE_COUNT;
-    
-    GfxBufferDescriptor uniformBufferDesc = {
-        .label = "Shared Uniform Buffer",
-        .size = totalBufferSize,
-        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST,
-        .mappedAtCreation = false,
-    };
-    
-    if (gfxDeviceCreateBuffer(app->device, &uniformBufferDesc, &app->sharedUniformBuffer) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create shared uniform buffer\n");
-        return false;
-    }
-    
-    // Create bind group layout
-    GfxBindGroupLayoutEntry bindGroupLayoutEntry = {
-        .binding = 0,
-        .visibility = GFX_SHADER_STAGE_VERTEX,
-        .type = GFX_BINDING_TYPE_BUFFER,
-        .buffer = {
-            .minBindingSize = sizeof(UniformData),
-            .hasDynamicOffset = false,
-        },
-    };
-    
-    GfxBindGroupLayoutDescriptor bindGroupLayoutDesc = {
-        .label = "Bind Group Layout",
-        .entryCount = 1,
-        .entries = &bindGroupLayoutEntry,
-    };
-    
-    if (gfxDeviceCreateBindGroupLayout(app->device, &bindGroupLayoutDesc, &app->bindGroupLayout) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create bind group layout\n");
-        return false;
-    }
-    
-    // Create per-frame bind groups for each cube
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
-            char label[64];
-            snprintf(label, sizeof(label), "Bind Group Frame %d Cube %d", i, cubeIdx);
-            
-            GfxBindGroupEntry bindGroupEntry = {
-                .binding = 0,
-                .type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER,
-                .resource = {
-                    .buffer = {
-                        .buffer = app->sharedUniformBuffer,
-                        .offset = (i * CUBE_COUNT + cubeIdx) * app->uniformAlignedSize,
-                        .size = sizeof(UniformData),
-                    },
-                },
-            };
-            
-            GfxBindGroupDescriptor bindGroupDesc = {
-                .label = label,
-                .layout = app->bindGroupLayout,
-                .entryCount = 1,
-                .entries = &bindGroupEntry,
-            };
-            
-            if (gfxDeviceCreateBindGroup(app->device, &bindGroupDesc, &app->bindGroups[i][cubeIdx]) != GFX_RESULT_SUCCESS) {
-                fprintf(stderr, "Failed to create bind group %d cube %d\n", i, cubeIdx);
-                return false;
-            }
-        }
-    }
-    
-    // Create shaders
-    GfxShaderDescriptor vertexShaderDesc = {
-        .label = "Vertex Shader",
-        .sourceType = GFX_SHADER_SOURCE_WGSL,
-        .code = vertexShaderSource,
-        .codeSize = strlen(vertexShaderSource),
-    };
-    
-    if (gfxDeviceCreateShader(app->device, &vertexShaderDesc, &app->vertexShader) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create vertex shader\n");
-        return false;
-    }
-    
-    GfxShaderDescriptor fragmentShaderDesc = {
-        .label = "Fragment Shader",
-        .sourceType = GFX_SHADER_SOURCE_WGSL,
-        .code = fragmentShaderSource,
-        .codeSize = strlen(fragmentShaderSource),
-    };
-    
-    if (gfxDeviceCreateShader(app->device, &fragmentShaderDesc, &app->fragmentShader) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create fragment shader\n");
-        return false;
-    }
-    
-    return true;
-}
-
-static bool createRenderPipeline(CubeApp* app) {
-    // Create render pipeline
-    GfxVertexAttribute vertexAttributes[] = {
-        {
-            .format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT,
-            .offset = offsetof(Vertex, position),
-            .shaderLocation = 0,
-        },
-        {
-            .format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT,
-            .offset = offsetof(Vertex, color),
-            .shaderLocation = 1,
-        },
-    };
-    
-    GfxVertexBufferLayout vertexBufferLayout = {
-        .arrayStride = sizeof(Vertex),
-        .stepModeInstance = false,
-        .attributeCount = 2,
-        .attributes = vertexAttributes,
-    };
-    
-    GfxVertexState vertexState = {
-        .module = app->vertexShader,
-        .entryPoint = "main",
-        .bufferCount = 1,
-        .buffers = &vertexBufferLayout,
-    };
-    
-    GfxColorTargetState colorTargetState = {
-        .format = app->swapchainFormat, // Use actual swapchain format
-        .blend = NULL,
-        .writeMask = 0xF, // Write all channels
-    };
-    
-    GfxFragmentState fragmentState = {
-        .module = app->fragmentShader,
-        .entryPoint = "main",
-        .targetCount = 1,
-        .targets = &colorTargetState,
-    };
-    
-    GfxPrimitiveState primitiveState = {
-        .topology = GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-        .stripIndexFormat = NULL,
-        .frontFace = GFX_FRONT_FACE_COUNTER_CLOCKWISE,
-        .cullMode = GFX_CULL_MODE_BACK,
-    };
-    
-    GfxDepthStencilState depthStencilState = {
-        .format = DEPTH_FORMAT,
-        .depthWriteEnabled = true,
-        .depthCompare = GFX_COMPARE_FUNCTION_LESS,
-        .stencilReadMask = 0,
-        .stencilWriteMask = 0,
-    };
-    
-    GfxRenderPipelineDescriptor pipelineDesc = {
-        .label = "Render Pipeline",
-        .vertex = &vertexState,
-        .primitive = &primitiveState,
-        .depthStencil = &depthStencilState,
-        .sampleCount = MSAA_SAMPLE_COUNT,
-        .fragment = &fragmentState,
-        .bindGroupLayoutCount = 1,
-        .bindGroupLayouts = &app->bindGroupLayout,
-    };
-    
-    if (gfxDeviceCreateRenderPipeline(app->device, &pipelineDesc, &app->pipeline) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create render pipeline\n");
-        return false;
-    }
-    
-    printf("Graphics initialized successfully\n");
-    return true;
-}
-
-static void cleanupSizeDependentResources(CubeApp* app) {
-    if (app->msaaColorTextureView) gfxTextureViewDestroy(app->msaaColorTextureView);
-    if (app->msaaColorTexture) gfxTextureDestroy(app->msaaColorTexture);
-    if (app->depthTextureView) gfxTextureViewDestroy(app->depthTextureView);
-    if (app->depthTexture) gfxTextureDestroy(app->depthTexture);
-    if (app->swapchain) gfxSwapchainDestroy(app->swapchain);
-}
-
-static void cleanupRenderingResources(CubeApp* app) {
-    if (app->pipeline) gfxRenderPipelineDestroy(app->pipeline);
-    if (app->fragmentShader) gfxShaderDestroy(app->fragmentShader);
-    if (app->vertexShader) gfxShaderDestroy(app->vertexShader);
-    if (app->bindGroupLayout) gfxBindGroupLayoutDestroy(app->bindGroupLayout);
-    
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
-            if (app->bindGroups[i][cubeIdx]) gfxBindGroupDestroy(app->bindGroups[i][cubeIdx]);
-        }
-    }
-    
-    if (app->sharedUniformBuffer) gfxBufferDestroy(app->sharedUniformBuffer);
-    if (app->indexBuffer) gfxBufferDestroy(app->indexBuffer);
-    if (app->vertexBuffer) gfxBufferDestroy(app->vertexBuffer);
-}
-
-static void updateCube(CubeApp* app, int cubeIndex) {
-    UniformData uniforms = {0}; // Initialize to zero!
-
-    // Create rotation matrices (combine X and Y rotations)
-    // Each cube rotates slightly differently
-    float rotX[16], rotY[16], tempModel[16];
-    matrixRotateX(rotX, (app->rotationAngleX + cubeIndex * 30.0f) * M_PI / 180.0f);
-    matrixRotateY(rotY, (app->rotationAngleY + cubeIndex * 45.0f) * M_PI / 180.0f);
-    matrixMultiply(tempModel, rotY, rotX);
-
-    // Position cubes side by side: left (-3, 0, 0), center (0, 0, 0), right (3, 0, 0)
-    float translation[16];
-    matrixIdentity(translation);
-    translation[12] = (cubeIndex - 1) * 3.0f; // x offset: -3, 0, 3
-
-    // Apply translation after rotation: model = rotation * translation
-    // This rotates in place, then translates to world position
-    matrixMultiply(uniforms.model, tempModel, translation);
-
-    // Create view matrix (camera positioned at 0, 0, 10 looking at origin)
-    matrixLookAt(uniforms.view,
-        0.0f, 0.0f, 10.0f, // eye position - pulled back to see all 3 cubes
-        0.0f, 0.0f, 0.0f, // look at point
-        0.0f, 1.0f, 0.0f); // up vector
-
-    // Create perspective projection matrix
-    float aspect = (float)app->windowWidth / (float)app->windowHeight;
-    matrixPerspective(uniforms.projection,
-        45.0f * M_PI / 180.0f, // 45 degree FOV
-        aspect,
-        0.1f, // near plane
-        100.0f, // far plane
-        GFX_BACKEND_WEBGPU); // Always WebGPU for web
-
-    // Upload uniform data to buffer at aligned offset
-    // Formula: (frame * CUBE_COUNT + cube) * alignedSize
-    size_t offset = (app->currentFrame * CUBE_COUNT + cubeIndex) * app->uniformAlignedSize;
-    gfxQueueWriteBuffer(app->queue, app->sharedUniformBuffer, offset, &uniforms, sizeof(uniforms));
-}
-
-static void update(CubeApp* app, float deltaTime) {
-    // Update rotation angles (both X and Y axes)
-    app->rotationAngleX += 45.0f * deltaTime; // 45 degrees per second around X
-    app->rotationAngleY += 30.0f * deltaTime; // 30 degrees per second around Y
-    if (app->rotationAngleX >= 360.0f) {
-        app->rotationAngleX -= 360.0f;
-    }
-    if (app->rotationAngleY >= 360.0f) {
-        app->rotationAngleY -= 360.0f;
+static void* loadTextFile(const char* filepath, size_t* outSize)
+{
+    FILE* file = fopen(filepath, "r");
+    if (!file) {
+        fprintf(stderr, "Failed to open file: %s\n", filepath);
+        return NULL;
     }
 
-    // Update uniforms for each cube
-    for (int i = 0; i < CUBE_COUNT; ++i) {
-        updateCube(app, i);
-    }
-}
+    // Get file size
+    fseek(file, 0, SEEK_END);
+    long fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
 
-static void renderFrame(CubeApp* app) {
-    // Get current frame resources
-    uint32_t frameIndex = app->currentFrame;
-    GfxCommandEncoder commandEncoder = app->commandEncoders[frameIndex];
-    
-    // Wait for this frame's fence (WebGPU backend provides no-op implementation)
-    gfxFenceWait(app->inFlightFences[frameIndex], UINT64_MAX);
-    gfxFenceReset(app->inFlightFences[frameIndex]);
-    
-    // Get backbuffer
-    uint32_t imageIndex = 0;
-    GfxResult acquireResult = gfxSwapchainAcquireNextImage(app->swapchain, UINT64_MAX, 
-        app->imageAvailableSemaphores[frameIndex], NULL, &imageIndex);
-    if (acquireResult != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to acquire swapchain image\n");
-        return;
+    if (fileSize <= 0) {
+        fprintf(stderr, "Invalid file size for: %s\n", filepath);
+        fclose(file);
+        return NULL;
     }
-    
-    GfxTextureView backbuffer = gfxSwapchainGetImageView(app->swapchain, imageIndex);
-    
-    // Begin command encoder for current frame
-    gfxCommandEncoderBegin(commandEncoder);
-    
-    // Setup render pass with MSAA
-    GfxColorAttachmentTarget colorTargets[2];
-    GfxColorAttachment colorAttachment;
-    
-    if (MSAA_SAMPLE_COUNT == GFX_SAMPLE_COUNT_1) {
-        colorTargets[0] = (GfxColorAttachmentTarget){
-            .view = backbuffer,
-            .ops = {
-                .loadOp = GFX_LOAD_OP_CLEAR,
-                .storeOp = GFX_STORE_OP_STORE,
-                .clearColor = {0.1f, 0.2f, 0.3f, 1.0f},
-            },
-            .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
-        };
-        colorAttachment = (GfxColorAttachment){
-            .target = colorTargets[0],
-            .resolveTarget = NULL
-        };
-    } else {
-        colorTargets[0] = (GfxColorAttachmentTarget){
-            .view = app->msaaColorTextureView,
-            .ops = {
-                .loadOp = GFX_LOAD_OP_CLEAR,
-                .storeOp = GFX_STORE_OP_DONT_CARE,
-                .clearColor = {0.1f, 0.2f, 0.3f, 1.0f},
-            },
-            .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
-        };
-        colorTargets[1] = (GfxColorAttachmentTarget){
-            .view = backbuffer,
-            .ops = {
-                .loadOp = GFX_LOAD_OP_DONT_CARE,
-                .storeOp = GFX_STORE_OP_STORE,
-                .clearColor = {0.1f, 0.2f, 0.3f, 1.0f},
-            },
-            .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
-        };
-        colorAttachment = (GfxColorAttachment){
-            .target = colorTargets[0],
-            .resolveTarget = &colorTargets[1]
-        };
-    }
-    
-    GfxDepthAttachmentOps depthOps = {
-        .loadOp = GFX_LOAD_OP_CLEAR,
-        .storeOp = GFX_STORE_OP_STORE,
-        .clearValue = 1.0f,
-    };
-    
-    GfxDepthStencilAttachment depthStencilAttachment = {
-        .target = {
-            .view = app->depthTextureView,
-            .depthOps = &depthOps,
-            .stencilOps = NULL,
-            .finalLayout = GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT,
-        },
-        .resolveTarget = NULL,
-    };
-    
-    GfxRenderPassDescriptor renderPassDesc = {
-        .label = "Main Render Pass",
-        .colorAttachmentCount = 1,
-        .colorAttachments = &colorAttachment,
-        .depthStencilAttachment = &depthStencilAttachment,
-    };
-    
-    GfxRenderPassEncoder renderPass;
-    if (gfxCommandEncoderBeginRenderPass(commandEncoder, &renderPassDesc, &renderPass) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to begin render pass\n");
-        return;
-    }
-    
-    // Draw
-    gfxRenderPassEncoderSetPipeline(renderPass, app->pipeline);
-    gfxRenderPassEncoderSetVertexBuffer(renderPass, 0, app->vertexBuffer, 0, sizeof(vertices));
-    gfxRenderPassEncoderSetIndexBuffer(renderPass, app->indexBuffer, GFX_INDEX_FORMAT_UINT16, 0, sizeof(indices));
-    
-    GfxViewport viewport = {0.0f, 0.0f, (float)app->windowWidth, (float)app->windowHeight, 0.0f, 1.0f};
-    gfxRenderPassEncoderSetViewport(renderPass, &viewport);
-    
-    GfxScissorRect scissor = {0, 0, app->windowWidth, app->windowHeight};
-    gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
-    
-    // Draw all 3 cubes
-    for (int i = 0; i < CUBE_COUNT; ++i) {
-        gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->bindGroups[frameIndex][i], NULL, 0);
-        gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
-    }
-    
-    gfxRenderPassEncoderEnd(renderPass);
-    gfxRenderPassEncoderDestroy(renderPass);
-    
-    // End command encoder
-    gfxCommandEncoderEnd(commandEncoder);
-    
-    // Submit
-    GfxSubmitInfo submitInfo = {
-        .commandEncoderCount = 1,
-        .commandEncoders = &commandEncoder,
-        .waitSemaphoreCount = 1,
-        .waitSemaphores = &app->imageAvailableSemaphores[frameIndex],
-        .signalSemaphoreCount = 1,
-        .signalSemaphores = &app->renderFinishedSemaphores[frameIndex],
-        .signalFence = app->inFlightFences[frameIndex],
-    };
-    
-    if (gfxQueueSubmit(app->queue, &submitInfo) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to submit queue\n");
-        return;
-    }
-    
-    // Present
-    GfxPresentInfo presentInfo = {
-        .waitSemaphoreCount = 1,
-        .waitSemaphores = &app->renderFinishedSemaphores[frameIndex],
-    };
-    if (gfxSwapchainPresent(app->swapchain, &presentInfo) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to present\n");
-        return;
-    }
-    
-    // Poll device events
-    gfxDevicePoll(app->device);
-    
-    // Advance to next frame
-    app->currentFrame = (app->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-}
 
-static void cleanup(CubeApp* app) {
-    printf("Cleaning up...\n");
-    
-    // Destroy per-frame resources
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        if (app->commandEncoders[i]) gfxCommandEncoderDestroy(app->commandEncoders[i]);
-        if (app->imageAvailableSemaphores[i]) gfxSemaphoreDestroy(app->imageAvailableSemaphores[i]);
-        if (app->renderFinishedSemaphores[i]) gfxSemaphoreDestroy(app->renderFinishedSemaphores[i]);
-        if (app->inFlightFences[i]) gfxFenceDestroy(app->inFlightFences[i]);
+    // Allocate buffer with extra byte for null terminator
+    char* buffer = (char*)malloc(fileSize + 1);
+    if (!buffer) {
+        fprintf(stderr, "Failed to allocate memory for file: %s\n", filepath);
+        fclose(file);
+        return NULL;
     }
-    
-    cleanupRenderingResources(app);
-    cleanupSizeDependentResources(app);
-    
-    if (app->surface) gfxSurfaceDestroy(app->surface);
-    if (app->device) gfxDeviceDestroy(app->device);
-    if (app->adapter) gfxAdapterDestroy(app->adapter);
-    if (app->instance) gfxInstanceDestroy(app->instance);
-    
-    gfxUnloadAllBackends();
-    
-    if (app->window) {
-        glfwDestroyWindow(app->window);
-        glfwTerminate();
+
+    // Read file
+    size_t bytesRead = fread(buffer, 1, fileSize, file);
+    fclose(file);
+
+    if (bytesRead != (size_t)fileSize) {
+        fprintf(stderr, "Failed to read complete file: %s\n", filepath);
+        free(buffer);
+        return NULL;
     }
+
+    // Null-terminate for text files
+    buffer[fileSize] = '\0';
+
+    // Return size including null terminator for shader code
+    *outSize = fileSize + 1;
+    return buffer;
 }
 
 #if defined(__EMSCRIPTEN__)
@@ -1019,7 +1500,8 @@ static CubeApp* g_app = NULL;
 static uint32_t g_previousWidth = 0;
 static uint32_t g_previousHeight = 0;
 
-static void mainLoop(void) {
+static void mainLoop(void)
+{
     if (!g_app || glfwWindowShouldClose(g_app->window)) {
         if (g_app) {
             emscripten_cancel_main_loop();
@@ -1027,14 +1509,14 @@ static void mainLoop(void) {
         }
         return;
     }
-    
+
     glfwPollEvents();
-    
+
     // Handle framebuffer resize
     if (g_previousWidth != g_app->windowWidth || g_previousHeight != g_app->windowHeight) {
         // Wait for all in-flight frames to complete
         gfxDeviceWaitIdle(g_app->device);
-        
+
         // Recreate only size-dependent resources (including swapchain)
         cleanupSizeDependentResources(g_app);
         if (!createSizeDependentResources(g_app, g_app->windowWidth, g_app->windowHeight)) {
@@ -1043,62 +1525,62 @@ static void mainLoop(void) {
             cleanup(g_app);
             return;
         }
-        
+
         g_previousWidth = g_app->windowWidth;
         g_previousHeight = g_app->windowHeight;
-        
+
         printf("Window resized: %dx%d\n", g_app->windowWidth, g_app->windowHeight);
         return; // Skip rendering this frame
     }
-    
+
     // Calculate delta time
     float currentTime = (float)emscripten_get_now() / 1000.0f; // Convert ms to seconds
     float deltaTime = currentTime - g_lastTime;
     g_lastTime = currentTime;
-    
+
     update(g_app, deltaTime);
-    renderFrame(g_app);
+    render(g_app);
 }
 #endif
 
-int main(void) {
-    printf("Starting WebGPU Cube Example\n");
-    
-    CubeApp app = {0};
-    
+int main(void)
+{
+    printf("=== Cube Example with Unified Graphics API (C) ===\n\n");
+
+    CubeApp app = { 0 }; // Initialize all members to NULL/0
+    app.windowWidth = WINDOW_WIDTH;
+    app.windowHeight = WINDOW_HEIGHT;
+
     if (!initWindow(&app)) {
         cleanup(&app);
-        return 1;
+        return -1;
     }
-    
+
     if (!initializeGraphics(&app)) {
         cleanup(&app);
-        return 1;
+        return -1;
     }
-    
-    if (!createSizeDependentResources(&app, WINDOW_WIDTH, WINDOW_HEIGHT)) {
+
+    if (!createSizeDependentResources(&app, app.windowWidth, app.windowHeight)) {
         cleanup(&app);
-        return 1;
+        return -1;
     }
-    
+
     if (!createSyncObjects(&app)) {
         cleanup(&app);
-        return 1;
+        return -1;
     }
-    
+
     if (!createRenderingResources(&app)) {
         cleanup(&app);
-        return 1;
+        return -1;
     }
-    
+
     if (!createRenderPipeline(&app)) {
         cleanup(&app);
-        return 1;
+        return -1;
     }
-    
-    app.rotationAngleX = 0.0f;
-    app.rotationAngleY = 0.0f;
-    
+
 #if defined(__EMSCRIPTEN__)
     g_app = &app;
     g_previousWidth = app.windowWidth;
@@ -1106,42 +1588,50 @@ int main(void) {
     g_lastTime = (float)emscripten_get_now() / 1000.0f;
     emscripten_set_main_loop(mainLoop, 0, 1);
 #else
-    uint32_t previousWidth = app.windowWidth;
-    uint32_t previousHeight = app.windowHeight;
+    printf("Application initialized successfully!\n");
+    printf("Press ESC to exit\n\n");
+
+    uint32_t previousWidth = gfxSwapchainGetWidth(app.swapchain);
+    uint32_t previousHeight = gfxSwapchainGetHeight(app.swapchain);
+
     float lastTime = (float)glfwGetTime();
-    
+
+    // Main loop
     while (!glfwWindowShouldClose(app.window)) {
         glfwPollEvents();
-        
-        // Handle framebuffer resize BEFORE rendering
+
+        // Handle framebuffer resize BEFORE rendering (prevent acquiring image during resize)
         if (previousWidth != app.windowWidth || previousHeight != app.windowHeight) {
             // Wait for all in-flight frames to complete
             gfxDeviceWaitIdle(app.device);
-            
+
             // Recreate only size-dependent resources (including swapchain)
             cleanupSizeDependentResources(&app);
             if (!createSizeDependentResources(&app, app.windowWidth, app.windowHeight)) {
                 fprintf(stderr, "Failed to recreate size-dependent resources after resize\n");
                 break;
             }
-            
+
             previousWidth = app.windowWidth;
             previousHeight = app.windowHeight;
-            
-            printf("Window resized: %dx%d\n", app.windowWidth, app.windowHeight);
+
+            printf("Window resized: %dx%d\n", gfxSwapchainGetWidth(app.swapchain), gfxSwapchainGetHeight(app.swapchain));
             continue; // Skip rendering this frame
         }
-        
+
         float currentTime = (float)glfwGetTime();
-        float deltaTime = currentTime - lastTime;
+        float deltaTime = (float)(currentTime - lastTime);
         lastTime = currentTime;
-        
+
         update(&app, deltaTime);
-        renderFrame(&app);
+        render(&app);
     }
-    
+
+    printf("\nCleaning up resources...\n");
+    // TODO - should we move this output of macro
     cleanup(&app);
 #endif
-    
+
+    printf("Example completed successfully!\n");
     return 0;
 }
