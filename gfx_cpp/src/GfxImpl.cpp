@@ -477,7 +477,7 @@ public:
         }
     }
 
-    void setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset = 0, uint64_t size = 0) override
+    void setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset = 0, uint64_t size = UINT64_MAX) override
     {
         auto impl = std::dynamic_pointer_cast<CBufferImpl>(buffer);
         if (impl) {
@@ -1333,12 +1333,14 @@ public:
                 cEntries[i].type = GFX_BINDING_TYPE_TEXTURE;
                 const auto& texture = std::get<BindGroupLayoutEntry::TextureBinding>(entry.resource);
                 cEntries[i].texture.multisampled = texture.multisampled;
+                cEntries[i].texture.viewDimension = cppTextureViewTypeToCType(texture.viewDimension);
             } else if (entry.resource.index() == 3) {
                 // Storage texture binding
                 cEntries[i].type = GFX_BINDING_TYPE_STORAGE_TEXTURE;
                 const auto& storageTexture = std::get<BindGroupLayoutEntry::StorageTextureBinding>(entry.resource);
                 cEntries[i].storageTexture.format = cppFormatToCFormat(storageTexture.format);
                 cEntries[i].storageTexture.writeOnly = storageTexture.writeOnly;
+                cEntries[i].storageTexture.viewDimension = cppTextureViewTypeToCType(storageTexture.viewDimension);
             }
         }
 

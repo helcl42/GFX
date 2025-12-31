@@ -64,11 +64,12 @@ private:
     bool createRenderResources();
     bool createSyncObjects();
     void cleanupSizeDependentResources();
-    bool recreateSizeDependentResources(uint32_t width, uint32_t height);
+    bool createSizeDependentResources(uint32_t width, uint32_t height);
     void update(float deltaTime);
     void drawFrame();
     PlatformWindowHandle extractNativeHandle();
     std::vector<uint8_t> loadBinaryFile(const char* filepath);
+    std::string loadTextFile(const char* filepath);
 
 private:
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
@@ -185,7 +186,7 @@ bool ComputeApp::initializeGraphics()
         instanceDesc.enableValidation = true;
         instanceDesc.enabledHeadless = false;
         instanceDesc.requiredExtensions = extensions;
-        instanceDesc.backend = Backend::Auto;
+        instanceDesc.backend = Backend::WebGPU;
 
         instance = createInstance(instanceDesc);
         if (!instance) {
@@ -272,16 +273,7 @@ bool ComputeApp::initializeGraphics()
             return false;
         }
 
-        // Create swapchain
-        SwapchainDescriptor swapchainDesc{};
-        swapchainDesc.width = windowWidth;
-        swapchainDesc.height = windowHeight;
-        swapchainDesc.format = COLOR_FORMAT;
-        swapchainDesc.usage = TextureUsage::RenderAttachment;
-        swapchainDesc.presentMode = PresentMode::Fifo;
-        swapchainDesc.bufferCount = MAX_FRAMES_IN_FLIGHT;
-
-        swapchain = device->createSwapchain(surface, swapchainDesc);
+        createSizeDependentResources(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
         if (!swapchain) {
             std::cerr << "Failed to create swapchain" << std::endl;
             return false;
@@ -326,8 +318,17 @@ bool ComputeApp::createComputeResources()
             return false;
         }
 
-        // Load compute shader
-        auto computeShaderCode = loadBinaryFile("generate.comp.spv");
+        // Load compute shader (WGSL for WebGPU, SPIR-V for Vulkan)
+        Backend backend = adapter->getBackend();
+        std::string computeShaderCode;
+
+        if (backend == Backend::WebGPU) {
+            computeShaderCode = loadTextFile("shaders/generate.comp.wgsl");
+        } else {
+            auto spirv = loadBinaryFile("generate.comp.spv");
+            computeShaderCode = std::string(reinterpret_cast<const char*>(spirv.data()), spirv.size());
+        }
+
         if (computeShaderCode.empty()) {
             std::cerr << "Failed to load compute shader" << std::endl;
             return false;
@@ -335,7 +336,7 @@ bool ComputeApp::createComputeResources()
 
         ShaderDescriptor computeShaderDesc{};
         computeShaderDesc.label = "Compute Shader";
-        computeShaderDesc.code = std::string(reinterpret_cast<const char*>(computeShaderCode.data()), computeShaderCode.size());
+        computeShaderDesc.code = computeShaderCode;
         computeShaderDesc.entryPoint = "main";
 
         computeShader = device->createShader(computeShaderDesc);
@@ -366,6 +367,7 @@ bool ComputeApp::createComputeResources()
             .resource = BindGroupLayoutEntry::StorageTextureBinding{
                 .format = TextureFormat::R8G8B8A8Unorm,
                 .writeOnly = true,
+                .viewDimension = TextureViewType::View2D,
             }
         };
 
@@ -470,16 +472,28 @@ bool ComputeApp::createComputeResources()
 bool ComputeApp::createRenderResources()
 {
     try {
-        // Load shaders
-        auto vertexShaderCode = loadBinaryFile("fullscreen.vert.spv");
-        if (vertexShaderCode.empty()) {
-            std::cerr << "Failed to load vertex shader" << std::endl;
+        // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
+        Backend backend = adapter->getBackend();
+        std::string vertexShaderCode, fragmentShaderCode;
+
+        if (backend == Backend::WebGPU) {
+            vertexShaderCode = loadTextFile("shaders/fullscreen.vert.wgsl");
+            fragmentShaderCode = loadTextFile("shaders/postprocess.frag.wgsl");
+        } else {
+            auto vertexSpirv = loadBinaryFile("fullscreen.vert.spv");
+            auto fragmentSpirv = loadBinaryFile("postprocess.frag.spv");
+            vertexShaderCode = std::string(reinterpret_cast<const char*>(vertexSpirv.data()), vertexSpirv.size());
+            fragmentShaderCode = std::string(reinterpret_cast<const char*>(fragmentSpirv.data()), fragmentSpirv.size());
+        }
+
+        if (vertexShaderCode.empty() || fragmentShaderCode.empty()) {
+            std::cerr << "Failed to load shaders" << std::endl;
             return false;
         }
 
         ShaderDescriptor vertexShaderDesc{};
         vertexShaderDesc.label = "Vertex Shader";
-        vertexShaderDesc.code = std::string(reinterpret_cast<const char*>(vertexShaderCode.data()), vertexShaderCode.size());
+        vertexShaderDesc.code = vertexShaderCode;
         vertexShaderDesc.entryPoint = "main";
 
         vertexShader = device->createShader(vertexShaderDesc);
@@ -488,15 +502,9 @@ bool ComputeApp::createRenderResources()
             return false;
         }
 
-        auto fragmentShaderCode = loadBinaryFile("postprocess.frag.spv");
-        if (fragmentShaderCode.empty()) {
-            std::cerr << "Failed to load fragment shader" << std::endl;
-            return false;
-        }
-
         ShaderDescriptor fragmentShaderDesc{};
         fragmentShaderDesc.label = "Fragment Shader";
-        fragmentShaderDesc.code = std::string(reinterpret_cast<const char*>(fragmentShaderCode.data()), fragmentShaderCode.size());
+        fragmentShaderDesc.code = fragmentShaderCode;
         fragmentShaderDesc.entryPoint = "main";
 
         fragmentShader = device->createShader(fragmentShaderDesc);
@@ -547,6 +555,7 @@ bool ComputeApp::createRenderResources()
             .visibility = ShaderStage::Fragment,
             .resource = BindGroupLayoutEntry::TextureBinding{
                 .multisampled = false,
+                .viewDimension = TextureViewType::View2D,
             }
         };
 
@@ -604,7 +613,7 @@ bool ComputeApp::createRenderResources()
         vertexState.buffers = {};
 
         ColorTargetState colorTarget{};
-        colorTarget.format = COLOR_FORMAT;
+        colorTarget.format = swapchain->getFormat();
         colorTarget.writeMask = 0xF;
 
         FragmentState fragmentState{};
@@ -687,7 +696,7 @@ void ComputeApp::cleanupSizeDependentResources()
     swapchain.reset();
 }
 
-bool ComputeApp::recreateSizeDependentResources(uint32_t width, uint32_t height)
+bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 {
     try {
         SwapchainDescriptor swapchainDesc{};
@@ -878,7 +887,7 @@ void ComputeApp::run()
             device->waitIdle();
 
             cleanupSizeDependentResources();
-            if (!recreateSizeDependentResources(windowWidth, windowHeight)) {
+            if (!createSizeDependentResources(windowWidth, windowHeight)) {
                 std::cerr << "Failed to recreate size-dependent resources after resize" << std::endl;
                 break;
             }
@@ -936,7 +945,7 @@ void ComputeApp::cleanup()
     computeTexture.reset();
 
     // Core resources
-    swapchain.reset();
+    cleanupSizeDependentResources();
     surface.reset();
     queue.reset();
     device.reset();
@@ -989,6 +998,36 @@ std::vector<uint8_t> ComputeApp::loadBinaryFile(const char* filepath)
     file.read(reinterpret_cast<char*>(buffer.data()), fileSize);
 
     if (!file) {
+        std::cerr << "Failed to read complete file: " << filepath << std::endl;
+        return {};
+    }
+
+    return buffer;
+}
+
+std::string ComputeApp::loadTextFile(const char* filepath)
+{
+    std::FILE* file = std::fopen(filepath, "r");
+    if (!file) {
+        std::cerr << "Failed to open file: " << filepath << std::endl;
+        return {};
+    }
+
+    std::fseek(file, 0, SEEK_END);
+    long fileSize = std::ftell(file);
+    std::fseek(file, 0, SEEK_SET);
+
+    if (fileSize <= 0) {
+        std::cerr << "Invalid file size for: " << filepath << std::endl;
+        std::fclose(file);
+        return {};
+    }
+
+    std::string buffer(fileSize, '\0');
+    size_t bytesRead = std::fread(buffer.data(), 1, fileSize, file);
+    std::fclose(file);
+
+    if (bytesRead != static_cast<size_t>(fileSize)) {
         std::cerr << "Failed to read complete file: " << filepath << std::endl;
         return {};
     }

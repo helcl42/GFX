@@ -212,7 +212,7 @@ static void* loadTextFile(const char* filepath, size_t* outSize)
 
     // Null-terminate for text files
     buffer[fileSize] = '\0';
-    
+
     // Return size including null terminator for shader code
     *outSize = fileSize + 1;
     return buffer;
@@ -740,7 +740,7 @@ static bool createRenderResources(ComputeApp* app)
     };
 
     GfxColorTargetState colorTarget = {
-        .format = COLOR_FORMAT,
+        .format = gfxSwapchainGetFormat(app->swapchain),
         .writeMask = 0xF
     };
 
@@ -920,7 +920,7 @@ static void drawFrame(ComputeApp* app)
         .ops = {
             .loadOp = GFX_LOAD_OP_CLEAR,
             .storeOp = GFX_STORE_OP_STORE,
-            .clearColor = { 0.0f, 0.0f, 0.0f, 1.0f }
+            .clearColor = { 0.0f, 0.0f, 0.0f, 1.0f },
         },
         .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
     };

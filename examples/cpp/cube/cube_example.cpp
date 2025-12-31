@@ -72,10 +72,11 @@ private:
     void render();
     PlatformWindowHandle extractNativeHandle();
     std::vector<uint8_t> loadBinaryFile(const char* filepath);
+    std::string loadTextFile(const char* filepath);
 
     // Matrix math utilities
     void matrixIdentity(std::array<std::array<float, 4>, 4>& matrix);
-    void matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fovy, float aspect, float nearPlane, float farPlane);
+    void matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fovy, float aspect, float nearPlane, float farPlane, Backend backend);
     void matrixLookAt(std::array<std::array<float, 4>, 4>& matrix,
         float eyeX, float eyeY, float eyeZ,
         float centerX, float centerY, float centerZ,
@@ -356,7 +357,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         msaaColorTextureDesc.arrayLayerCount = 1;
         msaaColorTextureDesc.mipLevelCount = 1;
         msaaColorTextureDesc.sampleCount = MSAA_SAMPLE_COUNT;
-        msaaColorTextureDesc.format = COLOR_FORMAT;
+        msaaColorTextureDesc.format = swapchain->getFormat();
         msaaColorTextureDesc.usage = TextureUsage::RenderAttachment;
 
         msaaColorTexture = device->createTexture(msaaColorTextureDesc);
@@ -369,7 +370,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         TextureViewDescriptor msaaColorViewDesc{};
         msaaColorViewDesc.label = "MSAA Color Buffer View";
         msaaColorViewDesc.viewType = TextureViewType::View2D;
-        msaaColorViewDesc.format = COLOR_FORMAT;
+        msaaColorViewDesc.format = swapchain->getFormat();
         msaaColorViewDesc.baseMipLevel = 0;
         msaaColorViewDesc.mipLevelCount = 1;
         msaaColorViewDesc.baseArrayLayer = 0;
@@ -589,20 +590,36 @@ bool CubeApp::createRenderingResources()
             }
         }
 
-        // Load SPIR-V shaders
-        auto vertexShaderCode = loadBinaryFile("cube.vert.spv");
-        auto fragmentShaderCode = loadBinaryFile("cube.frag.spv");
+        // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
+        Backend backend = adapter->getBackend();
+        std::string vertexShaderCode;
+        std::string fragmentShaderCode;
 
-        if (vertexShaderCode.empty() || fragmentShaderCode.empty()) {
-            std::cerr << "Failed to load SPIR-V shader files" << std::endl;
-            return false;
+        if (backend == Backend::WebGPU) {
+            // Load WGSL shaders for WebGPU
+            vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl");
+            fragmentShaderCode = loadTextFile("shaders/cube.frag.wgsl");
+            if (vertexShaderCode.empty() || fragmentShaderCode.empty()) {
+                std::cerr << "Failed to load WGSL shader files" << std::endl;
+                return false;
+            }
+        } else {
+            // Load SPIR-V shaders for Vulkan
+            auto vertexSpirv = loadBinaryFile("cube.vert.spv");
+            auto fragmentSpirv = loadBinaryFile("cube.frag.spv");
+            if (vertexSpirv.empty() || fragmentSpirv.empty()) {
+                std::cerr << "Failed to load SPIR-V shader files" << std::endl;
+                return false;
+            }
+            vertexShaderCode = std::string(reinterpret_cast<const char*>(vertexSpirv.data()), vertexSpirv.size());
+            fragmentShaderCode = std::string(reinterpret_cast<const char*>(fragmentSpirv.data()), fragmentSpirv.size());
         }
 
-        // Create vertex shader with SPIR-V binary
+        // Create vertex shader
         ShaderDescriptor vertexShaderDesc{};
         vertexShaderDesc.label = "Cube Vertex Shader";
-        vertexShaderDesc.code = std::string(reinterpret_cast<const char*>(vertexShaderCode.data()), vertexShaderCode.size());
-        vertexShaderDesc.entryPoint = "main"; // SPIR-V uses "main" as entry point
+        vertexShaderDesc.code = vertexShaderCode;
+        vertexShaderDesc.entryPoint = "main";
 
         vertexShader = device->createShader(vertexShaderDesc);
         if (!vertexShader) {
@@ -610,11 +627,11 @@ bool CubeApp::createRenderingResources()
             return false;
         }
 
-        // Create fragment shader with SPIR-V binary
+        // Create fragment shader
         ShaderDescriptor fragmentShaderDesc{};
         fragmentShaderDesc.label = "Cube Fragment Shader";
-        fragmentShaderDesc.code = std::string(reinterpret_cast<const char*>(fragmentShaderCode.data()), fragmentShaderCode.size());
-        fragmentShaderDesc.entryPoint = "main"; // SPIR-V uses "main" as entry point
+        fragmentShaderDesc.code = fragmentShaderCode;
+        fragmentShaderDesc.entryPoint = "main";
 
         fragmentShader = device->createShader(fragmentShaderDesc);
         if (!fragmentShader) {
@@ -727,7 +744,7 @@ void CubeApp::updateCube(int cubeIndex)
 
     // Create projection matrix
     float aspect = (float)swapchain->getWidth() / (float)swapchain->getHeight();
-    matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f);
+    matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f, adapter->getBackend());
 
     // Upload uniform data to buffer at aligned offset
     // Formula: (frame * CUBE_COUNT + cube) * alignedSize
@@ -815,7 +832,7 @@ void CubeApp::render()
             colorTargets[0].ops.storeOp = StoreOp::Store;
             colorTargets[0].ops.clearColor = clearColor;
             colorTargets[0].finalLayout = TextureLayout::PresentSrc;
-            
+
             colorAttachment.target = colorTargets[0];
             colorAttachment.resolveTarget = nullptr;
         } else {
@@ -825,17 +842,17 @@ void CubeApp::render()
             colorTargets[0].ops.storeOp = StoreOp::DontCare; // MSAA buffer doesn't need to be stored
             colorTargets[0].ops.clearColor = clearColor;
             colorTargets[0].finalLayout = TextureLayout::ColorAttachment;
-            
+
             colorTargets[1].view = backbuffer;
             colorTargets[1].ops.loadOp = LoadOp::DontCare; // Don't care about resolve target before resolve
             colorTargets[1].ops.storeOp = StoreOp::Store; // Store the resolved result
             colorTargets[1].ops.clearColor = clearColor;
             colorTargets[1].finalLayout = TextureLayout::PresentSrc;
-            
+
             colorAttachment.target = colorTargets[0];
             colorAttachment.resolveTarget = &colorTargets[1];
         }
-        
+
         renderPassDesc.colorAttachments = { colorAttachment };
         renderPassDesc.depthStencilAttachment = &depthAttachment;
 
@@ -1044,7 +1061,7 @@ void CubeApp::matrixIdentity(std::array<std::array<float, 4>, 4>& matrix)
         { { 0.0f, 0.0f, 0.0f, 1.0f } } } };
 }
 
-void CubeApp::matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fovy, float aspect, float nearPlane, float farPlane)
+void CubeApp::matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fovy, float aspect, float nearPlane, float farPlane, Backend backend)
 {
     matrix = { { { { 0.0f, 0.0f, 0.0f, 0.0f } },
         { { 0.0f, 0.0f, 0.0f, 0.0f } },
@@ -1053,7 +1070,11 @@ void CubeApp::matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, flo
 
     float f = 1.0f / std::tan(fovy / 2.0f);
     matrix[0][0] = f / aspect;
-    matrix[1][1] = f;
+    if (backend == Backend::Vulkan) {
+        matrix[1][1] = -f;
+    } else {
+        matrix[1][1] = f;
+    }
     matrix[2][2] = (farPlane + nearPlane) / (nearPlane - farPlane);
     matrix[2][3] = -1.0f;
     matrix[3][2] = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
@@ -1182,6 +1203,38 @@ std::vector<uint8_t> CubeApp::loadBinaryFile(const char* filepath)
 
     // Read file into vector
     std::vector<uint8_t> buffer(fileSize);
+    size_t bytesRead = std::fread(buffer.data(), 1, fileSize, file);
+    std::fclose(file);
+
+    if (bytesRead != static_cast<size_t>(fileSize)) {
+        std::cerr << "Failed to read complete file: " << filepath << std::endl;
+        return {};
+    }
+
+    return buffer;
+}
+
+std::string CubeApp::loadTextFile(const char* filepath)
+{
+    std::FILE* file = std::fopen(filepath, "r");
+    if (!file) {
+        std::cerr << "Failed to open file: " << filepath << std::endl;
+        return {};
+    }
+
+    // Get file size
+    std::fseek(file, 0, SEEK_END);
+    long fileSize = std::ftell(file);
+    std::fseek(file, 0, SEEK_SET);
+
+    if (fileSize <= 0) {
+        std::cerr << "Invalid file size for: " << filepath << std::endl;
+        std::fclose(file);
+        return {};
+    }
+
+    // Read file into string
+    std::string buffer(fileSize, '\0');
     size_t bytesRead = std::fread(buffer.data(), 1, fileSize, file);
     std::fclose(file);
 

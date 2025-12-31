@@ -681,11 +681,13 @@ struct BindGroupLayoutEntry {
 
     struct TextureBinding {
         bool multisampled = false;
+        TextureViewType viewDimension = TextureViewType::View2D;
     };
 
     struct StorageTextureBinding {
         TextureFormat format = TextureFormat::Undefined;
         bool writeOnly = true;
+        TextureViewType viewDimension = TextureViewType::View2D;
     };
 
     std::variant<BufferBinding, SamplerBinding, TextureBinding, StorageTextureBinding> resource;
@@ -996,7 +998,7 @@ public:
     virtual void setPipeline(std::shared_ptr<RenderPipeline> pipeline) = 0;
     virtual void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets = nullptr, uint32_t dynamicOffsetCount = 0) = 0;
     virtual void setVertexBuffer(uint32_t slot, std::shared_ptr<Buffer> buffer, uint64_t offset = 0, uint64_t size = 0) = 0;
-    virtual void setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset = 0, uint64_t size = 0) = 0;
+    virtual void setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset = 0, uint64_t size = UINT64_MAX) = 0;
     virtual void setViewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f) = 0;
     virtual void setScissorRect(int32_t x, int32_t y, uint32_t width, uint32_t height) = 0;
 

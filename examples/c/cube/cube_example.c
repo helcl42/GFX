@@ -343,6 +343,10 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
         return false;
     }
 
+    // Query the actual swapchain format (may differ from requested format on web)
+    GfxTextureFormat swapchainFormat = gfxSwapchainGetFormat(app->swapchain);
+    fprintf(stderr, "[INFO] Requested format: %d, Actual swapchain format: %d\n", COLOR_FORMAT, swapchainFormat);
+
     // Create depth texture (MSAA must match color attachment)
     GfxTextureDescriptor depthTextureDesc = {
         .label = "Depth Buffer",
@@ -390,7 +394,7 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = MSAA_SAMPLE_COUNT,
-        .format = COLOR_FORMAT,
+        .format = gfxSwapchainGetFormat(app->swapchain),
         .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT
     };
 
@@ -403,7 +407,7 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
     GfxTextureViewDescriptor msaaColorViewDesc = {
         .label = "MSAA Color Buffer View",
         .viewType = GFX_TEXTURE_VIEW_TYPE_2D,
-        .format = COLOR_FORMAT,
+        .format = gfxSwapchainGetFormat(app->swapchain),
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -768,8 +772,9 @@ bool createRenderPipeline(CubeApp* app)
     // Color target state
     // Note: Always 1 target even with MSAA - resolve is handled by render pass, not fragment shader
     // layout(location = 0) out vec4 outColor;
+    // Use actual swapchain format (may differ from requested format on web)
     GfxColorTargetState colorTarget = {
-        .format = COLOR_FORMAT,
+        .format = gfxSwapchainGetFormat(app->swapchain),
         .blend = NULL,
         .writeMask = 0xF // Write all channels
     };
@@ -915,16 +920,6 @@ void render(CubeApp* app)
         return;
     }
 
-    // // For WebGPU: Destroy old encoder and create a new one each frame
-    // // (WebGPU encoders cannot be reused after finishing)
-    // if (app->commandEncoders[app->currentFrame]) {
-    //     gfxCommandEncoderDestroy(app->commandEncoders[app->currentFrame]);
-    // }
-    // if (gfxDeviceCreateCommandEncoder(app->device, NULL, &app->commandEncoders[app->currentFrame]) != GFX_RESULT_SUCCESS) {
-    //     fprintf(stderr, "Failed to create command encoder\n");
-    //     return;
-    // }
-
     GfxCommandEncoder encoder = app->commandEncoders[app->currentFrame];
     gfxCommandEncoderBegin(encoder);
 
@@ -942,7 +937,7 @@ void render(CubeApp* app)
             .ops = {
                 .loadOp = GFX_LOAD_OP_CLEAR,
                 .storeOp = GFX_STORE_OP_STORE,
-                .clearColor = clearColor
+                .clearColor = clearColor,
             },
             .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
         };
@@ -957,7 +952,7 @@ void render(CubeApp* app)
             .ops = {
                 .loadOp = GFX_LOAD_OP_CLEAR,
                 .storeOp = GFX_STORE_OP_DONT_CARE, // MSAA buffer doesn't need to be stored
-                .clearColor = clearColor
+                .clearColor = clearColor,
             },
             .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
         };
@@ -966,7 +961,7 @@ void render(CubeApp* app)
             .ops = {
                 .loadOp = GFX_LOAD_OP_DONT_CARE, // Don't care about resolve target before resolve
                 .storeOp = GFX_STORE_OP_STORE, // Store the resolved result
-                .clearColor = clearColor
+                .clearColor = clearColor,
             },
             .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
         };
@@ -982,7 +977,7 @@ void render(CubeApp* app)
         .storeOp = GFX_STORE_OP_DONT_CARE, // Depth buffer contents not needed after render
         .clearValue = 1.0f
     };
-    
+
     GfxDepthStencilAttachmentTarget depthTarget = {
         .view = app->depthTextureView,
         .depthOps = &depthOps,
@@ -991,7 +986,7 @@ void render(CubeApp* app)
     };
 
     GfxDepthStencilAttachment depthAttachment = {
-            .target = depthTarget,
+        .target = depthTarget,
     };
 
     GfxRenderPassDescriptor renderPassDesc = {
