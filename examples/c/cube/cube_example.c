@@ -3,6 +3,10 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#if defined(__EMSCRIPTEN__)
+#include <emscripten/emscripten.h>
+#include <emscripten/html5.h>
+#else
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
@@ -11,6 +15,7 @@
 #define GLFW_EXPOSE_NATIVE_COCOA
 #endif
 #include <GLFW/glfw3native.h>
+#endif
 
 #include <math.h>
 #include <stdbool.h>
@@ -30,7 +35,13 @@
 #define MSAA_SAMPLE_COUNT GFX_SAMPLE_COUNT_4
 #define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
 #define DEPTH_FORMAT GFX_TEXTURE_FORMAT_DEPTH32_FLOAT
+
+#if defined(__EMSCRIPTEN__)
 #define GFX_BACKEND_API GFX_BACKEND_WEBGPU
+#else
+// here we can choose between VULKAN, WEBGPU
+#define GFX_BACKEND_API GFX_BACKEND_VULKAN
+#endif
 
 // Debug callback function
 static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData)
@@ -199,6 +210,9 @@ bool initWindow(CubeApp* app)
         return false;
     }
 
+    app->windowWidth = WINDOW_WIDTH;
+    app->windowHeight = WINDOW_HEIGHT;
+
     glfwSetWindowUserPointer(app->window, app);
     glfwSetFramebufferSizeCallback(app->window, framebufferSizeCallback);
     glfwSetKeyCallback(app->window, keyCallback);
@@ -209,7 +223,11 @@ bool initWindow(CubeApp* app)
 GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
 {
     GfxPlatformWindowHandle handle = { 0 };
+#if defined(__EMSCRIPTEN__)
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_EMSCRIPTEN;
+    handle.emscripten.canvasSelector = "#canvas";
 
+#else
 #ifdef _WIN32
     handle.hwnd = glfwGetWin32Window(window);
     handle.hinstance = GetModuleHandle(NULL);
@@ -224,6 +242,7 @@ GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
     handle.nsWindow = glfwGetCocoaWindow(window);
     // Metal layer will be created automatically by the graphics API
     handle.metalLayer = NULL;
+#endif
 #endif
 
     return handle;
@@ -240,6 +259,18 @@ bool initializeGraphics(CubeApp* app)
     }
     printf("Graphics backend loaded successfully!\n");
 
+#if defined(__EMSCRIPTEN__)
+    // Create graphics instance
+    GfxInstanceDescriptor instanceDesc = {
+        .backend = GFX_BACKEND_API,
+        .enableValidation = true,
+        .enabledHeadless = false,
+        .applicationName = "Cube Example (C)",
+        .applicationVersion = 1,
+        .requiredExtensions = NULL,
+        .requiredExtensionCount = 0
+    };
+#else
     // Get required Vulkan extensions from GLFW
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -259,6 +290,7 @@ bool initializeGraphics(CubeApp* app)
         .requiredExtensions = glfwExtensions,
         .requiredExtensionCount = glfwExtensionCount
     };
+#endif
 
     if (gfxCreateInstance(&instanceDesc, &app->instance) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create graphics instance\n");
@@ -677,6 +709,73 @@ bool createRenderingResources(CubeApp* app)
         }
     }
 
+#if defined(__EMSCRIPTEN__)
+    // Shader code (WGSL)
+    static const char* vertexShaderSource = "struct Uniforms {\n"
+                                            "    model: mat4x4<f32>,\n"
+                                            "    view: mat4x4<f32>,\n"
+                                            "    projection: mat4x4<f32>,\n"
+                                            "}\n"
+                                            "@group(0) @binding(0) var<uniform> uniforms: Uniforms;\n"
+                                            "\n"
+                                            "struct VertexInput {\n"
+                                            "    @location(0) position: vec3<f32>,\n"
+                                            "    @location(1) color: vec3<f32>,\n"
+                                            "}\n"
+                                            "\n"
+                                            "struct VertexOutput {\n"
+                                            "    @builtin(position) position: vec4<f32>,\n"
+                                            "    @location(0) color: vec3<f32>,\n"
+                                            "}\n"
+                                            "\n"
+                                            "@vertex\n"
+                                            "fn main(input: VertexInput) -> VertexOutput {\n"
+                                            "    var output: VertexOutput;\n"
+                                            "    let worldPos = uniforms.model * vec4<f32>(input.position, 1.0);\n"
+                                            "    let viewPos = uniforms.view * worldPos;\n"
+                                            "    output.position = uniforms.projection * viewPos;\n"
+                                            "    output.color = input.color;\n"
+                                            "    return output;\n"
+                                            "}\n";
+
+    static const char* fragmentShaderSource = "struct FragmentInput {\n"
+                                              "    @location(0) color: vec3<f32>,\n"
+                                              "}\n"
+                                              "\n"
+                                              "@fragment\n"
+                                              "fn main(input: FragmentInput) -> @location(0) vec4<f32> {\n"
+                                              "    return vec4<f32>(input.color, 1.0);\n"
+                                              "}\n";
+
+    // Create shaders from source strings (WGSL)
+    GfxShaderDescriptor vertexShaderDesc = {
+        .label = "Cube Vertex Shader",
+        .sourceType = GFX_SHADER_SOURCE_WGSL,
+        .code = (const uint8_t*)vertexShaderSource,
+        .codeSize = strlen(vertexShaderSource),
+        .entryPoint = "main"
+    };
+
+    if (gfxDeviceCreateShader(app->device, &vertexShaderDesc, &app->vertexShader) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create vertex shader\n");
+        return false;
+    }
+
+    GfxShaderDescriptor fragmentShaderDesc = {
+        .label = "Cube Fragment Shader",
+        .sourceType = GFX_SHADER_SOURCE_WGSL,
+        .code = (const uint8_t*)fragmentShaderSource,
+        .codeSize = strlen(fragmentShaderSource),
+        .entryPoint = "main"
+    };
+
+    if (gfxDeviceCreateShader(app->device, &fragmentShaderDesc, &app->fragmentShader) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create fragment shader\n");
+        return false;
+    }
+
+#else
+
     // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
     size_t vertexShaderSize, fragmentShaderSize;
     void* vertexShaderCode = NULL;
@@ -738,6 +837,8 @@ bool createRenderingResources(CubeApp* app)
 
     free(vertexShaderCode);
     free(fragmentShaderCode);
+
+#endif
 
     // Initialize animation state
     app->rotationAngleX = 0.0f;
@@ -1393,7 +1494,56 @@ static void* loadTextFile(const char* filepath, size_t* outSize)
     return buffer;
 }
 
-int main()
+#if defined(__EMSCRIPTEN__)
+static float g_lastTime = 0.0f;
+static CubeApp* g_app = NULL;
+static uint32_t g_previousWidth = 0;
+static uint32_t g_previousHeight = 0;
+
+static void mainLoop(void)
+{
+    if (!g_app || glfwWindowShouldClose(g_app->window)) {
+        if (g_app) {
+            emscripten_cancel_main_loop();
+            cleanup(g_app);
+        }
+        return;
+    }
+
+    glfwPollEvents();
+
+    // Handle framebuffer resize
+    if (g_previousWidth != g_app->windowWidth || g_previousHeight != g_app->windowHeight) {
+        // Wait for all in-flight frames to complete
+        gfxDeviceWaitIdle(g_app->device);
+
+        // Recreate only size-dependent resources (including swapchain)
+        cleanupSizeDependentResources(g_app);
+        if (!createSizeDependentResources(g_app, g_app->windowWidth, g_app->windowHeight)) {
+            fprintf(stderr, "Failed to recreate size-dependent resources after resize\n");
+            emscripten_cancel_main_loop();
+            cleanup(g_app);
+            return;
+        }
+
+        g_previousWidth = g_app->windowWidth;
+        g_previousHeight = g_app->windowHeight;
+
+        printf("Window resized: %dx%d\n", g_app->windowWidth, g_app->windowHeight);
+        return; // Skip rendering this frame
+    }
+
+    // Calculate delta time
+    float currentTime = (float)emscripten_get_now() / 1000.0f; // Convert ms to seconds
+    float deltaTime = currentTime - g_lastTime;
+    g_lastTime = currentTime;
+
+    update(g_app, deltaTime);
+    render(g_app);
+}
+#endif
+
+int main(void)
 {
     printf("=== Cube Example with Unified Graphics API (C) ===\n\n");
 
@@ -1431,6 +1581,13 @@ int main()
         return -1;
     }
 
+#if defined(__EMSCRIPTEN__)
+    g_app = &app;
+    g_previousWidth = app.windowWidth;
+    g_previousHeight = app.windowHeight;
+    g_lastTime = (float)emscripten_get_now() / 1000.0f;
+    emscripten_set_main_loop(mainLoop, 0, 1);
+#else
     printf("Application initialized successfully!\n");
     printf("Press ESC to exit\n\n");
 
@@ -1471,7 +1628,9 @@ int main()
     }
 
     printf("\nCleaning up resources...\n");
+    // TODO - should we move this output of macro
     cleanup(&app);
+#endif
 
     printf("Example completed successfully!\n");
     return 0;
