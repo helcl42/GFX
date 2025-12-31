@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GfxWrapper - Cube Example</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            color: #ffffff;
+        }
+        
+        h1 {
+            margin: 20px 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        #canvas {
+            border: 2px solid #444;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        #output {
+            width: 800px;
+            max-width: 90vw;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .info {
+            color: #888;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .controls label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        
+        .controls input[type="checkbox"] {
+            cursor: pointer;
+        }
+        
+        .controls button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .controls button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>GfxWrapper WebGPU Cube Example</h1>
+    
+    <div class="controls">
+        <label>
+            <input type="checkbox" id="resize">
+            Resize canvas
+        </label>
+        <label>
+            <input type="checkbox" id="pointerLock" checked>
+            Lock/hide mouse pointer
+        </label>
+        <button onclick="Module.requestFullscreen(document.getElementById('pointerLock').checked, 
+                                                   document.getElementById('resize').checked)">
+            Fullscreen
+        </button>
+    </div>
+    
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <div class="info">WebGPU cube rendering with Emscripten</div>
+    <div id="output"></div>
+    
+    <script type="text/javascript">
+        // Configure Emscripten Module before it loads
+        var Module = {
+            canvas: (function() {
+                var canvas = document.getElementById('canvas');
+                // As a default initial behavior, pop up an alert when webgl context is lost.
+                canvas.addEventListener("webglcontextlost", function(e) { 
+                    alert('WebGL context lost. You will need to reload the page.'); 
+                    e.preventDefault(); 
+                }, false);
+                return canvas;
+            })(),
+            print: function(text) {
+                console.log(text);
+                var output = document.getElementById('output');
+                output.innerHTML += text + '\n';
+                output.scrollTop = output.scrollHeight; // scroll to bottom
+            },
+            printErr: function(text) {
+                console.error(text);
+                var output = document.getElementById('output');
+                output.innerHTML += '<span style="color: #ff6b6b;">' + text + '</span>\n';
+                output.scrollTop = output.scrollHeight;
+            },
+            setStatus: function(text) {
+                if (text) {
+                    console.log('Status: ' + text);
+                }
+            }
+        };
+        
+        // Pointer lock functionality
+        var canvas = document.getElementById('canvas');
+        var pointerLockCheckbox = document.getElementById('pointerLock');
+        
+        // Handle pointer lock checkbox changes
+        pointerLockCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                canvas.requestPointerLock = canvas.requestPointerLock ||
+                                          canvas.mozRequestPointerLock ||
+                                          canvas.webkitRequestPointerLock;
+                canvas.requestPointerLock();
+            } else {
+                document.exitPointerLock = document.exitPointerLock ||
+                                          document.mozExitPointerLock ||
+                                          document.webkitExitPointerLock;
+                document.exitPointerLock();
+            }
+        });
+        
+        // Update checkbox state when pointer lock changes
+        document.addEventListener('pointerlockchange', updatePointerLockState, false);
+        document.addEventListener('mozpointerlockchange', updatePointerLockState, false);
+        document.addEventListener('webkitpointerlockchange', updatePointerLockState, false);
+        
+        function updatePointerLockState() {
+            var locked = document.pointerLockElement === canvas ||
+                        document.mozPointerLockElement === canvas ||
+                        document.webkitPointerLockElement === canvas;
+            pointerLockCheckbox.checked = locked;
+        }
+        
+        // Auto-lock pointer when canvas is clicked (optional)
+        canvas.addEventListener('click', function() {
+            if (pointerLockCheckbox.checked && 
+                document.pointerLockElement !== canvas &&
+                document.mozPointerLockElement !== canvas &&
+                document.webkitPointerLockElement !== canvas) {
+                canvas.requestPointerLock = canvas.requestPointerLock ||
+                                          canvas.mozRequestPointerLock ||
+                                          canvas.webkitRequestPointerLock;
+                canvas.requestPointerLock();
+            }
+        });
+    </script>
+    
+    {{{ SCRIPT }}}
+</body>
+</html>
