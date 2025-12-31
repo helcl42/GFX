@@ -741,7 +741,7 @@ static bool createRenderResources(ComputeApp* app)
 
     GfxColorTargetState colorTarget = {
         .format = gfxSwapchainGetFormat(app->swapchain),
-        .writeMask = 0xF
+        .writeMask = GFX_COLOR_WRITE_MASK_ALL
     };
 
     GfxFragmentState fragmentState = {

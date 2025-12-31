@@ -663,10 +663,20 @@ typedef struct {
     GfxBlendComponent alpha;
 } GfxBlendState;
 
+// Color write mask flags (can be combined with bitwise OR)
+typedef enum {
+    GFX_COLOR_WRITE_MASK_NONE  = 0x0,
+    GFX_COLOR_WRITE_MASK_RED   = 0x1,
+    GFX_COLOR_WRITE_MASK_GREEN = 0x2,
+    GFX_COLOR_WRITE_MASK_BLUE  = 0x4,
+    GFX_COLOR_WRITE_MASK_ALPHA = 0x8,
+    GFX_COLOR_WRITE_MASK_ALL   = 0xF  // R | G | B | A
+} GfxColorWriteMask;
+
 typedef struct {
     GfxTextureFormat format;
     GfxBlendState* blend; // NULL if not used
-    uint32_t writeMask;
+    uint32_t writeMask;   // Combination of GfxColorWriteMask flags
 } GfxColorTargetState;
 
 typedef struct {

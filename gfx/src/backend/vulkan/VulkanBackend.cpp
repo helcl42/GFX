@@ -1694,14 +1694,54 @@ public:
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisampling.rasterizationSamples = vkSampleCount;
 
-        // Color blending
-        VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-        colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        // Color blending - process all color targets
+        std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+        if (descriptor->fragment && descriptor->fragment->targetCount > 0) {
+            colorBlendAttachments.reserve(descriptor->fragment->targetCount);
+            
+            for (uint32_t i = 0; i < descriptor->fragment->targetCount; ++i) {
+                const auto& target = descriptor->fragment->targets[i];
+                VkPipelineColorBlendAttachmentState blendAttachment{};
+                
+                // Convert GfxColorWriteMask to VkColorComponentFlags
+                blendAttachment.colorWriteMask = 0;
+                if (target.writeMask & 0x1) blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT;
+                if (target.writeMask & 0x2) blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_G_BIT;
+                if (target.writeMask & 0x4) blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_B_BIT;
+                if (target.writeMask & 0x8) blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
+                
+                // Configure blend state if provided
+                if (target.blend) {
+                    blendAttachment.blendEnable = VK_TRUE;
+                    
+                    // Color blend
+                    blendAttachment.srcColorBlendFactor = static_cast<VkBlendFactor>(target.blend->color.srcFactor);
+                    blendAttachment.dstColorBlendFactor = static_cast<VkBlendFactor>(target.blend->color.dstFactor);
+                    blendAttachment.colorBlendOp = static_cast<VkBlendOp>(target.blend->color.operation);
+                    
+                    // Alpha blend
+                    blendAttachment.srcAlphaBlendFactor = static_cast<VkBlendFactor>(target.blend->alpha.srcFactor);
+                    blendAttachment.dstAlphaBlendFactor = static_cast<VkBlendFactor>(target.blend->alpha.dstFactor);
+                    blendAttachment.alphaBlendOp = static_cast<VkBlendOp>(target.blend->alpha.operation);
+                } else {
+                    blendAttachment.blendEnable = VK_FALSE;
+                }
+                
+                colorBlendAttachments.push_back(blendAttachment);
+            }
+        } else {
+            // Fallback: single target with all channels enabled
+            VkPipelineColorBlendAttachmentState blendAttachment{};
+            blendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | 
+                                            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            blendAttachment.blendEnable = VK_FALSE;
+            colorBlendAttachments.push_back(blendAttachment);
+        }
 
         VkPipelineColorBlendStateCreateInfo colorBlending{};
         colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlending.attachmentCount = 1;
-        colorBlending.pAttachments = &colorBlendAttachment;
+        colorBlending.attachmentCount = static_cast<uint32_t>(colorBlendAttachments.size());
+        colorBlending.pAttachments = colorBlendAttachments.data();
 
         // Dynamic state
         VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };

@@ -614,7 +614,7 @@ bool ComputeApp::createRenderResources()
 
         ColorTargetState colorTarget{};
         colorTarget.format = swapchain->getFormat();
-        colorTarget.writeMask = 0xF;
+        colorTarget.writeMask = ColorWriteMask::All;
 
         FragmentState fragmentState{};
         fragmentState.module = fragmentShader;

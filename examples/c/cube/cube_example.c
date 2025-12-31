@@ -776,7 +776,7 @@ bool createRenderPipeline(CubeApp* app)
     GfxColorTargetState colorTarget = {
         .format = gfxSwapchainGetFormat(app->swapchain),
         .blend = NULL,
-        .writeMask = 0xF // Write all channels
+        .writeMask = GFX_COLOR_WRITE_MASK_ALL
     };
 
     // Fragment state

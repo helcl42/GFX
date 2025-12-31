@@ -590,10 +590,20 @@ struct BlendState {
     BlendComponent alpha;
 };
 
+// Color write mask flags (can be combined with bitwise OR)
+enum ColorWriteMask : uint32_t {
+    None  = 0x0,
+    Red   = 0x1,
+    Green = 0x2,
+    Blue  = 0x4,
+    Alpha = 0x8,
+    All   = 0xF  // R | G | B | A
+};
+
 struct ColorTargetState {
     TextureFormat format = TextureFormat::Undefined;
     std::optional<BlendState> blend;
-    uint32_t writeMask = 0xF; // All channels
+    uint32_t writeMask = ColorWriteMask::All;
 };
 
 struct VertexAttribute {

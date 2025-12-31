@@ -677,7 +677,7 @@ bool CubeApp::createRenderPipeline()
 
         ColorTargetState colorTarget{};
         colorTarget.format = swapchain->getFormat();
-        colorTarget.writeMask = 0xF; // All channels
+        colorTarget.writeMask = ColorWriteMask::All;
 
         FragmentState fragmentState{};
         fragmentState.module = fragmentShader;
