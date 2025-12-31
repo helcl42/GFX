@@ -575,6 +575,8 @@ void cleanupRenderingResources(CubeApp* app)
 
 bool createRenderingResources(CubeApp* app)
 {
+    printf("[DEBUG] createRenderingResources called\n");
+    
     // Create cube vertices (8 vertices for a cube)
     Vertex vertices[] = {
         // Front face
@@ -709,74 +711,7 @@ bool createRenderingResources(CubeApp* app)
         }
     }
 
-#if defined(__EMSCRIPTEN__)
-    // Shader code (WGSL)
-    static const char* vertexShaderSource = "struct Uniforms {\n"
-                                            "    model: mat4x4<f32>,\n"
-                                            "    view: mat4x4<f32>,\n"
-                                            "    projection: mat4x4<f32>,\n"
-                                            "}\n"
-                                            "@group(0) @binding(0) var<uniform> uniforms: Uniforms;\n"
-                                            "\n"
-                                            "struct VertexInput {\n"
-                                            "    @location(0) position: vec3<f32>,\n"
-                                            "    @location(1) color: vec3<f32>,\n"
-                                            "}\n"
-                                            "\n"
-                                            "struct VertexOutput {\n"
-                                            "    @builtin(position) position: vec4<f32>,\n"
-                                            "    @location(0) color: vec3<f32>,\n"
-                                            "}\n"
-                                            "\n"
-                                            "@vertex\n"
-                                            "fn main(input: VertexInput) -> VertexOutput {\n"
-                                            "    var output: VertexOutput;\n"
-                                            "    let worldPos = uniforms.model * vec4<f32>(input.position, 1.0);\n"
-                                            "    let viewPos = uniforms.view * worldPos;\n"
-                                            "    output.position = uniforms.projection * viewPos;\n"
-                                            "    output.color = input.color;\n"
-                                            "    return output;\n"
-                                            "}\n";
-
-    static const char* fragmentShaderSource = "struct FragmentInput {\n"
-                                              "    @location(0) color: vec3<f32>,\n"
-                                              "}\n"
-                                              "\n"
-                                              "@fragment\n"
-                                              "fn main(input: FragmentInput) -> @location(0) vec4<f32> {\n"
-                                              "    return vec4<f32>(input.color, 1.0);\n"
-                                              "}\n";
-
-    // Create shaders from source strings (WGSL)
-    GfxShaderDescriptor vertexShaderDesc = {
-        .label = "Cube Vertex Shader",
-        .sourceType = GFX_SHADER_SOURCE_WGSL,
-        .code = (const uint8_t*)vertexShaderSource,
-        .codeSize = strlen(vertexShaderSource),
-        .entryPoint = "main"
-    };
-
-    if (gfxDeviceCreateShader(app->device, &vertexShaderDesc, &app->vertexShader) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create vertex shader\n");
-        return false;
-    }
-
-    GfxShaderDescriptor fragmentShaderDesc = {
-        .label = "Cube Fragment Shader",
-        .sourceType = GFX_SHADER_SOURCE_WGSL,
-        .code = (const uint8_t*)fragmentShaderSource,
-        .codeSize = strlen(fragmentShaderSource),
-        .entryPoint = "main"
-    };
-
-    if (gfxDeviceCreateShader(app->device, &fragmentShaderDesc, &app->fragmentShader) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create fragment shader\n");
-        return false;
-    }
-
-#else
-
-    // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
+    // Load shaders from files (works for both native and web)
     size_t vertexShaderSize, fragmentShaderSize;
     void* vertexShaderCode = NULL;
     void* fragmentShaderCode = NULL;
@@ -785,22 +720,28 @@ bool createRenderingResources(CubeApp* app)
     GfxBackend backend = gfxAdapterGetBackend(app->adapter);
     if (backend == GFX_BACKEND_WEBGPU) {
         sourceType = GFX_SHADER_SOURCE_WGSL;
-        // Load WGSL shaders for WebGPU
+        // Load WGSL shaders for WebGPU (both native and web)
+        printf("Loading WGSL shaders...\n");
         vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl", &vertexShaderSize);
         fragmentShaderCode = loadTextFile("shaders/cube.frag.wgsl", &fragmentShaderSize);
         if (!vertexShaderCode || !fragmentShaderCode) {
             fprintf(stderr, "Failed to load WGSL shaders\n");
             return false;
         }
+        printf("Successfully loaded WGSL shaders (vertex: %zu bytes, fragment: %zu bytes)\n",
+            vertexShaderSize, fragmentShaderSize);
     } else {
         sourceType = GFX_SHADER_SOURCE_SPIRV;
         // Load SPIR-V shaders for Vulkan
+        printf("Loading SPIR-V shaders...\n");
         vertexShaderCode = loadBinaryFile("cube.vert.spv", &vertexShaderSize);
         fragmentShaderCode = loadBinaryFile("cube.frag.spv", &fragmentShaderSize);
         if (!vertexShaderCode || !fragmentShaderCode) {
             fprintf(stderr, "Failed to load SPIR-V shaders\n");
             return false;
         }
+        printf("Successfully loaded SPIR-V shaders (vertex: %zu bytes, fragment: %zu bytes)\n",
+            vertexShaderSize, fragmentShaderSize);
     }
 
     // Create vertex shader
@@ -837,8 +778,6 @@ bool createRenderingResources(CubeApp* app)
 
     free(vertexShaderCode);
     free(fragmentShaderCode);
-
-#endif
 
     // Initialize animation state
     app->rotationAngleX = 0.0f;

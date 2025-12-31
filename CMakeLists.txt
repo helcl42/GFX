@@ -373,6 +373,7 @@ if(BUILD_EXAMPLES)
             -sSTACK_OVERFLOW_CHECK=2
             -sSAFE_HEAP=1
             -sEXPORTED_RUNTIME_METHODS=requestFullscreen
+            --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders@shaders
             -g
             -O0
             --shell-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/web/shell.html
