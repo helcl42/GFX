@@ -77,7 +77,7 @@ function(compile_wgsl_shader target shader_source)
     
     add_custom_command(
         OUTPUT ${shader_output}
-        COMMAND ${CMAKE_BINARY_DIR}/dawn/tint ${shader_source} -o ${shader_output} --format spirv
+        COMMAND ${CMAKE_BINARY_DIR}/dawn/tint ${shader_source} -o ${shader_output} --format spirv --entry-point main
         DEPENDS ${shader_source} tint
         COMMENT "Compiling WGSL shader: ${shader_name}${shader_ext} -> ${shader_base}.spv"
         VERBATIM
