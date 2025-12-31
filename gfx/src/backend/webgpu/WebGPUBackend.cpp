@@ -13,6 +13,10 @@
 #include <string>
 #include <vector>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 // Platform-specific includes for surface creation
 #ifdef _WIN32
 #include <windows.h>
@@ -551,6 +555,23 @@ static WGPUSurface createSurfaceMetal(WGPUInstance instance, const GfxPlatformWi
 }
 #endif
 
+#ifdef __EMSCRIPTEN__
+static WGPUSurface createSurfaceEmscripten(WGPUInstance instance, const GfxPlatformWindowHandle* handle)
+{
+    if (!handle->emscripten.canvasSelector) {
+        return nullptr;
+    }
+
+    WGPUEmscriptenSurfaceSourceCanvasHTMLSelector canvasDesc = WGPU_EMSCRIPTEN_SURFACE_SOURCE_CANVAS_HTML_SELECTOR_INIT;
+    canvasDesc.selector = gfxStringView(handle->emscripten.canvasSelector);
+
+    WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
+    surfaceDesc.nextInChain = (WGPUChainedStruct*)&canvasDesc;
+
+    return wgpuInstanceCreateSurface(instance, &surfaceDesc);
+}
+#endif
+
 static WGPUSurface createPlatformSurface(WGPUInstance instance, const GfxPlatformWindowHandle* handle)
 {
     if (!instance || !handle) {
@@ -572,6 +593,10 @@ static WGPUSurface createPlatformSurface(WGPUInstance instance, const GfxPlatfor
 #ifdef __APPLE__
     case GFX_WINDOWING_SYSTEM_COCOA:
         return createSurfaceMetal(instance, handle);
+#endif
+#ifdef __EMSCRIPTEN__
+    case GFX_WINDOWING_SYSTEM_EMSCRIPTEN:
+        return createSurfaceEmscripten(instance, handle);
 #endif
     default:
         return nullptr;
@@ -1300,8 +1325,9 @@ void webgpu_instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback call
     (void)userData;
 }
 
-// Static callback for adapter request
-static void onAdapterRequested(WGPURequestAdapterStatus status, WGPUAdapter adapter,
+// Callback for adapter request
+extern "C" {
+void onAdapterRequested(WGPURequestAdapterStatus status, WGPUAdapter adapter,
     WGPUStringView message, void* userdata1, void* userdata2)
 {
     struct AdapterRequestContext {
@@ -1323,6 +1349,7 @@ static void onAdapterRequested(WGPURequestAdapterStatus status, WGPUAdapter adap
             (int)message.length, message.data);
     }
     (void)userdata2; // Unused
+}
 }
 
 GfxResult webgpu_instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor,
@@ -1402,8 +1429,9 @@ void webgpu_adapterDestroy(GfxAdapter adapter)
     delete reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
 }
 
-// Static callback for device request
-static void onDeviceRequested(WGPURequestDeviceStatus status, WGPUDevice device,
+// Callback for device request
+extern "C" {
+void onDeviceRequested(WGPURequestDeviceStatus status, WGPUDevice device,
     WGPUStringView message, void* userdata1, void* userdata2)
 {
     struct DeviceRequestContext {
@@ -1425,6 +1453,7 @@ static void onDeviceRequested(WGPURequestDeviceStatus status, WGPUDevice device,
             (int)message.length, message.data);
     }
     (void)userdata2; // Unused
+}
 }
 
 static void uncapturedErrorCallback(WGPUDevice const*, WGPUErrorType type, WGPUStringView message, void*, void*)
@@ -2482,14 +2511,14 @@ GfxResult webgpu_swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* 
 
     auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
 
-    fprintf(stderr, "[WebGPU] Presenting surface\\n");
-
+#ifndef __EMSCRIPTEN__
     // Present the surface - Dawn will present the texture we have been rendering to
+    // Note: In Emscripten, presentation is automatic via requestAnimationFrame
     wgpuSurfacePresent(swapchainPtr->surface());
+#endif
 
     // Release the cached texture after presenting
     swapchainPtr->setCurrentTexture(nullptr);
-
 
     return GFX_RESULT_SUCCESS;
 }

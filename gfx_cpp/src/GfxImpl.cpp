@@ -132,6 +132,8 @@ static GfxWindowingSystem cppWindowingSystemToC(WindowingSystem sys)
         return GFX_WINDOWING_SYSTEM_XCB;
     case WindowingSystem::Cocoa:
         return GFX_WINDOWING_SYSTEM_COCOA;
+    case WindowingSystem::Emscripten:
+        return GFX_WINDOWING_SYSTEM_EMSCRIPTEN;
     default:
         return GFX_WINDOWING_SYSTEM_X11;
     }
@@ -150,6 +152,8 @@ static WindowingSystem cWindowingSystemToCpp(GfxWindowingSystem sys)
         return WindowingSystem::XCB;
     case GFX_WINDOWING_SYSTEM_COCOA:
         return WindowingSystem::Cocoa;
+    case GFX_WINDOWING_SYSTEM_EMSCRIPTEN:
+        return WindowingSystem::Emscripten;
     default:
         return WindowingSystem::X11;
     }
@@ -180,6 +184,9 @@ static GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& ha
     case WindowingSystem::Cocoa:
         cHandle.cocoa.nsWindow = handle.cocoa.nsWindow;
         cHandle.cocoa.metalLayer = handle.cocoa.metalLayer;
+        break;
+    case WindowingSystem::Emscripten:
+        cHandle.emscripten.canvasSelector = handle.emscripten.canvasSelector;
         break;
     }
     return cHandle;
@@ -1085,6 +1092,9 @@ public:
         case GFX_WINDOWING_SYSTEM_COCOA:
             result.cocoa.nsWindow = cHandle.cocoa.nsWindow;
             result.cocoa.metalLayer = cHandle.cocoa.metalLayer;
+            break;
+        case GFX_WINDOWING_SYSTEM_EMSCRIPTEN:
+            result.emscripten.canvasSelector = cHandle.emscripten.canvasSelector;
             break;
         }
         return result;

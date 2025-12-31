@@ -504,7 +504,8 @@ typedef enum {
     GFX_WINDOWING_SYSTEM_X11,
     GFX_WINDOWING_SYSTEM_WAYLAND,
     GFX_WINDOWING_SYSTEM_XCB,
-    GFX_WINDOWING_SYSTEM_COCOA
+    GFX_WINDOWING_SYSTEM_COCOA,
+    GFX_WINDOWING_SYSTEM_EMSCRIPTEN
 } GfxWindowingSystem;
 
 // Common platform window handle struct with union for all windowing systems
@@ -531,6 +532,9 @@ typedef struct {
             void* nsWindow; // NSWindow*
             void* metalLayer; // CAMetalLayer* (optional)
         } cocoa;
+        struct {
+            const char* canvasSelector; // CSS selector for canvas element (e.g., "#canvas")
+        } emscripten;
     };
 } GfxPlatformWindowHandle;
 
@@ -1065,6 +1069,7 @@ GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWayland(void* surface, void* 
 GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXCB(void* connection, uint32_t window);
 GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWin32(void* hwnd, void* hinstance);
 GfxPlatformWindowHandle gfxPlatformWindowHandleMakeCocoa(void* nsWindow, void* metalLayer);
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeEmscripten(const char* canvasSelector);
 
 #ifdef __cplusplus
 }

@@ -4,10 +4,23 @@
 
 #include "IBackend.h"
 
+#ifndef __EMSCRIPTEN__
 #include <mutex>
+#endif
 #include <unordered_map>
 
 namespace gfx {
+
+// No-op lock for single-threaded environments (Emscripten/WebAssembly)
+#ifdef __EMSCRIPTEN__
+struct NoOpLock {
+    template<typename T>
+    NoOpLock(T&) {} // Accept any parameter but do nothing
+};
+#define SCOPED_LOCK(mutex) NoOpLock _lock(mutex)
+#else
+#define SCOPED_LOCK(mutex) std::scoped_lock _lock(mutex)
+#endif
 
 // Handle metadata stores backend info
 struct HandleMeta {
@@ -44,7 +57,7 @@ public:
         if (!nativeHandle) {
             return nullptr;
         }
-        std::scoped_lock lock(m_mutex);
+        SCOPED_LOCK(m_mutex);
         m_handles[nativeHandle] = { backend, nativeHandle };
         return nativeHandle;
     }
@@ -54,7 +67,7 @@ public:
         if (!handle) {
             return nullptr;
         }
-        std::scoped_lock lock(m_mutex);
+        SCOPED_LOCK(m_mutex);
         auto it = m_handles.find(handle);
         if (it == m_handles.end()) {
             return nullptr;
@@ -67,7 +80,7 @@ public:
         if (!handle) {
             return GFX_BACKEND_AUTO;
         }
-        std::scoped_lock lock(m_mutex);
+        SCOPED_LOCK(m_mutex);
         auto it = m_handles.find(handle);
         if (it == m_handles.end()) {
             return GFX_BACKEND_AUTO;
@@ -80,20 +93,20 @@ public:
         if (!handle) {
             return;
         }
-        std::scoped_lock lock(m_mutex);
+        SCOPED_LOCK(m_mutex);
         m_handles.erase(handle);
     }
 
     // Backend loading/unloading with internal reference counting
     bool loadBackend(GfxBackend backend, const IBackend* backendImpl)
     {
-        std::scoped_lock lock(m_mutex);
+        SCOPED_LOCK(m_mutex);
         return loadBackendInternal(backend, backendImpl);
     }
 
     void unloadBackend(GfxBackend backend)
     {
-        std::scoped_lock lock(m_mutex);
+        SCOPED_LOCK(m_mutex);
         unloadBackendInternal(backend);
     }
 
@@ -139,7 +152,11 @@ private:
 
     const IBackend* m_backends[GFX_BACKEND_AUTO];
     int m_refCounts[GFX_BACKEND_AUTO];
+#ifndef __EMSCRIPTEN__
     std::mutex m_mutex;
+#else
+    int m_mutex;  // Dummy variable for NoOpLock template parameter
+#endif
     std::unordered_map<void*, HandleMeta> m_handles;
 };
 

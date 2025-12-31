@@ -1,5 +1,5 @@
-#include "backend/BackendManager.h"
 #include "backend/BackendFactory.h"
+#include "backend/BackendManager.h"
 
 #include <gfx/gfx.h>
 
@@ -39,7 +39,7 @@ bool gfxLoadBackend(GfxBackend backend)
         if (!backendImpl) {
             return false;
         }
-        
+
         return manager.loadBackend(backend, backendImpl);
     }
 
@@ -1304,6 +1304,14 @@ GfxPlatformWindowHandle gfxPlatformWindowHandleMakeCocoa(void* nsWindow, void* m
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_COCOA;
     handle.cocoa.nsWindow = nsWindow;
     handle.cocoa.metalLayer = metalLayer;
+    return handle;
+}
+
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeEmscripten(const char* canvasSelector)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_EMSCRIPTEN;
+    handle.emscripten.canvasSelector = canvasSelector;
     return handle;
 }
 

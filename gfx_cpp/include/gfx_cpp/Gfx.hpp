@@ -379,7 +379,8 @@ enum class WindowingSystem {
     X11,
     Wayland,
     XCB,
-    Cocoa
+    Cocoa,
+    Emscripten
 };
 
 // Common platform window handle struct with union for all windowing systems
@@ -414,6 +415,9 @@ struct PlatformWindowHandle {
             void* nsWindow; // NSWindow*
             void* metalLayer; // CAMetalLayer* (optional)
         } cocoa;
+        struct {
+            const char* canvasSelector = nullptr; // CSS selector for canvas element (e.g., "#canvas")
+        } emscripten;
     };
 
     PlatformWindowHandle()
@@ -473,6 +477,14 @@ struct PlatformWindowHandle {
         h.windowingSystem = WindowingSystem::Cocoa;
         h.cocoa.nsWindow = nsWindow;
         h.cocoa.metalLayer = metalLayer;
+        return h;
+    }
+
+    static PlatformWindowHandle makeEmscripten(const char* canvasSelector)
+    {
+        PlatformWindowHandle h;
+        h.windowingSystem = WindowingSystem::Emscripten;
+        h.emscripten.canvasSelector = canvasSelector;
         return h;
     }
 };
