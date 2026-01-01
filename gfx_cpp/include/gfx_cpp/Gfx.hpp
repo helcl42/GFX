@@ -1201,32 +1201,10 @@ public:
 };
 
 // ============================================================================
-// Utility Functions (Optional Helper)
+// Utility Functions
 // ============================================================================
 
 namespace utils {
-    // Helper to get required extensions for different windowing systems
-    // These are optional utilities - not part of the core API
-
-#ifdef GLFW_VERSION
-    // If GLFW is available, provide a helper (optional)
-    std::vector<std::string> getRequiredExtensions(void* glfwWindow, Backend backend);
-    PlatformWindowHandle createPlatformHandle(void* glfwWindow);
-#endif
-
-#ifdef _WIN32
-    // Win32 helpers (optional)
-    PlatformWindowHandle createWin32Handle(void* hwnd, void* hinstance = nullptr);
-#endif
-
-#ifdef __linux__
-    // X11 helpers (optional)
-    PlatformWindowHandle createX11Handle(void* window, void* display);
-#endif
-
-    // Generic helper for raw platform handles
-    PlatformWindowHandle createGenericHandle(void* handle);
-
     // Alignment helpers - align buffer offsets/sizes to device requirements
     uint64_t alignUp(uint64_t value, uint64_t alignment);
     uint64_t alignDown(uint64_t value, uint64_t alignment);
