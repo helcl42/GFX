@@ -671,6 +671,7 @@ public:
 
     Instance(const GfxInstanceDescriptor* descriptor)
     {
+        (void)descriptor; // Descriptor not used in current implementation
         // Request TimedWaitAny feature for proper async callback handling
         static const WGPUInstanceFeatureName requiredFeatures[] = {
             WGPUInstanceFeatureName_TimedWaitAny
@@ -1208,6 +1209,7 @@ public:
     uint32_t getWidth() const { return m_width; }
     uint32_t getHeight() const { return m_height; }
     WGPUTextureFormat getFormat() const { return m_format; }
+    WGPUPresentMode getPresentMode() const { return m_presentMode; }
     uint32_t getBufferCount() const { return m_bufferCount; }
 
     void setSize(uint32_t width, uint32_t height)
@@ -1346,7 +1348,7 @@ void webgpu_instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback call
 
 // Callback for adapter request
 extern "C" {
-void onAdapterRequested(WGPURequestAdapterStatus status, WGPUAdapter adapter,
+static void onAdapterRequested(WGPURequestAdapterStatus status, WGPUAdapter adapter,
     WGPUStringView message, void* userdata1, void* userdata2)
 {
     struct AdapterRequestContext {
@@ -1450,7 +1452,7 @@ void webgpu_adapterDestroy(GfxAdapter adapter)
 
 // Callback for device request
 extern "C" {
-void onDeviceRequested(WGPURequestDeviceStatus status, WGPUDevice device,
+static void onDeviceRequested(WGPURequestDeviceStatus status, WGPUDevice device,
     WGPUStringView message, void* userdata1, void* userdata2)
 {
     struct DeviceRequestContext {
@@ -1475,6 +1477,7 @@ void onDeviceRequested(WGPURequestDeviceStatus status, WGPUDevice device,
 }
 }
 
+extern "C" {
 static void uncapturedErrorCallback(WGPUDevice const*, WGPUErrorType type, WGPUStringView message, void*, void*)
 {
     const char* errorType = "Unknown";
@@ -1519,6 +1522,7 @@ static void deviceLostCallback(WGPUDevice const*, WGPUDeviceLostReason reason, W
             reasonStr, (int)message.length, message.data);
     }
 }
+} // extern "C"
 
 GfxResult webgpu_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor,
     GfxDevice* outDevice)
@@ -2312,6 +2316,7 @@ GfxResult webgpu_deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescr
     return GFX_RESULT_SUCCESS;
 }
 
+extern "C" {
 static void queueWorkDoneCallback(WGPUQueueWorkDoneStatus status, WGPUStringView message, void* userdata1, void* userdata2)
 {
     (void)status;
@@ -2320,6 +2325,7 @@ static void queueWorkDoneCallback(WGPUQueueWorkDoneStatus status, WGPUStringView
     (void)userdata2;
     // Nothing to do - we just needed a valid callback for Dawn
 }
+} // extern "C"
 
 void webgpu_deviceWaitIdle(GfxDevice device)
 {
@@ -2333,6 +2339,12 @@ void webgpu_deviceWaitIdle(GfxDevice device)
     callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
     callbackInfo.callback = queueWorkDoneCallback;
     WGPUFuture future = wgpuQueueOnSubmittedWorkDone(devicePtr->getQueue()->handle(), callbackInfo);
+    
+    // Wait for the work to complete
+    WGPUInstance instance = devicePtr->getAdapter()->getInstance()->handle();
+    WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
+    waitInfo.future = future;
+    wgpuInstanceWaitAny(instance, 1, &waitInfo, UINT64_MAX);
 }
 
 void webgpu_devicePoll(GfxDevice device)
@@ -2672,12 +2684,14 @@ struct MapCallbackData {
     bool completed = false;
 };
 
+extern "C" {
 static void bufferMapCallback(WGPUMapAsyncStatus status, WGPUStringView, void* userdata1, void*)
 {
     auto* data = static_cast<MapCallbackData*>(userdata1);
     data->status = status;
     data->completed = true;
 }
+} // extern "C"
 
 GfxResult webgpu_bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** mappedPointer)
 {
@@ -3316,7 +3330,7 @@ void webgpu_commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
 
 void webgpu_commandEncoderEnd(GfxCommandEncoder commandEncoder)
 {
-    // Handled in queueSubmit
+    (void)commandEncoder; // Parameter unused - handled in queueSubmit
 }
 
 // RenderPassEncoder functions
@@ -3576,6 +3590,7 @@ GfxResult webgpu_semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t 
     if (!semaphore) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
+    (void)timeoutNs; // WebGPU doesn't support timeout for semaphore waits
 
     auto* semaphorePtr = reinterpret_cast<gfx::webgpu::Semaphore*>(semaphore);
     if (semaphorePtr->getType() == GFX_SEMAPHORE_TYPE_TIMELINE) {

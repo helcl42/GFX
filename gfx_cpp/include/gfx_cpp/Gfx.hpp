@@ -386,7 +386,9 @@ enum class WindowingSystem {
 // Common platform window handle struct with union for all windowing systems
 struct PlatformWindowHandle {
     WindowingSystem windowingSystem =
-#ifdef _WIN32
+#if defined(__EMSCRIPTEN__)
+        WindowingSystem::Emscripten;
+#elif defined(_WIN32)
         WindowingSystem::Win32;
 #elif defined(__APPLE__)
         WindowingSystem::Cocoa;
@@ -394,30 +396,37 @@ struct PlatformWindowHandle {
         WindowingSystem::X11;
 #endif
 
+    struct Win32Handle {
+        void* hwnd = nullptr; // HWND - Window handle
+        void* hinstance; // HINSTANCE - Application instance
+    };
+    struct X11Handle {
+        void* window = nullptr; // Window
+        void* display; // Display*
+    };
+    struct WaylandHandle {
+        void* surface; // wl_surface*
+        void* display; // wl_display*
+    };
+    struct XcbHandle {
+        void* connection; // xcb_connection_t*
+        uint32_t window; // xcb_window_t
+    };
+    struct CocoaHandle {
+        void* nsWindow; // NSWindow*
+        void* metalLayer; // CAMetalLayer* (optional)
+    };
+    struct EmscriptenHandle {
+        const char* canvasSelector = nullptr; // CSS selector for canvas element (e.g., "#canvas")
+    };
+
     union {
-        struct {
-            void* hwnd = nullptr; // HWND - Window handle
-            void* hinstance; // HINSTANCE - Application instance
-        } win32;
-        struct {
-            void* window = nullptr; // Window
-            void* display; // Display*
-        } x11;
-        struct {
-            void* surface; // wl_surface*
-            void* display; // wl_display*
-        } wayland;
-        struct {
-            void* connection; // xcb_connection_t*
-            uint32_t window; // xcb_window_t
-        } xcb;
-        struct {
-            void* nsWindow; // NSWindow*
-            void* metalLayer; // CAMetalLayer* (optional)
-        } cocoa;
-        struct {
-            const char* canvasSelector = nullptr; // CSS selector for canvas element (e.g., "#canvas")
-        } emscripten;
+        Win32Handle win32;
+        X11Handle x11;
+        WaylandHandle wayland;
+        XcbHandle xcb;
+        CocoaHandle cocoa;
+        EmscriptenHandle emscripten;
     };
 
     PlatformWindowHandle()
