@@ -128,6 +128,22 @@ GfxTextureFormat wgpuFormatToGfxFormat(WGPUTextureFormat format)
     }
 }
 
+GfxPresentMode wgpuPresentModeToGfxPresentMode(WGPUPresentMode mode)
+{
+    switch (mode) {
+    case WGPUPresentMode_Immediate:
+        return GFX_PRESENT_MODE_IMMEDIATE;
+    case WGPUPresentMode_Mailbox:
+        return GFX_PRESENT_MODE_MAILBOX;
+    case WGPUPresentMode_Fifo:
+        return GFX_PRESENT_MODE_FIFO;
+    case WGPUPresentMode_FifoRelaxed:
+        return GFX_PRESENT_MODE_FIFO_RELAXED;
+    default:
+        return GFX_PRESENT_MODE_FIFO; // Safe default
+    }
+}
+
 bool formatHasStencil(GfxTextureFormat format)
 {
     switch (format) {
@@ -1130,8 +1146,9 @@ public:
     Surface(const Surface&) = delete;
     Surface& operator=(const Surface&) = delete;
 
-    Surface(WGPUSurface surface, const GfxPlatformWindowHandle& windowHandle)
+    Surface(WGPUSurface surface, WGPUAdapter adapter, const GfxPlatformWindowHandle& windowHandle)
         : m_surface(surface)
+        , m_adapter(adapter)
         , m_windowHandle(windowHandle)
     {
     }
@@ -1144,10 +1161,12 @@ public:
     }
 
     WGPUSurface handle() const { return m_surface; }
+    WGPUAdapter adapter() const { return m_adapter; }
     const GfxPlatformWindowHandle& getWindowHandle() const { return m_windowHandle; }
 
 private:
     WGPUSurface m_surface = nullptr;
+    WGPUAdapter m_adapter = nullptr;
     GfxPlatformWindowHandle m_windowHandle = {};
 };
 
@@ -1610,7 +1629,7 @@ GfxResult webgpu_deviceCreateSurface(GfxDevice device, const GfxSurfaceDescripto
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    auto* surface = new gfx::webgpu::Surface(wgpuSurface, descriptor->windowHandle);
+    auto* surface = new gfx::webgpu::Surface(wgpuSurface, devicePtr->getAdapter()->handle(), descriptor->windowHandle);
     *outSurface = reinterpret_cast<GfxSurface>(surface);
     return GFX_RESULT_SUCCESS;
 }
@@ -2322,14 +2341,64 @@ void webgpu_surfaceDestroy(GfxSurface surface)
 
 uint32_t webgpu_surfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats)
 {
-    // WebGPU surface capabilities need device - not available at surface level
-    return 0;
+    if (!surface) {
+        return 0;
+    }
+
+    auto* surf = reinterpret_cast<gfx::webgpu::Surface*>(surface);
+    
+    // Query surface capabilities
+    WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
+    wgpuSurfaceGetCapabilities(surf->handle(), surf->adapter(), &capabilities);
+    
+    uint32_t formatCount = static_cast<uint32_t>(capabilities.formatCount);
+    
+    if (formatCount == 0) {
+        wgpuSurfaceCapabilitiesFreeMembers(capabilities);
+        return 0;
+    }
+    
+    // Convert to GfxTextureFormat
+    if (formats && maxFormats > 0) {
+        uint32_t copyCount = std::min(formatCount, maxFormats);
+        for (uint32_t i = 0; i < copyCount; ++i) {
+            formats[i] = wgpuFormatToGfxFormat(capabilities.formats[i]);
+        }
+    }
+    
+    wgpuSurfaceCapabilitiesFreeMembers(capabilities);
+    return formatCount;
 }
 
 uint32_t webgpu_surfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes)
 {
-    // WebGPU surface capabilities need device - not available at surface level
-    return 0;
+    if (!surface) {
+        return 0;
+    }
+
+    auto* surf = reinterpret_cast<gfx::webgpu::Surface*>(surface);
+    
+    // Query surface capabilities
+    WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
+    wgpuSurfaceGetCapabilities(surf->handle(), surf->adapter(), &capabilities);
+    
+    uint32_t modeCount = static_cast<uint32_t>(capabilities.presentModeCount);
+    
+    if (modeCount == 0) {
+        wgpuSurfaceCapabilitiesFreeMembers(capabilities);
+        return 0;
+    }
+    
+    // Convert to GfxPresentMode
+    if (presentModes && maxModes > 0) {
+        uint32_t copyCount = std::min(modeCount, maxModes);
+        for (uint32_t i = 0; i < copyCount; ++i) {
+            presentModes[i] = wgpuPresentModeToGfxPresentMode(capabilities.presentModes[i]);
+        }
+    }
+    
+    wgpuSurfaceCapabilitiesFreeMembers(capabilities);
+    return modeCount;
 }
 
 GfxPlatformWindowHandle webgpu_surfaceGetPlatformHandle(GfxSurface surface)

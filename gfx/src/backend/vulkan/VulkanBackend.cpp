@@ -152,6 +152,22 @@ GfxTextureFormat vkFormatToGfxFormat(VkFormat format)
     }
 }
 
+GfxPresentMode vkPresentModeToGfxPresentMode(VkPresentModeKHR mode)
+{
+    switch (mode) {
+    case VK_PRESENT_MODE_IMMEDIATE_KHR:
+        return GFX_PRESENT_MODE_IMMEDIATE;
+    case VK_PRESENT_MODE_MAILBOX_KHR:
+        return GFX_PRESENT_MODE_MAILBOX;
+    case VK_PRESENT_MODE_FIFO_KHR:
+        return GFX_PRESENT_MODE_FIFO;
+    case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
+        return GFX_PRESENT_MODE_FIFO_RELAXED;
+    default:
+        return GFX_PRESENT_MODE_FIFO; // Safe default
+    }
+}
+
 bool hasStencilComponent(VkFormat format)
 {
     return format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D32_SFLOAT_S8_UINT;
@@ -809,8 +825,9 @@ public:
     Surface(const Surface&) = delete;
     Surface& operator=(const Surface&) = delete;
 
-    Surface(VkInstance instance, const GfxSurfaceDescriptor* descriptor)
+    Surface(VkInstance instance, VkPhysicalDevice physicalDevice, const GfxSurfaceDescriptor* descriptor)
         : m_instance(instance)
+        , m_physicalDevice(physicalDevice)
         , m_windowHandle(descriptor ? descriptor->windowHandle : GfxPlatformWindowHandle{})
     {
         if (descriptor && descriptor->windowHandle.windowingSystem == GFX_WINDOWING_SYSTEM_X11 && descriptor->windowHandle.x11.display) {
@@ -834,11 +851,13 @@ public:
     }
 
     VkSurfaceKHR handle() const { return m_surface; }
+    VkPhysicalDevice physicalDevice() const { return m_physicalDevice; }
     GfxPlatformWindowHandle getPlatformHandle() const { return m_windowHandle; }
 
 private:
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;
     VkInstance m_instance = VK_NULL_HANDLE;
+    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     GfxPlatformWindowHandle m_windowHandle;
 };
 
@@ -2422,7 +2441,7 @@ GfxResult VulkanBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceD
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
         auto* inst = dev->getAdapter()->getInstance();
-        auto* surface = new gfx::vulkan::Surface(inst->handle(), descriptor);
+        auto* surface = new gfx::vulkan::Surface(inst->handle(), dev->getAdapter()->handle(), descriptor);
         *outSurface = reinterpret_cast<GfxSurface>(surface);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -2689,25 +2708,28 @@ uint32_t VulkanBackend::surfaceGetSupportedFormats(GfxSurface surface, GfxTextur
         return 0;
     }
 
-    // For now, return a simple list of commonly supported formats
-    // A proper implementation would query the Vulkan surface capabilities
-    const GfxTextureFormat supportedFormats[] = {
-        GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB,
-        GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM,
-        GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB,
-        GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM
-    };
-
-    uint32_t count = sizeof(supportedFormats) / sizeof(supportedFormats[0]);
-
+    auto* surf = reinterpret_cast<gfx::vulkan::Surface*>(surface);
+    
+    // Query supported surface formats from Vulkan
+    uint32_t formatCount = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(surf->physicalDevice(), surf->handle(), &formatCount, nullptr);
+    
+    if (formatCount == 0) {
+        return 0;
+    }
+    
+    std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(surf->physicalDevice(), surf->handle(), &formatCount, surfaceFormats.data());
+    
+    // Convert to GfxTextureFormat
     if (formats && maxFormats > 0) {
-        uint32_t copyCount = count < maxFormats ? count : maxFormats;
+        uint32_t copyCount = std::min(formatCount, maxFormats);
         for (uint32_t i = 0; i < copyCount; ++i) {
-            formats[i] = supportedFormats[i];
+            formats[i] = vkFormatToGfxFormat(surfaceFormats[i].format);
         }
     }
 
-    return count;
+    return formatCount;
 }
 
 uint32_t VulkanBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes) const
@@ -2716,24 +2738,28 @@ uint32_t VulkanBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxP
         return 0;
     }
 
-    // For now, return commonly supported present modes
-    // A proper implementation would query the Vulkan surface capabilities
-    const GfxPresentMode supportedModes[] = {
-        GFX_PRESENT_MODE_FIFO,
-        GFX_PRESENT_MODE_IMMEDIATE,
-        GFX_PRESENT_MODE_MAILBOX
-    };
-
-    uint32_t count = sizeof(supportedModes) / sizeof(supportedModes[0]);
-
+    auto* surf = reinterpret_cast<gfx::vulkan::Surface*>(surface);
+    
+    // Query supported present modes from Vulkan
+    uint32_t modeCount = 0;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(surf->physicalDevice(), surf->handle(), &modeCount, nullptr);
+    
+    if (modeCount == 0) {
+        return 0;
+    }
+    
+    std::vector<VkPresentModeKHR> vkPresentModes(modeCount);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(surf->physicalDevice(), surf->handle(), &modeCount, vkPresentModes.data());
+    
+    // Convert to GfxPresentMode
     if (presentModes && maxModes > 0) {
-        uint32_t copyCount = count < maxModes ? count : maxModes;
+        uint32_t copyCount = std::min(modeCount, maxModes);
         for (uint32_t i = 0; i < copyCount; ++i) {
-            presentModes[i] = supportedModes[i];
+            presentModes[i] = vkPresentModeToGfxPresentMode(vkPresentModes[i]);
         }
     }
 
-    return count;
+    return modeCount;
 }
 
 GfxPlatformWindowHandle VulkanBackend::surfaceGetPlatformHandle(GfxSurface surface) const
