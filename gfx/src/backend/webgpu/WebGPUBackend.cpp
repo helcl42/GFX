@@ -13,12 +13,10 @@
 #include <string>
 #include <vector>
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
-#endif
-
 // Platform-specific includes for surface creation
-#ifdef _WIN32
+#elif defined(_WIN32)
 #include <windows.h>
 #elif defined(__linux__)
 #include <X11/Xlib.h>
