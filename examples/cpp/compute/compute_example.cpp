@@ -3,23 +3,25 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-// Include platform-specific GLFW headers to get native handles
-#ifdef _WIN32
+#if defined(__EMSCRIPTEN__)
+#include <emscripten/emscripten.h>
+#else
+#if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
 #elif defined(__linux__)
 #define GLFW_EXPOSE_NATIVE_X11
+#elif defined(__APPLE__)
+#define GLFW_EXPOSE_NATIVE_COCOA
+#endif
 #include <GLFW/glfw3native.h>
-// X11 headers define "Success" and "None" as macros which conflict with our enums
+#endif
+
 #ifdef Success
 #undef Success
 #endif
+
 #ifdef None
 #undef None
-#endif
-#elif defined(__APPLE__)
-#define GLFW_EXPOSE_NATIVE_COCOA
-#include <GLFW/glfw3native.h>
 #endif
 
 #include <array>
@@ -41,6 +43,13 @@ static constexpr uint32_t COMPUTE_TEXTURE_WIDTH = 800;
 static constexpr uint32_t COMPUTE_TEXTURE_HEIGHT = 600;
 static constexpr size_t MAX_FRAMES_IN_FLIGHT = 3;
 static constexpr TextureFormat COLOR_FORMAT = TextureFormat::B8G8R8A8UnormSrgb;
+
+#if defined(__EMSCRIPTEN__)
+static constexpr Backend BACKEND_API = Backend::WebGPU;
+#else
+// here we can choose between VULKAN, WEBGPU
+static constexpr Backend BACKEND_API = Backend::Vulkan;
+#endif
 
 // Uniform structures
 struct ComputeUniformData {
@@ -66,7 +75,12 @@ private:
     void cleanupSizeDependentResources();
     bool createSizeDependentResources(uint32_t width, uint32_t height);
     void update(float deltaTime);
-    void drawFrame();
+    void render();
+    float getCurrentTime();
+    bool mainLoopIteration();
+#if defined(__EMSCRIPTEN__)
+    static void emscriptenMainLoop(void* userData);
+#endif
     PlatformWindowHandle extractNativeHandle();
     std::vector<uint8_t> loadBinaryFile(const char* filepath);
     std::string loadTextFile(const char* filepath);
@@ -105,6 +119,8 @@ private:
 
     uint32_t windowWidth = WINDOW_WIDTH;
     uint32_t windowHeight = WINDOW_HEIGHT;
+    uint32_t previousWidth = WINDOW_WIDTH;
+    uint32_t previousHeight = WINDOW_HEIGHT;
 
     // Per-frame synchronization
     std::array<std::shared_ptr<Semaphore>, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
@@ -172,14 +188,14 @@ bool ComputeApp::initializeGraphics()
 {
     try {
         // Get required extensions from GLFW
+        std::vector<std::string> extensions;
+#if !defined(__EMSCRIPTEN__)
         uint32_t glfwExtensionCount = 0;
         const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-        std::vector<std::string> extensions;
         for (uint32_t i = 0; i < glfwExtensionCount; ++i) {
             extensions.emplace_back(glfwExtensions[i]);
         }
-
+#endif
         InstanceDescriptor instanceDesc{};
         instanceDesc.applicationName = "Compute & Postprocess Example (C++)";
         instanceDesc.applicationVersion = 1;
@@ -734,7 +750,7 @@ void ComputeApp::update(float deltaTime)
     elapsedTime += deltaTime;
 }
 
-void ComputeApp::drawFrame()
+void ComputeApp::render()
 {
     try {
         size_t frameIndex = currentFrame;
@@ -877,44 +893,75 @@ void ComputeApp::drawFrame()
     }
 }
 
-void ComputeApp::run()
+float ComputeApp::getCurrentTime()
 {
-    std::cout << "\nStarting render loop..." << std::endl;
-    std::cout << "Press ESC to exit\n"
-              << std::endl;
+#if defined(__EMSCRIPTEN__)
+    return (float)emscripten_get_now() / 1000.0f;
+#else
+    return (float)glfwGetTime();
+#endif
+}
 
-    float lastTime = static_cast<float>(glfwGetTime());
+bool ComputeApp::mainLoopIteration()
+{
+    if (glfwWindowShouldClose(window)) {
+        return false;
+    }
 
-    uint32_t previousWidth = swapchain->getWidth();
-    uint32_t previousHeight = swapchain->getHeight();
+    glfwPollEvents();
 
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
+    // Handle framebuffer resize
+    if (previousWidth != windowWidth || previousHeight != windowHeight) {
+        // Wait for all in-flight frames to complete
+        device->waitIdle();
 
-        // Handle framebuffer resize
-        if (previousWidth != windowWidth || previousHeight != windowHeight) {
-            device->waitIdle();
-
-            cleanupSizeDependentResources();
-            if (!createSizeDependentResources(windowWidth, windowHeight)) {
-                std::cerr << "Failed to recreate size-dependent resources after resize" << std::endl;
-                break;
-            }
-
-            previousWidth = windowWidth;
-            previousHeight = windowHeight;
-
-            std::cout << "Window resized: " << windowWidth << "x" << windowHeight << std::endl;
-            continue;
+        // Recreate only size-dependent resources (including swapchain)
+        cleanupSizeDependentResources();
+        if (!createSizeDependentResources(windowWidth, windowHeight)) {
+            std::cerr << "Failed to recreate size-dependent resources after resize" << std::endl;
+            return false;
         }
 
-        float currentTime = static_cast<float>(glfwGetTime());
-        float deltaTime = currentTime - lastTime;
-        lastTime = currentTime;
-
-        update(deltaTime);
-        drawFrame();
+        previousWidth = windowWidth;
+        previousHeight = windowHeight;
+        std::cout << "Window resized: " << swapchain->getWidth() << "x" << swapchain->getHeight() << std::endl;
+        return true; // Skip rendering this frame
     }
+
+    // Calculate delta time
+    float currentTime = getCurrentTime();
+    float deltaTime = currentTime - elapsedTime;
+
+    update(deltaTime);
+    render();
+
+    return true;
+}
+
+#if defined(__EMSCRIPTEN__)
+void ComputeApp::emscriptenMainLoop(void* userData)
+{
+    ComputeApp* app = (ComputeApp*)userData;
+    if (!app->mainLoopIteration()) {
+        emscripten_cancel_main_loop();
+        app->cleanup();
+    }
+}
+#endif
+
+void ComputeApp::run()
+{
+    // Run main loop (platform-specific)
+#if defined(__EMSCRIPTEN__)
+    // Note: emscripten_set_main_loop_arg returns immediately and never blocks
+    // Cleanup happens in emscriptenMainLoop when the loop exits
+    // Execution continues in the browser event loop
+    emscripten_set_main_loop_arg(ComputeApp::emscriptenMainLoop, this, 0, 1);
+#else
+    while (mainLoopIteration()) {
+        // Loop continues until mainLoopIteration returns false
+    }
+#endif
 }
 
 void ComputeApp::cleanup()
@@ -972,21 +1019,29 @@ PlatformWindowHandle ComputeApp::extractNativeHandle()
 {
     PlatformWindowHandle handle{};
 
-#ifdef _WIN32
+#if defined(__EMSCRIPTEN__)
+    handle.windowingSystem = gfx::WindowingSystem::Emscripten;
+    handle.emscripten.canvasSelector = "#canvas";
+
+#elif defined(_WIN32)
+    // Windows: Get HWND and HINSTANCE
+    handle.windowingSystem = gfx::WindowingSystem::Win32;
     handle.hwnd = glfwGetWin32Window(window);
     handle.hinstance = GetModuleHandle(nullptr);
-    std::cout << "Extracted Win32 handle" << std::endl;
+    std::cout << "Extracted Win32 handle: HWND=" << handle.hwnd << ", HINSTANCE=" << handle.hinstance << std::endl;
+
 #elif defined(__linux__)
-    handle.windowingSystem = WindowingSystem::X11;
+    // Linux: Get X11 Window and Display (assuming X11, not Wayland)
+    handle.windowingSystem = gfx::WindowingSystem::X11;
     handle.x11.window = reinterpret_cast<void*>(glfwGetX11Window(window));
     handle.x11.display = glfwGetX11Display();
-    std::cout << "Extracted X11 handle" << std::endl;
+    std::cout << "Extracted X11 handle: Window=" << handle.x11.window << ", Display=" << handle.x11.display << std::endl;
+
 #elif defined(__APPLE__)
+    // macOS: Get NSWindow
+    handle.windowingSystem = gfx::WindowingSystem::Cocoa;
     handle.nsWindow = glfwGetCocoaWindow(window);
-    std::cout << "Extracted Cocoa handle" << std::endl;
-#else
-    handle.window = window;
-    std::cout << "Using GLFW window handle directly (fallback)" << std::endl;
+    std::cout << "Extracted Cocoa handle: NSWindow=" << handle.nsWindow << std::endl;
 #endif
 
     return handle;
