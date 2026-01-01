@@ -314,16 +314,14 @@ target_link_libraries(gfx_cpp PUBLIC ${PLATFORM_LIBS})
 
 # Emscripten-specific configuration
 if(BUILD_FOR_WEB)
-    # Add Emscripten-specific flags to libraries
     target_compile_options(gfx PRIVATE 
-        -sUSE_GLFW=3
-        -sASYNCIFY=1
+        # -sUSE_GLFW=3
+        # -sASYNCIFY=1
     )
     target_compile_options(gfx_cpp PRIVATE 
-        -sUSE_GLFW=3
-        -sASYNCIFY=1
+        # -sUSE_GLFW=3
+        # -sASYNCIFY=1
     )
-    
     target_link_options(gfx PUBLIC
         --use-port=emdawnwebgpu
         -sUSE_GLFW=3

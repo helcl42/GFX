@@ -509,32 +509,44 @@ typedef enum {
 } GfxWindowingSystem;
 
 // Common platform window handle struct with union for all windowing systems
+typedef struct GfxWin32Handle {
+    void* hwnd; // HWND - Window handle
+    void* hinstance; // HINSTANCE - Application instance
+} GfxWin32Handle;
+
+typedef struct GfxX11Handle {
+    void* window; // Window
+    void* display; // Display*
+} GfxX11Handle;
+
+typedef struct GfxWaylandHandle {
+    void* surface; // wl_surface*
+    void* display; // wl_display*
+} GfxWaylandHandle;
+
+typedef struct GfxXcbHandle {
+    void* connection; // xcb_connection_t*
+    uint32_t window; // xcb_window_t
+} GfxXcbHandle;
+
+typedef struct GfxCocoaHandle {
+    void* nsWindow; // NSWindow*
+    void* metalLayer; // CAMetalLayer* (optional)
+} GfxCocoaHandle;
+
+typedef struct GfxEmscriptenHandle {
+    const char* canvasSelector; // CSS selector for canvas element (e.g., "#canvas")
+} GfxEmscriptenHandle;
+
 typedef struct {
     GfxWindowingSystem windowingSystem;
     union {
-        struct {
-            void* hwnd; // HWND - Window handle
-            void* hinstance; // HINSTANCE - Application instance
-        } win32;
-        struct {
-            void* window; // Window
-            void* display; // Display*
-        } x11;
-        struct {
-            void* surface; // wl_surface*
-            void* display; // wl_display*
-        } wayland;
-        struct {
-            void* connection; // xcb_connection_t*
-            uint32_t window; // xcb_window_t
-        } xcb;
-        struct {
-            void* nsWindow; // NSWindow*
-            void* metalLayer; // CAMetalLayer* (optional)
-        } cocoa;
-        struct {
-            const char* canvasSelector; // CSS selector for canvas element (e.g., "#canvas")
-        } emscripten;
+        GfxWin32Handle win32;
+        GfxX11Handle x11;
+        GfxWaylandHandle wayland;
+        GfxXcbHandle xcb;
+        GfxCocoaHandle cocoa;
+        GfxEmscriptenHandle emscripten;
     };
 } GfxPlatformWindowHandle;
 

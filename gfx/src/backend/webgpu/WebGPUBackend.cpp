@@ -39,9 +39,9 @@ namespace {
 WGPUStringView gfxStringView(const char* str)
 {
     if (!str) {
-        return (WGPUStringView){ nullptr, WGPU_STRLEN };
+        return WGPUStringView{ nullptr, WGPU_STRLEN };
     }
-    return (WGPUStringView){ str, WGPU_STRLEN };
+    return WGPUStringView{ str, WGPU_STRLEN };
 }
 
 WGPUTextureFormat gfxFormatToWGPUFormat(GfxTextureFormat format)
@@ -744,9 +744,9 @@ public:
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
 
-    Device(Adapter* adapter, WGPUDevice device)
-        : m_adapter(adapter)
-        , m_device(device)
+    Device(WGPUDevice device, Adapter* adapter)
+        : m_device(device)
+        , m_adapter(adapter)
     {
         if (!m_device) {
             throw std::runtime_error("Invalid WGPUDevice provided to Device constructor");
@@ -1446,7 +1446,7 @@ void onDeviceRequested(WGPURequestDeviceStatus status, WGPUDevice device,
     ctx->completed = true;
 
     if (status == WGPURequestDeviceStatus_Success && device) {
-        auto* deviceObj = new gfx::webgpu::Device(ctx->adapter, device);
+        auto* deviceObj = new gfx::webgpu::Device(device, ctx->adapter);
         *ctx->outDevice = reinterpret_cast<GfxDevice>(deviceObj);
     } else if (message.data) {
         fprintf(stderr, "Error: Failed to request device: %.*s\n",
