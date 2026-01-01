@@ -257,6 +257,18 @@ GfxBackend gfxAdapterGetBackend(GfxAdapter adapter)
     return gfx::getBackend(adapter);
 }
 
+void gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits)
+{
+    if (!adapter || !outLimits) {
+        return;
+    }
+    auto api = gfx::getAPI(adapter);
+    if (!api) {
+        return;
+    }
+    api->adapterGetLimits(gfx::native(adapter), outLimits);
+}
+
 // Device Functions
 void gfxDeviceDestroy(GfxDevice device)
 {

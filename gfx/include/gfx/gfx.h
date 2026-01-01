@@ -909,6 +909,7 @@ GFX_API void gfxAdapterDestroy(GfxAdapter adapter);
 GFX_API GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice);
 GFX_API const char* gfxAdapterGetName(GfxAdapter adapter);
 GFX_API GfxBackend gfxAdapterGetBackend(GfxAdapter adapter);
+GFX_API void gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits);
 
 // Device functions
 GFX_API void gfxDeviceDestroy(GfxDevice device);

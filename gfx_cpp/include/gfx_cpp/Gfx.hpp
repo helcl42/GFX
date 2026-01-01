@@ -1177,6 +1177,7 @@ public:
     virtual std::shared_ptr<Device> createDevice(const DeviceDescriptor& descriptor = {}) = 0;
     virtual std::string getName() const = 0;
     virtual Backend getBackend() const = 0;
+    virtual DeviceLimits getLimits() const = 0;
 };
 
 class Instance {

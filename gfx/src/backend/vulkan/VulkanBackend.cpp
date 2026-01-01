@@ -2417,6 +2417,27 @@ GfxBackend VulkanBackend::adapterGetBackend(GfxAdapter adapter) const
     return GFX_BACKEND_VULKAN;
 }
 
+void VulkanBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const
+{
+    if (!adapter || !outLimits) {
+        return;
+    }
+    auto* adap = reinterpret_cast<gfx::vulkan::Adapter*>(adapter);
+    
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(adap->handle(), &properties);
+    
+    outLimits->minUniformBufferOffsetAlignment = static_cast<uint32_t>(properties.limits.minUniformBufferOffsetAlignment);
+    outLimits->minStorageBufferOffsetAlignment = static_cast<uint32_t>(properties.limits.minStorageBufferOffsetAlignment);
+    outLimits->maxUniformBufferBindingSize = properties.limits.maxUniformBufferRange;
+    outLimits->maxStorageBufferBindingSize = properties.limits.maxStorageBufferRange;
+    outLimits->maxBufferSize = UINT64_MAX; // Vulkan doesn't have a single max, use practical limit
+    outLimits->maxTextureDimension1D = properties.limits.maxImageDimension1D;
+    outLimits->maxTextureDimension2D = properties.limits.maxImageDimension2D;
+    outLimits->maxTextureDimension3D = properties.limits.maxImageDimension3D;
+    outLimits->maxTextureArrayLayers = properties.limits.maxImageArrayLayers;
+}
+
 // Device functions
 void VulkanBackend::deviceDestroy(GfxDevice device) const
 {

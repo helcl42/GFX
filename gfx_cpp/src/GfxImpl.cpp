@@ -1720,6 +1720,24 @@ public:
         return cBackendToCppBackend(gfxAdapterGetBackend(m_handle));
     }
 
+    DeviceLimits getLimits() const override
+    {
+        GfxDeviceLimits cLimits = {};
+        gfxAdapterGetLimits(m_handle, &cLimits);
+        
+        DeviceLimits limits;
+        limits.minUniformBufferOffsetAlignment = cLimits.minUniformBufferOffsetAlignment;
+        limits.minStorageBufferOffsetAlignment = cLimits.minStorageBufferOffsetAlignment;
+        limits.maxUniformBufferBindingSize = cLimits.maxUniformBufferBindingSize;
+        limits.maxStorageBufferBindingSize = cLimits.maxStorageBufferBindingSize;
+        limits.maxBufferSize = cLimits.maxBufferSize;
+        limits.maxTextureDimension1D = cLimits.maxTextureDimension1D;
+        limits.maxTextureDimension2D = cLimits.maxTextureDimension2D;
+        limits.maxTextureDimension3D = cLimits.maxTextureDimension3D;
+        limits.maxTextureArrayLayers = cLimits.maxTextureArrayLayers;
+        return limits;
+    }
+
 private:
     GfxAdapter m_handle;
 };
