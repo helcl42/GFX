@@ -168,6 +168,22 @@ GfxPresentMode vkPresentModeToGfxPresentMode(VkPresentModeKHR mode)
     }
 }
 
+VkPresentModeKHR gfxPresentModeToVkPresentMode(GfxPresentMode mode)
+{
+    switch (mode) {
+    case GFX_PRESENT_MODE_IMMEDIATE:
+        return VK_PRESENT_MODE_IMMEDIATE_KHR;
+    case GFX_PRESENT_MODE_MAILBOX:
+        return VK_PRESENT_MODE_MAILBOX_KHR;
+    case GFX_PRESENT_MODE_FIFO:
+        return VK_PRESENT_MODE_FIFO_KHR;
+    case GFX_PRESENT_MODE_FIFO_RELAXED:
+        return VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+    default:
+        return VK_PRESENT_MODE_FIFO_KHR; // Safe default
+    }
+}
+
 bool hasStencilComponent(VkFormat format)
 {
     return format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D32_SFLOAT_S8_UINT;
@@ -867,13 +883,20 @@ public:
     Swapchain& operator=(const Swapchain&) = delete;
 
     Swapchain(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
-        const GfxSwapchainDescriptor* descriptor)
+        uint32_t queueFamily, const GfxSwapchainDescriptor* descriptor)
         : m_device(device)
         , m_physicalDevice(physicalDevice)
         , m_surface(surface)
         , m_width(descriptor->width)
         , m_height(descriptor->height)
     {
+        // Check if queue family supports presentation
+        VkBool32 presentSupport = VK_FALSE;
+        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily, surface, &presentSupport);
+        if (presentSupport != VK_TRUE) {
+            throw std::runtime_error("Selected queue family does not support presentation");
+        }
+
         // Query surface capabilities
         VkSurfaceCapabilitiesKHR capabilities;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities);
@@ -881,11 +904,43 @@ public:
         // Choose format
         uint32_t formatCount;
         vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+        if (formatCount == 0) {
+            throw std::runtime_error("No surface formats available");
+        }
         std::vector<VkSurfaceFormatKHR> formats(formatCount);
         vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
 
-        VkSurfaceFormatKHR surfaceFormat = formats[0];
+        // Try to find the requested format
+        VkFormat requestedFormat = gfxFormatToVkFormat(descriptor->format);
+        VkSurfaceFormatKHR surfaceFormat = formats[0]; // Default to first available
+
+        for (const auto& availableFormat : formats) {
+            if (availableFormat.format == requestedFormat) {
+                surfaceFormat = availableFormat;
+                break;
+            }
+        }
+
         m_format = surfaceFormat.format;
+
+        // Choose present mode
+        uint32_t presentModeCount;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
+        std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
+
+        // Try to find the requested present mode
+        VkPresentModeKHR requestedPresentMode = gfxPresentModeToVkPresentMode(descriptor->presentMode);
+        VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR; // Default to FIFO (always supported)
+
+        for (const auto& availableMode : presentModes) {
+            if (availableMode == requestedPresentMode) {
+                presentMode = requestedPresentMode;
+                break;
+            }
+        }
+
+        m_presentMode = presentMode;
 
         // Determine actual swapchain extent
         // If currentExtent is defined, we MUST use it. Otherwise, we can choose within min/max bounds.
@@ -921,7 +976,7 @@ public:
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         createInfo.preTransform = capabilities.currentTransform;
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+        createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
 
         VkResult result = vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapchain);
@@ -984,6 +1039,7 @@ public:
     uint32_t getWidth() const { return m_width; }
     uint32_t getHeight() const { return m_height; }
     uint32_t getCurrentImageIndex() const { return m_currentImageIndex; }
+    VkPresentModeKHR getPresentMode() const { return m_presentMode; }
 
     VkResult acquireNextImage(uint64_t timeoutNs, VkSemaphore semaphore, VkFence fence, uint32_t* outImageIndex)
     {
@@ -1020,6 +1076,7 @@ private:
     uint32_t m_width = 0;
     uint32_t m_height = 0;
     uint32_t m_currentImageIndex = 0;
+    VkPresentModeKHR m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
 };
 
 class Buffer {
@@ -1717,27 +1774,31 @@ public:
         std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
         if (descriptor->fragment && descriptor->fragment->targetCount > 0) {
             colorBlendAttachments.reserve(descriptor->fragment->targetCount);
-            
+
             for (uint32_t i = 0; i < descriptor->fragment->targetCount; ++i) {
                 const auto& target = descriptor->fragment->targets[i];
                 VkPipelineColorBlendAttachmentState blendAttachment{};
-                
+
                 // Convert GfxColorWriteMask to VkColorComponentFlags
                 blendAttachment.colorWriteMask = 0;
-                if (target.writeMask & 0x1) blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT;
-                if (target.writeMask & 0x2) blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_G_BIT;
-                if (target.writeMask & 0x4) blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_B_BIT;
-                if (target.writeMask & 0x8) blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
-                
+                if (target.writeMask & 0x1)
+                    blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT;
+                if (target.writeMask & 0x2)
+                    blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_G_BIT;
+                if (target.writeMask & 0x4)
+                    blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_B_BIT;
+                if (target.writeMask & 0x8)
+                    blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
+
                 // Configure blend state if provided
                 if (target.blend) {
                     blendAttachment.blendEnable = VK_TRUE;
-                    
+
                     // Color blend
                     blendAttachment.srcColorBlendFactor = static_cast<VkBlendFactor>(target.blend->color.srcFactor);
                     blendAttachment.dstColorBlendFactor = static_cast<VkBlendFactor>(target.blend->color.dstFactor);
                     blendAttachment.colorBlendOp = static_cast<VkBlendOp>(target.blend->color.operation);
-                    
+
                     // Alpha blend
                     blendAttachment.srcAlphaBlendFactor = static_cast<VkBlendFactor>(target.blend->alpha.srcFactor);
                     blendAttachment.dstAlphaBlendFactor = static_cast<VkBlendFactor>(target.blend->alpha.dstFactor);
@@ -1745,14 +1806,13 @@ public:
                 } else {
                     blendAttachment.blendEnable = VK_FALSE;
                 }
-                
+
                 colorBlendAttachments.push_back(blendAttachment);
             }
         } else {
             // Fallback: single target with all channels enabled
             VkPipelineColorBlendAttachmentState blendAttachment{};
-            blendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | 
-                                            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            blendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             blendAttachment.blendEnable = VK_FALSE;
             colorBlendAttachments.push_back(blendAttachment);
         }
@@ -2423,10 +2483,10 @@ void VulkanBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLim
         return;
     }
     auto* adap = reinterpret_cast<gfx::vulkan::Adapter*>(adapter);
-    
+
     VkPhysicalDeviceProperties properties;
     vkGetPhysicalDeviceProperties(adap->handle(), &properties);
-    
+
     outLimits->minUniformBufferOffsetAlignment = static_cast<uint32_t>(properties.limits.minUniformBufferOffsetAlignment);
     outLimits->minStorageBufferOffsetAlignment = static_cast<uint32_t>(properties.limits.minStorageBufferOffsetAlignment);
     outLimits->maxUniformBufferBindingSize = properties.limits.maxUniformBufferRange;
@@ -2484,6 +2544,7 @@ GfxResult VulkanBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
             dev->handle(),
             dev->getAdapter()->handle(),
             surf->handle(),
+            dev->getAdapter()->getGraphicsQueueFamily(),
             descriptor);
         *outSwapchain = reinterpret_cast<GfxSwapchain>(swapchain);
         return GFX_RESULT_SUCCESS;
@@ -2730,18 +2791,18 @@ uint32_t VulkanBackend::surfaceGetSupportedFormats(GfxSurface surface, GfxTextur
     }
 
     auto* surf = reinterpret_cast<gfx::vulkan::Surface*>(surface);
-    
+
     // Query supported surface formats from Vulkan
     uint32_t formatCount = 0;
     vkGetPhysicalDeviceSurfaceFormatsKHR(surf->physicalDevice(), surf->handle(), &formatCount, nullptr);
-    
+
     if (formatCount == 0) {
         return 0;
     }
-    
+
     std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
     vkGetPhysicalDeviceSurfaceFormatsKHR(surf->physicalDevice(), surf->handle(), &formatCount, surfaceFormats.data());
-    
+
     // Convert to GfxTextureFormat
     if (formats && maxFormats > 0) {
         uint32_t copyCount = std::min(formatCount, maxFormats);
@@ -2760,18 +2821,18 @@ uint32_t VulkanBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxP
     }
 
     auto* surf = reinterpret_cast<gfx::vulkan::Surface*>(surface);
-    
+
     // Query supported present modes from Vulkan
     uint32_t modeCount = 0;
     vkGetPhysicalDeviceSurfacePresentModesKHR(surf->physicalDevice(), surf->handle(), &modeCount, nullptr);
-    
+
     if (modeCount == 0) {
         return 0;
     }
-    
+
     std::vector<VkPresentModeKHR> vkPresentModes(modeCount);
     vkGetPhysicalDeviceSurfacePresentModesKHR(surf->physicalDevice(), surf->handle(), &modeCount, vkPresentModes.data());
-    
+
     // Convert to GfxPresentMode
     if (presentModes && maxModes > 0) {
         uint32_t copyCount = std::min(modeCount, maxModes);
@@ -3476,8 +3537,8 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         // Use UNDEFINED if we're clearing or don't care, otherwise preserve contents with COLOR_ATTACHMENT_OPTIMAL
-        colorAttachment.initialLayout = (target->ops.loadOp == GFX_LOAD_OP_LOAD) 
-            ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL 
+        colorAttachment.initialLayout = (target->ops.loadOp == GFX_LOAD_OP_LOAD)
+            ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
             : VK_IMAGE_LAYOUT_UNDEFINED;
         colorAttachment.finalLayout = gfxLayoutToVkImageLayout(target->finalLayout);
         attachments.push_back(colorAttachment);
@@ -3502,8 +3563,8 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
             resolveAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             resolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             // Use UNDEFINED if we're clearing or don't care, otherwise preserve contents with COLOR_ATTACHMENT_OPTIMAL
-            resolveAttachment.initialLayout = (resolveTarget->ops.loadOp == GFX_LOAD_OP_LOAD) 
-                ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL 
+            resolveAttachment.initialLayout = (resolveTarget->ops.loadOp == GFX_LOAD_OP_LOAD)
+                ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
                 : VK_IMAGE_LAYOUT_UNDEFINED;
             resolveAttachment.finalLayout = gfxLayoutToVkImageLayout(resolveTarget->finalLayout);
             attachments.push_back(resolveAttachment);
@@ -3536,7 +3597,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = depthView->getFormat();
         depthAttachment.samples = sampleCountToVkSampleCount(depthView->getTexture()->getSampleCount());
-        
+
         // Handle depth operations (required if depth pointer is set)
         if (target->depthOps) {
             depthAttachment.loadOp = gfxLoadOpToVkLoadOp(target->depthOps->loadOp);
@@ -3545,7 +3606,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
             depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         }
-        
+
         // Handle stencil operations (required if stencil pointer is set)
         if (target->stencilOps) {
             depthAttachment.stencilLoadOp = gfxLoadOpToVkLoadOp(target->stencilOps->loadOp);
@@ -3554,12 +3615,12 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
             depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         }
-        
+
         // Use UNDEFINED if we're clearing or don't care about both depth AND stencil, otherwise preserve contents
         bool loadDepth = (target->depthOps && target->depthOps->loadOp == GFX_LOAD_OP_LOAD);
         bool loadStencil = (target->stencilOps && target->stencilOps->loadOp == GFX_LOAD_OP_LOAD);
         depthAttachment.initialLayout = (loadDepth || loadStencil)
-            ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL 
+            ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
             : VK_IMAGE_LAYOUT_UNDEFINED;
         depthAttachment.finalLayout = gfxLayoutToVkImageLayout(target->finalLayout);
         attachments.push_back(depthAttachment);
@@ -3599,7 +3660,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         // Add color attachment
         auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].target.view);
         fbAttachments.push_back(colorView->handle());
-        
+
         // Add resolve target if present
         if (colorAttachments[i].resolveTarget) {
             auto* resolveView = reinterpret_cast<gfx::vulkan::TextureView*>(colorAttachments[i].resolveTarget->view);
