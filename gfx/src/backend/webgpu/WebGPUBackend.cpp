@@ -1532,7 +1532,6 @@ GfxResult webgpu_adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescript
     auto* adapterPtr = reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
 
     WGPUUncapturedErrorCallbackInfo errorCallbackInfo = WGPU_UNCAPTURED_ERROR_CALLBACK_INFO_INIT;
-    errorCallbackInfo.mode = WGPUCallbackMode_AllowSpontaneous;
     errorCallbackInfo.callback = uncapturedErrorCallback;
 
     WGPUDeviceLostCallbackInfo deviceLostCallbackInfo = WGPU_DEVICE_LOST_CALLBACK_INFO_INIT;
