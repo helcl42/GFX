@@ -1,20 +1,23 @@
-#include <GLFW/glfw3.h>
 #include <gfx_cpp/Gfx.hpp>
 
-// Include platform-specific GLFW headers to get native handles
-#ifdef _WIN32
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+
+#if defined(__EMSCRIPTEN__)
+#include <emscripten/emscripten.h>
+#else
+#if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
 #elif defined(__linux__)
 #define GLFW_EXPOSE_NATIVE_X11
-#include <GLFW/glfw3native.h>
-// X11 headers define "Success" as a macro which conflicts with our enum
-#ifdef Success
-#undef Success
-#endif
 #elif defined(__APPLE__)
 #define GLFW_EXPOSE_NATIVE_COCOA
+#endif
 #include <GLFW/glfw3native.h>
+#endif
+
+#ifdef Success
+#undef Success
 #endif
 
 #include <array>
@@ -37,7 +40,13 @@ static constexpr size_t CUBE_COUNT = 3;
 static constexpr SampleCount MSAA_SAMPLE_COUNT = SampleCount::Count4;
 static constexpr TextureFormat COLOR_FORMAT = TextureFormat::B8G8R8A8UnormSrgb;
 static constexpr TextureFormat DEPTH_FORMAT = TextureFormat::Depth32Float;
+
+#if defined(__EMSCRIPTEN__)
 static constexpr Backend BACKEND_API = Backend::WebGPU;
+#else
+// here we can choose between VULKAN, WEBGPU
+static constexpr Backend BACKEND_API = Backend::Vulkan;
+#endif
 
 // Vertex structure for cube
 struct Vertex {
@@ -70,6 +79,11 @@ private:
     void updateCube(int cubeIndex);
     void update(float deltaTime);
     void render();
+    float getCurrentTime();
+    bool mainLoopIteration();
+#if defined(__EMSCRIPTEN__)
+    static void emscriptenMainLoop(void* userData);
+#endif
     PlatformWindowHandle extractNativeHandle();
     std::vector<uint8_t> loadBinaryFile(const char* filepath);
     std::string loadTextFile(const char* filepath);
@@ -86,6 +100,7 @@ private:
     void matrixMultiply(std::array<std::array<float, 4>, 4>& result,
         const std::array<std::array<float, 4>, 4>& a,
         const std::array<std::array<float, 4>, 4>& b);
+    bool vectorNormalize(float& x, float& y, float& z);
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -115,6 +130,8 @@ private:
 
     uint32_t windowWidth = WINDOW_WIDTH;
     uint32_t windowHeight = WINDOW_HEIGHT;
+    uint32_t previousWidth = WINDOW_WIDTH;
+    uint32_t previousHeight = WINDOW_HEIGHT;
 
     // Per-frame resources (for frames in flight)
     std::shared_ptr<Buffer> sharedUniformBuffer; // Single buffer for all frames and cubes
@@ -131,6 +148,7 @@ private:
     // Animation state
     float rotationAngleX = 0.0f;
     float rotationAngleY = 0.0f;
+    float lastTime = 0.0f;
 };
 
 bool CubeApp::initialize()
@@ -192,14 +210,14 @@ bool CubeApp::initializeGraphics()
 {
     try {
         // Create graphics instance with required extensions from GLFW
+        std::vector<std::string> extensions;
+#if !defined(__EMSCRIPTEN__)
         uint32_t glfwExtensionCount = 0;
         const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-        std::vector<std::string> extensions;
         for (uint32_t i = 0; i < glfwExtensionCount; ++i) {
             extensions.emplace_back(glfwExtensions[i]);
         }
-
+#endif
         InstanceDescriptor instanceDesc{};
         instanceDesc.applicationName = "Rotating Cube Example (C++)";
         instanceDesc.applicationVersion = 1;
@@ -919,8 +937,13 @@ PlatformWindowHandle CubeApp::extractNativeHandle()
 {
     PlatformWindowHandle handle{};
 
-#ifdef _WIN32
+#if defined(__EMSCRIPTEN__)
+    handle.windowingSystem = gfx::WindowingSystem::Emscripten;
+    handle.emscripten.canvasSelector = "#canvas";
+
+#elif defined(_WIN32)
     // Windows: Get HWND and HINSTANCE
+    handle.windowingSystem = gfx::WindowingSystem::Win32;
     handle.hwnd = glfwGetWin32Window(window);
     handle.hinstance = GetModuleHandle(nullptr);
     std::cout << "Extracted Win32 handle: HWND=" << handle.hwnd << ", HINSTANCE=" << handle.hinstance << std::endl;
@@ -934,13 +957,9 @@ PlatformWindowHandle CubeApp::extractNativeHandle()
 
 #elif defined(__APPLE__)
     // macOS: Get NSWindow
+    handle.windowingSystem = gfx::WindowingSystem::Cocoa;
     handle.nsWindow = glfwGetCocoaWindow(window);
     std::cout << "Extracted Cocoa handle: NSWindow=" << handle.nsWindow << std::endl;
-
-#else
-    // Fallback: Use GLFW window directly
-    handle.window = window;
-    std::cout << "Using GLFW window handle directly (fallback)" << std::endl;
 #endif
 
     return handle;
@@ -965,42 +984,76 @@ void CubeApp::keyCallback(GLFWwindow* window, int key, int scancode, int action,
     }
 }
 
-void CubeApp::run()
+float CubeApp::getCurrentTime()
 {
-    float lastTime = (float)glfwGetTime();
+#if defined(__EMSCRIPTEN__)
+    return (float)emscripten_get_now() / 1000.0f;
+#else
+    return (float)glfwGetTime();
+#endif
+}
 
-    uint32_t previousWidth = swapchain->getWidth();
-    uint32_t previousHeight = swapchain->getHeight();
+bool CubeApp::mainLoopIteration()
+{
+    if (glfwWindowShouldClose(window)) {
+        return false;
+    }
 
-    // Main loop
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
+    glfwPollEvents();
 
-        if (previousWidth != windowWidth || previousHeight != windowHeight) {
-            // Wait for all in-flight frames to complete
-            device->waitIdle();
+    // Handle framebuffer resize
+    if (previousWidth != windowWidth || previousHeight != windowHeight) {
+        // Wait for all in-flight frames to complete
+        device->waitIdle();
 
-            // Recreate only size-dependent resources (including swapchain)
-            cleanupSizeDependentResources();
-            if (!createSizeDependentResources(windowWidth, windowHeight)) {
-                std::cerr << "Failed to recreate size-dependent resources after resize" << std::endl;
-                break;
-            }
-
-            previousWidth = windowWidth;
-            previousHeight = windowHeight;
-
-            std::cout << "Window resized: " << swapchain->getWidth() << "x" << swapchain->getHeight() << std::endl;
-            continue; // Skip rendering this frame
+        // Recreate only size-dependent resources (including swapchain)
+        cleanupSizeDependentResources();
+        if (!createSizeDependentResources(windowWidth, windowHeight)) {
+            std::cerr << "Failed to recreate size-dependent resources after resize" << std::endl;
+            return false;
         }
 
-        float currentTime = (float)glfwGetTime();
-        float deltaTime = (float)(currentTime - lastTime);
-        lastTime = currentTime;
-
-        update(deltaTime);
-        render();
+        previousWidth = windowWidth;
+        previousHeight = windowHeight;
+        std::cout << "Window resized: " << swapchain->getWidth() << "x" << swapchain->getHeight() << std::endl;
+        return true; // Skip rendering this frame
     }
+
+    // Calculate delta time
+    float currentTime = getCurrentTime();
+    float deltaTime = currentTime - lastTime;
+    lastTime = currentTime;
+
+    update(deltaTime);
+    render();
+
+    return true;
+}
+
+#if defined(__EMSCRIPTEN__)
+void CubeApp::emscriptenMainLoop(void* userData)
+{
+    CubeApp* app = (CubeApp*)userData;
+    if (!app->mainLoopIteration()) {
+        emscripten_cancel_main_loop();
+        app->cleanup();
+    }
+}
+#endif
+
+void CubeApp::run()
+{
+    // Run main loop (platform-specific)
+#if defined(__EMSCRIPTEN__)
+    // Note: emscripten_set_main_loop_arg returns immediately and never blocks
+    // Cleanup happens in emscriptenMainLoop when the loop exits
+    // Execution continues in the browser event loop
+    emscripten_set_main_loop_arg(CubeApp::emscriptenMainLoop, this, 0, 1);
+#else
+    while (mainLoopIteration()) {
+        // Loop continues until mainLoopIteration returns false
+    }
+#endif
 }
 
 void CubeApp::cleanup()
@@ -1090,39 +1143,27 @@ void CubeApp::matrixLookAt(std::array<std::array<float, 4>, 4>& matrix,
     float centerX, float centerY, float centerZ,
     float upX, float upY, float upZ)
 {
-    const float epsilon = 1e-6f;
-
     // Calculate forward vector
     float fx = centerX - eyeX;
     float fy = centerY - eyeY;
     float fz = centerZ - eyeZ;
-    float flen = std::sqrt(fx * fx + fy * fy + fz * fz);
 
     // Check for zero-length forward vector
-    if (flen < epsilon) {
+    if (!vectorNormalize(fx, fy, fz)) {
         matrixIdentity(matrix);
         return;
     }
-
-    fx /= flen;
-    fy /= flen;
-    fz /= flen;
 
     // Calculate right vector (cross product of forward and up)
     float rx = fy * upZ - fz * upY;
     float ry = fz * upX - fx * upZ;
     float rz = fx * upY - fy * upX;
-    float rlen = std::sqrt(rx * rx + ry * ry + rz * rz);
 
     // Check for zero-length right vector (forward and up are parallel)
-    if (rlen < epsilon) {
+    if (!vectorNormalize(rx, ry, rz)) {
         matrixIdentity(matrix);
         return;
     }
-
-    rx /= rlen;
-    ry /= rlen;
-    rz /= rlen;
 
     // Calculate up vector (cross product of right and forward)
     float ux = ry * fz - rz * fy;
@@ -1185,6 +1226,21 @@ void CubeApp::matrixMultiply(std::array<std::array<float, 4>, 4>& result,
         }
     }
     result = temp;
+}
+
+bool CubeApp::vectorNormalize(float& x, float& y, float& z)
+{
+    const float epsilon = 1e-6f;
+    float len = sqrtf(x * x + y * y + z * z);
+
+    if (len < epsilon) {
+        return false;
+    }
+
+    x /= len;
+    y /= len;
+    z /= len;
+    return true;
 }
 
 std::vector<uint8_t> CubeApp::loadBinaryFile(const char* filepath)
