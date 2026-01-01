@@ -391,6 +391,8 @@ static bool createComputeResources(ComputeApp* app)
         return false;
     }
 
+    printf("Created compute texture: %dx%d\n", COMPUTE_TEXTURE_WIDTH, COMPUTE_TEXTURE_HEIGHT);
+
     GfxTextureViewDescriptor viewDesc = {
         .format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM,
         .viewType = GFX_TEXTURE_VIEW_TYPE_2D,
@@ -410,9 +412,11 @@ static bool createComputeResources(ComputeApp* app)
     void* computeCode = NULL;
     size_t computeSize = 0;
     GfxBackend backend = gfxAdapterGetBackend(app->adapter);
+    printf("Backend: %s\n", backend == GFX_BACKEND_WEBGPU ? "WebGPU" : "Vulkan");
     if (backend == GFX_BACKEND_WEBGPU) {
         sourceType = GFX_SHADER_SOURCE_WGSL;
         // Load WGSL shader for WebGPU
+        printf("Loading WGSL shader: shaders/generate.comp.wgsl\n");
         computeCode = loadTextFile("shaders/generate.comp.wgsl", &computeSize);
         if (!computeCode) {
             fprintf(stderr, "Failed to load WGSL compute shader\n");
@@ -421,6 +425,7 @@ static bool createComputeResources(ComputeApp* app)
     } else {
         sourceType = GFX_SHADER_SOURCE_SPIRV;
         // Load SPIR-V shader for Vulkan
+        printf("Loading SPIR-V shader: generate.comp.spv\n");
         computeCode = loadBinaryFile("generate.comp.spv", &computeSize);
         if (!computeCode) {
             fprintf(stderr, "Failed to load SPIR-V compute shader\n");
@@ -878,6 +883,7 @@ static void render(ComputeApp* app)
     ComputeUniformData computeUniforms = {
         .time = app->elapsedTime
     };
+
     gfxQueueWriteBuffer(app->queue, app->computeUniformBuffer[frameIndex], 0, &computeUniforms, sizeof(computeUniforms));
 
     // Update render uniforms for current frame
