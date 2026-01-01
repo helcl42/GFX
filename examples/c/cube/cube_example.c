@@ -5,9 +5,8 @@
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten/emscripten.h>
-#include <emscripten/html5.h>
 #else
-#ifdef _WIN32
+#if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
 #define GLFW_EXPOSE_NATIVE_X11
@@ -134,6 +133,11 @@ typedef struct {
     // Animation state
     float rotationAngleX;
     float rotationAngleY;
+
+    // Loop state
+    uint32_t previousWidth;
+    uint32_t previousHeight;
+    float lastTime;
 } CubeApp;
 
 // Function declarations
@@ -163,6 +167,7 @@ void matrixPerspective(float* matrix, float fov, float aspect, float near, float
 void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ,
     float centerX, float centerY, float centerZ,
     float upX, float upY, float upZ);
+bool vectorNormalize(float* x, float* y, float* z);
 
 // GLFW callbacks
 static void errorCallback(int error, const char* description)
@@ -227,8 +232,7 @@ GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_EMSCRIPTEN;
     handle.emscripten.canvasSelector = "#canvas";
 
-#else
-#ifdef _WIN32
+#elif defined(_WIN32)
     handle.hwnd = glfwGetWin32Window(window);
     handle.hinstance = GetModuleHandle(NULL);
 
@@ -242,7 +246,6 @@ GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
     handle.nsWindow = glfwGetCocoaWindow(window);
     // Metal layer will be created automatically by the graphics API
     handle.metalLayer = NULL;
-#endif
 #endif
 
     return handle;
@@ -259,26 +262,17 @@ bool initializeGraphics(CubeApp* app)
     }
     printf("Graphics backend loaded successfully!\n");
 
-#if defined(__EMSCRIPTEN__)
-    // Create graphics instance
-    GfxInstanceDescriptor instanceDesc = {
-        .backend = GFX_BACKEND_API,
-        .enableValidation = true,
-        .enabledHeadless = false,
-        .applicationName = "Cube Example (C)",
-        .applicationVersion = 1,
-        .requiredExtensions = NULL,
-        .requiredExtensionCount = 0
-    };
-#else
-    // Get required Vulkan extensions from GLFW
+    // Get required extensions from GLFW (only needed for native builds)
     uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    const char** glfwExtensions = NULL;
 
+#if !defined(__EMSCRIPTEN__)
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
     printf("[DEBUG] GLFW requires %u extensions:\n", glfwExtensionCount);
     for (uint32_t i = 0; i < glfwExtensionCount; ++i) {
         printf("[DEBUG]   - %s\n", glfwExtensions[i]);
     }
+#endif
 
     // Create graphics instance
     GfxInstanceDescriptor instanceDesc = {
@@ -290,7 +284,6 @@ bool initializeGraphics(CubeApp* app)
         .requiredExtensions = glfwExtensions,
         .requiredExtensionCount = glfwExtensionCount
     };
-#endif
 
     if (gfxCreateInstance(&instanceDesc, &app->instance) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create graphics instance\n");
@@ -552,7 +545,7 @@ void cleanupRenderingResources(CubeApp* app)
         app->uniformBindGroupLayout = NULL;
     }
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        for (int cubeIdx = 0; cubeIdx < 3; ++cubeIdx) {
+        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
             if (app->uniformBindGroups[i][cubeIdx]) {
                 gfxBindGroupDestroy(app->uniformBindGroups[i][cubeIdx]);
                 app->uniformBindGroups[i][cubeIdx] = NULL;
@@ -576,7 +569,7 @@ void cleanupRenderingResources(CubeApp* app)
 bool createRenderingResources(CubeApp* app)
 {
     printf("[DEBUG] createRenderingResources called\n");
-    
+
     // Create cube vertices (8 vertices for a cube)
     Vertex vertices[] = {
         // Front face
@@ -1267,10 +1260,10 @@ void matrixPerspective(float* matrix, float fov, float aspect, float near, float
     float f = 1.0f / tanf(fov / 2.0f);
 
     matrix[0] = f / aspect;
-    if (backend == GFX_BACKEND_WEBGPU) {
-        matrix[5] = f;
-    } else {
+    if (backend == GFX_BACKEND_VULKAN) {
         matrix[5] = -f; // Invert Y for Vulkan
+    } else {
+        matrix[5] = f;
     }
     matrix[10] = (far + near) / (near - far);
     matrix[11] = -1.0f;
@@ -1281,43 +1274,27 @@ void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ,
     float centerX, float centerY, float centerZ,
     float upX, float upY, float upZ)
 {
-    const float epsilon = 1e-6f;
-
     // Calculate forward vector
     float fx = centerX - eyeX;
     float fy = centerY - eyeY;
     float fz = centerZ - eyeZ;
 
-    // Normalize forward
-    float flen = sqrtf(fx * fx + fy * fy + fz * fz);
-
-    // Check for zero-length forward vector
-    if (flen < epsilon) {
+    // Normalize forward vector
+    if (!vectorNormalize(&fx, &fy, &fz)) {
         matrixIdentity(matrix);
         return;
     }
-
-    fx /= flen;
-    fy /= flen;
-    fz /= flen;
 
     // Calculate right vector (forward cross up)
     float rx = fy * upZ - fz * upY;
     float ry = fz * upX - fx * upZ;
     float rz = fx * upY - fy * upX;
 
-    // Normalize right
-    float rlen = sqrtf(rx * rx + ry * ry + rz * rz);
-
-    // Check for zero-length right vector (forward and up are parallel)
-    if (rlen < epsilon) {
+    // Normalize right vector (check if forward and up are parallel)
+    if (!vectorNormalize(&rx, &ry, &rz)) {
         matrixIdentity(matrix);
         return;
     }
-
-    rx /= rlen;
-    ry /= rlen;
-    rz /= rlen;
 
     // Calculate up vector (right cross forward)
     float ux = ry * fz - rz * fy;
@@ -1344,6 +1321,22 @@ void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ,
     matrix[13] = -(ux * eyeX + uy * eyeY + uz * eyeZ);
     matrix[14] = fx * eyeX + fy * eyeY + fz * eyeZ;
     matrix[15] = 1.0f;
+}
+
+// Normalize a 3D vector in place. Returns false if vector is too small to normalize.
+bool vectorNormalize(float* x, float* y, float* z)
+{
+    const float epsilon = 1e-6f;
+    float len = sqrtf((*x) * (*x) + (*y) * (*y) + (*z) * (*z));
+
+    if (len < epsilon) {
+        return false;
+    }
+
+    *x /= len;
+    *y /= len;
+    *z /= len;
+    return true;
 }
 
 // Helper function to load binary files (SPIR-V shaders)
@@ -1433,52 +1426,62 @@ static void* loadTextFile(const char* filepath, size_t* outSize)
     return buffer;
 }
 
-#if defined(__EMSCRIPTEN__)
-static float g_lastTime = 0.0f;
-static CubeApp* g_app = NULL;
-static uint32_t g_previousWidth = 0;
-static uint32_t g_previousHeight = 0;
-
-static void mainLoop(void)
+static float getCurrentTime(void)
 {
-    if (!g_app || glfwWindowShouldClose(g_app->window)) {
-        if (g_app) {
-            emscripten_cancel_main_loop();
-            cleanup(g_app);
-        }
-        return;
+#if defined(__EMSCRIPTEN__)
+    return (float)emscripten_get_now() / 1000.0f;
+#else
+    return (float)glfwGetTime();
+#endif
+}
+
+// Returns false if loop should exit
+static bool mainLoopIteration(CubeApp* app)
+{
+    if (!app || glfwWindowShouldClose(app->window)) {
+        return false;
     }
 
     glfwPollEvents();
 
     // Handle framebuffer resize
-    if (g_previousWidth != g_app->windowWidth || g_previousHeight != g_app->windowHeight) {
+    if (app->previousWidth != app->windowWidth || app->previousHeight != app->windowHeight) {
         // Wait for all in-flight frames to complete
-        gfxDeviceWaitIdle(g_app->device);
+        gfxDeviceWaitIdle(app->device);
 
         // Recreate only size-dependent resources (including swapchain)
-        cleanupSizeDependentResources(g_app);
-        if (!createSizeDependentResources(g_app, g_app->windowWidth, g_app->windowHeight)) {
+        cleanupSizeDependentResources(app);
+        if (!createSizeDependentResources(app, app->windowWidth, app->windowHeight)) {
             fprintf(stderr, "Failed to recreate size-dependent resources after resize\n");
-            emscripten_cancel_main_loop();
-            cleanup(g_app);
-            return;
+            return false;
         }
 
-        g_previousWidth = g_app->windowWidth;
-        g_previousHeight = g_app->windowHeight;
+        app->previousWidth = app->windowWidth;
+        app->previousHeight = app->windowHeight;
 
-        printf("Window resized: %dx%d\n", g_app->windowWidth, g_app->windowHeight);
-        return; // Skip rendering this frame
+        printf("Window resized: %dx%d\n", app->windowWidth, app->windowHeight);
+        return true; // Skip rendering this frame
     }
 
     // Calculate delta time
-    float currentTime = (float)emscripten_get_now() / 1000.0f; // Convert ms to seconds
-    float deltaTime = currentTime - g_lastTime;
-    g_lastTime = currentTime;
+    float currentTime = getCurrentTime();
+    float deltaTime = currentTime - app->lastTime;
+    app->lastTime = currentTime;
 
-    update(g_app, deltaTime);
-    render(g_app);
+    update(app, deltaTime);
+    render(app);
+
+    return true;
+}
+
+#if defined(__EMSCRIPTEN__)
+static void emscriptenMainLoop(void* userData)
+{
+    CubeApp* app = (CubeApp*)userData;
+    if (!mainLoopIteration(app)) {
+        emscripten_cancel_main_loop();
+        cleanup(app);
+    }
 }
 #endif
 
@@ -1520,57 +1523,29 @@ int main(void)
         return -1;
     }
 
-#if defined(__EMSCRIPTEN__)
-    g_app = &app;
-    g_previousWidth = app.windowWidth;
-    g_previousHeight = app.windowHeight;
-    g_lastTime = (float)emscripten_get_now() / 1000.0f;
-    emscripten_set_main_loop(mainLoop, 0, 1);
-#else
     printf("Application initialized successfully!\n");
     printf("Press ESC to exit\n\n");
 
-    uint32_t previousWidth = gfxSwapchainGetWidth(app.swapchain);
-    uint32_t previousHeight = gfxSwapchainGetHeight(app.swapchain);
+    // Initialize loop state
+    app.previousWidth = app.windowWidth;
+    app.previousHeight = app.windowHeight;
+    app.lastTime = getCurrentTime();
 
-    float lastTime = (float)glfwGetTime();
-
-    // Main loop
-    while (!glfwWindowShouldClose(app.window)) {
-        glfwPollEvents();
-
-        // Handle framebuffer resize BEFORE rendering (prevent acquiring image during resize)
-        if (previousWidth != app.windowWidth || previousHeight != app.windowHeight) {
-            // Wait for all in-flight frames to complete
-            gfxDeviceWaitIdle(app.device);
-
-            // Recreate only size-dependent resources (including swapchain)
-            cleanupSizeDependentResources(&app);
-            if (!createSizeDependentResources(&app, app.windowWidth, app.windowHeight)) {
-                fprintf(stderr, "Failed to recreate size-dependent resources after resize\n");
-                break;
-            }
-
-            previousWidth = app.windowWidth;
-            previousHeight = app.windowHeight;
-
-            printf("Window resized: %dx%d\n", gfxSwapchainGetWidth(app.swapchain), gfxSwapchainGetHeight(app.swapchain));
-            continue; // Skip rendering this frame
-        }
-
-        float currentTime = (float)glfwGetTime();
-        float deltaTime = (float)(currentTime - lastTime);
-        lastTime = currentTime;
-
-        update(&app, deltaTime);
-        render(&app);
+    // Run main loop (platform-specific)
+#if defined(__EMSCRIPTEN__)
+    // Note: emscripten_set_main_loop_arg returns immediately and never blocks
+    // Cleanup happens in emscriptenMainLoop when the loop exits
+    // Execution continues in the browser event loop
+    emscripten_set_main_loop_arg(emscriptenMainLoop, &app, 0, 1);
+#else
+    while (mainLoopIteration(&app)) {
+        // Loop continues until mainLoopIteration returns false
     }
 
     printf("\nCleaning up resources...\n");
-    // TODO - should we move this output of macro
     cleanup(&app);
+    printf("Example completed successfully!\n");
 #endif
 
-    printf("Example completed successfully!\n");
     return 0;
 }
