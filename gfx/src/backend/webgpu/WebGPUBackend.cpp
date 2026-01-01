@@ -2815,7 +2815,6 @@ GfxResult webgpu_queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo)
     auto* queuePtr = reinterpret_cast<gfx::webgpu::Queue*>(queue);
 
     // WebGPU doesn't support semaphore-based sync - just submit command buffers
-    fprintf(stderr, "[WebGPU DEBUG] Queue submit: %u command encoders\n", submitInfo->commandEncoderCount);
     for (uint32_t i = 0; i < submitInfo->commandEncoderCount; ++i) {
         if (submitInfo->commandEncoders[i]) {
             auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(submitInfo->commandEncoders[i]);
@@ -2824,7 +2823,6 @@ GfxResult webgpu_queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo)
             WGPUCommandBuffer cmdBuffer = wgpuCommandEncoderFinish(encoderPtr->handle(), &cmdDesc);
 
             if (cmdBuffer) {
-                fprintf(stderr, "[WebGPU DEBUG] Submitting command buffer %u: %p\n", i, (void*)cmdBuffer);
                 wgpuQueueSubmit(queuePtr->handle(), 1, &cmdBuffer);
                 wgpuCommandBufferRelease(cmdBuffer);
 
@@ -2978,36 +2976,11 @@ GfxResult webgpu_commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
 
                 const GfxColor& color = colorAttachments[i].target.ops.clearColor;
                 attachment.clearValue = { color.r, color.g, color.b, color.a };
-                // Check sample count for MSAA validation
-                uint32_t sampleCount = 1;
-                if (viewPtr->getTexture()) {
-                    sampleCount = viewPtr->getTexture()->getSampleCount();
-                }
-
-                fprintf(stderr, "[WebGPU] Color attachment %u: view=%p, samples=%u, loadOp=%d, storeOp=%d, clear=(%.2f,%.2f,%.2f,%.2f)\n",
-                    i, attachment.view, sampleCount, attachment.loadOp, attachment.storeOp,
-                    color.r, color.g, color.b, color.a);
 
                 // WebGPU MSAA handling: check if this attachment has a resolve target
                 if (colorAttachments[i].resolveTarget && colorAttachments[i].resolveTarget->view) {
                     auto* resolveViewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(colorAttachments[i].resolveTarget->view);
                     attachment.resolveTarget = resolveViewPtr->handle();
-
-                    uint32_t resolveSampleCount = 1;
-                    if (resolveViewPtr->getTexture()) {
-                        resolveSampleCount = resolveViewPtr->getTexture()->getSampleCount();
-                    }
-
-                    fprintf(stderr, "[WebGPU] Color attachment %u has resolve target: %p (samples=%u)\n",
-                        i, attachment.resolveTarget, resolveSampleCount);
-
-                    // Validate MSAA configuration
-                    if (sampleCount <= 1) {
-                        fprintf(stderr, "[WebGPU WARNING] Resolve target specified but source has sampleCount=%u (should be > 1)\n", sampleCount);
-                    }
-                    if (resolveSampleCount != 1) {
-                        fprintf(stderr, "[WebGPU WARNING] Resolve target has sampleCount=%u (should be 1)\n", resolveSampleCount);
-                    }
                 }
             }
             wgpuColorAttachments.push_back(attachment);
@@ -3963,5 +3936,10 @@ const IBackend* WebGPUBackend::create()
     static WebGPUBackend webgpuBackend;
     return &webgpuBackend;
 }
+
+// Fix compute + cpp samples so they also work in web
+// Move the global functions into the class
+// TODO make NULL backend implementation
+// PASS BACKEND BY COMMAND LINE ARGUMENT
 
 } // namespace gfx::webgpu
