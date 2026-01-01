@@ -385,6 +385,35 @@ if(BUILD_EXAMPLES)
         
         message(STATUS "Web example will be built to: ${CMAKE_CURRENT_BINARY_DIR}/web/cube_example_web.html")
         
+        # Web Compute Example (Emscripten)
+        add_executable(compute_example_web examples/c/compute/compute_example.c)
+        target_link_libraries(compute_example_web gfx)
+        
+        # Emscripten-specific flags for web compute example
+        target_compile_options(compute_example_web PRIVATE -DEMSCRIPTEN)
+        target_link_options(compute_example_web PRIVATE
+            --use-port=emdawnwebgpu
+            -sUSE_GLFW=3
+            -sASYNCIFY=1
+            -sALLOW_MEMORY_GROWTH=1
+            -sASSERTIONS=2
+            -sSTACK_OVERFLOW_CHECK=2
+            -sSAFE_HEAP=1
+            -sEXPORTED_RUNTIME_METHODS=requestFullscreen
+            --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders@shaders
+            -g
+            -O0
+            --shell-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/web/shell.html
+        )
+        
+        # Set output to create HTML, JS, and WASM
+        set_target_properties(compute_example_web PROPERTIES
+            SUFFIX ".html"
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/web"
+        )
+        
+        message(STATUS "Web example will be built to: ${CMAKE_CURRENT_BINARY_DIR}/web/compute_example_web.html")
+        
     else()
         # Native C Cube Example
         add_executable(cube_example_c examples/c/cube/cube_example.c)

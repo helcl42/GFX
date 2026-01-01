@@ -1490,6 +1490,7 @@ int main(void)
     printf("=== Cube Example with Unified Graphics API (C) ===\n\n");
 
     CubeApp app = { 0 }; // Initialize all members to NULL/0
+    app.currentFrame = 0;
     app.windowWidth = WINDOW_WIDTH;
     app.windowHeight = WINDOW_HEIGHT;
 

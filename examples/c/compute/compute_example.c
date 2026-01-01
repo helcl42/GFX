@@ -3,6 +3,9 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#if defined(__EMSCRIPTEN__)
+#include <emscripten/emscripten.h>
+#else
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
@@ -11,6 +14,7 @@
 #define GLFW_EXPOSE_NATIVE_COCOA
 #endif
 #include <GLFW/glfw3native.h>
+#endif
 
 #include <math.h>
 #include <stdbool.h>
@@ -29,7 +33,13 @@
 #define COMPUTE_TEXTURE_HEIGHT 600
 #define MAX_FRAMES_IN_FLIGHT 3
 #define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
+
+#if defined(__EMSCRIPTEN__)
+#define GFX_BACKEND_API GFX_BACKEND_WEBGPU
+#else
+// here we can choose between VULKAN, WEBGPU
 #define GFX_BACKEND_API GFX_BACKEND_VULKAN
+#endif
 
 // Debug callback function
 static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData)
@@ -111,6 +121,8 @@ typedef struct {
     GfxCommandEncoder commandEncoders[MAX_FRAMES_IN_FLIGHT];
 
     uint32_t currentFrame;
+    uint32_t previousWidth;
+    uint32_t previousHeight;
     float elapsedTime;
 } ComputeApp;
 
@@ -245,6 +257,32 @@ static bool initWindow(ComputeApp* app)
     return true;
 }
 
+static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
+{
+    GfxPlatformWindowHandle handle = { 0 };
+#if defined(__EMSCRIPTEN__)
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_EMSCRIPTEN;
+    handle.emscripten.canvasSelector = "#canvas";
+
+#elif defined(_WIN32)
+    handle.hwnd = glfwGetWin32Window(window);
+    handle.hinstance = GetModuleHandle(NULL);
+
+#elif defined(__linux__)
+    // Force using Xlib instead of XCB to avoid driver hang
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_X11;
+    handle.x11.display = glfwGetX11Display();
+    handle.x11.window = (void*)(uintptr_t)glfwGetX11Window(window);
+
+#elif defined(__APPLE__)
+    handle.nsWindow = glfwGetCocoaWindow(window);
+    // Metal layer will be created automatically by the graphics API
+    handle.metalLayer = NULL;
+#endif
+
+    return handle;
+}
+
 static bool initGraphics(ComputeApp* app)
 {
     printf("Loading graphics backend...\n");
@@ -253,9 +291,17 @@ static bool initGraphics(ComputeApp* app)
         return false;
     }
 
-    // Get required Vulkan extensions from GLFW
+    // Get required extensions from GLFW (only needed for native builds)
     uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    const char** glfwExtensions = NULL;
+
+#if !defined(__EMSCRIPTEN__)
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    printf("[DEBUG] GLFW requires %u extensions:\n", glfwExtensionCount);
+    for (uint32_t i = 0; i < glfwExtensionCount; ++i) {
+        printf("[DEBUG]   - %s\n", glfwExtensions[i]);
+    }
+#endif
 
     // Create graphics instance
     GfxInstanceDescriptor instanceDesc = {
@@ -299,38 +345,11 @@ static bool initGraphics(ComputeApp* app)
 
     app->queue = gfxDeviceGetQueue(app->device);
 
-    // Create surface
-#ifdef _WIN32
-    HWND hwnd = glfwGetWin32Window(app->window);
+    GfxPlatformWindowHandle windowHandle = getPlatformWindowHandle(app->window);
     GfxSurfaceDescriptor surfaceDesc = {
-        .windowHandle = {
-            .windowingSystem = GFX_WINDOWING_SYSTEM_WIN32,
-            .win32 = { .hwnd = hwnd },
-        },
+        .label = "Main Surface",
+        .windowHandle = windowHandle
     };
-#elif defined(__APPLE__)
-    void* nsWindow = glfwGetCocoaWindow(app->window);
-    GfxSurfaceDescriptor surfaceDesc = {
-        .windowHandle = {
-            .windowingSystem = GFX_WINDOWING_SYSTEM_COCOA,
-            .cocoa = {
-                .nsWindow = nsWindow,
-            },
-        }
-    };
-#else
-    Display* display = glfwGetX11Display();
-    Window window = glfwGetX11Window(app->window);
-    GfxSurfaceDescriptor surfaceDesc = {
-        .windowHandle = {
-            .windowingSystem = GFX_WINDOWING_SYSTEM_X11,
-            .x11 = {
-                .display = display,
-                .window = (void*)(uintptr_t)window,
-            },
-        }
-    };
-#endif
 
     if (gfxDeviceCreateSurface(app->device, &surfaceDesc, &app->surface) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create surface\n");
@@ -833,7 +852,7 @@ static void update(ComputeApp* app, float deltaTime)
     app->elapsedTime += deltaTime;
 }
 
-static void drawFrame(ComputeApp* app)
+static void render(ComputeApp* app)
 {
     uint32_t frameIndex = app->currentFrame;
 
@@ -1112,7 +1131,7 @@ static void cleanupSizeDependentResources(ComputeApp* app)
 }
 
 // Helper function to recreate size-dependent resources
-static bool recreateSizeDependentResources(ComputeApp* app, uint32_t width, uint32_t height)
+static bool createSizeDependentResources(ComputeApp* app, uint32_t width, uint32_t height)
 {
     // Create swapchain with new dimensions
     // Compute texture stays at fixed resolution and is sampled with linear filtering
@@ -1132,12 +1151,72 @@ static bool recreateSizeDependentResources(ComputeApp* app, uint32_t width, uint
     return true;
 }
 
+static float getCurrentTime(void)
+{
+#if defined(__EMSCRIPTEN__)
+    return (float)emscripten_get_now() / 1000.0f;
+#else
+    return (float)glfwGetTime();
+#endif
+}
+
+// Returns false if loop should exit
+static bool mainLoopIteration(ComputeApp* app)
+{
+    if (!app || glfwWindowShouldClose(app->window)) {
+        return false;
+    }
+
+    glfwPollEvents();
+
+    // Handle framebuffer resize
+    if (app->previousWidth != app->windowWidth || app->previousHeight != app->windowHeight) {
+        // Wait for all in-flight frames to complete
+        gfxDeviceWaitIdle(app->device);
+
+        // Recreate only size-dependent resources (including swapchain)
+        cleanupSizeDependentResources(app);
+        if (!createSizeDependentResources(app, app->windowWidth, app->windowHeight)) {
+            fprintf(stderr, "Failed to recreate size-dependent resources after resize\n");
+            return false;
+        }
+
+        app->previousWidth = app->windowWidth;
+        app->previousHeight = app->windowHeight;
+
+        printf("Window resized: %dx%d\n", app->windowWidth, app->windowHeight);
+        return true; // Skip rendering this frame
+    }
+
+    // Calculate delta time
+    float currentTime = getCurrentTime();
+    float deltaTime = currentTime - app->elapsedTime;
+
+    update(app, deltaTime);
+    render(app);
+
+    return true;
+}
+
+#if defined(__EMSCRIPTEN__)
+static void emscriptenMainLoop(void* userData)
+{
+    ComputeApp* app = (ComputeApp*)userData;
+    if (!mainLoopIteration(app)) {
+        emscripten_cancel_main_loop();
+        cleanup(app);
+    }
+}
+#endif
+
 int main(void)
 {
     printf("=== Compute & Postprocess Example (C) ===\n\n");
 
     ComputeApp app = { 0 };
     app.currentFrame = 0;
+    app.windowWidth = WINDOW_WIDTH;
+    app.windowHeight = WINDOW_HEIGHT;
 
     if (!initWindow(&app)) {
         return 1;
@@ -1166,43 +1245,26 @@ int main(void)
     printf("\nStarting render loop...\n");
     printf("Press ESC to exit\n\n");
 
-    float lastTime = (float)glfwGetTime();
+    // Initialize loop state
+    app.previousWidth = app.windowWidth;
+    app.previousHeight = app.windowHeight;
+    app.elapsedTime = 0.0f;
 
-    uint32_t previousWidth = gfxSwapchainGetWidth(app.swapchain);
-    uint32_t previousHeight = gfxSwapchainGetHeight(app.swapchain);
-
-    while (!glfwWindowShouldClose(app.window)) {
-        glfwPollEvents();
-
-        // Handle framebuffer resize BEFORE rendering
-        if (previousWidth != app.windowWidth || previousHeight != app.windowHeight) {
-            // Wait for all in-flight frames to complete
-            gfxDeviceWaitIdle(app.device);
-
-            // Recreate size-dependent resources
-            cleanupSizeDependentResources(&app);
-            if (!recreateSizeDependentResources(&app, app.windowWidth, app.windowHeight)) {
-                fprintf(stderr, "Failed to recreate size-dependent resources after resize\n");
-                break;
-            }
-
-            previousWidth = app.windowWidth;
-            previousHeight = app.windowHeight;
-
-            printf("Window resized: %dx%d\n", app.windowWidth, app.windowHeight);
-            continue; // Skip rendering this frame
-        }
-
-        float currentTime = (float)glfwGetTime();
-        float deltaTime = (float)(currentTime - lastTime);
-        lastTime = currentTime;
-
-        update(&app, deltaTime);
-        drawFrame(&app);
+    // Run main loop (platform-specific)
+#if defined(__EMSCRIPTEN__)
+    // Note: emscripten_set_main_loop_arg returns immediately and never blocks
+    // Cleanup happens in emscriptenMainLoop when the loop exits
+    // Execution continues in the browser event loop
+    emscripten_set_main_loop_arg(emscriptenMainLoop, &app, 0, 1);
+#else
+    while (mainLoopIteration(&app)) {
+        // Loop continues until mainLoopIteration returns false
     }
 
+    printf("\nCleaning up resources...\n");
     cleanup(&app);
+    printf("Example completed successfully!\n");
+#endif
 
-    printf("Application terminated successfully\n");
     return 0;
 }
