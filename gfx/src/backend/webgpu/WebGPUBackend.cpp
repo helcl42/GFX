@@ -1,19 +1,4 @@
-#include <webgpu/webgpu.h>
-
-#if defined(__EMSCRIPTEN__)
-#include <emscripten.h>
-// Platform-specific includes for surface creation
-#elif defined(_WIN32)
-#include <windows.h>
-#elif defined(__linux__)
-#include <X11/Xlib.h>
-// For Wayland support
-struct wl_display;
-struct wl_surface;
-#elif defined(__APPLE__)
-#include <objc/objc.h>
-#include <objc/runtime.h>
-#endif
+#include "common/WebGPUCommon.h"
 
 #include "WebGPUBackend.h"
 #include "converter/GfxWebGPUConverter.h"
