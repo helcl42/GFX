@@ -36,6 +36,22 @@ gfx::vulkan::DebugMessageType convertVkDebugType(VkDebugUtilsMessageTypeFlagsEXT
 }
 
 // ============================================================================
+// Type Conversion Functions
+// ============================================================================
+
+gfx::vulkan::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(GfxSemaphoreType type)
+{
+    switch (type) {
+    case GFX_SEMAPHORE_TYPE_BINARY:
+        return gfx::vulkan::SemaphoreType::Binary;
+    case GFX_SEMAPHORE_TYPE_TIMELINE:
+        return gfx::vulkan::SemaphoreType::Timeline;
+    default:
+        return gfx::vulkan::SemaphoreType::Binary;
+    }
+}
+
+// ============================================================================
 // Format Conversion Functions
 // ============================================================================
 
@@ -571,7 +587,8 @@ gfx::vulkan::ShaderCreateInfo gfxDescriptorToShaderCreateInfo(const GfxShaderDes
 gfx::vulkan::SemaphoreCreateInfo gfxDescriptorToSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor)
 {
     gfx::vulkan::SemaphoreCreateInfo createInfo{};
-    createInfo.isTimeline = descriptor && descriptor->type == GFX_SEMAPHORE_TYPE_TIMELINE;
+    createInfo.type = descriptor ? gfxSemaphoreTypeToVulkanSemaphoreType(descriptor->type) 
+                                 : gfx::vulkan::SemaphoreType::Binary;
     createInfo.initialValue = descriptor ? descriptor->initialValue : 0;
     return createInfo;
 }

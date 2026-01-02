@@ -1476,10 +1476,10 @@ public:
 
     Semaphore(VkDevice device, const SemaphoreCreateInfo& createInfo)
         : m_device(device)
-        , m_isTimeline(createInfo.isTimeline)
+        , m_type(createInfo.type)
     {
 
-        if (m_isTimeline) {
+        if (m_type == SemaphoreType::Timeline) {
             // Timeline semaphore
             VkSemaphoreTypeCreateInfo timelineInfo{};
             timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
@@ -1514,11 +1514,11 @@ public:
     }
 
     VkSemaphore handle() const { return m_semaphore; }
-    bool isTimeline() const { return m_isTimeline; }
+    SemaphoreType getType() const { return m_type; }
 
     VkResult signal(uint64_t value)
     {
-        if (!m_isTimeline) {
+        if (m_type != SemaphoreType::Timeline) {
             return VK_ERROR_VALIDATION_FAILED_EXT; // Binary semaphores can't be manually signaled
         }
 
@@ -1532,7 +1532,7 @@ public:
 
     VkResult wait(uint64_t value, uint64_t timeoutNs)
     {
-        if (!m_isTimeline) {
+        if (m_type != SemaphoreType::Timeline) {
             return VK_ERROR_VALIDATION_FAILED_EXT; // Binary semaphores can't be manually waited
         }
 
@@ -1547,7 +1547,7 @@ public:
 
     uint64_t getValue() const
     {
-        if (!m_isTimeline) {
+        if (m_type != SemaphoreType::Timeline) {
             return 0; // Binary semaphores don't have values
         }
 
@@ -1559,7 +1559,7 @@ public:
 private:
     VkSemaphore m_semaphore = VK_NULL_HANDLE;
     VkDevice m_device = VK_NULL_HANDLE;
-    bool m_isTimeline = false;
+    SemaphoreType m_type = SemaphoreType::Binary;
 };
 
 class CommandEncoder {

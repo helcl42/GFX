@@ -979,7 +979,7 @@ GfxResult VulkanBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submit
         waitSemaphores.push_back(sem->handle());
         waitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
-        if (sem->isTimeline()) {
+        if (sem->getType() == gfx::vulkan::SemaphoreType::Timeline) {
             hasTimelineWait = true;
             uint64_t value = submitInfo->waitValues ? submitInfo->waitValues[i] : 0;
             waitValues.push_back(value);
@@ -998,7 +998,7 @@ GfxResult VulkanBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submit
         auto* sem = reinterpret_cast<gfx::vulkan::Semaphore*>(submitInfo->signalSemaphores[i]);
         signalSemaphores.push_back(sem->handle());
 
-        if (sem->isTimeline()) {
+        if (sem->getType() == gfx::vulkan::SemaphoreType::Timeline) {
             hasTimelineSignal = true;
             uint64_t value = submitInfo->signalValues ? submitInfo->signalValues[i] : 0;
             signalValues.push_back(value);
@@ -2188,7 +2188,7 @@ GfxSemaphoreType VulkanBackend::semaphoreGetType(GfxSemaphore semaphore) const
         return GFX_SEMAPHORE_TYPE_BINARY;
     }
     auto* s = reinterpret_cast<gfx::vulkan::Semaphore*>(semaphore);
-    return s->isTimeline() ? GFX_SEMAPHORE_TYPE_TIMELINE : GFX_SEMAPHORE_TYPE_BINARY;
+    return s->getType() == gfx::vulkan::SemaphoreType::Timeline ? GFX_SEMAPHORE_TYPE_TIMELINE : GFX_SEMAPHORE_TYPE_BINARY;
 }
 
 GfxResult VulkanBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const

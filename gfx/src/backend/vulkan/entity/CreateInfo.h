@@ -26,6 +26,11 @@ enum class DebugMessageType {
     Performance = 2
 };
 
+enum class SemaphoreType {
+    Binary,
+    Timeline
+};
+
 // ============================================================================
 // Internal CreateInfo structs - pure Vulkan types, no GFX dependencies
 // ============================================================================
@@ -61,7 +66,7 @@ struct ShaderCreateInfo {
 };
 
 struct SemaphoreCreateInfo {
-    bool isTimeline;
+    SemaphoreType type;
     uint64_t initialValue;
 };
 

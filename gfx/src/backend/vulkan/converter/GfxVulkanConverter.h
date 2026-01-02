@@ -24,6 +24,7 @@ struct ComputePipelineCreateInfo;
 
 enum class DebugMessageSeverity;
 enum class DebugMessageType;
+enum class SemaphoreType;
 } // namespace gfx::vulkan
 
 namespace gfx::convertor {
@@ -34,6 +35,12 @@ namespace gfx::convertor {
 
 gfx::vulkan::DebugMessageSeverity convertVkDebugSeverity(VkDebugUtilsMessageSeverityFlagBitsEXT vkSeverity);
 gfx::vulkan::DebugMessageType convertVkDebugType(VkDebugUtilsMessageTypeFlagsEXT vkType);
+
+// ============================================================================
+// Type Conversion Functions
+// ============================================================================
+
+gfx::vulkan::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(GfxSemaphoreType type);
 
 // ============================================================================
 // Format Conversion Functions
