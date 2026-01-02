@@ -5,6 +5,7 @@
 #include <gfx/gfx.h>
 
 #include "../IBackend.h"
+#include "converter/GfxWebGPUConverter.h"
 
 #include <cassert>
 #include <cstdio>
@@ -29,444 +30,6 @@ struct wl_surface;
 #endif
 
 // ============================================================================
-// Utility Functions
-// ============================================================================
-
-namespace {
-
-WGPUStringView gfxStringView(const char* str)
-{
-    if (!str) {
-        return WGPUStringView{ nullptr, WGPU_STRLEN };
-    }
-    return WGPUStringView{ str, WGPU_STRLEN };
-}
-
-WGPUTextureFormat gfxFormatToWGPUFormat(GfxTextureFormat format)
-{
-    switch (format) {
-    case GFX_TEXTURE_FORMAT_R8_UNORM:
-        return WGPUTextureFormat_R8Unorm;
-    case GFX_TEXTURE_FORMAT_R8G8_UNORM:
-        return WGPUTextureFormat_RG8Unorm;
-    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM:
-        return WGPUTextureFormat_RGBA8Unorm;
-    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB:
-        return WGPUTextureFormat_RGBA8UnormSrgb;
-    case GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM:
-        return WGPUTextureFormat_BGRA8Unorm;
-    case GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB:
-        return WGPUTextureFormat_BGRA8UnormSrgb;
-    case GFX_TEXTURE_FORMAT_R16_FLOAT:
-        return WGPUTextureFormat_R16Float;
-    case GFX_TEXTURE_FORMAT_R16G16_FLOAT:
-        return WGPUTextureFormat_RG16Float;
-    case GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT:
-        return WGPUTextureFormat_RGBA16Float;
-    case GFX_TEXTURE_FORMAT_R32_FLOAT:
-        return WGPUTextureFormat_R32Float;
-    case GFX_TEXTURE_FORMAT_R32G32_FLOAT:
-        return WGPUTextureFormat_RG32Float;
-    case GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT:
-        return WGPUTextureFormat_RGBA32Float;
-    case GFX_TEXTURE_FORMAT_DEPTH16_UNORM:
-        return WGPUTextureFormat_Depth16Unorm;
-    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS:
-        return WGPUTextureFormat_Depth24Plus;
-    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT:
-        return WGPUTextureFormat_Depth32Float;
-    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8:
-        return WGPUTextureFormat_Depth24PlusStencil8;
-    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8:
-        return WGPUTextureFormat_Depth32FloatStencil8;
-    default:
-        return WGPUTextureFormat_Undefined;
-    }
-}
-
-GfxTextureFormat wgpuFormatToGfxFormat(WGPUTextureFormat format)
-{
-    switch (format) {
-    case WGPUTextureFormat_R8Unorm:
-        return GFX_TEXTURE_FORMAT_R8_UNORM;
-    case WGPUTextureFormat_RG8Unorm:
-        return GFX_TEXTURE_FORMAT_R8G8_UNORM;
-    case WGPUTextureFormat_RGBA8Unorm:
-        return GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
-    case WGPUTextureFormat_RGBA8UnormSrgb:
-        return GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB;
-    case WGPUTextureFormat_BGRA8Unorm:
-        return GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
-    case WGPUTextureFormat_BGRA8UnormSrgb:
-        return GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB;
-    case WGPUTextureFormat_R16Float:
-        return GFX_TEXTURE_FORMAT_R16_FLOAT;
-    case WGPUTextureFormat_RG16Float:
-        return GFX_TEXTURE_FORMAT_R16G16_FLOAT;
-    case WGPUTextureFormat_RGBA16Float:
-        return GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT;
-    case WGPUTextureFormat_R32Float:
-        return GFX_TEXTURE_FORMAT_R32_FLOAT;
-    case WGPUTextureFormat_RG32Float:
-        return GFX_TEXTURE_FORMAT_R32G32_FLOAT;
-    case WGPUTextureFormat_RGBA32Float:
-        return GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT;
-    case WGPUTextureFormat_Depth16Unorm:
-        return GFX_TEXTURE_FORMAT_DEPTH16_UNORM;
-    case WGPUTextureFormat_Depth24Plus:
-        return GFX_TEXTURE_FORMAT_DEPTH24_PLUS;
-    case WGPUTextureFormat_Depth32Float:
-        return GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
-    case WGPUTextureFormat_Depth24PlusStencil8:
-        return GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8;
-    case WGPUTextureFormat_Depth32FloatStencil8:
-        return GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8;
-    default:
-        return GFX_TEXTURE_FORMAT_UNDEFINED;
-    }
-}
-
-GfxPresentMode wgpuPresentModeToGfxPresentMode(WGPUPresentMode mode)
-{
-    switch (mode) {
-    case WGPUPresentMode_Immediate:
-        return GFX_PRESENT_MODE_IMMEDIATE;
-    case WGPUPresentMode_Mailbox:
-        return GFX_PRESENT_MODE_MAILBOX;
-    case WGPUPresentMode_Fifo:
-        return GFX_PRESENT_MODE_FIFO;
-    case WGPUPresentMode_FifoRelaxed:
-        return GFX_PRESENT_MODE_FIFO_RELAXED;
-    default:
-        return GFX_PRESENT_MODE_FIFO; // Safe default
-    }
-}
-
-bool formatHasStencil(GfxTextureFormat format)
-{
-    switch (format) {
-    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8:
-    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8:
-        return true;
-    default:
-        return false;
-    }
-}
-
-WGPULoadOp gfxLoadOpToWGPULoadOp(GfxLoadOp loadOp)
-{
-    switch (loadOp) {
-    case GFX_LOAD_OP_LOAD:
-        return WGPULoadOp_Load;
-    case GFX_LOAD_OP_CLEAR:
-        return WGPULoadOp_Clear;
-    case GFX_LOAD_OP_DONT_CARE:
-        return WGPULoadOp_Undefined;
-    default:
-        return WGPULoadOp_Undefined;
-    }
-}
-
-WGPUStoreOp gfxStoreOpToWGPUStoreOp(GfxStoreOp storeOp)
-{
-    switch (storeOp) {
-    case GFX_STORE_OP_STORE:
-        return WGPUStoreOp_Store;
-    case GFX_STORE_OP_DONT_CARE:
-        return WGPUStoreOp_Discard;
-    default:
-        return WGPUStoreOp_Discard;
-    }
-}
-
-WGPUBufferUsage gfxBufferUsageToWGPU(GfxBufferUsage usage)
-{
-    WGPUBufferUsage wgpu_usage = WGPUBufferUsage_None;
-    if (usage & GFX_BUFFER_USAGE_MAP_READ) {
-        wgpu_usage |= WGPUBufferUsage_MapRead;
-    }
-    if (usage & GFX_BUFFER_USAGE_MAP_WRITE) {
-        wgpu_usage |= WGPUBufferUsage_MapWrite;
-    }
-    if (usage & GFX_BUFFER_USAGE_COPY_SRC) {
-        wgpu_usage |= WGPUBufferUsage_CopySrc;
-    }
-    if (usage & GFX_BUFFER_USAGE_COPY_DST) {
-        wgpu_usage |= WGPUBufferUsage_CopyDst;
-    }
-    if (usage & GFX_BUFFER_USAGE_INDEX) {
-        wgpu_usage |= WGPUBufferUsage_Index;
-    }
-    if (usage & GFX_BUFFER_USAGE_VERTEX) {
-        wgpu_usage |= WGPUBufferUsage_Vertex;
-    }
-    if (usage & GFX_BUFFER_USAGE_UNIFORM) {
-        wgpu_usage |= WGPUBufferUsage_Uniform;
-    }
-    if (usage & GFX_BUFFER_USAGE_STORAGE) {
-        wgpu_usage |= WGPUBufferUsage_Storage;
-    }
-    if (usage & GFX_BUFFER_USAGE_INDIRECT) {
-        wgpu_usage |= WGPUBufferUsage_Indirect;
-    }
-    return wgpu_usage;
-}
-
-WGPUTextureUsage gfxTextureUsageToWGPU(GfxTextureUsage usage)
-{
-    WGPUTextureUsage wgpu_usage = WGPUTextureUsage_None;
-    if (usage & GFX_TEXTURE_USAGE_COPY_SRC) {
-        wgpu_usage |= WGPUTextureUsage_CopySrc;
-    }
-    if (usage & GFX_TEXTURE_USAGE_COPY_DST) {
-        wgpu_usage |= WGPUTextureUsage_CopyDst;
-    }
-    if (usage & GFX_TEXTURE_USAGE_TEXTURE_BINDING) {
-        wgpu_usage |= WGPUTextureUsage_TextureBinding;
-    }
-    if (usage & GFX_TEXTURE_USAGE_STORAGE_BINDING) {
-        wgpu_usage |= WGPUTextureUsage_StorageBinding;
-    }
-    if (usage & GFX_TEXTURE_USAGE_RENDER_ATTACHMENT) {
-        wgpu_usage |= WGPUTextureUsage_RenderAttachment;
-    }
-    return wgpu_usage;
-}
-
-WGPUPresentMode gfxPresentModeToWGPU(GfxPresentMode mode)
-{
-    switch (mode) {
-    case GFX_PRESENT_MODE_IMMEDIATE:
-        return WGPUPresentMode_Immediate;
-    case GFX_PRESENT_MODE_FIFO:
-        return WGPUPresentMode_Fifo;
-    case GFX_PRESENT_MODE_FIFO_RELAXED:
-        return WGPUPresentMode_FifoRelaxed;
-    case GFX_PRESENT_MODE_MAILBOX:
-        return WGPUPresentMode_Mailbox;
-    default:
-        return WGPUPresentMode_Fifo;
-    }
-}
-
-WGPUAddressMode gfxAddressModeToWGPU(GfxAddressMode mode)
-{
-    switch (mode) {
-    case GFX_ADDRESS_MODE_REPEAT:
-        return WGPUAddressMode_Repeat;
-    case GFX_ADDRESS_MODE_MIRROR_REPEAT:
-        return WGPUAddressMode_MirrorRepeat;
-    case GFX_ADDRESS_MODE_CLAMP_TO_EDGE:
-        return WGPUAddressMode_ClampToEdge;
-    default:
-        return WGPUAddressMode_ClampToEdge;
-    }
-}
-
-WGPUFilterMode gfxFilterModeToWGPU(GfxFilterMode mode)
-{
-    return (mode == GFX_FILTER_MODE_LINEAR) ? WGPUFilterMode_Linear : WGPUFilterMode_Nearest;
-}
-
-WGPUMipmapFilterMode gfxMipmapFilterModeToWGPU(GfxFilterMode mode)
-{
-    return (mode == GFX_FILTER_MODE_LINEAR) ? WGPUMipmapFilterMode_Linear : WGPUMipmapFilterMode_Nearest;
-}
-
-WGPUPrimitiveTopology gfxPrimitiveTopologyToWGPU(GfxPrimitiveTopology topology)
-{
-    switch (topology) {
-    case GFX_PRIMITIVE_TOPOLOGY_POINT_LIST:
-        return WGPUPrimitiveTopology_PointList;
-    case GFX_PRIMITIVE_TOPOLOGY_LINE_LIST:
-        return WGPUPrimitiveTopology_LineList;
-    case GFX_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-        return WGPUPrimitiveTopology_LineStrip;
-    case GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-        return WGPUPrimitiveTopology_TriangleList;
-    case GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-        return WGPUPrimitiveTopology_TriangleStrip;
-    default:
-        return WGPUPrimitiveTopology_TriangleList;
-    }
-}
-
-WGPUFrontFace gfxFrontFaceToWGPU(GfxFrontFace frontFace)
-{
-    return (frontFace == GFX_FRONT_FACE_COUNTER_CLOCKWISE) ? WGPUFrontFace_CCW : WGPUFrontFace_CW;
-}
-
-WGPUCullMode gfxCullModeToWGPU(GfxCullMode cullMode)
-{
-    switch (cullMode) {
-    case GFX_CULL_MODE_NONE:
-        return WGPUCullMode_None;
-    case GFX_CULL_MODE_FRONT:
-        return WGPUCullMode_Front;
-    case GFX_CULL_MODE_BACK:
-        return WGPUCullMode_Back;
-    default:
-        return WGPUCullMode_None;
-    }
-}
-
-WGPUIndexFormat gfxIndexFormatToWGPU(GfxIndexFormat format)
-{
-    switch (format) {
-    case GFX_INDEX_FORMAT_UINT16:
-        return WGPUIndexFormat_Uint16;
-    case GFX_INDEX_FORMAT_UINT32:
-        return WGPUIndexFormat_Uint32;
-    default:
-        return WGPUIndexFormat_Undefined;
-    }
-}
-
-WGPUBlendOperation gfxBlendOperationToWGPU(GfxBlendOperation operation)
-{
-    switch (operation) {
-    case GFX_BLEND_OPERATION_ADD:
-        return WGPUBlendOperation_Add;
-    case GFX_BLEND_OPERATION_SUBTRACT:
-        return WGPUBlendOperation_Subtract;
-    case GFX_BLEND_OPERATION_REVERSE_SUBTRACT:
-        return WGPUBlendOperation_ReverseSubtract;
-    case GFX_BLEND_OPERATION_MIN:
-        return WGPUBlendOperation_Min;
-    case GFX_BLEND_OPERATION_MAX:
-        return WGPUBlendOperation_Max;
-    default:
-        return WGPUBlendOperation_Add;
-    }
-}
-
-WGPUBlendFactor gfxBlendFactorToWGPU(GfxBlendFactor factor)
-{
-    switch (factor) {
-    case GFX_BLEND_FACTOR_ZERO:
-        return WGPUBlendFactor_Zero;
-    case GFX_BLEND_FACTOR_ONE:
-        return WGPUBlendFactor_One;
-    case GFX_BLEND_FACTOR_SRC:
-        return WGPUBlendFactor_Src;
-    case GFX_BLEND_FACTOR_ONE_MINUS_SRC:
-        return WGPUBlendFactor_OneMinusSrc;
-    case GFX_BLEND_FACTOR_SRC_ALPHA:
-        return WGPUBlendFactor_SrcAlpha;
-    case GFX_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA:
-        return WGPUBlendFactor_OneMinusSrcAlpha;
-    case GFX_BLEND_FACTOR_DST:
-        return WGPUBlendFactor_Dst;
-    case GFX_BLEND_FACTOR_ONE_MINUS_DST:
-        return WGPUBlendFactor_OneMinusDst;
-    case GFX_BLEND_FACTOR_DST_ALPHA:
-        return WGPUBlendFactor_DstAlpha;
-    case GFX_BLEND_FACTOR_ONE_MINUS_DST_ALPHA:
-        return WGPUBlendFactor_OneMinusDstAlpha;
-    case GFX_BLEND_FACTOR_SRC_ALPHA_SATURATED:
-        return WGPUBlendFactor_SrcAlphaSaturated;
-    case GFX_BLEND_FACTOR_CONSTANT:
-        return WGPUBlendFactor_Constant;
-    case GFX_BLEND_FACTOR_ONE_MINUS_CONSTANT:
-        return WGPUBlendFactor_OneMinusConstant;
-    default:
-        return WGPUBlendFactor_Zero;
-    }
-}
-
-WGPUCompareFunction gfxCompareFunctionToWGPU(GfxCompareFunction func)
-{
-    switch (func) {
-    case GFX_COMPARE_FUNCTION_NEVER:
-        return WGPUCompareFunction_Never;
-    case GFX_COMPARE_FUNCTION_LESS:
-        return WGPUCompareFunction_Less;
-    case GFX_COMPARE_FUNCTION_EQUAL:
-        return WGPUCompareFunction_Equal;
-    case GFX_COMPARE_FUNCTION_LESS_EQUAL:
-        return WGPUCompareFunction_LessEqual;
-    case GFX_COMPARE_FUNCTION_GREATER:
-        return WGPUCompareFunction_Greater;
-    case GFX_COMPARE_FUNCTION_NOT_EQUAL:
-        return WGPUCompareFunction_NotEqual;
-    case GFX_COMPARE_FUNCTION_GREATER_EQUAL:
-        return WGPUCompareFunction_GreaterEqual;
-    case GFX_COMPARE_FUNCTION_ALWAYS:
-        return WGPUCompareFunction_Always;
-    default:
-        return WGPUCompareFunction_Always;
-    }
-}
-
-WGPUStencilOperation gfxStencilOperationToWGPU(GfxStencilOperation op)
-{
-    switch (op) {
-    case GFX_STENCIL_OPERATION_KEEP:
-        return WGPUStencilOperation_Keep;
-    case GFX_STENCIL_OPERATION_ZERO:
-        return WGPUStencilOperation_Zero;
-    case GFX_STENCIL_OPERATION_REPLACE:
-        return WGPUStencilOperation_Replace;
-    case GFX_STENCIL_OPERATION_INVERT:
-        return WGPUStencilOperation_Invert;
-    case GFX_STENCIL_OPERATION_INCREMENT_CLAMP:
-        return WGPUStencilOperation_IncrementClamp;
-    case GFX_STENCIL_OPERATION_DECREMENT_CLAMP:
-        return WGPUStencilOperation_DecrementClamp;
-    case GFX_STENCIL_OPERATION_INCREMENT_WRAP:
-        return WGPUStencilOperation_IncrementWrap;
-    case GFX_STENCIL_OPERATION_DECREMENT_WRAP:
-        return WGPUStencilOperation_DecrementWrap;
-    default:
-        return WGPUStencilOperation_Keep;
-    }
-}
-
-WGPUTextureSampleType gfxTextureSampleTypeToWGPU(GfxTextureSampleType sampleType)
-{
-    switch (sampleType) {
-    case GFX_TEXTURE_SAMPLE_TYPE_FLOAT:
-        return WGPUTextureSampleType_Float;
-    case GFX_TEXTURE_SAMPLE_TYPE_UNFILTERABLE_FLOAT:
-        return WGPUTextureSampleType_UnfilterableFloat;
-    case GFX_TEXTURE_SAMPLE_TYPE_DEPTH:
-        return WGPUTextureSampleType_Depth;
-    case GFX_TEXTURE_SAMPLE_TYPE_SINT:
-        return WGPUTextureSampleType_Sint;
-    case GFX_TEXTURE_SAMPLE_TYPE_UINT:
-        return WGPUTextureSampleType_Uint;
-    default:
-        return WGPUTextureSampleType_Float;
-    }
-}
-
-WGPUVertexFormat gfxFormatToWGPUVertexFormat(GfxTextureFormat format)
-{
-    switch (format) {
-    case GFX_TEXTURE_FORMAT_R32_FLOAT:
-        return WGPUVertexFormat_Float32;
-    case GFX_TEXTURE_FORMAT_R32G32_FLOAT:
-        return WGPUVertexFormat_Float32x2;
-    case GFX_TEXTURE_FORMAT_R32G32B32_FLOAT:
-        return WGPUVertexFormat_Float32x3;
-    case GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT:
-        return WGPUVertexFormat_Float32x4;
-    case GFX_TEXTURE_FORMAT_R16G16_FLOAT:
-        return WGPUVertexFormat_Float16x2;
-    case GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT:
-        return WGPUVertexFormat_Float16x4;
-    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM:
-        return WGPUVertexFormat_Unorm8x4;
-    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB:
-        return WGPUVertexFormat_Unorm8x4;
-    default:
-        return static_cast<WGPUVertexFormat>(0); // Return 0 for undefined
-    }
-}
-
-} // namespace
-
-// ============================================================================
 // Platform-specific Surface Creation Helpers
 // ============================================================================
 
@@ -482,7 +45,7 @@ static WGPUSurface createSurfaceWin32(WGPUInstance instance, const GfxPlatformWi
     source.hinstance = handle->hinstance;
 
     WGPUSurfaceDescriptor surface_desc = WGPU_SURFACE_DESCRIPTOR_INIT;
-    surface_desc.label = gfxStringView("Win32 Surface");
+    surface_desc.label = gfx::convertor::gfxStringView("Win32 Surface");
     surface_desc.nextInChain = (WGPUChainedStruct*)&source;
 
     return wgpuInstanceCreateSurface(instance, &surface_desc);
@@ -501,7 +64,7 @@ static WGPUSurface createSurfaceX11(WGPUInstance instance, const GfxPlatformWind
     source.window = (uint64_t)(uintptr_t)handle->x11.window;
 
     WGPUSurfaceDescriptor surface_desc = WGPU_SURFACE_DESCRIPTOR_INIT;
-    surface_desc.label = gfxStringView("X11 Surface");
+    surface_desc.label = gfx::convertor::gfxStringView("X11 Surface");
     surface_desc.nextInChain = (WGPUChainedStruct*)&source;
 
     return wgpuInstanceCreateSurface(instance, &surface_desc);
@@ -518,7 +81,7 @@ static WGPUSurface createSurfaceWayland(WGPUInstance instance, const GfxPlatform
     source.surface = handle->wayland.surface;
 
     WGPUSurfaceDescriptor surface_desc = WGPU_SURFACE_DESCRIPTOR_INIT;
-    surface_desc.label = gfxStringView("Wayland Surface");
+    surface_desc.label = gfx::convertor::gfxStringView("Wayland Surface");
     surface_desc.nextInChain = (WGPUChainedStruct*)&source;
 
     return wgpuInstanceCreateSurface(instance, &surface_desc);
@@ -562,7 +125,7 @@ static WGPUSurface createSurfaceMetal(WGPUInstance instance, const GfxPlatformWi
     source.layer = metal_layer;
 
     WGPUSurfaceDescriptor surface_desc = WGPU_SURFACE_DESCRIPTOR_INIT;
-    surface_desc.label = gfxStringView("Metal Surface");
+    surface_desc.label = gfx::convertor::gfxStringView("Metal Surface");
     surface_desc.nextInChain = (WGPUChainedStruct*)&source;
 
     return wgpuInstanceCreateSurface(instance, &surface_desc);
@@ -577,7 +140,7 @@ static WGPUSurface createSurfaceEmscripten(WGPUInstance instance, const GfxPlatf
     }
 
     WGPUEmscriptenSurfaceSourceCanvasHTMLSelector canvasDesc = WGPU_EMSCRIPTEN_SURFACE_SOURCE_CANVAS_HTML_SELECTOR_INIT;
-    canvasDesc.selector = gfxStringView(handle->emscripten.canvasSelector);
+    canvasDesc.selector = gfx::convertor::gfxStringView(handle->emscripten.canvasSelector);
 
     WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
     surfaceDesc.nextInChain = (WGPUChainedStruct*)&canvasDesc;
@@ -614,44 +177,6 @@ static WGPUSurface createPlatformSurface(WGPUInstance instance, const GfxPlatfor
 #endif
     default:
         return nullptr;
-    }
-}
-
-static WGPUTextureDimension gfxTextureTypeToWGPU(GfxTextureType type)
-{
-    switch (type) {
-    case GFX_TEXTURE_TYPE_1D:
-        return WGPUTextureDimension_1D;
-    case GFX_TEXTURE_TYPE_2D:
-        return WGPUTextureDimension_2D;
-    case GFX_TEXTURE_TYPE_CUBE:
-        return WGPUTextureDimension_2D; // Cube maps are 2D arrays in WebGPU
-    case GFX_TEXTURE_TYPE_3D:
-        return WGPUTextureDimension_3D;
-    default:
-        return WGPUTextureDimension_2D;
-    }
-}
-
-static WGPUTextureViewDimension gfxTextureViewTypeToWGPU(GfxTextureViewType type)
-{
-    switch (type) {
-    case GFX_TEXTURE_VIEW_TYPE_1D:
-        return WGPUTextureViewDimension_1D;
-    case GFX_TEXTURE_VIEW_TYPE_2D:
-        return WGPUTextureViewDimension_2D;
-    case GFX_TEXTURE_VIEW_TYPE_3D:
-        return WGPUTextureViewDimension_3D;
-    case GFX_TEXTURE_VIEW_TYPE_CUBE:
-        return WGPUTextureViewDimension_Cube;
-    case GFX_TEXTURE_VIEW_TYPE_1D_ARRAY:
-        return WGPUTextureViewDimension_1D; // WebGPU doesn't have 1D arrays
-    case GFX_TEXTURE_VIEW_TYPE_2D_ARRAY:
-        return WGPUTextureViewDimension_2DArray;
-    case GFX_TEXTURE_VIEW_TYPE_CUBE_ARRAY:
-        return WGPUTextureViewDimension_CubeArray;
-    default:
-        return WGPUTextureViewDimension_2D;
     }
 }
 
@@ -1565,7 +1090,7 @@ GfxResult WebGPUBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDevice
     wgpuDesc.uncapturedErrorCallbackInfo = errorCallbackInfo;
     wgpuDesc.deviceLostCallbackInfo = deviceLostCallbackInfo;
     if (descriptor && descriptor->label) {
-        wgpuDesc.label = gfxStringView(descriptor->label);
+        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
     }
 
     struct DeviceRequestContext {
@@ -1706,7 +1231,7 @@ GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
     WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
     wgpuSurfaceGetCapabilities(surfacePtr->handle(), devicePtr->getAdapter()->handle(), &capabilities);
 
-    WGPUTextureFormat format = gfxFormatToWGPUFormat(descriptor->format);
+    WGPUTextureFormat format = gfx::convertor::gfxFormatToWGPUFormat(descriptor->format);
     bool formatSupported = false;
     for (size_t i = 0; i < capabilities.formatCount; ++i) {
         if (capabilities.formats[i] == format) {
@@ -1718,7 +1243,7 @@ GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
         format = capabilities.formats[0];
     }
 
-    WGPUPresentMode presentMode = gfxPresentModeToWGPU(descriptor->presentMode);
+    WGPUPresentMode presentMode = gfx::convertor::gfxPresentModeToWGPU(descriptor->presentMode);
     bool presentModeSupported = false;
     for (size_t i = 0; i < capabilities.presentModeCount; ++i) {
         if (capabilities.presentModes[i] == presentMode) {
@@ -1734,7 +1259,7 @@ GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
     WGPUSurfaceConfiguration config = WGPU_SURFACE_CONFIGURATION_INIT;
     config.device = devicePtr->handle();
     config.format = format;
-    config.usage = gfxTextureUsageToWGPU(descriptor->usage);
+    config.usage = gfx::convertor::gfxTextureUsageToWGPU(descriptor->usage);
     config.width = descriptor->width;
     config.height = descriptor->height;
     config.presentMode = presentMode;
@@ -1763,10 +1288,10 @@ GfxResult WebGPUBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
 
     WGPUBufferDescriptor wgpuDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
     if (descriptor->label) {
-        wgpuDesc.label = gfxStringView(descriptor->label);
+        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
     }
     wgpuDesc.size = descriptor->size;
-    wgpuDesc.usage = gfxBufferUsageToWGPU(descriptor->usage);
+    wgpuDesc.usage = gfx::convertor::gfxBufferUsageToWGPU(descriptor->usage);
     wgpuDesc.mappedAtCreation = descriptor->mappedAtCreation ? WGPU_TRUE : WGPU_FALSE;
 
     WGPUBuffer wgpuBuffer = wgpuDeviceCreateBuffer(devicePtr->handle(), &wgpuDesc);
@@ -1789,9 +1314,9 @@ GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
 
     WGPUTextureDescriptor wgpuDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
     if (descriptor->label) {
-        wgpuDesc.label = gfxStringView(descriptor->label);
+        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
     }
-    wgpuDesc.dimension = gfxTextureTypeToWGPU(descriptor->type);
+    wgpuDesc.dimension = gfx::convertor::gfxTextureTypeToWGPU(descriptor->type);
 
     // Set size based on texture type
     uint32_t arrayLayers = descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1;
@@ -1806,8 +1331,8 @@ GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
         descriptor->type == GFX_TEXTURE_TYPE_3D ? descriptor->size.depth : arrayLayers };
     wgpuDesc.mipLevelCount = descriptor->mipLevelCount;
     wgpuDesc.sampleCount = descriptor->sampleCount;
-    wgpuDesc.format = gfxFormatToWGPUFormat(descriptor->format);
-    wgpuDesc.usage = gfxTextureUsageToWGPU(descriptor->usage);
+    wgpuDesc.format = gfx::convertor::gfxFormatToWGPUFormat(descriptor->format);
+    wgpuDesc.usage = gfx::convertor::gfxTextureUsageToWGPU(descriptor->usage);
 
     WGPUTexture wgpuTexture = wgpuDeviceCreateTexture(devicePtr->handle(), &wgpuDesc);
     if (!wgpuTexture) {
@@ -1831,25 +1356,25 @@ GfxResult WebGPUBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerD
 
     WGPUSamplerDescriptor wgpuDesc = WGPU_SAMPLER_DESCRIPTOR_INIT;
     if (descriptor->label) {
-        wgpuDesc.label = gfxStringView(descriptor->label);
+        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
     }
 
     // Convert address modes
-    wgpuDesc.addressModeU = gfxAddressModeToWGPU(descriptor->addressModeU);
-    wgpuDesc.addressModeV = gfxAddressModeToWGPU(descriptor->addressModeV);
-    wgpuDesc.addressModeW = gfxAddressModeToWGPU(descriptor->addressModeW);
+    wgpuDesc.addressModeU = gfx::convertor::gfxAddressModeToWGPU(descriptor->addressModeU);
+    wgpuDesc.addressModeV = gfx::convertor::gfxAddressModeToWGPU(descriptor->addressModeV);
+    wgpuDesc.addressModeW = gfx::convertor::gfxAddressModeToWGPU(descriptor->addressModeW);
 
     // Convert filter modes
-    wgpuDesc.magFilter = gfxFilterModeToWGPU(descriptor->magFilter);
-    wgpuDesc.minFilter = gfxFilterModeToWGPU(descriptor->minFilter);
-    wgpuDesc.mipmapFilter = gfxMipmapFilterModeToWGPU(descriptor->mipmapFilter);
+    wgpuDesc.magFilter = gfx::convertor::gfxFilterModeToWGPU(descriptor->magFilter);
+    wgpuDesc.minFilter = gfx::convertor::gfxFilterModeToWGPU(descriptor->minFilter);
+    wgpuDesc.mipmapFilter = gfx::convertor::gfxMipmapFilterModeToWGPU(descriptor->mipmapFilter);
 
     wgpuDesc.lodMinClamp = descriptor->lodMinClamp;
     wgpuDesc.lodMaxClamp = descriptor->lodMaxClamp;
     wgpuDesc.maxAnisotropy = descriptor->maxAnisotropy;
 
     if (descriptor->compare) {
-        wgpuDesc.compare = gfxCompareFunctionToWGPU(*descriptor->compare);
+        wgpuDesc.compare = gfx::convertor::gfxCompareFunctionToWGPU(*descriptor->compare);
     }
 
     WGPUSampler wgpuSampler = wgpuDeviceCreateSampler(devicePtr->handle(), &wgpuDesc);
@@ -1872,7 +1397,7 @@ GfxResult WebGPUBackend::deviceCreateShader(GfxDevice device, const GfxShaderDes
 
     WGPUShaderModuleDescriptor wgpuDesc = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
     if (descriptor->label) {
-        wgpuDesc.label = gfxStringView(descriptor->label);
+        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
     }
 
     // Use explicit source type from descriptor
@@ -1887,7 +1412,7 @@ GfxResult WebGPUBackend::deviceCreateShader(GfxDevice device, const GfxShaderDes
         // WGSL shader (text)
         const char* wgslCode = static_cast<const char*>(descriptor->code);
         WGPUShaderSourceWGSL wgslSource = WGPU_SHADER_SOURCE_WGSL_INIT;
-        wgslSource.code = gfxStringView(wgslCode);
+        wgslSource.code = gfx::convertor::gfxStringView(wgslCode);
         wgpuDesc.nextInChain = (WGPUChainedStruct*)&wgslSource;
     }
 
@@ -1911,7 +1436,7 @@ GfxResult WebGPUBackend::deviceCreateBindGroupLayout(GfxDevice device, const Gfx
 
     WGPUBindGroupLayoutDescriptor wgpuDesc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
     if (descriptor->label) {
-        wgpuDesc.label = gfxStringView(descriptor->label);
+        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
     }
 
     std::vector<WGPUBindGroupLayoutEntry> entries;
@@ -1944,14 +1469,14 @@ GfxResult WebGPUBackend::deviceCreateBindGroupLayout(GfxDevice device, const Gfx
                 wgpuEntry.sampler.type = entry.sampler.comparison ? WGPUSamplerBindingType_Comparison : WGPUSamplerBindingType_Filtering;
                 break;
             case GFX_BINDING_TYPE_TEXTURE:
-                wgpuEntry.texture.sampleType = gfxTextureSampleTypeToWGPU(entry.texture.sampleType);
-                wgpuEntry.texture.viewDimension = gfxTextureViewTypeToWGPU(entry.texture.viewDimension);
+                wgpuEntry.texture.sampleType = gfx::convertor::gfxTextureSampleTypeToWGPU(entry.texture.sampleType);
+                wgpuEntry.texture.viewDimension = gfx::convertor::gfxTextureViewTypeToWGPU(entry.texture.viewDimension);
                 wgpuEntry.texture.multisampled = entry.texture.multisampled ? WGPU_TRUE : WGPU_FALSE;
                 break;
             case GFX_BINDING_TYPE_STORAGE_TEXTURE:
                 wgpuEntry.storageTexture.access = entry.storageTexture.writeOnly ? WGPUStorageTextureAccess_WriteOnly : WGPUStorageTextureAccess_ReadOnly;
-                wgpuEntry.storageTexture.format = gfxFormatToWGPUFormat(entry.storageTexture.format);
-                wgpuEntry.storageTexture.viewDimension = gfxTextureViewTypeToWGPU(entry.storageTexture.viewDimension);
+                wgpuEntry.storageTexture.format = gfx::convertor::gfxFormatToWGPUFormat(entry.storageTexture.format);
+                wgpuEntry.storageTexture.viewDimension = gfx::convertor::gfxTextureViewTypeToWGPU(entry.storageTexture.viewDimension);
                 break;
             }
 
@@ -1983,7 +1508,7 @@ GfxResult WebGPUBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGr
 
     WGPUBindGroupDescriptor wgpuDesc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
     if (descriptor->label) {
-        wgpuDesc.label = gfxStringView(descriptor->label);
+        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
     }
     wgpuDesc.layout = layoutPtr->handle();
 
@@ -2044,7 +1569,7 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
 
     WGPURenderPipelineDescriptor wgpuDesc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
     if (descriptor->label) {
-        wgpuDesc.label = gfxStringView(descriptor->label);
+        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
     }
 
     // Create pipeline layout if bind group layouts are provided
@@ -2070,7 +1595,7 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
     auto* vertexShader = reinterpret_cast<gfx::webgpu::Shader*>(descriptor->vertex->module);
     WGPUVertexState vertexState = WGPU_VERTEX_STATE_INIT;
     vertexState.module = vertexShader->handle();
-    vertexState.entryPoint = gfxStringView(descriptor->vertex->entryPoint);
+    vertexState.entryPoint = gfx::convertor::gfxStringView(descriptor->vertex->entryPoint);
 
     fprintf(stderr, "[WebGPU] Creating pipeline - vertex entry: '%s'\n", descriptor->vertex->entryPoint ? descriptor->vertex->entryPoint : "NULL");
 
@@ -2091,7 +1616,7 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
             for (uint32_t j = 0; j < buffer.attributeCount; ++j) {
                 const auto& attr = buffer.attributes[j];
                 WGPUVertexAttribute wgpuAttr = WGPU_VERTEX_ATTRIBUTE_INIT;
-                wgpuAttr.format = gfxFormatToWGPUVertexFormat(attr.format);
+                wgpuAttr.format = gfx::convertor::gfxFormatToWGPUVertexFormat(attr.format);
                 wgpuAttr.offset = attr.offset;
                 wgpuAttr.shaderLocation = attr.shaderLocation;
                 attributes.push_back(wgpuAttr);
@@ -2121,7 +1646,7 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
     if (descriptor->fragment) {
         auto* fragmentShader = reinterpret_cast<gfx::webgpu::Shader*>(descriptor->fragment->module);
         fragmentState.module = fragmentShader->handle();
-        fragmentState.entryPoint = gfxStringView(descriptor->fragment->entryPoint);
+        fragmentState.entryPoint = gfx::convertor::gfxStringView(descriptor->fragment->entryPoint);
 
         fprintf(stderr, "[WebGPU] Creating pipeline - fragment entry: '%s'\n", descriptor->fragment->entryPoint ? descriptor->fragment->entryPoint : "NULL");
 
@@ -2131,21 +1656,21 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
             for (uint32_t i = 0; i < descriptor->fragment->targetCount; ++i) {
                 const auto& target = descriptor->fragment->targets[i];
                 WGPUColorTargetState wgpuTarget = WGPU_COLOR_TARGET_STATE_INIT;
-                wgpuTarget.format = gfxFormatToWGPUFormat(target.format);
+                wgpuTarget.format = gfx::convertor::gfxFormatToWGPUFormat(target.format);
                 wgpuTarget.writeMask = target.writeMask;
 
                 if (target.blend) {
                     WGPUBlendState blend = WGPU_BLEND_STATE_INIT;
 
                     // Color blend
-                    blend.color.operation = gfxBlendOperationToWGPU(target.blend->color.operation);
-                    blend.color.srcFactor = gfxBlendFactorToWGPU(target.blend->color.srcFactor);
-                    blend.color.dstFactor = gfxBlendFactorToWGPU(target.blend->color.dstFactor);
+                    blend.color.operation = gfx::convertor::gfxBlendOperationToWGPU(target.blend->color.operation);
+                    blend.color.srcFactor = gfx::convertor::gfxBlendFactorToWGPU(target.blend->color.srcFactor);
+                    blend.color.dstFactor = gfx::convertor::gfxBlendFactorToWGPU(target.blend->color.dstFactor);
 
                     // Alpha blend
-                    blend.alpha.operation = gfxBlendOperationToWGPU(target.blend->alpha.operation);
-                    blend.alpha.srcFactor = gfxBlendFactorToWGPU(target.blend->alpha.srcFactor);
-                    blend.alpha.dstFactor = gfxBlendFactorToWGPU(target.blend->alpha.dstFactor);
+                    blend.alpha.operation = gfx::convertor::gfxBlendOperationToWGPU(target.blend->alpha.operation);
+                    blend.alpha.srcFactor = gfx::convertor::gfxBlendFactorToWGPU(target.blend->alpha.srcFactor);
+                    blend.alpha.dstFactor = gfx::convertor::gfxBlendFactorToWGPU(target.blend->alpha.dstFactor);
 
                     blendStates.push_back(blend);
                     wgpuTarget.blend = &blendStates.back();
@@ -2163,12 +1688,12 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
 
     // Primitive state
     WGPUPrimitiveState primitiveState = WGPU_PRIMITIVE_STATE_INIT;
-    primitiveState.topology = gfxPrimitiveTopologyToWGPU(descriptor->primitive->topology);
-    primitiveState.frontFace = gfxFrontFaceToWGPU(descriptor->primitive->frontFace);
-    primitiveState.cullMode = gfxCullModeToWGPU(descriptor->primitive->cullMode);
+    primitiveState.topology = gfx::convertor::gfxPrimitiveTopologyToWGPU(descriptor->primitive->topology);
+    primitiveState.frontFace = gfx::convertor::gfxFrontFaceToWGPU(descriptor->primitive->frontFace);
+    primitiveState.cullMode = gfx::convertor::gfxCullModeToWGPU(descriptor->primitive->cullMode);
 
     if (descriptor->primitive->stripIndexFormat) {
-        primitiveState.stripIndexFormat = gfxIndexFormatToWGPU(*descriptor->primitive->stripIndexFormat);
+        primitiveState.stripIndexFormat = gfx::convertor::gfxIndexFormatToWGPU(*descriptor->primitive->stripIndexFormat);
     }
 
     wgpuDesc.primitive = primitiveState;
@@ -2176,24 +1701,24 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
     // Depth/stencil state (optional)
     WGPUDepthStencilState depthStencilState = WGPU_DEPTH_STENCIL_STATE_INIT;
     if (descriptor->depthStencil) {
-        depthStencilState.format = gfxFormatToWGPUFormat(descriptor->depthStencil->format);
+        depthStencilState.format = gfx::convertor::gfxFormatToWGPUFormat(descriptor->depthStencil->format);
         depthStencilState.depthWriteEnabled = descriptor->depthStencil->depthWriteEnabled ? WGPUOptionalBool_True : WGPUOptionalBool_False;
-        depthStencilState.depthCompare = gfxCompareFunctionToWGPU(descriptor->depthStencil->depthCompare);
+        depthStencilState.depthCompare = gfx::convertor::gfxCompareFunctionToWGPU(descriptor->depthStencil->depthCompare);
 
         // Only configure stencil ops for formats that have a stencil aspect
         // For depth-only formats, the INIT macro sets sensible defaults (Always/Keep)
-        if (formatHasStencil(descriptor->depthStencil->format)) {
+        if (gfx::convertor::formatHasStencil(descriptor->depthStencil->format)) {
             // Stencil front
-            depthStencilState.stencilFront.compare = gfxCompareFunctionToWGPU(descriptor->depthStencil->stencilFront.compare);
-            depthStencilState.stencilFront.failOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.failOp);
-            depthStencilState.stencilFront.depthFailOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.depthFailOp);
-            depthStencilState.stencilFront.passOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.passOp);
+            depthStencilState.stencilFront.compare = gfx::convertor::gfxCompareFunctionToWGPU(descriptor->depthStencil->stencilFront.compare);
+            depthStencilState.stencilFront.failOp = gfx::convertor::gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.failOp);
+            depthStencilState.stencilFront.depthFailOp = gfx::convertor::gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.depthFailOp);
+            depthStencilState.stencilFront.passOp = gfx::convertor::gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.passOp);
 
             // Stencil back
-            depthStencilState.stencilBack.compare = gfxCompareFunctionToWGPU(descriptor->depthStencil->stencilBack.compare);
-            depthStencilState.stencilBack.failOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.failOp);
-            depthStencilState.stencilBack.depthFailOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.depthFailOp);
-            depthStencilState.stencilBack.passOp = gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.passOp);
+            depthStencilState.stencilBack.compare = gfx::convertor::gfxCompareFunctionToWGPU(descriptor->depthStencil->stencilBack.compare);
+            depthStencilState.stencilBack.failOp = gfx::convertor::gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.failOp);
+            depthStencilState.stencilBack.depthFailOp = gfx::convertor::gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.depthFailOp);
+            depthStencilState.stencilBack.passOp = gfx::convertor::gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.passOp);
 
             depthStencilState.stencilReadMask = descriptor->depthStencil->stencilReadMask;
             depthStencilState.stencilWriteMask = descriptor->depthStencil->stencilWriteMask;
@@ -2238,7 +1763,7 @@ GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
 
     WGPUComputePipelineDescriptor wgpuDesc = WGPU_COMPUTE_PIPELINE_DESCRIPTOR_INIT;
     if (descriptor->label) {
-        wgpuDesc.label = gfxStringView(descriptor->label);
+        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
     }
 
     // Create pipeline layout if bind group layouts are provided
@@ -2261,7 +1786,7 @@ GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
     }
 
     wgpuDesc.compute.module = shader->handle();
-    wgpuDesc.compute.entryPoint = gfxStringView(descriptor->entryPoint);
+    wgpuDesc.compute.entryPoint = gfx::convertor::gfxStringView(descriptor->entryPoint);
 
     WGPUComputePipeline wgpuPipeline = wgpuDeviceCreateComputePipeline(devicePtr->handle(), &wgpuDesc);
 
@@ -2289,7 +1814,7 @@ GfxResult WebGPUBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxC
 
     WGPUCommandEncoderDescriptor wgpuDesc = WGPU_COMMAND_ENCODER_DESCRIPTOR_INIT;
     if (descriptor->label) {
-        wgpuDesc.label = gfxStringView(descriptor->label);
+        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
     }
 
     WGPUCommandEncoder wgpuEncoder = wgpuDeviceCreateCommandEncoder(devicePtr->handle(), &wgpuDesc);
@@ -2421,7 +1946,7 @@ uint32_t WebGPUBackend::surfaceGetSupportedFormats(GfxSurface surface, GfxTextur
     if (formats && maxFormats > 0) {
         uint32_t copyCount = std::min(formatCount, maxFormats);
         for (uint32_t i = 0; i < copyCount; ++i) {
-            formats[i] = wgpuFormatToGfxFormat(capabilities.formats[i]);
+            formats[i] = gfx::convertor::wgpuFormatToGfxFormat(capabilities.formats[i]);
         }
     }
 
@@ -2452,7 +1977,7 @@ uint32_t WebGPUBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxP
     if (presentModes && maxModes > 0) {
         uint32_t copyCount = std::min(modeCount, maxModes);
         for (uint32_t i = 0; i < copyCount; ++i) {
-            presentModes[i] = wgpuPresentModeToGfxPresentMode(capabilities.presentModes[i]);
+            presentModes[i] = gfx::convertor::wgpuPresentModeToGfxPresentMode(capabilities.presentModes[i]);
         }
     }
 
@@ -2500,7 +2025,7 @@ GfxTextureFormat WebGPUBackend::swapchainGetFormat(GfxSwapchain swapchain) const
         return GFX_TEXTURE_FORMAT_UNDEFINED;
     }
     auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
-    return wgpuFormatToGfxFormat(swapchainPtr->getFormat());
+    return gfx::convertor::wgpuFormatToGfxFormat(swapchainPtr->getFormat());
 }
 
 uint32_t WebGPUBackend::swapchainGetBufferCount(GfxSwapchain swapchain) const
@@ -2765,7 +2290,7 @@ GfxTextureFormat WebGPUBackend::textureGetFormat(GfxTexture texture) const
         return GFX_TEXTURE_FORMAT_UNDEFINED;
     }
     auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
-    return wgpuFormatToGfxFormat(texturePtr->getFormat());
+    return gfx::convertor::wgpuFormatToGfxFormat(texturePtr->getFormat());
 }
 
 uint32_t WebGPUBackend::textureGetMipLevelCount(GfxTexture texture) const
@@ -2833,10 +2358,10 @@ GfxResult WebGPUBackend::textureCreateView(GfxTexture texture, const GfxTextureV
     WGPUTextureViewDescriptor wgpuDesc = WGPU_TEXTURE_VIEW_DESCRIPTOR_INIT;
     if (descriptor) {
         if (descriptor->label) {
-            wgpuDesc.label = gfxStringView(descriptor->label);
+            wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
         }
-        wgpuDesc.dimension = gfxTextureViewTypeToWGPU(descriptor->viewType);
-        wgpuDesc.format = gfxFormatToWGPUFormat(descriptor->format);
+        wgpuDesc.dimension = gfx::convertor::gfxTextureViewTypeToWGPU(descriptor->viewType);
+        wgpuDesc.format = gfx::convertor::gfxFormatToWGPUFormat(descriptor->format);
         wgpuDesc.baseMipLevel = descriptor->baseMipLevel;
         wgpuDesc.mipLevelCount = descriptor->mipLevelCount;
         wgpuDesc.baseArrayLayer = descriptor->baseArrayLayer;
@@ -3080,8 +2605,8 @@ GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
             if (colorAttachments[i].target.view) {
                 auto* viewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(colorAttachments[i].target.view);
                 attachment.view = viewPtr->handle();
-                attachment.loadOp = gfxLoadOpToWGPULoadOp(colorAttachments[i].target.ops.loadOp);
-                attachment.storeOp = gfxStoreOpToWGPUStoreOp(colorAttachments[i].target.ops.storeOp);
+                attachment.loadOp = gfx::convertor::gfxLoadOpToWGPULoadOp(colorAttachments[i].target.ops.loadOp);
+                attachment.storeOp = gfx::convertor::gfxStoreOpToWGPUStoreOp(colorAttachments[i].target.ops.storeOp);
 
                 const GfxColor& color = colorAttachments[i].target.ops.clearColor;
                 attachment.clearValue = { color.r, color.g, color.b, color.a };
@@ -3107,8 +2632,8 @@ GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
         // Handle depth operations if depth pointer is set
         if (target->depthOps) {
-            wgpuDepthStencil.depthLoadOp = gfxLoadOpToWGPULoadOp(target->depthOps->loadOp);
-            wgpuDepthStencil.depthStoreOp = gfxStoreOpToWGPUStoreOp(target->depthOps->storeOp);
+            wgpuDepthStencil.depthLoadOp = gfx::convertor::gfxLoadOpToWGPULoadOp(target->depthOps->loadOp);
+            wgpuDepthStencil.depthStoreOp = gfx::convertor::gfxStoreOpToWGPUStoreOp(target->depthOps->storeOp);
             wgpuDepthStencil.depthClearValue = target->depthOps->clearValue;
         } else {
             wgpuDepthStencil.depthLoadOp = WGPULoadOp_Undefined;
@@ -3119,11 +2644,11 @@ GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         // Only set stencil operations for formats that have a stencil aspect
         // For depth-only formats (Depth16Unorm, Depth24Plus, Depth32Float), we must set to Undefined
         WGPUTextureFormat wgpuFormat = viewPtr->getTexture()->getFormat();
-        GfxTextureFormat format = wgpuFormatToGfxFormat(wgpuFormat);
-        if (formatHasStencil(format)) {
+        GfxTextureFormat format = gfx::convertor::wgpuFormatToGfxFormat(wgpuFormat);
+        if (gfx::convertor::formatHasStencil(format)) {
             if (target->stencilOps) {
-                wgpuDepthStencil.stencilLoadOp = gfxLoadOpToWGPULoadOp(target->stencilOps->loadOp);
-                wgpuDepthStencil.stencilStoreOp = gfxStoreOpToWGPUStoreOp(target->stencilOps->storeOp);
+                wgpuDepthStencil.stencilLoadOp = gfx::convertor::gfxLoadOpToWGPULoadOp(target->stencilOps->loadOp);
+                wgpuDepthStencil.stencilStoreOp = gfx::convertor::gfxStoreOpToWGPUStoreOp(target->stencilOps->storeOp);
                 wgpuDepthStencil.stencilClearValue = target->stencilOps->clearValue;
             } else {
                 wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Undefined;
@@ -3159,7 +2684,7 @@ GfxResult WebGPUBackend::commandEncoderBeginComputePass(GfxCommandEncoder comman
 
     WGPUComputePassDescriptor wgpuDesc = WGPU_COMPUTE_PASS_DESCRIPTOR_INIT;
     if (descriptor->label) {
-        wgpuDesc.label = gfxStringView(descriptor->label);
+        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
     }
 
     WGPUComputePassEncoder wgpuEncoder = wgpuCommandEncoderBeginComputePass(encoderPtr->handle(), &wgpuDesc);
@@ -3370,7 +2895,7 @@ void WebGPUBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderP
     auto* bufferPtr = reinterpret_cast<gfx::webgpu::Buffer*>(buffer);
 
     wgpuRenderPassEncoderSetIndexBuffer(encoderPtr->handle(), bufferPtr->handle(),
-        gfxIndexFormatToWGPU(format), offset, size);
+        gfx::convertor::gfxIndexFormatToWGPU(format), offset, size);
 }
 
 void WebGPUBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
