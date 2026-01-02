@@ -82,6 +82,27 @@ cmake -DBUILD_VULKAN_BACKEND=OFF ..
 cmake -DBUILD_EXAMPLES=OFF ..
 ```
 
+### WebAssembly Build (Emscripten)
+
+For building the web examples that run in the browser:
+
+```bash
+cd examples/web/cube
+./build_web.sh
+
+# kill any runninng server instance
+pkill -9 -f "python3.*http.server" 2>/dev/null || true
+# run the server
+cd /home/lhelcl/Dev/GfxWrapper/build_web/web && python3 -m http.server 8080
+
+# open url in browser
+http://localhost:8080/cube_example_web.html
+```
+
+**Requirements for Web Build:**
+- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)
+- Browser with WebGPU support (Chrome 113+, Edge 113+)
+
 ### Shader Compilation
 Shaders are automatically compiled from GLSL to SPIR-V during the build process using `glslc` from the Vulkan SDK. No manual compilation step is needed!
 
