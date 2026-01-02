@@ -148,7 +148,8 @@ GfxResult WebGPUBackend::createInstance(const GfxInstanceDescriptor* descriptor,
     }
 
     try {
-        auto* instance = new gfx::webgpu::Instance(descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUInstanceCreateInfo(descriptor);
+        auto* instance = new gfx::webgpu::Instance(createInfo);
         *outInstance = reinterpret_cast<GfxInstance>(instance);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
@@ -394,12 +395,11 @@ GfxResult WebGPUBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceD
     }
 
     WGPUSurface wgpuSurface = gfx::webgpu::surface::SurfaceFactory{}.createFromNativeWindow(inst, descriptor->windowHandle);
-
     if (!wgpuSurface) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    auto* surface = new gfx::webgpu::Surface(wgpuSurface, devicePtr->getAdapter()->handle(), descriptor->windowHandle);
+    auto* surface = new gfx::webgpu::Surface(wgpuSurface, devicePtr->getAdapter()->handle());
     *outSurface = reinterpret_cast<GfxSurface>(surface);
     return GFX_RESULT_SUCCESS;
 }
@@ -485,7 +485,7 @@ GfxResult WebGPUBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    auto* buffer = new gfx::webgpu::Buffer(wgpuBuffer, descriptor->size, descriptor->usage, devicePtr);
+    auto* buffer = new gfx::webgpu::Buffer(wgpuBuffer, descriptor->size, static_cast<WGPUBufferUsage>(descriptor->usage), devicePtr);
     *outBuffer = reinterpret_cast<GfxBuffer>(buffer);
     return GFX_RESULT_SUCCESS;
 }
@@ -1030,7 +1030,8 @@ GfxResult WebGPUBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaph
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* semaphore = new gfx::webgpu::Semaphore(descriptor->type, descriptor->initialValue);
+    auto semaphoreType = gfx::convertor::gfxSemaphoreTypeToWebGPUSemaphoreType(descriptor->type);
+    auto* semaphore = new gfx::webgpu::Semaphore(semaphoreType, descriptor->initialValue);
     *outSemaphore = reinterpret_cast<GfxSemaphore>(semaphore);
     return GFX_RESULT_SUCCESS;
 }
@@ -1371,7 +1372,8 @@ GfxBufferUsage WebGPUBackend::bufferGetUsage(GfxBuffer buffer) const
     if (!buffer) {
         return GFX_BUFFER_USAGE_NONE;
     }
-    return reinterpret_cast<gfx::webgpu::Buffer*>(buffer)->getUsage();
+    auto usage = reinterpret_cast<gfx::webgpu::Buffer*>(buffer)->getUsage();
+    return gfx::convertor::webgpuBufferUsageToGfxBufferUsage(usage);
 }
 
 GfxResult WebGPUBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
@@ -2241,7 +2243,8 @@ GfxSemaphoreType WebGPUBackend::semaphoreGetType(GfxSemaphore semaphore) const
     if (!semaphore) {
         return GFX_SEMAPHORE_TYPE_BINARY;
     }
-    return reinterpret_cast<gfx::webgpu::Semaphore*>(semaphore)->getType();
+    auto type = reinterpret_cast<gfx::webgpu::Semaphore*>(semaphore)->getType();
+    return gfx::convertor::webgpuSemaphoreTypeToGfxSemaphoreType(type);
 }
 
 GfxResult WebGPUBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
@@ -2251,7 +2254,7 @@ GfxResult WebGPUBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value)
     }
 
     auto* semaphorePtr = reinterpret_cast<gfx::webgpu::Semaphore*>(semaphore);
-    if (semaphorePtr->getType() == GFX_SEMAPHORE_TYPE_TIMELINE) {
+    if (semaphorePtr->getType() == gfx::webgpu::SemaphoreType::Timeline) {
         semaphorePtr->setValue(value);
     }
     return GFX_RESULT_SUCCESS;
@@ -2265,7 +2268,7 @@ GfxResult WebGPUBackend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, u
     (void)timeoutNs; // WebGPU doesn't support timeout for semaphore waits
 
     auto* semaphorePtr = reinterpret_cast<gfx::webgpu::Semaphore*>(semaphore);
-    if (semaphorePtr->getType() == GFX_SEMAPHORE_TYPE_TIMELINE) {
+    if (semaphorePtr->getType() == gfx::webgpu::SemaphoreType::Timeline) {
         return (semaphorePtr->getValue() >= value) ? GFX_RESULT_SUCCESS : GFX_RESULT_TIMEOUT;
     }
     return GFX_RESULT_SUCCESS;

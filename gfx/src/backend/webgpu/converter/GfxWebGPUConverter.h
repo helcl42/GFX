@@ -3,13 +3,36 @@
 #include <webgpu/webgpu.h>
 #include <gfx/gfx.h>
 
+// Forward declare internal WebGPU types
+namespace gfx::webgpu {
+    struct InstanceCreateInfo;
+    struct PlatformWindowHandle;
+    enum class SemaphoreType;
+    // BufferUsage is an alias to WGPUBufferUsage, so we use WGPUBufferUsage directly
+}
+
 // ============================================================================
 // WebGPU Conversion Functions
 // ============================================================================
 
 namespace gfx::convertor {
 
+// ============================================================================
+// Internal Type Conversions
+// ============================================================================
+
+gfx::webgpu::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstanceDescriptor* descriptor);
+gfx::webgpu::PlatformWindowHandle gfxWindowHandleToWebGPUPlatformWindowHandle(const GfxPlatformWindowHandle& gfxHandle);
+gfx::webgpu::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreType gfxType);
+
+// Reverse conversions - internal to Gfx API types
+GfxBufferUsage webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage);
+GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(gfx::webgpu::SemaphoreType type);
+
+// ============================================================================
 // String utilities
+// ============================================================================
+
 inline WGPUStringView gfxStringView(const char* str)
 {
     if (!str) {
@@ -18,7 +41,10 @@ inline WGPUStringView gfxStringView(const char* str)
     return WGPUStringView{ str, WGPU_STRLEN };
 }
 
+// ============================================================================
 // Texture format conversions
+// ============================================================================
+
 inline WGPUTextureFormat gfxFormatToWGPUFormat(GfxTextureFormat format)
 {
     switch (format) {

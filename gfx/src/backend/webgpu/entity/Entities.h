@@ -1,8 +1,7 @@
 #pragma once
 
 #include "../common/WebGPUCommon.h"
-
-#include <gfx/gfx.h>
+#include "CreateInfo.h"
 
 #include <memory>
 #include <stdexcept>
@@ -14,15 +13,37 @@
 
 namespace gfx::webgpu {
 
+// Forward declarations
+class Instance;
+class Adapter;
+class Device;
+class Queue;
+class Surface;
+class Swapchain;
+class Buffer;
+class Texture;
+class TextureView;
+class Sampler;
+class Shader;
+class RenderPipeline;
+class ComputePipeline;
+class CommandEncoder;
+class RenderPassEncoder;
+class ComputePassEncoder;
+class BindGroupLayout;
+class BindGroup;
+class Fence;
+class Semaphore;
+
 class Instance {
 public:
     // Prevent copying
     Instance(const Instance&) = delete;
     Instance& operator=(const Instance&) = delete;
 
-    Instance(const GfxInstanceDescriptor* descriptor)
+    Instance(const InstanceCreateInfo& createInfo)
     {
-        (void)descriptor; // Descriptor not used in current implementation
+        (void)createInfo; // Descriptor not used in current implementation
         // Request TimedWaitAny feature for proper async callback handling
         static const WGPUInstanceFeatureName requiredFeatures[] = {
             WGPUInstanceFeatureName_TimedWaitAny
@@ -76,8 +97,6 @@ private:
     Instance* m_instance = nullptr; // Non-owning
     std::string m_name;
 };
-
-class Device; // Forward declaration
 
 class Queue {
 public:
@@ -151,7 +170,7 @@ public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
-    Buffer(WGPUBuffer buffer, uint64_t size, GfxBufferUsage usage, Device* device)
+    Buffer(WGPUBuffer buffer, uint64_t size, BufferUsage usage, Device* device)
         : m_buffer(buffer)
         , m_size(size)
         , m_usage(usage)
@@ -168,13 +187,13 @@ public:
 
     WGPUBuffer handle() const { return m_buffer; }
     uint64_t getSize() const { return m_size; }
-    GfxBufferUsage getUsage() const { return m_usage; }
+    BufferUsage getUsage() const { return m_usage; }
     Device* getDevice() const { return m_device; }
 
 private:
     WGPUBuffer m_buffer = nullptr;
     uint64_t m_size = 0;
-    GfxBufferUsage m_usage = GFX_BUFFER_USAGE_NONE;
+    BufferUsage m_usage = WGPUBufferUsage_None;
     Device* m_device = nullptr; // Non-owning pointer to parent device
 };
 
@@ -498,10 +517,9 @@ public:
     Surface(const Surface&) = delete;
     Surface& operator=(const Surface&) = delete;
 
-    Surface(WGPUSurface surface, WGPUAdapter adapter, const GfxPlatformWindowHandle& windowHandle)
+    Surface(WGPUSurface surface, WGPUAdapter adapter)
         : m_surface(surface)
         , m_adapter(adapter)
-        , m_windowHandle(windowHandle)
     {
     }
 
@@ -518,7 +536,6 @@ public:
 private:
     WGPUSurface m_surface = nullptr;
     WGPUAdapter m_adapter = nullptr;
-    GfxPlatformWindowHandle m_windowHandle = {};
 };
 
 class Swapchain {
@@ -634,7 +651,7 @@ public:
     Semaphore(const Semaphore&) = delete;
     Semaphore& operator=(const Semaphore&) = delete;
 
-    Semaphore(GfxSemaphoreType type, uint64_t value)
+    Semaphore(SemaphoreType type, uint64_t value)
         : m_type(type)
         , m_value(value)
     {
@@ -642,12 +659,12 @@ public:
 
     ~Semaphore() = default;
 
-    GfxSemaphoreType getType() const { return m_type; }
+    SemaphoreType getType() const { return m_type; }
     uint64_t getValue() const { return m_value; }
     void setValue(uint64_t value) { m_value = value; }
 
 private:
-    GfxSemaphoreType m_type = GFX_SEMAPHORE_TYPE_BINARY;
+    SemaphoreType m_type = SemaphoreType::Binary;
     uint64_t m_value = 0;
 };
 
