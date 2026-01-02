@@ -1,18 +1,4 @@
-#include "WebGPUBackend.h"
-
 #include <webgpu/webgpu.h>
-
-#include <gfx/gfx.h>
-
-#include "../IBackend.h"
-#include "converter/GfxWebGPUConverter.h"
-
-#include <cassert>
-#include <cstdio>
-#include <cstring>
-#include <memory>
-#include <string>
-#include <vector>
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
@@ -28,6 +14,16 @@ struct wl_surface;
 #include <objc/objc.h>
 #include <objc/runtime.h>
 #endif
+
+#include "WebGPUBackend.h"
+#include "converter/GfxWebGPUConverter.h"
+
+#include <cassert>
+#include <cstdio>
+#include <cstring>
+#include <memory>
+#include <string>
+#include <vector>
 
 // ============================================================================
 // Platform-specific Surface Creation Helpers
