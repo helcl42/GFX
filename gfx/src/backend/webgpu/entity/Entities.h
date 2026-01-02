@@ -514,7 +514,6 @@ public:
 
     WGPUSurface handle() const { return m_surface; }
     WGPUAdapter adapter() const { return m_adapter; }
-    const GfxPlatformWindowHandle& getWindowHandle() const { return m_windowHandle; }
 
 private:
     WGPUSurface m_surface = nullptr;

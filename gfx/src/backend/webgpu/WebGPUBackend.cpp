@@ -1171,15 +1171,6 @@ uint32_t WebGPUBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxP
     return modeCount;
 }
 
-GfxPlatformWindowHandle WebGPUBackend::surfaceGetPlatformHandle(GfxSurface surface) const
-{
-    if (!surface) {
-        GfxPlatformWindowHandle handle = {};
-        return handle;
-    }
-    return reinterpret_cast<gfx::webgpu::Surface*>(surface)->getWindowHandle();
-}
-
 // Swapchain functions
 void WebGPUBackend::swapchainDestroy(GfxSwapchain swapchain) const
 {

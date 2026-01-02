@@ -47,7 +47,6 @@ public:
     void surfaceDestroy(GfxSurface surface) const override;
     uint32_t surfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats) const override;
     uint32_t surfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes) const override;
-    GfxPlatformWindowHandle surfaceGetPlatformHandle(GfxSurface surface) const override;
 
     // Swapchain functions
     void swapchainDestroy(GfxSwapchain swapchain) const override;
