@@ -177,11 +177,16 @@ set(GFX_C_SOURCES
 )
 
 if(BUILD_VULKAN_BACKEND)
-    list(APPEND GFX_C_SOURCES gfx/src/backend/vulkan/VulkanBackend.cpp)
+    list(APPEND GFX_C_SOURCES 
+        gfx/src/backend/vulkan/VulkanBackend.cpp
+    )
 endif()
 
 if(BUILD_WEBGPU_BACKEND)
-    list(APPEND GFX_C_SOURCES gfx/src/backend/webgpu/WebGPUBackend.cpp)
+    list(APPEND GFX_C_SOURCES 
+        gfx/src/backend/webgpu/WebGPUBackend.cpp
+        gfx/src/backend/webgpu/surface/SurfaceFactory.cpp
+    )
 endif()
 
 # Create library based on BUILD_SHARED_LIBS option
