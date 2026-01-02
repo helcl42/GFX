@@ -180,6 +180,7 @@ set(GFX_C_SOURCES
 if(BUILD_VULKAN_BACKEND)
     list(APPEND GFX_C_SOURCES 
         gfx/src/backend/vulkan/VulkanBackend.cpp
+        gfx/src/backend/vulkan/converter/GfxVulkanConverter.cpp
     )
 endif()
 

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../common/VulkanCommon.h"
-
-#include <gfx/gfx.h>
+#include "../converter/GfxVulkanConverter.h"
+#include "CreateInfo.h" // Internal CreateInfo structs
 
 #include <cassert>
 #include <cstdio>
@@ -15,6 +15,7 @@
 
 namespace gfx::vulkan {
 
+// Forward declarations
 class Instance;
 class Adapter;
 class Device;
@@ -42,7 +43,7 @@ public:
     Instance(const Instance&) = delete;
     Instance& operator=(const Instance&) = delete;
 
-    Instance(const GfxInstanceDescriptor* descriptor)
+    Instance(const InstanceCreateInfo& createInfo)
     {
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -52,13 +53,13 @@ public:
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.apiVersion = VK_API_VERSION_1_1;
 
-        VkInstanceCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        createInfo.pApplicationInfo = &appInfo;
+        VkInstanceCreateInfo vkCreateInfo{};
+        vkCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        vkCreateInfo.pApplicationInfo = &appInfo;
 
         // Extensions
         std::vector<const char*> extensions = {};
-        if (!descriptor->enabledHeadless) {
+        if (!createInfo.enableHeadless) {
             extensions.push_back("VK_KHR_surface");
 #ifdef _WIN32
             extensions.push_back("VK_KHR_win32_surface");
@@ -71,7 +72,7 @@ public:
 #endif
         }
 
-        m_validationEnabled = descriptor && descriptor->enableValidation;
+        m_validationEnabled = createInfo.enableValidation;
         if (m_validationEnabled) {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
@@ -97,18 +98,18 @@ public:
             }
         }
 
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-        createInfo.ppEnabledExtensionNames = extensions.data();
+        vkCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+        vkCreateInfo.ppEnabledExtensionNames = extensions.data();
 
         // Validation layers
         std::vector<const char*> layers;
         if (m_validationEnabled) {
             layers.push_back("VK_LAYER_KHRONOS_validation");
         }
-        createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
-        createInfo.ppEnabledLayerNames = layers.data();
+        vkCreateInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
+        vkCreateInfo.ppEnabledLayerNames = layers.data();
 
-        VkResult result = vkCreateInstance(&createInfo, nullptr, &m_instance);
+        VkResult result = vkCreateInstance(&vkCreateInfo, nullptr, &m_instance);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create Vulkan instance: " + std::string(gfx::convertor::vkResultToString(result)));
         }
@@ -139,7 +140,8 @@ private:
     VkInstance m_instance = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
     bool m_validationEnabled = false;
-    GfxDebugCallback m_userCallback = nullptr;
+    using DebugCallbackFunc = void (*)(DebugMessageSeverity severity, DebugMessageType type, const char* message, void* userData);
+    DebugCallbackFunc m_userCallback = nullptr;
     void* m_userCallbackData = nullptr;
 
     void setupDebugMessenger()
@@ -166,25 +168,9 @@ private:
     {
         auto* instance = static_cast<Instance*>(pUserData);
         if (instance && instance->m_userCallback) {
-            // Map Vulkan severity to Gfx severity
-            GfxDebugMessageSeverity severity = GFX_DEBUG_MESSAGE_SEVERITY_INFO;
-            if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
-                severity = GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE;
-            } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-                severity = GFX_DEBUG_MESSAGE_SEVERITY_INFO;
-            } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-                severity = GFX_DEBUG_MESSAGE_SEVERITY_WARNING;
-            } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-                severity = GFX_DEBUG_MESSAGE_SEVERITY_ERROR;
-            }
-
-            // Map Vulkan type to Gfx type
-            GfxDebugMessageType type = GFX_DEBUG_MESSAGE_TYPE_GENERAL;
-            if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) {
-                type = GFX_DEBUG_MESSAGE_TYPE_VALIDATION;
-            } else if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
-                type = GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE;
-            }
+            // Convert Vulkan types to internal enums
+            DebugMessageSeverity severity = gfx::convertor::convertVkDebugSeverity(messageSeverity);
+            DebugMessageType type = gfx::convertor::convertVkDebugType(messageType);
 
             instance->m_userCallback(severity, type, pCallbackData->pMessage, instance->m_userCallbackData);
         }
@@ -192,7 +178,7 @@ private:
     }
 
 public:
-    void setDebugCallback(GfxDebugCallback callback, void* userData)
+    void setDebugCallback(DebugCallbackFunc callback, void* userData)
     {
         m_userCallback = callback;
         m_userCallbackData = userData;
@@ -264,10 +250,10 @@ public:
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
 
-    Device(Adapter* adapter, const GfxDeviceDescriptor* descriptor)
+    Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
         : m_adapter(adapter)
     {
-        (void)descriptor;
+        (void)createInfo; // Currently unused
 
         // Queue create info
         float queuePriority = 1.0f;
@@ -283,15 +269,15 @@ public:
         // Device extensions
         std::vector<const char*> extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-        VkDeviceCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        createInfo.queueCreateInfoCount = 1;
-        createInfo.pQueueCreateInfos = &queueCreateInfo;
-        createInfo.pEnabledFeatures = &deviceFeatures;
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-        createInfo.ppEnabledExtensionNames = extensions.data();
+        VkDeviceCreateInfo vkCreateInfo{};
+        vkCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        vkCreateInfo.queueCreateInfoCount = 1;
+        vkCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+        vkCreateInfo.pEnabledFeatures = &deviceFeatures;
+        vkCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+        vkCreateInfo.ppEnabledExtensionNames = extensions.data();
 
-        VkResult result = vkCreateDevice(m_adapter->handle(), &createInfo, nullptr, &m_device);
+        VkResult result = vkCreateDevice(m_adapter->handle(), &vkCreateInfo, nullptr, &m_device);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create Vulkan device");
         }
@@ -321,21 +307,21 @@ public:
     Shader(const Shader&) = delete;
     Shader& operator=(const Shader&) = delete;
 
-    Shader(VkDevice device, const GfxShaderDescriptor* descriptor)
+    Shader(VkDevice device, const ShaderCreateInfo& createInfo)
         : m_device(device)
     {
-        if (descriptor->entryPoint) {
-            m_entryPoint = descriptor->entryPoint;
+        if (createInfo.entryPoint) {
+            m_entryPoint = createInfo.entryPoint;
         } else {
             m_entryPoint = "main";
         }
 
-        VkShaderModuleCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = descriptor->codeSize;
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(descriptor->code);
+        VkShaderModuleCreateInfo vkCreateInfo{};
+        vkCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        vkCreateInfo.codeSize = createInfo.codeSize;
+        vkCreateInfo.pCode = reinterpret_cast<const uint32_t*>(createInfo.code);
 
-        VkResult result = vkCreateShaderModule(m_device, &createInfo, nullptr, &m_shaderModule);
+        VkResult result = vkCreateShaderModule(m_device, &vkCreateInfo, nullptr, &m_shaderModule);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create shader module");
         }
@@ -362,50 +348,22 @@ public:
     BindGroupLayout(const BindGroupLayout&) = delete;
     BindGroupLayout& operator=(const BindGroupLayout&) = delete;
 
-    BindGroupLayout(VkDevice device, const GfxBindGroupLayoutDescriptor* descriptor)
+    BindGroupLayout(VkDevice device, const BindGroupLayoutCreateInfo& createInfo)
         : m_device(device)
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings;
 
-        for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
-            const auto& entry = descriptor->entries[i];
-
+        for (const auto& entry : createInfo.entries) {
             VkDescriptorSetLayoutBinding binding{};
             binding.binding = entry.binding;
             binding.descriptorCount = 1;
-
-            // Convert GfxBindingType to VkDescriptorType
-            switch (entry.type) {
-            case GFX_BINDING_TYPE_BUFFER:
-                binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                break;
-            case GFX_BINDING_TYPE_SAMPLER:
-                binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-                break;
-            case GFX_BINDING_TYPE_TEXTURE:
-                binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-                break;
-            case GFX_BINDING_TYPE_STORAGE_TEXTURE:
-                binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-                break;
-            }
-
-            // Convert GfxShaderStage to VkShaderStageFlags
-            binding.stageFlags = 0;
-            if (entry.visibility & GFX_SHADER_STAGE_VERTEX) {
-                binding.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
-            }
-            if (entry.visibility & GFX_SHADER_STAGE_FRAGMENT) {
-                binding.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
-            }
-            if (entry.visibility & GFX_SHADER_STAGE_COMPUTE) {
-                binding.stageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
-            }
+            binding.descriptorType = entry.descriptorType;
+            binding.stageFlags = entry.stageFlags;
 
             bindings.push_back(binding);
 
             // Store binding info for later queries
-            m_bindingTypes[entry.binding] = binding.descriptorType;
+            m_bindingTypes[entry.binding] = entry.descriptorType;
         }
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -448,21 +406,27 @@ public:
     Surface(const Surface&) = delete;
     Surface& operator=(const Surface&) = delete;
 
-    Surface(VkInstance instance, VkPhysicalDevice physicalDevice, const GfxSurfaceDescriptor* descriptor)
+    Surface(VkInstance instance, VkPhysicalDevice physicalDevice, const SurfaceCreateInfo& createInfo)
         : m_instance(instance)
         , m_physicalDevice(physicalDevice)
-        , m_windowHandle(descriptor ? descriptor->windowHandle : GfxPlatformWindowHandle{})
     {
-        if (descriptor && descriptor->windowHandle.windowingSystem == GFX_WINDOWING_SYSTEM_X11 && descriptor->windowHandle.x11.display) {
-            VkXlibSurfaceCreateInfoKHR createInfo{};
-            createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-            createInfo.dpy = static_cast<Display*>(descriptor->windowHandle.x11.display);
-            createInfo.window = reinterpret_cast<Window>(descriptor->windowHandle.x11.window);
+        switch (createInfo.platform) {
+        case SurfaceCreateInfo::Platform::Xlib:
+            if (createInfo.handle.xlib.display) {
+                VkXlibSurfaceCreateInfoKHR vkCreateInfo{};
+                vkCreateInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+                vkCreateInfo.dpy = static_cast<Display*>(createInfo.handle.xlib.display);
+                vkCreateInfo.window = static_cast<Window>(createInfo.handle.xlib.window);
 
-            VkResult result = vkCreateXlibSurfaceKHR(m_instance, &createInfo, nullptr, &m_surface);
-            if (result != VK_SUCCESS) {
-                throw std::runtime_error("Failed to create Xlib surface");
+                VkResult result = vkCreateXlibSurfaceKHR(m_instance, &vkCreateInfo, nullptr, &m_surface);
+                if (result != VK_SUCCESS) {
+                    throw std::runtime_error("Failed to create Xlib surface");
+                }
             }
+            break;
+        // Other platforms can be added here
+        default:
+            throw std::runtime_error("Unsupported windowing platform");
         }
     }
 
@@ -473,15 +437,14 @@ public:
         }
     }
 
-    VkSurfaceKHR handle() const { return m_surface; }
+    VkInstance instance() const { return m_instance; }
     VkPhysicalDevice physicalDevice() const { return m_physicalDevice; }
-    GfxPlatformWindowHandle getPlatformHandle() const { return m_windowHandle; }
+    VkSurfaceKHR handle() const { return m_surface; }
 
 private:
-    VkSurfaceKHR m_surface = VK_NULL_HANDLE;
     VkInstance m_instance = VK_NULL_HANDLE;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
-    GfxPlatformWindowHandle m_windowHandle;
+    VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 };
 
 class Swapchain {
@@ -489,65 +452,31 @@ public:
     Swapchain(const Swapchain&) = delete;
     Swapchain& operator=(const Swapchain&) = delete;
 
-    Swapchain(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
-        uint32_t queueFamily, const GfxSwapchainDescriptor* descriptor)
+    Swapchain(VkDevice device, VkPhysicalDevice physicalDevice, const SwapchainCreateInfo& createInfo)
         : m_device(device)
         , m_physicalDevice(physicalDevice)
-        , m_surface(surface)
-        , m_width(descriptor->width)
-        , m_height(descriptor->height)
+        , m_surface(createInfo.surface)
+        , m_width(createInfo.width)
+        , m_height(createInfo.height)
+        , m_format(createInfo.format)
+        , m_presentMode(createInfo.presentMode)
     {
         // Check if queue family supports presentation
         VkBool32 presentSupport = VK_FALSE;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily, surface, &presentSupport);
+        vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, createInfo.queueFamily, createInfo.surface, &presentSupport);
         if (presentSupport != VK_TRUE) {
             throw std::runtime_error("Selected queue family does not support presentation");
         }
 
         // Query surface capabilities
         VkSurfaceCapabilitiesKHR capabilities;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice, createInfo.surface, &capabilities);
 
-        // Choose format
-        uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
-        if (formatCount == 0) {
-            throw std::runtime_error("No surface formats available");
-        }
-        std::vector<VkSurfaceFormatKHR> formats(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
+        // Choose format - already converted in createInfo
+        // No format conversion needed
 
-        // Try to find the requested format
-        VkFormat requestedFormat = gfx::convertor::gfxFormatToVkFormat(descriptor->format);
-        VkSurfaceFormatKHR surfaceFormat = formats[0]; // Default to first available
-
-        for (const auto& availableFormat : formats) {
-            if (availableFormat.format == requestedFormat) {
-                surfaceFormat = availableFormat;
-                break;
-            }
-        }
-
-        m_format = surfaceFormat.format;
-
-        // Choose present mode
-        uint32_t presentModeCount;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
-        std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
-
-        // Try to find the requested present mode
-        VkPresentModeKHR requestedPresentMode = gfx::convertor::gfxPresentModeToVkPresentMode(descriptor->presentMode);
-        VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR; // Default to FIFO (always supported)
-
-        for (const auto& availableMode : presentModes) {
-            if (availableMode == requestedPresentMode) {
-                presentMode = requestedPresentMode;
-                break;
-            }
-        }
-
-        m_presentMode = presentMode;
+        // Choose present mode - already converted in createInfo
+        // No present mode conversion needed
 
         // Determine actual swapchain extent
         // If currentExtent is defined, we MUST use it. Otherwise, we can choose within min/max bounds.
@@ -568,25 +497,25 @@ public:
         }
 
         // Create swapchain
-        VkSwapchainCreateInfoKHR createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = surface;
-        createInfo.minImageCount = std::min(3u, capabilities.minImageCount + 1);
+        VkSwapchainCreateInfoKHR vkCreateInfo{};
+        vkCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        vkCreateInfo.surface = createInfo.surface;
+        vkCreateInfo.minImageCount = std::min(3u, capabilities.minImageCount + 1);
         if (capabilities.maxImageCount > 0) {
-            createInfo.minImageCount = std::min(createInfo.minImageCount, capabilities.maxImageCount);
+            vkCreateInfo.minImageCount = std::min(vkCreateInfo.minImageCount, capabilities.maxImageCount);
         }
-        createInfo.imageFormat = m_format;
-        createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = actualExtent;
-        createInfo.imageArrayLayers = 1;
-        createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.preTransform = capabilities.currentTransform;
-        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        createInfo.presentMode = presentMode;
-        createInfo.clipped = VK_TRUE;
+        vkCreateInfo.imageFormat = m_format;
+        vkCreateInfo.imageColorSpace = createInfo.colorSpace;
+        vkCreateInfo.imageExtent = actualExtent;
+        vkCreateInfo.imageArrayLayers = 1;
+        vkCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        vkCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        vkCreateInfo.preTransform = capabilities.currentTransform;
+        vkCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        vkCreateInfo.presentMode = m_presentMode;
+        vkCreateInfo.clipped = VK_TRUE;
 
-        VkResult result = vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapchain);
+        VkResult result = vkCreateSwapchainKHR(m_device, &vkCreateInfo, nullptr, &m_swapchain);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create swapchain");
         }
@@ -601,24 +530,26 @@ public:
         m_textureViews.reserve(imageCount);
         for (size_t i = 0; i < imageCount; ++i) {
             // Create non-owning Texture wrapper for swapchain image
-            GfxTextureDescriptor textureDesc{};
-            textureDesc.type = GFX_TEXTURE_TYPE_2D;
-            textureDesc.size = { m_width, m_height, 1 };
-            textureDesc.format = gfx::convertor::vkFormatToGfxFormat(m_format);
-            textureDesc.mipLevelCount = 1;
-            textureDesc.arrayLayerCount = 1;
-            textureDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-            textureDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
-            m_textures.push_back(std::make_unique<Texture>(m_device, m_images[i], &textureDesc));
+            gfx::vulkan::TextureCreateInfo textureCreateInfo{};
+            textureCreateInfo.format = m_format;
+            textureCreateInfo.size = { m_width, m_height, 1 };
+            textureCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            textureCreateInfo.sampleCount = VK_SAMPLE_COUNT_1_BIT;
+            textureCreateInfo.mipLevelCount = 1;
+            textureCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+            textureCreateInfo.arrayLayers = 1;
+            textureCreateInfo.flags = 0;
+            m_textures.push_back(std::make_unique<Texture>(m_device, m_images[i], textureCreateInfo));
 
             // Create TextureView for the texture
-            GfxTextureViewDescriptor viewDesc{};
-            viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-            viewDesc.format = GFX_TEXTURE_FORMAT_UNDEFINED; // Use texture's format
-            viewDesc.mipLevelCount = 1;
-            viewDesc.baseArrayLayer = 0;
-            viewDesc.arrayLayerCount = 1;
-            m_textureViews.push_back(std::make_unique<TextureView>(m_textures[i].get(), &viewDesc));
+            gfx::vulkan::TextureViewCreateInfo viewCreateInfo{};
+            viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            viewCreateInfo.format = VK_FORMAT_UNDEFINED; // Use texture's format
+            viewCreateInfo.baseMipLevel = 0;
+            viewCreateInfo.mipLevelCount = 1;
+            viewCreateInfo.baseArrayLayer = 0;
+            viewCreateInfo.arrayLayerCount = 1;
+            m_textureViews.push_back(std::make_unique<TextureView>(m_textures[i].get(), viewCreateInfo));
         }
 
         // Get present queue (assume queue family 0)
@@ -679,9 +610,9 @@ private:
     std::vector<VkImage> m_images;
     std::vector<std::unique_ptr<Texture>> m_textures;
     std::vector<std::unique_ptr<TextureView>> m_textureViews;
-    VkFormat m_format = VK_FORMAT_UNDEFINED;
     uint32_t m_width = 0;
     uint32_t m_height = 0;
+    VkFormat m_format = VK_FORMAT_UNDEFINED;
     uint32_t m_currentImageIndex = 0;
     VkPresentModeKHR m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
 };
@@ -691,39 +622,15 @@ public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
-    Buffer(VkDevice device, VkPhysicalDevice physicalDevice, const GfxBufferDescriptor* descriptor)
+    Buffer(VkDevice device, VkPhysicalDevice physicalDevice, const BufferCreateInfo& createInfo)
         : m_device(device)
-        , m_size(descriptor->size)
-        , m_usage(descriptor->usage)
+        , m_size(createInfo.size)
+        , m_usage(createInfo.usage)
     {
-        // Convert GfxBufferUsage to VkBufferUsageFlags
-        VkBufferUsageFlags usage = 0;
-        if (descriptor->usage & GFX_BUFFER_USAGE_COPY_SRC) {
-            usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        }
-        if (descriptor->usage & GFX_BUFFER_USAGE_COPY_DST) {
-            usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        }
-        if (descriptor->usage & GFX_BUFFER_USAGE_INDEX) {
-            usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-        }
-        if (descriptor->usage & GFX_BUFFER_USAGE_VERTEX) {
-            usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        }
-        if (descriptor->usage & GFX_BUFFER_USAGE_UNIFORM) {
-            usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-        }
-        if (descriptor->usage & GFX_BUFFER_USAGE_STORAGE) {
-            usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-        }
-        if (descriptor->usage & GFX_BUFFER_USAGE_INDIRECT) {
-            usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-        }
-
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.size = m_size;
-        bufferInfo.usage = usage;
+        bufferInfo.usage = m_usage;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         VkResult result = vkCreateBuffer(m_device, &bufferInfo, nullptr, &m_buffer);
@@ -792,14 +699,14 @@ public:
     }
 
     size_t size() const { return m_size; }
-    GfxBufferUsage getUsage() const { return m_usage; }
+    VkBufferUsageFlags getUsage() const { return m_usage; }
 
 private:
     VkBuffer m_buffer = VK_NULL_HANDLE;
     VkDeviceMemory m_memory = VK_NULL_HANDLE;
     VkDevice m_device = VK_NULL_HANDLE;
     size_t m_size = 0;
-    GfxBufferUsage m_usage = static_cast<GfxBufferUsage>(0);
+    VkBufferUsageFlags m_usage = 0;
 };
 
 class Texture {
@@ -808,63 +715,29 @@ public:
     Texture& operator=(const Texture&) = delete;
 
     // Owning constructor - creates and manages VkImage and memory
-    Texture(VkDevice device, VkPhysicalDevice physicalDevice, const GfxTextureDescriptor* descriptor)
+    Texture(VkDevice device, VkPhysicalDevice physicalDevice, const TextureCreateInfo& createInfo)
         : m_device(device)
-        , m_size(descriptor->size)
-        , m_format(descriptor->format)
-        , m_mipLevelCount(descriptor->mipLevelCount)
-        , m_sampleCount(descriptor->sampleCount)
-        , m_usage(descriptor->usage)
         , m_ownsResources(true)
+        , m_size(createInfo.size)
+        , m_format(createInfo.format)
+        , m_mipLevelCount(createInfo.mipLevelCount)
+        , m_sampleCount(createInfo.sampleCount)
+        , m_usage(createInfo.usage)
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = gfx::convertor::gfxTextureTypeToVkImageType(descriptor->type);
-        imageInfo.extent.width = descriptor->size.width;
-        imageInfo.extent.height = descriptor->size.height;
-        imageInfo.extent.depth = descriptor->size.depth;
-        imageInfo.mipLevels = descriptor->mipLevelCount;
-        imageInfo.arrayLayers = descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1;
-
-        // Set cube map flag if needed
-        if (descriptor->type == GFX_TEXTURE_TYPE_CUBE) {
-            imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-            // Cube maps must have 6 or 6*N array layers
-            if (imageInfo.arrayLayers < 6) {
-                imageInfo.arrayLayers = 6;
-            }
-        }
-        imageInfo.format = gfx::convertor::gfxFormatToVkFormat(descriptor->format);
+        imageInfo.imageType = createInfo.imageType;
+        imageInfo.extent = m_size;
+        imageInfo.mipLevels = createInfo.mipLevelCount;
+        imageInfo.arrayLayers = createInfo.arrayLayers;
+        imageInfo.flags = createInfo.flags;
+        imageInfo.format = m_format;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Always create in UNDEFINED, transition explicitly
-
-        // Convert GfxTextureUsage to VkImageUsageFlags
-        VkImageUsageFlags usage = 0;
-        if (descriptor->usage & GFX_TEXTURE_USAGE_COPY_SRC) {
-            usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        }
-        if (descriptor->usage & GFX_TEXTURE_USAGE_COPY_DST) {
-            usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-        }
-        if (descriptor->usage & GFX_TEXTURE_USAGE_TEXTURE_BINDING) {
-            usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-        }
-        if (descriptor->usage & GFX_TEXTURE_USAGE_STORAGE_BINDING) {
-            usage |= VK_IMAGE_USAGE_STORAGE_BIT;
-        }
-        if (descriptor->usage & GFX_TEXTURE_USAGE_RENDER_ATTACHMENT) {
-            // Check if this is a depth/stencil format
-            VkFormat format = imageInfo.format;
-            if (gfx::convertor::isDepthFormat(format)) {
-                usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-            } else {
-                usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-            }
-        }
-        imageInfo.usage = usage;
+        imageInfo.usage = m_usage;
 
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imageInfo.samples = gfx::convertor::sampleCountToVkSampleCount(descriptor->sampleCount);
+        imageInfo.samples = m_sampleCount;
 
         VkResult result = vkCreateImage(m_device, &imageInfo, nullptr, &m_image);
         if (result != VK_SUCCESS) {
@@ -900,15 +773,15 @@ public:
     }
 
     // Non-owning constructor - wraps an existing VkImage (e.g., from swapchain)
-    Texture(VkDevice device, VkImage image, const GfxTextureDescriptor* descriptor)
-        : m_image(image)
-        , m_device(device)
-        , m_size(descriptor->size)
-        , m_format(descriptor->format)
-        , m_mipLevelCount(descriptor->mipLevelCount)
-        , m_sampleCount(descriptor->sampleCount)
-        , m_usage(descriptor->usage)
+    Texture(VkDevice device, VkImage image, const TextureCreateInfo& createInfo)
+        : m_device(device)
         , m_ownsResources(false)
+        , m_size(createInfo.size)
+        , m_format(createInfo.format)
+        , m_mipLevelCount(createInfo.mipLevelCount)
+        , m_sampleCount(createInfo.sampleCount)
+        , m_usage(createInfo.usage)
+        , m_image(image)
     {
     }
 
@@ -926,25 +799,25 @@ public:
 
     VkImage handle() const { return m_image; }
     VkDevice device() const { return m_device; }
-    GfxExtent3D getSize() const { return m_size; }
-    GfxTextureFormat getFormat() const { return m_format; }
+    VkExtent3D getSize() const { return m_size; }
+    VkFormat getFormat() const { return m_format; }
     uint32_t getMipLevelCount() const { return m_mipLevelCount; }
-    GfxSampleCount getSampleCount() const { return m_sampleCount; }
-    GfxTextureUsage getUsage() const { return m_usage; }
-    GfxTextureLayout getLayout() const { return m_currentLayout; }
-    void setLayout(GfxTextureLayout layout) { m_currentLayout = layout; }
+    VkSampleCountFlagBits getSampleCount() const { return m_sampleCount; }
+    VkImageUsageFlags getUsage() const { return m_usage; }
+    VkImageLayout getLayout() const { return m_currentLayout; }
+    void setLayout(VkImageLayout layout) { m_currentLayout = layout; }
 
 private:
+    VkDevice m_device = VK_NULL_HANDLE;
+    bool m_ownsResources = true;
+    VkExtent3D m_size;
+    VkFormat m_format;
+    uint32_t m_mipLevelCount;
+    VkSampleCountFlagBits m_sampleCount;
+    VkImageUsageFlags m_usage;
     VkImage m_image = VK_NULL_HANDLE;
     VkDeviceMemory m_memory = VK_NULL_HANDLE;
-    VkDevice m_device = VK_NULL_HANDLE;
-    GfxExtent3D m_size;
-    GfxTextureFormat m_format;
-    uint32_t m_mipLevelCount;
-    GfxSampleCount m_sampleCount;
-    GfxTextureUsage m_usage;
-    GfxTextureLayout m_currentLayout = GFX_TEXTURE_LAYOUT_UNDEFINED;
-    bool m_ownsResources = true;
+    VkImageLayout m_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 };
 
 class TextureView {
@@ -952,19 +825,19 @@ public:
     TextureView(const TextureView&) = delete;
     TextureView& operator=(const TextureView&) = delete;
 
-    TextureView(Texture* texture, const GfxTextureViewDescriptor* descriptor)
+    TextureView(Texture* texture, const TextureViewCreateInfo& createInfo)
         : m_device(texture->device())
         , m_texture(texture)
     {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = texture->handle();
-        viewInfo.viewType = gfx::convertor::gfxTextureViewTypeToVkImageViewType(descriptor->viewType);
-        // Use texture's format if not explicitly specified in descriptor
-        m_format = (descriptor->format == GFX_TEXTURE_FORMAT_UNDEFINED)
+        viewInfo.viewType = createInfo.viewType;
+        // Use texture's format if VK_FORMAT_UNDEFINED
+        m_format = (createInfo.format == VK_FORMAT_UNDEFINED)
             ? texture->getFormat()
-            : descriptor->format;
-        viewInfo.format = gfx::convertor::gfxFormatToVkFormat(m_format);
+            : createInfo.format;
+        viewInfo.format = m_format;
         viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -980,10 +853,10 @@ public:
             viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         }
 
-        viewInfo.subresourceRange.baseMipLevel = descriptor ? descriptor->baseMipLevel : 0;
-        viewInfo.subresourceRange.levelCount = descriptor ? descriptor->mipLevelCount : 1;
-        viewInfo.subresourceRange.baseArrayLayer = descriptor ? descriptor->baseArrayLayer : 0;
-        viewInfo.subresourceRange.layerCount = descriptor ? descriptor->arrayLayerCount : 1;
+        viewInfo.subresourceRange.baseMipLevel = createInfo.baseMipLevel;
+        viewInfo.subresourceRange.levelCount = createInfo.mipLevelCount;
+        viewInfo.subresourceRange.baseArrayLayer = createInfo.baseArrayLayer;
+        viewInfo.subresourceRange.layerCount = createInfo.arrayLayerCount;
 
         VkResult result = vkCreateImageView(m_device, &viewInfo, nullptr, &m_imageView);
         if (result != VK_SUCCESS) {
@@ -1000,13 +873,13 @@ public:
 
     VkImageView handle() const { return m_imageView; }
     Texture* getTexture() const { return m_texture; }
-    VkFormat getFormat() const { return gfx::convertor::gfxFormatToVkFormat(m_format); }
+    VkFormat getFormat() const { return m_format; }
 
 private:
     VkDevice m_device = VK_NULL_HANDLE;
     Texture* m_texture = nullptr;
     VkImageView m_imageView = VK_NULL_HANDLE;
-    GfxTextureFormat m_format; // View format (may differ from texture format)
+    VkFormat m_format; // View format (may differ from texture format)
 };
 
 class Sampler {
@@ -1014,39 +887,39 @@ public:
     Sampler(const Sampler&) = delete;
     Sampler& operator=(const Sampler&) = delete;
 
-    Sampler(VkDevice device, const GfxSamplerDescriptor* descriptor)
+    Sampler(VkDevice device, const SamplerCreateInfo& createInfo)
         : m_device(device)
     {
         VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 
         // Address modes
-        samplerInfo.addressModeU = static_cast<VkSamplerAddressMode>(descriptor->addressModeU);
-        samplerInfo.addressModeV = static_cast<VkSamplerAddressMode>(descriptor->addressModeV);
-        samplerInfo.addressModeW = static_cast<VkSamplerAddressMode>(descriptor->addressModeW);
+        samplerInfo.addressModeU = createInfo.addressModeU;
+        samplerInfo.addressModeV = createInfo.addressModeV;
+        samplerInfo.addressModeW = createInfo.addressModeW;
 
         // Filter modes
-        samplerInfo.magFilter = (descriptor->magFilter == GFX_FILTER_MODE_LINEAR) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-        samplerInfo.minFilter = (descriptor->minFilter == GFX_FILTER_MODE_LINEAR) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-        samplerInfo.mipmapMode = (descriptor->mipmapFilter == GFX_FILTER_MODE_LINEAR) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        samplerInfo.magFilter = createInfo.magFilter;
+        samplerInfo.minFilter = createInfo.minFilter;
+        samplerInfo.mipmapMode = createInfo.mipmapMode;
 
         // LOD
-        samplerInfo.minLod = descriptor->lodMinClamp;
-        samplerInfo.maxLod = descriptor->lodMaxClamp;
+        samplerInfo.minLod = createInfo.lodMinClamp;
+        samplerInfo.maxLod = createInfo.lodMaxClamp;
 
         // Anisotropy
-        if (descriptor->maxAnisotropy > 1) {
+        if (createInfo.maxAnisotropy > 1) {
             samplerInfo.anisotropyEnable = VK_TRUE;
-            samplerInfo.maxAnisotropy = static_cast<float>(descriptor->maxAnisotropy);
+            samplerInfo.maxAnisotropy = static_cast<float>(createInfo.maxAnisotropy);
         } else {
             samplerInfo.anisotropyEnable = VK_FALSE;
             samplerInfo.maxAnisotropy = 1.0f;
         }
 
         // Compare operation for depth textures
-        if (descriptor->compare) {
+        if (createInfo.compareOp != VK_COMPARE_OP_MAX_ENUM) {
             samplerInfo.compareEnable = VK_TRUE;
-            samplerInfo.compareOp = static_cast<VkCompareOp>(*descriptor->compare);
+            samplerInfo.compareOp = createInfo.compareOp;
         } else {
             samplerInfo.compareEnable = VK_FALSE;
         }
@@ -1076,28 +949,14 @@ public:
     BindGroup(const BindGroup&) = delete;
     BindGroup& operator=(const BindGroup&) = delete;
 
-    BindGroup(VkDevice device, const GfxBindGroupDescriptor* descriptor)
+    BindGroup(VkDevice device, const BindGroupCreateInfo& createInfo)
         : m_device(device)
     {
         // Count actual descriptors needed by type
-        auto* layout = reinterpret_cast<BindGroupLayout*>(descriptor->layout);
         std::unordered_map<VkDescriptorType, uint32_t> descriptorCounts;
 
-        for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
-            const auto& entry = descriptor->entries[i];
-            VkDescriptorType type;
-
-            if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_BUFFER) {
-                type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            } else if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER) {
-                type = VK_DESCRIPTOR_TYPE_SAMPLER;
-            } else if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW) {
-                type = layout->getBindingType(entry.binding);
-            } else {
-                continue;
-            }
-
-            ++descriptorCounts[type];
+        for (const auto& entry : createInfo.entries) {
+            ++descriptorCounts[entry.descriptorType];
         }
 
         // Create descriptor pool with exact sizes
@@ -1121,7 +980,7 @@ public:
         }
 
         // Allocate descriptor set
-        VkDescriptorSetLayout setLayout = layout->handle();
+        VkDescriptorSetLayout setLayout = createInfo.layout;
 
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1141,24 +1000,20 @@ public:
         std::vector<VkWriteDescriptorSet> descriptorWrites;
 
         // Reserve space to avoid reallocation and pointer invalidation
-        bufferInfos.reserve(descriptor->entryCount);
-        imageInfos.reserve(descriptor->entryCount);
-        descriptorWrites.reserve(descriptor->entryCount);
+        bufferInfos.reserve(createInfo.entries.size());
+        imageInfos.reserve(createInfo.entries.size());
+        descriptorWrites.reserve(createInfo.entries.size());
 
         // Track indices for buffer and image infos
         size_t bufferInfoIndex = 0;
         size_t imageInfoIndex = 0;
 
-        for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
-            const auto& entry = descriptor->entries[i];
-
-            if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_BUFFER) {
-                auto* buffer = reinterpret_cast<Buffer*>(entry.resource.buffer.buffer);
-
+        for (const auto& entry : createInfo.entries) {
+            if (entry.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || entry.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
                 VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer = buffer->handle();
-                bufferInfo.offset = entry.resource.buffer.offset;
-                bufferInfo.range = entry.resource.buffer.size;
+                bufferInfo.buffer = entry.buffer;
+                bufferInfo.offset = entry.bufferOffset;
+                bufferInfo.range = entry.bufferSize;
                 bufferInfos.push_back(bufferInfo);
 
                 VkWriteDescriptorSet descriptorWrite{};
@@ -1166,16 +1021,14 @@ public:
                 descriptorWrite.dstSet = m_descriptorSet;
                 descriptorWrite.dstBinding = entry.binding;
                 descriptorWrite.dstArrayElement = 0;
-                descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                descriptorWrite.descriptorType = entry.descriptorType;
                 descriptorWrite.descriptorCount = 1;
                 descriptorWrite.pBufferInfo = &bufferInfos[bufferInfoIndex++];
 
                 descriptorWrites.push_back(descriptorWrite);
-            } else if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER) {
-                auto* sampler = reinterpret_cast<Sampler*>(entry.resource.sampler);
-
+            } else if (entry.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER) {
                 VkDescriptorImageInfo imageInfo{};
-                imageInfo.sampler = sampler->handle();
+                imageInfo.sampler = entry.sampler;
                 imageInfo.imageView = VK_NULL_HANDLE;
                 imageInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
                 imageInfos.push_back(imageInfo);
@@ -1190,25 +1043,11 @@ public:
                 descriptorWrite.pImageInfo = &imageInfos[imageInfoIndex++];
 
                 descriptorWrites.push_back(descriptorWrite);
-            } else if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW) {
-                auto* textureView = reinterpret_cast<TextureView*>(entry.resource.textureView);
-
-                // Query the bind group layout for the correct descriptor type
-                VkDescriptorType descriptorType = layout->getBindingType(entry.binding);
-
+            } else if (entry.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE || entry.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
                 VkDescriptorImageInfo imageInfo{};
                 imageInfo.sampler = VK_NULL_HANDLE;
-                imageInfo.imageView = textureView->handle();
-
-                // Set image layout based on descriptor type from the layout
-                // Storage images use GENERAL layout
-                // Sampled images use SHADER_READ_ONLY_OPTIMAL layout
-                if (descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-                    imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-                } else {
-                    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                }
-
+                imageInfo.imageView = entry.imageView;
+                imageInfo.imageLayout = entry.imageLayout;
                 imageInfos.push_back(imageInfo);
 
                 VkWriteDescriptorSet descriptorWrite{};
@@ -1216,7 +1055,7 @@ public:
                 descriptorWrite.dstSet = m_descriptorSet;
                 descriptorWrite.dstBinding = entry.binding;
                 descriptorWrite.dstArrayElement = 0;
-                descriptorWrite.descriptorType = descriptorType;
+                descriptorWrite.descriptorType = entry.descriptorType;
                 descriptorWrite.descriptorCount = 1;
                 descriptorWrite.pImageInfo = &imageInfos[imageInfoIndex++];
 
@@ -1250,22 +1089,14 @@ public:
     RenderPipeline(const RenderPipeline&) = delete;
     RenderPipeline& operator=(const RenderPipeline&) = delete;
 
-    RenderPipeline(VkDevice device, const GfxRenderPipelineDescriptor* descriptor)
+    RenderPipeline(VkDevice device, const RenderPipelineCreateInfo& createInfo)
         : m_device(device)
     {
         // Create pipeline layout
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-
-        // Process bind group layouts
-        std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-        for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
-            auto* layout = reinterpret_cast<BindGroupLayout*>(descriptor->bindGroupLayouts[i]);
-            descriptorSetLayouts.push_back(layout->handle());
-        }
-
-        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
-        pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(createInfo.bindGroupLayouts.size());
+        pipelineLayoutInfo.pSetLayouts = createInfo.bindGroupLayouts.data();
 
         VkResult result = vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout);
         if (result != VK_SUCCESS) {
@@ -1273,31 +1104,19 @@ public:
         }
 
         // Shader stages
-        auto* vertShader = reinterpret_cast<Shader*>(descriptor->vertex->module);
-        auto* fragShader = descriptor->fragment ? reinterpret_cast<Shader*>(descriptor->fragment->module) : nullptr;
-
-        if (!vertShader || vertShader->handle() == VK_NULL_HANDLE) {
-            vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
-            throw std::runtime_error("Invalid vertex shader");
-        }
-
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        vertShaderStageInfo.module = vertShader->handle();
-        vertShaderStageInfo.pName = vertShader->entryPoint();
+        vertShaderStageInfo.module = createInfo.vertex.module;
+        vertShaderStageInfo.pName = createInfo.vertex.entryPoint;
 
         VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
         uint32_t stageCount = 1;
-        if (fragShader) {
-            if (fragShader->handle() == VK_NULL_HANDLE) {
-                vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
-                throw std::runtime_error("Invalid fragment shader");
-            }
+        if (createInfo.fragment.module != VK_NULL_HANDLE) {
             fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-            fragShaderStageInfo.module = fragShader->handle();
-            fragShaderStageInfo.pName = fragShader->entryPoint();
+            fragShaderStageInfo.module = createInfo.fragment.module;
+            fragShaderStageInfo.pName = createInfo.fragment.entryPoint;
             stageCount = 2;
         }
 
@@ -1307,29 +1126,17 @@ public:
         std::vector<VkVertexInputBindingDescription> bindings;
         std::vector<VkVertexInputAttributeDescription> attributes;
 
-        for (uint32_t i = 0; i < descriptor->vertex->bufferCount; ++i) {
-            const auto& bufferLayout = descriptor->vertex->buffers[i];
+        for (size_t i = 0; i < createInfo.vertex.buffers.size(); ++i) {
+            const auto& bufferLayout = createInfo.vertex.buffers[i];
 
             VkVertexInputBindingDescription binding{};
-            binding.binding = i;
+            binding.binding = static_cast<uint32_t>(i);
             binding.stride = static_cast<uint32_t>(bufferLayout.arrayStride);
             binding.inputRate = bufferLayout.stepModeInstance ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
             bindings.push_back(binding);
 
-            for (uint32_t j = 0; j < bufferLayout.attributeCount; ++j) {
-                const auto& attr = bufferLayout.attributes[j];
-
-                VkVertexInputAttributeDescription attribute{};
-                attribute.binding = i;
-                attribute.location = attr.shaderLocation;
-                attribute.offset = static_cast<uint32_t>(attr.offset);
-                attribute.format = gfx::convertor::gfxFormatToVkFormat(attr.format);
-
-                attributes.push_back(attribute);
-            }
+            attributes.insert(attributes.end(), bufferLayout.attributes.begin(), bufferLayout.attributes.end());
         }
-
-        VkSampleCountFlagBits vkSampleCount = gfx::convertor::sampleCountToVkSampleCount(descriptor->sampleCount);
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -1341,12 +1148,11 @@ public:
         // Input assembly
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = static_cast<VkPrimitiveTopology>(descriptor->primitive->topology);
+        inputAssembly.topology = createInfo.primitive.topology;
 
         // Viewport
         VkViewport viewport{};
         viewport.x = 0.0f;
-        inputAssembly.topology = static_cast<VkPrimitiveTopology>(descriptor->primitive->topology);
         viewport.y = 0.0f;
         viewport.width = 800.0f; // Placeholder, dynamic state will be used
         viewport.height = 600.0f; // Placeholder, dynamic state will be used
@@ -1367,57 +1173,23 @@ public:
         // Rasterizer
         VkPipelineRasterizationStateCreateInfo rasterizer{};
         rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizer.polygonMode = gfx::convertor::gfxPolygonModeToVkPolygonMode(descriptor->primitive->polygonMode);
+        rasterizer.polygonMode = createInfo.primitive.polygonMode;
         rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = gfx::convertor::gfxCullModeToVkCullMode(descriptor->primitive->cullMode);
-        rasterizer.frontFace = gfx::convertor::gfxFrontFaceToVkFrontFace(descriptor->primitive->frontFace);
+        rasterizer.cullMode = createInfo.primitive.cullMode;
+        rasterizer.frontFace = createInfo.primitive.frontFace;
 
         // Multisampling
         VkPipelineMultisampleStateCreateInfo multisampling{};
         multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampling.rasterizationSamples = vkSampleCount;
+        multisampling.rasterizationSamples = createInfo.sampleCount;
 
-        // Color blending - process all color targets
+        // Color blending
         std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
-        if (descriptor->fragment && descriptor->fragment->targetCount > 0) {
-            colorBlendAttachments.reserve(descriptor->fragment->targetCount);
-
-            for (uint32_t i = 0; i < descriptor->fragment->targetCount; ++i) {
-                const auto& target = descriptor->fragment->targets[i];
-                VkPipelineColorBlendAttachmentState blendAttachment{};
-
-                // Convert GfxColorWriteMask to VkColorComponentFlags
-                blendAttachment.colorWriteMask = 0;
-                if (target.writeMask & 0x1)
-                    blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT;
-                if (target.writeMask & 0x2)
-                    blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_G_BIT;
-                if (target.writeMask & 0x4)
-                    blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_B_BIT;
-                if (target.writeMask & 0x8)
-                    blendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
-
-                // Configure blend state if provided
-                if (target.blend) {
-                    blendAttachment.blendEnable = VK_TRUE;
-
-                    // Color blend
-                    blendAttachment.srcColorBlendFactor = static_cast<VkBlendFactor>(target.blend->color.srcFactor);
-                    blendAttachment.dstColorBlendFactor = static_cast<VkBlendFactor>(target.blend->color.dstFactor);
-                    blendAttachment.colorBlendOp = static_cast<VkBlendOp>(target.blend->color.operation);
-
-                    // Alpha blend
-                    blendAttachment.srcAlphaBlendFactor = static_cast<VkBlendFactor>(target.blend->alpha.srcFactor);
-                    blendAttachment.dstAlphaBlendFactor = static_cast<VkBlendFactor>(target.blend->alpha.dstFactor);
-                    blendAttachment.alphaBlendOp = static_cast<VkBlendOp>(target.blend->alpha.operation);
-                } else {
-                    blendAttachment.blendEnable = VK_FALSE;
-                }
-
-                colorBlendAttachments.push_back(blendAttachment);
+        if (!createInfo.fragment.targets.empty()) {
+            for (const auto& target : createInfo.fragment.targets) {
+                colorBlendAttachments.push_back(target.blendState);
             }
         } else {
-            // Fallback: single target with all channels enabled
             VkPipelineColorBlendAttachmentState blendAttachment{};
             blendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             blendAttachment.blendEnable = VK_FALSE;
@@ -1438,38 +1210,30 @@ public:
 
         // Create depth stencil state if provided
         VkPipelineDepthStencilStateCreateInfo depthStencil{};
-        if (descriptor->depthStencil) {
+        if (createInfo.depthStencil.has_value()) {
             depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
             depthStencil.depthTestEnable = VK_TRUE;
-            depthStencil.depthWriteEnable = descriptor->depthStencil->depthWriteEnabled ? VK_TRUE : VK_FALSE;
-            depthStencil.depthCompareOp = static_cast<VkCompareOp>(descriptor->depthStencil->depthCompare);
+            depthStencil.depthWriteEnable = createInfo.depthStencil->depthWriteEnabled ? VK_TRUE : VK_FALSE;
+            depthStencil.depthCompareOp = createInfo.depthStencil->depthCompareOp;
             depthStencil.depthBoundsTestEnable = VK_FALSE;
             depthStencil.stencilTestEnable = VK_FALSE;
         }
 
-        // Create a temporary render pass for pipeline creation using actual formats from descriptor
-        // This render pass must be compatible with the one used during actual rendering
-        // Supports Multiple Render Targets (MRT) with optional MSAA resolve per target
+        // Create a temporary render pass for pipeline creation
         std::vector<VkAttachmentDescription> attachments;
         std::vector<VkAttachmentReference> colorAttachmentRefs;
         std::vector<VkAttachmentReference> resolveAttachmentRefs;
-        bool needsResolve = vkSampleCount > VK_SAMPLE_COUNT_1_BIT;
+        bool needsResolve = createInfo.sampleCount > VK_SAMPLE_COUNT_1_BIT;
 
-        // Process all fragment shader color targets (MRT support)
-        if (!descriptor->fragment || descriptor->fragment->targetCount == 0) {
+        if (createInfo.fragment.targets.empty()) {
             vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
             throw std::runtime_error("Fragment shader must define at least one color target");
         }
 
-        uint32_t targetCount = descriptor->fragment->targetCount;
-
-        for (uint32_t i = 0; i < targetCount; ++i) {
-            VkFormat targetFormat = gfx::convertor::gfxFormatToVkFormat(descriptor->fragment->targets[i].format);
-
-            // Create color attachment at pipeline sample count
+        for (const auto& target : createInfo.fragment.targets) {
             VkAttachmentDescription colorAttachment{};
-            colorAttachment.format = targetFormat;
-            colorAttachment.samples = vkSampleCount;
+            colorAttachment.format = target.format;
+            colorAttachment.samples = createInfo.sampleCount;
             colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             colorAttachment.storeOp = needsResolve ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
             colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -1481,11 +1245,9 @@ public:
             colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             colorAttachmentRefs.push_back(colorAttachmentRef);
 
-            // Add resolve attachment if MSAA is enabled
-            // Note: This assumes all color targets get resolved - adjust per-target if needed
             if (needsResolve) {
                 VkAttachmentDescription resolveAttachment{};
-                resolveAttachment.format = targetFormat;
+                resolveAttachment.format = target.format;
                 resolveAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
                 resolveAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 resolveAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1500,12 +1262,12 @@ public:
             }
         }
 
-        // Add depth attachment if present (always after all color attachments)
+        // Add depth attachment if present
         VkAttachmentReference depthAttachmentRef{};
-        if (descriptor->depthStencil) {
+        if (createInfo.depthStencil.has_value()) {
             VkAttachmentDescription depthAttachment{};
-            depthAttachment.format = gfx::convertor::gfxFormatToVkFormat(descriptor->depthStencil->format);
-            depthAttachment.samples = vkSampleCount;
+            depthAttachment.format = createInfo.depthStencil->format;
+            depthAttachment.samples = createInfo.sampleCount;
             depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -1523,7 +1285,7 @@ public:
         subpass.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRefs.size());
         subpass.pColorAttachments = colorAttachmentRefs.data();
         subpass.pResolveAttachments = needsResolve ? resolveAttachmentRefs.data() : nullptr;
-        if (descriptor->depthStencil) {
+        if (createInfo.depthStencil.has_value()) {
             subpass.pDepthStencilAttachment = &depthAttachmentRef;
         }
 
@@ -1549,7 +1311,7 @@ public:
         pipelineInfo.pMultisampleState = &multisampling;
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.pDynamicState = &dynamicState;
-        if (descriptor->depthStencil) {
+        if (createInfo.depthStencil.has_value()) {
             pipelineInfo.pDepthStencilState = &depthStencil;
         }
         pipelineInfo.layout = m_pipelineLayout;
@@ -1590,22 +1352,14 @@ public:
     ComputePipeline(const ComputePipeline&) = delete;
     ComputePipeline& operator=(const ComputePipeline&) = delete;
 
-    ComputePipeline(VkDevice device, const GfxComputePipelineDescriptor* descriptor)
+    ComputePipeline(VkDevice device, const ComputePipelineCreateInfo& createInfo)
         : m_device(device)
     {
         // Create pipeline layout
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-
-        // Process bind group layouts
-        std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-        for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
-            auto* layout = reinterpret_cast<BindGroupLayout*>(descriptor->bindGroupLayouts[i]);
-            descriptorSetLayouts.push_back(layout->handle());
-        }
-
-        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
-        pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(createInfo.bindGroupLayouts.size());
+        pipelineLayoutInfo.pSetLayouts = createInfo.bindGroupLayouts.data();
 
         VkResult result = vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout);
         if (result != VK_SUCCESS) {
@@ -1613,13 +1367,11 @@ public:
         }
 
         // Shader stage
-        auto* computeShader = reinterpret_cast<Shader*>(descriptor->compute);
-
         VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
         computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-        computeShaderStageInfo.module = computeShader->handle();
-        computeShaderStageInfo.pName = descriptor->entryPoint ? descriptor->entryPoint : "main";
+        computeShaderStageInfo.module = createInfo.module;
+        computeShaderStageInfo.pName = createInfo.entryPoint;
 
         // Create compute pipeline
         VkComputePipelineCreateInfo pipelineInfo{};
@@ -1658,14 +1410,14 @@ public:
     Fence(const Fence&) = delete;
     Fence& operator=(const Fence&) = delete;
 
-    Fence(VkDevice device, const GfxFenceDescriptor* descriptor)
+    Fence(VkDevice device, const FenceCreateInfo& createInfo)
         : m_device(device)
     {
         VkFenceCreateInfo fenceInfo{};
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
         // If signaled = true, create fence in signaled state
-        if (descriptor && descriptor->signaled) {
+        if (createInfo.signaled) {
             fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         }
 
@@ -1684,34 +1436,27 @@ public:
 
     VkFence handle() const { return m_fence; }
 
-    GfxResult getStatus(bool* isSignaled) const
+    VkResult getStatus(bool* isSignaled) const
     {
         if (!isSignaled) {
-            return GFX_RESULT_ERROR_INVALID_PARAMETER;
+            return VK_ERROR_UNKNOWN;
         }
 
         VkResult result = vkGetFenceStatus(m_device, m_fence);
         if (result == VK_SUCCESS) {
             *isSignaled = true;
-            return GFX_RESULT_SUCCESS;
+            return VK_SUCCESS;
         } else if (result == VK_NOT_READY) {
             *isSignaled = false;
-            return GFX_RESULT_SUCCESS;
+            return VK_SUCCESS;
         } else {
-            return GFX_RESULT_ERROR_UNKNOWN;
+            return result;
         }
     }
 
-    GfxResult wait(uint64_t timeoutNs)
+    VkResult wait(uint64_t timeoutNs)
     {
-        VkResult result = vkWaitForFences(m_device, 1, &m_fence, VK_TRUE, timeoutNs);
-        if (result == VK_SUCCESS) {
-            return GFX_RESULT_SUCCESS;
-        } else if (result == VK_TIMEOUT) {
-            return GFX_RESULT_TIMEOUT;
-        } else {
-            return GFX_RESULT_ERROR_UNKNOWN;
-        }
+        return vkWaitForFences(m_device, 1, &m_fence, VK_TRUE, timeoutNs);
     }
 
     void reset()
@@ -1729,17 +1474,17 @@ public:
     Semaphore(const Semaphore&) = delete;
     Semaphore& operator=(const Semaphore&) = delete;
 
-    Semaphore(VkDevice device, const GfxSemaphoreDescriptor* descriptor)
+    Semaphore(VkDevice device, const SemaphoreCreateInfo& createInfo)
         : m_device(device)
-        , m_type(descriptor ? descriptor->type : GFX_SEMAPHORE_TYPE_BINARY)
+        , m_isTimeline(createInfo.isTimeline)
     {
 
-        if (m_type == GFX_SEMAPHORE_TYPE_TIMELINE) {
+        if (m_isTimeline) {
             // Timeline semaphore
             VkSemaphoreTypeCreateInfo timelineInfo{};
             timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
             timelineInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
-            timelineInfo.initialValue = descriptor ? descriptor->initialValue : 0;
+            timelineInfo.initialValue = createInfo.initialValue;
 
             VkSemaphoreCreateInfo semaphoreInfo{};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1769,12 +1514,12 @@ public:
     }
 
     VkSemaphore handle() const { return m_semaphore; }
-    GfxSemaphoreType type() const { return m_type; }
+    bool isTimeline() const { return m_isTimeline; }
 
-    GfxResult signal(uint64_t value)
+    VkResult signal(uint64_t value)
     {
-        if (m_type != GFX_SEMAPHORE_TYPE_TIMELINE) {
-            return GFX_RESULT_ERROR_INVALID_PARAMETER; // Binary semaphores can't be manually signaled
+        if (!m_isTimeline) {
+            return VK_ERROR_VALIDATION_FAILED_EXT; // Binary semaphores can't be manually signaled
         }
 
         VkSemaphoreSignalInfo signalInfo{};
@@ -1782,14 +1527,13 @@ public:
         signalInfo.semaphore = m_semaphore;
         signalInfo.value = value;
 
-        VkResult result = vkSignalSemaphore(m_device, &signalInfo);
-        return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
+        return vkSignalSemaphore(m_device, &signalInfo);
     }
 
-    GfxResult wait(uint64_t value, uint64_t timeoutNs)
+    VkResult wait(uint64_t value, uint64_t timeoutNs)
     {
-        if (m_type != GFX_SEMAPHORE_TYPE_TIMELINE) {
-            return GFX_RESULT_ERROR_INVALID_PARAMETER; // Binary semaphores can't be manually waited
+        if (!m_isTimeline) {
+            return VK_ERROR_VALIDATION_FAILED_EXT; // Binary semaphores can't be manually waited
         }
 
         VkSemaphoreWaitInfo waitInfo{};
@@ -1798,19 +1542,12 @@ public:
         waitInfo.pSemaphores = &m_semaphore;
         waitInfo.pValues = &value;
 
-        VkResult result = vkWaitSemaphores(m_device, &waitInfo, timeoutNs);
-        if (result == VK_SUCCESS) {
-            return GFX_RESULT_SUCCESS;
-        } else if (result == VK_TIMEOUT) {
-            return GFX_RESULT_TIMEOUT;
-        } else {
-            return GFX_RESULT_ERROR_UNKNOWN;
-        }
+        return vkWaitSemaphores(m_device, &waitInfo, timeoutNs);
     }
 
     uint64_t getValue() const
     {
-        if (m_type != GFX_SEMAPHORE_TYPE_TIMELINE) {
+        if (!m_isTimeline) {
             return 0; // Binary semaphores don't have values
         }
 
@@ -1822,7 +1559,7 @@ public:
 private:
     VkSemaphore m_semaphore = VK_NULL_HANDLE;
     VkDevice m_device = VK_NULL_HANDLE;
-    GfxSemaphoreType m_type;
+    bool m_isTimeline = false;
 };
 
 class CommandEncoder {

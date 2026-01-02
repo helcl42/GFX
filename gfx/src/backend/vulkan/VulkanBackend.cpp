@@ -5,15 +5,10 @@
 #include "converter/GfxVulkanConverter.h"
 #include "entity/Entities.h"
 
-#ifdef __linux__
-#include <X11/Xlib-xcb.h>
-#include <X11/Xlib.h>
-#include <xcb/xcb.h>
-#endif
-
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -30,7 +25,8 @@ GfxResult VulkanBackend::createInstance(const GfxInstanceDescriptor* descriptor,
     }
 
     try {
-        auto* instance = new gfx::vulkan::Instance(descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToInstanceCreateInfo(descriptor);
+        auto* instance = new gfx::vulkan::Instance(createInfo);
         *outInstance = reinterpret_cast<GfxInstance>(instance);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -50,7 +46,59 @@ void VulkanBackend::instanceSetDebugCallback(GfxInstance instance, GfxDebugCallb
         return;
     }
     auto* inst = reinterpret_cast<gfx::vulkan::Instance*>(instance);
-    inst->setDebugCallback(callback, userData);
+
+    // Create adapter callback that converts internal enums to Gfx API enums
+    if (callback) {
+        // Create a struct to hold both the callback and userData
+        struct CallbackData {
+            GfxDebugCallback callback;
+            void* userData;
+        };
+
+        auto* callbackData = new CallbackData{ callback, userData };
+
+        // Create a static callback that uses the adapter
+        auto staticCallback = +[](gfx::vulkan::DebugMessageSeverity severity, gfx::vulkan::DebugMessageType type, const char* message, void* dataPtr) {
+            auto* data = static_cast<CallbackData*>(dataPtr);
+
+            // Convert internal enum to GfxDebugMessageSeverity
+            GfxDebugMessageSeverity gfxSeverity;
+            switch (severity) {
+            case gfx::vulkan::DebugMessageSeverity::Verbose:
+                gfxSeverity = GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE;
+                break;
+            case gfx::vulkan::DebugMessageSeverity::Info:
+                gfxSeverity = GFX_DEBUG_MESSAGE_SEVERITY_INFO;
+                break;
+            case gfx::vulkan::DebugMessageSeverity::Warning:
+                gfxSeverity = GFX_DEBUG_MESSAGE_SEVERITY_WARNING;
+                break;
+            case gfx::vulkan::DebugMessageSeverity::Error:
+                gfxSeverity = GFX_DEBUG_MESSAGE_SEVERITY_ERROR;
+                break;
+            }
+
+            // Convert internal enum to GfxDebugMessageType
+            GfxDebugMessageType gfxType;
+            switch (type) {
+            case gfx::vulkan::DebugMessageType::General:
+                gfxType = GFX_DEBUG_MESSAGE_TYPE_GENERAL;
+                break;
+            case gfx::vulkan::DebugMessageType::Validation:
+                gfxType = GFX_DEBUG_MESSAGE_TYPE_VALIDATION;
+                break;
+            case gfx::vulkan::DebugMessageType::Performance:
+                gfxType = GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE;
+                break;
+            }
+
+            data->callback(gfxSeverity, gfxType, message, data->userData);
+        };
+
+        inst->setDebugCallback(staticCallback, callbackData);
+    } else {
+        inst->setDebugCallback(nullptr, nullptr);
+    }
 }
 
 GfxResult VulkanBackend::instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const
@@ -151,7 +199,8 @@ GfxResult VulkanBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDevice
     try {
         // Device doesn't own the adapter - just keeps a pointer
         auto* adapterPtr = reinterpret_cast<gfx::vulkan::Adapter*>(adapter);
-        auto* device = new gfx::vulkan::Device(adapterPtr, descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToDeviceCreateInfo(descriptor);
+        auto* device = new gfx::vulkan::Device(adapterPtr, createInfo);
         *outDevice = reinterpret_cast<GfxDevice>(device);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -220,7 +269,8 @@ GfxResult VulkanBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceD
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
         auto* inst = dev->getAdapter()->getInstance();
-        auto* surface = new gfx::vulkan::Surface(inst->handle(), dev->getAdapter()->handle(), descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToSurfaceCreateInfo(descriptor);
+        auto* surface = new gfx::vulkan::Surface(inst->handle(), dev->getAdapter()->handle(), createInfo);
         *outSurface = reinterpret_cast<GfxSurface>(surface);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -238,12 +288,12 @@ GfxResult VulkanBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
         auto* surf = reinterpret_cast<gfx::vulkan::Surface*>(surface);
-        auto* swapchain = new gfx::vulkan::Swapchain(
-            dev->handle(),
-            dev->getAdapter()->handle(),
+        auto createInfo = gfx::convertor::gfxDescriptorToSwapchainCreateInfo(
             surf->handle(),
+            dev->getAdapter()->handle(),
             dev->getAdapter()->getGraphicsQueueFamily(),
             descriptor);
+        auto* swapchain = new gfx::vulkan::Swapchain(dev->handle(), dev->getAdapter()->handle(), createInfo);
         *outSwapchain = reinterpret_cast<GfxSwapchain>(swapchain);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -260,10 +310,11 @@ GfxResult VulkanBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
 
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
+        auto createInfo = gfx::convertor::gfxDescriptorToBufferCreateInfo(descriptor);
         auto* buffer = new gfx::vulkan::Buffer(
             dev->handle(),
             dev->getAdapter()->handle(),
-            descriptor);
+            createInfo);
         *outBuffer = reinterpret_cast<GfxBuffer>(buffer);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -280,10 +331,11 @@ GfxResult VulkanBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
 
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
+        auto createInfo = gfx::convertor::gfxDescriptorToTextureCreateInfo(descriptor);
         auto* texture = new gfx::vulkan::Texture(
             dev->handle(),
             dev->getAdapter()->handle(),
-            descriptor);
+            createInfo);
         *outTexture = reinterpret_cast<GfxTexture>(texture);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -300,7 +352,8 @@ GfxResult VulkanBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerD
 
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
-        auto* sampler = new gfx::vulkan::Sampler(dev->handle(), descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToSamplerCreateInfo(descriptor);
+        auto* sampler = new gfx::vulkan::Sampler(dev->handle(), createInfo);
         *outSampler = reinterpret_cast<GfxSampler>(sampler);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -317,7 +370,8 @@ GfxResult VulkanBackend::deviceCreateShader(GfxDevice device, const GfxShaderDes
 
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
-        auto* shader = new gfx::vulkan::Shader(dev->handle(), descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToShaderCreateInfo(descriptor);
+        auto* shader = new gfx::vulkan::Shader(dev->handle(), createInfo);
         *outShader = reinterpret_cast<GfxShader>(shader);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -330,7 +384,8 @@ GfxResult VulkanBackend::deviceCreateBindGroupLayout(GfxDevice device, const Gfx
 {
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
-        auto* layout = new gfx::vulkan::BindGroupLayout(dev->handle(), descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToBindGroupLayoutCreateInfo(descriptor);
+        auto* layout = new gfx::vulkan::BindGroupLayout(dev->handle(), createInfo);
         *outLayout = reinterpret_cast<GfxBindGroupLayout>(layout);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
@@ -342,7 +397,8 @@ GfxResult VulkanBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGr
 {
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
-        auto* bindGroup = new gfx::vulkan::BindGroup(dev->handle(), descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToBindGroupCreateInfo(descriptor);
+        auto* bindGroup = new gfx::vulkan::BindGroup(dev->handle(), createInfo);
         *outBindGroup = reinterpret_cast<GfxBindGroup>(bindGroup);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
@@ -358,7 +414,8 @@ GfxResult VulkanBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
 
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
-        auto* pipeline = new gfx::vulkan::RenderPipeline(dev->handle(), descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToRenderPipelineCreateInfo(descriptor);
+        auto* pipeline = new gfx::vulkan::RenderPipeline(dev->handle(), createInfo);
         *outPipeline = reinterpret_cast<GfxRenderPipeline>(pipeline);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -375,7 +432,8 @@ GfxResult VulkanBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
 
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
-        auto* pipeline = new gfx::vulkan::ComputePipeline(dev->handle(), descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToComputePipelineCreateInfo(descriptor);
+        auto* pipeline = new gfx::vulkan::ComputePipeline(dev->handle(), createInfo);
         *outPipeline = reinterpret_cast<GfxComputePipeline>(pipeline);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -413,7 +471,8 @@ GfxResult VulkanBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescr
 
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
-        auto* fence = new gfx::vulkan::Fence(dev->handle(), descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToFenceCreateInfo(descriptor);
+        auto* fence = new gfx::vulkan::Fence(dev->handle(), createInfo);
         *outFence = reinterpret_cast<GfxFence>(fence);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -430,7 +489,8 @@ GfxResult VulkanBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaph
 
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
-        auto* semaphore = new gfx::vulkan::Semaphore(dev->handle(), descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToSemaphoreCreateInfo(descriptor);
+        auto* semaphore = new gfx::vulkan::Semaphore(dev->handle(), createInfo);
         *outSemaphore = reinterpret_cast<GfxSemaphore>(semaphore);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -540,15 +600,6 @@ uint32_t VulkanBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxP
     }
 
     return modeCount;
-}
-
-GfxPlatformWindowHandle VulkanBackend::surfaceGetPlatformHandle(GfxSurface surface) const
-{
-    if (!surface) {
-        return GfxPlatformWindowHandle{};
-    }
-    auto* surf = reinterpret_cast<gfx::vulkan::Surface*>(surface);
-    return surf->getPlatformHandle();
 }
 
 // Swapchain functions
@@ -716,7 +767,25 @@ GfxBufferUsage VulkanBackend::bufferGetUsage(GfxBuffer buffer) const
         return static_cast<GfxBufferUsage>(0);
     }
     auto* buf = reinterpret_cast<gfx::vulkan::Buffer*>(buffer);
-    return buf->getUsage();
+    VkBufferUsageFlags vkUsage = buf->getUsage();
+
+    // Convert VkBufferUsageFlags to GfxBufferUsage
+    GfxBufferUsage usage = GFX_BUFFER_USAGE_NONE;
+    if (vkUsage & VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_COPY_SRC);
+    if (vkUsage & VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_COPY_DST);
+    if (vkUsage & VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_INDEX);
+    if (vkUsage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_VERTEX);
+    if (vkUsage & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_UNIFORM);
+    if (vkUsage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_STORAGE);
+    if (vkUsage & VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_INDIRECT);
+    return usage;
 }
 
 GfxResult VulkanBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
@@ -755,7 +824,9 @@ GfxExtent3D VulkanBackend::textureGetSize(GfxTexture texture) const
         return empty;
     }
     auto* tex = reinterpret_cast<gfx::vulkan::Texture*>(texture);
-    return tex->getSize();
+    VkExtent3D vkSize = tex->getSize();
+    GfxExtent3D size = { vkSize.width, vkSize.height, vkSize.depth };
+    return size;
 }
 
 GfxTextureFormat VulkanBackend::textureGetFormat(GfxTexture texture) const
@@ -764,7 +835,7 @@ GfxTextureFormat VulkanBackend::textureGetFormat(GfxTexture texture) const
         return GFX_TEXTURE_FORMAT_UNDEFINED;
     }
     auto* tex = reinterpret_cast<gfx::vulkan::Texture*>(texture);
-    return tex->getFormat();
+    return gfx::convertor::vkFormatToGfxFormat(tex->getFormat());
 }
 
 uint32_t VulkanBackend::textureGetMipLevelCount(GfxTexture texture) const
@@ -782,7 +853,7 @@ GfxSampleCount VulkanBackend::textureGetSampleCount(GfxTexture texture) const
         return GFX_SAMPLE_COUNT_1;
     }
     auto* tex = reinterpret_cast<gfx::vulkan::Texture*>(texture);
-    return tex->getSampleCount();
+    return gfx::convertor::vkSampleCountToGfxSampleCount(tex->getSampleCount());
 }
 
 GfxTextureUsage VulkanBackend::textureGetUsage(GfxTexture texture) const
@@ -791,7 +862,22 @@ GfxTextureUsage VulkanBackend::textureGetUsage(GfxTexture texture) const
         return static_cast<GfxTextureUsage>(0);
     }
     auto* tex = reinterpret_cast<gfx::vulkan::Texture*>(texture);
-    return tex->getUsage();
+    VkImageUsageFlags vkUsage = tex->getUsage();
+
+    // Convert VkImageUsageFlags to GfxTextureUsage
+    GfxTextureUsage usage = GFX_TEXTURE_USAGE_NONE;
+    if (vkUsage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_COPY_SRC);
+    if (vkUsage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_COPY_DST);
+    if (vkUsage & VK_IMAGE_USAGE_SAMPLED_BIT)
+        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_TEXTURE_BINDING);
+    if (vkUsage & VK_IMAGE_USAGE_STORAGE_BIT)
+        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_STORAGE_BINDING);
+    if (vkUsage & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
+        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_RENDER_ATTACHMENT);
+    }
+    return usage;
 }
 
 GfxTextureLayout VulkanBackend::textureGetLayout(GfxTexture texture) const
@@ -800,7 +886,7 @@ GfxTextureLayout VulkanBackend::textureGetLayout(GfxTexture texture) const
         return GFX_TEXTURE_LAYOUT_UNDEFINED;
     }
     auto* tex = reinterpret_cast<gfx::vulkan::Texture*>(texture);
-    return tex->getLayout();
+    return gfx::convertor::vkImageLayoutToGfxLayout(tex->getLayout());
 }
 
 GfxResult VulkanBackend::textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const
@@ -811,7 +897,8 @@ GfxResult VulkanBackend::textureCreateView(GfxTexture texture, const GfxTextureV
 
     try {
         auto* tex = reinterpret_cast<gfx::vulkan::Texture*>(texture);
-        auto* view = new gfx::vulkan::TextureView(tex, descriptor);
+        auto createInfo = gfx::convertor::gfxDescriptorToTextureViewCreateInfo(descriptor);
+        auto* view = new gfx::vulkan::TextureView(tex, createInfo);
         *outView = reinterpret_cast<GfxTextureView>(view);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -892,7 +979,7 @@ GfxResult VulkanBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submit
         waitSemaphores.push_back(sem->handle());
         waitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
-        if (sem->type() == GFX_SEMAPHORE_TYPE_TIMELINE) {
+        if (sem->isTimeline()) {
             hasTimelineWait = true;
             uint64_t value = submitInfo->waitValues ? submitInfo->waitValues[i] : 0;
             waitValues.push_back(value);
@@ -911,7 +998,7 @@ GfxResult VulkanBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submit
         auto* sem = reinterpret_cast<gfx::vulkan::Semaphore*>(submitInfo->signalSemaphores[i]);
         signalSemaphores.push_back(sem->handle());
 
-        if (sem->type() == GFX_SEMAPHORE_TYPE_TIMELINE) {
+        if (sem->isTimeline()) {
             hasTimelineSignal = true;
             uint64_t value = submitInfo->signalValues ? submitInfo->signalValues[i] : 0;
             signalValues.push_back(value);
@@ -1066,12 +1153,12 @@ void VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
     // Transition image to transfer dst optimal
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = gfx::convertor::gfxLayoutToVkImageLayout(tex->getLayout());
+    barrier.oldLayout = tex->getLayout();
     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = tex->handle();
-    barrier.subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(tex->getFormat()));
+    barrier.subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(tex->getFormat());
     barrier.subresourceRange.baseMipLevel = mipLevel;
     barrier.subresourceRange.levelCount = 1;
     barrier.subresourceRange.baseArrayLayer = 0;
@@ -1087,7 +1174,7 @@ void VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
     region.bufferOffset = 0;
     region.bufferRowLength = 0; // Tightly packed
     region.bufferImageHeight = 0;
-    region.imageSubresource.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(tex->getFormat()));
+    region.imageSubresource.aspectMask = gfx::convertor::getImageAspectMask(tex->getFormat());
     region.imageSubresource.mipLevel = mipLevel;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
@@ -1109,7 +1196,7 @@ void VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
     // Update tracked layout
-    tex->setLayout(finalLayout);
+    tex->setLayout(gfx::convertor::gfxLayoutToVkImageLayout(finalLayout));
 
     // End and submit
     vkEndCommandBuffer(commandBuffer);
@@ -1222,7 +1309,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
         const GfxColorAttachmentTarget* target = &colorAttachments[i].target;
         auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(target->view);
-        VkSampleCountFlagBits samples = gfx::convertor::sampleCountToVkSampleCount(colorView->getTexture()->getSampleCount());
+        VkSampleCountFlagBits samples = colorView->getTexture()->getSampleCount();
 
         bool isMSAA = (samples > VK_SAMPLE_COUNT_1_BIT);
 
@@ -1294,7 +1381,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = depthView->getFormat();
-        depthAttachment.samples = gfx::convertor::sampleCountToVkSampleCount(depthView->getTexture()->getSampleCount());
+        depthAttachment.samples = depthView->getTexture()->getSampleCount();
 
         // Handle depth operations (required if depth pointer is set)
         if (target->depthOps) {
@@ -1496,12 +1583,12 @@ void VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandE
     // Transition image layout to transfer dst optimal
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = gfx::convertor::gfxLayoutToVkImageLayout(dstTex->getLayout());
+    barrier.oldLayout = dstTex->getLayout();
     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = dstTex->handle();
-    barrier.subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(dstTex->getFormat()));
+    barrier.subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(dstTex->getFormat());
     barrier.subresourceRange.baseMipLevel = mipLevel;
     barrier.subresourceRange.levelCount = 1;
     barrier.subresourceRange.baseArrayLayer = 0;
@@ -1517,7 +1604,7 @@ void VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandE
     region.bufferOffset = sourceOffset;
     region.bufferRowLength = 0; // Tightly packed
     region.bufferImageHeight = 0; // Tightly packed
-    region.imageSubresource.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(dstTex->getFormat()));
+    region.imageSubresource.aspectMask = gfx::convertor::getImageAspectMask(dstTex->getFormat());
     region.imageSubresource.mipLevel = mipLevel;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
@@ -1537,7 +1624,7 @@ void VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandE
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
     // Update tracked layout
-    dstTex->setLayout(finalLayout);
+    dstTex->setLayout(gfx::convertor::gfxLayoutToVkImageLayout(finalLayout));
 
     (void)bytesPerRow; // Unused - assuming tightly packed data
 }
@@ -1560,12 +1647,12 @@ void VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandE
     // Transition image layout to transfer src optimal
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = gfx::convertor::gfxLayoutToVkImageLayout(srcTex->getLayout());
+    barrier.oldLayout = srcTex->getLayout();
     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = srcTex->handle();
-    barrier.subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(srcTex->getFormat()));
+    barrier.subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(srcTex->getFormat());
     barrier.subresourceRange.baseMipLevel = mipLevel;
     barrier.subresourceRange.levelCount = 1;
     barrier.subresourceRange.baseArrayLayer = 0;
@@ -1581,7 +1668,7 @@ void VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandE
     region.bufferOffset = destinationOffset;
     region.bufferRowLength = 0; // Tightly packed
     region.bufferImageHeight = 0; // Tightly packed
-    region.imageSubresource.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(srcTex->getFormat()));
+    region.imageSubresource.aspectMask = gfx::convertor::getImageAspectMask(srcTex->getFormat());
     region.imageSubresource.mipLevel = mipLevel;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
@@ -1601,7 +1688,7 @@ void VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandE
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
     // Update tracked layout
-    srcTex->setLayout(finalLayout);
+    srcTex->setLayout(gfx::convertor::gfxLayoutToVkImageLayout(finalLayout));
 
     (void)bytesPerRow; // Unused - assuming tightly packed data
 }
@@ -1627,7 +1714,7 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
     uint32_t copyDepth = extent->depth;
 
     // Check if source is a 3D texture (depth > 1 and not an array)
-    GfxExtent3D srcSize = srcTex->getSize();
+    VkExtent3D srcSize = srcTex->getSize();
     bool is3DTexture = (srcSize.depth > 1);
 
     if (!is3DTexture) {
@@ -1641,12 +1728,12 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
     // Transition source image to transfer src optimal
     VkImageMemoryBarrier barriers[2] = {};
     barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barriers[0].oldLayout = gfx::convertor::gfxLayoutToVkImageLayout(srcTex->getLayout());
+    barriers[0].oldLayout = srcTex->getLayout();
     barriers[0].newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barriers[0].image = srcTex->handle();
-    barriers[0].subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(srcTex->getFormat()));
+    barriers[0].subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(srcTex->getFormat());
     barriers[0].subresourceRange.baseMipLevel = sourceMipLevel;
     barriers[0].subresourceRange.levelCount = 1;
     barriers[0].subresourceRange.baseArrayLayer = sourceOrigin->z;
@@ -1656,12 +1743,12 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
 
     // Transition destination image to transfer dst optimal
     barriers[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barriers[1].oldLayout = gfx::convertor::gfxLayoutToVkImageLayout(dstTex->getLayout());
+    barriers[1].oldLayout = dstTex->getLayout();
     barriers[1].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barriers[1].image = dstTex->handle();
-    barriers[1].subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(dstTex->getFormat()));
+    barriers[1].subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(dstTex->getFormat());
     barriers[1].subresourceRange.baseMipLevel = destinationMipLevel;
     barriers[1].subresourceRange.levelCount = 1;
     barriers[1].subresourceRange.baseArrayLayer = destinationOrigin->z;
@@ -1675,12 +1762,12 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
 
     // Copy image to image
     VkImageCopy region{};
-    region.srcSubresource.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(srcTex->getFormat()));
+    region.srcSubresource.aspectMask = gfx::convertor::getImageAspectMask(srcTex->getFormat());
     region.srcSubresource.mipLevel = sourceMipLevel;
     region.srcSubresource.baseArrayLayer = is3DTexture ? 0 : sourceOrigin->z;
     region.srcSubresource.layerCount = layerCount;
     region.srcOffset = { sourceOrigin->x, sourceOrigin->y, is3DTexture ? sourceOrigin->z : 0 };
-    region.dstSubresource.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(dstTex->getFormat()));
+    region.dstSubresource.aspectMask = gfx::convertor::getImageAspectMask(dstTex->getFormat());
     region.dstSubresource.mipLevel = destinationMipLevel;
     region.dstSubresource.baseArrayLayer = is3DTexture ? 0 : destinationOrigin->z;
     region.dstSubresource.layerCount = layerCount;
@@ -1705,8 +1792,8 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 2, barriers);
 
     // Update tracked layouts
-    srcTex->setLayout(srcFinalLayout);
-    dstTex->setLayout(dstFinalLayout);
+    srcTex->setLayout(gfx::convertor::gfxLayoutToVkImageLayout(srcFinalLayout));
+    dstTex->setLayout(gfx::convertor::gfxLayoutToVkImageLayout(dstFinalLayout));
 }
 
 void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
@@ -1783,7 +1870,7 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
         vkBarrier.image = texture->handle();
 
         // Determine aspect mask based on texture format
-        VkFormat format = gfx::convertor::gfxFormatToVkFormat(texture->getFormat());
+        VkFormat format = texture->getFormat();
         if (gfx::convertor::isDepthFormat(format)) {
             vkBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
             if (gfx::convertor::hasStencilComponent(format)) {
@@ -1816,7 +1903,7 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
         dstStage |= static_cast<VkPipelineStageFlags>(barrier.dstStageMask);
 
         // Update tracked layout (simplified - tracks whole texture, not per-subresource)
-        texture->setLayout(barrier.newLayout);
+        texture->setLayout(gfx::convertor::gfxLayoutToVkImageLayout(barrier.newLayout));
     }
 
     vkCmdPipelineBarrier(
@@ -2048,7 +2135,16 @@ GfxResult VulkanBackend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
     auto* f = reinterpret_cast<gfx::vulkan::Fence*>(fence);
-    return f->getStatus(isSignaled);
+    VkResult result = f->getStatus(isSignaled);
+
+    // Convert VkResult to GfxResult
+    if (result == VK_SUCCESS) {
+        return GFX_RESULT_SUCCESS;
+    } else if (result == VK_ERROR_DEVICE_LOST) {
+        return GFX_RESULT_ERROR_DEVICE_LOST;
+    } else {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult VulkanBackend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
@@ -2057,7 +2153,18 @@ GfxResult VulkanBackend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
     auto* f = reinterpret_cast<gfx::vulkan::Fence*>(fence);
-    return f->wait(timeoutNs);
+    VkResult result = f->wait(timeoutNs);
+
+    // Convert VkResult to GfxResult
+    if (result == VK_SUCCESS) {
+        return GFX_RESULT_SUCCESS;
+    } else if (result == VK_TIMEOUT) {
+        return GFX_RESULT_TIMEOUT;
+    } else if (result == VK_ERROR_DEVICE_LOST) {
+        return GFX_RESULT_ERROR_DEVICE_LOST;
+    } else {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 void VulkanBackend::fenceReset(GfxFence fence) const
@@ -2081,7 +2188,7 @@ GfxSemaphoreType VulkanBackend::semaphoreGetType(GfxSemaphore semaphore) const
         return GFX_SEMAPHORE_TYPE_BINARY;
     }
     auto* s = reinterpret_cast<gfx::vulkan::Semaphore*>(semaphore);
-    return s->type();
+    return s->isTimeline() ? GFX_SEMAPHORE_TYPE_TIMELINE : GFX_SEMAPHORE_TYPE_BINARY;
 }
 
 GfxResult VulkanBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
@@ -2090,7 +2197,8 @@ GfxResult VulkanBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
     auto* s = reinterpret_cast<gfx::vulkan::Semaphore*>(semaphore);
-    return s->signal(value);
+    VkResult result = s->signal(value);
+    return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 GfxResult VulkanBackend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const
 {
@@ -2098,7 +2206,8 @@ GfxResult VulkanBackend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, u
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
     auto* s = reinterpret_cast<gfx::vulkan::Semaphore*>(semaphore);
-    return s->wait(value, timeoutNs);
+    VkResult result = s->wait(value, timeoutNs);
+    return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
 uint64_t VulkanBackend::semaphoreGetValue(GfxSemaphore semaphore) const

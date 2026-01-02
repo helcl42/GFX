@@ -46,7 +46,6 @@ public:
     virtual void surfaceDestroy(GfxSurface surface) const = 0;
     virtual uint32_t surfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats) const = 0;
     virtual uint32_t surfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes) const = 0;
-    virtual GfxPlatformWindowHandle surfaceGetPlatformHandle(GfxSurface surface) const = 0;
 
     // Swapchain functions
     virtual void swapchainDestroy(GfxSwapchain swapchain) const = 0;

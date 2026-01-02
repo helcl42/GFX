@@ -139,26 +139,6 @@ static GfxWindowingSystem cppWindowingSystemToC(WindowingSystem sys)
     }
 }
 
-static WindowingSystem cWindowingSystemToCpp(GfxWindowingSystem sys)
-{
-    switch (sys) {
-    case GFX_WINDOWING_SYSTEM_WIN32:
-        return WindowingSystem::Win32;
-    case GFX_WINDOWING_SYSTEM_X11:
-        return WindowingSystem::X11;
-    case GFX_WINDOWING_SYSTEM_WAYLAND:
-        return WindowingSystem::Wayland;
-    case GFX_WINDOWING_SYSTEM_XCB:
-        return WindowingSystem::XCB;
-    case GFX_WINDOWING_SYSTEM_COCOA:
-        return WindowingSystem::Cocoa;
-    case GFX_WINDOWING_SYSTEM_EMSCRIPTEN:
-        return WindowingSystem::Emscripten;
-    default:
-        return WindowingSystem::X11;
-    }
-}
-
 static GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& handle)
 {
     GfxPlatformWindowHandle cHandle = {};
@@ -1062,40 +1042,6 @@ public:
         std::vector<PresentMode> result;
         for (uint32_t i = 0; i < count; ++i) {
             result.push_back(static_cast<PresentMode>(modes[i]));
-        }
-        return result;
-    }
-
-    PlatformWindowHandle getPlatformHandle() const override
-    {
-        GfxPlatformWindowHandle cHandle = gfxSurfaceGetPlatformHandle(m_handle);
-        PlatformWindowHandle result;
-        result.windowingSystem = cWindowingSystemToCpp(cHandle.windowingSystem);
-
-        switch (cHandle.windowingSystem) {
-        case GFX_WINDOWING_SYSTEM_WIN32:
-            result.win32.hwnd = cHandle.win32.hwnd;
-            result.win32.hinstance = cHandle.win32.hinstance;
-            break;
-        case GFX_WINDOWING_SYSTEM_X11:
-            result.x11.window = cHandle.x11.window;
-            result.x11.display = cHandle.x11.display;
-            break;
-        case GFX_WINDOWING_SYSTEM_WAYLAND:
-            result.wayland.surface = cHandle.wayland.surface;
-            result.wayland.display = cHandle.wayland.display;
-            break;
-        case GFX_WINDOWING_SYSTEM_XCB:
-            result.xcb.connection = cHandle.xcb.connection;
-            result.xcb.window = cHandle.xcb.window;
-            break;
-        case GFX_WINDOWING_SYSTEM_COCOA:
-            result.cocoa.nsWindow = cHandle.cocoa.nsWindow;
-            result.cocoa.metalLayer = cHandle.cocoa.metalLayer;
-            break;
-        case GFX_WINDOWING_SYSTEM_EMSCRIPTEN:
-            result.emscripten.canvasSelector = cHandle.emscripten.canvasSelector;
-            break;
         }
         return result;
     }

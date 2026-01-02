@@ -915,9 +915,6 @@ public:
     // Get supported formats and present modes for this surface
     virtual std::vector<TextureFormat> getSupportedFormats() const = 0;
     virtual std::vector<PresentMode> getSupportedPresentModes() const = 0;
-
-    // Get the underlying platform handle
-    virtual PlatformWindowHandle getPlatformHandle() const = 0;
 };
 
 class Swapchain {

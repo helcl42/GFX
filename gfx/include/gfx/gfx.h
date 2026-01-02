@@ -935,7 +935,6 @@ GFX_API void gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
 GFX_API void gfxSurfaceDestroy(GfxSurface surface);
 GFX_API uint32_t gfxSurfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats);
 GFX_API uint32_t gfxSurfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes);
-GFX_API GfxPlatformWindowHandle gfxSurfaceGetPlatformHandle(GfxSurface surface);
 
 // Swapchain functions
 GFX_API void gfxSwapchainDestroy(GfxSwapchain swapchain);

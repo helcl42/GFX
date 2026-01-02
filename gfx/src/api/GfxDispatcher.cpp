@@ -490,18 +490,6 @@ uint32_t gfxSurfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* 
     return api->surfaceGetSupportedPresentModes(gfx::native(surface), presentModes, maxModes);
 }
 
-GfxPlatformWindowHandle gfxSurfaceGetPlatformHandle(GfxSurface surface)
-{
-    if (!surface) {
-        return {};
-    }
-    auto api = gfx::getAPI(surface);
-    if (!api) {
-        return {};
-    }
-    return api->surfaceGetPlatformHandle(gfx::native(surface));
-}
-
 // Swapchain Functions
 uint32_t gfxSwapchainGetWidth(GfxSwapchain swapchain)
 {
