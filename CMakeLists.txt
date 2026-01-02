@@ -18,6 +18,7 @@ endif()
 
 # Options
 option(BUILD_EXAMPLES "Build example applications" ON)
+option(BUILD_CPP_WRAPPER "Build C++ wrapper library" ON)
 option(BUILD_VULKAN_BACKEND "Build Vulkan backend" ON)
 option(BUILD_WEBGPU_BACKEND "Build WebGPU backend" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
@@ -253,77 +254,115 @@ endif()
 # Link platform libraries
 target_link_libraries(gfx PUBLIC ${PLATFORM_LIBS})
 
-# C++ API Library
-set(GFX_CPP_SOURCES
-    gfx_cpp/include/gfx_cpp/Gfx.hpp
-    gfx_cpp/src/GfxImpl.cpp  # Single unified C++ wrapper for all backends
-)
-
-# Create library based on BUILD_SHARED_LIBS option
-if(BUILD_SHARED_LIBS)
-    add_library(gfx_cpp SHARED ${GFX_CPP_SOURCES})
-    # Set version information for shared library
-    set_target_properties(gfx_cpp PROPERTIES
-        VERSION ${PROJECT_VERSION}
-        SOVERSION ${PROJECT_VERSION_MAJOR}
+# C++ API Library (optional)
+if(BUILD_CPP_WRAPPER)
+    set(GFX_CPP_SOURCES
+        gfx_cpp/include/gfx_cpp/Gfx.hpp
+        gfx_cpp/src/GfxImpl.cpp  # Single unified C++ wrapper for all backends
     )
-else()
-    add_library(gfx_cpp STATIC ${GFX_CPP_SOURCES})
-endif()
 
-target_include_directories(gfx_cpp 
-    PUBLIC 
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/gfx_cpp/include>
-        $<INSTALL_INTERFACE:include>
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/gfx_cpp/src
-)
-target_link_libraries(gfx_cpp PUBLIC gfx)  # Link to C API library
-
-# Link Vulkan if available
-if(BUILD_VULKAN_BACKEND)
-    target_link_libraries(gfx_cpp PUBLIC Vulkan::Vulkan)
-    target_compile_definitions(gfx_cpp PUBLIC GFX_ENABLE_VULKAN=1)
-endif()
-
-# Link WebGPU if available
-if(BUILD_WEBGPU_BACKEND)
-    target_link_libraries(gfx_cpp PUBLIC ${WEBGPU_LIBRARY})
-    
-    # Add Emscripten-specific generated headers BEFORE source headers
-    if(BUILD_FOR_WEB)
-        target_include_directories(gfx_cpp PUBLIC 
-            ${CMAKE_BINARY_DIR}/dawn/gen/src/emdawnwebgpu/include  # Generated headers first
-            ${WEBGPU_INCLUDE_DIR}                                   # Source headers second
+    # Create library based on BUILD_SHARED_LIBS option
+    if(BUILD_SHARED_LIBS)
+        add_library(gfx_cpp SHARED ${GFX_CPP_SOURCES})
+        # Set version information for shared library
+        set_target_properties(gfx_cpp PROPERTIES
+            VERSION ${PROJECT_VERSION}
+            SOVERSION ${PROJECT_VERSION_MAJOR}
         )
     else()
-        target_include_directories(gfx_cpp PUBLIC 
-            ${CMAKE_BINARY_DIR}/dawn/gen/include
-            ${WEBGPU_INCLUDE_DIR}
+        add_library(gfx_cpp STATIC ${GFX_CPP_SOURCES})
+    endif()
+
+    target_include_directories(gfx_cpp 
+        PUBLIC 
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/gfx_cpp/include>
+            $<INSTALL_INTERFACE:include>
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/gfx_cpp/src
+    )
+    target_link_libraries(gfx_cpp PUBLIC gfx)  # Link to C API library
+
+    # Link Vulkan if available
+    if(BUILD_VULKAN_BACKEND)
+        target_link_libraries(gfx_cpp PUBLIC Vulkan::Vulkan)
+        target_compile_definitions(gfx_cpp PUBLIC GFX_ENABLE_VULKAN=1)
+    endif()
+
+    # Link WebGPU if available
+    if(BUILD_WEBGPU_BACKEND)
+        target_link_libraries(gfx_cpp PUBLIC ${WEBGPU_LIBRARY})
+        
+        # Add Emscripten-specific generated headers BEFORE source headers
+        if(BUILD_FOR_WEB)
+            target_include_directories(gfx_cpp PUBLIC 
+                ${CMAKE_BINARY_DIR}/dawn/gen/src/emdawnwebgpu/include  # Generated headers first
+                ${WEBGPU_INCLUDE_DIR}                                   # Source headers second
+            )
+        else()
+            target_include_directories(gfx_cpp PUBLIC 
+                ${CMAKE_BINARY_DIR}/dawn/gen/include
+                ${WEBGPU_INCLUDE_DIR}
+            )
+        endif()
+        
+        target_compile_definitions(gfx_cpp PUBLIC GFX_ENABLE_WEBGPU=1)
+        
+        # Ensure Dawn's generated headers are built first
+        if(TARGET webgpu_headers_gen)
+            add_dependencies(gfx_cpp webgpu_headers_gen)
+        endif()
+        if(TARGET emdawnwebgpu_headers_gen)
+            add_dependencies(gfx_cpp emdawnwebgpu_headers_gen)
+        endif()
+    endif()
+
+    # Link platform libraries
+    target_link_libraries(gfx_cpp PUBLIC ${PLATFORM_LIBS})
+
+    # Emscripten-specific configuration
+    if(BUILD_FOR_WEB)
+        target_compile_options(gfx_cpp PRIVATE 
+            # -sUSE_GLFW=3
+            # -sASYNCIFY=1
+        )
+        target_link_options(gfx_cpp PUBLIC
+            --use-port=emdawnwebgpu
+            -sUSE_GLFW=3
+            -sASYNCIFY=1
+            -sALLOW_MEMORY_GROWTH=1
         )
     endif()
-    
-    target_compile_definitions(gfx_cpp PUBLIC GFX_ENABLE_WEBGPU=1)
-    
-    # Ensure Dawn's generated headers are built first
-    if(TARGET webgpu_headers_gen)
-        add_dependencies(gfx_cpp webgpu_headers_gen)
+
+    # Compiler flags
+    if(MSVC)
+        target_compile_options(gfx_cpp PRIVATE /W4)
+    else()
+        target_compile_options(gfx_cpp PRIVATE -Wall -Wextra -Wpedantic -g)
+        
+        # Address Sanitizer (optional)
+        if(ENABLE_ASAN)
+            target_compile_options(gfx_cpp PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+            target_link_options(gfx_cpp PRIVATE -fsanitize=address)
+        endif()
     endif()
-    if(TARGET emdawnwebgpu_headers_gen)
-        add_dependencies(gfx_cpp emdawnwebgpu_headers_gen)
+endif()  # BUILD_CPP_WRAPPER
+
+# C API library compiler flags
+if(MSVC)
+    target_compile_options(gfx PRIVATE /W4)
+else()
+    target_compile_options(gfx PRIVATE -Wall -Wextra -Wpedantic -g)
+    
+    # Address Sanitizer (optional)
+    if(ENABLE_ASAN)
+        target_compile_options(gfx PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+        target_link_options(gfx PRIVATE -fsanitize=address)
     endif()
 endif()
 
-# Link platform libraries
-target_link_libraries(gfx_cpp PUBLIC ${PLATFORM_LIBS})
-
-# Emscripten-specific configuration
+# Emscripten-specific configuration for C library
 if(BUILD_FOR_WEB)
     target_compile_options(gfx PRIVATE 
-        # -sUSE_GLFW=3
-        # -sASYNCIFY=1
-    )
-    target_compile_options(gfx_cpp PRIVATE 
         # -sUSE_GLFW=3
         # -sASYNCIFY=1
     )
@@ -333,29 +372,6 @@ if(BUILD_FOR_WEB)
         -sASYNCIFY=1
         -sALLOW_MEMORY_GROWTH=1
     )
-    target_link_options(gfx_cpp PUBLIC
-        --use-port=emdawnwebgpu
-        -sUSE_GLFW=3
-        -sASYNCIFY=1
-        -sALLOW_MEMORY_GROWTH=1
-    )
-endif()
-
-# Compiler flags
-if(MSVC)
-    target_compile_options(gfx PRIVATE /W4)
-    target_compile_options(gfx_cpp PRIVATE /W4)
-else()
-    target_compile_options(gfx PRIVATE -Wall -Wextra -Wpedantic -g)
-    target_compile_options(gfx_cpp PRIVATE -Wall -Wextra -Wpedantic -g)
-    
-    # Address Sanitizer (optional)
-    if(ENABLE_ASAN)
-        target_compile_options(gfx PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-        target_compile_options(gfx_cpp PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-        target_link_options(gfx PRIVATE -fsanitize=address)
-        target_link_options(gfx_cpp PRIVATE -fsanitize=address)
-    endif()
 endif()
 
 # Examples
@@ -420,8 +436,9 @@ if(BUILD_EXAMPLES)
         message(STATUS "Web example will be built to: ${CMAKE_CURRENT_BINARY_DIR}/web/compute_example_web.html")
         
         # Web C++ Cube Example (Emscripten)
-        add_executable(cube_example_cpp_web examples/cpp/cube/cube_example.cpp)
-        target_link_libraries(cube_example_cpp_web gfx_cpp)
+        if(BUILD_CPP_WRAPPER)
+            add_executable(cube_example_cpp_web examples/cpp/cube/cube_example.cpp)
+            target_link_libraries(cube_example_cpp_web gfx_cpp)
         
         # Emscripten-specific flags for web C++ cube example
         target_compile_options(cube_example_cpp_web PRIVATE -DEMSCRIPTEN)
@@ -447,33 +464,36 @@ if(BUILD_EXAMPLES)
         )
         
         message(STATUS "Web C++ cube example will be built to: ${CMAKE_CURRENT_BINARY_DIR}/web/cube_example_cpp_web.html")
+        endif()  # BUILD_CPP_WRAPPER
         
         # Web C++ Compute Example (Emscripten)
-        add_executable(compute_example_cpp_web examples/cpp/compute/compute_example.cpp)
-        target_link_libraries(compute_example_cpp_web gfx_cpp)
-        
-        # Emscripten-specific flags for web C++ compute example
-        target_compile_options(compute_example_cpp_web PRIVATE -DEMSCRIPTEN)
-        target_link_options(compute_example_cpp_web PRIVATE
-            --use-port=emdawnwebgpu
-            -sUSE_GLFW=3
-            -sASYNCIFY=1
-            -sALLOW_MEMORY_GROWTH=1
-            -sASSERTIONS=0
-            -sEXPORTED_RUNTIME_METHODS=requestFullscreen
-            --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders@shaders
-            -g
-            -O0
-            --shell-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/web/shell.html
-        )
-        
-        # Set output to create HTML, JS, and WASM
-        set_target_properties(compute_example_cpp_web PROPERTIES
-            SUFFIX ".html"
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/web"
-        )
-        
-        message(STATUS "Web C++ compute example will be built to: ${CMAKE_CURRENT_BINARY_DIR}/web/compute_example_cpp_web.html")
+        if(BUILD_CPP_WRAPPER)
+            add_executable(compute_example_cpp_web examples/cpp/compute/compute_example.cpp)
+            target_link_libraries(compute_example_cpp_web gfx_cpp)
+            
+            # Emscripten-specific flags for web C++ compute example
+            target_compile_options(compute_example_cpp_web PRIVATE -DEMSCRIPTEN)
+            target_link_options(compute_example_cpp_web PRIVATE
+                --use-port=emdawnwebgpu
+                -sUSE_GLFW=3
+                -sASYNCIFY=1
+                -sALLOW_MEMORY_GROWTH=1
+                -sASSERTIONS=0
+                -sEXPORTED_RUNTIME_METHODS=requestFullscreen
+                --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders@shaders
+                -g
+                -O0
+                --shell-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/web/shell.html
+            )
+            
+            # Set output to create HTML, JS, and WASM
+            set_target_properties(compute_example_cpp_web PROPERTIES
+                SUFFIX ".html"
+                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/web"
+            )
+            
+            message(STATUS "Web C++ compute example will be built to: ${CMAKE_CURRENT_BINARY_DIR}/web/compute_example_cpp_web.html")
+        endif()  # BUILD_CPP_WRAPPER
         
     else()
         # Native C Cube Example
@@ -502,28 +522,30 @@ if(BUILD_EXAMPLES)
     
     # C++ and Compute examples only for native builds (for now)
     if(NOT BUILD_FOR_WEB)
-    # C++ Cube Example
-    add_executable(cube_example_cpp examples/cpp/cube/cube_example.cpp)
-    target_link_libraries(cube_example_cpp gfx_cpp glfw)
-    if(ENABLE_ASAN AND NOT MSVC)
-        target_link_options(cube_example_cpp PRIVATE -fsanitize=address)
-    endif()
-    
-    # Compile WGSL shaders to SPIR-V for C++ example (shares with C example)
-    compile_wgsl_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl)
-    compile_wgsl_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl)
-    
-    # Copy WGSL shaders for WebGPU runtime loading (same command as C example)
-    add_custom_command(TARGET cube_example_cpp POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl
-            ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.wgsl
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl
-            ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
-        COMMENT "Copying WGSL shaders for WebGPU runtime"
-    )
+        # C++ Cube Example
+        if(BUILD_CPP_WRAPPER)
+            add_executable(cube_example_cpp examples/cpp/cube/cube_example.cpp)
+            target_link_libraries(cube_example_cpp gfx_cpp glfw)
+            if(ENABLE_ASAN AND NOT MSVC)
+                target_link_options(cube_example_cpp PRIVATE -fsanitize=address)
+            endif()
+            
+            # Compile WGSL shaders to SPIR-V for C++ example (shares with C example)
+            compile_wgsl_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl)
+            compile_wgsl_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl)
+            
+            # Copy WGSL shaders for WebGPU runtime loading (same command as C example)
+            add_custom_command(TARGET cube_example_cpp POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl
+                    ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.wgsl
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl
+                    ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
+                COMMENT "Copying WGSL shaders for WebGPU runtime"
+            )
+        endif()  # BUILD_CPP_WRAPPER
     
     # C Compute Example
     add_executable(compute_example_c examples/c/compute/compute_example.c)
@@ -553,26 +575,36 @@ if(BUILD_EXAMPLES)
     )
     
     # C++ Compute Example
-    add_executable(compute_example_cpp examples/cpp/compute/compute_example.cpp)
-    target_link_libraries(compute_example_cpp gfx_cpp glfw)
-    if(ENABLE_ASAN AND NOT MSVC)
-        target_link_options(compute_example_cpp PRIVATE -fsanitize=address)
-    endif()
-    
-    # C++ compute example uses the same compiled shaders as C example
-    add_dependencies(compute_example_cpp compute_example_c)
+        if(BUILD_CPP_WRAPPER)
+            add_executable(compute_example_cpp examples/cpp/compute/compute_example.cpp)
+            target_link_libraries(compute_example_cpp gfx_cpp glfw)
+            if(ENABLE_ASAN AND NOT MSVC)
+                target_link_options(compute_example_cpp PRIVATE -fsanitize=address)
+            endif()
+            
+            # C++ compute example uses the same compiled shaders as C example
+            add_dependencies(compute_example_cpp compute_example_c)
+        endif()  # BUILD_CPP_WRAPPER
     endif()  # NOT BUILD_FOR_WEB
 endif()  # BUILD_EXAMPLES
 
 # Install targets
-install(TARGETS gfx gfx_cpp
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-)
-
-install(FILES gfx/include/gfx/gfx.h DESTINATION include/gfx)
-install(FILES gfx_cpp/include/gfx_cpp/Gfx.hpp DESTINATION include/gfx_cpp)
+if(BUILD_CPP_WRAPPER)
+    install(TARGETS gfx gfx_cpp
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
+    install(FILES gfx/include/gfx/gfx.h DESTINATION include/gfx)
+    install(FILES gfx_cpp/include/gfx_cpp/Gfx.hpp DESTINATION include/gfx_cpp)
+else()
+    install(TARGETS gfx
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
+    install(FILES gfx/include/gfx/gfx.h DESTINATION include/gfx)
+endif()
 
 # Print configuration summary
 message(STATUS "")
@@ -584,6 +616,7 @@ else()
     message(STATUS "  Building STATIC libraries")
 endif()
 message(STATUS "  Build examples: ${BUILD_EXAMPLES}")
+message(STATUS "  Build C++ wrapper: ${BUILD_CPP_WRAPPER}")
 message(STATUS "  Address Sanitizer: ${ENABLE_ASAN}")
 message(STATUS "  Vulkan backend: ${BUILD_VULKAN_BACKEND}")
 message(STATUS "  WebGPU backend: ${BUILD_WEBGPU_BACKEND}")
