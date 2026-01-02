@@ -1,6 +1,4 @@
-#include "VulkanBackend.h"
-
-// Platform-specific Vulkan extensions
+// Platform-specific Vulkan extensions - MUST be defined before including vulkan headers
 #ifdef _WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
 #elif defined(__linux__)
@@ -12,6 +10,9 @@
 #endif
 
 #include <vulkan/vulkan.h>
+
+#include "VulkanBackend.h"
+#include "converter/GfxVulkanConverter.h"
 
 #ifdef __linux__
 #include <X11/Xlib-xcb.h>
@@ -27,374 +28,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-// ============================================================================
-// Format Conversion Helpers
-// ============================================================================
-
-namespace {
-VkFormat gfxFormatToVkFormat(GfxTextureFormat format)
-{
-    switch (format) {
-    case GFX_TEXTURE_FORMAT_UNDEFINED:
-        return VK_FORMAT_UNDEFINED;
-    case GFX_TEXTURE_FORMAT_R8_UNORM:
-        return VK_FORMAT_R8_UNORM;
-    case GFX_TEXTURE_FORMAT_R8G8_UNORM:
-        return VK_FORMAT_R8G8_UNORM;
-    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM:
-        return VK_FORMAT_R8G8B8A8_UNORM;
-    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB:
-        return VK_FORMAT_R8G8B8A8_SRGB;
-    case GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM:
-        return VK_FORMAT_B8G8R8A8_UNORM;
-    case GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB:
-        return VK_FORMAT_B8G8R8A8_SRGB;
-    case GFX_TEXTURE_FORMAT_R16_FLOAT:
-        return VK_FORMAT_R16_SFLOAT;
-    case GFX_TEXTURE_FORMAT_R16G16_FLOAT:
-        return VK_FORMAT_R16G16_SFLOAT;
-    case GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT:
-        return VK_FORMAT_R16G16B16A16_SFLOAT;
-    case GFX_TEXTURE_FORMAT_R32_FLOAT:
-        return VK_FORMAT_R32_SFLOAT;
-    case GFX_TEXTURE_FORMAT_R32G32_FLOAT:
-        return VK_FORMAT_R32G32_SFLOAT;
-    case GFX_TEXTURE_FORMAT_R32G32B32_FLOAT:
-        return VK_FORMAT_R32G32B32_SFLOAT;
-    case GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT:
-        return VK_FORMAT_R32G32B32A32_SFLOAT;
-    case GFX_TEXTURE_FORMAT_DEPTH16_UNORM:
-        return VK_FORMAT_D16_UNORM;
-    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS:
-        return VK_FORMAT_D24_UNORM_S8_UINT;
-    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT:
-        return VK_FORMAT_D32_SFLOAT;
-    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8:
-        return VK_FORMAT_D24_UNORM_S8_UINT;
-    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8:
-        return VK_FORMAT_D32_SFLOAT_S8_UINT;
-    default:
-        return VK_FORMAT_UNDEFINED;
-    }
-}
-
-bool isDepthFormat(VkFormat format)
-{
-    return format == VK_FORMAT_D32_SFLOAT || format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D16_UNORM;
-}
-
-VkAttachmentLoadOp gfxLoadOpToVkLoadOp(GfxLoadOp loadOp)
-{
-    switch (loadOp) {
-    case GFX_LOAD_OP_LOAD:
-        return VK_ATTACHMENT_LOAD_OP_LOAD;
-    case GFX_LOAD_OP_CLEAR:
-        return VK_ATTACHMENT_LOAD_OP_CLEAR;
-    case GFX_LOAD_OP_DONT_CARE:
-        return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    default:
-        return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    }
-}
-
-VkAttachmentStoreOp gfxStoreOpToVkStoreOp(GfxStoreOp storeOp)
-{
-    switch (storeOp) {
-    case GFX_STORE_OP_STORE:
-        return VK_ATTACHMENT_STORE_OP_STORE;
-    case GFX_STORE_OP_DONT_CARE:
-        return VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    default:
-        return VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    }
-}
-
-GfxTextureFormat vkFormatToGfxFormat(VkFormat format)
-{
-    switch (format) {
-    case VK_FORMAT_R8_UNORM:
-        return GFX_TEXTURE_FORMAT_R8_UNORM;
-    case VK_FORMAT_R8G8_UNORM:
-        return GFX_TEXTURE_FORMAT_R8G8_UNORM;
-    case VK_FORMAT_R8G8B8A8_UNORM:
-        return GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
-    case VK_FORMAT_R8G8B8A8_SRGB:
-        return GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB;
-    case VK_FORMAT_B8G8R8A8_UNORM:
-        return GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
-    case VK_FORMAT_B8G8R8A8_SRGB:
-        return GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB;
-    case VK_FORMAT_R16_SFLOAT:
-        return GFX_TEXTURE_FORMAT_R16_FLOAT;
-    case VK_FORMAT_R16G16_SFLOAT:
-        return GFX_TEXTURE_FORMAT_R16G16_FLOAT;
-    case VK_FORMAT_R16G16B16A16_SFLOAT:
-        return GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT;
-    case VK_FORMAT_R32_SFLOAT:
-        return GFX_TEXTURE_FORMAT_R32_FLOAT;
-    case VK_FORMAT_R32G32_SFLOAT:
-        return GFX_TEXTURE_FORMAT_R32G32_FLOAT;
-    case VK_FORMAT_R32G32B32_SFLOAT:
-        return GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
-    case VK_FORMAT_R32G32B32A32_SFLOAT:
-        return GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT;
-    case VK_FORMAT_D16_UNORM:
-        return GFX_TEXTURE_FORMAT_DEPTH16_UNORM;
-    case VK_FORMAT_D24_UNORM_S8_UINT:
-        return GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8;
-    case VK_FORMAT_D32_SFLOAT:
-        return GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
-    case VK_FORMAT_D32_SFLOAT_S8_UINT:
-        return GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8;
-    default:
-        return GFX_TEXTURE_FORMAT_UNDEFINED;
-    }
-}
-
-GfxPresentMode vkPresentModeToGfxPresentMode(VkPresentModeKHR mode)
-{
-    switch (mode) {
-    case VK_PRESENT_MODE_IMMEDIATE_KHR:
-        return GFX_PRESENT_MODE_IMMEDIATE;
-    case VK_PRESENT_MODE_MAILBOX_KHR:
-        return GFX_PRESENT_MODE_MAILBOX;
-    case VK_PRESENT_MODE_FIFO_KHR:
-        return GFX_PRESENT_MODE_FIFO;
-    case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
-        return GFX_PRESENT_MODE_FIFO_RELAXED;
-    default:
-        return GFX_PRESENT_MODE_FIFO; // Safe default
-    }
-}
-
-VkPresentModeKHR gfxPresentModeToVkPresentMode(GfxPresentMode mode)
-{
-    switch (mode) {
-    case GFX_PRESENT_MODE_IMMEDIATE:
-        return VK_PRESENT_MODE_IMMEDIATE_KHR;
-    case GFX_PRESENT_MODE_MAILBOX:
-        return VK_PRESENT_MODE_MAILBOX_KHR;
-    case GFX_PRESENT_MODE_FIFO:
-        return VK_PRESENT_MODE_FIFO_KHR;
-    case GFX_PRESENT_MODE_FIFO_RELAXED:
-        return VK_PRESENT_MODE_FIFO_RELAXED_KHR;
-    default:
-        return VK_PRESENT_MODE_FIFO_KHR; // Safe default
-    }
-}
-
-bool hasStencilComponent(VkFormat format)
-{
-    return format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D32_SFLOAT_S8_UINT;
-}
-
-VkImageAspectFlags getImageAspectMask(VkFormat format)
-{
-    if (isDepthFormat(format)) {
-        VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-        if (hasStencilComponent(format)) {
-            aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-        return aspectMask;
-    }
-    return VK_IMAGE_ASPECT_COLOR_BIT;
-}
-
-VkImageLayout gfxLayoutToVkImageLayout(GfxTextureLayout layout)
-{
-    switch (layout) {
-    case GFX_TEXTURE_LAYOUT_UNDEFINED:
-        return VK_IMAGE_LAYOUT_UNDEFINED;
-    case GFX_TEXTURE_LAYOUT_GENERAL:
-        return VK_IMAGE_LAYOUT_GENERAL;
-    case GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT:
-        return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    case GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT:
-        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    case GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_READ_ONLY:
-        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    case GFX_TEXTURE_LAYOUT_SHADER_READ_ONLY:
-        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    case GFX_TEXTURE_LAYOUT_TRANSFER_SRC:
-        return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    case GFX_TEXTURE_LAYOUT_TRANSFER_DST:
-        return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    case GFX_TEXTURE_LAYOUT_PRESENT_SRC:
-        return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    default:
-        return VK_IMAGE_LAYOUT_UNDEFINED;
-    }
-}
-
-VkImageType gfxTextureTypeToVkImageType(GfxTextureType type)
-{
-    switch (type) {
-    case GFX_TEXTURE_TYPE_1D:
-        return VK_IMAGE_TYPE_1D;
-    case GFX_TEXTURE_TYPE_2D:
-    case GFX_TEXTURE_TYPE_CUBE:
-        return VK_IMAGE_TYPE_2D;
-    case GFX_TEXTURE_TYPE_3D:
-        return VK_IMAGE_TYPE_3D;
-    default:
-        return VK_IMAGE_TYPE_2D;
-    }
-}
-
-VkImageViewType gfxTextureViewTypeToVkImageViewType(GfxTextureViewType type)
-{
-    switch (type) {
-    case GFX_TEXTURE_VIEW_TYPE_1D:
-        return VK_IMAGE_VIEW_TYPE_1D;
-    case GFX_TEXTURE_VIEW_TYPE_2D:
-        return VK_IMAGE_VIEW_TYPE_2D;
-    case GFX_TEXTURE_VIEW_TYPE_3D:
-        return VK_IMAGE_VIEW_TYPE_3D;
-    case GFX_TEXTURE_VIEW_TYPE_CUBE:
-        return VK_IMAGE_VIEW_TYPE_CUBE;
-    case GFX_TEXTURE_VIEW_TYPE_1D_ARRAY:
-        return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
-    case GFX_TEXTURE_VIEW_TYPE_2D_ARRAY:
-        return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-    case GFX_TEXTURE_VIEW_TYPE_CUBE_ARRAY:
-        return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
-    default:
-        return VK_IMAGE_VIEW_TYPE_2D;
-    }
-}
-
-VkSampleCountFlagBits sampleCountToVkSampleCount(GfxSampleCount sampleCount)
-{
-    switch (sampleCount) {
-    case GFX_SAMPLE_COUNT_1:
-        return VK_SAMPLE_COUNT_1_BIT;
-    case GFX_SAMPLE_COUNT_2:
-        return VK_SAMPLE_COUNT_2_BIT;
-    case GFX_SAMPLE_COUNT_4:
-        return VK_SAMPLE_COUNT_4_BIT;
-    case GFX_SAMPLE_COUNT_8:
-        return VK_SAMPLE_COUNT_8_BIT;
-    case GFX_SAMPLE_COUNT_16:
-        return VK_SAMPLE_COUNT_16_BIT;
-    case GFX_SAMPLE_COUNT_32:
-        return VK_SAMPLE_COUNT_32_BIT;
-    case GFX_SAMPLE_COUNT_64:
-        return VK_SAMPLE_COUNT_64_BIT;
-    default:
-        return VK_SAMPLE_COUNT_1_BIT;
-    }
-}
-
-VkCullModeFlags gfxCullModeToVkCullMode(GfxCullMode cullMode)
-{
-    switch (cullMode) {
-    case GFX_CULL_MODE_NONE:
-        return VK_CULL_MODE_NONE;
-    case GFX_CULL_MODE_FRONT:
-        return VK_CULL_MODE_FRONT_BIT;
-    case GFX_CULL_MODE_BACK:
-        return VK_CULL_MODE_BACK_BIT;
-    case GFX_CULL_MODE_FRONT_AND_BACK:
-        return VK_CULL_MODE_FRONT_BIT | VK_CULL_MODE_BACK_BIT;
-    default:
-        return VK_CULL_MODE_NONE;
-    }
-}
-
-VkFrontFace gfxFrontFaceToVkFrontFace(GfxFrontFace frontFace)
-{
-    switch (frontFace) {
-    case GFX_FRONT_FACE_COUNTER_CLOCKWISE:
-        return VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    case GFX_FRONT_FACE_CLOCKWISE:
-        return VK_FRONT_FACE_CLOCKWISE;
-    default:
-        return VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    }
-}
-
-VkPolygonMode gfxPolygonModeToVkPolygonMode(GfxPolygonMode polygonMode)
-{
-    switch (polygonMode) {
-    case GFX_POLYGON_MODE_FILL:
-        return VK_POLYGON_MODE_FILL;
-    case GFX_POLYGON_MODE_LINE:
-        return VK_POLYGON_MODE_LINE;
-    case GFX_POLYGON_MODE_POINT:
-        return VK_POLYGON_MODE_POINT;
-    default:
-        return VK_POLYGON_MODE_FILL;
-    }
-}
-
-const char* vkResultToString(VkResult result)
-{
-    switch (result) {
-    case VK_SUCCESS:
-        return "VK_SUCCESS";
-    case VK_NOT_READY:
-        return "VK_NOT_READY";
-    case VK_TIMEOUT:
-        return "VK_TIMEOUT";
-    case VK_EVENT_SET:
-        return "VK_EVENT_SET";
-    case VK_EVENT_RESET:
-        return "VK_EVENT_RESET";
-    case VK_INCOMPLETE:
-        return "VK_INCOMPLETE";
-    case VK_ERROR_OUT_OF_HOST_MEMORY:
-        return "VK_ERROR_OUT_OF_HOST_MEMORY";
-    case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-        return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
-    case VK_ERROR_INITIALIZATION_FAILED:
-        return "VK_ERROR_INITIALIZATION_FAILED";
-    case VK_ERROR_DEVICE_LOST:
-        return "VK_ERROR_DEVICE_LOST";
-    case VK_ERROR_MEMORY_MAP_FAILED:
-        return "VK_ERROR_MEMORY_MAP_FAILED";
-    case VK_ERROR_LAYER_NOT_PRESENT:
-        return "VK_ERROR_LAYER_NOT_PRESENT";
-    case VK_ERROR_EXTENSION_NOT_PRESENT:
-        return "VK_ERROR_EXTENSION_NOT_PRESENT";
-    case VK_ERROR_FEATURE_NOT_PRESENT:
-        return "VK_ERROR_FEATURE_NOT_PRESENT";
-    case VK_ERROR_INCOMPATIBLE_DRIVER:
-        return "VK_ERROR_INCOMPATIBLE_DRIVER";
-    case VK_ERROR_TOO_MANY_OBJECTS:
-        return "VK_ERROR_TOO_MANY_OBJECTS";
-    case VK_ERROR_FORMAT_NOT_SUPPORTED:
-        return "VK_ERROR_FORMAT_NOT_SUPPORTED";
-    case VK_ERROR_FRAGMENTED_POOL:
-        return "VK_ERROR_FRAGMENTED_POOL";
-    case VK_ERROR_SURFACE_LOST_KHR:
-        return "VK_ERROR_SURFACE_LOST_KHR";
-    case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:
-        return "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
-    case VK_SUBOPTIMAL_KHR:
-        return "VK_SUBOPTIMAL_KHR";
-    case VK_ERROR_OUT_OF_DATE_KHR:
-        return "VK_ERROR_OUT_OF_DATE_KHR";
-    case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:
-        return "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR";
-    case VK_ERROR_VALIDATION_FAILED_EXT:
-        return "VK_ERROR_VALIDATION_FAILED_EXT";
-    case VK_ERROR_INVALID_SHADER_NV:
-        return "VK_ERROR_INVALID_SHADER_NV";
-    case VK_ERROR_OUT_OF_POOL_MEMORY:
-        return "VK_ERROR_OUT_OF_POOL_MEMORY";
-    case VK_ERROR_INVALID_EXTERNAL_HANDLE:
-        return "VK_ERROR_INVALID_EXTERNAL_HANDLE";
-    case VK_ERROR_FRAGMENTATION:
-        return "VK_ERROR_FRAGMENTATION";
-    case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS:
-        return "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS";
-    default:
-        return "VK_UNKNOWN_ERROR";
-    }
-}
-
-} // namespace
 
 // ============================================================================
 // Forward Declarations
@@ -503,7 +136,7 @@ public:
 
         VkResult result = vkCreateInstance(&createInfo, nullptr, &m_instance);
         if (result != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create Vulkan instance: " + std::string(vkResultToString(result)));
+            throw std::runtime_error("Failed to create Vulkan instance: " + std::string(gfx::convertor::vkResultToString(result)));
         }
 
         // Setup debug messenger if validation enabled
@@ -911,7 +544,7 @@ public:
         vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
 
         // Try to find the requested format
-        VkFormat requestedFormat = gfxFormatToVkFormat(descriptor->format);
+        VkFormat requestedFormat = gfx::convertor::gfxFormatToVkFormat(descriptor->format);
         VkSurfaceFormatKHR surfaceFormat = formats[0]; // Default to first available
 
         for (const auto& availableFormat : formats) {
@@ -930,7 +563,7 @@ public:
         vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
 
         // Try to find the requested present mode
-        VkPresentModeKHR requestedPresentMode = gfxPresentModeToVkPresentMode(descriptor->presentMode);
+        VkPresentModeKHR requestedPresentMode = gfx::convertor::gfxPresentModeToVkPresentMode(descriptor->presentMode);
         VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR; // Default to FIFO (always supported)
 
         for (const auto& availableMode : presentModes) {
@@ -997,7 +630,7 @@ public:
             GfxTextureDescriptor textureDesc{};
             textureDesc.type = GFX_TEXTURE_TYPE_2D;
             textureDesc.size = { m_width, m_height, 1 };
-            textureDesc.format = vkFormatToGfxFormat(m_format);
+            textureDesc.format = gfx::convertor::vkFormatToGfxFormat(m_format);
             textureDesc.mipLevelCount = 1;
             textureDesc.arrayLayerCount = 1;
             textureDesc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -1212,7 +845,7 @@ public:
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = gfxTextureTypeToVkImageType(descriptor->type);
+        imageInfo.imageType = gfx::convertor::gfxTextureTypeToVkImageType(descriptor->type);
         imageInfo.extent.width = descriptor->size.width;
         imageInfo.extent.height = descriptor->size.height;
         imageInfo.extent.depth = descriptor->size.depth;
@@ -1227,7 +860,7 @@ public:
                 imageInfo.arrayLayers = 6;
             }
         }
-        imageInfo.format = gfxFormatToVkFormat(descriptor->format);
+        imageInfo.format = gfx::convertor::gfxFormatToVkFormat(descriptor->format);
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Always create in UNDEFINED, transition explicitly
 
@@ -1248,7 +881,7 @@ public:
         if (descriptor->usage & GFX_TEXTURE_USAGE_RENDER_ATTACHMENT) {
             // Check if this is a depth/stencil format
             VkFormat format = imageInfo.format;
-            if (isDepthFormat(format)) {
+            if (gfx::convertor::isDepthFormat(format)) {
                 usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             } else {
                 usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -1257,7 +890,7 @@ public:
         imageInfo.usage = usage;
 
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imageInfo.samples = sampleCountToVkSampleCount(descriptor->sampleCount);
+        imageInfo.samples = gfx::convertor::sampleCountToVkSampleCount(descriptor->sampleCount);
 
         VkResult result = vkCreateImage(m_device, &imageInfo, nullptr, &m_image);
         if (result != VK_SUCCESS) {
@@ -1352,21 +985,21 @@ public:
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = texture->handle();
-        viewInfo.viewType = gfxTextureViewTypeToVkImageViewType(descriptor->viewType);
+        viewInfo.viewType = gfx::convertor::gfxTextureViewTypeToVkImageViewType(descriptor->viewType);
         // Use texture's format if not explicitly specified in descriptor
         m_format = (descriptor->format == GFX_TEXTURE_FORMAT_UNDEFINED)
             ? texture->getFormat()
             : descriptor->format;
-        viewInfo.format = gfxFormatToVkFormat(m_format);
+        viewInfo.format = gfx::convertor::gfxFormatToVkFormat(m_format);
         viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
         // Set aspect mask based on format
-        if (isDepthFormat(viewInfo.format)) {
+        if (gfx::convertor::isDepthFormat(viewInfo.format)) {
             viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            if (hasStencilComponent(viewInfo.format)) {
+            if (gfx::convertor::hasStencilComponent(viewInfo.format)) {
                 viewInfo.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
             }
         } else {
@@ -1393,7 +1026,7 @@ public:
 
     VkImageView handle() const { return m_imageView; }
     Texture* getTexture() const { return m_texture; }
-    VkFormat getFormat() const { return gfxFormatToVkFormat(m_format); }
+    VkFormat getFormat() const { return gfx::convertor::gfxFormatToVkFormat(m_format); }
 
 private:
     VkDevice m_device = VK_NULL_HANDLE;
@@ -1716,13 +1349,13 @@ public:
                 attribute.binding = i;
                 attribute.location = attr.shaderLocation;
                 attribute.offset = static_cast<uint32_t>(attr.offset);
-                attribute.format = gfxFormatToVkFormat(attr.format);
+                attribute.format = gfx::convertor::gfxFormatToVkFormat(attr.format);
 
                 attributes.push_back(attribute);
             }
         }
 
-        VkSampleCountFlagBits vkSampleCount = sampleCountToVkSampleCount(descriptor->sampleCount);
+        VkSampleCountFlagBits vkSampleCount = gfx::convertor::sampleCountToVkSampleCount(descriptor->sampleCount);
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -1760,10 +1393,10 @@ public:
         // Rasterizer
         VkPipelineRasterizationStateCreateInfo rasterizer{};
         rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizer.polygonMode = gfxPolygonModeToVkPolygonMode(descriptor->primitive->polygonMode);
+        rasterizer.polygonMode = gfx::convertor::gfxPolygonModeToVkPolygonMode(descriptor->primitive->polygonMode);
         rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = gfxCullModeToVkCullMode(descriptor->primitive->cullMode);
-        rasterizer.frontFace = gfxFrontFaceToVkFrontFace(descriptor->primitive->frontFace);
+        rasterizer.cullMode = gfx::convertor::gfxCullModeToVkCullMode(descriptor->primitive->cullMode);
+        rasterizer.frontFace = gfx::convertor::gfxFrontFaceToVkFrontFace(descriptor->primitive->frontFace);
 
         // Multisampling
         VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -1857,7 +1490,7 @@ public:
         uint32_t targetCount = descriptor->fragment->targetCount;
 
         for (uint32_t i = 0; i < targetCount; ++i) {
-            VkFormat targetFormat = gfxFormatToVkFormat(descriptor->fragment->targets[i].format);
+            VkFormat targetFormat = gfx::convertor::gfxFormatToVkFormat(descriptor->fragment->targets[i].format);
 
             // Create color attachment at pipeline sample count
             VkAttachmentDescription colorAttachment{};
@@ -1897,7 +1530,7 @@ public:
         VkAttachmentReference depthAttachmentRef{};
         if (descriptor->depthStencil) {
             VkAttachmentDescription depthAttachment{};
-            depthAttachment.format = gfxFormatToVkFormat(descriptor->depthStencil->format);
+            depthAttachment.format = gfx::convertor::gfxFormatToVkFormat(descriptor->depthStencil->format);
             depthAttachment.samples = vkSampleCount;
             depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -2823,7 +2456,7 @@ uint32_t VulkanBackend::surfaceGetSupportedFormats(GfxSurface surface, GfxTextur
     if (formats && maxFormats > 0) {
         uint32_t copyCount = std::min(formatCount, maxFormats);
         for (uint32_t i = 0; i < copyCount; ++i) {
-            formats[i] = vkFormatToGfxFormat(surfaceFormats[i].format);
+            formats[i] = gfx::convertor::vkFormatToGfxFormat(surfaceFormats[i].format);
         }
     }
 
@@ -2853,7 +2486,7 @@ uint32_t VulkanBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxP
     if (presentModes && maxModes > 0) {
         uint32_t copyCount = std::min(modeCount, maxModes);
         for (uint32_t i = 0; i < copyCount; ++i) {
-            presentModes[i] = vkPresentModeToGfxPresentMode(vkPresentModes[i]);
+            presentModes[i] = gfx::convertor::vkPresentModeToGfxPresentMode(vkPresentModes[i]);
         }
     }
 
@@ -2899,7 +2532,7 @@ GfxTextureFormat VulkanBackend::swapchainGetFormat(GfxSwapchain swapchain) const
         return GFX_TEXTURE_FORMAT_UNDEFINED;
     }
     auto* sc = reinterpret_cast<gfx::vulkan::Swapchain*>(swapchain);
-    return vkFormatToGfxFormat(sc->getFormat());
+    return gfx::convertor::vkFormatToGfxFormat(sc->getFormat());
 }
 
 uint32_t VulkanBackend::swapchainGetBufferCount(GfxSwapchain swapchain) const
@@ -3384,12 +3017,12 @@ void VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
     // Transition image to transfer dst optimal
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = gfxLayoutToVkImageLayout(tex->getLayout());
+    barrier.oldLayout = gfx::convertor::gfxLayoutToVkImageLayout(tex->getLayout());
     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = tex->handle();
-    barrier.subresourceRange.aspectMask = getImageAspectMask(gfxFormatToVkFormat(tex->getFormat()));
+    barrier.subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(tex->getFormat()));
     barrier.subresourceRange.baseMipLevel = mipLevel;
     barrier.subresourceRange.levelCount = 1;
     barrier.subresourceRange.baseArrayLayer = 0;
@@ -3405,7 +3038,7 @@ void VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
     region.bufferOffset = 0;
     region.bufferRowLength = 0; // Tightly packed
     region.bufferImageHeight = 0;
-    region.imageSubresource.aspectMask = getImageAspectMask(gfxFormatToVkFormat(tex->getFormat()));
+    region.imageSubresource.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(tex->getFormat()));
     region.imageSubresource.mipLevel = mipLevel;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
@@ -3419,7 +3052,7 @@ void VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
 
     // Transition image to final layout
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrier.newLayout = gfxLayoutToVkImageLayout(finalLayout);
+    barrier.newLayout = gfx::convertor::gfxLayoutToVkImageLayout(finalLayout);
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = static_cast<VkAccessFlags>(gfxGetAccessFlagsForLayout(finalLayout));
 
@@ -3540,7 +3173,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
         const GfxColorAttachmentTarget* target = &colorAttachments[i].target;
         auto* colorView = reinterpret_cast<gfx::vulkan::TextureView*>(target->view);
-        VkSampleCountFlagBits samples = sampleCountToVkSampleCount(colorView->getTexture()->getSampleCount());
+        VkSampleCountFlagBits samples = gfx::convertor::sampleCountToVkSampleCount(colorView->getTexture()->getSampleCount());
 
         bool isMSAA = (samples > VK_SAMPLE_COUNT_1_BIT);
 
@@ -3548,15 +3181,15 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = colorView->getFormat();
         colorAttachment.samples = samples;
-        colorAttachment.loadOp = gfxLoadOpToVkLoadOp(target->ops.loadOp);
-        colorAttachment.storeOp = gfxStoreOpToVkStoreOp(target->ops.storeOp);
+        colorAttachment.loadOp = gfx::convertor::gfxLoadOpToVkLoadOp(target->ops.loadOp);
+        colorAttachment.storeOp = gfx::convertor::gfxStoreOpToVkStoreOp(target->ops.storeOp);
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         // Use UNDEFINED if we're clearing or don't care, otherwise preserve contents with COLOR_ATTACHMENT_OPTIMAL
         colorAttachment.initialLayout = (target->ops.loadOp == GFX_LOAD_OP_LOAD)
             ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
             : VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = gfxLayoutToVkImageLayout(target->finalLayout);
+        colorAttachment.finalLayout = gfx::convertor::gfxLayoutToVkImageLayout(target->finalLayout);
         attachments.push_back(colorAttachment);
 
         VkAttachmentReference colorRef{};
@@ -3574,15 +3207,15 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
             VkAttachmentDescription resolveAttachment{};
             resolveAttachment.format = resolveView->getFormat();
             resolveAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-            resolveAttachment.loadOp = gfxLoadOpToVkLoadOp(resolveTarget->ops.loadOp);
-            resolveAttachment.storeOp = gfxStoreOpToVkStoreOp(resolveTarget->ops.storeOp);
+            resolveAttachment.loadOp = gfx::convertor::gfxLoadOpToVkLoadOp(resolveTarget->ops.loadOp);
+            resolveAttachment.storeOp = gfx::convertor::gfxStoreOpToVkStoreOp(resolveTarget->ops.storeOp);
             resolveAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             resolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             // Use UNDEFINED if we're clearing or don't care, otherwise preserve contents with COLOR_ATTACHMENT_OPTIMAL
             resolveAttachment.initialLayout = (resolveTarget->ops.loadOp == GFX_LOAD_OP_LOAD)
                 ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
                 : VK_IMAGE_LAYOUT_UNDEFINED;
-            resolveAttachment.finalLayout = gfxLayoutToVkImageLayout(resolveTarget->finalLayout);
+            resolveAttachment.finalLayout = gfx::convertor::gfxLayoutToVkImageLayout(resolveTarget->finalLayout);
             attachments.push_back(resolveAttachment);
 
             VkAttachmentReference resolveRef{};
@@ -3612,12 +3245,12 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = depthView->getFormat();
-        depthAttachment.samples = sampleCountToVkSampleCount(depthView->getTexture()->getSampleCount());
+        depthAttachment.samples = gfx::convertor::sampleCountToVkSampleCount(depthView->getTexture()->getSampleCount());
 
         // Handle depth operations (required if depth pointer is set)
         if (target->depthOps) {
-            depthAttachment.loadOp = gfxLoadOpToVkLoadOp(target->depthOps->loadOp);
-            depthAttachment.storeOp = gfxStoreOpToVkStoreOp(target->depthOps->storeOp);
+            depthAttachment.loadOp = gfx::convertor::gfxLoadOpToVkLoadOp(target->depthOps->loadOp);
+            depthAttachment.storeOp = gfx::convertor::gfxStoreOpToVkStoreOp(target->depthOps->storeOp);
         } else {
             depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -3625,8 +3258,8 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
 
         // Handle stencil operations (required if stencil pointer is set)
         if (target->stencilOps) {
-            depthAttachment.stencilLoadOp = gfxLoadOpToVkLoadOp(target->stencilOps->loadOp);
-            depthAttachment.stencilStoreOp = gfxStoreOpToVkStoreOp(target->stencilOps->storeOp);
+            depthAttachment.stencilLoadOp = gfx::convertor::gfxLoadOpToVkLoadOp(target->stencilOps->loadOp);
+            depthAttachment.stencilStoreOp = gfx::convertor::gfxStoreOpToVkStoreOp(target->stencilOps->storeOp);
         } else {
             depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -3638,7 +3271,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         depthAttachment.initialLayout = (loadDepth || loadStencil)
             ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
             : VK_IMAGE_LAYOUT_UNDEFINED;
-        depthAttachment.finalLayout = gfxLayoutToVkImageLayout(target->finalLayout);
+        depthAttachment.finalLayout = gfx::convertor::gfxLayoutToVkImageLayout(target->finalLayout);
         attachments.push_back(depthAttachment);
 
         depthRef.attachment = attachmentIndex++;
@@ -3716,7 +3349,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     for (size_t i = 0; i < attachments.size(); ++i) {
         VkClearValue clearValue{};
 
-        if (isDepthFormat(attachments[i].format)) {
+        if (gfx::convertor::isDepthFormat(attachments[i].format)) {
             // Depth/stencil attachment
             float depthClear = (depthStencilAttachment->target.depthOps) ? depthStencilAttachment->target.depthOps->clearValue : 1.0f;
             uint32_t stencilClear = (depthStencilAttachment->target.stencilOps) ? depthStencilAttachment->target.stencilOps->clearValue : 0;
@@ -3814,12 +3447,12 @@ void VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandE
     // Transition image layout to transfer dst optimal
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = gfxLayoutToVkImageLayout(dstTex->getLayout());
+    barrier.oldLayout = gfx::convertor::gfxLayoutToVkImageLayout(dstTex->getLayout());
     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = dstTex->handle();
-    barrier.subresourceRange.aspectMask = getImageAspectMask(gfxFormatToVkFormat(dstTex->getFormat()));
+    barrier.subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(dstTex->getFormat()));
     barrier.subresourceRange.baseMipLevel = mipLevel;
     barrier.subresourceRange.levelCount = 1;
     barrier.subresourceRange.baseArrayLayer = 0;
@@ -3835,7 +3468,7 @@ void VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandE
     region.bufferOffset = sourceOffset;
     region.bufferRowLength = 0; // Tightly packed
     region.bufferImageHeight = 0; // Tightly packed
-    region.imageSubresource.aspectMask = getImageAspectMask(gfxFormatToVkFormat(dstTex->getFormat()));
+    region.imageSubresource.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(dstTex->getFormat()));
     region.imageSubresource.mipLevel = mipLevel;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
@@ -3847,7 +3480,7 @@ void VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandE
 
     // Transition image layout to final layout
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrier.newLayout = gfxLayoutToVkImageLayout(finalLayout);
+    barrier.newLayout = gfx::convertor::gfxLayoutToVkImageLayout(finalLayout);
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = static_cast<VkAccessFlags>(gfxGetAccessFlagsForLayout(finalLayout));
 
@@ -3878,12 +3511,12 @@ void VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandE
     // Transition image layout to transfer src optimal
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = gfxLayoutToVkImageLayout(srcTex->getLayout());
+    barrier.oldLayout = gfx::convertor::gfxLayoutToVkImageLayout(srcTex->getLayout());
     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = srcTex->handle();
-    barrier.subresourceRange.aspectMask = getImageAspectMask(gfxFormatToVkFormat(srcTex->getFormat()));
+    barrier.subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(srcTex->getFormat()));
     barrier.subresourceRange.baseMipLevel = mipLevel;
     barrier.subresourceRange.levelCount = 1;
     barrier.subresourceRange.baseArrayLayer = 0;
@@ -3899,7 +3532,7 @@ void VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandE
     region.bufferOffset = destinationOffset;
     region.bufferRowLength = 0; // Tightly packed
     region.bufferImageHeight = 0; // Tightly packed
-    region.imageSubresource.aspectMask = getImageAspectMask(gfxFormatToVkFormat(srcTex->getFormat()));
+    region.imageSubresource.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(srcTex->getFormat()));
     region.imageSubresource.mipLevel = mipLevel;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
@@ -3911,7 +3544,7 @@ void VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandE
 
     // Transition image layout to final layout
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    barrier.newLayout = gfxLayoutToVkImageLayout(finalLayout);
+    barrier.newLayout = gfx::convertor::gfxLayoutToVkImageLayout(finalLayout);
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
     barrier.dstAccessMask = static_cast<VkAccessFlags>(gfxGetAccessFlagsForLayout(finalLayout));
 
@@ -3959,12 +3592,12 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
     // Transition source image to transfer src optimal
     VkImageMemoryBarrier barriers[2] = {};
     barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barriers[0].oldLayout = gfxLayoutToVkImageLayout(srcTex->getLayout());
+    barriers[0].oldLayout = gfx::convertor::gfxLayoutToVkImageLayout(srcTex->getLayout());
     barriers[0].newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barriers[0].image = srcTex->handle();
-    barriers[0].subresourceRange.aspectMask = getImageAspectMask(gfxFormatToVkFormat(srcTex->getFormat()));
+    barriers[0].subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(srcTex->getFormat()));
     barriers[0].subresourceRange.baseMipLevel = sourceMipLevel;
     barriers[0].subresourceRange.levelCount = 1;
     barriers[0].subresourceRange.baseArrayLayer = sourceOrigin->z;
@@ -3974,12 +3607,12 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
 
     // Transition destination image to transfer dst optimal
     barriers[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barriers[1].oldLayout = gfxLayoutToVkImageLayout(dstTex->getLayout());
+    barriers[1].oldLayout = gfx::convertor::gfxLayoutToVkImageLayout(dstTex->getLayout());
     barriers[1].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barriers[1].image = dstTex->handle();
-    barriers[1].subresourceRange.aspectMask = getImageAspectMask(gfxFormatToVkFormat(dstTex->getFormat()));
+    barriers[1].subresourceRange.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(dstTex->getFormat()));
     barriers[1].subresourceRange.baseMipLevel = destinationMipLevel;
     barriers[1].subresourceRange.levelCount = 1;
     barriers[1].subresourceRange.baseArrayLayer = destinationOrigin->z;
@@ -3993,12 +3626,12 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
 
     // Copy image to image
     VkImageCopy region{};
-    region.srcSubresource.aspectMask = getImageAspectMask(gfxFormatToVkFormat(srcTex->getFormat()));
+    region.srcSubresource.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(srcTex->getFormat()));
     region.srcSubresource.mipLevel = sourceMipLevel;
     region.srcSubresource.baseArrayLayer = is3DTexture ? 0 : sourceOrigin->z;
     region.srcSubresource.layerCount = layerCount;
     region.srcOffset = { sourceOrigin->x, sourceOrigin->y, is3DTexture ? sourceOrigin->z : 0 };
-    region.dstSubresource.aspectMask = getImageAspectMask(gfxFormatToVkFormat(dstTex->getFormat()));
+    region.dstSubresource.aspectMask = gfx::convertor::getImageAspectMask(gfx::convertor::gfxFormatToVkFormat(dstTex->getFormat()));
     region.dstSubresource.mipLevel = destinationMipLevel;
     region.dstSubresource.baseArrayLayer = is3DTexture ? 0 : destinationOrigin->z;
     region.dstSubresource.layerCount = layerCount;
@@ -4010,12 +3643,12 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
 
     // Transition images to final layouts
     barriers[0].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    barriers[0].newLayout = gfxLayoutToVkImageLayout(srcFinalLayout);
+    barriers[0].newLayout = gfx::convertor::gfxLayoutToVkImageLayout(srcFinalLayout);
     barriers[0].srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
     barriers[0].dstAccessMask = static_cast<VkAccessFlags>(gfxGetAccessFlagsForLayout(srcFinalLayout));
 
     barriers[1].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barriers[1].newLayout = gfxLayoutToVkImageLayout(dstFinalLayout);
+    barriers[1].newLayout = gfx::convertor::gfxLayoutToVkImageLayout(dstFinalLayout);
     barriers[1].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barriers[1].dstAccessMask = static_cast<VkAccessFlags>(gfxGetAccessFlagsForLayout(dstFinalLayout));
 
@@ -4101,10 +3734,10 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
         vkBarrier.image = texture->handle();
 
         // Determine aspect mask based on texture format
-        VkFormat format = gfxFormatToVkFormat(texture->getFormat());
-        if (isDepthFormat(format)) {
+        VkFormat format = gfx::convertor::gfxFormatToVkFormat(texture->getFormat());
+        if (gfx::convertor::isDepthFormat(format)) {
             vkBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            if (hasStencilComponent(format)) {
+            if (gfx::convertor::hasStencilComponent(format)) {
                 vkBarrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
             }
         } else {
@@ -4117,8 +3750,8 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
         vkBarrier.subresourceRange.layerCount = barrier.arrayLayerCount;
 
         // Convert layouts
-        vkBarrier.oldLayout = gfxLayoutToVkImageLayout(barrier.oldLayout);
-        vkBarrier.newLayout = gfxLayoutToVkImageLayout(barrier.newLayout);
+        vkBarrier.oldLayout = gfx::convertor::gfxLayoutToVkImageLayout(barrier.oldLayout);
+        vkBarrier.newLayout = gfx::convertor::gfxLayoutToVkImageLayout(barrier.newLayout);
 
         // Convert access masks
         vkBarrier.srcAccessMask = static_cast<VkAccessFlags>(barrier.srcAccessMask);
