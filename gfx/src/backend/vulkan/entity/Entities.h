@@ -561,6 +561,34 @@ public:
     VkPhysicalDevice physicalDevice() const { return m_physicalDevice; }
     VkSurfaceKHR handle() const { return m_surface; }
 
+    std::vector<VkSurfaceFormatKHR> getSupportedFormats() const
+    {
+        uint32_t formatCount = 0;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount, nullptr);
+
+        if (formatCount == 0) {
+            return {};
+        }
+
+        std::vector<VkSurfaceFormatKHR> formats(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount, formats.data());
+        return formats;
+    }
+
+    std::vector<VkPresentModeKHR> getSupportedPresentModes() const
+    {
+        uint32_t modeCount = 0;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(m_physicalDevice, m_surface, &modeCount, nullptr);
+
+        if (modeCount == 0) {
+            return {};
+        }
+
+        std::vector<VkPresentModeKHR> presentModes(modeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(m_physicalDevice, m_surface, &modeCount, presentModes.data());
+        return presentModes;
+    }
+
 private:
     VkInstance m_instance = VK_NULL_HANDLE;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;

@@ -470,27 +470,17 @@ uint32_t VulkanBackend::surfaceGetSupportedFormats(GfxSurface surface, GfxTextur
     }
 
     auto* surf = reinterpret_cast<gfx::vulkan::Surface*>(surface);
-
-    // Query supported surface formats from Vulkan
-    uint32_t formatCount = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(surf->physicalDevice(), surf->handle(), &formatCount, nullptr);
-
-    if (formatCount == 0) {
-        return 0;
-    }
-
-    std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(surf->physicalDevice(), surf->handle(), &formatCount, surfaceFormats.data());
+    auto surfaceFormats = surf->getSupportedFormats();
 
     // Convert to GfxTextureFormat
     if (formats && maxFormats > 0) {
-        uint32_t copyCount = std::min(formatCount, maxFormats);
+        uint32_t copyCount = std::min(static_cast<uint32_t>(surfaceFormats.size()), maxFormats);
         for (uint32_t i = 0; i < copyCount; ++i) {
             formats[i] = gfx::convertor::vkFormatToGfxFormat(surfaceFormats[i].format);
         }
     }
 
-    return formatCount;
+    return static_cast<uint32_t>(surfaceFormats.size());
 }
 
 uint32_t VulkanBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes) const
@@ -500,27 +490,17 @@ uint32_t VulkanBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxP
     }
 
     auto* surf = reinterpret_cast<gfx::vulkan::Surface*>(surface);
-
-    // Query supported present modes from Vulkan
-    uint32_t modeCount = 0;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(surf->physicalDevice(), surf->handle(), &modeCount, nullptr);
-
-    if (modeCount == 0) {
-        return 0;
-    }
-
-    std::vector<VkPresentModeKHR> vkPresentModes(modeCount);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(surf->physicalDevice(), surf->handle(), &modeCount, vkPresentModes.data());
+    auto vkPresentModes = surf->getSupportedPresentModes();
 
     // Convert to GfxPresentMode
     if (presentModes && maxModes > 0) {
-        uint32_t copyCount = std::min(modeCount, maxModes);
+        uint32_t copyCount = std::min(static_cast<uint32_t>(vkPresentModes.size()), maxModes);
         for (uint32_t i = 0; i < copyCount; ++i) {
             presentModes[i] = gfx::convertor::vkPresentModeToGfxPresentMode(vkPresentModes[i]);
         }
     }
 
-    return modeCount;
+    return static_cast<uint32_t>(vkPresentModes.size());
 }
 
 // Swapchain functions
