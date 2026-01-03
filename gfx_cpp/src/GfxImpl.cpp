@@ -172,7 +172,12 @@ static GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& wi
     case WindowingSystem::Android:
         cHandle.android.window = windowHandle.handle.android.window;
         break;
+    case WindowingSystem::Unknown:
+    default:
+        // Unknown platform - leave handles null
+        break;
     }
+
     return cHandle;
 }
 
