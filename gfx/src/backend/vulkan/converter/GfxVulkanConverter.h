@@ -14,6 +14,7 @@ struct TextureCreateInfo;
 struct TextureViewCreateInfo;
 struct SamplerCreateInfo;
 struct InstanceCreateInfo;
+struct AdapterCreateInfo;
 struct DeviceCreateInfo;
 struct SurfaceCreateInfo;
 struct SwapchainCreateInfo;
@@ -81,6 +82,7 @@ gfx::vulkan::TextureCreateInfo gfxDescriptorToTextureCreateInfo(const GfxTexture
 gfx::vulkan::TextureViewCreateInfo gfxDescriptorToTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor);
 gfx::vulkan::SamplerCreateInfo gfxDescriptorToSamplerCreateInfo(const GfxSamplerDescriptor* descriptor);
 gfx::vulkan::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInstanceDescriptor* descriptor);
+gfx::vulkan::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescriptor* descriptor);
 gfx::vulkan::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDescriptor* descriptor);
 gfx::vulkan::SurfaceCreateInfo gfxDescriptorToSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor);
 gfx::vulkan::SwapchainCreateInfo gfxDescriptorToSwapchainCreateInfo(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, uint32_t queueFamily, const GfxSwapchainDescriptor* descriptor);

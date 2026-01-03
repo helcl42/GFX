@@ -110,46 +110,8 @@ GfxResult VulkanBackend::instanceRequestAdapter(GfxInstance instance, const GfxA
     auto* inst = reinterpret_cast<gfx::vulkan::Instance*>(instance);
 
     try {
-        uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(inst->handle(), &deviceCount, nullptr);
-
-        if (deviceCount == 0) {
-            return GFX_RESULT_ERROR_UNKNOWN;
-        }
-
-        std::vector<VkPhysicalDevice> devices(deviceCount);
-        vkEnumeratePhysicalDevices(inst->handle(), &deviceCount, devices.data());
-
-        // Determine preferred device type based on descriptor
-        VkPhysicalDeviceType preferredType;
-        if (descriptor && descriptor->forceFallbackAdapter) {
-            // Force software renderer (CPU-based like SwiftShader or lavapipe)
-            preferredType = VK_PHYSICAL_DEVICE_TYPE_CPU;
-        } else if (descriptor && descriptor->powerPreference == GFX_POWER_PREFERENCE_LOW_POWER) {
-            // Prefer integrated GPU for battery life
-            preferredType = VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
-        } else {
-            // Default to high performance discrete GPU
-            preferredType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-        }
-
-        // First pass: try to find preferred device type
-        VkPhysicalDevice selectedDevice = VK_NULL_HANDLE;
-        for (auto device : devices) {
-            VkPhysicalDeviceProperties props;
-            vkGetPhysicalDeviceProperties(device, &props);
-            if (props.deviceType == preferredType) {
-                selectedDevice = device;
-                break;
-            }
-        }
-
-        // Fallback: if preferred type not found, use first available device
-        if (selectedDevice == VK_NULL_HANDLE) {
-            selectedDevice = devices[0];
-        }
-
-        auto* adapter = new gfx::vulkan::Adapter(inst, selectedDevice);
+        auto createInfo = gfx::convertor::gfxDescriptorToAdapterCreateInfo(descriptor);
+        auto* adapter = new gfx::vulkan::Adapter(inst, createInfo);
         *outAdapter = reinterpret_cast<GfxAdapter>(adapter);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -160,7 +122,7 @@ GfxResult VulkanBackend::instanceRequestAdapter(GfxInstance instance, const GfxA
 
 uint32_t VulkanBackend::instanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters) const
 {
-    if (!instance) {
+    if (!instance || !adapters || maxAdapters == 0) {
         return 0;
     }
 
@@ -169,13 +131,14 @@ uint32_t VulkanBackend::instanceEnumerateAdapters(GfxInstance instance, GfxAdapt
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(inst->handle(), &deviceCount, nullptr);
 
-    if (deviceCount == 0 || !adapters) {
-        return deviceCount;
+    if (deviceCount == 0) {
+        return 0;
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(inst->handle(), &deviceCount, devices.data());
 
+    // Create an adapter for each physical device
     uint32_t count = std::min(deviceCount, maxAdapters);
     for (uint32_t i = 0; i < count; ++i) {
         adapters[i] = reinterpret_cast<GfxAdapter>(new gfx::vulkan::Adapter(inst, devices[i]));

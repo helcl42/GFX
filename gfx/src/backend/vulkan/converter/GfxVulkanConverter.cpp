@@ -685,7 +685,22 @@ gfx::vulkan::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInsta
     createInfo.enableHeadless = descriptor && descriptor->enabledHeadless;
     return createInfo;
 }
-
+gfx::vulkan::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)
+{
+    gfx::vulkan::AdapterCreateInfo createInfo{};
+    
+    if (!descriptor || descriptor->preference == GFX_ADAPTER_PREFERENCE_UNDEFINED) {
+        createInfo.devicePreference = gfx::vulkan::DeviceTypePreference::HighPerformance;
+    } else if (descriptor->preference == GFX_ADAPTER_PREFERENCE_SOFTWARE) {
+        createInfo.devicePreference = gfx::vulkan::DeviceTypePreference::SoftwareRenderer;
+    } else if (descriptor->preference == GFX_ADAPTER_PREFERENCE_LOW_POWER) {
+        createInfo.devicePreference = gfx::vulkan::DeviceTypePreference::LowPower;
+    } else {
+        createInfo.devicePreference = gfx::vulkan::DeviceTypePreference::HighPerformance;
+    }
+    
+    return createInfo;
+}
 gfx::vulkan::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
 {
     (void)descriptor;

@@ -208,9 +208,69 @@ public:
     Adapter(const Adapter&) = delete;
     Adapter& operator=(const Adapter&) = delete;
 
-    Adapter(Instance* instance, VkPhysicalDevice pd)
-        : m_physicalDevice(pd)
-        , m_instance(instance)
+    Adapter(Instance* instance, const AdapterCreateInfo& createInfo)
+        : m_instance(instance)
+    {
+        // Enumerate physical devices
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance->handle(), &deviceCount, nullptr);
+
+        if (deviceCount == 0) {
+            throw std::runtime_error("No Vulkan physical devices found");
+        }
+
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(instance->handle(), &deviceCount, devices.data());
+
+        // Determine preferred device type based on createInfo
+        VkPhysicalDeviceType preferredType;
+        switch (createInfo.devicePreference) {
+        case DeviceTypePreference::SoftwareRenderer:
+            preferredType = VK_PHYSICAL_DEVICE_TYPE_CPU;
+            break;
+        case DeviceTypePreference::LowPower:
+            preferredType = VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+            break;
+        case DeviceTypePreference::HighPerformance:
+        default:
+            preferredType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+            break;
+        }
+
+        // First pass: try to find preferred device type
+        m_physicalDevice = VK_NULL_HANDLE;
+        for (auto device : devices) {
+            VkPhysicalDeviceProperties props;
+            vkGetPhysicalDeviceProperties(device, &props);
+            if (props.deviceType == preferredType) {
+                m_physicalDevice = device;
+                break;
+            }
+        }
+
+        // Fallback: if preferred type not found, use first available device
+        if (m_physicalDevice == VK_NULL_HANDLE) {
+            m_physicalDevice = devices[0];
+        }
+
+        initializeAdapterInfo();
+    }
+
+    // Constructor for wrapping a specific physical device (used by enumerate)
+    Adapter(Instance* instance, VkPhysicalDevice physicalDevice)
+        : m_instance(instance)
+        , m_physicalDevice(physicalDevice)
+    {
+        initializeAdapterInfo();
+    }
+
+    VkPhysicalDevice handle() const { return m_physicalDevice; }
+    const char* getName() const { return m_properties.deviceName; }
+    uint32_t getGraphicsQueueFamily() const { return m_graphicsQueueFamily; }
+    Instance* getInstance() const { return m_instance; }
+
+private:
+    void initializeAdapterInfo()
     {
         vkGetPhysicalDeviceProperties(m_physicalDevice, &m_properties);
 
@@ -227,18 +287,16 @@ public:
                 break;
             }
         }
+
+        if (m_graphicsQueueFamily == UINT32_MAX) {
+            throw std::runtime_error("Failed to find graphics queue family for adapter");
+        }
     }
 
-    VkPhysicalDevice handle() const { return m_physicalDevice; }
-    const char* getName() const { return m_properties.deviceName; }
-    uint32_t getGraphicsQueueFamily() const { return m_graphicsQueueFamily; }
-    Instance* getInstance() const { return m_instance; }
-
-private:
+    Instance* m_instance = nullptr;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkPhysicalDeviceProperties m_properties{};
     uint32_t m_graphicsQueueFamily = UINT32_MAX;
-    Instance* m_instance = nullptr;
 };
 
 class Queue {

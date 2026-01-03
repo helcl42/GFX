@@ -31,6 +31,12 @@ enum class SemaphoreType {
     Timeline
 };
 
+enum class DeviceTypePreference {
+    HighPerformance,  // Prefer discrete GPU
+    LowPower,         // Prefer integrated GPU
+    SoftwareRenderer  // Force CPU-based software renderer
+};
+
 // ============================================================================
 // Internal CreateInfo structs - pure Vulkan types, no GFX dependencies
 // ============================================================================
@@ -118,6 +124,10 @@ struct BindGroupCreateInfo {
 struct InstanceCreateInfo {
     bool enableValidation;
     bool enableHeadless;
+};
+
+struct AdapterCreateInfo {
+    DeviceTypePreference devicePreference = DeviceTypePreference::HighPerformance;
 };
 
 struct DeviceCreateInfo {
