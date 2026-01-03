@@ -39,7 +39,6 @@ public:
     virtual GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const = 0;
     virtual GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const = 0;
     virtual void deviceWaitIdle(GfxDevice device) const = 0;
-    virtual void devicePoll(GfxDevice device) const = 0;
     virtual void deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const = 0;
 
     // Surface functions

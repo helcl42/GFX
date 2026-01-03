@@ -38,7 +38,6 @@ public:
     GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const override;
     GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const override;
     void deviceWaitIdle(GfxDevice device) const override;
-    void devicePoll(GfxDevice device) const override;
     void deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const override;
 
     // Surface functions

@@ -442,12 +442,6 @@ void VulkanBackend::deviceWaitIdle(GfxDevice device) const
     dev->waitIdle();
 }
 
-void VulkanBackend::devicePoll(GfxDevice device) const
-{
-    // Vulkan doesn't need polling - commands execute immediately
-    (void)device;
-}
-
 void VulkanBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const
 {
     if (!device || !outLimits) {

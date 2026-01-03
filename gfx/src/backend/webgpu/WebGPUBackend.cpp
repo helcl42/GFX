@@ -423,17 +423,6 @@ void WebGPUBackend::deviceWaitIdle(GfxDevice device) const
     devicePtr->waitIdle();
 }
 
-void WebGPUBackend::devicePoll(GfxDevice device) const
-{
-    if (!device) {
-        return;
-    }
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
-    // Call ProcessEvents on the instance to handle async operations
-    wgpuInstanceProcessEvents(devicePtr->getAdapter()->getInstance()->handle());
-}
-
 void WebGPUBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const
 {
     if (!device || !outLimits) {

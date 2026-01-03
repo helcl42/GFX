@@ -938,7 +938,6 @@ GFX_API GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const GfxComma
 GFX_API GfxResult gfxDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence);
 GFX_API GfxResult gfxDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore);
 GFX_API void gfxDeviceWaitIdle(GfxDevice device);
-GFX_API void gfxDevicePoll(GfxDevice device); // Poll device for async operations (needed for some backends)
 GFX_API void gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
 
 // Surface functions
