@@ -17,75 +17,6 @@
 // ============================================================================
 
 extern "C" {
-// Callback for device request
-static void onDeviceRequested(WGPURequestDeviceStatus status, WGPUDevice device,
-    WGPUStringView message, void* userdata1, void* userdata2)
-{
-    struct DeviceRequestContext {
-        GfxDevice* outDevice;
-        gfx::webgpu::Adapter* adapter;
-        bool completed;
-        WGPURequestDeviceStatus status;
-    };
-
-    auto* ctx = static_cast<DeviceRequestContext*>(userdata1);
-    ctx->status = status;
-    ctx->completed = true;
-
-    if (status == WGPURequestDeviceStatus_Success && device) {
-        auto* deviceObj = new gfx::webgpu::Device(device, ctx->adapter);
-        *ctx->outDevice = reinterpret_cast<GfxDevice>(deviceObj);
-    } else if (message.data) {
-        fprintf(stderr, "Error: Failed to request device: %.*s\n",
-            (int)message.length, message.data);
-    }
-    (void)userdata2; // Unused
-}
-
-static void uncapturedErrorCallback(WGPUDevice const*, WGPUErrorType type, WGPUStringView message, void*, void*)
-{
-    const char* errorType = "Unknown";
-    switch (type) {
-    case WGPUErrorType_Validation:
-        errorType = "Validation";
-        break;
-    case WGPUErrorType_OutOfMemory:
-        errorType = "OutOfMemory";
-        break;
-    case WGPUErrorType_Internal:
-        errorType = "Internal";
-        break;
-    default:
-        break;
-    }
-    fprintf(stderr, "[WebGPU ERROR - %s]: %.*s\n",
-        errorType, (int)message.length, message.data);
-}
-
-static void deviceLostCallback(WGPUDevice const*, WGPUDeviceLostReason reason, WGPUStringView message, void*, void*)
-{
-    const char* reasonStr = "Unknown";
-    switch (reason) {
-    case WGPUDeviceLostReason_Unknown:
-        reasonStr = "Unknown";
-        break;
-    case WGPUDeviceLostReason_Destroyed:
-        reasonStr = "Destroyed";
-        break;
-    case WGPUDeviceLostReason_CallbackCancelled:
-        reasonStr = "CallbackCancelled";
-        break;
-    case WGPUDeviceLostReason_FailedCreation:
-        reasonStr = "FailedCreation";
-        break;
-    default:
-        break;
-    }
-    if (message.data && message.length > 0) {
-        fprintf(stderr, "[WebGPU Device Lost - %s]: %.*s\n",
-            reasonStr, (int)message.length, message.data);
-    }
-}
 
 static void queueWorkDoneCallback(WGPUQueueWorkDoneStatus status, WGPUStringView message, void* userdata1, void* userdata2)
 {
@@ -221,47 +152,14 @@ GfxResult WebGPUBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDevice
 
     auto* adapterPtr = reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
 
-    WGPUUncapturedErrorCallbackInfo errorCallbackInfo = WGPU_UNCAPTURED_ERROR_CALLBACK_INFO_INIT;
-    errorCallbackInfo.callback = uncapturedErrorCallback;
-
-    WGPUDeviceLostCallbackInfo deviceLostCallbackInfo = WGPU_DEVICE_LOST_CALLBACK_INFO_INIT;
-    deviceLostCallbackInfo.mode = WGPUCallbackMode_AllowSpontaneous;
-    deviceLostCallbackInfo.callback = deviceLostCallback;
-
-    WGPUDeviceDescriptor wgpuDesc = WGPU_DEVICE_DESCRIPTOR_INIT;
-    wgpuDesc.uncapturedErrorCallbackInfo = errorCallbackInfo;
-    wgpuDesc.deviceLostCallbackInfo = deviceLostCallbackInfo;
-    if (descriptor && descriptor->label) {
-        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
-    }
-
-    struct DeviceRequestContext {
-        GfxDevice* outDevice;
-        gfx::webgpu::Adapter* adapter;
-        bool completed;
-        WGPURequestDeviceStatus status;
-    } context = { outDevice, adapterPtr, false, WGPURequestDeviceStatus_Error };
-
-    WGPURequestDeviceCallbackInfo callbackInfo = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
-    callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-    callbackInfo.callback = onDeviceRequested;
-    callbackInfo.userdata1 = &context;
-
-    WGPUFuture future = wgpuAdapterRequestDevice(adapterPtr->handle(), &wgpuDesc, callbackInfo);
-
-    // Use WaitAny to properly wait for the callback
-    if (adapterPtr->getInstance()) {
-        WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
-        waitInfo.future = future;
-        wgpuInstanceWaitAny(adapterPtr->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
-    }
-
-    if (!context.completed) {
-        fprintf(stderr, "Error: Device request timed out\n");
+    try {
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUDeviceCreateInfo(descriptor);
+        auto* device = new gfx::webgpu::Device(adapterPtr, createInfo);
+        *outDevice = reinterpret_cast<GfxDevice>(device);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
-
-    return *outDevice ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
 const char* WebGPUBackend::adapterGetName(GfxAdapter adapter) const
@@ -349,6 +247,8 @@ GfxResult WebGPUBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceD
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
+    // TODO - can we unify this with vulkna
+
     WGPUSurface wgpuSurface = gfx::webgpu::surface::SurfaceFactory{}.createFromNativeWindow(inst, descriptor->windowHandle);
     if (!wgpuSurface) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -367,6 +267,8 @@ GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
     auto* surfacePtr = reinterpret_cast<gfx::webgpu::Surface*>(surface);
+
+    // TODO - can we unify this with vulkna
 
     // Get surface capabilities
     WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
