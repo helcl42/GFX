@@ -437,8 +437,12 @@ public:
         : m_handle(h)
     {
     }
-    // Render pass encoder is an alias to command encoder - do not destroy
-    ~CRenderPassEncoderImpl() override = default;
+    ~CRenderPassEncoderImpl() override
+    {
+        if (m_handle) {
+            gfxRenderPassEncoderDestroy(m_handle);
+        }
+    }
 
     void setPipeline(std::shared_ptr<RenderPipeline> pipeline) override
     {
@@ -510,8 +514,12 @@ public:
         : m_handle(h)
     {
     }
-    // Compute pass encoder is an alias to command encoder - do not destroy
-    ~CComputePassEncoderImpl() override = default;
+    ~CComputePassEncoderImpl() override
+    {
+        if (m_handle) {
+            gfxComputePassEncoderDestroy(m_handle);
+        }
+    }
 
     void setPipeline(std::shared_ptr<ComputePipeline> pipeline) override
     {

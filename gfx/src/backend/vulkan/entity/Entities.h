@@ -37,6 +37,14 @@ class BindGroup;
 class Fence;
 class Semaphore;
 
+using DebugCallbackFunc = void (*)(DebugMessageSeverity severity, DebugMessageType type, const char* message, void* userData);
+
+// Callback data wrapper for debug callbacks
+struct CallbackData {
+    DebugCallbackFunc callback;
+    void* userData;
+};
+
 class Instance {
 public:
     // Prevent copying
@@ -122,6 +130,12 @@ public:
 
     ~Instance()
     {
+        // Clean up callback data if allocated
+        if (m_userCallbackData) {
+            delete static_cast<CallbackData*>(m_userCallbackData);
+            m_userCallbackData = nullptr;
+        }
+
         if (m_debugMessenger != VK_NULL_HANDLE) {
             auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
                 m_instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -134,16 +148,20 @@ public:
         }
     }
 
+    void setDebugCallback(DebugCallbackFunc callback, void* userData)
+    {
+        // Clean up previously allocated data if any
+        if (m_userCallbackData) {
+            delete static_cast<CallbackData*>(m_userCallbackData);
+        }
+
+        m_userCallback = callback;
+        m_userCallbackData = userData; // Take ownership, will delete in destructor
+    }
+
     VkInstance handle() const { return m_instance; }
 
 private:
-    VkInstance m_instance = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
-    bool m_validationEnabled = false;
-    using DebugCallbackFunc = void (*)(DebugMessageSeverity severity, DebugMessageType type, const char* message, void* userData);
-    DebugCallbackFunc m_userCallback = nullptr;
-    void* m_userCallbackData = nullptr;
-
     void setupDebugMessenger()
     {
         VkDebugUtilsMessengerCreateInfoEXT createInfo{};
@@ -177,12 +195,12 @@ private:
         return VK_FALSE;
     }
 
-public:
-    void setDebugCallback(DebugCallbackFunc callback, void* userData)
-    {
-        m_userCallback = callback;
-        m_userCallbackData = userData;
-    }
+private:
+    VkInstance m_instance = VK_NULL_HANDLE;
+    VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
+    bool m_validationEnabled = false;
+    DebugCallbackFunc m_userCallback = nullptr;
+    void* m_userCallbackData = nullptr; // Owned pointer, will be deleted in destructor
 };
 
 class Adapter {
