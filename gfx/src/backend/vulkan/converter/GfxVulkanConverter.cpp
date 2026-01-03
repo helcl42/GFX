@@ -8,6 +8,25 @@
 namespace gfx::convertor {
 
 // ============================================================================
+// Device Limits Conversion
+// ============================================================================
+
+GfxDeviceLimits vkPropertiesToGfxDeviceLimits(const VkPhysicalDeviceProperties& properties)
+{
+    GfxDeviceLimits limits{};
+    limits.minUniformBufferOffsetAlignment = static_cast<uint32_t>(properties.limits.minUniformBufferOffsetAlignment);
+    limits.minStorageBufferOffsetAlignment = static_cast<uint32_t>(properties.limits.minStorageBufferOffsetAlignment);
+    limits.maxUniformBufferBindingSize = properties.limits.maxUniformBufferRange;
+    limits.maxStorageBufferBindingSize = properties.limits.maxStorageBufferRange;
+    limits.maxBufferSize = UINT64_MAX; // Vulkan doesn't have a single max, use practical limit
+    limits.maxTextureDimension1D = properties.limits.maxImageDimension1D;
+    limits.maxTextureDimension2D = properties.limits.maxImageDimension2D;
+    limits.maxTextureDimension3D = properties.limits.maxImageDimension3D;
+    limits.maxTextureArrayLayers = properties.limits.maxImageArrayLayers;
+    return limits;
+}
+
+// ============================================================================
 // Debug Message Conversion Functions
 // ============================================================================
 

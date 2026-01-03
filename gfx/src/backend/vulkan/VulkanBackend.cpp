@@ -176,19 +176,7 @@ void VulkanBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLim
         return;
     }
     auto* adap = reinterpret_cast<gfx::vulkan::Adapter*>(adapter);
-
-    VkPhysicalDeviceProperties properties;
-    vkGetPhysicalDeviceProperties(adap->handle(), &properties);
-
-    outLimits->minUniformBufferOffsetAlignment = static_cast<uint32_t>(properties.limits.minUniformBufferOffsetAlignment);
-    outLimits->minStorageBufferOffsetAlignment = static_cast<uint32_t>(properties.limits.minStorageBufferOffsetAlignment);
-    outLimits->maxUniformBufferBindingSize = properties.limits.maxUniformBufferRange;
-    outLimits->maxStorageBufferBindingSize = properties.limits.maxStorageBufferRange;
-    outLimits->maxBufferSize = UINT64_MAX; // Vulkan doesn't have a single max, use practical limit
-    outLimits->maxTextureDimension1D = properties.limits.maxImageDimension1D;
-    outLimits->maxTextureDimension2D = properties.limits.maxImageDimension2D;
-    outLimits->maxTextureDimension3D = properties.limits.maxImageDimension3D;
-    outLimits->maxTextureArrayLayers = properties.limits.maxImageArrayLayers;
+    *outLimits = gfx::convertor::vkPropertiesToGfxDeviceLimits(adap->getLimits());
 }
 
 // Device functions
@@ -466,20 +454,7 @@ void VulkanBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits
         return;
     }
     auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
-    auto* adapter = dev->getAdapter();
-
-    VkPhysicalDeviceProperties properties;
-    vkGetPhysicalDeviceProperties(adapter->handle(), &properties);
-
-    outLimits->minUniformBufferOffsetAlignment = properties.limits.minUniformBufferOffsetAlignment;
-    outLimits->minStorageBufferOffsetAlignment = properties.limits.minStorageBufferOffsetAlignment;
-    outLimits->maxUniformBufferBindingSize = properties.limits.maxUniformBufferRange;
-    outLimits->maxStorageBufferBindingSize = properties.limits.maxStorageBufferRange;
-    outLimits->maxBufferSize = UINT64_MAX; // Vulkan doesn't expose a direct limit
-    outLimits->maxTextureDimension1D = properties.limits.maxImageDimension1D;
-    outLimits->maxTextureDimension2D = properties.limits.maxImageDimension2D;
-    outLimits->maxTextureDimension3D = properties.limits.maxImageDimension3D;
-    outLimits->maxTextureArrayLayers = properties.limits.maxImageArrayLayers;
+    *outLimits = gfx::convertor::vkPropertiesToGfxDeviceLimits(dev->getLimits());
 }
 
 // Surface functions

@@ -48,10 +48,21 @@ gfx::vulkan::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(GfxSemaphoreTyp
 // ============================================================================
 
 VkFormat gfxFormatToVkFormat(GfxTextureFormat format);
+GfxTextureFormat vkFormatToGfxFormat(VkFormat format);
+
+// ============================================================================
+// Device Limits Conversion
+// ============================================================================
+
+GfxDeviceLimits vkPropertiesToGfxDeviceLimits(const VkPhysicalDeviceProperties& properties);
+
+// ============================================================================
+// Other Format Functions
+// ============================================================================
+
 bool isDepthFormat(VkFormat format);
 VkAttachmentLoadOp gfxLoadOpToVkLoadOp(GfxLoadOp loadOp);
 VkAttachmentStoreOp gfxStoreOpToVkStoreOp(GfxStoreOp storeOp);
-GfxTextureFormat vkFormatToGfxFormat(VkFormat format);
 GfxPresentMode vkPresentModeToGfxPresentMode(VkPresentModeKHR mode);
 VkPresentModeKHR gfxPresentModeToVkPresentMode(GfxPresentMode mode);
 bool hasStencilComponent(VkFormat format);

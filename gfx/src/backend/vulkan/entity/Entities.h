@@ -299,6 +299,13 @@ public:
     uint32_t getGraphicsQueueFamily() const { return m_graphicsQueueFamily; }
     Instance* getInstance() const { return m_instance; }
 
+    VkPhysicalDeviceProperties getLimits() const
+    {
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(m_physicalDevice, &properties);
+        return properties;
+    }
+
 private:
     void initializeAdapterInfo()
     {
@@ -401,6 +408,13 @@ public:
     VkDevice handle() const { return m_device; }
     Queue* getQueue() { return m_queue.get(); }
     Adapter* getAdapter() { return m_adapter; }
+
+    VkPhysicalDeviceProperties getLimits() const
+    {
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(m_adapter->handle(), &properties);
+        return properties;
+    }
 
 private:
     VkDevice m_device = VK_NULL_HANDLE;
