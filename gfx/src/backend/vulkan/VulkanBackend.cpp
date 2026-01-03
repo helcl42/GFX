@@ -439,7 +439,7 @@ void VulkanBackend::deviceWaitIdle(GfxDevice device) const
         return;
     }
     auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
-    vkDeviceWaitIdle(dev->handle());
+    dev->waitIdle();
 }
 
 void VulkanBackend::devicePoll(GfxDevice device) const

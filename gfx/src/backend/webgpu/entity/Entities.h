@@ -346,6 +346,25 @@ public:
         return limits;
     }
 
+    void waitIdle() const
+    {
+        WGPUQueueWorkDoneCallbackInfo callbackInfo = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
+        callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+        callbackInfo.callback = [](WGPUQueueWorkDoneStatus status, WGPUStringView message, void* userdata1, void* userdata2) {
+            (void)status;
+            (void)message;
+            (void)userdata1;
+            (void)userdata2;
+        };
+        WGPUFuture future = wgpuQueueOnSubmittedWorkDone(m_queue->handle(), callbackInfo);
+
+        // Wait for the work to complete
+        WGPUInstance instance = m_adapter->getInstance()->handle();
+        WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
+        waitInfo.future = future;
+        wgpuInstanceWaitAny(instance, 1, &waitInfo, UINT64_MAX);
+    }
+
 private:
     WGPUDevice m_device = nullptr;
     Adapter* m_adapter = nullptr; // Non-owning pointer

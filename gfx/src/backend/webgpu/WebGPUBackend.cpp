@@ -17,15 +17,6 @@
 
 extern "C" {
 
-static void queueWorkDoneCallback(WGPUQueueWorkDoneStatus status, WGPUStringView message, void* userdata1, void* userdata2)
-{
-    (void)status;
-    (void)message;
-    (void)userdata1;
-    (void)userdata2;
-    // Nothing to do - we just needed a valid callback for Dawn
-}
-
 struct MapCallbackData {
     WGPUMapAsyncStatus status = WGPUMapAsyncStatus_Error;
     bool completed = false;
@@ -429,18 +420,7 @@ void WebGPUBackend::deviceWaitIdle(GfxDevice device) const
         return;
     }
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
-    // Device always has valid queue, adapter, and instance
-    WGPUQueueWorkDoneCallbackInfo callbackInfo = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
-    callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-    callbackInfo.callback = queueWorkDoneCallback;
-    WGPUFuture future = wgpuQueueOnSubmittedWorkDone(devicePtr->getQueue()->handle(), callbackInfo);
-
-    // Wait for the work to complete
-    WGPUInstance instance = devicePtr->getAdapter()->getInstance()->handle();
-    WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
-    waitInfo.future = future;
-    wgpuInstanceWaitAny(instance, 1, &waitInfo, UINT64_MAX);
+    devicePtr->waitIdle();
 }
 
 void WebGPUBackend::devicePoll(GfxDevice device) const

@@ -416,6 +416,11 @@ public:
         return properties;
     }
 
+    void waitIdle()
+    {
+        vkDeviceWaitIdle(m_device);
+    }
+
 private:
     VkDevice m_device = VK_NULL_HANDLE;
     Adapter* m_adapter = nullptr; // Non-owning pointer
