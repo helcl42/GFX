@@ -114,7 +114,9 @@ public:
 
     ~Queue()
     {
-        // Don't release - emdawnwebgpu doesn't provide wgpuQueueRelease
+        if (m_queue) {
+            wgpuQueueRelease(m_queue);
+        }
     }
 
     WGPUQueue handle() const { return m_queue; }
@@ -148,8 +150,11 @@ public:
 
     ~Device()
     {
-        m_queue.reset();
         if (m_device) {
+            // Release queue first
+            m_queue.reset();
+            // Destroy device to ensure proper cleanup of internal resources
+            wgpuDeviceDestroy(m_device);
             wgpuDeviceRelease(m_device);
         }
     }
@@ -170,12 +175,21 @@ public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
-    Buffer(WGPUBuffer buffer, uint64_t size, BufferUsage usage, Device* device)
-        : m_buffer(buffer)
-        , m_size(size)
-        , m_usage(usage)
-        , m_device(device)
+    Buffer(WGPUDevice device, const BufferCreateInfo& createInfo, Device* deviceObj = nullptr)
+        : m_device(device)
+        , m_deviceObj(deviceObj)
+        , m_size(createInfo.size)
+        , m_usage(createInfo.usage)
     {
+        WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
+        desc.size = m_size;
+        desc.usage = m_usage;
+        desc.mappedAtCreation = false;
+
+        m_buffer = wgpuDeviceCreateBuffer(m_device, &desc);
+        if (!m_buffer) {
+            throw std::runtime_error("Failed to create WebGPU buffer");
+        }
     }
 
     ~Buffer()
@@ -188,13 +202,14 @@ public:
     WGPUBuffer handle() const { return m_buffer; }
     uint64_t getSize() const { return m_size; }
     BufferUsage getUsage() const { return m_usage; }
-    Device* getDevice() const { return m_device; }
+    Device* getDevice() const { return m_deviceObj; }
 
 private:
     WGPUBuffer m_buffer = nullptr;
+    WGPUDevice m_device = nullptr;
+    Device* m_deviceObj = nullptr; // Non-owning pointer for operations that need it
     uint64_t m_size = 0;
     BufferUsage m_usage = WGPUBufferUsage_None;
-    Device* m_device = nullptr; // Non-owning pointer to parent device
 };
 
 class Texture {
@@ -203,15 +218,28 @@ public:
     Texture(const Texture&) = delete;
     Texture& operator=(const Texture&) = delete;
 
-    Texture(WGPUTexture texture, WGPUExtent3D size, WGPUTextureFormat format,
-        uint32_t mipLevels, uint32_t sampleCount, WGPUTextureUsage usage)
-        : m_texture(texture)
-        , m_size(size)
-        , m_format(format)
-        , m_mipLevels(mipLevels)
-        , m_sampleCount(sampleCount)
-        , m_usage(usage)
+    Texture(WGPUDevice device, const TextureCreateInfo& createInfo)
+        : m_device(device)
+        , m_size(createInfo.size)
+        , m_format(createInfo.format)
+        , m_mipLevels(createInfo.mipLevelCount)
+        , m_sampleCount(createInfo.sampleCount)
+        , m_usage(createInfo.usage)
     {
+        WGPUTextureDescriptor desc = WGPU_TEXTURE_DESCRIPTOR_INIT;
+        desc.dimension = createInfo.dimension;
+        desc.size = createInfo.size; // Already has correct depthOrArrayLayers
+        desc.format = createInfo.format;
+        desc.mipLevelCount = createInfo.mipLevelCount;
+        desc.sampleCount = createInfo.sampleCount;
+        desc.usage = createInfo.usage;
+        desc.viewFormatCount = 0;
+        desc.viewFormats = nullptr;
+
+        m_texture = wgpuDeviceCreateTexture(m_device, &desc);
+        if (!m_texture) {
+            throw std::runtime_error("Failed to create WebGPU texture");
+        }
     }
 
     ~Texture()
@@ -230,6 +258,7 @@ public:
 
 private:
     WGPUTexture m_texture = nullptr;
+    WGPUDevice m_device = nullptr;
     WGPUExtent3D m_size = {};
     WGPUTextureFormat m_format = WGPUTextureFormat_Undefined;
     uint32_t m_mipLevels = 0;
@@ -270,9 +299,25 @@ public:
     Sampler(const Sampler&) = delete;
     Sampler& operator=(const Sampler&) = delete;
 
-    Sampler(WGPUSampler sampler)
-        : m_sampler(sampler)
+    Sampler(WGPUDevice device, const SamplerCreateInfo& createInfo)
+        : m_device(device)
     {
+        WGPUSamplerDescriptor desc = WGPU_SAMPLER_DESCRIPTOR_INIT;
+        desc.addressModeU = createInfo.addressModeU;
+        desc.addressModeV = createInfo.addressModeV;
+        desc.addressModeW = createInfo.addressModeW;
+        desc.magFilter = createInfo.magFilter;
+        desc.minFilter = createInfo.minFilter;
+        desc.mipmapFilter = createInfo.mipmapFilter;
+        desc.lodMinClamp = createInfo.lodMinClamp;
+        desc.lodMaxClamp = createInfo.lodMaxClamp;
+        desc.maxAnisotropy = createInfo.maxAnisotropy;
+        desc.compare = createInfo.compareFunction;
+
+        m_sampler = wgpuDeviceCreateSampler(m_device, &desc);
+        if (!m_sampler) {
+            throw std::runtime_error("Failed to create WebGPU sampler");
+        }
     }
 
     ~Sampler()
@@ -286,6 +331,7 @@ public:
 
 private:
     WGPUSampler m_sampler = nullptr;
+    WGPUDevice m_device = nullptr;
 };
 
 class Shader {
@@ -294,9 +340,26 @@ public:
     Shader(const Shader&) = delete;
     Shader& operator=(const Shader&) = delete;
 
-    Shader(WGPUShaderModule module)
-        : m_module(module)
+    Shader(WGPUDevice device, const ShaderCreateInfo& createInfo)
+        : m_device(device)
     {
+        WGPUShaderSourceWGSL wgslDesc = WGPU_SHADER_SOURCE_WGSL_INIT;
+        // codeSize may include null terminator, but WGPUStringView expects length without it
+        size_t codeLength = createInfo.codeSize;
+        const char* codeStr = static_cast<const char*>(createInfo.code);
+        // If last char is null terminator, exclude it from length
+        if (codeLength > 0 && codeStr[codeLength - 1] == '\0') {
+            codeLength--;
+        }
+        wgslDesc.code = { codeStr, codeLength };
+
+        WGPUShaderModuleDescriptor desc = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
+        desc.nextInChain = &wgslDesc.chain;
+
+        m_module = wgpuDeviceCreateShaderModule(m_device, &desc);
+        if (!m_module) {
+            throw std::runtime_error("Failed to create WebGPU shader module");
+        }
     }
 
     ~Shader()
@@ -310,6 +373,7 @@ public:
 
 private:
     WGPUShaderModule m_module = nullptr;
+    WGPUDevice m_device = nullptr;
 };
 
 class BindGroupLayout {
@@ -318,9 +382,48 @@ public:
     BindGroupLayout(const BindGroupLayout&) = delete;
     BindGroupLayout& operator=(const BindGroupLayout&) = delete;
 
-    BindGroupLayout(WGPUBindGroupLayout layout)
-        : m_layout(layout)
+    BindGroupLayout(WGPUDevice device, const BindGroupLayoutCreateInfo& createInfo)
     {
+        WGPUBindGroupLayoutDescriptor desc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
+
+        std::vector<WGPUBindGroupLayoutEntry> wgpuEntries;
+        wgpuEntries.reserve(createInfo.entries.size());
+
+        for (const auto& entry : createInfo.entries) {
+            WGPUBindGroupLayoutEntry wgpuEntry = WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT;
+            wgpuEntry.binding = entry.binding;
+            wgpuEntry.visibility = entry.visibility;
+
+            // Set binding type based on which field is used
+            if (entry.bufferType != WGPUBufferBindingType_Undefined) {
+                wgpuEntry.buffer.type = entry.bufferType;
+                wgpuEntry.buffer.hasDynamicOffset = entry.bufferHasDynamicOffset;
+                wgpuEntry.buffer.minBindingSize = entry.bufferMinBindingSize;
+            }
+            if (entry.samplerType != WGPUSamplerBindingType_Undefined) {
+                wgpuEntry.sampler.type = entry.samplerType;
+            }
+            if (entry.textureSampleType != WGPUTextureSampleType_Undefined) {
+                wgpuEntry.texture.sampleType = entry.textureSampleType;
+                wgpuEntry.texture.viewDimension = entry.textureViewDimension;
+                wgpuEntry.texture.multisampled = entry.textureMultisampled;
+            }
+            if (entry.storageTextureAccess != WGPUStorageTextureAccess_Undefined) {
+                wgpuEntry.storageTexture.access = entry.storageTextureAccess;
+                wgpuEntry.storageTexture.format = entry.storageTextureFormat;
+                wgpuEntry.storageTexture.viewDimension = entry.storageTextureViewDimension;
+            }
+
+            wgpuEntries.push_back(wgpuEntry);
+        }
+
+        desc.entryCount = static_cast<uint32_t>(wgpuEntries.size());
+        desc.entries = wgpuEntries.data();
+
+        m_layout = wgpuDeviceCreateBindGroupLayout(device, &desc);
+        if (!m_layout) {
+            throw std::runtime_error("Failed to create WebGPU BindGroupLayout");
+        }
     }
 
     ~BindGroupLayout()
@@ -342,9 +445,33 @@ public:
     BindGroup(const BindGroup&) = delete;
     BindGroup& operator=(const BindGroup&) = delete;
 
-    BindGroup(WGPUBindGroup bindGroup)
-        : m_bindGroup(bindGroup)
+    BindGroup(WGPUDevice device, const BindGroupCreateInfo& createInfo)
+        : m_device(device)
     {
+        WGPUBindGroupDescriptor desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
+        desc.layout = createInfo.layout;
+
+        std::vector<WGPUBindGroupEntry> wgpuEntries;
+        wgpuEntries.reserve(createInfo.entries.size());
+
+        for (const auto& entry : createInfo.entries) {
+            WGPUBindGroupEntry wgpuEntry = WGPU_BIND_GROUP_ENTRY_INIT;
+            wgpuEntry.binding = entry.binding;
+            wgpuEntry.buffer = entry.buffer;
+            wgpuEntry.offset = entry.bufferOffset;
+            wgpuEntry.size = entry.bufferSize;
+            wgpuEntry.sampler = entry.sampler;
+            wgpuEntry.textureView = entry.textureView;
+            wgpuEntries.push_back(wgpuEntry);
+        }
+
+        desc.entries = wgpuEntries.data();
+        desc.entryCount = static_cast<uint32_t>(wgpuEntries.size());
+
+        m_bindGroup = wgpuDeviceCreateBindGroup(m_device, &desc);
+        if (!m_bindGroup) {
+            throw std::runtime_error("Failed to create WebGPU BindGroup");
+        }
     }
 
     ~BindGroup()
@@ -358,6 +485,7 @@ public:
 
 private:
     WGPUBindGroup m_bindGroup = nullptr;
+    WGPUDevice m_device = nullptr;
 };
 
 class RenderPipeline {
@@ -366,9 +494,150 @@ public:
     RenderPipeline(const RenderPipeline&) = delete;
     RenderPipeline& operator=(const RenderPipeline&) = delete;
 
-    RenderPipeline(WGPURenderPipeline pipeline)
-        : m_pipeline(pipeline)
+    RenderPipeline(WGPUDevice device, const RenderPipelineCreateInfo& createInfo)
+        : m_device(device)
     {
+        WGPURenderPipelineDescriptor desc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
+
+        // Create pipeline layout if bind group layouts are provided
+        WGPUPipelineLayout pipelineLayout = nullptr;
+        if (!createInfo.bindGroupLayouts.empty()) {
+            WGPUPipelineLayoutDescriptor layoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
+            layoutDesc.bindGroupLayouts = createInfo.bindGroupLayouts.data();
+            layoutDesc.bindGroupLayoutCount = static_cast<uint32_t>(createInfo.bindGroupLayouts.size());
+            pipelineLayout = wgpuDeviceCreatePipelineLayout(device, &layoutDesc);
+            desc.layout = pipelineLayout;
+        }
+
+        // Vertex state
+        WGPUVertexState vertexState = WGPU_VERTEX_STATE_INIT;
+        vertexState.module = createInfo.vertex.module;
+        vertexState.entryPoint = { createInfo.vertex.entryPoint, WGPU_STRLEN };
+
+        // Convert vertex buffers
+        std::vector<WGPUVertexBufferLayout> vertexBuffers;
+        std::vector<std::vector<WGPUVertexAttribute>> allAttributes;
+
+        if (!createInfo.vertex.buffers.empty()) {
+            vertexBuffers.reserve(createInfo.vertex.buffers.size());
+            allAttributes.reserve(createInfo.vertex.buffers.size());
+
+            for (const auto& buffer : createInfo.vertex.buffers) {
+                std::vector<WGPUVertexAttribute> attributes;
+                attributes.reserve(buffer.attributes.size());
+
+                for (const auto& attr : buffer.attributes) {
+                    WGPUVertexAttribute wgpuAttr = WGPU_VERTEX_ATTRIBUTE_INIT;
+                    wgpuAttr.format = attr.format;
+                    wgpuAttr.offset = attr.offset;
+                    wgpuAttr.shaderLocation = attr.shaderLocation;
+                    attributes.push_back(wgpuAttr);
+                }
+
+                allAttributes.push_back(std::move(attributes));
+
+                WGPUVertexBufferLayout wgpuBuffer = WGPU_VERTEX_BUFFER_LAYOUT_INIT;
+                wgpuBuffer.arrayStride = buffer.arrayStride;
+                wgpuBuffer.stepMode = buffer.stepMode;
+                wgpuBuffer.attributes = allAttributes.back().data();
+                wgpuBuffer.attributeCount = static_cast<uint32_t>(allAttributes.back().size());
+                vertexBuffers.push_back(wgpuBuffer);
+            }
+
+            vertexState.buffers = vertexBuffers.data();
+            vertexState.bufferCount = static_cast<uint32_t>(vertexBuffers.size());
+        }
+
+        desc.vertex = vertexState;
+
+        // Fragment state (optional)
+        WGPUFragmentState fragmentState = WGPU_FRAGMENT_STATE_INIT;
+        std::vector<WGPUColorTargetState> colorTargets;
+        std::vector<WGPUBlendState> blendStates;
+
+        if (createInfo.fragment.has_value()) {
+            fragmentState.module = createInfo.fragment->module;
+            fragmentState.entryPoint = { createInfo.fragment->entryPoint, WGPU_STRLEN };
+
+            if (!createInfo.fragment->targets.empty()) {
+                colorTargets.reserve(createInfo.fragment->targets.size());
+
+                for (const auto& target : createInfo.fragment->targets) {
+                    WGPUColorTargetState wgpuTarget = WGPU_COLOR_TARGET_STATE_INIT;
+                    wgpuTarget.format = target.format;
+                    wgpuTarget.writeMask = target.writeMask;
+
+                    if (target.blend.has_value()) {
+                        WGPUBlendState blend = WGPU_BLEND_STATE_INIT;
+                        blend.color.operation = target.blend->color.operation;
+                        blend.color.srcFactor = target.blend->color.srcFactor;
+                        blend.color.dstFactor = target.blend->color.dstFactor;
+                        blend.alpha.operation = target.blend->alpha.operation;
+                        blend.alpha.srcFactor = target.blend->alpha.srcFactor;
+                        blend.alpha.dstFactor = target.blend->alpha.dstFactor;
+                        blendStates.push_back(blend);
+                        wgpuTarget.blend = &blendStates.back();
+                    }
+
+                    colorTargets.push_back(wgpuTarget);
+                }
+
+                fragmentState.targets = colorTargets.data();
+                fragmentState.targetCount = static_cast<uint32_t>(colorTargets.size());
+            }
+
+            desc.fragment = &fragmentState;
+        }
+
+        // Primitive state
+        WGPUPrimitiveState primitiveState = WGPU_PRIMITIVE_STATE_INIT;
+        primitiveState.topology = createInfo.primitive.topology;
+        primitiveState.frontFace = createInfo.primitive.frontFace;
+        primitiveState.cullMode = createInfo.primitive.cullMode;
+        primitiveState.stripIndexFormat = createInfo.primitive.stripIndexFormat;
+        desc.primitive = primitiveState;
+
+        // Depth/stencil state (optional)
+        WGPUDepthStencilState depthStencilState = WGPU_DEPTH_STENCIL_STATE_INIT;
+        if (createInfo.depthStencil.has_value()) {
+            depthStencilState.format = createInfo.depthStencil->format;
+            depthStencilState.depthWriteEnabled = createInfo.depthStencil->depthWriteEnabled ? WGPUOptionalBool_True : WGPUOptionalBool_False;
+            depthStencilState.depthCompare = createInfo.depthStencil->depthCompare;
+
+            depthStencilState.stencilFront.compare = createInfo.depthStencil->stencilFront.compare;
+            depthStencilState.stencilFront.failOp = createInfo.depthStencil->stencilFront.failOp;
+            depthStencilState.stencilFront.depthFailOp = createInfo.depthStencil->stencilFront.depthFailOp;
+            depthStencilState.stencilFront.passOp = createInfo.depthStencil->stencilFront.passOp;
+
+            depthStencilState.stencilBack.compare = createInfo.depthStencil->stencilBack.compare;
+            depthStencilState.stencilBack.failOp = createInfo.depthStencil->stencilBack.failOp;
+            depthStencilState.stencilBack.depthFailOp = createInfo.depthStencil->stencilBack.depthFailOp;
+            depthStencilState.stencilBack.passOp = createInfo.depthStencil->stencilBack.passOp;
+
+            depthStencilState.stencilReadMask = createInfo.depthStencil->stencilReadMask;
+            depthStencilState.stencilWriteMask = createInfo.depthStencil->stencilWriteMask;
+            depthStencilState.depthBias = createInfo.depthStencil->depthBias;
+            depthStencilState.depthBiasSlopeScale = createInfo.depthStencil->depthBiasSlopeScale;
+            depthStencilState.depthBiasClamp = createInfo.depthStencil->depthBiasClamp;
+
+            desc.depthStencil = &depthStencilState;
+        }
+
+        // Multisample state
+        WGPUMultisampleState multisampleState = WGPU_MULTISAMPLE_STATE_INIT;
+        multisampleState.count = createInfo.sampleCount;
+        desc.multisample = multisampleState;
+
+        m_pipeline = wgpuDeviceCreateRenderPipeline(device, &desc);
+
+        // Release the pipeline layout if we created one (pipeline holds its own reference)
+        if (pipelineLayout) {
+            wgpuPipelineLayoutRelease(pipelineLayout);
+        }
+
+        if (!m_pipeline) {
+            throw std::runtime_error("Failed to create WebGPU RenderPipeline");
+        }
     }
 
     ~RenderPipeline()
@@ -382,6 +651,7 @@ public:
 
 private:
     WGPURenderPipeline m_pipeline = nullptr;
+    WGPUDevice m_device = nullptr;
 };
 
 class ComputePipeline {
@@ -390,9 +660,34 @@ public:
     ComputePipeline(const ComputePipeline&) = delete;
     ComputePipeline& operator=(const ComputePipeline&) = delete;
 
-    ComputePipeline(WGPUComputePipeline pipeline)
-        : m_pipeline(pipeline)
+    ComputePipeline(WGPUDevice device, const ComputePipelineCreateInfo& createInfo)
+        : m_device(device)
     {
+        WGPUComputePipelineDescriptor desc = WGPU_COMPUTE_PIPELINE_DESCRIPTOR_INIT;
+
+        // Create pipeline layout if bind group layouts are provided
+        WGPUPipelineLayout pipelineLayout = nullptr;
+        if (!createInfo.bindGroupLayouts.empty()) {
+            WGPUPipelineLayoutDescriptor layoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
+            layoutDesc.bindGroupLayouts = createInfo.bindGroupLayouts.data();
+            layoutDesc.bindGroupLayoutCount = static_cast<uint32_t>(createInfo.bindGroupLayouts.size());
+            pipelineLayout = wgpuDeviceCreatePipelineLayout(device, &layoutDesc);
+            desc.layout = pipelineLayout;
+        }
+
+        desc.compute.module = createInfo.module;
+        desc.compute.entryPoint = { createInfo.entryPoint, WGPU_STRLEN };
+
+        m_pipeline = wgpuDeviceCreateComputePipeline(device, &desc);
+
+        // Release the pipeline layout if we created one (pipeline holds its own reference)
+        if (pipelineLayout) {
+            wgpuPipelineLayoutRelease(pipelineLayout);
+        }
+
+        if (!m_pipeline) {
+            throw std::runtime_error("Failed to create WebGPU ComputePipeline");
+        }
     }
 
     ~ComputePipeline()
@@ -406,6 +701,7 @@ public:
 
 private:
     WGPUComputePipeline m_pipeline = nullptr;
+    WGPUDevice m_device = nullptr;
 };
 
 class CommandEncoder {
@@ -477,7 +773,18 @@ public:
     ~RenderPassEncoder()
     {
         if (m_encoder) {
+            if (!m_ended) {
+                wgpuRenderPassEncoderEnd(m_encoder);
+            }
             wgpuRenderPassEncoderRelease(m_encoder);
+        }
+    }
+
+    void end()
+    {
+        if (m_encoder && !m_ended) {
+            wgpuRenderPassEncoderEnd(m_encoder);
+            m_ended = true;
         }
     }
 
@@ -485,6 +792,7 @@ public:
 
 private:
     WGPURenderPassEncoder m_encoder = nullptr;
+    bool m_ended = false;
 };
 
 class ComputePassEncoder {
@@ -501,7 +809,18 @@ public:
     ~ComputePassEncoder()
     {
         if (m_encoder) {
+            if (!m_ended) {
+                wgpuComputePassEncoderEnd(m_encoder);
+            }
             wgpuComputePassEncoderRelease(m_encoder);
+        }
+    }
+
+    void end()
+    {
+        if (m_encoder && !m_ended) {
+            wgpuComputePassEncoderEnd(m_encoder);
+            m_ended = true;
         }
     }
 
@@ -509,6 +828,7 @@ public:
 
 private:
     WGPUComputePassEncoder m_encoder = nullptr;
+    bool m_ended = false;
 };
 
 class Surface {

@@ -472,20 +472,8 @@ GfxResult WebGPUBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
 
-    WGPUBufferDescriptor wgpuDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
-    if (descriptor->label) {
-        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
-    }
-    wgpuDesc.size = descriptor->size;
-    wgpuDesc.usage = gfx::convertor::gfxBufferUsageToWGPU(descriptor->usage);
-    wgpuDesc.mappedAtCreation = descriptor->mappedAtCreation ? WGPU_TRUE : WGPU_FALSE;
-
-    WGPUBuffer wgpuBuffer = wgpuDeviceCreateBuffer(devicePtr->handle(), &wgpuDesc);
-    if (!wgpuBuffer) {
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
-
-    auto* buffer = new gfx::webgpu::Buffer(wgpuBuffer, descriptor->size, static_cast<WGPUBufferUsage>(descriptor->usage), devicePtr);
+    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBufferCreateInfo(descriptor);
+    auto* buffer = new gfx::webgpu::Buffer(devicePtr->handle(), createInfo, devicePtr);
     *outBuffer = reinterpret_cast<GfxBuffer>(buffer);
     return GFX_RESULT_SUCCESS;
 }
@@ -498,36 +486,8 @@ GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
 
-    WGPUTextureDescriptor wgpuDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
-    if (descriptor->label) {
-        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
-    }
-    wgpuDesc.dimension = gfx::convertor::gfxTextureTypeToWGPU(descriptor->type);
-
-    // Set size based on texture type
-    uint32_t arrayLayers = descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1;
-    if (descriptor->type == GFX_TEXTURE_TYPE_CUBE) {
-        // Cube maps need 6 or 6*N layers
-        if (arrayLayers < 6) {
-            arrayLayers = 6;
-        }
-    }
-
-    wgpuDesc.size = { descriptor->size.width, descriptor->size.height,
-        descriptor->type == GFX_TEXTURE_TYPE_3D ? descriptor->size.depth : arrayLayers };
-    wgpuDesc.mipLevelCount = descriptor->mipLevelCount;
-    wgpuDesc.sampleCount = descriptor->sampleCount;
-    wgpuDesc.format = gfx::convertor::gfxFormatToWGPUFormat(descriptor->format);
-    wgpuDesc.usage = gfx::convertor::gfxTextureUsageToWGPU(descriptor->usage);
-
-    WGPUTexture wgpuTexture = wgpuDeviceCreateTexture(devicePtr->handle(), &wgpuDesc);
-    if (!wgpuTexture) {
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
-
-    auto* texture = new gfx::webgpu::Texture(wgpuTexture, wgpuDesc.size, wgpuDesc.format,
-        descriptor->mipLevelCount, descriptor->sampleCount,
-        wgpuDesc.usage);
+    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUTextureCreateInfo(descriptor);
+    auto* texture = new gfx::webgpu::Texture(devicePtr->handle(), createInfo);
     *outTexture = reinterpret_cast<GfxTexture>(texture);
     return GFX_RESULT_SUCCESS;
 }
@@ -540,35 +500,8 @@ GfxResult WebGPUBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerD
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
 
-    WGPUSamplerDescriptor wgpuDesc = WGPU_SAMPLER_DESCRIPTOR_INIT;
-    if (descriptor->label) {
-        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
-    }
-
-    // Convert address modes
-    wgpuDesc.addressModeU = gfx::convertor::gfxAddressModeToWGPU(descriptor->addressModeU);
-    wgpuDesc.addressModeV = gfx::convertor::gfxAddressModeToWGPU(descriptor->addressModeV);
-    wgpuDesc.addressModeW = gfx::convertor::gfxAddressModeToWGPU(descriptor->addressModeW);
-
-    // Convert filter modes
-    wgpuDesc.magFilter = gfx::convertor::gfxFilterModeToWGPU(descriptor->magFilter);
-    wgpuDesc.minFilter = gfx::convertor::gfxFilterModeToWGPU(descriptor->minFilter);
-    wgpuDesc.mipmapFilter = gfx::convertor::gfxMipmapFilterModeToWGPU(descriptor->mipmapFilter);
-
-    wgpuDesc.lodMinClamp = descriptor->lodMinClamp;
-    wgpuDesc.lodMaxClamp = descriptor->lodMaxClamp;
-    wgpuDesc.maxAnisotropy = descriptor->maxAnisotropy;
-
-    if (descriptor->compare) {
-        wgpuDesc.compare = gfx::convertor::gfxCompareFunctionToWGPU(*descriptor->compare);
-    }
-
-    WGPUSampler wgpuSampler = wgpuDeviceCreateSampler(devicePtr->handle(), &wgpuDesc);
-    if (!wgpuSampler) {
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
-
-    auto* sampler = new gfx::webgpu::Sampler(wgpuSampler);
+    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSamplerCreateInfo(descriptor);
+    auto* sampler = new gfx::webgpu::Sampler(devicePtr->handle(), createInfo);
     *outSampler = reinterpret_cast<GfxSampler>(sampler);
     return GFX_RESULT_SUCCESS;
 }
@@ -581,33 +514,8 @@ GfxResult WebGPUBackend::deviceCreateShader(GfxDevice device, const GfxShaderDes
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
 
-    WGPUShaderModuleDescriptor wgpuDesc = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
-    if (descriptor->label) {
-        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
-    }
-
-    // Use explicit source type from descriptor
-    if (descriptor->sourceType == GFX_SHADER_SOURCE_SPIRV) {
-        // SPIR-V shader (binary)
-        const uint32_t* codeU32 = static_cast<const uint32_t*>(descriptor->code);
-        WGPUShaderSourceSPIRV spirvSource = WGPU_SHADER_SOURCE_SPIRV_INIT;
-        spirvSource.code = codeU32;
-        spirvSource.codeSize = descriptor->codeSize / sizeof(uint32_t);
-        wgpuDesc.nextInChain = (WGPUChainedStruct*)&spirvSource;
-    } else {
-        // WGSL shader (text)
-        const char* wgslCode = static_cast<const char*>(descriptor->code);
-        WGPUShaderSourceWGSL wgslSource = WGPU_SHADER_SOURCE_WGSL_INIT;
-        wgslSource.code = gfx::convertor::gfxStringView(wgslCode);
-        wgpuDesc.nextInChain = (WGPUChainedStruct*)&wgslSource;
-    }
-
-    WGPUShaderModule wgpuModule = wgpuDeviceCreateShaderModule(devicePtr->handle(), &wgpuDesc);
-    if (!wgpuModule) {
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
-
-    auto* shader = new gfx::webgpu::Shader(wgpuModule);
+    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUShaderCreateInfo(descriptor);
+    auto* shader = new gfx::webgpu::Shader(devicePtr->handle(), createInfo);
     *outShader = reinterpret_cast<GfxShader>(shader);
     return GFX_RESULT_SUCCESS;
 }
@@ -619,66 +527,9 @@ GfxResult WebGPUBackend::deviceCreateBindGroupLayout(GfxDevice device, const Gfx
     }
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(descriptor);
 
-    WGPUBindGroupLayoutDescriptor wgpuDesc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
-    if (descriptor->label) {
-        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
-    }
-
-    std::vector<WGPUBindGroupLayoutEntry> entries;
-    if (descriptor->entryCount > 0 && descriptor->entries) {
-        entries.reserve(descriptor->entryCount);
-
-        for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
-            const auto& entry = descriptor->entries[i];
-            WGPUBindGroupLayoutEntry wgpuEntry = WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT;
-
-            wgpuEntry.binding = entry.binding;
-            wgpuEntry.visibility = WGPUShaderStage_None;
-            if (entry.visibility & GFX_SHADER_STAGE_VERTEX) {
-                wgpuEntry.visibility |= WGPUShaderStage_Vertex;
-            }
-            if (entry.visibility & GFX_SHADER_STAGE_FRAGMENT) {
-                wgpuEntry.visibility |= WGPUShaderStage_Fragment;
-            }
-            if (entry.visibility & GFX_SHADER_STAGE_COMPUTE) {
-                wgpuEntry.visibility |= WGPUShaderStage_Compute;
-            }
-
-            switch (entry.type) {
-            case GFX_BINDING_TYPE_BUFFER:
-                wgpuEntry.buffer.type = WGPUBufferBindingType_Uniform;
-                wgpuEntry.buffer.hasDynamicOffset = entry.buffer.hasDynamicOffset ? WGPU_TRUE : WGPU_FALSE;
-                wgpuEntry.buffer.minBindingSize = entry.buffer.minBindingSize;
-                break;
-            case GFX_BINDING_TYPE_SAMPLER:
-                wgpuEntry.sampler.type = entry.sampler.comparison ? WGPUSamplerBindingType_Comparison : WGPUSamplerBindingType_Filtering;
-                break;
-            case GFX_BINDING_TYPE_TEXTURE:
-                wgpuEntry.texture.sampleType = gfx::convertor::gfxTextureSampleTypeToWGPU(entry.texture.sampleType);
-                wgpuEntry.texture.viewDimension = gfx::convertor::gfxTextureViewTypeToWGPU(entry.texture.viewDimension);
-                wgpuEntry.texture.multisampled = entry.texture.multisampled ? WGPU_TRUE : WGPU_FALSE;
-                break;
-            case GFX_BINDING_TYPE_STORAGE_TEXTURE:
-                wgpuEntry.storageTexture.access = entry.storageTexture.writeOnly ? WGPUStorageTextureAccess_WriteOnly : WGPUStorageTextureAccess_ReadOnly;
-                wgpuEntry.storageTexture.format = gfx::convertor::gfxFormatToWGPUFormat(entry.storageTexture.format);
-                wgpuEntry.storageTexture.viewDimension = gfx::convertor::gfxTextureViewTypeToWGPU(entry.storageTexture.viewDimension);
-                break;
-            }
-
-            entries.push_back(wgpuEntry);
-        }
-
-        wgpuDesc.entries = entries.data();
-        wgpuDesc.entryCount = static_cast<uint32_t>(entries.size());
-    }
-
-    WGPUBindGroupLayout wgpuLayout = wgpuDeviceCreateBindGroupLayout(devicePtr->handle(), &wgpuDesc);
-    if (!wgpuLayout) {
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
-
-    auto* layout = new gfx::webgpu::BindGroupLayout(wgpuLayout);
+    auto* layout = new gfx::webgpu::BindGroupLayout(devicePtr->handle(), createInfo);
     *outLayout = reinterpret_cast<GfxBindGroupLayout>(layout);
     return GFX_RESULT_SUCCESS;
 }
@@ -692,55 +543,8 @@ GfxResult WebGPUBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGr
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
     auto* layoutPtr = reinterpret_cast<gfx::webgpu::BindGroupLayout*>(descriptor->layout);
 
-    WGPUBindGroupDescriptor wgpuDesc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
-    if (descriptor->label) {
-        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
-    }
-    wgpuDesc.layout = layoutPtr->handle();
-
-    std::vector<WGPUBindGroupEntry> entries;
-    if (descriptor->entryCount > 0 && descriptor->entries) {
-        entries.reserve(descriptor->entryCount);
-
-        for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
-            const auto& entry = descriptor->entries[i];
-            WGPUBindGroupEntry wgpuEntry = WGPU_BIND_GROUP_ENTRY_INIT;
-
-            wgpuEntry.binding = entry.binding;
-
-            switch (entry.type) {
-            case GFX_BIND_GROUP_ENTRY_TYPE_BUFFER: {
-                auto* buffer = reinterpret_cast<gfx::webgpu::Buffer*>(entry.resource.buffer.buffer);
-                wgpuEntry.buffer = buffer->handle();
-                wgpuEntry.offset = entry.resource.buffer.offset;
-                wgpuEntry.size = entry.resource.buffer.size;
-                break;
-            }
-            case GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER: {
-                auto* sampler = reinterpret_cast<gfx::webgpu::Sampler*>(entry.resource.sampler);
-                wgpuEntry.sampler = sampler->handle();
-                break;
-            }
-            case GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW: {
-                auto* textureView = reinterpret_cast<gfx::webgpu::TextureView*>(entry.resource.textureView);
-                wgpuEntry.textureView = textureView->handle();
-                break;
-            }
-            }
-
-            entries.push_back(wgpuEntry);
-        }
-
-        wgpuDesc.entries = entries.data();
-        wgpuDesc.entryCount = static_cast<uint32_t>(entries.size());
-    }
-
-    WGPUBindGroup wgpuBindGroup = wgpuDeviceCreateBindGroup(devicePtr->handle(), &wgpuDesc);
-    if (!wgpuBindGroup) {
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
-
-    auto* bindGroup = new gfx::webgpu::BindGroup(wgpuBindGroup);
+    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBindGroupCreateInfo(descriptor, layoutPtr->handle());
+    auto* bindGroup = new gfx::webgpu::BindGroup(devicePtr->handle(), createInfo);
     *outBindGroup = reinterpret_cast<GfxBindGroup>(bindGroup);
     return GFX_RESULT_SUCCESS;
 }
@@ -752,188 +556,9 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
     }
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
-    WGPURenderPipelineDescriptor wgpuDesc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
-    if (descriptor->label) {
-        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
-    }
-
-    // Create pipeline layout if bind group layouts are provided
-    WGPUPipelineLayout pipelineLayout = nullptr;
-    if (descriptor->bindGroupLayoutCount > 0 && descriptor->bindGroupLayouts) {
-        std::vector<WGPUBindGroupLayout> wgpuBindGroupLayouts;
-        wgpuBindGroupLayouts.reserve(descriptor->bindGroupLayoutCount);
-
-        for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
-            auto* layout = reinterpret_cast<gfx::webgpu::BindGroupLayout*>(descriptor->bindGroupLayouts[i]);
-            wgpuBindGroupLayouts.push_back(layout->handle());
-        }
-
-        WGPUPipelineLayoutDescriptor layoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
-        layoutDesc.bindGroupLayouts = wgpuBindGroupLayouts.data();
-        layoutDesc.bindGroupLayoutCount = static_cast<uint32_t>(wgpuBindGroupLayouts.size());
-
-        pipelineLayout = wgpuDeviceCreatePipelineLayout(devicePtr->handle(), &layoutDesc);
-        wgpuDesc.layout = pipelineLayout;
-    }
-
-    // Vertex state
-    auto* vertexShader = reinterpret_cast<gfx::webgpu::Shader*>(descriptor->vertex->module);
-    WGPUVertexState vertexState = WGPU_VERTEX_STATE_INIT;
-    vertexState.module = vertexShader->handle();
-    vertexState.entryPoint = gfx::convertor::gfxStringView(descriptor->vertex->entryPoint);
-
-    fprintf(stderr, "[WebGPU] Creating pipeline - vertex entry: '%s'\n", descriptor->vertex->entryPoint ? descriptor->vertex->entryPoint : "NULL");
-
-    // Convert vertex buffers
-    std::vector<WGPUVertexBufferLayout> vertexBuffers;
-    std::vector<std::vector<WGPUVertexAttribute>> allAttributes;
-
-    if (descriptor->vertex->bufferCount > 0) {
-        vertexBuffers.reserve(descriptor->vertex->bufferCount);
-        allAttributes.reserve(descriptor->vertex->bufferCount);
-
-        for (uint32_t i = 0; i < descriptor->vertex->bufferCount; ++i) {
-            const auto& buffer = descriptor->vertex->buffers[i];
-
-            std::vector<WGPUVertexAttribute> attributes;
-            attributes.reserve(buffer.attributeCount);
-
-            for (uint32_t j = 0; j < buffer.attributeCount; ++j) {
-                const auto& attr = buffer.attributes[j];
-                WGPUVertexAttribute wgpuAttr = WGPU_VERTEX_ATTRIBUTE_INIT;
-                wgpuAttr.format = gfx::convertor::gfxFormatToWGPUVertexFormat(attr.format);
-                wgpuAttr.offset = attr.offset;
-                wgpuAttr.shaderLocation = attr.shaderLocation;
-                attributes.push_back(wgpuAttr);
-            }
-
-            allAttributes.push_back(std::move(attributes));
-
-            WGPUVertexBufferLayout wgpuBuffer = WGPU_VERTEX_BUFFER_LAYOUT_INIT;
-            wgpuBuffer.arrayStride = buffer.arrayStride;
-            wgpuBuffer.stepMode = buffer.stepModeInstance ? WGPUVertexStepMode_Instance : WGPUVertexStepMode_Vertex;
-            wgpuBuffer.attributes = allAttributes.back().data();
-            wgpuBuffer.attributeCount = static_cast<uint32_t>(allAttributes.back().size());
-            vertexBuffers.push_back(wgpuBuffer);
-        }
-
-        vertexState.buffers = vertexBuffers.data();
-        vertexState.bufferCount = static_cast<uint32_t>(vertexBuffers.size());
-    }
-
-    wgpuDesc.vertex = vertexState;
-
-    // Fragment state (optional)
-    WGPUFragmentState fragmentState = WGPU_FRAGMENT_STATE_INIT;
-    std::vector<WGPUColorTargetState> colorTargets;
-    std::vector<WGPUBlendState> blendStates;
-
-    if (descriptor->fragment) {
-        auto* fragmentShader = reinterpret_cast<gfx::webgpu::Shader*>(descriptor->fragment->module);
-        fragmentState.module = fragmentShader->handle();
-        fragmentState.entryPoint = gfx::convertor::gfxStringView(descriptor->fragment->entryPoint);
-
-        fprintf(stderr, "[WebGPU] Creating pipeline - fragment entry: '%s'\n", descriptor->fragment->entryPoint ? descriptor->fragment->entryPoint : "NULL");
-
-        if (descriptor->fragment->targetCount > 0) {
-            colorTargets.reserve(descriptor->fragment->targetCount);
-
-            for (uint32_t i = 0; i < descriptor->fragment->targetCount; ++i) {
-                const auto& target = descriptor->fragment->targets[i];
-                WGPUColorTargetState wgpuTarget = WGPU_COLOR_TARGET_STATE_INIT;
-                wgpuTarget.format = gfx::convertor::gfxFormatToWGPUFormat(target.format);
-                wgpuTarget.writeMask = target.writeMask;
-
-                if (target.blend) {
-                    WGPUBlendState blend = WGPU_BLEND_STATE_INIT;
-
-                    // Color blend
-                    blend.color.operation = gfx::convertor::gfxBlendOperationToWGPU(target.blend->color.operation);
-                    blend.color.srcFactor = gfx::convertor::gfxBlendFactorToWGPU(target.blend->color.srcFactor);
-                    blend.color.dstFactor = gfx::convertor::gfxBlendFactorToWGPU(target.blend->color.dstFactor);
-
-                    // Alpha blend
-                    blend.alpha.operation = gfx::convertor::gfxBlendOperationToWGPU(target.blend->alpha.operation);
-                    blend.alpha.srcFactor = gfx::convertor::gfxBlendFactorToWGPU(target.blend->alpha.srcFactor);
-                    blend.alpha.dstFactor = gfx::convertor::gfxBlendFactorToWGPU(target.blend->alpha.dstFactor);
-
-                    blendStates.push_back(blend);
-                    wgpuTarget.blend = &blendStates.back();
-                }
-
-                colorTargets.push_back(wgpuTarget);
-            }
-
-            fragmentState.targets = colorTargets.data();
-            fragmentState.targetCount = static_cast<uint32_t>(colorTargets.size());
-        }
-
-        wgpuDesc.fragment = &fragmentState;
-    }
-
-    // Primitive state
-    WGPUPrimitiveState primitiveState = WGPU_PRIMITIVE_STATE_INIT;
-    primitiveState.topology = gfx::convertor::gfxPrimitiveTopologyToWGPU(descriptor->primitive->topology);
-    primitiveState.frontFace = gfx::convertor::gfxFrontFaceToWGPU(descriptor->primitive->frontFace);
-    primitiveState.cullMode = gfx::convertor::gfxCullModeToWGPU(descriptor->primitive->cullMode);
-
-    if (descriptor->primitive->stripIndexFormat) {
-        primitiveState.stripIndexFormat = gfx::convertor::gfxIndexFormatToWGPU(*descriptor->primitive->stripIndexFormat);
-    }
-
-    wgpuDesc.primitive = primitiveState;
-
-    // Depth/stencil state (optional)
-    WGPUDepthStencilState depthStencilState = WGPU_DEPTH_STENCIL_STATE_INIT;
-    if (descriptor->depthStencil) {
-        depthStencilState.format = gfx::convertor::gfxFormatToWGPUFormat(descriptor->depthStencil->format);
-        depthStencilState.depthWriteEnabled = descriptor->depthStencil->depthWriteEnabled ? WGPUOptionalBool_True : WGPUOptionalBool_False;
-        depthStencilState.depthCompare = gfx::convertor::gfxCompareFunctionToWGPU(descriptor->depthStencil->depthCompare);
-
-        // Only configure stencil ops for formats that have a stencil aspect
-        // For depth-only formats, the INIT macro sets sensible defaults (Always/Keep)
-        if (gfx::convertor::formatHasStencil(descriptor->depthStencil->format)) {
-            // Stencil front
-            depthStencilState.stencilFront.compare = gfx::convertor::gfxCompareFunctionToWGPU(descriptor->depthStencil->stencilFront.compare);
-            depthStencilState.stencilFront.failOp = gfx::convertor::gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.failOp);
-            depthStencilState.stencilFront.depthFailOp = gfx::convertor::gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.depthFailOp);
-            depthStencilState.stencilFront.passOp = gfx::convertor::gfxStencilOperationToWGPU(descriptor->depthStencil->stencilFront.passOp);
-
-            // Stencil back
-            depthStencilState.stencilBack.compare = gfx::convertor::gfxCompareFunctionToWGPU(descriptor->depthStencil->stencilBack.compare);
-            depthStencilState.stencilBack.failOp = gfx::convertor::gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.failOp);
-            depthStencilState.stencilBack.depthFailOp = gfx::convertor::gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.depthFailOp);
-            depthStencilState.stencilBack.passOp = gfx::convertor::gfxStencilOperationToWGPU(descriptor->depthStencil->stencilBack.passOp);
-
-            depthStencilState.stencilReadMask = descriptor->depthStencil->stencilReadMask;
-            depthStencilState.stencilWriteMask = descriptor->depthStencil->stencilWriteMask;
-        }
-
-        depthStencilState.depthBias = descriptor->depthStencil->depthBias;
-        depthStencilState.depthBiasSlopeScale = descriptor->depthStencil->depthBiasSlopeScale;
-        depthStencilState.depthBiasClamp = descriptor->depthStencil->depthBiasClamp;
-
-        wgpuDesc.depthStencil = &depthStencilState;
-    }
-
-    // Multisample state
-    WGPUMultisampleState multisampleState = WGPU_MULTISAMPLE_STATE_INIT;
-    multisampleState.count = descriptor->sampleCount;
-    wgpuDesc.multisample = multisampleState;
-
-    WGPURenderPipeline wgpuPipeline = wgpuDeviceCreateRenderPipeline(devicePtr->handle(), &wgpuDesc);
-
-    // Release the pipeline layout if we created one (pipeline holds its own reference)
-    if (pipelineLayout) {
-        wgpuPipelineLayoutRelease(pipelineLayout);
-    }
-
-    if (!wgpuPipeline) {
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
-
-    auto* pipeline = new gfx::webgpu::RenderPipeline(wgpuPipeline);
+    
+    auto createInfo = gfx::convertor::gfxDescriptorToWebGPURenderPipelineCreateInfo(descriptor);
+    auto* pipeline = new gfx::webgpu::RenderPipeline(devicePtr->handle(), createInfo);
     *outPipeline = reinterpret_cast<GfxRenderPipeline>(pipeline);
     return GFX_RESULT_SUCCESS;
 }
@@ -945,47 +570,9 @@ GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
     }
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-    auto* shader = reinterpret_cast<gfx::webgpu::Shader*>(descriptor->compute);
-
-    WGPUComputePipelineDescriptor wgpuDesc = WGPU_COMPUTE_PIPELINE_DESCRIPTOR_INIT;
-    if (descriptor->label) {
-        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
-    }
-
-    // Create pipeline layout if bind group layouts are provided
-    WGPUPipelineLayout pipelineLayout = nullptr;
-    if (descriptor->bindGroupLayoutCount > 0 && descriptor->bindGroupLayouts) {
-        std::vector<WGPUBindGroupLayout> wgpuBindGroupLayouts;
-        wgpuBindGroupLayouts.reserve(descriptor->bindGroupLayoutCount);
-
-        for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
-            auto* layout = reinterpret_cast<gfx::webgpu::BindGroupLayout*>(descriptor->bindGroupLayouts[i]);
-            wgpuBindGroupLayouts.push_back(layout->handle());
-        }
-
-        WGPUPipelineLayoutDescriptor layoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
-        layoutDesc.bindGroupLayouts = wgpuBindGroupLayouts.data();
-        layoutDesc.bindGroupLayoutCount = static_cast<uint32_t>(wgpuBindGroupLayouts.size());
-
-        pipelineLayout = wgpuDeviceCreatePipelineLayout(devicePtr->handle(), &layoutDesc);
-        wgpuDesc.layout = pipelineLayout;
-    }
-
-    wgpuDesc.compute.module = shader->handle();
-    wgpuDesc.compute.entryPoint = gfx::convertor::gfxStringView(descriptor->entryPoint);
-
-    WGPUComputePipeline wgpuPipeline = wgpuDeviceCreateComputePipeline(devicePtr->handle(), &wgpuDesc);
-
-    // Release the pipeline layout if we created one (pipeline holds its own reference)
-    if (pipelineLayout) {
-        wgpuPipelineLayoutRelease(pipelineLayout);
-    }
-
-    if (!wgpuPipeline) {
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
-
-    auto* pipeline = new gfx::webgpu::ComputePipeline(wgpuPipeline);
+    
+    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUComputePipelineCreateInfo(descriptor);
+    auto* pipeline = new gfx::webgpu::ComputePipeline(devicePtr->handle(), createInfo);
     *outPipeline = reinterpret_cast<GfxComputePipeline>(pipeline);
     return GFX_RESULT_SUCCESS;
 }
@@ -2128,7 +1715,7 @@ void WebGPUBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder)
     }
 
     auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
-    wgpuRenderPassEncoderEnd(encoderPtr->handle());
+    encoderPtr->end();
 }
 
 // ComputePassEncoder functions
@@ -2181,7 +1768,7 @@ void WebGPUBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncod
     }
 
     auto* encoderPtr = reinterpret_cast<gfx::webgpu::ComputePassEncoder*>(computePassEncoder);
-    wgpuComputePassEncoderEnd(encoderPtr->handle());
+    encoderPtr->end();
 }
 
 // Fence functions
