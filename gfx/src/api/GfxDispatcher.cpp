@@ -1262,12 +1262,12 @@ uint64_t gfxAlignDown(uint64_t value, uint64_t alignment)
     return value & ~(alignment - 1);
 }
 
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeX11(void* window, void* display)
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXlib(void* display, unsigned long window)
 {
     GfxPlatformWindowHandle handle = {};
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_X11;
-    handle.x11.window = window;
-    handle.x11.display = display;
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_XLIB;
+    handle.xlib.display = display;
+    handle.xlib.window = window;
     return handle;
 }
 
@@ -1298,20 +1298,27 @@ GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWin32(void* hwnd, void* hinst
     return handle;
 }
 
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeCocoa(void* nsWindow, void* metalLayer)
-{
-    GfxPlatformWindowHandle handle = {};
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_COCOA;
-    handle.cocoa.nsWindow = nsWindow;
-    handle.cocoa.metalLayer = metalLayer;
-    return handle;
-}
-
 GfxPlatformWindowHandle gfxPlatformWindowHandleMakeEmscripten(const char* canvasSelector)
 {
     GfxPlatformWindowHandle handle = {};
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_EMSCRIPTEN;
     handle.emscripten.canvasSelector = canvasSelector;
+    return handle;
+}
+
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeAndroid(void* window)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_ANDROID;
+    handle.android.window = window;
+    return handle;
+}
+
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeMetal(void* layer)
+{
+    GfxPlatformWindowHandle handle = {};
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_METAL;
+    handle.metal.layer = layer;
     return handle;
 }
 

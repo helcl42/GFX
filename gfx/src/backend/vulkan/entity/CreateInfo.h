@@ -1,6 +1,7 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "../common/VulkanCommon.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -32,9 +33,9 @@ enum class SemaphoreType {
 };
 
 enum class DeviceTypePreference {
-    HighPerformance,  // Prefer discrete GPU
-    LowPower,         // Prefer integrated GPU
-    SoftwareRenderer  // Force CPU-based software renderer
+    HighPerformance, // Prefer discrete GPU
+    LowPower, // Prefer integrated GPU
+    SoftwareRenderer // Force CPU-based software renderer
 };
 
 // ============================================================================
@@ -135,7 +136,7 @@ struct DeviceCreateInfo {
     // Placeholder for future extensibility
 };
 
-struct SurfaceCreateInfo {
+struct PlatformWindowHandle {
     // Platform-specific window handles (Vulkan native)
     enum class Platform {
         Unknown,
@@ -143,7 +144,9 @@ struct SurfaceCreateInfo {
         Xcb,
         Wayland,
         Win32,
-        MacOS
+        Metal,
+        Android,
+        Emscripten
     } platform;
 
     union {
@@ -165,8 +168,18 @@ struct SurfaceCreateInfo {
         } win32;
         struct {
             void* layer; // CAMetalLayer*
-        } macos;
+        } metal;
+        struct {
+            void* window; // ANativeWindow*
+        } android;
+        struct {
+            const char* canvasSelector; // CSS selector for canvas element (e.g., "#canvas")
+        } emscripten;
     } handle;
+};
+
+struct SurfaceCreateInfo {
+    PlatformWindowHandle windowHandle;
 };
 
 struct SwapchainCreateInfo {

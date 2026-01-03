@@ -938,27 +938,27 @@ PlatformWindowHandle CubeApp::extractNativeHandle()
 
 #if defined(__EMSCRIPTEN__)
     handle.windowingSystem = gfx::WindowingSystem::Emscripten;
-    handle.emscripten.canvasSelector = "#canvas";
+    handle.handle.emscripten.canvasSelector = "#canvas";
 
 #elif defined(_WIN32)
     // Windows: Get HWND and HINSTANCE
     handle.windowingSystem = gfx::WindowingSystem::Win32;
-    handle.hwnd = glfwGetWin32Window(window);
-    handle.hinstance = GetModuleHandle(nullptr);
-    std::cout << "Extracted Win32 handle: HWND=" << handle.hwnd << ", HINSTANCE=" << handle.hinstance << std::endl;
+    handle.handle.win32.hwnd = glfwGetWin32Window(window);
+    handle.handle.win32.hinstance = GetModuleHandle(nullptr);
+    std::cout << "Extracted Win32 handle: HWND=" << handle.handle.win32.hwnd << ", HINSTANCE=" << handle.handle.win32.hinstance << std::endl;
 
 #elif defined(__linux__)
     // Linux: Get X11 Window and Display (assuming X11, not Wayland)
-    handle.windowingSystem = gfx::WindowingSystem::X11;
-    handle.x11.window = reinterpret_cast<void*>(glfwGetX11Window(window));
-    handle.x11.display = glfwGetX11Display();
-    std::cout << "Extracted X11 handle: Window=" << handle.x11.window << ", Display=" << handle.x11.display << std::endl;
+    handle.windowingSystem = gfx::WindowingSystem::Xlib;
+    handle.handle.xlib.window = glfwGetX11Window(window);
+    handle.handle.xlib.display = glfwGetX11Display();
+    std::cout << "Extracted X11 handle: Window=" << handle.handle.xlib.window << ", Display=" << handle.handle.xlib.display << std::endl;
 
 #elif defined(__APPLE__)
     // macOS: Get NSWindow
-    handle.windowingSystem = gfx::WindowingSystem::Cocoa;
-    handle.nsWindow = glfwGetCocoaWindow(window);
-    std::cout << "Extracted Cocoa handle: NSWindow=" << handle.nsWindow << std::endl;
+    handle.windowingSystem = gfx::WindowingSystem::Metal;
+    handle.handle.metal.layer = glfwGetMetalLayer(window);
+    std::cout << "Extracted Metal handle: Layer=" << handle.handle.metal.layer << std::endl;
 #endif
 
     return handle;

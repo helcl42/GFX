@@ -208,8 +208,8 @@ enum class SampleCount {
 };
 
 enum class ShaderSourceType {
-    WGSL,   // WGSL text source (for WebGPU)
-    SPIRV   // SPIR-V binary (for Vulkan)
+    WGSL, // WGSL text source (for WebGPU)
+    SPIRV // SPIR-V binary (for Vulkan)
 };
 
 // Synchronization enums
@@ -247,14 +247,14 @@ enum class DebugMessageType {
 };
 
 enum class LoadOp {
-    Load,     // Load existing contents
-    Clear,    // Clear to specified clear value
-    DontCare  // Don't care about initial contents (better performance on tiled GPUs)
+    Load, // Load existing contents
+    Clear, // Clear to specified clear value
+    DontCare // Don't care about initial contents (better performance on tiled GPUs)
 };
 
 enum class StoreOp {
-    Store,    // Store contents after render pass
-    DontCare  // Don't care about contents after render pass (better performance for transient attachments)
+    Store, // Store contents after render pass
+    DontCare // Don't care about contents after render pass (better performance for transient attachments)
 };
 
 enum class TextureLayout {
@@ -376,34 +376,25 @@ struct Origin3D {
 
 // Common windowing system enum for all platforms
 enum class WindowingSystem {
+    Unknown,
     Win32,
-    X11,
+    Xlib,
     Wayland,
     XCB,
-    Cocoa,
-    Emscripten
+    Metal,
+    Emscripten,
+    Android
 };
 
 // Common platform window handle struct with union for all windowing systems
 struct PlatformWindowHandle {
-    WindowingSystem windowingSystem =
-#if defined(__EMSCRIPTEN__)
-        WindowingSystem::Emscripten;
-#elif defined(_WIN32)
-        WindowingSystem::Win32;
-#elif defined(__APPLE__)
-        WindowingSystem::Cocoa;
-#else
-        WindowingSystem::X11;
-#endif
-
     struct Win32Handle {
         void* hwnd = nullptr; // HWND - Window handle
         void* hinstance; // HINSTANCE - Application instance
     };
-    struct X11Handle {
-        void* window = nullptr; // Window
+    struct XlibHandle {
         void* display; // Display*
+        unsigned long window; // Window
     };
     struct WaylandHandle {
         void* surface; // wl_surface*
@@ -413,88 +404,89 @@ struct PlatformWindowHandle {
         void* connection; // xcb_connection_t*
         uint32_t window; // xcb_window_t
     };
-    struct CocoaHandle {
-        void* nsWindow; // NSWindow*
-        void* metalLayer; // CAMetalLayer* (optional)
+    struct MetalHandle {
+        void* layer; // CAMetalLayer* (optional)
     };
     struct EmscriptenHandle {
         const char* canvasSelector = nullptr; // CSS selector for canvas element (e.g., "#canvas")
     };
-
-    union {
-        Win32Handle win32;
-        X11Handle x11;
-        WaylandHandle wayland;
-        XcbHandle xcb;
-        CocoaHandle cocoa;
-        EmscriptenHandle emscripten;
+    struct AndroidHandle {
+        void* window;
     };
 
-    PlatformWindowHandle()
-    {
-#ifdef _WIN32
-        win32.hwnd = nullptr;
-        win32.hinstance = nullptr;
-#elif defined(__APPLE__)
-        cocoa.nsWindow = nullptr;
-        cocoa.metalLayer = nullptr;
-#else
-        x11.window = nullptr;
-        x11.display = nullptr;
-#endif
-    }
+    union WindowHandleUnion {
+        Win32Handle win32;
+        XlibHandle xlib;
+        WaylandHandle wayland;
+        XcbHandle xcb;
+        MetalHandle metal;
+        EmscriptenHandle emscripten;
+        AndroidHandle android;
+
+        // Pick a default active member:
+        constexpr WindowHandleUnion()
+            : win32{}
+        {
+        }
+
+        // If ALL members are trivial, you can omit this.
+        // If ANY member is non-trivial, you must manage lifetime somewhere.
+        ~WindowHandleUnion() {}
+    };
+
+    WindowingSystem windowingSystem{};
+    WindowHandleUnion handle{};
 
     // Factory methods for each windowing system
     static PlatformWindowHandle makeWin32(void* hwnd, void* hinstance = nullptr)
     {
-        PlatformWindowHandle h;
+        PlatformWindowHandle h{};
         h.windowingSystem = WindowingSystem::Win32;
-        h.win32.hwnd = hwnd;
-        h.win32.hinstance = hinstance;
+        h.handle.win32.hwnd = hwnd;
+        h.handle.win32.hinstance = hinstance;
         return h;
     }
 
-    static PlatformWindowHandle makeX11(void* window, void* display)
+    static PlatformWindowHandle makeXlib(void* display, unsigned long window)
     {
-        PlatformWindowHandle h;
-        h.windowingSystem = WindowingSystem::X11;
-        h.x11.window = window;
-        h.x11.display = display;
+        PlatformWindowHandle h{};
+        h.windowingSystem = WindowingSystem::Xlib;
+        h.handle.xlib.display = display;
+        h.handle.xlib.window = window;
         return h;
     }
 
     static PlatformWindowHandle makeWayland(void* surface, void* display)
     {
-        PlatformWindowHandle h;
+        PlatformWindowHandle h{};
         h.windowingSystem = WindowingSystem::Wayland;
-        h.wayland.surface = surface;
-        h.wayland.display = display;
+        h.handle.wayland.surface = surface;
+        h.handle.wayland.display = display;
         return h;
     }
 
     static PlatformWindowHandle makeXCB(void* connection, uint32_t window)
     {
-        PlatformWindowHandle h;
+        PlatformWindowHandle h{};
         h.windowingSystem = WindowingSystem::XCB;
-        h.xcb.connection = connection;
-        h.xcb.window = window;
+        h.handle.xcb.connection = connection;
+        h.handle.xcb.window = window;
         return h;
     }
 
-    static PlatformWindowHandle makeCocoa(void* nsWindow, void* metalLayer = nullptr)
+    static PlatformWindowHandle makeMetal(void* layer)
     {
-        PlatformWindowHandle h;
-        h.windowingSystem = WindowingSystem::Cocoa;
-        h.cocoa.nsWindow = nsWindow;
-        h.cocoa.metalLayer = metalLayer;
+        PlatformWindowHandle h{};
+        h.windowingSystem = WindowingSystem::Metal;
+        h.handle.metal.layer = layer;
         return h;
     }
 
     static PlatformWindowHandle makeEmscripten(const char* canvasSelector)
     {
-        PlatformWindowHandle h;
+        PlatformWindowHandle h{};
         h.windowingSystem = WindowingSystem::Emscripten;
-        h.emscripten.canvasSelector = canvasSelector;
+        h.handle.emscripten.canvasSelector = canvasSelector;
         return h;
     }
 };
@@ -619,12 +611,12 @@ struct BlendState {
 
 // Color write mask flags (can be combined with bitwise OR)
 enum ColorWriteMask : uint32_t {
-    None  = 0x0,
-    Red   = 0x1,
+    None = 0x0,
+    Red = 0x1,
     Green = 0x2,
-    Blue  = 0x4,
+    Blue = 0x4,
     Alpha = 0x8,
-    All   = 0xF  // R | G | B | A
+    All = 0xF // R | G | B | A
 };
 
 struct ColorTargetState {
@@ -836,7 +828,7 @@ struct BufferBarrier {
     AccessFlags srcAccessMask = AccessFlags::None;
     AccessFlags dstAccessMask = AccessFlags::None;
     uint64_t offset = 0;
-    uint64_t size = 0;  // 0 means whole buffer
+    uint64_t size = 0; // 0 means whole buffer
 };
 
 struct TextureBarrier {
@@ -884,7 +876,7 @@ struct StencilAttachmentOps {
 
 struct DepthStencilAttachmentTarget {
     std::shared_ptr<TextureView> view;
-    DepthAttachmentOps* depthOps = nullptr;   // Optional: set to nullptr if not used
+    DepthAttachmentOps* depthOps = nullptr; // Optional: set to nullptr if not used
     StencilAttachmentOps* stencilOps = nullptr; // Optional: set to nullptr if not used
     TextureLayout finalLayout = TextureLayout::Undefined;
 };
@@ -1088,7 +1080,8 @@ public:
     virtual void pipelineBarrier(
         const std::vector<MemoryBarrier>& memoryBarriers = {},
         const std::vector<BufferBarrier>& bufferBarriers = {},
-        const std::vector<TextureBarrier>& textureBarriers = {}) = 0;
+        const std::vector<TextureBarrier>& textureBarriers = {})
+        = 0;
 
     virtual void end() = 0;
     virtual void begin() = 0;

@@ -46,7 +46,7 @@ gfx::webgpu::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreTyp
 gfx::webgpu::AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)
 {
     gfx::webgpu::AdapterCreateInfo createInfo{};
-    
+
     if (descriptor) {
         switch (descriptor->preference) {
         case GFX_ADAPTER_PREFERENCE_LOW_POWER:
@@ -70,7 +70,7 @@ gfx::webgpu::AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxA
         createInfo.powerPreference = WGPUPowerPreference_Undefined;
         createInfo.forceFallbackAdapter = false;
     }
-    
+
     return createInfo;
 }
 
@@ -177,14 +177,14 @@ gfx::webgpu::PlatformWindowHandle gfxWindowHandleToWebGPUPlatformWindowHandle(co
 
     switch (gfxHandle.windowingSystem) {
     case GFX_WINDOWING_SYSTEM_XCB:
-        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::XCB;
+        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Xcb;
         handle.handle.xcb.connection = gfxHandle.xcb.connection;
         handle.handle.xcb.window = gfxHandle.xcb.window;
         break;
-    case GFX_WINDOWING_SYSTEM_X11:
+    case GFX_WINDOWING_SYSTEM_XLIB:
         handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Xlib;
-        handle.handle.xlib.display = gfxHandle.x11.display;
-        handle.handle.xlib.window = reinterpret_cast<unsigned long>(gfxHandle.x11.window);
+        handle.handle.xlib.display = gfxHandle.xlib.display;
+        handle.handle.xlib.window = gfxHandle.xlib.window;
         break;
     case GFX_WINDOWING_SYSTEM_WAYLAND:
         handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Wayland;
@@ -196,12 +196,17 @@ gfx::webgpu::PlatformWindowHandle gfxWindowHandleToWebGPUPlatformWindowHandle(co
         handle.handle.win32.hinstance = gfxHandle.win32.hinstance;
         handle.handle.win32.hwnd = gfxHandle.win32.hwnd;
         break;
-    case GFX_WINDOWING_SYSTEM_COCOA:
-        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::MacOS;
-        handle.handle.macos.layer = gfxHandle.cocoa.nsWindow;
+    case GFX_WINDOWING_SYSTEM_METAL:
+        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Metal;
+        handle.handle.metal.layer = gfxHandle.metal.layer;
         break;
     case GFX_WINDOWING_SYSTEM_EMSCRIPTEN:
-        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Unknown;
+        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Emscripten;
+        handle.handle.emscripten.canvasSelector = gfxHandle.emscripten.canvasSelector;
+        break;
+    case GFX_WINDOWING_SYSTEM_ANDROID:
+        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Android;
+        handle.handle.android.window = gfxHandle.android.window;
         break;
     default:
         handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Unknown;

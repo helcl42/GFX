@@ -287,8 +287,8 @@ typedef enum {
 } GfxSampleCount;
 
 typedef enum {
-    GFX_SHADER_SOURCE_WGSL,   // WGSL text source (for WebGPU)
-    GFX_SHADER_SOURCE_SPIRV   // SPIR-V binary (for Vulkan)
+    GFX_SHADER_SOURCE_WGSL, // WGSL text source (for WebGPU)
+    GFX_SHADER_SOURCE_SPIRV // SPIR-V binary (for Vulkan)
 } GfxShaderSourceType;
 
 // Result codes
@@ -328,14 +328,14 @@ typedef enum {
 } GfxDebugMessageType;
 
 typedef enum {
-    GFX_LOAD_OP_LOAD,      // Load existing contents
-    GFX_LOAD_OP_CLEAR,     // Clear to specified clear value
-    GFX_LOAD_OP_DONT_CARE  // Don't care about initial contents (better performance on tiled GPUs)
+    GFX_LOAD_OP_LOAD, // Load existing contents
+    GFX_LOAD_OP_CLEAR, // Clear to specified clear value
+    GFX_LOAD_OP_DONT_CARE // Don't care about initial contents (better performance on tiled GPUs)
 } GfxLoadOp;
 
 typedef enum {
-    GFX_STORE_OP_STORE,     // Store contents after render pass
-    GFX_STORE_OP_DONT_CARE  // Don't care about contents after render pass (better performance for transient attachments)
+    GFX_STORE_OP_STORE, // Store contents after render pass
+    GFX_STORE_OP_DONT_CARE // Don't care about contents after render pass (better performance for transient attachments)
 } GfxStoreOp;
 
 // ============================================================================
@@ -474,7 +474,7 @@ typedef struct {
 
 typedef struct {
     GfxTextureView view;
-    GfxDepthAttachmentOps* depthOps;   // Optional: set to nullptr if not used
+    GfxDepthAttachmentOps* depthOps; // Optional: set to nullptr if not used
     GfxStencilAttachmentOps* stencilOps; // Optional: set to nullptr if not used
     GfxTextureLayout finalLayout;
 } GfxDepthStencilAttachmentTarget;
@@ -502,11 +502,12 @@ typedef struct {
 // Common windowing system enum for all platforms
 typedef enum {
     GFX_WINDOWING_SYSTEM_WIN32,
-    GFX_WINDOWING_SYSTEM_X11,
+    GFX_WINDOWING_SYSTEM_XLIB,
     GFX_WINDOWING_SYSTEM_WAYLAND,
     GFX_WINDOWING_SYSTEM_XCB,
-    GFX_WINDOWING_SYSTEM_COCOA,
-    GFX_WINDOWING_SYSTEM_EMSCRIPTEN
+    GFX_WINDOWING_SYSTEM_METAL,
+    GFX_WINDOWING_SYSTEM_EMSCRIPTEN,
+    GFX_WINDOWING_SYSTEM_ANDROID
 } GfxWindowingSystem;
 
 // Common platform window handle struct with union for all windowing systems
@@ -515,9 +516,14 @@ typedef struct GfxWin32Handle {
     void* hinstance; // HINSTANCE - Application instance
 } GfxWin32Handle;
 
-typedef struct GfxX11Handle {
-    void* window; // Window
+typedef struct GfxXlibHandle {
+    unsigned long window; // Window
     void* display; // Display*
+} GfxXlibHandle;
+
+typedef struct GfxX11Handle {
+    void* connection;
+    uint32_t window;
 } GfxX11Handle;
 
 typedef struct GfxWaylandHandle {
@@ -530,24 +536,28 @@ typedef struct GfxXcbHandle {
     uint32_t window; // xcb_window_t
 } GfxXcbHandle;
 
-typedef struct GfxCocoaHandle {
-    void* nsWindow; // NSWindow*
-    void* metalLayer; // CAMetalLayer* (optional)
-} GfxCocoaHandle;
+typedef struct GfxMetalHandle {
+    void* layer; // CAMetalLayer* (optional)
+} GfxMetalHandle;
 
 typedef struct GfxEmscriptenHandle {
     const char* canvasSelector; // CSS selector for canvas element (e.g., "#canvas")
 } GfxEmscriptenHandle;
 
+typedef struct GfxAndroidHandle {
+    void* window;
+} GfxAndroidHandle;
+
 typedef struct {
     GfxWindowingSystem windowingSystem;
     union {
         GfxWin32Handle win32;
-        GfxX11Handle x11;
-        GfxWaylandHandle wayland;
+        GfxXlibHandle xlib;
         GfxXcbHandle xcb;
-        GfxCocoaHandle cocoa;
+        GfxWaylandHandle wayland;
+        GfxMetalHandle metal;
         GfxEmscriptenHandle emscripten;
+        GfxAndroidHandle android;
     };
 } GfxPlatformWindowHandle;
 
@@ -687,18 +697,18 @@ typedef struct {
 
 // Color write mask flags (can be combined with bitwise OR)
 typedef enum {
-    GFX_COLOR_WRITE_MASK_NONE  = 0x0,
-    GFX_COLOR_WRITE_MASK_RED   = 0x1,
+    GFX_COLOR_WRITE_MASK_NONE = 0x0,
+    GFX_COLOR_WRITE_MASK_RED = 0x1,
     GFX_COLOR_WRITE_MASK_GREEN = 0x2,
-    GFX_COLOR_WRITE_MASK_BLUE  = 0x4,
+    GFX_COLOR_WRITE_MASK_BLUE = 0x4,
     GFX_COLOR_WRITE_MASK_ALPHA = 0x8,
-    GFX_COLOR_WRITE_MASK_ALL   = 0xF  // R | G | B | A
+    GFX_COLOR_WRITE_MASK_ALL = 0xF // R | G | B | A
 } GfxColorWriteMask;
 
 typedef struct {
     GfxTextureFormat format;
     GfxBlendState* blend; // NULL if not used
-    uint32_t writeMask;   // Combination of GfxColorWriteMask flags
+    uint32_t writeMask; // Combination of GfxColorWriteMask flags
 } GfxColorTargetState;
 
 typedef struct {
@@ -928,7 +938,7 @@ GFX_API GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const GfxComma
 GFX_API GfxResult gfxDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence);
 GFX_API GfxResult gfxDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore);
 GFX_API void gfxDeviceWaitIdle(GfxDevice device);
-GFX_API void gfxDevicePoll(GfxDevice device);  // Poll device for async operations (needed for some backends)
+GFX_API void gfxDevicePoll(GfxDevice device); // Poll device for async operations (needed for some backends)
 GFX_API void gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
 
 // Surface functions
@@ -1076,12 +1086,13 @@ GFX_API uint64_t gfxAlignUp(uint64_t value, uint64_t alignment);
 GFX_API uint64_t gfxAlignDown(uint64_t value, uint64_t alignment);
 
 // Cross-platform helpers available on all platforms
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeX11(void* window, void* display);
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXlib(void* display, unsigned long window);
 GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWayland(void* surface, void* display);
 GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXCB(void* connection, uint32_t window);
 GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWin32(void* hwnd, void* hinstance);
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeCocoa(void* nsWindow, void* metalLayer);
 GfxPlatformWindowHandle gfxPlatformWindowHandleMakeEmscripten(const char* canvasSelector);
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeAndroid(void* window);
+GfxPlatformWindowHandle gfxPlatformWindowHandleMakeMetal(void* layer);
 
 #ifdef __cplusplus
 }

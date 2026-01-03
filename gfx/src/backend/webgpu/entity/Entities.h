@@ -3,6 +3,21 @@
 #include "../common/WebGPUCommon.h"
 #include "CreateInfo.h"
 
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+// Platform-specific includes for surface creation
+#elif defined(_WIN32)
+#include <windows.h>
+#elif defined(__linux__)
+#include <X11/Xlib.h>
+// For Wayland support
+struct wl_display;
+struct wl_surface;
+#elif defined(__APPLE__)
+#include <objc/objc.h>
+#include <objc/runtime.h>
+#endif
+
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -1005,10 +1020,40 @@ public:
     Surface(const Surface&) = delete;
     Surface& operator=(const Surface&) = delete;
 
-    Surface(WGPUSurface surface, WGPUAdapter adapter)
-        : m_surface(surface)
-        , m_adapter(adapter)
+    Surface(WGPUInstance instance, WGPUAdapter adapter, const SurfaceCreateInfo& createInfo)
+        : m_adapter(adapter)
     {
+        switch (createInfo.windowHandle.platform) {
+#if defined(_WIN32)
+        case gfx::webgpu::PlatformWindowHandle::Platform::Win32:
+            m_surface = createSurfaceWin32(instance, createInfo.windowHandle);
+            break;
+#elif defined(__ANDROID__)
+        case gfx::webgpu::PlatformWindowHandle::Platform::Android:
+            m_surface = createSurfaceAndroid(instance, createInfo.windowHandle);
+            break;
+#elif defined(__linux__)
+        case gfx::webgpu::PlatformWindowHandle::Platform::Xlib:
+            m_surface = createSurfaceXlib(instance, createInfo.windowHandle);
+            break;
+        case gfx::webgpu::PlatformWindowHandle::Platform::Xcb:
+            m_surface = createSurfaceXCB(instance, createInfo.windowHandle);
+            break;
+        case gfx::webgpu::PlatformWindowHandle::Platform::Wayland:
+            m_surface = createSurfaceWayland(instance, createInfo.windowHandle);
+            break;
+#elif defined(__APPLE__)
+        case gfx::webgpu::PlatformWindowHandle::Platform::Cocoa:
+            m_surface = createSurfaceMetal(instance, createInfo.windowHandle);
+            break;
+#elif defined(__EMSCRIPTEN__)
+        case gfx::webgpu::PlatformWindowHandle::Platform::Emscripten:
+            m_surface = createSurfaceEmscripten(instance, createInfo.windowHandle);
+            break;
+#endif
+        default:
+            throw std::runtime_error("Unsupported windowing system for WebGPU surface creation");
+        }
     }
 
     ~Surface()
@@ -1018,12 +1063,131 @@ public:
         }
     }
 
-    WGPUSurface handle() const { return m_surface; }
     WGPUAdapter adapter() const { return m_adapter; }
+    WGPUSurface handle() const { return m_surface; }
 
 private:
-    WGPUSurface m_surface = nullptr;
+#if defined(_WIN32)
+    static WGPUSurface createSurfaceWin32(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    {
+        if (!windowHandle.handle.win32.hwnd || !windowHandle.handle.win32.hinstance) {
+            throw std::runtime_error("Invalid Win32 window or instance handle");
+        }
+
+        WGPUSurfaceSourceWindowsHWND source = WGPU_SURFACE_SOURCE_WINDOWS_HWND_INIT;
+        source.hwnd = windowHandle.handle.win32.hwnd;
+        source.hinstance = windowHandle.handle.win32.hinstance;
+
+        WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
+        surfaceDesc.label = gfx::convertor::gfxStringView("Win32 Surface");
+        surfaceDesc.nextInChain = (WGPUChainedStruct*)&source;
+
+        return wgpuInstanceCreateSurface(instance, &surfaceDesc);
+    }
+#elif defined(__ANDROID__)
+    static WGPUSurface createSurfaceAndroid(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    {
+        if (!windowHandle.handle.android.window) {
+            throw std::runtime_error("Invalid Android window handle");
+        }
+
+        WGPUSurfaceSourceAndroidNativeWindow source = WGPU_SURFACE_SOURCE_ANDROID_NATIVE_WINDOW_INIT;
+        source.window = windowHandle.android.window;
+
+        WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
+        surfaceDesc.label = gfx::convertor::gfxStringView("Android Surface");
+        surfaceDesc.nextInChain = (WGPUChainedStruct*)&source;
+
+        return wgpuInstanceCreateSurface(instance, &surfaceDesc);
+    }
+#elif defined(__linux__)
+    static WGPUSurface createSurfaceXlib(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    {
+        if (!windowHandle.handle.xlib.window || !windowHandle.handle.xlib.display) {
+            throw std::runtime_error("Invalid Xlib window or display handle");
+        }
+
+        WGPUSurfaceSourceXlibWindow source = WGPU_SURFACE_SOURCE_XLIB_WINDOW_INIT;
+        source.display = windowHandle.handle.xlib.display;
+        source.window = windowHandle.handle.xlib.window;
+
+        WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
+        surfaceDesc.label = gfx::convertor::gfxStringView("X11 Surface");
+        surfaceDesc.nextInChain = (WGPUChainedStruct*)&source;
+
+        return wgpuInstanceCreateSurface(instance, &surfaceDesc);
+    }
+
+    static WGPUSurface createSurfaceXCB(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    {
+        if (!windowHandle.handle.xcb.window || !windowHandle.handle.xcb.connection) {
+            throw std::runtime_error("Invalid XCB window or connection handle");
+        }
+
+        WGPUSurfaceSourceXCBWindow source = WGPU_SURFACE_SOURCE_XCB_WINDOW_INIT;
+        source.connection = windowHandle.handle.xcb.connection;
+        source.window = windowHandle.handle.xcb.window;
+
+        WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
+        surfaceDesc.label = gfx::convertor::gfxStringView("XCB Surface");
+        surfaceDesc.nextInChain = (WGPUChainedStruct*)&source;
+
+        return wgpuInstanceCreateSurface(instance, &surfaceDesc);
+    }
+
+    static WGPUSurface createSurfaceWayland(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    {
+        if (!windowHandle.handle.wayland.surface || !windowHandle.handle.wayland.display) {
+            throw std::runtime_error("Invalid Wayland surface or display handle");
+        }
+
+        WGPUSurfaceSourceWaylandSurface source = WGPU_SURFACE_SOURCE_WAYLAND_SURFACE_INIT;
+        source.display = windowHandle.handle.wayland.display;
+        source.surface = windowHandle.handle.wayland.surface;
+
+        WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
+        surfaceDesc.label = gfx::convertor::gfxStringView("Wayland Surface");
+        surfaceDesc.nextInChain = (WGPUChainedStruct*)&source;
+
+        return wgpuInstanceCreateSurface(instance, &surfaceDesc);
+    }
+#elif defined(__APPLE__)
+    static WGPUSurface createSurfaceMetal(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    {
+        if (!windowHandle.handle.metalLayer) {
+            throw std::runtime_error("Invalid Metal layer handle");
+        }
+
+        WGPUSurfaceSourceMetalLayer source = WGPU_SURFACE_SOURCE_METAL_LAYER_INIT;
+        source.layer = windowHandle.handle.metalLayer;
+
+        WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
+        surfaceDesc.label = gfx::convertor::gfxStringView("Metal Surface");
+        surfaceDesc.nextInChain = (WGPUChainedStruct*)&source;
+
+        return wgpuInstanceCreateSurface(instance, &surfaceDesc);
+    }
+#elif defined(__EMSCRIPTEN__)
+    static WGPUSurface createSurfaceEmscripten(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    {
+        if (!windowHandle.handle.emscripten.canvasSelector) {
+            throw std::runtime_error("Invalid Emscripten canvas selector");
+        }
+
+        WGPUEmscriptenSurfaceSourceCanvasHTMLSelector canvasDesc = WGPU_EMSCRIPTEN_SURFACE_SOURCE_CANVAS_HTML_SELECTOR_INIT;
+        canvasDesc.selector = gfx::convertor::gfxStringView(windowHandle.handle.emscripten.canvasSelector);
+
+        WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
+        surfaceDesc.nextInChain = (WGPUChainedStruct*)&canvasDesc;
+
+        return wgpuInstanceCreateSurface(instance, &surfaceDesc);
+    }
+#endif
+
+private:
+    WGPUInstance m_instance = nullptr;
     WGPUAdapter m_adapter = nullptr;
+    WGPUSurface m_surface = nullptr;
 };
 
 class Swapchain {

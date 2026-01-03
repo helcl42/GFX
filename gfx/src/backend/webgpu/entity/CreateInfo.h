@@ -95,23 +95,24 @@ struct DeviceCreateInfo {
 struct PlatformWindowHandle {
     enum class Platform {
         Unknown,
-        XCB,
         Xlib,
+        Xcb,
         Wayland,
         Win32,
-        MacOS,
-        Android
+        Metal,
+        Android,
+        Emscripten
     } platform;
 
     union {
         struct {
+            void* display; // Display*
+            unsigned long window; // Window
+        } xlib;
+        struct {
             void* connection;
             uint32_t window;
         } xcb;
-        struct {
-            void* display;
-            unsigned long window;
-        } xlib;
         struct {
             void* display;
             void* surface;
@@ -122,10 +123,13 @@ struct PlatformWindowHandle {
         } win32;
         struct {
             void* layer;
-        } macos;
+        } metal;
         struct {
             void* window;
         } android;
+        struct {
+            const char* canvasSelector;
+        } emscripten;
     } handle;
 };
 

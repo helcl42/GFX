@@ -3,7 +3,6 @@
 #include "WebGPUBackend.h"
 #include "converter/GfxWebGPUConverter.h"
 #include "entity/Entities.h"
-#include "surface/SurfaceFactory.h"
 
 #include <cassert>
 #include <cstdio>
@@ -193,27 +192,14 @@ GfxResult WebGPUBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceD
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
 
-    // Get the instance from the device's adapter
-    WGPUInstance inst = nullptr;
-    if (devicePtr->getAdapter() && devicePtr->getAdapter()->getInstance()) {
-        inst = devicePtr->getAdapter()->getInstance()->handle();
-    }
-
-    if (!inst) {
-        fprintf(stderr, "Error: Cannot create surface - no instance available\\n");
+    try {
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSurfaceCreateInfo(descriptor);
+        auto* surface = new gfx::webgpu::Surface(devicePtr->getAdapter()->getInstance()->handle(), devicePtr->getAdapter()->handle(), createInfo);
+        *outSurface = reinterpret_cast<GfxSurface>(surface);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
-
-    // TODO - can we unify this with vulkna
-
-    WGPUSurface wgpuSurface = gfx::webgpu::surface::SurfaceFactory{}.createFromNativeWindow(inst, descriptor->windowHandle);
-    if (!wgpuSurface) {
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
-
-    auto* surface = new gfx::webgpu::Surface(wgpuSurface, devicePtr->getAdapter()->handle());
-    *outSurface = reinterpret_cast<GfxSurface>(surface);
-    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const

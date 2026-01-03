@@ -124,49 +124,53 @@ static GfxWindowingSystem cppWindowingSystemToC(WindowingSystem sys)
     switch (sys) {
     case WindowingSystem::Win32:
         return GFX_WINDOWING_SYSTEM_WIN32;
-    case WindowingSystem::X11:
-        return GFX_WINDOWING_SYSTEM_X11;
+    case WindowingSystem::Xlib:
+        return GFX_WINDOWING_SYSTEM_XLIB;
     case WindowingSystem::Wayland:
         return GFX_WINDOWING_SYSTEM_WAYLAND;
     case WindowingSystem::XCB:
         return GFX_WINDOWING_SYSTEM_XCB;
-    case WindowingSystem::Cocoa:
-        return GFX_WINDOWING_SYSTEM_COCOA;
+    case WindowingSystem::Metal:
+        return GFX_WINDOWING_SYSTEM_METAL;
     case WindowingSystem::Emscripten:
         return GFX_WINDOWING_SYSTEM_EMSCRIPTEN;
+    case WindowingSystem::Android:
+        return GFX_WINDOWING_SYSTEM_ANDROID;
     default:
-        return GFX_WINDOWING_SYSTEM_X11;
+        return GFX_WINDOWING_SYSTEM_XLIB;
     }
 }
 
-static GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& handle)
+static GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& windowHandle)
 {
     GfxPlatformWindowHandle cHandle = {};
-    cHandle.windowingSystem = cppWindowingSystemToC(handle.windowingSystem);
+    cHandle.windowingSystem = cppWindowingSystemToC(windowHandle.windowingSystem);
 
-    switch (handle.windowingSystem) {
+    switch (windowHandle.windowingSystem) {
     case WindowingSystem::Win32:
-        cHandle.win32.hwnd = handle.win32.hwnd;
-        cHandle.win32.hinstance = handle.win32.hinstance;
+        cHandle.win32.hwnd = windowHandle.handle.win32.hwnd;
+        cHandle.win32.hinstance = windowHandle.handle.win32.hinstance;
         break;
-    case WindowingSystem::X11:
-        cHandle.x11.window = handle.x11.window;
-        cHandle.x11.display = handle.x11.display;
+    case WindowingSystem::Xlib:
+        cHandle.xlib.window = windowHandle.handle.xlib.window;
+        cHandle.xlib.display = windowHandle.handle.xlib.display;
         break;
     case WindowingSystem::Wayland:
-        cHandle.wayland.surface = handle.wayland.surface;
-        cHandle.wayland.display = handle.wayland.display;
+        cHandle.wayland.surface = windowHandle.handle.wayland.surface;
+        cHandle.wayland.display = windowHandle.handle.wayland.display;
         break;
     case WindowingSystem::XCB:
-        cHandle.xcb.connection = handle.xcb.connection;
-        cHandle.xcb.window = handle.xcb.window;
+        cHandle.xcb.connection = windowHandle.handle.xcb.connection;
+        cHandle.xcb.window = windowHandle.handle.xcb.window;
         break;
-    case WindowingSystem::Cocoa:
-        cHandle.cocoa.nsWindow = handle.cocoa.nsWindow;
-        cHandle.cocoa.metalLayer = handle.cocoa.metalLayer;
+    case WindowingSystem::Metal:
+        cHandle.metal.layer = windowHandle.handle.metal.layer;
         break;
     case WindowingSystem::Emscripten:
-        cHandle.emscripten.canvasSelector = handle.emscripten.canvasSelector;
+        cHandle.emscripten.canvasSelector = windowHandle.handle.emscripten.canvasSelector;
+        break;
+    case WindowingSystem::Android:
+        cHandle.android.window = windowHandle.handle.android.window;
         break;
     }
     return cHandle;
@@ -572,10 +576,10 @@ public:
         std::vector<GfxColorAttachmentTarget> cColorTargets;
         std::vector<GfxColorAttachmentTarget> cResolveTargets;
         std::vector<GfxColorAttachment> cColorAttachments;
-        
+
         cColorTargets.reserve(descriptor.colorAttachments.size());
         cColorAttachments.reserve(descriptor.colorAttachments.size());
-        
+
         for (const auto& colorAttachment : descriptor.colorAttachments) {
             // Main target
             GfxColorAttachmentTarget cTarget{};
@@ -619,13 +623,13 @@ public:
         GfxDepthStencilAttachmentTarget cDepthTarget{};
         GfxDepthStencilAttachment cDepthStencil{};
         GfxDepthStencilAttachment* cDepthStencilPtr = nullptr;
-        
+
         if (descriptor.depthStencilAttachment) {
             auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(descriptor.depthStencilAttachment->target.view);
             if (viewImpl) {
                 cDepthTarget.view = viewImpl->getHandle();
             }
-            
+
             // Handle depth ops if present
             if (descriptor.depthStencilAttachment->target.depthOps) {
                 cDepthOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->target.depthOps->loadOp);
@@ -635,7 +639,7 @@ public:
             } else {
                 cDepthTarget.depthOps = nullptr;
             }
-            
+
             // Handle stencil ops if present
             if (descriptor.depthStencilAttachment->target.stencilOps) {
                 cStencilOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->target.stencilOps->loadOp);
@@ -645,7 +649,7 @@ public:
             } else {
                 cDepthTarget.stencilOps = nullptr;
             }
-            
+
             cDepthTarget.finalLayout = static_cast<GfxTextureLayout>(descriptor.depthStencilAttachment->target.finalLayout);
             cDepthStencil.target = cDepthTarget;
             cDepthStencil.resolveTarget = nullptr; // TODO: handle resolve if needed
@@ -1678,7 +1682,7 @@ public:
     {
         GfxDeviceLimits cLimits = {};
         gfxAdapterGetLimits(m_handle, &cLimits);
-        
+
         DeviceLimits limits;
         limits.minUniformBufferOffsetAlignment = cLimits.minUniformBufferOffsetAlignment;
         limits.minStorageBufferOffsetAlignment = cLimits.minStorageBufferOffsetAlignment;

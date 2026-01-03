@@ -39,7 +39,7 @@
 #define GFX_BACKEND_API GFX_BACKEND_WEBGPU
 #else
 // here we can choose between VULKAN, WEBGPU
-#define GFX_BACKEND_API GFX_BACKEND_VULKAN
+#define GFX_BACKEND_API GFX_BACKEND_WEBGPU
 #endif
 
 // Debug callback function
@@ -233,19 +233,19 @@ GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
     handle.emscripten.canvasSelector = "#canvas";
 
 #elif defined(_WIN32)
-    handle.hwnd = glfwGetWin32Window(window);
-    handle.hinstance = GetModuleHandle(NULL);
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_WIN32;
+    handle.win32.hwnd = glfwGetWin32Window(window);
+    handle.win32.hinstance = GetModuleHandle(NULL);
 
 #elif defined(__linux__)
     // Force using Xlib instead of XCB to avoid driver hang
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_X11;
-    handle.x11.display = glfwGetX11Display();
-    handle.x11.window = (void*)(uintptr_t)glfwGetX11Window(window);
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_XLIB;
+    handle.xlib.display = glfwGetX11Display();
+    handle.xlib.window = glfwGetX11Window(window);
 
 #elif defined(__APPLE__)
-    handle.nsWindow = glfwGetCocoaWindow(window);
-    // Metal layer will be created automatically by the graphics API
-    handle.metalLayer = NULL;
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_METAL;
+    handle.metal.layer = glfwGetMetalLayer(window);
 #endif
 
     return handle;

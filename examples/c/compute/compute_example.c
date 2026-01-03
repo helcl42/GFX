@@ -270,14 +270,13 @@ static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
 
 #elif defined(__linux__)
     // Force using Xlib instead of XCB to avoid driver hang
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_X11;
-    handle.x11.display = glfwGetX11Display();
-    handle.x11.window = (void*)(uintptr_t)glfwGetX11Window(window);
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_XLIB;
+    handle.xlib.display = glfwGetX11Display();
+    handle.xlib.window = glfwGetX11Window(window);
 
 #elif defined(__APPLE__)
-    handle.nsWindow = glfwGetCocoaWindow(window);
-    // Metal layer will be created automatically by the graphics API
-    handle.metalLayer = NULL;
+    handle.windowingSystem = GFX_WINDOWING_SYSTEM_METAL;
+    handle.metal.layer = glfwGetMetalLayer(window);
 #endif
 
     return handle;

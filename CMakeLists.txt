@@ -188,7 +188,6 @@ if(BUILD_WEBGPU_BACKEND)
     list(APPEND GFX_C_SOURCES 
         gfx/src/backend/webgpu/WebGPUBackend.cpp
         gfx/src/backend/webgpu/converter/GfxWebGPUConverter.cpp
-        gfx/src/backend/webgpu/surface/SurfaceFactory.cpp
     )
 endif()
 

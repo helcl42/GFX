@@ -1,6 +1,6 @@
-#include "../common/VulkanCommon.h"
 #include "GfxVulkanConverter.h"
 
+#include "../common/VulkanCommon.h"
 #include "../entity/Entities.h"
 
 #include <vector>
@@ -606,7 +606,7 @@ gfx::vulkan::ShaderCreateInfo gfxDescriptorToShaderCreateInfo(const GfxShaderDes
 gfx::vulkan::SemaphoreCreateInfo gfxDescriptorToSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor)
 {
     gfx::vulkan::SemaphoreCreateInfo createInfo{};
-    createInfo.type = descriptor ? gfxSemaphoreTypeToVulkanSemaphoreType(descriptor->type) 
+    createInfo.type = descriptor ? gfxSemaphoreTypeToVulkanSemaphoreType(descriptor->type)
                                  : gfx::vulkan::SemaphoreType::Binary;
     createInfo.initialValue = descriptor ? descriptor->initialValue : 0;
     return createInfo;
@@ -707,7 +707,7 @@ gfx::vulkan::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInsta
 gfx::vulkan::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)
 {
     gfx::vulkan::AdapterCreateInfo createInfo{};
-    
+
     if (!descriptor || descriptor->preference == GFX_ADAPTER_PREFERENCE_UNDEFINED) {
         createInfo.devicePreference = gfx::vulkan::DeviceTypePreference::HighPerformance;
     } else if (descriptor->preference == GFX_ADAPTER_PREFERENCE_SOFTWARE) {
@@ -717,7 +717,7 @@ gfx::vulkan::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapter
     } else {
         createInfo.devicePreference = gfx::vulkan::DeviceTypePreference::HighPerformance;
     }
-    
+
     return createInfo;
 }
 gfx::vulkan::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
@@ -727,47 +727,58 @@ gfx::vulkan::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDes
     return createInfo;
 }
 
+gfx::vulkan::PlatformWindowHandle gfxWindowHandleToPlatformWindowHandle(const GfxPlatformWindowHandle& gfxHandle)
+{
+    gfx::vulkan::PlatformWindowHandle handle{};
+
+    // Convert GfxPlatformWindowHandle to Vulkan-native platform handles
+    switch (gfxHandle.windowingSystem) {
+    case GFX_WINDOWING_SYSTEM_XCB:
+        handle.platform = gfx::vulkan::PlatformWindowHandle::Platform::Xcb;
+        handle.handle.xcb.connection = gfxHandle.xcb.connection;
+        handle.handle.xcb.window = gfxHandle.xcb.window;
+        break;
+    case GFX_WINDOWING_SYSTEM_XLIB:
+        handle.platform = gfx::vulkan::PlatformWindowHandle::Platform::Xlib;
+        handle.handle.xlib.display = gfxHandle.xlib.display;
+        handle.handle.xlib.window = gfxHandle.xlib.window;
+        break;
+    case GFX_WINDOWING_SYSTEM_WAYLAND:
+        handle.platform = gfx::vulkan::PlatformWindowHandle::Platform::Wayland;
+        handle.handle.wayland.display = gfxHandle.wayland.display;
+        handle.handle.wayland.surface = gfxHandle.wayland.surface;
+        break;
+    case GFX_WINDOWING_SYSTEM_WIN32:
+        handle.platform = gfx::vulkan::PlatformWindowHandle::Platform::Win32;
+        handle.handle.win32.hinstance = gfxHandle.win32.hinstance;
+        handle.handle.win32.hwnd = gfxHandle.win32.hwnd;
+        break;
+    case GFX_WINDOWING_SYSTEM_METAL:
+        handle.platform = gfx::vulkan::PlatformWindowHandle::Platform::Metal;
+        handle.handle.metal.layer = gfxHandle.metal.layer;
+        break;
+    case GFX_WINDOWING_SYSTEM_EMSCRIPTEN:
+        handle.platform = gfx::vulkan::PlatformWindowHandle::Platform::Emscripten;
+        handle.handle.emscripten.canvasSelector = gfxHandle.emscripten.canvasSelector;
+        break;
+    case GFX_WINDOWING_SYSTEM_ANDROID:
+        handle.platform = gfx::vulkan::PlatformWindowHandle::Platform::Android;
+        handle.handle.android.window = gfxHandle.android.window;
+        break;
+    default:
+        handle.platform = gfx::vulkan::PlatformWindowHandle::Platform::Unknown;
+        break;
+    }
+
+    return handle;
+}
+
 gfx::vulkan::SurfaceCreateInfo gfxDescriptorToSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor)
 {
     gfx::vulkan::SurfaceCreateInfo createInfo{};
-
     if (descriptor) {
-        const auto& gfxHandle = descriptor->windowHandle;
-
-        // Convert GfxPlatformWindowHandle to Vulkan-native platform handles
-        switch (gfxHandle.windowingSystem) {
-        case GFX_WINDOWING_SYSTEM_X11:
-            createInfo.platform = gfx::vulkan::SurfaceCreateInfo::Platform::Xlib;
-            createInfo.handle.xlib.display = gfxHandle.x11.display;
-            createInfo.handle.xlib.window = reinterpret_cast<unsigned long>(gfxHandle.x11.window);
-            break;
-        case GFX_WINDOWING_SYSTEM_XCB:
-            createInfo.platform = gfx::vulkan::SurfaceCreateInfo::Platform::Xcb;
-            createInfo.handle.xcb.connection = gfxHandle.xcb.connection;
-            createInfo.handle.xcb.window = gfxHandle.xcb.window;
-            break;
-        case GFX_WINDOWING_SYSTEM_WAYLAND:
-            createInfo.platform = gfx::vulkan::SurfaceCreateInfo::Platform::Wayland;
-            createInfo.handle.wayland.display = gfxHandle.wayland.display;
-            createInfo.handle.wayland.surface = gfxHandle.wayland.surface;
-            break;
-        case GFX_WINDOWING_SYSTEM_WIN32:
-            createInfo.platform = gfx::vulkan::SurfaceCreateInfo::Platform::Win32;
-            createInfo.handle.win32.hinstance = gfxHandle.win32.hinstance;
-            createInfo.handle.win32.hwnd = gfxHandle.win32.hwnd;
-            break;
-        case GFX_WINDOWING_SYSTEM_COCOA:
-            createInfo.platform = gfx::vulkan::SurfaceCreateInfo::Platform::MacOS;
-            createInfo.handle.macos.layer = gfxHandle.cocoa.nsWindow;
-            break;
-        default:
-            createInfo.platform = gfx::vulkan::SurfaceCreateInfo::Platform::Unknown;
-            break;
-        }
-    } else {
-        createInfo.platform = gfx::vulkan::SurfaceCreateInfo::Platform::Unknown;
+        createInfo.windowHandle = gfxWindowHandleToPlatformWindowHandle(descriptor->windowHandle);
     }
-
     return createInfo;
 }
 
