@@ -96,7 +96,7 @@ gfx::vulkan::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInsta
 gfx::vulkan::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescriptor* descriptor);
 gfx::vulkan::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDescriptor* descriptor);
 gfx::vulkan::SurfaceCreateInfo gfxDescriptorToSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor);
-gfx::vulkan::SwapchainCreateInfo gfxDescriptorToSwapchainCreateInfo(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, uint32_t queueFamily, const GfxSwapchainDescriptor* descriptor);
+gfx::vulkan::SwapchainCreateInfo gfxDescriptorToSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor);
 gfx::vulkan::BindGroupLayoutCreateInfo gfxDescriptorToBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor);
 
 // ============================================================================

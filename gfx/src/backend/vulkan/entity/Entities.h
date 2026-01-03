@@ -724,10 +724,10 @@ public:
     Swapchain(const Swapchain&) = delete;
     Swapchain& operator=(const Swapchain&) = delete;
 
-    Swapchain(VkDevice device, VkPhysicalDevice physicalDevice, const SwapchainCreateInfo& createInfo)
+    Swapchain(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t queueFamily, const SwapchainCreateInfo& createInfo)
         : m_device(device)
         , m_physicalDevice(physicalDevice)
-        , m_surface(createInfo.surface)
+        , m_surface(surface)
         , m_width(createInfo.width)
         , m_height(createInfo.height)
         , m_format(createInfo.format)
@@ -735,20 +735,49 @@ public:
     {
         // Check if queue family supports presentation
         VkBool32 presentSupport = VK_FALSE;
-        vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, createInfo.queueFamily, createInfo.surface, &presentSupport);
+        vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, queueFamily, m_surface, &presentSupport);
         if (presentSupport != VK_TRUE) {
             throw std::runtime_error("Selected queue family does not support presentation");
         }
 
+        // Query and choose format
+        uint32_t formatCount;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount, nullptr);
+        if (formatCount == 0) {
+            throw std::runtime_error("No surface formats available for swapchain");
+        }
+        std::vector<VkSurfaceFormatKHR> formats(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount, formats.data());
+
+        VkSurfaceFormatKHR selectedFormat = formats[0];
+        for (const auto& availableFormat : formats) {
+            if (availableFormat.format == createInfo.format) {
+                selectedFormat = availableFormat;
+                break;
+            }
+        }
+        m_format = selectedFormat.format;
+
+        // Query and choose present mode
+        uint32_t presentModeCount;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(m_physicalDevice, m_surface, &presentModeCount, nullptr);
+        if (presentModeCount == 0) {
+            throw std::runtime_error("No present modes available for swapchain");
+        }
+        std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(m_physicalDevice, m_surface, &presentModeCount, presentModes.data());
+
+        m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
+        for (const auto& availableMode : presentModes) {
+            if (availableMode == createInfo.presentMode) {
+                m_presentMode = availableMode;
+                break;
+            }
+        }
+
         // Query surface capabilities
         VkSurfaceCapabilitiesKHR capabilities;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice, createInfo.surface, &capabilities);
-
-        // Choose format - already converted in createInfo
-        // No format conversion needed
-
-        // Choose present mode - already converted in createInfo
-        // No present mode conversion needed
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice, m_surface, &capabilities);
 
         // Determine actual swapchain extent
         // If currentExtent is defined, we MUST use it. Otherwise, we can choose within min/max bounds.
@@ -771,13 +800,13 @@ public:
         // Create swapchain
         VkSwapchainCreateInfoKHR vkCreateInfo{};
         vkCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        vkCreateInfo.surface = createInfo.surface;
-        vkCreateInfo.minImageCount = std::min(3u, capabilities.minImageCount + 1);
+        vkCreateInfo.surface = m_surface;
+        vkCreateInfo.minImageCount = std::min(createInfo.bufferCount, capabilities.minImageCount + 1);
         if (capabilities.maxImageCount > 0) {
             vkCreateInfo.minImageCount = std::min(vkCreateInfo.minImageCount, capabilities.maxImageCount);
         }
         vkCreateInfo.imageFormat = m_format;
-        vkCreateInfo.imageColorSpace = createInfo.colorSpace;
+        vkCreateInfo.imageColorSpace = selectedFormat.colorSpace;
         vkCreateInfo.imageExtent = actualExtent;
         vkCreateInfo.imageArrayLayers = 1;
         vkCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;

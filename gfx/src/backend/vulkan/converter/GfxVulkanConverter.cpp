@@ -782,52 +782,14 @@ gfx::vulkan::SurfaceCreateInfo gfxDescriptorToSurfaceCreateInfo(const GfxSurface
     return createInfo;
 }
 
-gfx::vulkan::SwapchainCreateInfo gfxDescriptorToSwapchainCreateInfo(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, uint32_t queueFamily, const GfxSwapchainDescriptor* descriptor)
+gfx::vulkan::SwapchainCreateInfo gfxDescriptorToSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor)
 {
     gfx::vulkan::SwapchainCreateInfo createInfo{};
-    createInfo.surface = surface;
-    createInfo.queueFamily = queueFamily;
     createInfo.width = descriptor->width;
     createInfo.height = descriptor->height;
-
-    // Query and choose format
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
-    if (formatCount > 0) {
-        std::vector<VkSurfaceFormatKHR> formats(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
-
-        VkFormat requestedFormat = gfxFormatToVkFormat(descriptor->format);
-        createInfo.format = formats[0].format;
-        createInfo.colorSpace = formats[0].colorSpace;
-
-        for (const auto& availableFormat : formats) {
-            if (availableFormat.format == requestedFormat) {
-                createInfo.format = requestedFormat;
-                createInfo.colorSpace = availableFormat.colorSpace;
-                break;
-            }
-        }
-    }
-
-    // Query and choose present mode
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
-    if (presentModeCount > 0) {
-        std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
-
-        VkPresentModeKHR requestedPresentMode = gfxPresentModeToVkPresentMode(descriptor->presentMode);
-        createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-
-        for (const auto& availableMode : presentModes) {
-            if (availableMode == requestedPresentMode) {
-                createInfo.presentMode = requestedPresentMode;
-                break;
-            }
-        }
-    }
-
+    createInfo.format = gfxFormatToVkFormat(descriptor->format);
+    createInfo.presentMode = gfxPresentModeToVkPresentMode(descriptor->presentMode);
+    createInfo.bufferCount = descriptor->bufferCount;
     return createInfo;
 }
 

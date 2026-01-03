@@ -222,12 +222,8 @@ GfxResult VulkanBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
     try {
         auto* dev = reinterpret_cast<gfx::vulkan::Device*>(device);
         auto* surf = reinterpret_cast<gfx::vulkan::Surface*>(surface);
-        auto createInfo = gfx::convertor::gfxDescriptorToSwapchainCreateInfo(
-            surf->handle(),
-            dev->getAdapter()->handle(),
-            dev->getAdapter()->getGraphicsQueueFamily(),
-            descriptor);
-        auto* swapchain = new gfx::vulkan::Swapchain(dev->handle(), dev->getAdapter()->handle(), createInfo);
+        auto createInfo = gfx::convertor::gfxDescriptorToSwapchainCreateInfo(descriptor);
+        auto* swapchain = new gfx::vulkan::Swapchain(dev->handle(), dev->getAdapter()->handle(), surf->handle(), dev->getAdapter()->getGraphicsQueueFamily(), createInfo);
         *outSwapchain = reinterpret_cast<GfxSwapchain>(swapchain);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {

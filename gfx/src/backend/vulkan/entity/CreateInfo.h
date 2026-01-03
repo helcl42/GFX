@@ -183,13 +183,12 @@ struct SurfaceCreateInfo {
 };
 
 struct SwapchainCreateInfo {
-    VkSurfaceKHR surface;
-    uint32_t queueFamily;
     uint32_t width;
     uint32_t height;
     VkFormat format;
     VkColorSpaceKHR colorSpace;
     VkPresentModeKHR presentMode;
+    uint32_t bufferCount;
 };
 
 // Pipeline CreateInfo structs - these are complex
