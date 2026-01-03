@@ -17,31 +17,6 @@
 // ============================================================================
 
 extern "C" {
-// Callback for adapter request
-static void onAdapterRequested(WGPURequestAdapterStatus status, WGPUAdapter adapter,
-    WGPUStringView message, void* userdata1, void* userdata2)
-{
-    struct AdapterRequestContext {
-        GfxAdapter* outAdapter;
-        gfx::webgpu::Instance* instance;
-        bool completed;
-        WGPURequestAdapterStatus status;
-    };
-
-    auto* ctx = static_cast<AdapterRequestContext*>(userdata1);
-    ctx->status = status;
-    ctx->completed = true;
-
-    if (status == WGPURequestAdapterStatus_Success && adapter) {
-        auto* adapterObj = new gfx::webgpu::Adapter(adapter, ctx->instance);
-        *ctx->outAdapter = reinterpret_cast<GfxAdapter>(adapterObj);
-    } else if (message.data) {
-        fprintf(stderr, "Error: Failed to request adapter: %.*s\n",
-            (int)message.length, message.data);
-    }
-    (void)userdata2; // Unused
-}
-
 // Callback for device request
 static void onDeviceRequested(WGPURequestDeviceStatus status, WGPUDevice device,
     WGPUStringView message, void* userdata1, void* userdata2)
@@ -189,63 +164,43 @@ GfxResult WebGPUBackend::instanceRequestAdapter(GfxInstance instance, const GfxA
 
     auto* inst = reinterpret_cast<gfx::webgpu::Instance*>(instance);
 
-    WGPURequestAdapterOptions options = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
-    if (descriptor) {
-        switch (descriptor->powerPreference) {
-        case GFX_POWER_PREFERENCE_LOW_POWER:
-            options.powerPreference = WGPUPowerPreference_LowPower;
-            break;
-        case GFX_POWER_PREFERENCE_HIGH_PERFORMANCE:
-            options.powerPreference = WGPUPowerPreference_HighPerformance;
-            break;
-        default:
-            options.powerPreference = WGPUPowerPreference_Undefined;
-            break;
-        }
-        options.forceFallbackAdapter = descriptor->forceFallbackAdapter ? WGPU_TRUE : WGPU_FALSE;
-    }
-
-    // Use a struct to track callback completion
-    struct AdapterRequestContext {
-        GfxAdapter* outAdapter;
-        gfx::webgpu::Instance* instance;
-        bool completed;
-        WGPURequestAdapterStatus status;
-    } context = { outAdapter, inst, false, WGPURequestAdapterStatus_Error };
-
-    WGPURequestAdapterCallbackInfo callbackInfo = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
-    callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-    callbackInfo.callback = onAdapterRequested;
-    callbackInfo.userdata1 = &context;
-
-    WGPUFuture future = wgpuInstanceRequestAdapter(inst->handle(), &options, callbackInfo);
-
-    // Use WaitAny to properly wait for the callback
-    WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
-    waitInfo.future = future;
-    wgpuInstanceWaitAny(inst->handle(), 1, &waitInfo, UINT64_MAX);
-
-    if (!context.completed) {
-        fprintf(stderr, "Error: Adapter request timed out\n");
+    try {
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUAdapterCreateInfo(descriptor);
+        auto* adapter = new gfx::webgpu::Adapter(inst, createInfo);
+        *outAdapter = reinterpret_cast<GfxAdapter>(adapter);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
-
-    return *outAdapter ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
 uint32_t WebGPUBackend::instanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters) const
 {
-    if (!instance || maxAdapters == 0) {
+    // WebGPU doesn't have an enumerate API - it only supports requesting one adapter at a time
+    // We return the default adapter if available
+    if (!instance) {
         return 0;
     }
 
+    // Try to request the default adapter to check availability
     GfxAdapter adapter = nullptr;
-    if (instanceRequestAdapter(instance, nullptr, &adapter) == GFX_RESULT_SUCCESS && adapter) {
-        if (adapters) {
-            adapters[0] = adapter;
+    GfxResult result = instanceRequestAdapter(instance, nullptr, &adapter);
+
+    // If just querying the count, clean up the adapter and return count
+    if (!adapters || maxAdapters == 0) {
+        if (result == GFX_RESULT_SUCCESS && adapter) {
+            adapterDestroy(adapter);
+            return 1;
         }
+        return 0;
+    }
+
+    // Return the adapter if successfully obtained
+    if (result == GFX_RESULT_SUCCESS && adapter) {
+        adapters[0] = adapter;
         return 1;
     }
+
     return 0;
 }
 
@@ -556,7 +511,7 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
     }
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-    
+
     auto createInfo = gfx::convertor::gfxDescriptorToWebGPURenderPipelineCreateInfo(descriptor);
     auto* pipeline = new gfx::webgpu::RenderPipeline(devicePtr->handle(), createInfo);
     *outPipeline = reinterpret_cast<GfxRenderPipeline>(pipeline);
@@ -570,7 +525,7 @@ GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
     }
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-    
+
     auto createInfo = gfx::convertor::gfxDescriptorToWebGPUComputePipelineCreateInfo(descriptor);
     auto* pipeline = new gfx::webgpu::ComputePipeline(devicePtr->handle(), createInfo);
     *outPipeline = reinterpret_cast<GfxComputePipeline>(pipeline);

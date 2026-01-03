@@ -24,6 +24,37 @@ gfx::webgpu::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreTyp
 // CreateInfo Conversion Functions - GfxDescriptor to Internal CreateInfo
 // ============================================================================
 
+gfx::webgpu::AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)
+{
+    gfx::webgpu::AdapterCreateInfo createInfo{};
+    
+    if (descriptor) {
+        switch (descriptor->preference) {
+        case GFX_ADAPTER_PREFERENCE_LOW_POWER:
+            createInfo.powerPreference = WGPUPowerPreference_LowPower;
+            createInfo.forceFallbackAdapter = false;
+            break;
+        case GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE:
+            createInfo.powerPreference = WGPUPowerPreference_HighPerformance;
+            createInfo.forceFallbackAdapter = false;
+            break;
+        case GFX_ADAPTER_PREFERENCE_SOFTWARE:
+            createInfo.powerPreference = WGPUPowerPreference_Undefined;
+            createInfo.forceFallbackAdapter = true;
+            break;
+        default:
+            createInfo.powerPreference = WGPUPowerPreference_Undefined;
+            createInfo.forceFallbackAdapter = false;
+            break;
+        }
+    } else {
+        createInfo.powerPreference = WGPUPowerPreference_Undefined;
+        createInfo.forceFallbackAdapter = false;
+    }
+    
+    return createInfo;
+}
+
 gfx::webgpu::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstanceDescriptor* descriptor)
 {
     gfx::webgpu::InstanceCreateInfo createInfo{};

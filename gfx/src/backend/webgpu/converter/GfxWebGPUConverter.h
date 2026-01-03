@@ -6,6 +6,7 @@
 
 // Forward declare internal WebGPU types
 namespace gfx::webgpu {
+struct AdapterCreateInfo;
 struct InstanceCreateInfo;
 struct DeviceCreateInfo;
 struct BufferCreateInfo;
@@ -42,6 +43,7 @@ gfx::webgpu::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreTyp
 // CreateInfo Conversion Functions - GfxDescriptor to Internal CreateInfo
 // ============================================================================
 
+gfx::webgpu::AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxAdapterDescriptor* descriptor);
 gfx::webgpu::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstanceDescriptor* descriptor);
 gfx::webgpu::DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDescriptor* descriptor);
 gfx::webgpu::BufferCreateInfo gfxDescriptorToWebGPUBufferCreateInfo(const GfxBufferDescriptor* descriptor);

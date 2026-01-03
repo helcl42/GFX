@@ -25,6 +25,11 @@ enum class SemaphoreType {
 // Internal CreateInfo structs - pure WebGPU types, no GFX dependencies
 // ============================================================================
 
+struct AdapterCreateInfo {
+    WGPUPowerPreference powerPreference;
+    bool forceFallbackAdapter;
+};
+
 struct BufferCreateInfo {
     size_t size;
     WGPUBufferUsage usage;
