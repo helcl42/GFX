@@ -89,6 +89,9 @@ WGPUPresentMode gfxPresentModeToWGPU(GfxPresentMode mode);
 // Utility functions
 bool formatHasStencil(GfxTextureFormat format);
 
+// Device limits conversion
+GfxDeviceLimits wgpuLimitsToGfxDeviceLimits(const WGPULimits& wgpuLimits);
+
 // Load/Store operations
 WGPULoadOp gfxLoadOpToWGPULoadOp(GfxLoadOp loadOp);
 WGPUStoreOp gfxStoreOpToWGPUStoreOp(GfxStoreOp storeOp);

@@ -97,8 +97,7 @@ public:
 
         WGPURequestAdapterCallbackInfo callbackInfo = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
         callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-        callbackInfo.callback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
-            WGPUStringView message, void* userdata1, void* userdata2) {
+        callbackInfo.callback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void* userdata2) {
             auto* ctx = static_cast<AdapterRequestContext*>(userdata1);
             ctx->status = status;
             ctx->completed = true;
@@ -180,6 +179,16 @@ public:
     const char* getName() const { return m_name.c_str(); }
     Instance* getInstance() const { return m_instance; }
 
+    WGPULimits getLimits() const
+    {
+        WGPULimits limits = WGPU_LIMITS_INIT;
+        WGPUStatus status = wgpuAdapterGetLimits(m_adapter, &limits);
+        if (status != WGPUStatus_Success) {
+            throw std::runtime_error("Failed to get adapter limits");
+        }
+        return limits;
+    }
+
 private:
     WGPUAdapter m_adapter = nullptr;
     Instance* m_instance = nullptr; // Non-owning
@@ -257,8 +266,7 @@ public:
 
         WGPURequestDeviceCallbackInfo callbackInfo = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
         callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-        callbackInfo.callback = [](WGPURequestDeviceStatus status, WGPUDevice device,
-            WGPUStringView message, void* userdata1, void* userdata2) {
+        callbackInfo.callback = [](WGPURequestDeviceStatus status, WGPUDevice device, WGPUStringView message, void* userdata1, void* userdata2) {
             auto* ctx = static_cast<DeviceRequestContext*>(userdata1);
             ctx->status = status;
             ctx->completed = true;
@@ -312,6 +320,16 @@ public:
     WGPUDevice handle() const { return m_device; }
     Queue* getQueue() { return m_queue.get(); }
     Adapter* getAdapter() { return m_adapter; }
+
+    WGPULimits getLimits() const
+    {
+        WGPULimits limits = WGPU_LIMITS_INIT;
+        WGPUStatus status = wgpuDeviceGetLimits(m_device, &limits);
+        if (status != WGPUStatus_Success) {
+            throw std::runtime_error("Failed to get device limits");
+        }
+        return limits;
+    }
 
 private:
     WGPUDevice m_device = nullptr;

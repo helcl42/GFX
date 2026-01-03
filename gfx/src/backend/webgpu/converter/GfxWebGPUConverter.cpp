@@ -5,6 +5,25 @@
 namespace gfx::convertor {
 
 // ============================================================================
+// Device Limits Conversion
+// ============================================================================
+
+GfxDeviceLimits wgpuLimitsToGfxDeviceLimits(const WGPULimits& limits)
+{
+    GfxDeviceLimits gfxLimits{};
+    gfxLimits.minUniformBufferOffsetAlignment = limits.minUniformBufferOffsetAlignment;
+    gfxLimits.minStorageBufferOffsetAlignment = limits.minStorageBufferOffsetAlignment;
+    gfxLimits.maxUniformBufferBindingSize = static_cast<uint32_t>(limits.maxUniformBufferBindingSize);
+    gfxLimits.maxStorageBufferBindingSize = static_cast<uint32_t>(limits.maxStorageBufferBindingSize);
+    gfxLimits.maxBufferSize = limits.maxBufferSize;
+    gfxLimits.maxTextureDimension1D = limits.maxTextureDimension1D;
+    gfxLimits.maxTextureDimension2D = limits.maxTextureDimension2D;
+    gfxLimits.maxTextureDimension3D = limits.maxTextureDimension3D;
+    gfxLimits.maxTextureArrayLayers = limits.maxTextureArrayLayers;
+    return gfxLimits;
+}
+
+// ============================================================================
 // Type Conversion Functions
 // ============================================================================
 

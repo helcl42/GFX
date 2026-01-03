@@ -153,7 +153,8 @@ const char* WebGPUBackend::adapterGetName(GfxAdapter adapter) const
 
 GfxBackend WebGPUBackend::adapterGetBackend(GfxAdapter adapter) const
 {
-    return adapter ? GFX_BACKEND_WEBGPU : GFX_BACKEND_AUTO;
+    (void)adapter;
+    return GFX_BACKEND_WEBGPU;
 }
 
 void WebGPUBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const
@@ -163,31 +164,7 @@ void WebGPUBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLim
     }
 
     auto* adapterPtr = reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
-
-    WGPULimits limits = WGPU_LIMITS_INIT;
-    WGPUStatus status = wgpuAdapterGetLimits(adapterPtr->handle(), &limits);
-    if (status == WGPUStatus_Success) {
-        outLimits->minUniformBufferOffsetAlignment = limits.minUniformBufferOffsetAlignment;
-        outLimits->minStorageBufferOffsetAlignment = limits.minStorageBufferOffsetAlignment;
-        outLimits->maxUniformBufferBindingSize = static_cast<uint32_t>(limits.maxUniformBufferBindingSize);
-        outLimits->maxStorageBufferBindingSize = static_cast<uint32_t>(limits.maxStorageBufferBindingSize);
-        outLimits->maxBufferSize = limits.maxBufferSize;
-        outLimits->maxTextureDimension1D = limits.maxTextureDimension1D;
-        outLimits->maxTextureDimension2D = limits.maxTextureDimension2D;
-        outLimits->maxTextureDimension3D = limits.maxTextureDimension3D;
-        outLimits->maxTextureArrayLayers = limits.maxTextureArrayLayers;
-    } else {
-        // Fallback to reasonable defaults if query fails
-        outLimits->minUniformBufferOffsetAlignment = 256;
-        outLimits->minStorageBufferOffsetAlignment = 256;
-        outLimits->maxUniformBufferBindingSize = 65536;
-        outLimits->maxStorageBufferBindingSize = 134217728;
-        outLimits->maxBufferSize = 268435456;
-        outLimits->maxTextureDimension1D = 8192;
-        outLimits->maxTextureDimension2D = 8192;
-        outLimits->maxTextureDimension3D = 2048;
-        outLimits->maxTextureArrayLayers = 256;
-    }
+    *outLimits = gfx::convertor::wgpuLimitsToGfxDeviceLimits(adapterPtr->getLimits());
 }
 
 // Device functions
@@ -498,31 +475,7 @@ void WebGPUBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits
     }
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
-    WGPULimits limits = WGPU_LIMITS_INIT;
-    WGPUStatus status = wgpuDeviceGetLimits(devicePtr->handle(), &limits);
-    if (status == WGPUStatus_Success) {
-        outLimits->minUniformBufferOffsetAlignment = limits.minUniformBufferOffsetAlignment;
-        outLimits->minStorageBufferOffsetAlignment = limits.minStorageBufferOffsetAlignment;
-        outLimits->maxUniformBufferBindingSize = static_cast<uint32_t>(limits.maxUniformBufferBindingSize);
-        outLimits->maxStorageBufferBindingSize = static_cast<uint32_t>(limits.maxStorageBufferBindingSize);
-        outLimits->maxBufferSize = limits.maxBufferSize;
-        outLimits->maxTextureDimension1D = limits.maxTextureDimension1D;
-        outLimits->maxTextureDimension2D = limits.maxTextureDimension2D;
-        outLimits->maxTextureDimension3D = limits.maxTextureDimension3D;
-        outLimits->maxTextureArrayLayers = limits.maxTextureArrayLayers;
-    } else {
-        // Fallback to reasonable defaults if query fails
-        outLimits->minUniformBufferOffsetAlignment = 256;
-        outLimits->minStorageBufferOffsetAlignment = 256;
-        outLimits->maxUniformBufferBindingSize = 65536;
-        outLimits->maxStorageBufferBindingSize = 134217728;
-        outLimits->maxBufferSize = 268435456;
-        outLimits->maxTextureDimension1D = 8192;
-        outLimits->maxTextureDimension2D = 8192;
-        outLimits->maxTextureDimension3D = 2048;
-        outLimits->maxTextureArrayLayers = 256;
-    }
+    *outLimits = gfx::convertor::wgpuLimitsToGfxDeviceLimits(devicePtr->getLimits());
 }
 
 // Surface functions
