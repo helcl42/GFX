@@ -107,32 +107,12 @@ GfxResult WebGPUBackend::instanceRequestAdapter(GfxInstance instance, const GfxA
 
 uint32_t WebGPUBackend::instanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters) const
 {
-    // WebGPU doesn't have an enumerate API - it only supports requesting one adapter at a time
-    // We return the default adapter if available
     if (!instance) {
         return 0;
     }
 
-    // Try to request the default adapter to check availability
-    GfxAdapter adapter = nullptr;
-    GfxResult result = instanceRequestAdapter(instance, nullptr, &adapter);
-
-    // If just querying the count, clean up the adapter and return count
-    if (!adapters || maxAdapters == 0) {
-        if (result == GFX_RESULT_SUCCESS && adapter) {
-            adapterDestroy(adapter);
-            return 1;
-        }
-        return 0;
-    }
-
-    // Return the adapter if successfully obtained
-    if (result == GFX_RESULT_SUCCESS && adapter) {
-        adapters[0] = adapter;
-        return 1;
-    }
-
-    return 0;
+    auto* inst = reinterpret_cast<gfx::webgpu::Instance*>(instance);
+    return gfx::webgpu::Adapter::enumerate(inst, reinterpret_cast<gfx::webgpu::Adapter**>(adapters), maxAdapters);
 }
 
 // Adapter functions

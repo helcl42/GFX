@@ -264,6 +264,36 @@ public:
         initializeAdapterInfo();
     }
 
+    // Static method to enumerate all available adapters
+    // NOTE: Each adapter returned must be freed by the caller using the backend's adapterDestroy method
+    // (e.g., gfxAdapterDestroy() in the public API)
+    static uint32_t enumerate(Instance* instance, Adapter** outAdapters, uint32_t maxAdapters)
+    {
+        if (!instance) {
+            return 0;
+        }
+
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance->handle(), &deviceCount, nullptr);
+
+        if (deviceCount == 0) {
+            return 0;
+        }
+
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(instance->handle(), &deviceCount, devices.data());
+
+        // Create an adapter for each physical device
+        uint32_t count = std::min(deviceCount, maxAdapters);
+        if (outAdapters) {
+            for (uint32_t i = 0; i < count; ++i) {
+                outAdapters[i] = new Adapter(instance, devices[i]);
+            }
+        }
+
+        return count;
+    }
+
     VkPhysicalDevice handle() const { return m_physicalDevice; }
     const char* getName() const { return m_properties.deviceName; }
     uint32_t getGraphicsQueueFamily() const { return m_graphicsQueueFamily; }

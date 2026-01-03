@@ -137,6 +137,38 @@ public:
     {
     }
 
+    // Static method to enumerate all available adapters
+    // NOTE: WebGPU doesn't have a native enumerate API - returns the default adapter if available
+    // Each adapter returned must be freed by the caller using the backend's adapterDestroy method
+    // (e.g., gfxAdapterDestroy() in the public API)
+    static uint32_t enumerate(Instance* instance, Adapter** outAdapters, uint32_t maxAdapters)
+    {
+        if (!instance) {
+            return 0;
+        }
+
+        // Try to request the default adapter
+        try {
+            AdapterCreateInfo createInfo{};
+            createInfo.powerPreference = WGPUPowerPreference_Undefined;
+            createInfo.forceFallbackAdapter = false;
+
+            auto* adapter = new Adapter(instance, createInfo);
+
+            // If just querying the count (no output array), clean up and return count
+            if (!outAdapters || maxAdapters == 0) {
+                delete adapter;
+                return 1;
+            }
+
+            // Return the adapter
+            outAdapters[0] = adapter;
+            return 1;
+        } catch (...) {
+            return 0;
+        }
+    }
+
     ~Adapter()
     {
         if (m_adapter) {

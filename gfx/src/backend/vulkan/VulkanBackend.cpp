@@ -127,24 +127,7 @@ uint32_t VulkanBackend::instanceEnumerateAdapters(GfxInstance instance, GfxAdapt
     }
 
     auto* inst = reinterpret_cast<gfx::vulkan::Instance*>(instance);
-
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(inst->handle(), &deviceCount, nullptr);
-
-    if (deviceCount == 0) {
-        return 0;
-    }
-
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(inst->handle(), &deviceCount, devices.data());
-
-    // Create an adapter for each physical device
-    uint32_t count = std::min(deviceCount, maxAdapters);
-    for (uint32_t i = 0; i < count; ++i) {
-        adapters[i] = reinterpret_cast<GfxAdapter>(new gfx::vulkan::Adapter(inst, devices[i]));
-    }
-
-    return count;
+    return gfx::vulkan::Adapter::enumerate(inst, reinterpret_cast<gfx::vulkan::Adapter**>(adapters), maxAdapters);
 }
 
 // Adapter functions
