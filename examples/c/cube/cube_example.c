@@ -295,8 +295,7 @@ bool initializeGraphics(CubeApp* app)
 
     // Get adapter
     GfxAdapterDescriptor adapterDesc = {
-        .powerPreference = GFX_POWER_PREFERENCE_HIGH_PERFORMANCE,
-        .forceFallbackAdapter = false
+        .preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE
     };
 
     if (gfxInstanceRequestAdapter(app->instance, &adapterDesc, &app->adapter) != GFX_RESULT_SUCCESS) {

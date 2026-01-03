@@ -1712,8 +1712,7 @@ public:
     std::shared_ptr<Adapter> requestAdapter(const AdapterDescriptor& descriptor = {}) override
     {
         GfxAdapterDescriptor cDesc = {};
-        cDesc.powerPreference = static_cast<GfxPowerPreference>(descriptor.powerPreference);
-        cDesc.forceFallbackAdapter = descriptor.forceFallbackAdapter;
+        cDesc.preference = static_cast<GfxAdapterPreference>(descriptor.preference);
 
         GfxAdapter adapter = nullptr;
         GfxResult result = gfxInstanceRequestAdapter(m_handle, &cDesc, &adapter);

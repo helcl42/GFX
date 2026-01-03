@@ -27,10 +27,11 @@ enum class Backend {
     Auto
 };
 
-enum class PowerPreference {
+enum class AdapterPreference {
     Undefined,
     LowPower,
-    HighPerformance
+    HighPerformance,
+    Software
 };
 
 enum class PresentMode {
@@ -548,8 +549,7 @@ struct InstanceDescriptor {
 };
 
 struct AdapterDescriptor {
-    PowerPreference powerPreference = PowerPreference::Undefined;
-    bool forceFallbackAdapter = false;
+    AdapterPreference preference = AdapterPreference::Undefined;
 };
 
 struct DeviceDescriptor {

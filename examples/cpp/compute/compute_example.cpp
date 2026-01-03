@@ -249,8 +249,7 @@ bool ComputeApp::initializeGraphics()
 
         // Get adapter
         AdapterDescriptor adapterDesc{};
-        adapterDesc.powerPreference = PowerPreference::HighPerformance;
-        adapterDesc.forceFallbackAdapter = false;
+        adapterDesc.preference = AdapterPreference::HighPerformance;
 
         adapter = instance->requestAdapter(adapterDesc);
         if (!adapter) {

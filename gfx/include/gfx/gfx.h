@@ -48,10 +48,11 @@ typedef enum {
 } GfxBackend;
 
 typedef enum {
-    GFX_POWER_PREFERENCE_UNDEFINED,
-    GFX_POWER_PREFERENCE_LOW_POWER,
-    GFX_POWER_PREFERENCE_HIGH_PERFORMANCE
-} GfxPowerPreference;
+    GFX_ADAPTER_PREFERENCE_UNDEFINED,
+    GFX_ADAPTER_PREFERENCE_LOW_POWER,
+    GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE,
+    GFX_ADAPTER_PREFERENCE_SOFTWARE
+} GfxAdapterPreference;
 
 typedef enum {
     GFX_PRESENT_MODE_IMMEDIATE,
@@ -582,8 +583,7 @@ typedef struct {
 // - list required features Graphics/Compute/Present
 // - pass device override index in ??
 typedef struct {
-    GfxPowerPreference powerPreference;
-    bool forceFallbackAdapter;
+    GfxAdapterPreference preference;
 } GfxAdapterDescriptor;
 
 // Device limits
