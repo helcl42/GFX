@@ -5,7 +5,7 @@
 
 #include <vector>
 
-namespace gfx::convertor {
+namespace gfx::vulkan::converter {
 
 // ============================================================================
 // Device Limits Conversion

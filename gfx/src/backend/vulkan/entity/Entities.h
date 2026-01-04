@@ -119,7 +119,7 @@ public:
 
         VkResult result = vkCreateInstance(&vkCreateInfo, nullptr, &m_instance);
         if (result != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create Vulkan instance: " + std::string(gfx::convertor::vkResultToString(result)));
+            throw std::runtime_error("Failed to create Vulkan instance: " + std::string(gfx::vulkan::converter::vkResultToString(result)));
         }
 
         // Setup debug messenger if validation enabled
@@ -187,8 +187,8 @@ private:
         auto* instance = static_cast<Instance*>(pUserData);
         if (instance && instance->m_userCallback) {
             // Convert Vulkan types to internal enums
-            DebugMessageSeverity severity = gfx::convertor::convertVkDebugSeverity(messageSeverity);
-            DebugMessageType type = gfx::convertor::convertVkDebugType(messageType);
+            DebugMessageSeverity severity = gfx::vulkan::converter::convertVkDebugSeverity(messageSeverity);
+            DebugMessageType type = gfx::vulkan::converter::convertVkDebugType(messageType);
 
             instance->m_userCallback(severity, type, pCallbackData->pMessage, instance->m_userCallbackData);
         }
@@ -1145,9 +1145,9 @@ public:
         viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
         // Set aspect mask based on format
-        if (gfx::convertor::isDepthFormat(viewInfo.format)) {
+        if (gfx::vulkan::converter::isDepthFormat(viewInfo.format)) {
             viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            if (gfx::convertor::hasStencilComponent(viewInfo.format)) {
+            if (gfx::vulkan::converter::hasStencilComponent(viewInfo.format)) {
                 viewInfo.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
             }
         } else {

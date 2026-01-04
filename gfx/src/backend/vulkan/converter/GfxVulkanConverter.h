@@ -28,7 +28,23 @@ enum class DebugMessageType;
 enum class SemaphoreType;
 } // namespace gfx::vulkan
 
-namespace gfx::convertor {
+namespace gfx::vulkan::converter {
+
+// Template function to convert internal C++ pointer to opaque C handle
+// Usage: toGfx<GfxDevice>(devicePtr)
+template <typename GfxHandle, typename InternalType>
+inline GfxHandle toGfx(InternalType* ptr)
+{
+    return reinterpret_cast<GfxHandle>(ptr);
+}
+
+// Template function to convert opaque C handle to internal C++ pointer
+// Usage: toNative<Device>(device)
+template <typename InternalType, typename GfxHandle>
+inline InternalType* toNative(GfxHandle handle)
+{
+    return reinterpret_cast<InternalType*>(handle);
+}
 
 // ============================================================================
 // Debug Message Conversion Functions
@@ -114,4 +130,4 @@ gfx::vulkan::BindGroupCreateInfo gfxDescriptorToBindGroupCreateInfo(const GfxBin
 gfx::vulkan::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor);
 gfx::vulkan::ComputePipelineCreateInfo gfxDescriptorToComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor);
 
-} // namespace gfx::convertor
+} // namespace gfx::vulkan::converter
