@@ -658,7 +658,8 @@ GfxSampleCount WebGPUBackend::textureGetSampleCount(GfxTexture texture) const
     if (!texture) {
         return GFX_SAMPLE_COUNT_1;
     }
-    return static_cast<GfxSampleCount>(reinterpret_cast<gfx::webgpu::Texture*>(texture)->getSampleCount());
+    auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
+    return gfx::convertor::wgpuSampleCountToGfxSampleCount(texturePtr->getSampleCount());
 }
 
 GfxTextureUsage WebGPUBackend::textureGetUsage(GfxTexture texture) const

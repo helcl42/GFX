@@ -86,6 +86,9 @@ GfxTextureFormat wgpuFormatToGfxFormat(WGPUTextureFormat format);
 GfxPresentMode wgpuPresentModeToGfxPresentMode(WGPUPresentMode mode);
 WGPUPresentMode gfxPresentModeToWGPU(GfxPresentMode mode);
 
+// Sample count conversions
+GfxSampleCount wgpuSampleCountToGfxSampleCount(uint32_t sampleCount);
+
 // Utility functions
 bool formatHasStencil(GfxTextureFormat format);
 

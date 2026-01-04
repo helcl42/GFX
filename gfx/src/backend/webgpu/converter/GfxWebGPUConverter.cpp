@@ -646,6 +646,28 @@ GfxPresentMode wgpuPresentModeToGfxPresentMode(WGPUPresentMode mode)
     }
 }
 
+GfxSampleCount wgpuSampleCountToGfxSampleCount(uint32_t sampleCount)
+{
+    switch (sampleCount) {
+    case 1:
+        return GFX_SAMPLE_COUNT_1;
+    case 2:
+        return GFX_SAMPLE_COUNT_2;
+    case 4:
+        return GFX_SAMPLE_COUNT_4;
+    case 8:
+        return GFX_SAMPLE_COUNT_8;
+    case 16:
+        return GFX_SAMPLE_COUNT_16;
+    case 32:
+        return GFX_SAMPLE_COUNT_32;
+    case 64:
+        return GFX_SAMPLE_COUNT_64;
+    default:
+        return GFX_SAMPLE_COUNT_1;
+    }
+}
+
 WGPUPresentMode gfxPresentModeToWGPU(GfxPresentMode mode)
 {
     switch (mode) {
