@@ -92,7 +92,7 @@ gfx::webgpu::BufferCreateInfo gfxDescriptorToWebGPUBufferCreateInfo(const GfxBuf
 {
     gfx::webgpu::BufferCreateInfo createInfo{};
     createInfo.size = descriptor->size;
-    createInfo.usage = static_cast<WGPUBufferUsage>(descriptor->usage);
+    createInfo.usage = gfxBufferUsageToWGPU(descriptor->usage);
     return createInfo;
 }
 
@@ -106,7 +106,7 @@ gfx::webgpu::TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxT
     createInfo.size.depthOrArrayLayers = (descriptor->type == GFX_TEXTURE_TYPE_3D)
         ? descriptor->size.depth
         : (descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1);
-    createInfo.usage = static_cast<WGPUTextureUsage>(descriptor->usage);
+    createInfo.usage = gfxTextureUsageToWGPU(descriptor->usage);
     createInfo.sampleCount = descriptor->sampleCount;
     createInfo.mipLevelCount = descriptor->mipLevelCount;
     createInfo.dimension = gfxTextureTypeToWGPU(descriptor->type);
@@ -117,10 +117,8 @@ gfx::webgpu::TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxT
 gfx::webgpu::TextureViewCreateInfo gfxDescriptorToWebGPUTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor)
 {
     gfx::webgpu::TextureViewCreateInfo createInfo{};
-    createInfo.viewDimension = static_cast<WGPUTextureViewDimension>(descriptor->viewType);
-    createInfo.format = descriptor->format == GFX_TEXTURE_FORMAT_UNDEFINED
-        ? WGPUTextureFormat_Undefined
-        : static_cast<WGPUTextureFormat>(descriptor->format);
+    createInfo.viewDimension = gfxTextureViewTypeToWGPU(descriptor->viewType);
+    createInfo.format = gfxFormatToWGPUFormat(descriptor->format);
     createInfo.baseMipLevel = descriptor ? descriptor->baseMipLevel : 0;
     createInfo.mipLevelCount = descriptor ? descriptor->mipLevelCount : 1;
     createInfo.baseArrayLayer = descriptor ? descriptor->baseArrayLayer : 0;
@@ -140,17 +138,17 @@ gfx::webgpu::ShaderCreateInfo gfxDescriptorToWebGPUShaderCreateInfo(const GfxSha
 gfx::webgpu::SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxSamplerDescriptor* descriptor)
 {
     gfx::webgpu::SamplerCreateInfo createInfo{};
-    createInfo.addressModeU = static_cast<WGPUAddressMode>(descriptor->addressModeU);
-    createInfo.addressModeV = static_cast<WGPUAddressMode>(descriptor->addressModeV);
-    createInfo.addressModeW = static_cast<WGPUAddressMode>(descriptor->addressModeW);
-    createInfo.magFilter = static_cast<WGPUFilterMode>(descriptor->magFilter);
-    createInfo.minFilter = static_cast<WGPUFilterMode>(descriptor->minFilter);
-    createInfo.mipmapFilter = static_cast<WGPUMipmapFilterMode>(descriptor->mipmapFilter);
+    createInfo.addressModeU = gfxAddressModeToWGPU(descriptor->addressModeU);
+    createInfo.addressModeV = gfxAddressModeToWGPU(descriptor->addressModeV);
+    createInfo.addressModeW = gfxAddressModeToWGPU(descriptor->addressModeW);
+    createInfo.magFilter = gfxFilterModeToWGPU(descriptor->magFilter);
+    createInfo.minFilter = gfxFilterModeToWGPU(descriptor->minFilter);
+    createInfo.mipmapFilter = gfxMipmapFilterModeToWGPU(descriptor->mipmapFilter);
     createInfo.lodMinClamp = descriptor->lodMinClamp;
     createInfo.lodMaxClamp = descriptor->lodMaxClamp;
     createInfo.maxAnisotropy = descriptor->maxAnisotropy;
     createInfo.compareFunction = descriptor->compare
-        ? static_cast<WGPUCompareFunction>(*descriptor->compare)
+        ? gfxCompareFunctionToWGPU(*descriptor->compare)
         : WGPUCompareFunction_Undefined;
     return createInfo;
 }
@@ -697,7 +695,7 @@ WGPUStoreOp gfxStoreOpToWGPUStoreOp(GfxStoreOp storeOp)
     case GFX_STORE_OP_DONT_CARE:
         return WGPUStoreOp_Discard;
     default:
-        return WGPUStoreOp_Discard;
+        return WGPUStoreOp_Undefined;
     }
 }
 
@@ -765,7 +763,7 @@ WGPUAddressMode gfxAddressModeToWGPU(GfxAddressMode mode)
     case GFX_ADDRESS_MODE_CLAMP_TO_EDGE:
         return WGPUAddressMode_ClampToEdge;
     default:
-        return WGPUAddressMode_ClampToEdge;
+        return WGPUAddressMode_Undefined;
     }
 }
 
@@ -793,7 +791,7 @@ WGPUPrimitiveTopology gfxPrimitiveTopologyToWGPU(GfxPrimitiveTopology topology)
     case GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
         return WGPUPrimitiveTopology_TriangleStrip;
     default:
-        return WGPUPrimitiveTopology_TriangleList;
+        return WGPUPrimitiveTopology_Undefined;
     }
 }
 
@@ -812,7 +810,7 @@ WGPUCullMode gfxCullModeToWGPU(GfxCullMode cullMode)
     case GFX_CULL_MODE_BACK:
         return WGPUCullMode_Back;
     default:
-        return WGPUCullMode_None;
+        return WGPUCullMode_Undefined;
     }
 }
 
@@ -842,7 +840,7 @@ WGPUBlendOperation gfxBlendOperationToWGPU(GfxBlendOperation operation)
     case GFX_BLEND_OPERATION_MAX:
         return WGPUBlendOperation_Max;
     default:
-        return WGPUBlendOperation_Add;
+        return WGPUBlendOperation_Undefined;
     }
 }
 
@@ -900,7 +898,7 @@ WGPUCompareFunction gfxCompareFunctionToWGPU(GfxCompareFunction func)
     case GFX_COMPARE_FUNCTION_ALWAYS:
         return WGPUCompareFunction_Always;
     default:
-        return WGPUCompareFunction_Always;
+        return WGPUCompareFunction_Undefined;
     }
 }
 
@@ -924,7 +922,7 @@ WGPUStencilOperation gfxStencilOperationToWGPU(GfxStencilOperation op)
     case GFX_STENCIL_OPERATION_DECREMENT_WRAP:
         return WGPUStencilOperation_DecrementWrap;
     default:
-        return WGPUStencilOperation_Keep;
+        return WGPUStencilOperation_Undefined;
     }
 }
 
@@ -942,7 +940,7 @@ WGPUTextureSampleType gfxTextureSampleTypeToWGPU(GfxTextureSampleType sampleType
     case GFX_TEXTURE_SAMPLE_TYPE_UINT:
         return WGPUTextureSampleType_Uint;
     default:
-        return WGPUTextureSampleType_Float;
+        return WGPUTextureSampleType_Undefined;
     }
 }
 
@@ -1004,7 +1002,7 @@ WGPUTextureViewDimension gfxTextureViewTypeToWGPU(GfxTextureViewType type)
     case GFX_TEXTURE_VIEW_TYPE_CUBE_ARRAY:
         return WGPUTextureViewDimension_CubeArray;
     default:
-        return WGPUTextureViewDimension_2D;
+        return WGPUTextureViewDimension_Undefined;
     }
 }
 
