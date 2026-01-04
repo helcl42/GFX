@@ -885,7 +885,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     try {
         auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
         auto createInfo = converter::gfxRenderPassDescriptorToCreateInfo(descriptor);
-        RenderPassEncoder* renderPassEncoder = new RenderPassEncoder(encoderPtr, createInfo);
+        auto* renderPassEncoder = new RenderPassEncoder(encoderPtr, createInfo);
         *outRenderPass = converter::toGfx<GfxRenderPassEncoder>(renderPassEncoder);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception&) {
@@ -902,7 +902,7 @@ GfxResult VulkanBackend::commandEncoderBeginComputePass(GfxCommandEncoder comman
     try {
         auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
         auto createInfo = converter::gfxComputePassDescriptorToCreateInfo(descriptor);
-        ComputePassEncoder* computePassEncoder = new ComputePassEncoder(encoderPtr, createInfo);
+        auto* computePassEncoder = new ComputePassEncoder(encoderPtr, createInfo);
         *outComputePass = converter::toGfx<GfxComputePassEncoder>(computePassEncoder);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception&) {
