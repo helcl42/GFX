@@ -198,7 +198,7 @@ GfxResult WebGPUBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
     try {
         auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
         auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBufferCreateInfo(descriptor);
-        auto* buffer = new gfx::webgpu::Buffer(devicePtr->handle(), createInfo, devicePtr);
+        auto* buffer = new gfx::webgpu::Buffer(devicePtr, createInfo);
         *outBuffer = reinterpret_cast<GfxBuffer>(buffer);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
@@ -215,7 +215,7 @@ GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
     try {
         auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
         auto createInfo = gfx::convertor::gfxDescriptorToWebGPUTextureCreateInfo(descriptor);
-        auto* texture = new gfx::webgpu::Texture(devicePtr->handle(), createInfo);
+        auto* texture = new gfx::webgpu::Texture(devicePtr, createInfo);
         *outTexture = reinterpret_cast<GfxTexture>(texture);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
@@ -232,7 +232,7 @@ GfxResult WebGPUBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerD
     try {
         auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
         auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSamplerCreateInfo(descriptor);
-        auto* sampler = new gfx::webgpu::Sampler(devicePtr->handle(), createInfo);
+        auto* sampler = new gfx::webgpu::Sampler(devicePtr, createInfo);
         *outSampler = reinterpret_cast<GfxSampler>(sampler);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
@@ -249,7 +249,7 @@ GfxResult WebGPUBackend::deviceCreateShader(GfxDevice device, const GfxShaderDes
     try {
         auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
         auto createInfo = gfx::convertor::gfxDescriptorToWebGPUShaderCreateInfo(descriptor);
-        auto* shader = new gfx::webgpu::Shader(devicePtr->handle(), createInfo);
+        auto* shader = new gfx::webgpu::Shader(devicePtr, createInfo);
         *outShader = reinterpret_cast<GfxShader>(shader);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
@@ -266,7 +266,7 @@ GfxResult WebGPUBackend::deviceCreateBindGroupLayout(GfxDevice device, const Gfx
     try {
         auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
         auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(descriptor);
-        auto* layout = new gfx::webgpu::BindGroupLayout(devicePtr->handle(), createInfo);
+        auto* layout = new gfx::webgpu::BindGroupLayout(devicePtr, createInfo);
         *outLayout = reinterpret_cast<GfxBindGroupLayout>(layout);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
@@ -284,7 +284,7 @@ GfxResult WebGPUBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGr
         auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
         auto* layoutPtr = reinterpret_cast<gfx::webgpu::BindGroupLayout*>(descriptor->layout);
         auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBindGroupCreateInfo(descriptor, layoutPtr->handle());
-        auto* bindGroup = new gfx::webgpu::BindGroup(devicePtr->handle(), createInfo);
+        auto* bindGroup = new gfx::webgpu::BindGroup(devicePtr, createInfo);
         *outBindGroup = reinterpret_cast<GfxBindGroup>(bindGroup);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
@@ -301,7 +301,7 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
     try {
         auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
         auto createInfo = gfx::convertor::gfxDescriptorToWebGPURenderPipelineCreateInfo(descriptor);
-        auto* pipeline = new gfx::webgpu::RenderPipeline(devicePtr->handle(), createInfo);
+        auto* pipeline = new gfx::webgpu::RenderPipeline(devicePtr, createInfo);
         *outPipeline = reinterpret_cast<GfxRenderPipeline>(pipeline);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
@@ -318,7 +318,7 @@ GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
     try {
         auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
         auto createInfo = gfx::convertor::gfxDescriptorToWebGPUComputePipelineCreateInfo(descriptor);
-        auto* pipeline = new gfx::webgpu::ComputePipeline(devicePtr->handle(), createInfo);
+        auto* pipeline = new gfx::webgpu::ComputePipeline(devicePtr, createInfo);
         *outPipeline = reinterpret_cast<GfxComputePipeline>(pipeline);
         return GFX_RESULT_SUCCESS;
     } catch (...) {

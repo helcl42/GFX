@@ -390,9 +390,8 @@ public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
-    Buffer(WGPUDevice device, const BufferCreateInfo& createInfo, Device* deviceObj = nullptr)
+    Buffer(Device* device, const BufferCreateInfo& createInfo)
         : m_device(device)
-        , m_deviceObj(deviceObj)
         , m_size(createInfo.size)
         , m_usage(createInfo.usage)
     {
@@ -401,7 +400,7 @@ public:
         desc.usage = m_usage;
         desc.mappedAtCreation = false;
 
-        m_buffer = wgpuDeviceCreateBuffer(m_device, &desc);
+        m_buffer = wgpuDeviceCreateBuffer(m_device->handle(), &desc);
         if (!m_buffer) {
             throw std::runtime_error("Failed to create WebGPU buffer");
         }
@@ -417,7 +416,7 @@ public:
     WGPUBuffer handle() const { return m_buffer; }
     uint64_t getSize() const { return m_size; }
     BufferUsage getUsage() const { return m_usage; }
-    Device* getDevice() const { return m_deviceObj; }
+    Device* getDevice() const { return m_device; }
 
     // Map buffer for CPU access
     // Returns mapped pointer on success, nullptr on failure
@@ -461,10 +460,10 @@ public:
         WGPUFuture future = wgpuBufferMapAsync(m_buffer, mapMode, offset, mapSize, callbackInfo);
 
         // Properly wait for the mapping to complete
-        if (m_deviceObj && m_deviceObj->getAdapter() && m_deviceObj->getAdapter()->getInstance()) {
+        if (m_device && m_device->getAdapter() && m_device->getAdapter()->getInstance()) {
             WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
             waitInfo.future = future;
-            wgpuInstanceWaitAny(m_deviceObj->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
+            wgpuInstanceWaitAny(m_device->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
         }
 
         if (!callbackData.completed || callbackData.status != WGPUMapAsyncStatus_Success) {
@@ -488,8 +487,7 @@ public:
 
 private:
     WGPUBuffer m_buffer = nullptr;
-    WGPUDevice m_device = nullptr;
-    Device* m_deviceObj = nullptr; // Non-owning pointer for operations that need it
+    Device* m_device = nullptr; // Non-owning pointer for device operations
     uint64_t m_size = 0;
     BufferUsage m_usage = WGPUBufferUsage_None;
 };
@@ -500,7 +498,7 @@ public:
     Texture(const Texture&) = delete;
     Texture& operator=(const Texture&) = delete;
 
-    Texture(WGPUDevice device, const TextureCreateInfo& createInfo)
+    Texture(Device* device, const TextureCreateInfo& createInfo)
         : m_device(device)
         , m_size(createInfo.size)
         , m_format(createInfo.format)
@@ -518,7 +516,7 @@ public:
         desc.viewFormatCount = 0;
         desc.viewFormats = nullptr;
 
-        m_texture = wgpuDeviceCreateTexture(m_device, &desc);
+        m_texture = wgpuDeviceCreateTexture(m_device->handle(), &desc);
         if (!m_texture) {
             throw std::runtime_error("Failed to create WebGPU texture");
         }
@@ -540,7 +538,7 @@ public:
 
 private:
     WGPUTexture m_texture = nullptr;
-    WGPUDevice m_device = nullptr;
+    Device* m_device = nullptr; // Non-owning pointer for device operations
     WGPUExtent3D m_size = {};
     WGPUTextureFormat m_format = WGPUTextureFormat_Undefined;
     uint32_t m_mipLevels = 0;
@@ -600,7 +598,7 @@ public:
     Sampler(const Sampler&) = delete;
     Sampler& operator=(const Sampler&) = delete;
 
-    Sampler(WGPUDevice device, const SamplerCreateInfo& createInfo)
+    Sampler(Device* device, const SamplerCreateInfo& createInfo)
         : m_device(device)
     {
         WGPUSamplerDescriptor desc = WGPU_SAMPLER_DESCRIPTOR_INIT;
@@ -615,7 +613,7 @@ public:
         desc.maxAnisotropy = createInfo.maxAnisotropy;
         desc.compare = createInfo.compareFunction;
 
-        m_sampler = wgpuDeviceCreateSampler(m_device, &desc);
+        m_sampler = wgpuDeviceCreateSampler(m_device->handle(), &desc);
         if (!m_sampler) {
             throw std::runtime_error("Failed to create WebGPU sampler");
         }
@@ -632,7 +630,7 @@ public:
 
 private:
     WGPUSampler m_sampler = nullptr;
-    WGPUDevice m_device = nullptr;
+    Device* m_device = nullptr; // Non-owning pointer for device operations
 };
 
 class Shader {
@@ -641,7 +639,7 @@ public:
     Shader(const Shader&) = delete;
     Shader& operator=(const Shader&) = delete;
 
-    Shader(WGPUDevice device, const ShaderCreateInfo& createInfo)
+    Shader(Device* device, const ShaderCreateInfo& createInfo)
         : m_device(device)
     {
         WGPUShaderSourceWGSL wgslDesc = WGPU_SHADER_SOURCE_WGSL_INIT;
@@ -657,7 +655,7 @@ public:
         WGPUShaderModuleDescriptor desc = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
         desc.nextInChain = &wgslDesc.chain;
 
-        m_module = wgpuDeviceCreateShaderModule(m_device, &desc);
+        m_module = wgpuDeviceCreateShaderModule(m_device->handle(), &desc);
         if (!m_module) {
             throw std::runtime_error("Failed to create WebGPU shader module");
         }
@@ -674,7 +672,7 @@ public:
 
 private:
     WGPUShaderModule m_module = nullptr;
-    WGPUDevice m_device = nullptr;
+    Device* m_device = nullptr; // Non-owning pointer for device operations
 };
 
 class BindGroupLayout {
@@ -683,7 +681,7 @@ public:
     BindGroupLayout(const BindGroupLayout&) = delete;
     BindGroupLayout& operator=(const BindGroupLayout&) = delete;
 
-    BindGroupLayout(WGPUDevice device, const BindGroupLayoutCreateInfo& createInfo)
+    BindGroupLayout(Device* device, const BindGroupLayoutCreateInfo& createInfo)
     {
         WGPUBindGroupLayoutDescriptor desc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
 
@@ -721,7 +719,7 @@ public:
         desc.entryCount = static_cast<uint32_t>(wgpuEntries.size());
         desc.entries = wgpuEntries.data();
 
-        m_layout = wgpuDeviceCreateBindGroupLayout(device, &desc);
+        m_layout = wgpuDeviceCreateBindGroupLayout(device->handle(), &desc);
         if (!m_layout) {
             throw std::runtime_error("Failed to create WebGPU BindGroupLayout");
         }
@@ -746,7 +744,7 @@ public:
     BindGroup(const BindGroup&) = delete;
     BindGroup& operator=(const BindGroup&) = delete;
 
-    BindGroup(WGPUDevice device, const BindGroupCreateInfo& createInfo)
+    BindGroup(Device* device, const BindGroupCreateInfo& createInfo)
         : m_device(device)
     {
         WGPUBindGroupDescriptor desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
@@ -769,7 +767,7 @@ public:
         desc.entries = wgpuEntries.data();
         desc.entryCount = static_cast<uint32_t>(wgpuEntries.size());
 
-        m_bindGroup = wgpuDeviceCreateBindGroup(m_device, &desc);
+        m_bindGroup = wgpuDeviceCreateBindGroup(m_device->handle(), &desc);
         if (!m_bindGroup) {
             throw std::runtime_error("Failed to create WebGPU BindGroup");
         }
@@ -786,7 +784,7 @@ public:
 
 private:
     WGPUBindGroup m_bindGroup = nullptr;
-    WGPUDevice m_device = nullptr;
+    Device* m_device = nullptr; // Non-owning pointer for device operations
 };
 
 class RenderPipeline {
@@ -795,7 +793,7 @@ public:
     RenderPipeline(const RenderPipeline&) = delete;
     RenderPipeline& operator=(const RenderPipeline&) = delete;
 
-    RenderPipeline(WGPUDevice device, const RenderPipelineCreateInfo& createInfo)
+    RenderPipeline(Device* device, const RenderPipelineCreateInfo& createInfo)
     {
         WGPURenderPipelineDescriptor desc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
 
@@ -805,7 +803,7 @@ public:
             WGPUPipelineLayoutDescriptor layoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
             layoutDesc.bindGroupLayouts = createInfo.bindGroupLayouts.data();
             layoutDesc.bindGroupLayoutCount = static_cast<uint32_t>(createInfo.bindGroupLayouts.size());
-            pipelineLayout = wgpuDeviceCreatePipelineLayout(device, &layoutDesc);
+            pipelineLayout = wgpuDeviceCreatePipelineLayout(device->handle(), &layoutDesc);
             desc.layout = pipelineLayout;
         }
 
@@ -928,7 +926,7 @@ public:
         multisampleState.count = createInfo.sampleCount;
         desc.multisample = multisampleState;
 
-        m_pipeline = wgpuDeviceCreateRenderPipeline(device, &desc);
+        m_pipeline = wgpuDeviceCreateRenderPipeline(device->handle(), &desc);
 
         // Release the pipeline layout if we created one (pipeline holds its own reference)
         if (pipelineLayout) {
@@ -959,7 +957,7 @@ public:
     ComputePipeline(const ComputePipeline&) = delete;
     ComputePipeline& operator=(const ComputePipeline&) = delete;
 
-    ComputePipeline(WGPUDevice device, const ComputePipelineCreateInfo& createInfo)
+    ComputePipeline(Device* device, const ComputePipelineCreateInfo& createInfo)
     {
         WGPUComputePipelineDescriptor desc = WGPU_COMPUTE_PIPELINE_DESCRIPTOR_INIT;
 
@@ -969,14 +967,14 @@ public:
             WGPUPipelineLayoutDescriptor layoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
             layoutDesc.bindGroupLayouts = createInfo.bindGroupLayouts.data();
             layoutDesc.bindGroupLayoutCount = static_cast<uint32_t>(createInfo.bindGroupLayouts.size());
-            pipelineLayout = wgpuDeviceCreatePipelineLayout(device, &layoutDesc);
+            pipelineLayout = wgpuDeviceCreatePipelineLayout(device->handle(), &layoutDesc);
             desc.layout = pipelineLayout;
         }
 
         desc.compute.module = createInfo.module;
         desc.compute.entryPoint = { createInfo.entryPoint, WGPU_STRLEN };
 
-        m_pipeline = wgpuDeviceCreateComputePipeline(device, &desc);
+        m_pipeline = wgpuDeviceCreateComputePipeline(device->handle(), &desc);
 
         // Release the pipeline layout if we created one (pipeline holds its own reference)
         if (pipelineLayout) {
