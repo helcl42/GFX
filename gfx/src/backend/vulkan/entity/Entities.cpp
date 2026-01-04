@@ -104,4 +104,169 @@ VkResult Queue::submit(const SubmitInfo& submitInfo)
     return vkQueueSubmit(m_queue, 1, &vkSubmitInfo, fence);
 }
 
+void Queue::writeTexture(Texture* texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+    const void* data, uint64_t dataSize,
+    const GfxExtent3D* extent, GfxTextureLayout finalLayout)
+{
+    VkDevice device = texture->device();
+
+    // Create staging buffer
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = dataSize;
+    bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VkBuffer stagingBuffer = VK_NULL_HANDLE;
+    VkResult result = vkCreateBuffer(device, &bufferInfo, nullptr, &stagingBuffer);
+    if (result != VK_SUCCESS) {
+        fprintf(stderr, "Failed to create staging buffer for texture upload\n");
+        return;
+    }
+
+    // Get memory requirements and allocate
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device, stagingBuffer, &memRequirements);
+
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice(), &memProperties);
+
+    uint32_t memoryTypeIndex = UINT32_MAX;
+    VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
+        if ((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            memoryTypeIndex = i;
+            break;
+        }
+    }
+
+    if (memoryTypeIndex == UINT32_MAX) {
+        fprintf(stderr, "Failed to find suitable memory type for staging buffer\n");
+        vkDestroyBuffer(device, stagingBuffer, nullptr);
+        return;
+    }
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = memoryTypeIndex;
+
+    VkDeviceMemory stagingMemory = VK_NULL_HANDLE;
+    result = vkAllocateMemory(device, &allocInfo, nullptr, &stagingMemory);
+    if (result != VK_SUCCESS) {
+        fprintf(stderr, "Failed to allocate staging buffer memory\n");
+        vkDestroyBuffer(device, stagingBuffer, nullptr);
+        return;
+    }
+
+    vkBindBufferMemory(device, stagingBuffer, stagingMemory, 0);
+
+    // Copy data to staging buffer
+    void* mappedData = nullptr;
+    vkMapMemory(device, stagingMemory, 0, dataSize, 0, &mappedData);
+    memcpy(mappedData, data, dataSize);
+    vkUnmapMemory(device, stagingMemory);
+
+    // Create temporary command buffer
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    poolInfo.queueFamilyIndex = m_queueFamily;
+
+    VkCommandPool commandPool = VK_NULL_HANDLE;
+    vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool);
+
+    VkCommandBufferAllocateInfo allocCmdInfo{};
+    allocCmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocCmdInfo.commandPool = commandPool;
+    allocCmdInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocCmdInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+    vkAllocateCommandBuffers(device, &allocCmdInfo, &commandBuffer);
+
+    // Begin command buffer
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    // Transition image to transfer dst optimal
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = texture->getLayout();
+    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = texture->handle();
+    barrier.subresourceRange.aspectMask = converter::getImageAspectMask(texture->getFormat());
+    barrier.subresourceRange.baseMipLevel = mipLevel;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+    // Copy buffer to image
+    VkBufferImageCopy region{};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0; // Tightly packed
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = converter::getImageAspectMask(texture->getFormat());
+    region.imageSubresource.mipLevel = mipLevel;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+    region.imageOffset = { origin ? origin->x : 0,
+        origin ? origin->y : 0,
+        origin ? origin->z : 0 };
+    region.imageExtent = { extent->width, extent->height, extent->depth };
+
+    vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, texture->handle(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    // Transition image to final layout
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.newLayout = converter::gfxLayoutToVkImageLayout(finalLayout);
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = static_cast<VkAccessFlags>(gfxGetAccessFlagsForLayout(finalLayout));
+
+    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+    // Update tracked layout
+    texture->setLayout(converter::gfxLayoutToVkImageLayout(finalLayout));
+
+    // End and submit
+    vkEndCommandBuffer(commandBuffer);
+
+    // Create fence for synchronization
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFence fence = VK_NULL_HANDLE;
+    vkCreateFence(device, &fenceInfo, nullptr, &fence);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(m_queue, 1, &submitInfo, fence);
+    vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+    vkDestroyFence(device, fence, nullptr);
+
+    // Cleanup
+    vkDestroyCommandPool(device, commandPool, nullptr);
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingMemory, nullptr);
+}
+
+void Queue::waitIdle()
+{
+    vkQueueWaitIdle(m_queue);
+}
+
 } // namespace gfx::vulkan

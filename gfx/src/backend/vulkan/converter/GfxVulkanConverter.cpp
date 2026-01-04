@@ -412,6 +412,11 @@ GfxSampleCount vkSampleCountToGfxSampleCount(VkSampleCountFlagBits vkSampleCount
     }
 }
 
+GfxExtent3D vkExtent3DToGfxExtent3D(const VkExtent3D& vkExtent)
+{
+    return { vkExtent.width, vkExtent.height, vkExtent.depth };
+}
+
 VkCullModeFlags gfxCullModeToVkCullMode(GfxCullMode cullMode)
 {
     switch (cullMode) {

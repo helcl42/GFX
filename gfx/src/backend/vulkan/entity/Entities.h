@@ -351,6 +351,14 @@ public:
 
     VkResult submit(const SubmitInfo& submitInfo);
 
+    // Write data directly to a texture using staging buffer
+    void writeTexture(Texture* texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+        const void* data, uint64_t dataSize,
+        const GfxExtent3D* extent, GfxTextureLayout finalLayout);
+
+    // Wait for all operations on the queue to complete
+    void waitIdle();
+
 private:
     VkQueue m_queue = VK_NULL_HANDLE;
     Device* m_device = nullptr;

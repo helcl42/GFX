@@ -92,6 +92,7 @@ VkImageType gfxTextureTypeToVkImageType(GfxTextureType type);
 VkImageViewType gfxTextureViewTypeToVkImageViewType(GfxTextureViewType type);
 VkSampleCountFlagBits sampleCountToVkSampleCount(GfxSampleCount sampleCount);
 GfxSampleCount vkSampleCountToGfxSampleCount(VkSampleCountFlagBits vkSampleCount);
+GfxExtent3D vkExtent3DToGfxExtent3D(const VkExtent3D& vkExtent);
 VkCullModeFlags gfxCullModeToVkCullMode(GfxCullMode cullMode);
 VkFrontFace gfxFrontFaceToVkFrontFace(GfxFrontFace frontFace);
 VkPolygonMode gfxPolygonModeToVkPolygonMode(GfxPolygonMode polygonMode);
