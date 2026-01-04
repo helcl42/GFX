@@ -23,9 +23,12 @@ struct BindGroupCreateInfo;
 struct RenderPipelineCreateInfo;
 struct ComputePipelineCreateInfo;
 struct CommandEncoderCreateInfo;
+struct RenderPassEncoderCreateInfo;
+struct ComputePassEncoderCreateInfo;
 struct SubmitInfo;
 struct PlatformWindowHandle;
 enum class SemaphoreType;
+class CommandEncoder;
 // BufferUsage is an alias to WGPUBufferUsage, so we use WGPUBufferUsage directly
 } // namespace gfx::webgpu
 
@@ -154,5 +157,12 @@ WGPUVertexFormat gfxFormatToWGPUVertexFormat(GfxTextureFormat format);
 // Texture dimension conversions
 WGPUTextureDimension gfxTextureTypeToWGPU(GfxTextureType type);
 WGPUTextureViewDimension gfxTextureViewTypeToWGPU(GfxTextureViewType type);
+
+// CreateInfo conversions
+RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(
+    const GfxRenderPassDescriptor* descriptor);
+
+ComputePassEncoderCreateInfo gfxComputePassDescriptorToCreateInfo(
+    const GfxComputePassDescriptor* descriptor);
 
 } // namespace gfx::webgpu::converter

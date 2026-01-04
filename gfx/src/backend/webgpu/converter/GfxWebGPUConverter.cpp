@@ -1071,4 +1071,80 @@ WGPUTextureViewDimension gfxTextureViewTypeToWGPU(GfxTextureViewType type)
     }
 }
 
+RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(
+    const GfxRenderPassDescriptor* descriptor)
+{
+    RenderPassEncoderCreateInfo createInfo{};
+
+    // Convert color attachments
+    for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
+        const GfxColorAttachment& gfxColor = descriptor->colorAttachments[i];
+        ColorAttachment colorAttachment{};
+
+        // Convert target
+        if (gfxColor.target.view) {
+            auto* viewPtr = toNative<TextureView>(gfxColor.target.view);
+            colorAttachment.target.view = viewPtr->handle();
+            colorAttachment.target.ops.loadOp = gfxLoadOpToWGPULoadOp(gfxColor.target.ops.loadOp);
+            colorAttachment.target.ops.storeOp = gfxStoreOpToWGPUStoreOp(gfxColor.target.ops.storeOp);
+            const GfxColor& color = gfxColor.target.ops.clearColor;
+            colorAttachment.target.ops.clearColor = { color.r, color.g, color.b, color.a };
+
+            // Convert resolve target if present
+            if (gfxColor.resolveTarget && gfxColor.resolveTarget->view) {
+                ColorAttachmentTarget resolveTarget{};
+                auto* resolveViewPtr = toNative<TextureView>(gfxColor.resolveTarget->view);
+                resolveTarget.view = resolveViewPtr->handle();
+                resolveTarget.ops.loadOp = gfxLoadOpToWGPULoadOp(gfxColor.resolveTarget->ops.loadOp);
+                resolveTarget.ops.storeOp = gfxStoreOpToWGPUStoreOp(gfxColor.resolveTarget->ops.storeOp);
+                const GfxColor& resolveColor = gfxColor.resolveTarget->ops.clearColor;
+                resolveTarget.ops.clearColor = { resolveColor.r, resolveColor.g, resolveColor.b, resolveColor.a };
+                colorAttachment.resolveTarget = resolveTarget;
+            }
+        }
+        createInfo.colorAttachments.push_back(colorAttachment);
+    }
+
+    // Convert depth/stencil attachment
+    if (descriptor->depthStencilAttachment) {
+        const GfxDepthStencilAttachment& gfxDepthStencil = *descriptor->depthStencilAttachment;
+        DepthStencilAttachment depthStencilAttachment{};
+
+        const GfxDepthStencilAttachmentTarget& target = gfxDepthStencil.target;
+        auto* viewPtr = toNative<TextureView>(target.view);
+        depthStencilAttachment.target.view = viewPtr->handle();
+        depthStencilAttachment.target.format = viewPtr->getTexture()->getFormat();
+
+        // Convert depth operations
+        if (target.depthOps) {
+            DepthAttachmentOps depthOps{};
+            depthOps.loadOp = gfxLoadOpToWGPULoadOp(target.depthOps->loadOp);
+            depthOps.storeOp = gfxStoreOpToWGPUStoreOp(target.depthOps->storeOp);
+            depthOps.clearValue = target.depthOps->clearValue;
+            depthStencilAttachment.target.depthOps = depthOps;
+        }
+
+        // Convert stencil operations
+        if (target.stencilOps) {
+            StencilAttachmentOps stencilOps{};
+            stencilOps.loadOp = gfxLoadOpToWGPULoadOp(target.stencilOps->loadOp);
+            stencilOps.storeOp = gfxStoreOpToWGPUStoreOp(target.stencilOps->storeOp);
+            stencilOps.clearValue = target.stencilOps->clearValue;
+            depthStencilAttachment.target.stencilOps = stencilOps;
+        }
+
+        createInfo.depthStencilAttachment = depthStencilAttachment;
+    }
+
+    return createInfo;
+}
+
+ComputePassEncoderCreateInfo gfxComputePassDescriptorToCreateInfo(
+    const GfxComputePassDescriptor* descriptor)
+{
+    ComputePassEncoderCreateInfo createInfo{};
+    createInfo.label = descriptor->label;
+    return createInfo;
+}
+
 } // namespace gfx::webgpu::converter

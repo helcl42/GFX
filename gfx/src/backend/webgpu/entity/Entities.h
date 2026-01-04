@@ -1081,10 +1081,7 @@ public:
     RenderPassEncoder(const RenderPassEncoder&) = delete;
     RenderPassEncoder& operator=(const RenderPassEncoder&) = delete;
 
-    RenderPassEncoder(WGPURenderPassEncoder encoder)
-        : m_encoder(encoder)
-    {
-    }
+    RenderPassEncoder(CommandEncoder* commandEncoder, const RenderPassEncoderCreateInfo& createInfo);
 
     ~RenderPassEncoder()
     {
@@ -1117,10 +1114,7 @@ public:
     ComputePassEncoder(const ComputePassEncoder&) = delete;
     ComputePassEncoder& operator=(const ComputePassEncoder&) = delete;
 
-    ComputePassEncoder(WGPUComputePassEncoder encoder)
-        : m_encoder(encoder)
-    {
-    }
+    ComputePassEncoder(CommandEncoder* commandEncoder, const ComputePassEncoderCreateInfo& createInfo);
 
     ~ComputePassEncoder()
     {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../common/WebGPUCommon.h"
+#include "gfx/gfx.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -295,6 +296,54 @@ struct ComputePipelineCreateInfo {
     std::vector<WGPUBindGroupLayout> bindGroupLayouts;
     WGPUShaderModule module;
     const char* entryPoint;
+};
+
+struct ColorAttachmentOps {
+    WGPULoadOp loadOp;
+    WGPUStoreOp storeOp;
+    WGPUColor clearColor;
+};
+
+struct ColorAttachmentTarget {
+    WGPUTextureView view;
+    ColorAttachmentOps ops;
+};
+
+struct ColorAttachment {
+    ColorAttachmentTarget target;
+    std::optional<ColorAttachmentTarget> resolveTarget;
+};
+
+struct DepthAttachmentOps {
+    WGPULoadOp loadOp;
+    WGPUStoreOp storeOp;
+    float clearValue;
+};
+
+struct StencilAttachmentOps {
+    WGPULoadOp loadOp;
+    WGPUStoreOp storeOp;
+    uint32_t clearValue;
+};
+
+struct DepthStencilAttachmentTarget {
+    WGPUTextureView view;
+    WGPUTextureFormat format; // Cached format for stencil checking
+    std::optional<DepthAttachmentOps> depthOps;
+    std::optional<StencilAttachmentOps> stencilOps;
+};
+
+struct DepthStencilAttachment {
+    DepthStencilAttachmentTarget target;
+};
+
+struct RenderPassEncoderCreateInfo {
+    std::vector<ColorAttachment> colorAttachments;
+    std::optional<DepthStencilAttachment> depthStencilAttachment;
+};
+
+struct ComputePassEncoderCreateInfo {
+    const char* label;
 };
 
 } // namespace gfx::webgpu

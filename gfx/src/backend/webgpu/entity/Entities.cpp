@@ -1,4 +1,5 @@
 #include "Entities.h"
+#include "../converter/GfxWebGPUConverter.h"
 
 namespace gfx::webgpu {
 bool Queue::submit(const SubmitInfo& submitInfo)
@@ -101,4 +102,87 @@ bool Queue::waitIdle()
 
     return workDone;
 }
+
+RenderPassEncoder::RenderPassEncoder(CommandEncoder* commandEncoder, const RenderPassEncoderCreateInfo& createInfo)
+{
+    WGPURenderPassDescriptor wgpuDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
+
+    // Convert color attachments
+    std::vector<WGPURenderPassColorAttachment> wgpuColorAttachments;
+    for (const ColorAttachment& colorAttachment : createInfo.colorAttachments) {
+        WGPURenderPassColorAttachment attachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
+        attachment.view = colorAttachment.target.view;
+        attachment.loadOp = colorAttachment.target.ops.loadOp;
+        attachment.storeOp = colorAttachment.target.ops.storeOp;
+        attachment.clearValue = colorAttachment.target.ops.clearColor;
+
+        // Handle resolve target if present
+        if (colorAttachment.resolveTarget.has_value()) {
+            attachment.resolveTarget = colorAttachment.resolveTarget->view;
+        }
+        wgpuColorAttachments.push_back(attachment);
+    }
+
+    if (!wgpuColorAttachments.empty()) {
+        wgpuDesc.colorAttachments = wgpuColorAttachments.data();
+        wgpuDesc.colorAttachmentCount = static_cast<uint32_t>(wgpuColorAttachments.size());
+    }
+
+    // Convert depth/stencil attachment
+    WGPURenderPassDepthStencilAttachment wgpuDepthStencil = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
+    if (createInfo.depthStencilAttachment.has_value()) {
+        const DepthStencilAttachmentTarget& target = createInfo.depthStencilAttachment->target;
+        wgpuDepthStencil.view = target.view;
+
+        // Handle depth operations
+        if (target.depthOps.has_value()) {
+            wgpuDepthStencil.depthLoadOp = target.depthOps->loadOp;
+            wgpuDepthStencil.depthStoreOp = target.depthOps->storeOp;
+            wgpuDepthStencil.depthClearValue = target.depthOps->clearValue;
+        } else {
+            wgpuDepthStencil.depthLoadOp = WGPULoadOp_Undefined;
+            wgpuDepthStencil.depthStoreOp = WGPUStoreOp_Undefined;
+            wgpuDepthStencil.depthClearValue = 1.0f;
+        }
+
+        // Only set stencil operations for formats that have a stencil aspect
+        GfxTextureFormat format = converter::wgpuFormatToGfxFormat(target.format);
+        if (converter::formatHasStencil(format)) {
+            if (target.stencilOps.has_value()) {
+                wgpuDepthStencil.stencilLoadOp = target.stencilOps->loadOp;
+                wgpuDepthStencil.stencilStoreOp = target.stencilOps->storeOp;
+                wgpuDepthStencil.stencilClearValue = target.stencilOps->clearValue;
+            } else {
+                wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Undefined;
+                wgpuDepthStencil.stencilStoreOp = WGPUStoreOp_Undefined;
+                wgpuDepthStencil.stencilClearValue = 0;
+            }
+        } else {
+            wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Undefined;
+            wgpuDepthStencil.stencilStoreOp = WGPUStoreOp_Undefined;
+            wgpuDepthStencil.stencilClearValue = 0;
+        }
+
+        wgpuDesc.depthStencilAttachment = &wgpuDepthStencil;
+    }
+
+    m_encoder = wgpuCommandEncoderBeginRenderPass(commandEncoder->handle(), &wgpuDesc);
+    if (!m_encoder) {
+        throw std::runtime_error("Failed to create WebGPU render pass encoder");
+    }
+}
+
+ComputePassEncoder::ComputePassEncoder(CommandEncoder* commandEncoder, const ComputePassEncoderCreateInfo& createInfo)
+{
+    WGPUComputePassDescriptor wgpuDesc = WGPU_COMPUTE_PASS_DESCRIPTOR_INIT;
+    if (createInfo.label) {
+        wgpuDesc.label = converter::gfxStringView(createInfo.label);
+    }
+
+    m_encoder = wgpuCommandEncoderBeginComputePass(commandEncoder->handle(), &wgpuDesc);
+    if (!m_encoder) {
+        throw std::runtime_error("Failed to create compute pass encoder");
+    }
+}
+
 } // namespace gfx::webgpu

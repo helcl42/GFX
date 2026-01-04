@@ -860,90 +860,15 @@ GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
-
-    // Extract parameters from descriptor
-    const GfxColorAttachment* colorAttachments = descriptor->colorAttachments;
-    uint32_t colorAttachmentCount = descriptor->colorAttachmentCount;
-    const GfxDepthStencilAttachment* depthStencilAttachment = descriptor->depthStencilAttachment;
-
-    WGPURenderPassDescriptor wgpuDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
-
-    std::vector<WGPURenderPassColorAttachment> wgpuColorAttachments;
-    if (colorAttachmentCount > 0 && colorAttachments) {
-        wgpuColorAttachments.reserve(colorAttachmentCount);
-
-        for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-            WGPURenderPassColorAttachment attachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
-            if (colorAttachments[i].target.view) {
-                auto* viewPtr = converter::toNative<TextureView>(colorAttachments[i].target.view);
-                attachment.view = viewPtr->handle();
-                attachment.loadOp = converter::gfxLoadOpToWGPULoadOp(colorAttachments[i].target.ops.loadOp);
-                attachment.storeOp = converter::gfxStoreOpToWGPUStoreOp(colorAttachments[i].target.ops.storeOp);
-
-                const GfxColor& color = colorAttachments[i].target.ops.clearColor;
-                attachment.clearValue = { color.r, color.g, color.b, color.a };
-
-                // WebGPU MSAA handling: check if this attachment has a resolve target
-                if (colorAttachments[i].resolveTarget && colorAttachments[i].resolveTarget->view) {
-                    auto* resolveViewPtr = converter::toNative<TextureView>(colorAttachments[i].resolveTarget->view);
-                    attachment.resolveTarget = resolveViewPtr->handle();
-                }
-            }
-            wgpuColorAttachments.push_back(attachment);
-        }
-
-        wgpuDesc.colorAttachments = wgpuColorAttachments.data();
-        wgpuDesc.colorAttachmentCount = static_cast<uint32_t>(wgpuColorAttachments.size());
-    }
-
-    WGPURenderPassDepthStencilAttachment wgpuDepthStencil = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
-    if (depthStencilAttachment) {
-        const GfxDepthStencilAttachmentTarget* target = &depthStencilAttachment->target;
-        auto* viewPtr = converter::toNative<TextureView>(target->view);
-        wgpuDepthStencil.view = viewPtr->handle();
-
-        // Handle depth operations if depth pointer is set
-        if (target->depthOps) {
-            wgpuDepthStencil.depthLoadOp = converter::gfxLoadOpToWGPULoadOp(target->depthOps->loadOp);
-            wgpuDepthStencil.depthStoreOp = converter::gfxStoreOpToWGPUStoreOp(target->depthOps->storeOp);
-            wgpuDepthStencil.depthClearValue = target->depthOps->clearValue;
-        } else {
-            wgpuDepthStencil.depthLoadOp = WGPULoadOp_Undefined;
-            wgpuDepthStencil.depthStoreOp = WGPUStoreOp_Undefined;
-            wgpuDepthStencil.depthClearValue = 1.0f;
-        }
-
-        // Only set stencil operations for formats that have a stencil aspect
-        // For depth-only formats (Depth16Unorm, Depth24Plus, Depth32Float), we must set to Undefined
-        WGPUTextureFormat wgpuFormat = viewPtr->getTexture()->getFormat();
-        GfxTextureFormat format = converter::wgpuFormatToGfxFormat(wgpuFormat);
-        if (converter::formatHasStencil(format)) {
-            if (target->stencilOps) {
-                wgpuDepthStencil.stencilLoadOp = converter::gfxLoadOpToWGPULoadOp(target->stencilOps->loadOp);
-                wgpuDepthStencil.stencilStoreOp = converter::gfxStoreOpToWGPUStoreOp(target->stencilOps->storeOp);
-                wgpuDepthStencil.stencilClearValue = target->stencilOps->clearValue;
-            } else {
-                wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Undefined;
-                wgpuDepthStencil.stencilStoreOp = WGPUStoreOp_Undefined;
-                wgpuDepthStencil.stencilClearValue = 0;
-            }
-        } else {
-            wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Undefined;
-            wgpuDepthStencil.stencilStoreOp = WGPUStoreOp_Undefined;
-            wgpuDepthStencil.stencilClearValue = 0;
-        }
-
-        wgpuDesc.depthStencilAttachment = &wgpuDepthStencil;
-    }
-
-    WGPURenderPassEncoder wgpuEncoder = wgpuCommandEncoderBeginRenderPass(encoderPtr->handle(), &wgpuDesc);
-    if (!wgpuEncoder) {
+    try {
+        auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
+        auto createInfo = converter::gfxRenderPassDescriptorToCreateInfo(descriptor);
+        RenderPassEncoder* renderPassEncoder = new RenderPassEncoder(encoderPtr, createInfo);
+        *outRenderPass = converter::toGfx<GfxRenderPassEncoder>(renderPassEncoder);
+    } catch (const std::exception&) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
-    auto* renderPassEncoder = new gfx::webgpu::RenderPassEncoder(wgpuEncoder);
-    *outRenderPass = converter::toGfx<GfxRenderPassEncoder>(renderPassEncoder);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -953,21 +878,15 @@ GfxResult WebGPUBackend::commandEncoderBeginComputePass(GfxCommandEncoder comman
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
-
-    WGPUComputePassDescriptor wgpuDesc = WGPU_COMPUTE_PASS_DESCRIPTOR_INIT;
-    if (descriptor->label) {
-        wgpuDesc.label = converter::gfxStringView(descriptor->label);
-    }
-
-    WGPUComputePassEncoder wgpuEncoder = wgpuCommandEncoderBeginComputePass(encoderPtr->handle(), &wgpuDesc);
-    if (!wgpuEncoder) {
+    try {
+        auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
+        auto createInfo = converter::gfxComputePassDescriptorToCreateInfo(descriptor);
+        auto* computePassEncoder = new ComputePassEncoder(encoderPtr, createInfo);
+        *outComputePass = converter::toGfx<GfxComputePassEncoder>(computePassEncoder);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception&) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
-
-    auto* computePassEncoder = new gfx::webgpu::ComputePassEncoder(wgpuEncoder);
-    *outComputePass = converter::toGfx<GfxComputePassEncoder>(computePassEncoder);
-    return GFX_RESULT_SUCCESS;
 }
 
 void WebGPUBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset,
