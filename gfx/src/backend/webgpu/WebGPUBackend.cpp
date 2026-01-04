@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-
 namespace gfx::webgpu {
 
 // ============================================================================
@@ -65,9 +64,8 @@ GfxResult WebGPUBackend::instanceRequestAdapter(GfxInstance instance, const GfxA
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* inst = reinterpret_cast<gfx::webgpu::Instance*>(instance);
-
     try {
+        auto* inst = reinterpret_cast<gfx::webgpu::Instance*>(instance);
         auto createInfo = gfx::convertor::gfxDescriptorToWebGPUAdapterCreateInfo(descriptor);
         auto* adapter = new gfx::webgpu::Adapter(inst, createInfo);
         *outAdapter = reinterpret_cast<GfxAdapter>(adapter);
@@ -102,9 +100,8 @@ GfxResult WebGPUBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDevice
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* adapterPtr = reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
-
     try {
+        auto* adapterPtr = reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
         auto createInfo = gfx::convertor::gfxDescriptorToWebGPUDeviceCreateInfo(descriptor);
         auto* device = new gfx::webgpu::Device(adapterPtr, createInfo);
         *outDevice = reinterpret_cast<GfxDevice>(device);
@@ -163,9 +160,8 @@ GfxResult WebGPUBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceD
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
     try {
+        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
         auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSurfaceCreateInfo(descriptor);
         auto* surface = new gfx::webgpu::Surface(devicePtr->getAdapter()->getInstance()->handle(), devicePtr->getAdapter()->handle(), createInfo);
         *outSurface = reinterpret_cast<GfxSurface>(surface);
@@ -181,12 +177,16 @@ GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-    auto* surfacePtr = reinterpret_cast<gfx::webgpu::Surface*>(surface);
-    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSwapchainCreateInfo(descriptor);
-    auto* swapchain = new gfx::webgpu::Swapchain(devicePtr, surfacePtr, createInfo);
-    *outSwapchain = reinterpret_cast<GfxSwapchain>(swapchain);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+        auto* surfacePtr = reinterpret_cast<gfx::webgpu::Surface*>(surface);
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSwapchainCreateInfo(descriptor);
+        auto* swapchain = new gfx::webgpu::Swapchain(devicePtr, surfacePtr, createInfo);
+        *outSwapchain = reinterpret_cast<GfxSwapchain>(swapchain);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult WebGPUBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
@@ -195,12 +195,15 @@ GfxResult WebGPUBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
-    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBufferCreateInfo(descriptor);
-    auto* buffer = new gfx::webgpu::Buffer(devicePtr->handle(), createInfo, devicePtr);
-    *outBuffer = reinterpret_cast<GfxBuffer>(buffer);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBufferCreateInfo(descriptor);
+        auto* buffer = new gfx::webgpu::Buffer(devicePtr->handle(), createInfo, devicePtr);
+        *outBuffer = reinterpret_cast<GfxBuffer>(buffer);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
@@ -209,12 +212,15 @@ GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
-    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUTextureCreateInfo(descriptor);
-    auto* texture = new gfx::webgpu::Texture(devicePtr->handle(), createInfo);
-    *outTexture = reinterpret_cast<GfxTexture>(texture);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUTextureCreateInfo(descriptor);
+        auto* texture = new gfx::webgpu::Texture(devicePtr->handle(), createInfo);
+        *outTexture = reinterpret_cast<GfxTexture>(texture);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult WebGPUBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
@@ -223,12 +229,15 @@ GfxResult WebGPUBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerD
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
-    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSamplerCreateInfo(descriptor);
-    auto* sampler = new gfx::webgpu::Sampler(devicePtr->handle(), createInfo);
-    *outSampler = reinterpret_cast<GfxSampler>(sampler);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSamplerCreateInfo(descriptor);
+        auto* sampler = new gfx::webgpu::Sampler(devicePtr->handle(), createInfo);
+        *outSampler = reinterpret_cast<GfxSampler>(sampler);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult WebGPUBackend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
@@ -237,12 +246,15 @@ GfxResult WebGPUBackend::deviceCreateShader(GfxDevice device, const GfxShaderDes
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
-    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUShaderCreateInfo(descriptor);
-    auto* shader = new gfx::webgpu::Shader(devicePtr->handle(), createInfo);
-    *outShader = reinterpret_cast<GfxShader>(shader);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUShaderCreateInfo(descriptor);
+        auto* shader = new gfx::webgpu::Shader(devicePtr->handle(), createInfo);
+        *outShader = reinterpret_cast<GfxShader>(shader);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult WebGPUBackend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
@@ -251,12 +263,15 @@ GfxResult WebGPUBackend::deviceCreateBindGroupLayout(GfxDevice device, const Gfx
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(descriptor);
-
-    auto* layout = new gfx::webgpu::BindGroupLayout(devicePtr->handle(), createInfo);
-    *outLayout = reinterpret_cast<GfxBindGroupLayout>(layout);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(descriptor);
+        auto* layout = new gfx::webgpu::BindGroupLayout(devicePtr->handle(), createInfo);
+        *outLayout = reinterpret_cast<GfxBindGroupLayout>(layout);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult WebGPUBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
@@ -265,13 +280,16 @@ GfxResult WebGPUBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGr
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-    auto* layoutPtr = reinterpret_cast<gfx::webgpu::BindGroupLayout*>(descriptor->layout);
-
-    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBindGroupCreateInfo(descriptor, layoutPtr->handle());
-    auto* bindGroup = new gfx::webgpu::BindGroup(devicePtr->handle(), createInfo);
-    *outBindGroup = reinterpret_cast<GfxBindGroup>(bindGroup);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+        auto* layoutPtr = reinterpret_cast<gfx::webgpu::BindGroupLayout*>(descriptor->layout);
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBindGroupCreateInfo(descriptor, layoutPtr->handle());
+        auto* bindGroup = new gfx::webgpu::BindGroup(devicePtr->handle(), createInfo);
+        *outBindGroup = reinterpret_cast<GfxBindGroup>(bindGroup);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
@@ -280,12 +298,15 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
-    auto createInfo = gfx::convertor::gfxDescriptorToWebGPURenderPipelineCreateInfo(descriptor);
-    auto* pipeline = new gfx::webgpu::RenderPipeline(devicePtr->handle(), createInfo);
-    *outPipeline = reinterpret_cast<GfxRenderPipeline>(pipeline);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPURenderPipelineCreateInfo(descriptor);
+        auto* pipeline = new gfx::webgpu::RenderPipeline(devicePtr->handle(), createInfo);
+        *outPipeline = reinterpret_cast<GfxRenderPipeline>(pipeline);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
@@ -294,12 +315,15 @@ GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
-    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUComputePipelineCreateInfo(descriptor);
-    auto* pipeline = new gfx::webgpu::ComputePipeline(devicePtr->handle(), createInfo);
-    *outPipeline = reinterpret_cast<GfxComputePipeline>(pipeline);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUComputePipelineCreateInfo(descriptor);
+        auto* pipeline = new gfx::webgpu::ComputePipeline(devicePtr->handle(), createInfo);
+        *outPipeline = reinterpret_cast<GfxComputePipeline>(pipeline);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult WebGPUBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
@@ -308,21 +332,15 @@ GfxResult WebGPUBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxC
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-
-    WGPUCommandEncoderDescriptor wgpuDesc = WGPU_COMMAND_ENCODER_DESCRIPTOR_INIT;
-    if (descriptor->label) {
-        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
-    }
-
-    WGPUCommandEncoder wgpuEncoder = wgpuDeviceCreateCommandEncoder(devicePtr->handle(), &wgpuDesc);
-    if (!wgpuEncoder) {
+    try {
+        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUCommandEncoderCreateInfo(descriptor);
+        auto* encoder = new gfx::webgpu::CommandEncoder(devicePtr, createInfo);
+        *outEncoder = reinterpret_cast<GfxCommandEncoder>(encoder);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
-
-    auto* encoder = new gfx::webgpu::CommandEncoder(devicePtr->handle(), wgpuEncoder);
-    *outEncoder = reinterpret_cast<GfxCommandEncoder>(encoder);
-    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult WebGPUBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
@@ -331,9 +349,13 @@ GfxResult WebGPUBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescr
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* fence = new gfx::webgpu::Fence(descriptor->signaled);
-    *outFence = reinterpret_cast<GfxFence>(fence);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* fence = new gfx::webgpu::Fence(descriptor->signaled);
+        *outFence = reinterpret_cast<GfxFence>(fence);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult WebGPUBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const
@@ -342,10 +364,14 @@ GfxResult WebGPUBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaph
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto semaphoreType = gfx::convertor::gfxSemaphoreTypeToWebGPUSemaphoreType(descriptor->type);
-    auto* semaphore = new gfx::webgpu::Semaphore(semaphoreType, descriptor->initialValue);
-    *outSemaphore = reinterpret_cast<GfxSemaphore>(semaphore);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto semaphoreType = gfx::convertor::gfxSemaphoreTypeToWebGPUSemaphoreType(descriptor->type);
+        auto* semaphore = new gfx::webgpu::Semaphore(semaphoreType, descriptor->initialValue);
+        *outSemaphore = reinterpret_cast<GfxSemaphore>(semaphore);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 void WebGPUBackend::deviceWaitIdle(GfxDevice device) const
@@ -599,7 +625,7 @@ GfxResult WebGPUBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t s
 
     auto* bufferPtr = reinterpret_cast<gfx::webgpu::Buffer*>(buffer);
     void* mappedData = bufferPtr->map(offset, size);
-    
+
     if (!mappedData) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
