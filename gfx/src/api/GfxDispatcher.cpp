@@ -430,31 +430,6 @@ DESTROY_FUNC(CommandEncoder, commandEncoder)
 DESTROY_FUNC(Fence, fence)
 DESTROY_FUNC(Semaphore, semaphore)
 
-// Render/Compute pass encoders are just aliases to command encoder - don't unwrap them
-void gfxRenderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder)
-{
-    if (!renderPassEncoder) {
-        return;
-    }
-    auto api = gfx::getAPI(renderPassEncoder);
-    if (api) {
-        api->renderPassEncoderDestroy(gfx::native(renderPassEncoder));
-    }
-    // Do NOT unwrap - it's an alias to the command encoder
-}
-
-void gfxComputePassEncoderDestroy(GfxComputePassEncoder computePassEncoder)
-{
-    if (!computePassEncoder) {
-        return;
-    }
-    auto api = gfx::getAPI(computePassEncoder);
-    if (api) {
-        api->computePassEncoderDestroy(gfx::native(computePassEncoder));
-    }
-    // Do NOT unwrap - it's an alias to the command encoder
-}
-
 uint32_t gfxSurfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats)
 {
     if (!surface) {

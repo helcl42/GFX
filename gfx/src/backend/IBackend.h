@@ -142,7 +142,6 @@ public:
     virtual void commandEncoderBegin(GfxCommandEncoder commandEncoder) const = 0;
 
     // RenderPassEncoder functions
-    virtual void renderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder) const = 0;
     virtual void renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const = 0;
     virtual void renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const = 0;
     virtual void renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const = 0;
@@ -154,7 +153,6 @@ public:
     virtual void renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const = 0;
 
     // ComputePassEncoder functions
-    virtual void computePassEncoderDestroy(GfxComputePassEncoder computePassEncoder) const = 0;
     virtual void computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const = 0;
     virtual void computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const = 0;
     virtual void computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const = 0;

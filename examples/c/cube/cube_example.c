@@ -1067,7 +1067,6 @@ void render(CubeApp* app)
 
         // End render pass
         gfxRenderPassEncoderEnd(renderPass);
-        gfxRenderPassEncoderDestroy(renderPass);
     }
 
     // Finish command encoding

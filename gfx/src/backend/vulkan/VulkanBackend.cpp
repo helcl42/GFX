@@ -1305,13 +1305,6 @@ void VulkanBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
 }
 
 // RenderPassEncoder functions
-void VulkanBackend::renderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder) const
-{
-    // Encoder is already deleted in renderPassEncoderEnd()
-    // This is a no-op for safety if user calls destroy after end
-    (void)renderPassEncoder;
-}
-
 void VulkanBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
 {
     if (!renderPassEncoder || !pipeline) {
@@ -1436,13 +1429,6 @@ void VulkanBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder)
 }
 
 // ComputePassEncoder functions
-void VulkanBackend::computePassEncoderDestroy(GfxComputePassEncoder computePassEncoder) const
-{
-    // Encoder is already deleted in computePassEncoderEnd()
-    // This is a no-op for safety if user calls destroy after end
-    (void)computePassEncoder;
-}
-
 void VulkanBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
 {
     if (!computePassEncoder || !pipeline) {

@@ -1033,14 +1033,6 @@ void WebGPUBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
 }
 
 // RenderPassEncoder functions
-void WebGPUBackend::renderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder) const
-{
-    if (!renderPassEncoder) {
-        return;
-    }
-    delete converter::toNative<RenderPassEncoder>(renderPassEncoder);
-}
-
 void WebGPUBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
 {
     if (!renderPassEncoder || !pipeline) {
@@ -1142,17 +1134,10 @@ void WebGPUBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder)
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     encoderPtr->end();
+    delete encoderPtr;
 }
 
 // ComputePassEncoder functions
-void WebGPUBackend::computePassEncoderDestroy(GfxComputePassEncoder computePassEncoder) const
-{
-    if (!computePassEncoder) {
-        return;
-    }
-    delete converter::toNative<ComputePassEncoder>(computePassEncoder);
-}
-
 void WebGPUBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
 {
     if (!computePassEncoder || !pipeline) {
@@ -1195,6 +1180,7 @@ void WebGPUBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncod
 
     auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
     encoderPtr->end();
+    delete encoderPtr;
 }
 
 // Fence functions

@@ -449,7 +449,7 @@ public:
     ~CRenderPassEncoderImpl() override
     {
         if (m_handle) {
-            gfxRenderPassEncoderDestroy(m_handle);
+            gfxRenderPassEncoderEnd(m_handle);
         }
     }
 
@@ -510,7 +510,10 @@ public:
 
     void end() override
     {
-        gfxRenderPassEncoderEnd(m_handle);
+        if (m_handle) {
+            gfxRenderPassEncoderEnd(m_handle);
+            m_handle = nullptr;
+        }
     }
 
 private:
@@ -526,7 +529,7 @@ public:
     ~CComputePassEncoderImpl() override
     {
         if (m_handle) {
-            gfxComputePassEncoderDestroy(m_handle);
+            gfxComputePassEncoderEnd(m_handle);
         }
     }
 
@@ -553,7 +556,10 @@ public:
 
     void end() override
     {
-        gfxComputePassEncoderEnd(m_handle);
+        if (m_handle) {
+            gfxComputePassEncoderEnd(m_handle);
+            m_handle = nullptr;
+        }
     }
 
 private:

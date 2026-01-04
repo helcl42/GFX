@@ -128,7 +128,6 @@ public:
     void commandEncoderBegin(GfxCommandEncoder commandEncoder) const override;
 
     // RenderPassEncoder functions
-    void renderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder) const override;
     void renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const override;
     void renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const override;
     void renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const override;
@@ -140,7 +139,6 @@ public:
     void renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const override;
 
     // ComputePassEncoder functions
-    void computePassEncoderDestroy(GfxComputePassEncoder computePassEncoder) const override;
     void computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const override;
     void computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const override;
     void computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const override;

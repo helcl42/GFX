@@ -1035,7 +1035,6 @@ GFX_API void gfxCommandEncoderEnd(GfxCommandEncoder commandEncoder);
 GFX_API void gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder);
 
 // RenderPassEncoder functions
-GFX_API void gfxRenderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder);
 GFX_API void gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline);
 // Dynamic offsets allow using a single bind group with multiple offsets into uniform/storage buffers
 // The offsets MUST be aligned to device limits (use gfxAlignUp with minUniformBufferOffsetAlignment)
@@ -1050,7 +1049,6 @@ GFX_API void gfxRenderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEnco
 GFX_API void gfxRenderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder);
 
 // ComputePassEncoder functions
-GFX_API void gfxComputePassEncoderDestroy(GfxComputePassEncoder computePassEncoder);
 GFX_API void gfxComputePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline);
 // Dynamic offsets allow using a single bind group with multiple offsets into uniform/storage buffers
 // The offsets MUST be aligned to device limits (use gfxAlignUp with minUniformBufferOffsetAlignment)
