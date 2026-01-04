@@ -22,6 +22,7 @@ struct BindGroupLayoutCreateInfo;
 struct BindGroupCreateInfo;
 struct RenderPipelineCreateInfo;
 struct ComputePipelineCreateInfo;
+struct SubmitInfo;
 struct PlatformWindowHandle;
 enum class SemaphoreType;
 // BufferUsage is an alias to WGPUBufferUsage, so we use WGPUBufferUsage directly
@@ -61,6 +62,7 @@ gfx::webgpu::BindGroupLayoutCreateInfo gfxDescriptorToWebGPUBindGroupLayoutCreat
 gfx::webgpu::BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor, WGPUBindGroupLayout layout);
 gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor);
 gfx::webgpu::ComputePipelineCreateInfo gfxDescriptorToWebGPUComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor);
+gfx::webgpu::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitInfo* descriptor);
 
 // ============================================================================
 // Reverse conversions - internal to Gfx API types

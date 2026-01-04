@@ -28,6 +28,16 @@ struct wl_surface;
 
 namespace gfx::webgpu {
 
+namespace {
+    WGPUStringView toStringView(const char* str)
+    {
+        if (!str) {
+            return WGPUStringView{ nullptr, WGPU_STRLEN };
+        }
+        return WGPUStringView{ str, WGPU_STRLEN };
+    }
+} // namespace
+
 // Forward declarations
 class Instance;
 class Adapter;
@@ -233,6 +243,9 @@ public:
 
     WGPUQueue handle() const { return m_queue; }
     Device* getDevice() const { return m_device; }
+
+    // Submit command encoders with optional fence signaling
+    bool submit(const SubmitInfo& submitInfo);
 
 private:
     WGPUQueue m_queue = nullptr;
@@ -1189,7 +1202,7 @@ private:
         source.hinstance = windowHandle.handle.win32.hinstance;
 
         WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
-        surfaceDesc.label = gfx::convertor::gfxStringView("Win32 Surface");
+        surfaceDesc.label = toStringView("Win32 Surface");
         surfaceDesc.nextInChain = (WGPUChainedStruct*)&source;
 
         return wgpuInstanceCreateSurface(instance, &surfaceDesc);
@@ -1205,7 +1218,7 @@ private:
         source.window = windowHandle.android.window;
 
         WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
-        surfaceDesc.label = gfx::convertor::gfxStringView("Android Surface");
+        surfaceDesc.label = toStringView("Android Surface");
         surfaceDesc.nextInChain = (WGPUChainedStruct*)&source;
 
         return wgpuInstanceCreateSurface(instance, &surfaceDesc);
@@ -1222,7 +1235,7 @@ private:
         source.window = windowHandle.handle.xlib.window;
 
         WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
-        surfaceDesc.label = gfx::convertor::gfxStringView("X11 Surface");
+        surfaceDesc.label = toStringView("X11 Surface");
         surfaceDesc.nextInChain = (WGPUChainedStruct*)&source;
 
         return wgpuInstanceCreateSurface(instance, &surfaceDesc);
@@ -1239,7 +1252,7 @@ private:
         source.window = windowHandle.handle.xcb.window;
 
         WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
-        surfaceDesc.label = gfx::convertor::gfxStringView("XCB Surface");
+        surfaceDesc.label = toStringView("XCB Surface");
         surfaceDesc.nextInChain = (WGPUChainedStruct*)&source;
 
         return wgpuInstanceCreateSurface(instance, &surfaceDesc);
@@ -1256,7 +1269,7 @@ private:
         source.surface = windowHandle.handle.wayland.surface;
 
         WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
-        surfaceDesc.label = gfx::convertor::gfxStringView("Wayland Surface");
+        surfaceDesc.label = toStringView("Wayland Surface");
         surfaceDesc.nextInChain = (WGPUChainedStruct*)&source;
 
         return wgpuInstanceCreateSurface(instance, &surfaceDesc);
@@ -1272,7 +1285,7 @@ private:
         source.layer = windowHandle.handle.metalLayer;
 
         WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
-        surfaceDesc.label = gfx::convertor::gfxStringView("Metal Surface");
+        surfaceDesc.label = toStringView("Metal Surface");
         surfaceDesc.nextInChain = (WGPUChainedStruct*)&source;
 
         return wgpuInstanceCreateSurface(instance, &surfaceDesc);
@@ -1285,7 +1298,7 @@ private:
         }
 
         WGPUEmscriptenSurfaceSourceCanvasHTMLSelector canvasDesc = WGPU_EMSCRIPTEN_SURFACE_SOURCE_CANVAS_HTML_SELECTOR_INIT;
-        canvasDesc.selector = gfx::convertor::gfxStringView(windowHandle.handle.emscripten.canvasSelector);
+        canvasDesc.selector = toStringView(windowHandle.handle.emscripten.canvasSelector);
 
         WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
         surfaceDesc.nextInChain = (WGPUChainedStruct*)&canvasDesc;

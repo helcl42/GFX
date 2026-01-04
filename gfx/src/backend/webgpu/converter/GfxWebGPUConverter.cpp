@@ -485,6 +485,16 @@ gfx::webgpu::ComputePipelineCreateInfo gfxDescriptorToWebGPUComputePipelineCreat
     return createInfo;
 }
 
+gfx::webgpu::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitInfo* descriptor)
+{
+    gfx::webgpu::SubmitInfo submitInfo{};
+    submitInfo.commandEncoders = reinterpret_cast<gfx::webgpu::CommandEncoder**>(descriptor->commandEncoders);
+    submitInfo.commandEncoderCount = descriptor->commandEncoderCount;
+    submitInfo.signalFence = reinterpret_cast<gfx::webgpu::Fence*>(descriptor->signalFence);
+    // Note: WebGPU doesn't support semaphores, so wait/signal semaphores are ignored
+    return submitInfo;
+}
+
 // ============================================================================
 // Reverse Conversions - Internal to Gfx API types
 // ============================================================================

@@ -770,54 +770,9 @@ GfxResult WebGPUBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submit
     }
 
     auto* queuePtr = reinterpret_cast<gfx::webgpu::Queue*>(queue);
+    auto submit = gfx::convertor::gfxDescriptorToWebGPUSubmitInfo(submitInfo);
 
-    // WebGPU doesn't support semaphore-based sync - just submit command buffers
-    for (uint32_t i = 0; i < submitInfo->commandEncoderCount; ++i) {
-        if (submitInfo->commandEncoders[i]) {
-            auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(submitInfo->commandEncoders[i]);
-
-            WGPUCommandBufferDescriptor cmdDesc = WGPU_COMMAND_BUFFER_DESCRIPTOR_INIT;
-            WGPUCommandBuffer cmdBuffer = wgpuCommandEncoderFinish(encoderPtr->handle(), &cmdDesc);
-
-            if (cmdBuffer) {
-                wgpuQueueSubmit(queuePtr->handle(), 1, &cmdBuffer);
-                wgpuCommandBufferRelease(cmdBuffer);
-
-                // Mark encoder as finished so it will be recreated on next Begin()
-                encoderPtr->markFinished();
-            } else {
-                return GFX_RESULT_ERROR_UNKNOWN;
-            }
-        }
-    }
-
-    // Signal fence if provided - use queue work done to wait for GPU completion
-    if (submitInfo->signalFence) {
-        auto* fencePtr = reinterpret_cast<gfx::webgpu::Fence*>(submitInfo->signalFence);
-
-        static auto fenceSignalCallback = [](WGPUQueueWorkDoneStatus status, WGPUStringView, void* userdata1, void*) {
-            auto* fence = static_cast<gfx::webgpu::Fence*>(userdata1);
-            if (status == WGPUQueueWorkDoneStatus_Success) {
-                fence->setSignaled(true);
-            }
-        };
-
-        WGPUQueueWorkDoneCallbackInfo callbackInfo = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
-        callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-        callbackInfo.callback = fenceSignalCallback;
-        callbackInfo.userdata1 = fencePtr;
-
-        WGPUFuture future = wgpuQueueOnSubmittedWorkDone(queuePtr->handle(), callbackInfo);
-
-        // Wait for the fence to be signaled (GPU work done)
-        if (queuePtr->getDevice() && queuePtr->getDevice()->getAdapter() && queuePtr->getDevice()->getAdapter()->getInstance()) {
-            WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
-            waitInfo.future = future;
-            wgpuInstanceWaitAny(queuePtr->getDevice()->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
-        }
-    }
-
-    return GFX_RESULT_SUCCESS;
+    return queuePtr->submit(submit) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
 void WebGPUBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const

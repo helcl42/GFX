@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../common/WebGPUCommon.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -7,6 +9,10 @@
 #include <webgpu/webgpu.h>
 
 namespace gfx::webgpu {
+
+// Forward declarations for SubmitInfo
+class CommandEncoder;
+class Fence;
 
 // ============================================================================
 // Internal Type Definitions
@@ -67,6 +73,12 @@ struct SemaphoreCreateInfo {
 
 struct FenceCreateInfo {
     bool signaled; // true = create in signaled state
+};
+
+struct SubmitInfo {
+    CommandEncoder** commandEncoders;
+    uint32_t commandEncoderCount;
+    Fence* signalFence;
 };
 
 struct SamplerCreateInfo {
