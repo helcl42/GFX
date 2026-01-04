@@ -417,6 +417,62 @@ VkPolygonMode gfxPolygonModeToVkPolygonMode(GfxPolygonMode polygonMode)
     }
 }
 
+VkPrimitiveTopology gfxPrimitiveTopologyToVkPrimitiveTopology(GfxPrimitiveTopology topology)
+{
+    switch (topology) {
+    case GFX_PRIMITIVE_TOPOLOGY_POINT_LIST:
+        return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+    case GFX_PRIMITIVE_TOPOLOGY_LINE_LIST:
+        return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    case GFX_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+        return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+    case GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    case GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    default:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    }
+}
+
+VkSamplerAddressMode gfxAddressModeToVkAddressMode(GfxAddressMode addressMode)
+{
+    switch (addressMode) {
+    case GFX_ADDRESS_MODE_REPEAT:
+        return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    case GFX_ADDRESS_MODE_MIRROR_REPEAT:
+        return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+    case GFX_ADDRESS_MODE_CLAMP_TO_EDGE:
+        return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    default:
+        return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    }
+}
+
+VkFilter gfxFilterToVkFilter(GfxFilterMode filter)
+{
+    switch (filter) {
+    case GFX_FILTER_MODE_NEAREST:
+        return VK_FILTER_NEAREST;
+    case GFX_FILTER_MODE_LINEAR:
+        return VK_FILTER_LINEAR;
+    default:
+        return VK_FILTER_NEAREST;
+    }
+}
+
+VkSamplerMipmapMode gfxFilterModeToVkMipMapFilterMode(GfxFilterMode filter)
+{
+    switch (filter) {
+    case GFX_FILTER_MODE_NEAREST:
+        return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    case GFX_FILTER_MODE_LINEAR:
+        return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    default:
+        return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    }
+}
+
 VkBlendFactor gfxBlendFactorToVkBlendFactor(GfxBlendFactor factor)
 {
     switch (factor) {
@@ -671,9 +727,7 @@ gfx::vulkan::TextureViewCreateInfo gfxDescriptorToTextureViewCreateInfo(const Gf
 {
     gfx::vulkan::TextureViewCreateInfo createInfo{};
     createInfo.viewType = gfxTextureViewTypeToVkImageViewType(descriptor->viewType);
-    createInfo.format = (descriptor->format == GFX_TEXTURE_FORMAT_UNDEFINED)
-        ? VK_FORMAT_UNDEFINED
-        : gfxFormatToVkFormat(descriptor->format);
+    createInfo.format = gfxFormatToVkFormat(descriptor->format);
     createInfo.baseMipLevel = descriptor ? descriptor->baseMipLevel : 0;
     createInfo.mipLevelCount = descriptor ? descriptor->mipLevelCount : 1;
     createInfo.baseArrayLayer = descriptor ? descriptor->baseArrayLayer : 0;
@@ -684,12 +738,12 @@ gfx::vulkan::TextureViewCreateInfo gfxDescriptorToTextureViewCreateInfo(const Gf
 gfx::vulkan::SamplerCreateInfo gfxDescriptorToSamplerCreateInfo(const GfxSamplerDescriptor* descriptor)
 {
     gfx::vulkan::SamplerCreateInfo createInfo{};
-    createInfo.addressModeU = static_cast<VkSamplerAddressMode>(descriptor->addressModeU);
-    createInfo.addressModeV = static_cast<VkSamplerAddressMode>(descriptor->addressModeV);
-    createInfo.addressModeW = static_cast<VkSamplerAddressMode>(descriptor->addressModeW);
-    createInfo.magFilter = (descriptor->magFilter == GFX_FILTER_MODE_LINEAR) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-    createInfo.minFilter = (descriptor->minFilter == GFX_FILTER_MODE_LINEAR) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-    createInfo.mipmapMode = (descriptor->mipmapFilter == GFX_FILTER_MODE_LINEAR) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    createInfo.addressModeU = gfxAddressModeToVkAddressMode(descriptor->addressModeU);
+    createInfo.addressModeV = gfxAddressModeToVkAddressMode(descriptor->addressModeV);
+    createInfo.addressModeW = gfxAddressModeToVkAddressMode(descriptor->addressModeW);
+    createInfo.magFilter = gfxFilterToVkFilter(descriptor->magFilter);
+    createInfo.minFilter = gfxFilterToVkFilter(descriptor->minFilter);
+    createInfo.mipmapMode = gfxFilterModeToVkMipMapFilterMode(descriptor->mipmapFilter);
     createInfo.lodMinClamp = descriptor->lodMinClamp;
     createInfo.lodMaxClamp = descriptor->lodMaxClamp;
     createInfo.maxAnisotropy = descriptor->maxAnisotropy;
@@ -963,7 +1017,7 @@ gfx::vulkan::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(co
     }
 
     // Primitive state
-    createInfo.primitive.topology = static_cast<VkPrimitiveTopology>(descriptor->primitive->topology);
+    createInfo.primitive.topology = gfxPrimitiveTopologyToVkPrimitiveTopology(descriptor->primitive->topology);
     createInfo.primitive.polygonMode = gfxPolygonModeToVkPolygonMode(descriptor->primitive->polygonMode);
     createInfo.primitive.cullMode = gfxCullModeToVkCullMode(descriptor->primitive->cullMode);
     createInfo.primitive.frontFace = gfxFrontFaceToVkFrontFace(descriptor->primitive->frontFace);

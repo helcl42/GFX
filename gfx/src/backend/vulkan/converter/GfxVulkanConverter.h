@@ -76,6 +76,10 @@ GfxSampleCount vkSampleCountToGfxSampleCount(VkSampleCountFlagBits vkSampleCount
 VkCullModeFlags gfxCullModeToVkCullMode(GfxCullMode cullMode);
 VkFrontFace gfxFrontFaceToVkFrontFace(GfxFrontFace frontFace);
 VkPolygonMode gfxPolygonModeToVkPolygonMode(GfxPolygonMode polygonMode);
+VkPrimitiveTopology gfxPrimitiveTopologyToVkPrimitiveTopology(GfxPrimitiveTopology topology);
+VkSamplerAddressMode gfxAddressModeToVkAddressMode(GfxAddressMode addressMode);
+VkFilter gfxFilterToVkFilter(GfxFilterMode filter);
+VkSamplerMipmapMode gfxFilterModeToVkMipMapFilterMode(GfxFilterMode filter);
 VkBlendFactor gfxBlendFactorToVkBlendFactor(GfxBlendFactor factor);
 VkBlendOp gfxBlendOpToVkBlendOp(GfxBlendOperation op);
 VkCompareOp gfxCompareOpToVkCompareOp(GfxCompareFunction func);
