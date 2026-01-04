@@ -324,6 +324,7 @@ if(BUILD_CPP_WRAPPER)
     # Emscripten-specific configuration
     if(BUILD_FOR_WEB)
         target_compile_options(gfx_cpp PRIVATE 
+            -sDISABLE_EXCEPTION_CATCHING=0
             # -sUSE_GLFW=3
             # -sASYNCIFY=1
         )
@@ -332,6 +333,7 @@ if(BUILD_CPP_WRAPPER)
             -sUSE_GLFW=3
             -sASYNCIFY=1
             -sALLOW_MEMORY_GROWTH=1
+            -sDISABLE_EXCEPTION_CATCHING=0
         )
     endif()
 
@@ -365,6 +367,7 @@ endif()
 # Emscripten-specific configuration for C library
 if(BUILD_FOR_WEB)
     target_compile_options(gfx PRIVATE 
+        -sDISABLE_EXCEPTION_CATCHING=0
         # -sUSE_GLFW=3
         # -sASYNCIFY=1
     )
@@ -373,6 +376,7 @@ if(BUILD_FOR_WEB)
         -sUSE_GLFW=3
         -sASYNCIFY=1
         -sALLOW_MEMORY_GROWTH=1
+        -sDISABLE_EXCEPTION_CATCHING=0
     )
 endif()
 
@@ -384,7 +388,7 @@ if(BUILD_EXAMPLES)
         target_link_libraries(cube_example_web gfx)
         
         # Emscripten-specific flags for web example
-        target_compile_options(cube_example_web PRIVATE -DEMSCRIPTEN)
+        target_compile_options(cube_example_web PRIVATE -DEMSCRIPTEN -sDISABLE_EXCEPTION_CATCHING=0)
         target_link_options(cube_example_web PRIVATE
             --use-port=emdawnwebgpu
             -sUSE_GLFW=3
@@ -393,6 +397,7 @@ if(BUILD_EXAMPLES)
             -sASSERTIONS=2
             -sSTACK_OVERFLOW_CHECK=2
             -sSAFE_HEAP=1
+            -sDISABLE_EXCEPTION_CATCHING=0
             -sEXPORTED_RUNTIME_METHODS=requestFullscreen
             --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders@shaders
             -g
@@ -413,7 +418,7 @@ if(BUILD_EXAMPLES)
         target_link_libraries(compute_example_web gfx)
         
         # Emscripten-specific flags for web compute example
-        target_compile_options(compute_example_web PRIVATE -DEMSCRIPTEN)
+        target_compile_options(compute_example_web PRIVATE -DEMSCRIPTEN -sDISABLE_EXCEPTION_CATCHING=0)
         target_link_options(compute_example_web PRIVATE
             --use-port=emdawnwebgpu
             -sUSE_GLFW=3
@@ -422,6 +427,7 @@ if(BUILD_EXAMPLES)
             -sASSERTIONS=2
             -sSTACK_OVERFLOW_CHECK=2
             -sSAFE_HEAP=1
+            -sDISABLE_EXCEPTION_CATCHING=0
             -sEXPORTED_RUNTIME_METHODS=requestFullscreen
             --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders@shaders
             -g
@@ -443,7 +449,7 @@ if(BUILD_EXAMPLES)
             target_link_libraries(cube_example_cpp_web gfx_cpp)
         
         # Emscripten-specific flags for web C++ cube example
-        target_compile_options(cube_example_cpp_web PRIVATE -DEMSCRIPTEN)
+        target_compile_options(cube_example_cpp_web PRIVATE -DEMSCRIPTEN -sDISABLE_EXCEPTION_CATCHING=0)
         target_link_options(cube_example_cpp_web PRIVATE
             --use-port=emdawnwebgpu
             -sUSE_GLFW=3
@@ -452,6 +458,7 @@ if(BUILD_EXAMPLES)
             -sASSERTIONS=2
             -sSTACK_OVERFLOW_CHECK=2
             -sSAFE_HEAP=1
+            -sDISABLE_EXCEPTION_CATCHING=0
             -sEXPORTED_RUNTIME_METHODS=requestFullscreen
             --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders@shaders
             -g
@@ -474,13 +481,14 @@ if(BUILD_EXAMPLES)
             target_link_libraries(compute_example_cpp_web gfx_cpp)
             
             # Emscripten-specific flags for web C++ compute example
-            target_compile_options(compute_example_cpp_web PRIVATE -DEMSCRIPTEN)
+            target_compile_options(compute_example_cpp_web PRIVATE -DEMSCRIPTEN -sDISABLE_EXCEPTION_CATCHING=0)
             target_link_options(compute_example_cpp_web PRIVATE
                 --use-port=emdawnwebgpu
                 -sUSE_GLFW=3
                 -sASYNCIFY=1
                 -sALLOW_MEMORY_GROWTH=1
                 -sASSERTIONS=0
+                -sDISABLE_EXCEPTION_CATCHING=0
                 -sEXPORTED_RUNTIME_METHODS=requestFullscreen
                 --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders@shaders
                 -g
