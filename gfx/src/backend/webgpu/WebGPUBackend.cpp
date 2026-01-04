@@ -202,7 +202,7 @@ GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
     auto* surfacePtr = reinterpret_cast<gfx::webgpu::Surface*>(surface);
     auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSwapchainCreateInfo(descriptor);
-    auto* swapchain = new gfx::webgpu::Swapchain(devicePtr->getAdapter()->handle(), devicePtr->handle(), surfacePtr->handle(), createInfo);
+    auto* swapchain = new gfx::webgpu::Swapchain(devicePtr, surfacePtr, createInfo);
     *outSwapchain = reinterpret_cast<GfxSwapchain>(swapchain);
     return GFX_RESULT_SUCCESS;
 }
@@ -403,8 +403,7 @@ uint32_t WebGPUBackend::surfaceGetSupportedFormats(GfxSurface surface, GfxTextur
     auto* surf = reinterpret_cast<gfx::webgpu::Surface*>(surface);
 
     // Query surface capabilities
-    WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
-    wgpuSurfaceGetCapabilities(surf->handle(), surf->adapter(), &capabilities);
+    WGPUSurfaceCapabilities capabilities = surf->getCapabilities();
 
     uint32_t formatCount = static_cast<uint32_t>(capabilities.formatCount);
 
@@ -434,8 +433,7 @@ uint32_t WebGPUBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxP
     auto* surf = reinterpret_cast<gfx::webgpu::Surface*>(surface);
 
     // Query surface capabilities
-    WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
-    wgpuSurfaceGetCapabilities(surf->handle(), surf->adapter(), &capabilities);
+    WGPUSurfaceCapabilities capabilities = surf->getCapabilities();
 
     uint32_t modeCount = static_cast<uint32_t>(capabilities.presentModeCount);
 

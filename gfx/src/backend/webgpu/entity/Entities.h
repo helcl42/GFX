@@ -1081,6 +1081,15 @@ public:
     WGPUAdapter adapter() const { return m_adapter; }
     WGPUSurface handle() const { return m_surface; }
 
+    // Query surface capabilities and return them
+    // Caller is responsible for calling wgpuSurfaceCapabilitiesFreeMembers
+    WGPUSurfaceCapabilities getCapabilities() const
+    {
+        WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
+        wgpuSurfaceGetCapabilities(m_surface, m_adapter, &capabilities);
+        return capabilities;
+    }
+
 private:
 #if defined(_WIN32)
     static WGPUSurface createSurfaceWin32(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
@@ -1210,10 +1219,9 @@ public:
     Swapchain(const Swapchain&) = delete;
     Swapchain& operator=(const Swapchain&) = delete;
 
-    Swapchain(WGPUAdapter adapter, WGPUDevice device, WGPUSurface surface, const SwapchainCreateInfo& createInfo)
-        : m_adapter(adapter)
-        , m_device(device)
-        , m_surface(surface)
+    Swapchain(gfx::webgpu::Device* device, gfx::webgpu::Surface* surface, const SwapchainCreateInfo& createInfo)
+        : m_device(device->handle())
+        , m_surface(surface->handle())
         , m_width(createInfo.width)
         , m_height(createInfo.height)
         , m_format(createInfo.format)
@@ -1222,8 +1230,7 @@ public:
     {
 
         // Get surface capabilities
-        WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
-        wgpuSurfaceGetCapabilities(m_surface, m_adapter, &capabilities);
+        WGPUSurfaceCapabilities capabilities = surface->getCapabilities();
 
         // Choose format
         WGPUTextureFormat selectedFormat = WGPUTextureFormat_Undefined;
@@ -1294,7 +1301,6 @@ public:
     }
 
     // Accessors
-    WGPUAdapter adapter() const { return m_adapter; }
     WGPUDevice device() const { return m_device; }
     WGPUSurface surface() const { return m_surface; }
     uint32_t getWidth() const { return m_width; }
@@ -1315,8 +1321,7 @@ public:
         WGPUSurfaceTexture surfaceTexture = WGPU_SURFACE_TEXTURE_INIT;
         wgpuSurfaceGetCurrentTexture(m_surface, &surfaceTexture);
 
-        if (surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal || 
-            surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal) {
+        if (surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal || surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal) {
             if (m_currentTexture) {
                 wgpuTextureRelease(m_currentTexture);
             }
@@ -1361,7 +1366,6 @@ public:
     }
 
 private:
-    WGPUAdapter m_adapter = nullptr; // Non-owning
     WGPUDevice m_device = nullptr; // Non-owning
     WGPUSurface m_surface = nullptr; // Non-owning
     uint32_t m_width = 0;
