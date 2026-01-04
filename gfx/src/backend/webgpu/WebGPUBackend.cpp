@@ -12,6 +12,7 @@
 #include <vector>
 
 namespace gfx::webgpu {
+using converter::toNative;
 
 // ============================================================================
 // Backend C++ Class Export
@@ -25,9 +26,9 @@ GfxResult WebGPUBackend::createInstance(const GfxInstanceDescriptor* descriptor,
     }
 
     try {
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUInstanceCreateInfo(descriptor);
+        auto createInfo = converter::gfxDescriptorToWebGPUInstanceCreateInfo(descriptor);
         auto* instance = new gfx::webgpu::Instance(createInfo);
-        *outInstance = reinterpret_cast<GfxInstance>(instance);
+        *outInstance = converter::toGfx<GfxInstance>(instance);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -42,7 +43,7 @@ void WebGPUBackend::instanceDestroy(GfxInstance instance) const
 
     // Process any remaining events before destroying the instance
     // This ensures all pending callbacks are completed
-    auto* inst = reinterpret_cast<gfx::webgpu::Instance*>(instance);
+    auto* inst = converter::toNative<Instance>(instance);
     if (inst->handle()) {
         wgpuInstanceProcessEvents(inst->handle());
     }
@@ -65,10 +66,10 @@ GfxResult WebGPUBackend::instanceRequestAdapter(GfxInstance instance, const GfxA
     }
 
     try {
-        auto* inst = reinterpret_cast<gfx::webgpu::Instance*>(instance);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUAdapterCreateInfo(descriptor);
+        auto* inst = converter::toNative<Instance>(instance);
+        auto createInfo = converter::gfxDescriptorToWebGPUAdapterCreateInfo(descriptor);
         auto* adapter = new gfx::webgpu::Adapter(inst, createInfo);
-        *outAdapter = reinterpret_cast<GfxAdapter>(adapter);
+        *outAdapter = converter::toGfx<GfxAdapter>(adapter);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -81,8 +82,8 @@ uint32_t WebGPUBackend::instanceEnumerateAdapters(GfxInstance instance, GfxAdapt
         return 0;
     }
 
-    auto* inst = reinterpret_cast<gfx::webgpu::Instance*>(instance);
-    return gfx::webgpu::Adapter::enumerate(inst, reinterpret_cast<gfx::webgpu::Adapter**>(adapters), maxAdapters);
+    auto* inst = converter::toNative<Instance>(instance);
+    return gfx::webgpu::Adapter::enumerate(inst, reinterpret_cast<Adapter**>(adapters), maxAdapters);
 }
 
 // Adapter functions
@@ -91,7 +92,7 @@ void WebGPUBackend::adapterDestroy(GfxAdapter adapter) const
     if (!adapter) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
+    delete converter::toNative<Adapter>(adapter);
 }
 
 GfxResult WebGPUBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const
@@ -101,10 +102,10 @@ GfxResult WebGPUBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDevice
     }
 
     try {
-        auto* adapterPtr = reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUDeviceCreateInfo(descriptor);
+        auto* adapterPtr = converter::toNative<Adapter>(adapter);
+        auto createInfo = converter::gfxDescriptorToWebGPUDeviceCreateInfo(descriptor);
         auto* device = new gfx::webgpu::Device(adapterPtr, createInfo);
-        *outDevice = reinterpret_cast<GfxDevice>(device);
+        *outDevice = converter::toGfx<GfxDevice>(device);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -116,7 +117,7 @@ const char* WebGPUBackend::adapterGetName(GfxAdapter adapter) const
     if (!adapter) {
         return nullptr;
     }
-    auto* adapterPtr = reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
+    auto* adapterPtr = converter::toNative<Adapter>(adapter);
     return adapterPtr->getName();
 }
 
@@ -132,8 +133,8 @@ void WebGPUBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLim
         return;
     }
 
-    auto* adapterPtr = reinterpret_cast<gfx::webgpu::Adapter*>(adapter);
-    *outLimits = gfx::convertor::wgpuLimitsToGfxDeviceLimits(adapterPtr->getLimits());
+    auto* adapterPtr = converter::toNative<Adapter>(adapter);
+    *outLimits = converter::wgpuLimitsToGfxDeviceLimits(adapterPtr->getLimits());
 }
 
 // Device functions
@@ -142,7 +143,7 @@ void WebGPUBackend::deviceDestroy(GfxDevice device) const
     if (!device) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::Device*>(device);
+    delete converter::toNative<Device>(device);
 }
 
 GfxQueue WebGPUBackend::deviceGetQueue(GfxDevice device) const
@@ -150,8 +151,8 @@ GfxQueue WebGPUBackend::deviceGetQueue(GfxDevice device) const
     if (!device) {
         return nullptr;
     }
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-    return reinterpret_cast<GfxQueue>(devicePtr->getQueue());
+    auto* devicePtr = converter::toNative<Device>(device);
+    return converter::toGfx<GfxQueue>(devicePtr->getQueue());
 }
 
 GfxResult WebGPUBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
@@ -161,10 +162,10 @@ GfxResult WebGPUBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceD
     }
 
     try {
-        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSurfaceCreateInfo(descriptor);
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxDescriptorToWebGPUSurfaceCreateInfo(descriptor);
         auto* surface = new gfx::webgpu::Surface(devicePtr->getAdapter()->getInstance()->handle(), devicePtr->getAdapter()->handle(), createInfo);
-        *outSurface = reinterpret_cast<GfxSurface>(surface);
+        *outSurface = converter::toGfx<GfxSurface>(surface);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -178,11 +179,11 @@ GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
     }
 
     try {
-        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-        auto* surfacePtr = reinterpret_cast<gfx::webgpu::Surface*>(surface);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSwapchainCreateInfo(descriptor);
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto* surfacePtr = converter::toNative<Surface>(surface);
+        auto createInfo = converter::gfxDescriptorToWebGPUSwapchainCreateInfo(descriptor);
         auto* swapchain = new gfx::webgpu::Swapchain(devicePtr, surfacePtr, createInfo);
-        *outSwapchain = reinterpret_cast<GfxSwapchain>(swapchain);
+        *outSwapchain = converter::toGfx<GfxSwapchain>(swapchain);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -196,10 +197,10 @@ GfxResult WebGPUBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
     }
 
     try {
-        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBufferCreateInfo(descriptor);
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxDescriptorToWebGPUBufferCreateInfo(descriptor);
         auto* buffer = new gfx::webgpu::Buffer(devicePtr, createInfo);
-        *outBuffer = reinterpret_cast<GfxBuffer>(buffer);
+        *outBuffer = converter::toGfx<GfxBuffer>(buffer);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -213,10 +214,10 @@ GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
     }
 
     try {
-        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUTextureCreateInfo(descriptor);
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxDescriptorToWebGPUTextureCreateInfo(descriptor);
         auto* texture = new gfx::webgpu::Texture(devicePtr, createInfo);
-        *outTexture = reinterpret_cast<GfxTexture>(texture);
+        *outTexture = converter::toGfx<GfxTexture>(texture);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -230,10 +231,10 @@ GfxResult WebGPUBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerD
     }
 
     try {
-        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSamplerCreateInfo(descriptor);
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxDescriptorToWebGPUSamplerCreateInfo(descriptor);
         auto* sampler = new gfx::webgpu::Sampler(devicePtr, createInfo);
-        *outSampler = reinterpret_cast<GfxSampler>(sampler);
+        *outSampler = converter::toGfx<GfxSampler>(sampler);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -247,10 +248,10 @@ GfxResult WebGPUBackend::deviceCreateShader(GfxDevice device, const GfxShaderDes
     }
 
     try {
-        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUShaderCreateInfo(descriptor);
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxDescriptorToWebGPUShaderCreateInfo(descriptor);
         auto* shader = new gfx::webgpu::Shader(devicePtr, createInfo);
-        *outShader = reinterpret_cast<GfxShader>(shader);
+        *outShader = converter::toGfx<GfxShader>(shader);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -264,10 +265,10 @@ GfxResult WebGPUBackend::deviceCreateBindGroupLayout(GfxDevice device, const Gfx
     }
 
     try {
-        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(descriptor);
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(descriptor);
         auto* layout = new gfx::webgpu::BindGroupLayout(devicePtr, createInfo);
-        *outLayout = reinterpret_cast<GfxBindGroupLayout>(layout);
+        *outLayout = converter::toGfx<GfxBindGroupLayout>(layout);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -281,11 +282,11 @@ GfxResult WebGPUBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGr
     }
 
     try {
-        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-        auto* layoutPtr = reinterpret_cast<gfx::webgpu::BindGroupLayout*>(descriptor->layout);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUBindGroupCreateInfo(descriptor, layoutPtr->handle());
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto* layoutPtr = converter::toNative<BindGroupLayout>(descriptor->layout);
+        auto createInfo = converter::gfxDescriptorToWebGPUBindGroupCreateInfo(descriptor, layoutPtr->handle());
         auto* bindGroup = new gfx::webgpu::BindGroup(devicePtr, createInfo);
-        *outBindGroup = reinterpret_cast<GfxBindGroup>(bindGroup);
+        *outBindGroup = converter::toGfx<GfxBindGroup>(bindGroup);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -299,10 +300,10 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
     }
 
     try {
-        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPURenderPipelineCreateInfo(descriptor);
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxDescriptorToWebGPURenderPipelineCreateInfo(descriptor);
         auto* pipeline = new gfx::webgpu::RenderPipeline(devicePtr, createInfo);
-        *outPipeline = reinterpret_cast<GfxRenderPipeline>(pipeline);
+        *outPipeline = converter::toGfx<GfxRenderPipeline>(pipeline);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -316,10 +317,10 @@ GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
     }
 
     try {
-        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUComputePipelineCreateInfo(descriptor);
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxDescriptorToWebGPUComputePipelineCreateInfo(descriptor);
         auto* pipeline = new gfx::webgpu::ComputePipeline(devicePtr, createInfo);
-        *outPipeline = reinterpret_cast<GfxComputePipeline>(pipeline);
+        *outPipeline = converter::toGfx<GfxComputePipeline>(pipeline);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -333,10 +334,10 @@ GfxResult WebGPUBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxC
     }
 
     try {
-        auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUCommandEncoderCreateInfo(descriptor);
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxDescriptorToWebGPUCommandEncoderCreateInfo(descriptor);
         auto* encoder = new gfx::webgpu::CommandEncoder(devicePtr, createInfo);
-        *outEncoder = reinterpret_cast<GfxCommandEncoder>(encoder);
+        *outEncoder = converter::toGfx<GfxCommandEncoder>(encoder);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -351,7 +352,7 @@ GfxResult WebGPUBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescr
 
     try {
         auto* fence = new gfx::webgpu::Fence(descriptor->signaled);
-        *outFence = reinterpret_cast<GfxFence>(fence);
+        *outFence = converter::toGfx<GfxFence>(fence);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -365,9 +366,9 @@ GfxResult WebGPUBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaph
     }
 
     try {
-        auto semaphoreType = gfx::convertor::gfxSemaphoreTypeToWebGPUSemaphoreType(descriptor->type);
+        auto semaphoreType = converter::gfxSemaphoreTypeToWebGPUSemaphoreType(descriptor->type);
         auto* semaphore = new gfx::webgpu::Semaphore(semaphoreType, descriptor->initialValue);
-        *outSemaphore = reinterpret_cast<GfxSemaphore>(semaphore);
+        *outSemaphore = converter::toGfx<GfxSemaphore>(semaphore);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -379,7 +380,7 @@ void WebGPUBackend::deviceWaitIdle(GfxDevice device) const
     if (!device) {
         return;
     }
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
+    auto* devicePtr = converter::toNative<Device>(device);
     devicePtr->waitIdle();
 }
 
@@ -389,8 +390,8 @@ void WebGPUBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits
         return;
     }
 
-    auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
-    *outLimits = gfx::convertor::wgpuLimitsToGfxDeviceLimits(devicePtr->getLimits());
+    auto* devicePtr = converter::toNative<Device>(device);
+    *outLimits = converter::wgpuLimitsToGfxDeviceLimits(devicePtr->getLimits());
 }
 
 // Surface functions
@@ -399,7 +400,7 @@ void WebGPUBackend::surfaceDestroy(GfxSurface surface) const
     if (!surface) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::Surface*>(surface);
+    delete converter::toNative<Surface>(surface);
 }
 
 uint32_t WebGPUBackend::surfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats) const
@@ -408,7 +409,7 @@ uint32_t WebGPUBackend::surfaceGetSupportedFormats(GfxSurface surface, GfxTextur
         return 0;
     }
 
-    auto* surf = reinterpret_cast<gfx::webgpu::Surface*>(surface);
+    auto* surf = converter::toNative<Surface>(surface);
 
     // Query surface capabilities
     WGPUSurfaceCapabilities capabilities = surf->getCapabilities();
@@ -424,7 +425,7 @@ uint32_t WebGPUBackend::surfaceGetSupportedFormats(GfxSurface surface, GfxTextur
     if (formats && maxFormats > 0) {
         uint32_t copyCount = std::min(formatCount, maxFormats);
         for (uint32_t i = 0; i < copyCount; ++i) {
-            formats[i] = gfx::convertor::wgpuFormatToGfxFormat(capabilities.formats[i]);
+            formats[i] = converter::wgpuFormatToGfxFormat(capabilities.formats[i]);
         }
     }
 
@@ -438,7 +439,7 @@ uint32_t WebGPUBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxP
         return 0;
     }
 
-    auto* surf = reinterpret_cast<gfx::webgpu::Surface*>(surface);
+    auto* surf = converter::toNative<Surface>(surface);
 
     // Query surface capabilities
     WGPUSurfaceCapabilities capabilities = surf->getCapabilities();
@@ -454,7 +455,7 @@ uint32_t WebGPUBackend::surfaceGetSupportedPresentModes(GfxSurface surface, GfxP
     if (presentModes && maxModes > 0) {
         uint32_t copyCount = std::min(modeCount, maxModes);
         for (uint32_t i = 0; i < copyCount; ++i) {
-            presentModes[i] = gfx::convertor::wgpuPresentModeToGfxPresentMode(capabilities.presentModes[i]);
+            presentModes[i] = converter::wgpuPresentModeToGfxPresentMode(capabilities.presentModes[i]);
         }
     }
 
@@ -468,7 +469,7 @@ void WebGPUBackend::swapchainDestroy(GfxSwapchain swapchain) const
     if (!swapchain) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
+    delete converter::toNative<Swapchain>(swapchain);
 }
 
 uint32_t WebGPUBackend::swapchainGetWidth(GfxSwapchain swapchain) const
@@ -476,7 +477,7 @@ uint32_t WebGPUBackend::swapchainGetWidth(GfxSwapchain swapchain) const
     if (!swapchain) {
         return 0;
     }
-    return reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain)->getWidth();
+    return converter::toNative<Swapchain>(swapchain)->getWidth();
 }
 
 uint32_t WebGPUBackend::swapchainGetHeight(GfxSwapchain swapchain) const
@@ -484,7 +485,7 @@ uint32_t WebGPUBackend::swapchainGetHeight(GfxSwapchain swapchain) const
     if (!swapchain) {
         return 0;
     }
-    return reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain)->getHeight();
+    return converter::toNative<Swapchain>(swapchain)->getHeight();
 }
 
 GfxTextureFormat WebGPUBackend::swapchainGetFormat(GfxSwapchain swapchain) const
@@ -492,8 +493,8 @@ GfxTextureFormat WebGPUBackend::swapchainGetFormat(GfxSwapchain swapchain) const
     if (!swapchain) {
         return GFX_TEXTURE_FORMAT_UNDEFINED;
     }
-    auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
-    return gfx::convertor::wgpuFormatToGfxFormat(swapchainPtr->getFormat());
+    auto* swapchainPtr = converter::toNative<Swapchain>(swapchain);
+    return converter::wgpuFormatToGfxFormat(swapchainPtr->getFormat());
 }
 
 uint32_t WebGPUBackend::swapchainGetBufferCount(GfxSwapchain swapchain) const
@@ -501,7 +502,7 @@ uint32_t WebGPUBackend::swapchainGetBufferCount(GfxSwapchain swapchain) const
     if (!swapchain) {
         return 0;
     }
-    return reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain)->getBufferCount();
+    return converter::toNative<Swapchain>(swapchain)->getBufferCount();
 }
 
 GfxResult WebGPUBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const
@@ -518,7 +519,7 @@ GfxResult WebGPUBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint6
     (void)timeoutNs;
     (void)imageAvailableSemaphore; // WebGPU doesn't support explicit semaphore signaling
 
-    auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
+    auto* swapchainPtr = converter::toNative<Swapchain>(swapchain);
 
     WGPUSurfaceGetCurrentTextureStatus status = swapchainPtr->acquireNextImage();
 
@@ -545,7 +546,7 @@ GfxResult WebGPUBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint6
 
     // Signal fence if provided (even though WebGPU doesn't truly have fences)
     if (fence && result == GFX_RESULT_SUCCESS) {
-        auto* fencePtr = reinterpret_cast<gfx::webgpu::Fence*>(fence);
+        auto* fencePtr = converter::toNative<Fence>(fence);
         fencePtr->setSignaled(true);
     }
 
@@ -571,8 +572,8 @@ GfxTextureView WebGPUBackend::swapchainGetCurrentTextureView(GfxSwapchain swapch
         return nullptr;
     }
 
-    auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
-    return reinterpret_cast<GfxTextureView>(swapchainPtr->getCurrentTextureView());
+    auto* swapchainPtr = converter::toNative<Swapchain>(swapchain);
+    return converter::toGfx<GfxTextureView>(swapchainPtr->getCurrentTextureView());
 }
 
 GfxResult WebGPUBackend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const
@@ -585,7 +586,7 @@ GfxResult WebGPUBackend::swapchainPresent(GfxSwapchain swapchain, const GfxPrese
     // The queue submission already ensures ordering, so we just present
     (void)presentInfo; // Wait semaphores are noted but not used in WebGPU
 
-    auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
+    auto* swapchainPtr = converter::toNative<Swapchain>(swapchain);
     swapchainPtr->present();
 
     return GFX_RESULT_SUCCESS;
@@ -597,7 +598,7 @@ void WebGPUBackend::bufferDestroy(GfxBuffer buffer) const
     if (!buffer) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::Buffer*>(buffer);
+    delete converter::toNative<Buffer>(buffer);
 }
 
 uint64_t WebGPUBackend::bufferGetSize(GfxBuffer buffer) const
@@ -605,7 +606,7 @@ uint64_t WebGPUBackend::bufferGetSize(GfxBuffer buffer) const
     if (!buffer) {
         return 0;
     }
-    return reinterpret_cast<gfx::webgpu::Buffer*>(buffer)->getSize();
+    return converter::toNative<Buffer>(buffer)->getSize();
 }
 
 GfxBufferUsage WebGPUBackend::bufferGetUsage(GfxBuffer buffer) const
@@ -613,8 +614,8 @@ GfxBufferUsage WebGPUBackend::bufferGetUsage(GfxBuffer buffer) const
     if (!buffer) {
         return GFX_BUFFER_USAGE_NONE;
     }
-    auto usage = reinterpret_cast<gfx::webgpu::Buffer*>(buffer)->getUsage();
-    return gfx::convertor::webgpuBufferUsageToGfxBufferUsage(usage);
+    auto usage = converter::toNative<Buffer>(buffer)->getUsage();
+    return converter::webgpuBufferUsageToGfxBufferUsage(usage);
 }
 
 GfxResult WebGPUBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
@@ -623,7 +624,7 @@ GfxResult WebGPUBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t s
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* bufferPtr = reinterpret_cast<gfx::webgpu::Buffer*>(buffer);
+    auto* bufferPtr = converter::toNative<Buffer>(buffer);
     void* mappedData = bufferPtr->map(offset, size);
 
     if (!mappedData) {
@@ -639,7 +640,7 @@ void WebGPUBackend::bufferUnmap(GfxBuffer buffer) const
     if (!buffer) {
         return;
     }
-    auto* bufferPtr = reinterpret_cast<gfx::webgpu::Buffer*>(buffer);
+    auto* bufferPtr = converter::toNative<Buffer>(buffer);
     bufferPtr->unmap();
 }
 
@@ -649,7 +650,7 @@ void WebGPUBackend::textureDestroy(GfxTexture texture) const
     if (!texture) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::Texture*>(texture);
+    delete converter::toNative<Texture>(texture);
 }
 
 GfxExtent3D WebGPUBackend::textureGetSize(GfxTexture texture) const
@@ -657,7 +658,7 @@ GfxExtent3D WebGPUBackend::textureGetSize(GfxTexture texture) const
     if (!texture) {
         return { 0, 0, 0 };
     }
-    auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
+    auto* texturePtr = converter::toNative<Texture>(texture);
     WGPUExtent3D size = texturePtr->getSize();
     return { size.width, size.height, size.depthOrArrayLayers };
 }
@@ -667,8 +668,8 @@ GfxTextureFormat WebGPUBackend::textureGetFormat(GfxTexture texture) const
     if (!texture) {
         return GFX_TEXTURE_FORMAT_UNDEFINED;
     }
-    auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
-    return gfx::convertor::wgpuFormatToGfxFormat(texturePtr->getFormat());
+    auto* texturePtr = converter::toNative<Texture>(texture);
+    return converter::wgpuFormatToGfxFormat(texturePtr->getFormat());
 }
 
 uint32_t WebGPUBackend::textureGetMipLevelCount(GfxTexture texture) const
@@ -676,7 +677,7 @@ uint32_t WebGPUBackend::textureGetMipLevelCount(GfxTexture texture) const
     if (!texture) {
         return 0;
     }
-    return reinterpret_cast<gfx::webgpu::Texture*>(texture)->getMipLevels();
+    return converter::toNative<Texture>(texture)->getMipLevels();
 }
 
 GfxSampleCount WebGPUBackend::textureGetSampleCount(GfxTexture texture) const
@@ -684,8 +685,8 @@ GfxSampleCount WebGPUBackend::textureGetSampleCount(GfxTexture texture) const
     if (!texture) {
         return GFX_SAMPLE_COUNT_1;
     }
-    auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
-    return gfx::convertor::wgpuSampleCountToGfxSampleCount(texturePtr->getSampleCount());
+    auto* texturePtr = converter::toNative<Texture>(texture);
+    return converter::wgpuSampleCountToGfxSampleCount(texturePtr->getSampleCount());
 }
 
 GfxTextureUsage WebGPUBackend::textureGetUsage(GfxTexture texture) const
@@ -694,8 +695,8 @@ GfxTextureUsage WebGPUBackend::textureGetUsage(GfxTexture texture) const
         return GFX_TEXTURE_USAGE_NONE;
     }
 
-    auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
-    return gfx::convertor::wgpuTextureUsageToGfxTextureUsage(texturePtr->getUsage());
+    auto* texturePtr = converter::toNative<Texture>(texture);
+    return converter::wgpuTextureUsageToGfxTextureUsage(texturePtr->getUsage());
 }
 
 GfxTextureLayout WebGPUBackend::textureGetLayout(GfxTexture texture) const
@@ -714,10 +715,10 @@ GfxResult WebGPUBackend::textureCreateView(GfxTexture texture, const GfxTextureV
     }
 
     try {
-        auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
-        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUTextureViewCreateInfo(descriptor);
+        auto* texturePtr = converter::toNative<Texture>(texture);
+        auto createInfo = converter::gfxDescriptorToWebGPUTextureViewCreateInfo(descriptor);
         auto* view = new gfx::webgpu::TextureView(texturePtr, createInfo);
-        *outView = reinterpret_cast<GfxTextureView>(view);
+        *outView = converter::toGfx<GfxTextureView>(view);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception&) {
         return GFX_RESULT_ERROR_UNKNOWN;
@@ -730,7 +731,7 @@ void WebGPUBackend::textureViewDestroy(GfxTextureView textureView) const
     if (!textureView) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::TextureView*>(textureView);
+    delete converter::toNative<TextureView>(textureView);
 }
 
 // Sampler functions
@@ -739,7 +740,7 @@ void WebGPUBackend::samplerDestroy(GfxSampler sampler) const
     if (!sampler) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::Sampler*>(sampler);
+    delete converter::toNative<Sampler>(sampler);
 }
 
 // Shader functions
@@ -748,7 +749,7 @@ void WebGPUBackend::shaderDestroy(GfxShader shader) const
     if (!shader) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::Shader*>(shader);
+    delete converter::toNative<Shader>(shader);
 }
 
 // BindGroupLayout functions
@@ -757,7 +758,7 @@ void WebGPUBackend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) c
     if (!bindGroupLayout) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::BindGroupLayout*>(bindGroupLayout);
+    delete converter::toNative<BindGroupLayout>(bindGroupLayout);
 }
 
 // BindGroup functions
@@ -766,7 +767,7 @@ void WebGPUBackend::bindGroupDestroy(GfxBindGroup bindGroup) const
     if (!bindGroup) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::BindGroup*>(bindGroup);
+    delete converter::toNative<BindGroup>(bindGroup);
 }
 
 // RenderPipeline functions
@@ -775,7 +776,7 @@ void WebGPUBackend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) cons
     if (!renderPipeline) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::RenderPipeline*>(renderPipeline);
+    delete converter::toNative<RenderPipeline>(renderPipeline);
 }
 
 // ComputePipeline functions
@@ -784,7 +785,7 @@ void WebGPUBackend::computePipelineDestroy(GfxComputePipeline computePipeline) c
     if (!computePipeline) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::ComputePipeline*>(computePipeline);
+    delete converter::toNative<ComputePipeline>(computePipeline);
 }
 
 // Queue functions
@@ -794,8 +795,8 @@ GfxResult WebGPUBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submit
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* queuePtr = reinterpret_cast<gfx::webgpu::Queue*>(queue);
-    auto submit = gfx::convertor::gfxDescriptorToWebGPUSubmitInfo(submitInfo);
+    auto* queuePtr = converter::toNative<Queue>(queue);
+    auto submit = converter::gfxDescriptorToWebGPUSubmitInfo(submitInfo);
 
     return queuePtr->submit(submit) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
@@ -806,8 +807,8 @@ void WebGPUBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t 
         return;
     }
 
-    auto* queuePtr = reinterpret_cast<gfx::webgpu::Queue*>(queue);
-    auto* bufferPtr = reinterpret_cast<gfx::webgpu::Buffer*>(buffer);
+    auto* queuePtr = converter::toNative<Queue>(queue);
+    auto* bufferPtr = converter::toNative<Buffer>(buffer);
 
     wgpuQueueWriteBuffer(queuePtr->handle(), bufferPtr->handle(), offset, data, size);
 }
@@ -819,8 +820,8 @@ void WebGPUBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
         return;
     }
 
-    auto* queuePtr = reinterpret_cast<gfx::webgpu::Queue*>(queue);
-    auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
+    auto* queuePtr = converter::toNative<Queue>(queue);
+    auto* texturePtr = converter::toNative<Texture>(texture);
 
     WGPUTexelCopyTextureInfo dest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     dest.texture = texturePtr->handle();
@@ -843,7 +844,7 @@ GfxResult WebGPUBackend::queueWaitIdle(GfxQueue queue) const
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* queuePtr = reinterpret_cast<gfx::webgpu::Queue*>(queue);
+    auto* queuePtr = converter::toNative<Queue>(queue);
 
     // Submit empty command to ensure all previous work is queued
     static auto queueWorkDoneCallback = [](WGPUQueueWorkDoneStatus status, WGPUStringView, void* userdata1, void*) {
@@ -877,7 +878,7 @@ void WebGPUBackend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) cons
     if (!commandEncoder) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::CommandEncoder*>(commandEncoder);
+    delete converter::toNative<CommandEncoder>(commandEncoder);
 }
 
 GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
@@ -888,7 +889,7 @@ GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(commandEncoder);
+    auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
 
     // Extract parameters from descriptor
     const GfxColorAttachment* colorAttachments = descriptor->colorAttachments;
@@ -904,17 +905,17 @@ GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
             WGPURenderPassColorAttachment attachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
             if (colorAttachments[i].target.view) {
-                auto* viewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(colorAttachments[i].target.view);
+                auto* viewPtr = converter::toNative<TextureView>(colorAttachments[i].target.view);
                 attachment.view = viewPtr->handle();
-                attachment.loadOp = gfx::convertor::gfxLoadOpToWGPULoadOp(colorAttachments[i].target.ops.loadOp);
-                attachment.storeOp = gfx::convertor::gfxStoreOpToWGPUStoreOp(colorAttachments[i].target.ops.storeOp);
+                attachment.loadOp = converter::gfxLoadOpToWGPULoadOp(colorAttachments[i].target.ops.loadOp);
+                attachment.storeOp = converter::gfxStoreOpToWGPUStoreOp(colorAttachments[i].target.ops.storeOp);
 
                 const GfxColor& color = colorAttachments[i].target.ops.clearColor;
                 attachment.clearValue = { color.r, color.g, color.b, color.a };
 
                 // WebGPU MSAA handling: check if this attachment has a resolve target
                 if (colorAttachments[i].resolveTarget && colorAttachments[i].resolveTarget->view) {
-                    auto* resolveViewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(colorAttachments[i].resolveTarget->view);
+                    auto* resolveViewPtr = converter::toNative<TextureView>(colorAttachments[i].resolveTarget->view);
                     attachment.resolveTarget = resolveViewPtr->handle();
                 }
             }
@@ -928,13 +929,13 @@ GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     WGPURenderPassDepthStencilAttachment wgpuDepthStencil = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
     if (depthStencilAttachment) {
         const GfxDepthStencilAttachmentTarget* target = &depthStencilAttachment->target;
-        auto* viewPtr = reinterpret_cast<gfx::webgpu::TextureView*>(target->view);
+        auto* viewPtr = converter::toNative<TextureView>(target->view);
         wgpuDepthStencil.view = viewPtr->handle();
 
         // Handle depth operations if depth pointer is set
         if (target->depthOps) {
-            wgpuDepthStencil.depthLoadOp = gfx::convertor::gfxLoadOpToWGPULoadOp(target->depthOps->loadOp);
-            wgpuDepthStencil.depthStoreOp = gfx::convertor::gfxStoreOpToWGPUStoreOp(target->depthOps->storeOp);
+            wgpuDepthStencil.depthLoadOp = converter::gfxLoadOpToWGPULoadOp(target->depthOps->loadOp);
+            wgpuDepthStencil.depthStoreOp = converter::gfxStoreOpToWGPUStoreOp(target->depthOps->storeOp);
             wgpuDepthStencil.depthClearValue = target->depthOps->clearValue;
         } else {
             wgpuDepthStencil.depthLoadOp = WGPULoadOp_Undefined;
@@ -945,11 +946,11 @@ GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         // Only set stencil operations for formats that have a stencil aspect
         // For depth-only formats (Depth16Unorm, Depth24Plus, Depth32Float), we must set to Undefined
         WGPUTextureFormat wgpuFormat = viewPtr->getTexture()->getFormat();
-        GfxTextureFormat format = gfx::convertor::wgpuFormatToGfxFormat(wgpuFormat);
-        if (gfx::convertor::formatHasStencil(format)) {
+        GfxTextureFormat format = converter::wgpuFormatToGfxFormat(wgpuFormat);
+        if (converter::formatHasStencil(format)) {
             if (target->stencilOps) {
-                wgpuDepthStencil.stencilLoadOp = gfx::convertor::gfxLoadOpToWGPULoadOp(target->stencilOps->loadOp);
-                wgpuDepthStencil.stencilStoreOp = gfx::convertor::gfxStoreOpToWGPUStoreOp(target->stencilOps->storeOp);
+                wgpuDepthStencil.stencilLoadOp = converter::gfxLoadOpToWGPULoadOp(target->stencilOps->loadOp);
+                wgpuDepthStencil.stencilStoreOp = converter::gfxStoreOpToWGPUStoreOp(target->stencilOps->storeOp);
                 wgpuDepthStencil.stencilClearValue = target->stencilOps->clearValue;
             } else {
                 wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Undefined;
@@ -971,7 +972,7 @@ GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     }
 
     auto* renderPassEncoder = new gfx::webgpu::RenderPassEncoder(wgpuEncoder);
-    *outRenderPass = reinterpret_cast<GfxRenderPassEncoder>(renderPassEncoder);
+    *outRenderPass = converter::toGfx<GfxRenderPassEncoder>(renderPassEncoder);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -981,11 +982,11 @@ GfxResult WebGPUBackend::commandEncoderBeginComputePass(GfxCommandEncoder comman
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(commandEncoder);
+    auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
 
     WGPUComputePassDescriptor wgpuDesc = WGPU_COMPUTE_PASS_DESCRIPTOR_INIT;
     if (descriptor->label) {
-        wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
+        wgpuDesc.label = converter::gfxStringView(descriptor->label);
     }
 
     WGPUComputePassEncoder wgpuEncoder = wgpuCommandEncoderBeginComputePass(encoderPtr->handle(), &wgpuDesc);
@@ -994,7 +995,7 @@ GfxResult WebGPUBackend::commandEncoderBeginComputePass(GfxCommandEncoder comman
     }
 
     auto* computePassEncoder = new gfx::webgpu::ComputePassEncoder(wgpuEncoder);
-    *outComputePass = reinterpret_cast<GfxComputePassEncoder>(computePassEncoder);
+    *outComputePass = converter::toGfx<GfxComputePassEncoder>(computePassEncoder);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -1005,9 +1006,9 @@ void WebGPUBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEn
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(commandEncoder);
-    auto* srcPtr = reinterpret_cast<gfx::webgpu::Buffer*>(source);
-    auto* dstPtr = reinterpret_cast<gfx::webgpu::Buffer*>(destination);
+    auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
+    auto* srcPtr = converter::toNative<Buffer>(source);
+    auto* dstPtr = converter::toNative<Buffer>(destination);
 
     wgpuCommandEncoderCopyBufferToBuffer(encoderPtr->handle(),
         srcPtr->handle(), sourceOffset,
@@ -1022,9 +1023,9 @@ void WebGPUBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandE
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(commandEncoder);
-    auto* srcPtr = reinterpret_cast<gfx::webgpu::Buffer*>(source);
-    auto* dstPtr = reinterpret_cast<gfx::webgpu::Texture*>(destination);
+    auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
+    auto* srcPtr = converter::toNative<Buffer>(source);
+    auto* dstPtr = converter::toNative<Texture>(destination);
 
     WGPUTexelCopyBufferInfo sourceInfo = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
     sourceInfo.buffer = srcPtr->handle();
@@ -1050,9 +1051,9 @@ void WebGPUBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandE
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(commandEncoder);
-    auto* srcPtr = reinterpret_cast<gfx::webgpu::Texture*>(source);
-    auto* dstPtr = reinterpret_cast<gfx::webgpu::Buffer*>(destination);
+    auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
+    auto* srcPtr = converter::toNative<Texture>(source);
+    auto* dstPtr = converter::toNative<Buffer>(destination);
 
     WGPUTexelCopyTextureInfo sourceInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     sourceInfo.texture = srcPtr->handle();
@@ -1079,9 +1080,9 @@ void WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(commandEncoder);
-    auto* srcPtr = reinterpret_cast<gfx::webgpu::Texture*>(source);
-    auto* dstPtr = reinterpret_cast<gfx::webgpu::Texture*>(destination);
+    auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
+    auto* srcPtr = converter::toNative<Texture>(source);
+    auto* dstPtr = converter::toNative<Texture>(destination);
 
     // For 2D textures and arrays, extent->depth represents layer count
     // For 3D textures, it represents actual depth
@@ -1133,7 +1134,7 @@ void WebGPUBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::CommandEncoder*>(commandEncoder);
+    auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
 
     // WebGPU encoders can't be reused after Finish() - recreate if needed
     if (!encoderPtr->recreateIfNeeded()) {
@@ -1147,7 +1148,7 @@ void WebGPUBackend::renderPassEncoderDestroy(GfxRenderPassEncoder renderPassEnco
     if (!renderPassEncoder) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
+    delete converter::toNative<RenderPassEncoder>(renderPassEncoder);
 }
 
 void WebGPUBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
@@ -1156,8 +1157,8 @@ void WebGPUBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPass
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
-    auto* pipelinePtr = reinterpret_cast<gfx::webgpu::RenderPipeline*>(pipeline);
+    auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
+    auto* pipelinePtr = converter::toNative<RenderPipeline>(pipeline);
 
     wgpuRenderPassEncoderSetPipeline(encoderPtr->handle(), pipelinePtr->handle());
 }
@@ -1168,8 +1169,8 @@ void WebGPUBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPas
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
-    auto* bindGroupPtr = reinterpret_cast<gfx::webgpu::BindGroup*>(bindGroup);
+    auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
+    auto* bindGroupPtr = converter::toNative<BindGroup>(bindGroup);
 
     wgpuRenderPassEncoderSetBindGroup(encoderPtr->handle(), index, bindGroupPtr->handle(), dynamicOffsetCount, dynamicOffsets);
 }
@@ -1180,8 +1181,8 @@ void WebGPUBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder render
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
-    auto* bufferPtr = reinterpret_cast<gfx::webgpu::Buffer*>(buffer);
+    auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
+    auto* bufferPtr = converter::toNative<Buffer>(buffer);
 
     wgpuRenderPassEncoderSetVertexBuffer(encoderPtr->handle(), slot, bufferPtr->handle(), offset, size);
 }
@@ -1192,11 +1193,11 @@ void WebGPUBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderP
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
-    auto* bufferPtr = reinterpret_cast<gfx::webgpu::Buffer*>(buffer);
+    auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
+    auto* bufferPtr = converter::toNative<Buffer>(buffer);
 
     wgpuRenderPassEncoderSetIndexBuffer(encoderPtr->handle(), bufferPtr->handle(),
-        gfx::convertor::gfxIndexFormatToWGPU(format), offset, size);
+        converter::gfxIndexFormatToWGPU(format), offset, size);
 }
 
 void WebGPUBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
@@ -1205,7 +1206,7 @@ void WebGPUBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPass
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
+    auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     wgpuRenderPassEncoderSetViewport(encoderPtr->handle(),
         viewport->x, viewport->y, viewport->width, viewport->height,
         viewport->minDepth, viewport->maxDepth);
@@ -1217,7 +1218,7 @@ void WebGPUBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderP
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
+    auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     wgpuRenderPassEncoderSetScissorRect(encoderPtr->handle(),
         scissor->x, scissor->y, scissor->width, scissor->height);
 }
@@ -1228,7 +1229,7 @@ void WebGPUBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
+    auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     wgpuRenderPassEncoderDraw(encoderPtr->handle(), vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
@@ -1238,7 +1239,7 @@ void WebGPUBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPass
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
+    auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     wgpuRenderPassEncoderDrawIndexed(encoderPtr->handle(), indexCount, instanceCount,
         firstIndex, baseVertex, firstInstance);
 }
@@ -1249,7 +1250,7 @@ void WebGPUBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder)
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::RenderPassEncoder*>(renderPassEncoder);
+    auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     encoderPtr->end();
 }
 
@@ -1259,7 +1260,7 @@ void WebGPUBackend::computePassEncoderDestroy(GfxComputePassEncoder computePassE
     if (!computePassEncoder) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::ComputePassEncoder*>(computePassEncoder);
+    delete converter::toNative<ComputePassEncoder>(computePassEncoder);
 }
 
 void WebGPUBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
@@ -1268,8 +1269,8 @@ void WebGPUBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computeP
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::ComputePassEncoder*>(computePassEncoder);
-    auto* pipelinePtr = reinterpret_cast<gfx::webgpu::ComputePipeline*>(pipeline);
+    auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
+    auto* pipelinePtr = converter::toNative<ComputePipeline>(pipeline);
 
     wgpuComputePassEncoderSetPipeline(encoderPtr->handle(), pipelinePtr->handle());
 }
@@ -1280,8 +1281,8 @@ void WebGPUBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder compute
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::ComputePassEncoder*>(computePassEncoder);
-    auto* bindGroupPtr = reinterpret_cast<gfx::webgpu::BindGroup*>(bindGroup);
+    auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
+    auto* bindGroupPtr = converter::toNative<BindGroup>(bindGroup);
 
     wgpuComputePassEncoderSetBindGroup(encoderPtr->handle(), index, bindGroupPtr->handle(), dynamicOffsetCount, dynamicOffsets);
 }
@@ -1292,7 +1293,7 @@ void WebGPUBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder c
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::ComputePassEncoder*>(computePassEncoder);
+    auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
     wgpuComputePassEncoderDispatchWorkgroups(encoderPtr->handle(), workgroupCountX, workgroupCountY, workgroupCountZ);
 }
 
@@ -1302,7 +1303,7 @@ void WebGPUBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncod
         return;
     }
 
-    auto* encoderPtr = reinterpret_cast<gfx::webgpu::ComputePassEncoder*>(computePassEncoder);
+    auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
     encoderPtr->end();
 }
 
@@ -1312,7 +1313,7 @@ void WebGPUBackend::fenceDestroy(GfxFence fence) const
     if (!fence) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::Fence*>(fence);
+    delete converter::toNative<Fence>(fence);
 }
 
 GfxResult WebGPUBackend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
@@ -1321,7 +1322,7 @@ GfxResult WebGPUBackend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* fencePtr = reinterpret_cast<gfx::webgpu::Fence*>(fence);
+    auto* fencePtr = converter::toNative<Fence>(fence);
     *isSignaled = fencePtr->isSignaled();
     return GFX_RESULT_SUCCESS;
 }
@@ -1332,7 +1333,7 @@ GfxResult WebGPUBackend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* fencePtr = reinterpret_cast<gfx::webgpu::Fence*>(fence);
+    auto* fencePtr = converter::toNative<Fence>(fence);
 
     // Fence is already properly signaled by queueSubmit after GPU work completes
     // Just check the status
@@ -1347,7 +1348,7 @@ void WebGPUBackend::fenceReset(GfxFence fence) const
         return;
     }
 
-    auto* fencePtr = reinterpret_cast<gfx::webgpu::Fence*>(fence);
+    auto* fencePtr = converter::toNative<Fence>(fence);
     fencePtr->setSignaled(false);
 }
 
@@ -1357,7 +1358,7 @@ void WebGPUBackend::semaphoreDestroy(GfxSemaphore semaphore) const
     if (!semaphore) {
         return;
     }
-    delete reinterpret_cast<gfx::webgpu::Semaphore*>(semaphore);
+    delete converter::toNative<Semaphore>(semaphore);
 }
 
 GfxSemaphoreType WebGPUBackend::semaphoreGetType(GfxSemaphore semaphore) const
@@ -1365,8 +1366,8 @@ GfxSemaphoreType WebGPUBackend::semaphoreGetType(GfxSemaphore semaphore) const
     if (!semaphore) {
         return GFX_SEMAPHORE_TYPE_BINARY;
     }
-    auto type = reinterpret_cast<gfx::webgpu::Semaphore*>(semaphore)->getType();
-    return gfx::convertor::webgpuSemaphoreTypeToGfxSemaphoreType(type);
+    auto type = converter::toNative<Semaphore>(semaphore)->getType();
+    return converter::webgpuSemaphoreTypeToGfxSemaphoreType(type);
 }
 
 GfxResult WebGPUBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
@@ -1375,7 +1376,7 @@ GfxResult WebGPUBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value)
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* semaphorePtr = reinterpret_cast<gfx::webgpu::Semaphore*>(semaphore);
+    auto* semaphorePtr = converter::toNative<Semaphore>(semaphore);
     if (semaphorePtr->getType() == gfx::webgpu::SemaphoreType::Timeline) {
         semaphorePtr->setValue(value);
     }
@@ -1389,7 +1390,7 @@ GfxResult WebGPUBackend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, u
     }
     (void)timeoutNs; // WebGPU doesn't support timeout for semaphore waits
 
-    auto* semaphorePtr = reinterpret_cast<gfx::webgpu::Semaphore*>(semaphore);
+    auto* semaphorePtr = converter::toNative<Semaphore>(semaphore);
     if (semaphorePtr->getType() == gfx::webgpu::SemaphoreType::Timeline) {
         return (semaphorePtr->getValue() >= value) ? GFX_RESULT_SUCCESS : GFX_RESULT_TIMEOUT;
     }
@@ -1401,7 +1402,7 @@ uint64_t WebGPUBackend::semaphoreGetValue(GfxSemaphore semaphore) const
     if (!semaphore) {
         return 0;
     }
-    return reinterpret_cast<gfx::webgpu::Semaphore*>(semaphore)->getValue();
+    return converter::toNative<Semaphore>(semaphore)->getValue();
 }
 
 const IBackend* WebGPUBackend::create()

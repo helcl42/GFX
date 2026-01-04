@@ -1,8 +1,9 @@
 #include "GfxWebGPUConverter.h"
+
 #include "../entity/CreateInfo.h"
 #include "../entity/Entities.h"
 
-namespace gfx::convertor {
+namespace gfx::webgpu::converter {
 
 // ============================================================================
 // Device Limits Conversion
@@ -1064,4 +1065,4 @@ WGPUTextureViewDimension gfxTextureViewTypeToWGPU(GfxTextureViewType type)
     }
 }
 
-} // namespace gfx::convertor
+} // namespace gfx::webgpu::converter

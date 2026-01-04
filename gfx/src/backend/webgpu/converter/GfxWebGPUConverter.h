@@ -27,13 +27,29 @@ struct SubmitInfo;
 struct PlatformWindowHandle;
 enum class SemaphoreType;
 // BufferUsage is an alias to WGPUBufferUsage, so we use WGPUBufferUsage directly
-}
+} // namespace gfx::webgpu
 
 // ============================================================================
 // WebGPU Conversion Functions
 // ============================================================================
 
-namespace gfx::convertor {
+namespace gfx::webgpu::converter {
+
+// Template function to convert internal C++ pointer to opaque C handle
+// Usage: toGfx<GfxDevice>(devicePtr)
+template <typename GfxHandle, typename InternalType>
+inline GfxHandle toGfx(InternalType* ptr)
+{
+    return reinterpret_cast<GfxHandle>(ptr);
+}
+
+// Template function to convert opaque C handle to internal C++ pointer
+// Usage: toNative<Device>(device)
+template <typename InternalType, typename GfxHandle>
+inline InternalType* toNative(GfxHandle handle)
+{
+    return reinterpret_cast<InternalType*>(handle);
+}
 
 // ============================================================================
 // Type Conversion Functions
@@ -139,5 +155,4 @@ WGPUVertexFormat gfxFormatToWGPUVertexFormat(GfxTextureFormat format);
 WGPUTextureDimension gfxTextureTypeToWGPU(GfxTextureType type);
 WGPUTextureViewDimension gfxTextureViewTypeToWGPU(GfxTextureViewType type);
 
-
-} // namespace gfx::convertor
+} // namespace gfx::webgpu::converter
