@@ -1239,9 +1239,16 @@ public:
             }
         }
 
+        // If requested format not found, fall back to first available format
         if (selectedFormat == WGPUTextureFormat_Undefined && capabilities.formatCount > 0) {
-            throw std::runtime_error("Requested swapchain format not supported by surface");
+            selectedFormat = capabilities.formats[0];
+            fprintf(stderr, "[WebGPU Swapchain] Requested format %d not supported, using format %d\n", m_format, selectedFormat);
         }
+
+        if (selectedFormat == WGPUTextureFormat_Undefined) {
+            throw std::runtime_error("No supported surface formats available for swapchain");
+        }
+
         m_format = selectedFormat;
 
         // Choose present mode
@@ -1253,9 +1260,16 @@ public:
             }
         }
 
+        // If requested present mode not found, fall back to first available mode
         if (selectedPresentMode == WGPUPresentMode_Undefined && capabilities.presentModeCount > 0) {
-            throw std::runtime_error("Requested swapchain present mode not supported by surface");
+            selectedPresentMode = capabilities.presentModes[0];
+            fprintf(stderr, "[WebGPU Swapchain] Requested present mode %d not supported, using mode %d\n", createInfo.presentMode, selectedPresentMode);
         }
+
+        if (selectedPresentMode == WGPUPresentMode_Undefined) {
+            throw std::runtime_error("No supported present modes available for swapchain");
+        }
+
         m_presentMode = selectedPresentMode;
 
         // Configure surface
