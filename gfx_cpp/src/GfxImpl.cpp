@@ -1247,14 +1247,7 @@ public:
         cDesc.lodMinClamp = descriptor.lodMinClamp;
         cDesc.lodMaxClamp = descriptor.lodMaxClamp;
         cDesc.maxAnisotropy = descriptor.maxAnisotropy;
-
-        GfxCompareFunction cCompare;
-        if (descriptor.compare.has_value()) {
-            cCompare = static_cast<GfxCompareFunction>(*descriptor.compare);
-            cDesc.compare = &cCompare;
-        } else {
-            cDesc.compare = nullptr;
-        }
+        cDesc.compare = static_cast<GfxCompareFunction>(descriptor.compare);
 
         GfxSampler sampler = nullptr;
         GfxResult result = gfxDeviceCreateSampler(m_handle, &cDesc, &sampler);

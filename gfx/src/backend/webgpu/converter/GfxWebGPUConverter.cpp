@@ -147,9 +147,7 @@ gfx::webgpu::SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxS
     createInfo.lodMinClamp = descriptor->lodMinClamp;
     createInfo.lodMaxClamp = descriptor->lodMaxClamp;
     createInfo.maxAnisotropy = descriptor->maxAnisotropy;
-    createInfo.compareFunction = descriptor->compare
-        ? gfxCompareFunctionToWGPU(*descriptor->compare)
-        : WGPUCompareFunction_Undefined;
+    createInfo.compareFunction = gfxCompareFunctionToWGPU(descriptor->compare);
     return createInfo;
 }
 

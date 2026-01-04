@@ -152,6 +152,7 @@ enum class AddressMode {
 };
 
 enum class CompareFunction {
+    Undefined,
     Never,
     Less,
     Equal,
@@ -587,7 +588,7 @@ struct SamplerDescriptor {
     FilterMode mipmapFilter = FilterMode::Nearest;
     float lodMinClamp = 0.0f;
     float lodMaxClamp = 32.0f;
-    std::optional<CompareFunction> compare;
+    CompareFunction compare = CompareFunction::Undefined;
     uint16_t maxAnisotropy = 1;
 };
 

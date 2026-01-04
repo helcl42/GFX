@@ -582,7 +582,7 @@ VkCompareOp gfxCompareOpToVkCompareOp(GfxCompareFunction func)
     case GFX_COMPARE_FUNCTION_ALWAYS:
         return VK_COMPARE_OP_ALWAYS;
     default:
-        return VK_COMPARE_OP_LESS;
+        return VK_COMPARE_OP_MAX_ENUM;
     }
 }
 
@@ -784,7 +784,7 @@ gfx::vulkan::SamplerCreateInfo gfxDescriptorToSamplerCreateInfo(const GfxSampler
     createInfo.lodMinClamp = descriptor->lodMinClamp;
     createInfo.lodMaxClamp = descriptor->lodMaxClamp;
     createInfo.maxAnisotropy = descriptor->maxAnisotropy;
-    createInfo.compareOp = descriptor->compare ? static_cast<VkCompareOp>(*descriptor->compare) : VK_COMPARE_OP_MAX_ENUM;
+    createInfo.compareOp = gfxCompareOpToVkCompareOp(descriptor->compare);
     return createInfo;
 }
 

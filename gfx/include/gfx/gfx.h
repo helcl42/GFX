@@ -231,6 +231,7 @@ typedef enum {
 } GfxAddressMode;
 
 typedef enum {
+    GFX_COMPARE_FUNCTION_UNDEFINED,
     GFX_COMPARE_FUNCTION_NEVER,
     GFX_COMPARE_FUNCTION_LESS,
     GFX_COMPARE_FUNCTION_EQUAL,
@@ -672,7 +673,7 @@ typedef struct {
     GfxFilterMode mipmapFilter;
     float lodMinClamp;
     float lodMaxClamp;
-    GfxCompareFunction* compare; // NULL if not used
+    GfxCompareFunction compare; // GFX_COMPARE_FUNCTION_UNDEFINED if not used
     uint16_t maxAnisotropy;
 } GfxSamplerDescriptor;
 
