@@ -810,7 +810,7 @@ void WebGPUBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t 
     auto* queuePtr = converter::toNative<Queue>(queue);
     auto* bufferPtr = converter::toNative<Buffer>(buffer);
 
-    queuePtr->writeBuffer(bufferPtr->handle(), offset, data, size);
+    queuePtr->writeBuffer(bufferPtr, offset, data, size);
 }
 
 void WebGPUBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
@@ -824,7 +824,7 @@ void WebGPUBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
     auto* texturePtr = converter::toNative<Texture>(texture);
 
     queuePtr->writeTexture(
-        texturePtr->handle(), mipLevel,
+        texturePtr, mipLevel,
         static_cast<uint32_t>(origin->x), static_cast<uint32_t>(origin->y), static_cast<uint32_t>(origin->z),
         data, dataSize,
         bytesPerRow,

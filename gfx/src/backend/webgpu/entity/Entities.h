@@ -248,10 +248,10 @@ public:
     bool submit(const SubmitInfo& submitInfo);
 
     // Write data directly to a buffer
-    void writeBuffer(WGPUBuffer buffer, uint64_t offset, const void* data, uint64_t size);
+    void writeBuffer(Buffer* buffer, uint64_t offset, const void* data, uint64_t size);
 
     // Write data directly to a texture
-    void writeTexture(WGPUTexture texture, uint32_t mipLevel,
+    void writeTexture(Texture* texture, uint32_t mipLevel,
         uint32_t originX, uint32_t originY, uint32_t originZ,
         const void* data, uint64_t dataSize,
         uint32_t bytesPerRow,

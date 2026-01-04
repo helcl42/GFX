@@ -51,19 +51,19 @@ bool Queue::submit(const SubmitInfo& submitInfo)
     return true;
 }
 
-void Queue::writeBuffer(WGPUBuffer buffer, uint64_t offset, const void* data, uint64_t size)
+void Queue::writeBuffer(Buffer* buffer, uint64_t offset, const void* data, uint64_t size)
 {
-    wgpuQueueWriteBuffer(m_queue, buffer, offset, data, size);
+    wgpuQueueWriteBuffer(m_queue, buffer->handle(), offset, data, size);
 }
 
-void Queue::writeTexture(WGPUTexture texture, uint32_t mipLevel,
+void Queue::writeTexture(Texture* texture, uint32_t mipLevel,
     uint32_t originX, uint32_t originY, uint32_t originZ,
     const void* data, uint64_t dataSize,
     uint32_t bytesPerRow,
     uint32_t width, uint32_t height, uint32_t depth)
 {
     WGPUTexelCopyTextureInfo dest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
-    dest.texture = texture;
+    dest.texture = texture->handle();
     dest.mipLevel = mipLevel;
     dest.origin = { originX, originY, originZ };
 
