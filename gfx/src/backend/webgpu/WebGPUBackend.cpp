@@ -810,7 +810,7 @@ void WebGPUBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t 
     auto* queuePtr = converter::toNative<Queue>(queue);
     auto* bufferPtr = converter::toNative<Buffer>(buffer);
 
-    wgpuQueueWriteBuffer(queuePtr->handle(), bufferPtr->handle(), offset, data, size);
+    queuePtr->writeBuffer(bufferPtr->handle(), offset, data, size);
 }
 
 void WebGPUBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
@@ -823,17 +823,12 @@ void WebGPUBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
     auto* queuePtr = converter::toNative<Queue>(queue);
     auto* texturePtr = converter::toNative<Texture>(texture);
 
-    WGPUTexelCopyTextureInfo dest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
-    dest.texture = texturePtr->handle();
-    dest.mipLevel = mipLevel;
-    dest.origin = { static_cast<uint32_t>(origin->x), static_cast<uint32_t>(origin->y), static_cast<uint32_t>(origin->z) };
-
-    WGPUTexelCopyBufferLayout layout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
-    layout.bytesPerRow = bytesPerRow;
-
-    WGPUExtent3D wgpuExtent = { extent->width, extent->height, extent->depth };
-
-    wgpuQueueWriteTexture(queuePtr->handle(), &dest, data, dataSize, &layout, &wgpuExtent);
+    queuePtr->writeTexture(
+        texturePtr->handle(), mipLevel,
+        static_cast<uint32_t>(origin->x), static_cast<uint32_t>(origin->y), static_cast<uint32_t>(origin->z),
+        data, dataSize,
+        bytesPerRow,
+        extent->width, extent->height, extent->depth);
 
     (void)finalLayout; // WebGPU handles layout transitions automatically
 }
@@ -845,31 +840,7 @@ GfxResult WebGPUBackend::queueWaitIdle(GfxQueue queue) const
     }
 
     auto* queuePtr = converter::toNative<Queue>(queue);
-
-    // Submit empty command to ensure all previous work is queued
-    static auto queueWorkDoneCallback = [](WGPUQueueWorkDoneStatus status, WGPUStringView, void* userdata1, void*) {
-        bool* done = static_cast<bool*>(userdata1);
-        if (status == WGPUQueueWorkDoneStatus_Success) {
-            *done = true;
-        }
-    };
-
-    bool workDone = false;
-    WGPUQueueWorkDoneCallbackInfo callbackInfo = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
-    callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-    callbackInfo.callback = queueWorkDoneCallback;
-    callbackInfo.userdata1 = &workDone;
-
-    WGPUFuture future = wgpuQueueOnSubmittedWorkDone(queuePtr->handle(), callbackInfo);
-
-    // Properly wait for the queue work to complete
-    if (queuePtr->getDevice() && queuePtr->getDevice()->getAdapter() && queuePtr->getDevice()->getAdapter()->getInstance()) {
-        WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
-        waitInfo.future = future;
-        wgpuInstanceWaitAny(queuePtr->getDevice()->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
-    }
-
-    return workDone ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
+    return queuePtr->waitIdle() ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
 // CommandEncoder functions

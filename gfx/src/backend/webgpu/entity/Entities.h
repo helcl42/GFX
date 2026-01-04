@@ -247,6 +247,19 @@ public:
     // Submit command encoders with optional fence signaling
     bool submit(const SubmitInfo& submitInfo);
 
+    // Write data directly to a buffer
+    void writeBuffer(WGPUBuffer buffer, uint64_t offset, const void* data, uint64_t size);
+
+    // Write data directly to a texture
+    void writeTexture(WGPUTexture texture, uint32_t mipLevel,
+        uint32_t originX, uint32_t originY, uint32_t originZ,
+        const void* data, uint64_t dataSize,
+        uint32_t bytesPerRow,
+        uint32_t width, uint32_t height, uint32_t depth);
+
+    // Wait for all submitted work to complete
+    bool waitIdle();
+
 private:
     WGPUQueue m_queue = nullptr;
     Device* m_device = nullptr; // Non-owning pointer to parent device
