@@ -49,6 +49,8 @@ gfx::vulkan::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(GfxSemaphoreTyp
 
 VkFormat gfxFormatToVkFormat(GfxTextureFormat format);
 GfxTextureFormat vkFormatToGfxFormat(VkFormat format);
+GfxBufferUsage vkBufferUsageToGfxBufferUsage(VkBufferUsageFlags vkUsage);
+GfxTextureUsage vkImageUsageToGfxTextureUsage(VkImageUsageFlags vkUsage);
 
 // ============================================================================
 // Device Limits Conversion

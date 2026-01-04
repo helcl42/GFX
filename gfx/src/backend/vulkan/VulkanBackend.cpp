@@ -658,25 +658,7 @@ GfxBufferUsage VulkanBackend::bufferGetUsage(GfxBuffer buffer) const
         return static_cast<GfxBufferUsage>(0);
     }
     auto* buf = reinterpret_cast<gfx::vulkan::Buffer*>(buffer);
-    VkBufferUsageFlags vkUsage = buf->getUsage();
-
-    // Convert VkBufferUsageFlags to GfxBufferUsage
-    GfxBufferUsage usage = GFX_BUFFER_USAGE_NONE;
-    if (vkUsage & VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_COPY_SRC);
-    if (vkUsage & VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_COPY_DST);
-    if (vkUsage & VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_INDEX);
-    if (vkUsage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_VERTEX);
-    if (vkUsage & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_UNIFORM);
-    if (vkUsage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_STORAGE);
-    if (vkUsage & VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_INDIRECT);
-    return usage;
+    return gfx::convertor::vkBufferUsageToGfxBufferUsage(buf->getUsage());
 }
 
 GfxResult VulkanBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
@@ -753,22 +735,7 @@ GfxTextureUsage VulkanBackend::textureGetUsage(GfxTexture texture) const
         return static_cast<GfxTextureUsage>(0);
     }
     auto* tex = reinterpret_cast<gfx::vulkan::Texture*>(texture);
-    VkImageUsageFlags vkUsage = tex->getUsage();
-
-    // Convert VkImageUsageFlags to GfxTextureUsage
-    GfxTextureUsage usage = GFX_TEXTURE_USAGE_NONE;
-    if (vkUsage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
-        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_COPY_SRC);
-    if (vkUsage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_COPY_DST);
-    if (vkUsage & VK_IMAGE_USAGE_SAMPLED_BIT)
-        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_TEXTURE_BINDING);
-    if (vkUsage & VK_IMAGE_USAGE_STORAGE_BIT)
-        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_STORAGE_BINDING);
-    if (vkUsage & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
-        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_RENDER_ATTACHMENT);
-    }
-    return usage;
+    return gfx::convertor::vkImageUsageToGfxTextureUsage(tex->getUsage());
 }
 
 GfxTextureLayout VulkanBackend::textureGetLayout(GfxTexture texture) const

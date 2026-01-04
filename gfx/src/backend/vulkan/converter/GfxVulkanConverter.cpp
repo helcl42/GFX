@@ -193,6 +193,43 @@ GfxTextureFormat vkFormatToGfxFormat(VkFormat format)
     }
 }
 
+GfxBufferUsage vkBufferUsageToGfxBufferUsage(VkBufferUsageFlags vkUsage)
+{
+    GfxBufferUsage usage = GFX_BUFFER_USAGE_NONE;
+    if (vkUsage & VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_COPY_SRC);
+    if (vkUsage & VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_COPY_DST);
+    if (vkUsage & VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_INDEX);
+    if (vkUsage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_VERTEX);
+    if (vkUsage & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_UNIFORM);
+    if (vkUsage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_STORAGE);
+    if (vkUsage & VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT)
+        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_INDIRECT);
+    return usage;
+}
+
+GfxTextureUsage vkImageUsageToGfxTextureUsage(VkImageUsageFlags vkUsage)
+{
+    GfxTextureUsage usage = GFX_TEXTURE_USAGE_NONE;
+    if (vkUsage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_COPY_SRC);
+    if (vkUsage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_COPY_DST);
+    if (vkUsage & VK_IMAGE_USAGE_SAMPLED_BIT)
+        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_TEXTURE_BINDING);
+    if (vkUsage & VK_IMAGE_USAGE_STORAGE_BIT)
+        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_STORAGE_BINDING);
+    if (vkUsage & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
+        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_RENDER_ATTACHMENT);
+    }
+    return usage;
+}
+
 GfxPresentMode vkPresentModeToGfxPresentMode(VkPresentModeKHR mode)
 {
     switch (mode) {
