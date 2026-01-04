@@ -104,6 +104,15 @@ VkResult Queue::submit(const SubmitInfo& submitInfo)
     return vkQueueSubmit(m_queue, 1, &vkSubmitInfo, fence);
 }
 
+void Queue::writeBuffer(Buffer* buffer, uint64_t offset, const void* data, uint64_t size)
+{
+    void* mapped = buffer->map();
+    if (mapped) {
+        memcpy(static_cast<char*>(mapped) + offset, data, size);
+        buffer->unmap();
+    }
+}
+
 void Queue::writeTexture(Texture* texture, const VkOffset3D& origin, uint32_t mipLevel,
     const void* data, uint64_t dataSize,
     const VkExtent3D& extent, VkImageLayout finalLayout)

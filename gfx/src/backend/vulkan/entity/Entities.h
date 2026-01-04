@@ -379,6 +379,9 @@ public:
 
     VkResult submit(const SubmitInfo& submitInfo);
 
+    // Write data directly to a buffer by mapping it
+    void writeBuffer(Buffer* buffer, uint64_t offset, const void* data, uint64_t size);
+
     // Write data directly to a texture using staging buffer
     void writeTexture(Texture* texture, const VkOffset3D& origin, uint32_t mipLevel,
         const void* data, uint64_t dataSize,

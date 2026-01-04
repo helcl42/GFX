@@ -815,13 +815,9 @@ void VulkanBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t 
         return;
     }
 
-    // Map, write, unmap
+    auto* q = converter::toNative<Queue>(queue);
     auto* buf = converter::toNative<Buffer>(buffer);
-    void* mapped = buf->map();
-    if (mapped) {
-        memcpy(static_cast<char*>(mapped) + offset, data, size);
-        buf->unmap();
-    }
+    q->writeBuffer(buf, offset, data, size);
 }
 
 void VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
