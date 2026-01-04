@@ -11,24 +11,6 @@
 #include <string>
 #include <vector>
 
-// ============================================================================
-// WebGPU Callback Functions
-// ============================================================================
-
-extern "C" {
-
-struct MapCallbackData {
-    WGPUMapAsyncStatus status = WGPUMapAsyncStatus_Error;
-    bool completed = false;
-};
-
-static void bufferMapCallback(WGPUMapAsyncStatus status, WGPUStringView, void* userdata1, void*)
-{
-    auto* data = static_cast<MapCallbackData*>(userdata1);
-    data->status = status;
-    data->completed = true;
-}
-} // extern "C"
 
 namespace gfx::webgpu {
 
@@ -616,51 +598,9 @@ GfxResult WebGPUBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t s
     }
 
     auto* bufferPtr = reinterpret_cast<gfx::webgpu::Buffer*>(buffer);
-
-    // If size is 0, map the entire buffer from offset
-    uint64_t mapSize = size;
-    if (mapSize == 0) {
-        mapSize = bufferPtr->getSize() - offset;
-    }
-
-    // Determine map mode based on buffer usage
-    WGPUMapMode mapMode = WGPUMapMode_None;
-    if (bufferPtr->getUsage() & GFX_BUFFER_USAGE_MAP_READ) {
-        mapMode |= WGPUMapMode_Read;
-    }
-    if (bufferPtr->getUsage() & GFX_BUFFER_USAGE_MAP_WRITE) {
-        mapMode |= WGPUMapMode_Write;
-    }
-
-    if (mapMode == WGPUMapMode_None) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
-    }
-
-    // Set up async mapping with synchronous wait
-    MapCallbackData callbackData;
-
-    WGPUBufferMapCallbackInfo callbackInfo = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
-    callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-    callbackInfo.callback = bufferMapCallback;
-    callbackInfo.userdata1 = &callbackData;
-
-    WGPUFuture future = wgpuBufferMapAsync(bufferPtr->handle(), mapMode, offset, mapSize, callbackInfo);
-
-    // Properly wait for the mapping to complete
-    if (bufferPtr->getDevice() && bufferPtr->getDevice()->getAdapter() && bufferPtr->getDevice()->getAdapter()->getInstance()) {
-        WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
-        waitInfo.future = future;
-        wgpuInstanceWaitAny(bufferPtr->getDevice()->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
-    }
-
-    if (!callbackData.completed || callbackData.status != WGPUMapAsyncStatus_Success) {
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
-
-    // Get the mapped range
-    void* mappedData = wgpuBufferGetMappedRange(bufferPtr->handle(), offset, mapSize);
+    void* mappedData = bufferPtr->map(offset, size);
+    
     if (!mappedData) {
-        wgpuBufferUnmap(bufferPtr->handle());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 
@@ -674,7 +614,7 @@ void WebGPUBackend::bufferUnmap(GfxBuffer buffer) const
         return;
     }
     auto* bufferPtr = reinterpret_cast<gfx::webgpu::Buffer*>(buffer);
-    wgpuBufferUnmap(bufferPtr->handle());
+    bufferPtr->unmap();
 }
 
 // Texture functions

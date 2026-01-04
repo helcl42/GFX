@@ -406,6 +406,73 @@ public:
     BufferUsage getUsage() const { return m_usage; }
     Device* getDevice() const { return m_deviceObj; }
 
+    // Map buffer for CPU access
+    // Returns mapped pointer on success, nullptr on failure
+    void* map(uint64_t offset, uint64_t size)
+    {
+        // If size is 0, map the entire buffer from offset
+        uint64_t mapSize = size;
+        if (mapSize == 0) {
+            mapSize = m_size - offset;
+        }
+
+        // Determine map mode based on buffer usage
+        WGPUMapMode mapMode = WGPUMapMode_None;
+        if (m_usage & GFX_BUFFER_USAGE_MAP_READ) {
+            mapMode |= WGPUMapMode_Read;
+        }
+        if (m_usage & GFX_BUFFER_USAGE_MAP_WRITE) {
+            mapMode |= WGPUMapMode_Write;
+        }
+
+        if (mapMode == WGPUMapMode_None) {
+            return nullptr;
+        }
+
+        // Set up async mapping with synchronous wait
+        struct MapCallbackData {
+            WGPUMapAsyncStatus status = WGPUMapAsyncStatus_Error;
+            bool completed = false;
+        };
+        MapCallbackData callbackData;
+
+        WGPUBufferMapCallbackInfo callbackInfo = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
+        callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+        callbackInfo.callback = [](WGPUMapAsyncStatus status, WGPUStringView, void* userdata1, void*) {
+            auto* data = static_cast<MapCallbackData*>(userdata1);
+            data->status = status;
+            data->completed = true;
+        };
+        callbackInfo.userdata1 = &callbackData;
+
+        WGPUFuture future = wgpuBufferMapAsync(m_buffer, mapMode, offset, mapSize, callbackInfo);
+
+        // Properly wait for the mapping to complete
+        if (m_deviceObj && m_deviceObj->getAdapter() && m_deviceObj->getAdapter()->getInstance()) {
+            WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
+            waitInfo.future = future;
+            wgpuInstanceWaitAny(m_deviceObj->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
+        }
+
+        if (!callbackData.completed || callbackData.status != WGPUMapAsyncStatus_Success) {
+            return nullptr;
+        }
+
+        // Get the mapped range
+        void* mappedData = wgpuBufferGetMappedRange(m_buffer, offset, mapSize);
+        if (!mappedData) {
+            wgpuBufferUnmap(m_buffer);
+            return nullptr;
+        }
+
+        return mappedData;
+    }
+
+    void unmap()
+    {
+        wgpuBufferUnmap(m_buffer);
+    }
+
 private:
     WGPUBuffer m_buffer = nullptr;
     WGPUDevice m_device = nullptr;
