@@ -225,14 +225,15 @@ gfx::webgpu::SurfaceCreateInfo gfxDescriptorToWebGPUSurfaceCreateInfo(const GfxS
     return createInfo;
 }
 
-gfx::webgpu::SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor, WGPUSurface surface)
+gfx::webgpu::SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor)
 {
     gfx::webgpu::SwapchainCreateInfo createInfo{};
-    createInfo.surface = surface;
     createInfo.width = descriptor->width;
     createInfo.height = descriptor->height;
-    createInfo.format = static_cast<WGPUTextureFormat>(descriptor->format);
-    createInfo.presentMode = static_cast<WGPUPresentMode>(descriptor->presentMode);
+    createInfo.format = gfxFormatToWGPUFormat(descriptor->format);
+    createInfo.usage = gfxTextureUsageToWGPU(descriptor->usage);
+    createInfo.presentMode = gfxPresentModeToWGPU(descriptor->presentMode);
+    createInfo.bufferCount = descriptor->bufferCount;
     return createInfo;
 }
 

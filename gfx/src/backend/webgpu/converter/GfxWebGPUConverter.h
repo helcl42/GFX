@@ -54,7 +54,7 @@ gfx::webgpu::SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxS
 gfx::webgpu::SemaphoreCreateInfo gfxDescriptorToWebGPUSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor);
 gfx::webgpu::FenceCreateInfo gfxDescriptorToWebGPUFenceCreateInfo(const GfxFenceDescriptor* descriptor);
 gfx::webgpu::SurfaceCreateInfo gfxDescriptorToWebGPUSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor);
-gfx::webgpu::SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor, WGPUSurface surface);
+gfx::webgpu::SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor);
 gfx::webgpu::BindGroupLayoutCreateInfo gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor);
 
 // Entity-dependent CreateInfo Conversion Functions

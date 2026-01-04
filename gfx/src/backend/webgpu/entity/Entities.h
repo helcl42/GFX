@@ -1215,16 +1215,63 @@ public:
     Swapchain(const Swapchain&) = delete;
     Swapchain& operator=(const Swapchain&) = delete;
 
-    Swapchain(WGPUSurface surface, WGPUDevice device, uint32_t width, uint32_t height,
-        WGPUTextureFormat format, WGPUPresentMode presentMode, uint32_t bufferCount)
-        : m_surface(surface)
+    Swapchain(WGPUAdapter adapter, WGPUDevice device, WGPUSurface surface, const SwapchainCreateInfo& createInfo)
+        : m_adapter(adapter)
         , m_device(device)
-        , m_width(width)
-        , m_height(height)
-        , m_format(format)
-        , m_presentMode(presentMode)
-        , m_bufferCount(bufferCount)
+        , m_surface(surface)
+        , m_width(createInfo.width)
+        , m_height(createInfo.height)
+        , m_format(createInfo.format)
+        , m_presentMode(createInfo.presentMode)
+        , m_bufferCount(createInfo.bufferCount)
     {
+
+        // Get surface capabilities
+        WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
+        wgpuSurfaceGetCapabilities(m_surface, m_adapter, &capabilities);
+
+        // Choose format
+        WGPUTextureFormat selectedFormat = WGPUTextureFormat_Undefined;
+        for (size_t i = 0; i < capabilities.formatCount; ++i) {
+            if (capabilities.formats[i] == m_format) {
+                selectedFormat = capabilities.formats[i];
+                break;
+            }
+        }
+
+        if (selectedFormat == WGPUTextureFormat_Undefined && capabilities.formatCount > 0) {
+            throw std::runtime_error("Requested swapchain format not supported by surface");
+        }
+        m_format = selectedFormat;
+
+        // Choose present mode
+        WGPUPresentMode selectedPresentMode = WGPUPresentMode_Undefined;
+        for (size_t i = 0; i < capabilities.presentModeCount; ++i) {
+            if (capabilities.presentModes[i] == createInfo.presentMode) {
+                selectedPresentMode = capabilities.presentModes[i];
+                break;
+            }
+        }
+
+        if (selectedPresentMode == WGPUPresentMode_Undefined && capabilities.presentModeCount > 0) {
+            throw std::runtime_error("Requested swapchain present mode not supported by surface");
+        }
+        m_presentMode = selectedPresentMode;
+
+        // Configure surface
+        WGPUSurfaceConfiguration config = WGPU_SURFACE_CONFIGURATION_INIT;
+        config.device = m_device;
+        config.format = m_format;
+        config.usage = createInfo.usage;
+        config.width = createInfo.width;
+        config.height = createInfo.height;
+        config.presentMode = m_presentMode;
+        config.alphaMode = WGPUCompositeAlphaMode_Auto;
+
+        wgpuSurfaceConfigure(m_surface, &config);
+
+        // Free capabilities using the proper WebGPU function
+        wgpuSurfaceCapabilitiesFreeMembers(capabilities);
     }
 
     ~Swapchain()
@@ -1242,19 +1289,14 @@ public:
         // Don't release surface or device - they're not owned
     }
 
-    WGPUSurface surface() const { return m_surface; }
+    WGPUAdapter adapter() const { return m_adapter; }
     WGPUDevice device() const { return m_device; }
+    WGPUSurface surface() const { return m_surface; }
     uint32_t getWidth() const { return m_width; }
     uint32_t getHeight() const { return m_height; }
     WGPUTextureFormat getFormat() const { return m_format; }
     WGPUPresentMode getPresentMode() const { return m_presentMode; }
     uint32_t getBufferCount() const { return m_bufferCount; }
-
-    void setSize(uint32_t width, uint32_t height)
-    {
-        m_width = width;
-        m_height = height;
-    }
 
     // Cache the current texture so it persists across view creation and present
     void setCurrentTexture(WGPUTexture texture)
@@ -1271,6 +1313,7 @@ public:
             m_currentView = nullptr;
         }
     }
+
     WGPUTexture getCurrentTexture() const { return m_currentTexture; }
 
     // Cache texture view so it can be reused and cleaned up automatically
@@ -1282,11 +1325,13 @@ public:
         }
         m_currentView = view;
     }
+
     gfx::webgpu::TextureView* getCurrentView() const { return m_currentView; }
 
 private:
-    WGPUSurface m_surface = nullptr; // Non-owning
+    WGPUAdapter m_adapter = nullptr; // Non-owning
     WGPUDevice m_device = nullptr; // Non-owning
+    WGPUSurface m_surface = nullptr; // Non-owning
     uint32_t m_width = 0;
     uint32_t m_height = 0;
     WGPUTextureFormat m_format = WGPUTextureFormat_Undefined;

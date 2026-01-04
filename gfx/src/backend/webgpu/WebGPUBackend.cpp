@@ -201,57 +201,9 @@ GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
 
     auto* devicePtr = reinterpret_cast<gfx::webgpu::Device*>(device);
     auto* surfacePtr = reinterpret_cast<gfx::webgpu::Surface*>(surface);
-
-    // TODO - can we unify this with vulkna
-
-    // Get surface capabilities
-    WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
-    wgpuSurfaceGetCapabilities(surfacePtr->handle(), devicePtr->getAdapter()->handle(), &capabilities);
-
-    WGPUTextureFormat format = gfx::convertor::gfxFormatToWGPUFormat(descriptor->format);
-    bool formatSupported = false;
-    for (size_t i = 0; i < capabilities.formatCount; ++i) {
-        if (capabilities.formats[i] == format) {
-            formatSupported = true;
-            break;
-        }
-    }
-    if (!formatSupported && capabilities.formatCount > 0) {
-        format = capabilities.formats[0];
-    }
-
-    WGPUPresentMode presentMode = gfx::convertor::gfxPresentModeToWGPU(descriptor->presentMode);
-    bool presentModeSupported = false;
-    for (size_t i = 0; i < capabilities.presentModeCount; ++i) {
-        if (capabilities.presentModes[i] == presentMode) {
-            presentModeSupported = true;
-            break;
-        }
-    }
-    if (!presentModeSupported && capabilities.presentModeCount > 0) {
-        presentMode = capabilities.presentModes[0];
-    }
-
-    // Configure surface
-    WGPUSurfaceConfiguration config = WGPU_SURFACE_CONFIGURATION_INIT;
-    config.device = devicePtr->handle();
-    config.format = format;
-    config.usage = gfx::convertor::gfxTextureUsageToWGPU(descriptor->usage);
-    config.width = descriptor->width;
-    config.height = descriptor->height;
-    config.presentMode = presentMode;
-    config.alphaMode = WGPUCompositeAlphaMode_Auto;
-
-    wgpuSurfaceConfigure(surfacePtr->handle(), &config);
-
-    auto* swapchain = new gfx::webgpu::Swapchain(surfacePtr->handle(), devicePtr->handle(),
-        descriptor->width, descriptor->height,
-        format, presentMode, descriptor->bufferCount);
+    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUSwapchainCreateInfo(descriptor);
+    auto* swapchain = new gfx::webgpu::Swapchain(devicePtr->getAdapter()->handle(), devicePtr->handle(), surfacePtr->handle(), createInfo);
     *outSwapchain = reinterpret_cast<GfxSwapchain>(swapchain);
-
-    // Free capabilities using the proper WebGPU function
-    wgpuSurfaceCapabilitiesFreeMembers(capabilities);
-
     return GFX_RESULT_SUCCESS;
 }
 

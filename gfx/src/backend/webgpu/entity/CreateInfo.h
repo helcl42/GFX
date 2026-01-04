@@ -142,7 +142,9 @@ struct SwapchainCreateInfo {
     uint32_t width;
     uint32_t height;
     WGPUTextureFormat format;
+    WGPUTextureUsage usage;
     WGPUPresentMode presentMode;
+    uint32_t bufferCount;
 };
 
 // Pipeline CreateInfo structs
