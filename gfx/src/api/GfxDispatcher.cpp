@@ -1186,28 +1186,14 @@ GfxResult gfxSemaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t time
 // Helper function to deduce access flags from texture layout
 GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout)
 {
-    switch (layout) {
-    case GFX_TEXTURE_LAYOUT_UNDEFINED:
-        return GFX_ACCESS_NONE;
-    case GFX_TEXTURE_LAYOUT_GENERAL:
-        return static_cast<GfxAccessFlags>(GFX_ACCESS_MEMORY_READ | GFX_ACCESS_MEMORY_WRITE);
-    case GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT:
-        return static_cast<GfxAccessFlags>(GFX_ACCESS_COLOR_ATTACHMENT_READ | GFX_ACCESS_COLOR_ATTACHMENT_WRITE);
-    case GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT:
-        return static_cast<GfxAccessFlags>(GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ | GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE);
-    case GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_READ_ONLY:
-        return GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ;
-    case GFX_TEXTURE_LAYOUT_SHADER_READ_ONLY:
-        return GFX_ACCESS_SHADER_READ;
-    case GFX_TEXTURE_LAYOUT_TRANSFER_SRC:
-        return GFX_ACCESS_TRANSFER_READ;
-    case GFX_TEXTURE_LAYOUT_TRANSFER_DST:
-        return GFX_ACCESS_TRANSFER_WRITE;
-    case GFX_TEXTURE_LAYOUT_PRESENT_SRC:
-        return GFX_ACCESS_MEMORY_READ;
-    default:
+    // Use Vulkan-style explicit access flags (deterministic mapping)
+    // WebGPU backends will ignore these as they use implicit synchronization
+    auto api = gfx::getBackendAPI(GFX_BACKEND_VULKAN);
+    if (!api) {
         return GFX_ACCESS_NONE;
     }
+
+    return api->getAccessFlagsForLayout(layout);
 }
 
 uint64_t gfxAlignUp(uint64_t value, uint64_t alignment)

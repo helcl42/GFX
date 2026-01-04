@@ -104,9 +104,9 @@ VkResult Queue::submit(const SubmitInfo& submitInfo)
     return vkQueueSubmit(m_queue, 1, &vkSubmitInfo, fence);
 }
 
-void Queue::writeTexture(Texture* texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+void Queue::writeTexture(Texture* texture, const VkOffset3D& origin, uint32_t mipLevel,
     const void* data, uint64_t dataSize,
-    const GfxExtent3D* extent, GfxTextureLayout finalLayout)
+    const VkExtent3D& extent, VkImageLayout finalLayout)
 {
     VkDevice device = texture->device();
 
@@ -220,25 +220,23 @@ void Queue::writeTexture(Texture* texture, const GfxOrigin3D* origin, uint32_t m
     region.imageSubresource.mipLevel = mipLevel;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
-    region.imageOffset = { origin ? origin->x : 0,
-        origin ? origin->y : 0,
-        origin ? origin->z : 0 };
-    region.imageExtent = { extent->width, extent->height, extent->depth };
+    region.imageOffset = origin;
+    region.imageExtent = extent;
 
     vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, texture->handle(),
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
     // Transition image to final layout
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrier.newLayout = converter::gfxLayoutToVkImageLayout(finalLayout);
+    barrier.newLayout = finalLayout;
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrier.dstAccessMask = static_cast<VkAccessFlags>(gfxGetAccessFlagsForLayout(finalLayout));
+    barrier.dstAccessMask = getVkAccessFlagsForLayout(finalLayout);
 
     vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
     // Update tracked layout
-    texture->setLayout(converter::gfxLayoutToVkImageLayout(finalLayout));
+    texture->setLayout(finalLayout);
 
     // End and submit
     vkEndCommandBuffer(commandBuffer);

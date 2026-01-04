@@ -162,6 +162,9 @@ public:
     GfxResult semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const override;
     uint64_t semaphoreGetValue(GfxSemaphore semaphore) const override;
 
+    // Helper functions
+    GfxAccessFlags getAccessFlagsForLayout(GfxTextureLayout layout) const override;
+
 public:
     // TODO - return reference instead of pointer!
     static const IBackend* create();

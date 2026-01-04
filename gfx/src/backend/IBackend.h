@@ -170,5 +170,8 @@ public:
     virtual GfxResult semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const = 0;
     virtual GfxResult semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const = 0;
     virtual uint64_t semaphoreGetValue(GfxSemaphore semaphore) const = 0;
+
+    // Helper functions
+    virtual GfxAccessFlags getAccessFlagsForLayout(GfxTextureLayout layout) const = 0;
 };
 } // namespace gfx

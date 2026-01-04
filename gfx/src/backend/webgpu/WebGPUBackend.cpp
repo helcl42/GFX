@@ -1281,6 +1281,13 @@ uint64_t WebGPUBackend::semaphoreGetValue(GfxSemaphore semaphore) const
     return converter::toNative<Semaphore>(semaphore)->getValue();
 }
 
+GfxAccessFlags WebGPUBackend::getAccessFlagsForLayout(GfxTextureLayout layout) const
+{
+    // WebGPU doesn't use explicit access flags - synchronization is implicit
+    (void)layout;
+    return GFX_ACCESS_NONE;
+}
+
 const IBackend* WebGPUBackend::create()
 {
     static WebGPUBackend webgpuBackend;

@@ -834,7 +834,11 @@ void VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
     auto* q = converter::toNative<Queue>(queue);
     auto* tex = converter::toNative<Texture>(texture);
 
-    q->writeTexture(tex, origin, mipLevel, data, dataSize, extent, finalLayout);
+    VkOffset3D vkOrigin = origin ? converter::gfxOrigin3DToVkOffset3D(origin) : VkOffset3D{ 0, 0, 0 };
+    VkExtent3D vkExtent = converter::gfxExtent3DToVkExtent3D(extent);
+    VkImageLayout vkLayout = converter::gfxLayoutToVkImageLayout(finalLayout);
+
+    q->writeTexture(tex, vkOrigin, mipLevel, data, dataSize, vkExtent, vkLayout);
 
     (void)bytesPerRow; // Unused - assuming tightly packed data
 }
@@ -1407,6 +1411,13 @@ uint64_t VulkanBackend::semaphoreGetValue(GfxSemaphore semaphore) const
     }
     auto* s = converter::toNative<Semaphore>(semaphore);
     return s->getValue();
+}
+
+GfxAccessFlags VulkanBackend::getAccessFlagsForLayout(GfxTextureLayout layout) const
+{
+    VkImageLayout vkLayout = converter::gfxLayoutToVkImageLayout(layout);
+    VkAccessFlags vkAccessFlags = getVkAccessFlagsForLayout(vkLayout);
+    return converter::vkAccessFlagsToGfxAccessFlags(vkAccessFlags);
 }
 
 const IBackend* VulkanBackend::create()

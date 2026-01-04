@@ -97,6 +97,7 @@ GfxSampleCount vkSampleCountToGfxSampleCount(VkSampleCountFlagBits vkSampleCount
 GfxExtent3D vkExtent3DToGfxExtent3D(const VkExtent3D& vkExtent);
 VkExtent3D gfxExtent3DToVkExtent3D(const GfxExtent3D* gfxExtent);
 VkOffset3D gfxOrigin3DToVkOffset3D(const GfxOrigin3D* gfxOrigin);
+GfxAccessFlags vkAccessFlagsToGfxAccessFlags(VkAccessFlags vkAccessFlags);
 VkCullModeFlags gfxCullModeToVkCullMode(GfxCullMode cullMode);
 VkFrontFace gfxFrontFaceToVkFrontFace(GfxFrontFace frontFace);
 VkPolygonMode gfxPolygonModeToVkPolygonMode(GfxPolygonMode polygonMode);

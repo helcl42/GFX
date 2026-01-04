@@ -1075,6 +1075,8 @@ GFX_API uint64_t gfxSemaphoreGetValue(GfxSemaphore semaphore);
 // ============================================================================
 
 // Helper function to deduce access flags from texture layout
+// Returns appropriate access flags for the given layout (deterministic mapping)
+// Note: WebGPU backends with implicit synchronization may ignore these flags
 GFX_API GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout);
 
 // Alignment helper functions

@@ -427,6 +427,48 @@ VkOffset3D gfxOrigin3DToVkOffset3D(const GfxOrigin3D* gfxOrigin)
     return { gfxOrigin->x, gfxOrigin->y, gfxOrigin->z };
 }
 
+GfxAccessFlags vkAccessFlagsToGfxAccessFlags(VkAccessFlags vkAccessFlags)
+{
+    GfxAccessFlags flags = GFX_ACCESS_NONE;
+    
+    if (vkAccessFlags & VK_ACCESS_INDIRECT_COMMAND_READ_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_INDIRECT_COMMAND_READ);
+    if (vkAccessFlags & VK_ACCESS_INDEX_READ_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_INDEX_READ);
+    if (vkAccessFlags & VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_VERTEX_ATTRIBUTE_READ);
+    if (vkAccessFlags & VK_ACCESS_UNIFORM_READ_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_UNIFORM_READ);
+    if (vkAccessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_INPUT_ATTACHMENT_READ);
+    if (vkAccessFlags & VK_ACCESS_SHADER_READ_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_SHADER_READ);
+    if (vkAccessFlags & VK_ACCESS_SHADER_WRITE_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_SHADER_WRITE);
+    if (vkAccessFlags & VK_ACCESS_COLOR_ATTACHMENT_READ_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_COLOR_ATTACHMENT_READ);
+    if (vkAccessFlags & VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_COLOR_ATTACHMENT_WRITE);
+    if (vkAccessFlags & VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ);
+    if (vkAccessFlags & VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE);
+    if (vkAccessFlags & VK_ACCESS_TRANSFER_READ_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_TRANSFER_READ);
+    if (vkAccessFlags & VK_ACCESS_TRANSFER_WRITE_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_TRANSFER_WRITE);
+    if (vkAccessFlags & VK_ACCESS_HOST_READ_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_READ);
+    if (vkAccessFlags & VK_ACCESS_HOST_WRITE_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_WRITE);
+    if (vkAccessFlags & VK_ACCESS_MEMORY_READ_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_READ);
+    if (vkAccessFlags & VK_ACCESS_MEMORY_WRITE_BIT)
+        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_WRITE);
+    
+    return flags;
+}
+
 VkCullModeFlags gfxCullModeToVkCullMode(GfxCullMode cullMode)
 {
     switch (cullMode) {
