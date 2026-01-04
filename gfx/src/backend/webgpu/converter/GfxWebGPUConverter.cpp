@@ -1071,6 +1071,22 @@ WGPUTextureViewDimension gfxTextureViewTypeToWGPU(GfxTextureViewType type)
     }
 }
 
+WGPUOrigin3D gfxOrigin3DToWGPUOrigin3D(const GfxOrigin3D* origin)
+{
+    if (!origin) {
+        return { 0, 0, 0 };
+    }
+    return { static_cast<uint32_t>(origin->x), static_cast<uint32_t>(origin->y), static_cast<uint32_t>(origin->z) };
+}
+
+WGPUExtent3D gfxExtent3DToWGPUExtent3D(const GfxExtent3D* extent)
+{
+    if (!extent) {
+        return { 0, 0, 0 };
+    }
+    return { extent->width, extent->height, extent->depth };
+}
+
 RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(
     const GfxRenderPassDescriptor* descriptor)
 {

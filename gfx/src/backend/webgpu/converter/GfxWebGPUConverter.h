@@ -158,6 +158,10 @@ WGPUVertexFormat gfxFormatToWGPUVertexFormat(GfxTextureFormat format);
 WGPUTextureDimension gfxTextureTypeToWGPU(GfxTextureType type);
 WGPUTextureViewDimension gfxTextureViewTypeToWGPU(GfxTextureViewType type);
 
+// Geometry conversions
+WGPUOrigin3D gfxOrigin3DToWGPUOrigin3D(const GfxOrigin3D* origin);
+WGPUExtent3D gfxExtent3DToWGPUExtent3D(const GfxExtent3D* extent);
+
 // CreateInfo conversions
 RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(
     const GfxRenderPassDescriptor* descriptor);

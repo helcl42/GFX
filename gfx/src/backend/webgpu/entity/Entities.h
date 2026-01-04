@@ -252,10 +252,8 @@ public:
 
     // Write data directly to a texture
     void writeTexture(Texture* texture, uint32_t mipLevel,
-        uint32_t originX, uint32_t originY, uint32_t originZ,
-        const void* data, uint64_t dataSize,
-        uint32_t bytesPerRow,
-        uint32_t width, uint32_t height, uint32_t depth);
+        const WGPUOrigin3D& origin, const void* data, uint64_t dataSize,
+        uint32_t bytesPerRow, const WGPUExtent3D& extent);
 
     // Wait for all submitted work to complete
     bool waitIdle();
@@ -1068,6 +1066,22 @@ public:
         m_finished = false;
         return true;
     }
+
+    // Copy operations
+    void copyBufferToBuffer(Buffer* source, uint64_t sourceOffset,
+        Buffer* destination, uint64_t destinationOffset, uint64_t size);
+
+    void copyBufferToTexture(Buffer* source, uint64_t sourceOffset, uint32_t bytesPerRow,
+        Texture* destination, const WGPUOrigin3D& origin,
+        const WGPUExtent3D& extent, uint32_t mipLevel);
+
+    void copyTextureToBuffer(Texture* source, const WGPUOrigin3D& origin,
+        uint32_t mipLevel, Buffer* destination, uint64_t destinationOffset, uint32_t bytesPerRow,
+        const WGPUExtent3D& extent);
+
+    void copyTextureToTexture(Texture* source, const WGPUOrigin3D& sourceOrigin,
+        uint32_t sourceMipLevel, Texture* destination, const WGPUOrigin3D& destinationOrigin,
+        uint32_t destinationMipLevel, const WGPUExtent3D& extent);
 
 private:
     Device* m_device = nullptr; // Non-owning pointer

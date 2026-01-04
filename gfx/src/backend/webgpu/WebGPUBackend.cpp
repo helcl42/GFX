@@ -823,12 +823,10 @@ void WebGPUBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
     auto* queuePtr = converter::toNative<Queue>(queue);
     auto* texturePtr = converter::toNative<Texture>(texture);
 
-    queuePtr->writeTexture(
-        texturePtr, mipLevel,
-        static_cast<uint32_t>(origin->x), static_cast<uint32_t>(origin->y), static_cast<uint32_t>(origin->z),
-        data, dataSize,
-        bytesPerRow,
-        extent->width, extent->height, extent->depth);
+    WGPUOrigin3D wgpuOrigin = converter::gfxOrigin3DToWGPUOrigin3D(origin);
+    WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(extent);
+
+    queuePtr->writeTexture(texturePtr, mipLevel, wgpuOrigin, data, dataSize, bytesPerRow, wgpuExtent);
 
     (void)finalLayout; // WebGPU handles layout transitions automatically
 }
@@ -900,10 +898,7 @@ void WebGPUBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEn
     auto* srcPtr = converter::toNative<Buffer>(source);
     auto* dstPtr = converter::toNative<Buffer>(destination);
 
-    wgpuCommandEncoderCopyBufferToBuffer(encoderPtr->handle(),
-        srcPtr->handle(), sourceOffset,
-        dstPtr->handle(), destinationOffset,
-        size);
+    encoderPtr->copyBufferToBuffer(srcPtr, sourceOffset, dstPtr, destinationOffset, size);
 }
 
 void WebGPUBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
@@ -917,19 +912,11 @@ void WebGPUBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandE
     auto* srcPtr = converter::toNative<Buffer>(source);
     auto* dstPtr = converter::toNative<Texture>(destination);
 
-    WGPUTexelCopyBufferInfo sourceInfo = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
-    sourceInfo.buffer = srcPtr->handle();
-    sourceInfo.layout.offset = sourceOffset;
-    sourceInfo.layout.bytesPerRow = bytesPerRow;
+    WGPUOrigin3D wgpuOrigin = converter::gfxOrigin3DToWGPUOrigin3D(origin);
+    WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(extent);
 
-    WGPUTexelCopyTextureInfo destInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
-    destInfo.texture = dstPtr->handle();
-    destInfo.mipLevel = mipLevel;
-    destInfo.origin = { static_cast<uint32_t>(origin->x), static_cast<uint32_t>(origin->y), static_cast<uint32_t>(origin->z) };
-
-    WGPUExtent3D wgpuExtent = { extent->width, extent->height, extent->depth };
-
-    wgpuCommandEncoderCopyBufferToTexture(encoderPtr->handle(), &sourceInfo, &destInfo, &wgpuExtent);
+    encoderPtr->copyBufferToTexture(srcPtr, sourceOffset, bytesPerRow, dstPtr,
+        wgpuOrigin, wgpuExtent, mipLevel);
 
     (void)finalLayout; // WebGPU handles layout transitions automatically
 }
@@ -945,19 +932,11 @@ void WebGPUBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandE
     auto* srcPtr = converter::toNative<Texture>(source);
     auto* dstPtr = converter::toNative<Buffer>(destination);
 
-    WGPUTexelCopyTextureInfo sourceInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
-    sourceInfo.texture = srcPtr->handle();
-    sourceInfo.mipLevel = mipLevel;
-    sourceInfo.origin = { static_cast<uint32_t>(origin->x), static_cast<uint32_t>(origin->y), static_cast<uint32_t>(origin->z) };
+    WGPUOrigin3D wgpuOrigin = converter::gfxOrigin3DToWGPUOrigin3D(origin);
+    WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(extent);
 
-    WGPUTexelCopyBufferInfo destInfo = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
-    destInfo.buffer = dstPtr->handle();
-    destInfo.layout.offset = destinationOffset;
-    destInfo.layout.bytesPerRow = bytesPerRow;
-
-    WGPUExtent3D wgpuExtent = { extent->width, extent->height, extent->depth };
-
-    wgpuCommandEncoderCopyTextureToBuffer(encoderPtr->handle(), &sourceInfo, &destInfo, &wgpuExtent);
+    encoderPtr->copyTextureToBuffer(srcPtr, wgpuOrigin,
+        mipLevel, dstPtr, destinationOffset, bytesPerRow, wgpuExtent);
 
     (void)finalLayout; // WebGPU handles layout transitions automatically
 }
@@ -974,24 +953,13 @@ void WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
     auto* srcPtr = converter::toNative<Texture>(source);
     auto* dstPtr = converter::toNative<Texture>(destination);
 
-    // For 2D textures and arrays, extent->depth represents layer count
-    // For 3D textures, it represents actual depth
-    WGPUExtent3D srcSize = srcPtr->getSize();
-    bool is3DTexture = (srcSize.depthOrArrayLayers > 1 && srcSize.height > 1);
+    WGPUOrigin3D wgpuSrcOrigin = converter::gfxOrigin3DToWGPUOrigin3D(sourceOrigin);
+    WGPUOrigin3D wgpuDstOrigin = converter::gfxOrigin3DToWGPUOrigin3D(destinationOrigin);
+    WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(extent);
 
-    WGPUTexelCopyTextureInfo sourceInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
-    sourceInfo.texture = srcPtr->handle();
-    sourceInfo.mipLevel = sourceMipLevel;
-    sourceInfo.origin = { static_cast<uint32_t>(sourceOrigin->x), static_cast<uint32_t>(sourceOrigin->y), static_cast<uint32_t>(is3DTexture ? sourceOrigin->z : 0) };
-
-    WGPUTexelCopyTextureInfo destInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
-    destInfo.texture = dstPtr->handle();
-    destInfo.mipLevel = destinationMipLevel;
-    destInfo.origin = { static_cast<uint32_t>(destinationOrigin->x), static_cast<uint32_t>(destinationOrigin->y), static_cast<uint32_t>(is3DTexture ? destinationOrigin->z : 0) };
-
-    WGPUExtent3D wgpuExtent = { extent->width, extent->height, extent->depth };
-
-    wgpuCommandEncoderCopyTextureToTexture(encoderPtr->handle(), &sourceInfo, &destInfo, &wgpuExtent);
+    encoderPtr->copyTextureToTexture(srcPtr, wgpuSrcOrigin,
+        sourceMipLevel, dstPtr, wgpuDstOrigin,
+        destinationMipLevel, wgpuExtent);
 
     (void)srcFinalLayout; // WebGPU handles layout transitions automatically
     (void)dstFinalLayout;

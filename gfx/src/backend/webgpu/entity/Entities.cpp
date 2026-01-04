@@ -57,20 +57,16 @@ void Queue::writeBuffer(Buffer* buffer, uint64_t offset, const void* data, uint6
 }
 
 void Queue::writeTexture(Texture* texture, uint32_t mipLevel,
-    uint32_t originX, uint32_t originY, uint32_t originZ,
-    const void* data, uint64_t dataSize,
-    uint32_t bytesPerRow,
-    uint32_t width, uint32_t height, uint32_t depth)
+    const WGPUOrigin3D& origin, const void* data, uint64_t dataSize,
+    uint32_t bytesPerRow, const WGPUExtent3D& extent)
 {
     WGPUTexelCopyTextureInfo dest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     dest.texture = texture->handle();
     dest.mipLevel = mipLevel;
-    dest.origin = { originX, originY, originZ };
+    dest.origin = origin;
 
     WGPUTexelCopyBufferLayout layout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
     layout.bytesPerRow = bytesPerRow;
-
-    WGPUExtent3D extent = { width, height, depth };
 
     wgpuQueueWriteTexture(m_queue, &dest, data, dataSize, &layout, &extent);
 }
@@ -101,6 +97,79 @@ bool Queue::waitIdle()
     }
 
     return workDone;
+}
+
+// CommandEncoder implementations
+void CommandEncoder::copyBufferToBuffer(Buffer* source, uint64_t sourceOffset,
+    Buffer* destination, uint64_t destinationOffset, uint64_t size)
+{
+    wgpuCommandEncoderCopyBufferToBuffer(m_encoder,
+        source->handle(), sourceOffset,
+        destination->handle(), destinationOffset,
+        size);
+}
+
+void CommandEncoder::copyBufferToTexture(Buffer* source, uint64_t sourceOffset, uint32_t bytesPerRow,
+    Texture* destination, const WGPUOrigin3D& origin,
+    const WGPUExtent3D& extent, uint32_t mipLevel)
+{
+    WGPUTexelCopyBufferInfo sourceInfo = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
+    sourceInfo.buffer = source->handle();
+    sourceInfo.layout.offset = sourceOffset;
+    sourceInfo.layout.bytesPerRow = bytesPerRow;
+
+    WGPUTexelCopyTextureInfo destInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+    destInfo.texture = destination->handle();
+    destInfo.mipLevel = mipLevel;
+    destInfo.origin = origin;
+
+    wgpuCommandEncoderCopyBufferToTexture(m_encoder, &sourceInfo, &destInfo, &extent);
+}
+
+void CommandEncoder::copyTextureToBuffer(Texture* source, const WGPUOrigin3D& origin,
+    uint32_t mipLevel, Buffer* destination, uint64_t destinationOffset, uint32_t bytesPerRow,
+    const WGPUExtent3D& extent)
+{
+    WGPUTexelCopyTextureInfo sourceInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+    sourceInfo.texture = source->handle();
+    sourceInfo.mipLevel = mipLevel;
+    sourceInfo.origin = origin;
+
+    WGPUTexelCopyBufferInfo destInfo = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
+    destInfo.buffer = destination->handle();
+    destInfo.layout.offset = destinationOffset;
+    destInfo.layout.bytesPerRow = bytesPerRow;
+
+    wgpuCommandEncoderCopyTextureToBuffer(m_encoder, &sourceInfo, &destInfo, &extent);
+}
+
+void CommandEncoder::copyTextureToTexture(Texture* source, const WGPUOrigin3D& sourceOrigin,
+    uint32_t sourceMipLevel, Texture* destination, const WGPUOrigin3D& destinationOrigin,
+    uint32_t destinationMipLevel, const WGPUExtent3D& extent)
+{
+    // For 2D textures and arrays, depth represents layer count
+    // For 3D textures, it represents actual depth
+    WGPUExtent3D srcSize = source->getSize();
+    bool is3DTexture = (srcSize.depthOrArrayLayers > 1 && srcSize.height > 1);
+
+    WGPUOrigin3D srcOrigin = sourceOrigin;
+    WGPUOrigin3D dstOrigin = destinationOrigin;
+    if (!is3DTexture) {
+        srcOrigin.z = 0;
+        dstOrigin.z = 0;
+    }
+
+    WGPUTexelCopyTextureInfo sourceInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+    sourceInfo.texture = source->handle();
+    sourceInfo.mipLevel = sourceMipLevel;
+    sourceInfo.origin = srcOrigin;
+
+    WGPUTexelCopyTextureInfo destInfo = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+    destInfo.texture = destination->handle();
+    destInfo.mipLevel = destinationMipLevel;
+    destInfo.origin = dstOrigin;
+
+    wgpuCommandEncoderCopyTextureToTexture(m_encoder, &sourceInfo, &destInfo, &extent);
 }
 
 RenderPassEncoder::RenderPassEncoder(CommandEncoder* commandEncoder, const RenderPassEncoderCreateInfo& createInfo)
