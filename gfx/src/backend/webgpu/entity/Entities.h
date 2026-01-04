@@ -541,10 +541,29 @@ public:
     TextureView(const TextureView&) = delete;
     TextureView& operator=(const TextureView&) = delete;
 
+    // Constructor 1: Wrap existing WGPUTextureView (legacy, used by swapchain)
     TextureView(WGPUTextureView view, Texture* texture = nullptr)
         : m_view(view)
         , m_texture(texture)
     {
+    }
+
+    // Constructor 2: Create view from Texture with TextureViewCreateInfo
+    TextureView(Texture* texture, const TextureViewCreateInfo& createInfo)
+        : m_texture(texture)
+    {
+        WGPUTextureViewDescriptor desc = WGPU_TEXTURE_VIEW_DESCRIPTOR_INIT;
+        desc.dimension = createInfo.viewDimension;
+        desc.format = createInfo.format;
+        desc.baseMipLevel = createInfo.baseMipLevel;
+        desc.mipLevelCount = createInfo.mipLevelCount;
+        desc.baseArrayLayer = createInfo.baseArrayLayer;
+        desc.arrayLayerCount = createInfo.arrayLayerCount;
+
+        m_view = wgpuTextureCreateView(texture->handle(), &desc);
+        if (!m_view) {
+            throw std::runtime_error("Failed to create WebGPU texture view");
+        }
     }
 
     ~TextureView()

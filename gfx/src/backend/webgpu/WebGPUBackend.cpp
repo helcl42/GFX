@@ -687,28 +687,15 @@ GfxResult WebGPUBackend::textureCreateView(GfxTexture texture, const GfxTextureV
     }
 
     auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
+    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUTextureViewCreateInfo(descriptor);
 
-    WGPUTextureViewDescriptor wgpuDesc = WGPU_TEXTURE_VIEW_DESCRIPTOR_INIT;
-    if (descriptor) {
-        if (descriptor->label) {
-            wgpuDesc.label = gfx::convertor::gfxStringView(descriptor->label);
-        }
-        wgpuDesc.dimension = gfx::convertor::gfxTextureViewTypeToWGPU(descriptor->viewType);
-        wgpuDesc.format = gfx::convertor::gfxFormatToWGPUFormat(descriptor->format);
-        wgpuDesc.baseMipLevel = descriptor->baseMipLevel;
-        wgpuDesc.mipLevelCount = descriptor->mipLevelCount;
-        wgpuDesc.baseArrayLayer = descriptor->baseArrayLayer;
-        wgpuDesc.arrayLayerCount = descriptor->arrayLayerCount;
-    }
-
-    WGPUTextureView wgpuView = wgpuTextureCreateView(texturePtr->handle(), &wgpuDesc);
-    if (!wgpuView) {
+    try {
+        auto* view = new gfx::webgpu::TextureView(texturePtr, createInfo);
+        *outView = reinterpret_cast<GfxTextureView>(view);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception&) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
-
-    auto* view = new gfx::webgpu::TextureView(wgpuView, texturePtr);
-    *outView = reinterpret_cast<GfxTextureView>(view);
-    return GFX_RESULT_SUCCESS;
 }
 
 // TextureView functions
