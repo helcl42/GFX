@@ -697,7 +697,6 @@ public:
     RenderPipeline& operator=(const RenderPipeline&) = delete;
 
     RenderPipeline(WGPUDevice device, const RenderPipelineCreateInfo& createInfo)
-        : m_device(device)
     {
         WGPURenderPipelineDescriptor desc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
 
@@ -853,7 +852,6 @@ public:
 
 private:
     WGPURenderPipeline m_pipeline = nullptr;
-    WGPUDevice m_device = nullptr;
 };
 
 class ComputePipeline {
@@ -863,7 +861,6 @@ public:
     ComputePipeline& operator=(const ComputePipeline&) = delete;
 
     ComputePipeline(WGPUDevice device, const ComputePipelineCreateInfo& createInfo)
-        : m_device(device)
     {
         WGPUComputePipelineDescriptor desc = WGPU_COMPUTE_PIPELINE_DESCRIPTOR_INIT;
 
@@ -903,7 +900,6 @@ public:
 
 private:
     WGPUComputePipeline m_pipeline = nullptr;
-    WGPUDevice m_device = nullptr;
 };
 
 class CommandEncoder {
@@ -1204,7 +1200,6 @@ private:
 #endif
 
 private:
-    WGPUInstance m_instance = nullptr;
     WGPUAdapter m_adapter = nullptr;
     WGPUSurface m_surface = nullptr;
 };
