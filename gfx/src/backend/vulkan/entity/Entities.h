@@ -342,18 +342,23 @@ public:
     Queue& operator=(const Queue&) = delete;
 
     Queue(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t queueFamily)
-        : m_physicalDevice(physicalDevice)
+        : m_device(device)
+        , m_physicalDevice(physicalDevice)
         , m_queueFamily(queueFamily)
     {
         vkGetDeviceQueue(device, queueFamily, 0, &m_queue);
     }
 
     VkQueue handle() const { return m_queue; }
+    VkDevice device() const { return m_device; }
     VkPhysicalDevice physicalDevice() const { return m_physicalDevice; }
     uint32_t family() const { return m_queueFamily; }
 
+    VkResult submit(const SubmitInfo& submitInfo);
+
 private:
     VkQueue m_queue = VK_NULL_HANDLE;
+    VkDevice m_device = VK_NULL_HANDLE;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     uint32_t m_queueFamily = 0;
 };

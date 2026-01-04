@@ -22,6 +22,7 @@ struct BindGroupLayoutCreateInfo;
 struct BindGroupCreateInfo;
 struct RenderPipelineCreateInfo;
 struct ComputePipelineCreateInfo;
+struct SubmitInfo;
 
 enum class DebugMessageSeverity;
 enum class DebugMessageType;
@@ -129,5 +130,6 @@ gfx::vulkan::BindGroupLayoutCreateInfo gfxDescriptorToBindGroupLayoutCreateInfo(
 gfx::vulkan::BindGroupCreateInfo gfxDescriptorToBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor);
 gfx::vulkan::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor);
 gfx::vulkan::ComputePipelineCreateInfo gfxDescriptorToComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor);
+gfx::vulkan::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitInfo* descriptor);
 
 } // namespace gfx::vulkan::converter

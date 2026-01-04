@@ -1092,4 +1092,20 @@ gfx::vulkan::ComputePipelineCreateInfo gfxDescriptorToComputePipelineCreateInfo(
     return createInfo;
 }
 
-} // namespace gfx::convertor
+gfx::vulkan::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitInfo* descriptor)
+{
+    gfx::vulkan::SubmitInfo submitInfo{};
+    // Note: Array pointer conversions use reinterpret_cast as toNative<> is for individual objects
+    submitInfo.commandEncoders = reinterpret_cast<CommandEncoder**>(descriptor->commandEncoders);
+    submitInfo.commandEncoderCount = descriptor->commandEncoderCount;
+    submitInfo.signalFence = converter::toNative<Fence>(descriptor->signalFence);
+    submitInfo.waitSemaphores = reinterpret_cast<Semaphore**>(descriptor->waitSemaphores);
+    submitInfo.waitValues = descriptor->waitValues;
+    submitInfo.waitSemaphoreCount = descriptor->waitSemaphoreCount;
+    submitInfo.signalSemaphores = reinterpret_cast<Semaphore**>(descriptor->signalSemaphores);
+    submitInfo.signalValues = descriptor->signalValues;
+    submitInfo.signalSemaphoreCount = descriptor->signalSemaphoreCount;
+    return submitInfo;
+}
+
+} // namespace gfx::vulkan::converter

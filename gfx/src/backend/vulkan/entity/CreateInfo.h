@@ -9,6 +9,11 @@
 
 namespace gfx::vulkan {
 
+// Forward declarations for SubmitInfo
+class CommandEncoder;
+class Fence;
+class Semaphore;
+
 // ============================================================================
 // Internal Type Definitions
 // ============================================================================
@@ -242,6 +247,18 @@ struct ComputePipelineCreateInfo {
     std::vector<VkDescriptorSetLayout> bindGroupLayouts;
     VkShaderModule module;
     const char* entryPoint;
+};
+
+struct SubmitInfo {
+    CommandEncoder** commandEncoders;
+    uint32_t commandEncoderCount;
+    Fence* signalFence;
+    Semaphore** waitSemaphores;
+    uint64_t* waitValues;
+    uint32_t waitSemaphoreCount;
+    Semaphore** signalSemaphores;
+    uint64_t* signalValues;
+    uint32_t signalSemaphoreCount;
 };
 
 } // namespace gfx::vulkan
