@@ -514,42 +514,26 @@ GfxResult WebGPUBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint6
 
     auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
 
-    // Get current texture - cache it for the frame
-    WGPUSurfaceTexture surfaceTexture = WGPU_SURFACE_TEXTURE_INIT;
-    wgpuSurfaceGetCurrentTexture(swapchainPtr->surface(), &surfaceTexture);
+    WGPUSurfaceGetCurrentTextureStatus status = swapchainPtr->acquireNextImage();
 
     GfxResult result = GFX_RESULT_SUCCESS;
-    switch (surfaceTexture.status) {
+    switch (status) {
     case WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal:
     case WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal:
         *outImageIndex = 0; // WebGPU only exposes current image
-        // Cache the texture - it will be released after present
-        swapchainPtr->setCurrentTexture(surfaceTexture.texture);
         result = GFX_RESULT_SUCCESS;
         break;
     case WGPUSurfaceGetCurrentTextureStatus_Timeout:
         result = GFX_RESULT_TIMEOUT;
-        if (surfaceTexture.texture) {
-            wgpuTextureRelease(surfaceTexture.texture);
-        }
         break;
     case WGPUSurfaceGetCurrentTextureStatus_Outdated:
         result = GFX_RESULT_ERROR_OUT_OF_DATE;
-        if (surfaceTexture.texture) {
-            wgpuTextureRelease(surfaceTexture.texture);
-        }
         break;
     case WGPUSurfaceGetCurrentTextureStatus_Lost:
         result = GFX_RESULT_ERROR_SURFACE_LOST;
-        if (surfaceTexture.texture) {
-            wgpuTextureRelease(surfaceTexture.texture);
-        }
         break;
     default:
         result = GFX_RESULT_ERROR_UNKNOWN;
-        if (surfaceTexture.texture) {
-            wgpuTextureRelease(surfaceTexture.texture);
-        }
         break;
     }
 
@@ -582,32 +566,7 @@ GfxTextureView WebGPUBackend::swapchainGetCurrentTextureView(GfxSwapchain swapch
     }
 
     auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
-
-    // Return cached view if already created
-    if (swapchainPtr->getCurrentView()) {
-        return reinterpret_cast<GfxTextureView>(swapchainPtr->getCurrentView());
-    }
-
-    // Use the cached texture from acquire - don't call wgpuSurfaceGetCurrentTexture again!
-    // Dawn expects GetCurrentTexture to be called only ONCE per frame
-    WGPUTexture texture = swapchainPtr->getCurrentTexture();
-    if (!texture) {
-        fprintf(stderr, "[WebGPU] No cached texture available! Call AcquireNextImage first.\\n");
-        return nullptr;
-    }
-
-    // Create texture view with nullptr descriptor - let Dawn infer the format from texture
-    // This matches the working Dawn app behavior
-    WGPUTextureView wgpuView = wgpuTextureCreateView(texture, nullptr);
-    if (!wgpuView) {
-        fprintf(stderr, "[WebGPU] Failed to create texture view\\n");
-        return nullptr;
-    }
-
-    // Cache the view in the swapchain - it will be destroyed on next acquire or swapchain destruction
-    auto* view = new gfx::webgpu::TextureView(wgpuView, nullptr);
-    swapchainPtr->setCurrentView(view);
-    return reinterpret_cast<GfxTextureView>(view);
+    return reinterpret_cast<GfxTextureView>(swapchainPtr->getCurrentTextureView());
 }
 
 GfxResult WebGPUBackend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const
@@ -621,15 +580,7 @@ GfxResult WebGPUBackend::swapchainPresent(GfxSwapchain swapchain, const GfxPrese
     (void)presentInfo; // Wait semaphores are noted but not used in WebGPU
 
     auto* swapchainPtr = reinterpret_cast<gfx::webgpu::Swapchain*>(swapchain);
-
-#ifndef __EMSCRIPTEN__
-    // Present the surface - Dawn will present the texture we have been rendering to
-    // Note: In Emscripten, presentation is automatic via requestAnimationFrame
-    wgpuSurfacePresent(swapchainPtr->surface());
-#endif
-
-    // Release the cached texture after presenting
-    swapchainPtr->setCurrentTexture(nullptr);
+    swapchainPtr->present();
 
     return GFX_RESULT_SUCCESS;
 }

@@ -1328,6 +1328,61 @@ public:
 
     gfx::webgpu::TextureView* getCurrentView() const { return m_currentView; }
 
+    WGPUSurfaceGetCurrentTextureStatus acquireNextImage()
+    {
+        WGPUSurfaceTexture surfaceTexture = WGPU_SURFACE_TEXTURE_INIT;
+        wgpuSurfaceGetCurrentTexture(m_surface, &surfaceTexture);
+
+        // Cache the texture if successful
+        if (surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal || surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal) {
+            setCurrentTexture(surfaceTexture.texture);
+        } else if (surfaceTexture.texture) {
+            // Release texture on error
+            wgpuTextureRelease(surfaceTexture.texture);
+        }
+
+        return surfaceTexture.status;
+    }
+
+    gfx::webgpu::TextureView* getCurrentTextureView()
+    {
+        // Return cached view if already created
+        if (m_currentView) {
+            return m_currentView;
+        }
+
+        // Use the cached texture from acquire - don't call wgpuSurfaceGetCurrentTexture again!
+        // Dawn expects GetCurrentTexture to be called only ONCE per frame
+        if (!m_currentTexture) {
+            fprintf(stderr, "[WebGPU] No cached texture available! Call acquireNextImage first.\n");
+            return nullptr;
+        }
+
+        // Create texture view with nullptr descriptor - let Dawn infer the format from texture
+        // This matches the working Dawn app behavior
+        WGPUTextureView wgpuView = wgpuTextureCreateView(m_currentTexture, nullptr);
+        if (!wgpuView) {
+            fprintf(stderr, "[WebGPU] Failed to create texture view\n");
+            return nullptr;
+        }
+
+        // Cache the view in the swapchain - it will be destroyed on next acquire or swapchain destruction
+        m_currentView = new gfx::webgpu::TextureView(wgpuView, nullptr);
+        return m_currentView;
+    }
+
+    void present()
+    {
+#ifndef __EMSCRIPTEN__
+        // Present the surface - Dawn will present the texture we have been rendering to
+        // Note: In Emscripten, presentation is automatic via requestAnimationFrame
+        wgpuSurfacePresent(m_surface);
+#endif
+
+        // Release the cached texture after presenting
+        setCurrentTexture(nullptr);
+    }
+
 private:
     WGPUAdapter m_adapter = nullptr; // Non-owning
     WGPUDevice m_device = nullptr; // Non-owning
