@@ -319,19 +319,19 @@ gfx::webgpu::BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const 
 
             switch (entry.type) {
             case GFX_BIND_GROUP_ENTRY_TYPE_BUFFER: {
-                auto* buffer = reinterpret_cast<gfx::webgpu::Buffer*>(entry.resource.buffer.buffer);
+                auto* buffer = toNative<Buffer>(entry.resource.buffer.buffer);
                 bindEntry.buffer = buffer->handle();
                 bindEntry.bufferOffset = entry.resource.buffer.offset;
                 bindEntry.bufferSize = entry.resource.buffer.size;
                 break;
             }
             case GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER: {
-                auto* sampler = reinterpret_cast<gfx::webgpu::Sampler*>(entry.resource.sampler);
+                auto* sampler = toNative<Sampler>(entry.resource.sampler);
                 bindEntry.sampler = sampler->handle();
                 break;
             }
             case GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW: {
-                auto* textureView = reinterpret_cast<gfx::webgpu::TextureView*>(entry.resource.textureView);
+                auto* textureView = toNative<TextureView>(entry.resource.textureView);
                 bindEntry.textureView = textureView->handle();
                 break;
             }
@@ -352,13 +352,13 @@ gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateI
     if (descriptor->bindGroupLayoutCount > 0 && descriptor->bindGroupLayouts) {
         createInfo.bindGroupLayouts.reserve(descriptor->bindGroupLayoutCount);
         for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
-            auto* layout = reinterpret_cast<gfx::webgpu::BindGroupLayout*>(descriptor->bindGroupLayouts[i]);
+            auto* layout = toNative<BindGroupLayout>(descriptor->bindGroupLayouts[i]);
             createInfo.bindGroupLayouts.push_back(layout->handle());
         }
     }
 
     // Vertex state
-    auto* vertexShader = reinterpret_cast<gfx::webgpu::Shader*>(descriptor->vertex->module);
+    auto* vertexShader = toNative<Shader>(descriptor->vertex->module);
     createInfo.vertex.module = vertexShader->handle();
     createInfo.vertex.entryPoint = descriptor->vertex->entryPoint;
 
@@ -390,7 +390,7 @@ gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateI
     // Fragment state (optional)
     if (descriptor->fragment) {
         gfx::webgpu::FragmentState fragState{};
-        auto* fragmentShader = reinterpret_cast<gfx::webgpu::Shader*>(descriptor->fragment->module);
+        auto* fragmentShader = toNative<Shader>(descriptor->fragment->module);
         fragState.module = fragmentShader->handle();
         fragState.entryPoint = descriptor->fragment->entryPoint;
 
@@ -471,13 +471,13 @@ gfx::webgpu::ComputePipelineCreateInfo gfxDescriptorToWebGPUComputePipelineCreat
     if (descriptor->bindGroupLayoutCount > 0 && descriptor->bindGroupLayouts) {
         createInfo.bindGroupLayouts.reserve(descriptor->bindGroupLayoutCount);
         for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
-            auto* layout = reinterpret_cast<gfx::webgpu::BindGroupLayout*>(descriptor->bindGroupLayouts[i]);
+            auto* layout = toNative<BindGroupLayout>(descriptor->bindGroupLayouts[i]);
             createInfo.bindGroupLayouts.push_back(layout->handle());
         }
     }
 
     // Extract shader module
-    auto* shader = reinterpret_cast<gfx::webgpu::Shader*>(descriptor->compute);
+    auto* shader = toNative<Shader>(descriptor->compute);
     createInfo.module = shader->handle();
     createInfo.entryPoint = descriptor->entryPoint;
 
@@ -494,10 +494,16 @@ gfx::webgpu::CommandEncoderCreateInfo gfxDescriptorToWebGPUCommandEncoderCreateI
 gfx::webgpu::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitInfo* descriptor)
 {
     gfx::webgpu::SubmitInfo submitInfo{};
-    submitInfo.commandEncoders = reinterpret_cast<gfx::webgpu::CommandEncoder**>(descriptor->commandEncoders);
+    // Note: Array pointer conversions use reinterpret_cast as toNative<> is for individual objects
+    submitInfo.commandEncoders = reinterpret_cast<CommandEncoder**>(descriptor->commandEncoders);
     submitInfo.commandEncoderCount = descriptor->commandEncoderCount;
-    submitInfo.signalFence = reinterpret_cast<gfx::webgpu::Fence*>(descriptor->signalFence);
-    // Note: WebGPU doesn't support semaphores, so wait/signal semaphores are ignored
+    submitInfo.signalFence = toNative<Fence>(descriptor->signalFence);
+    submitInfo.waitSemaphores = reinterpret_cast<Semaphore**>(descriptor->waitSemaphores);
+    submitInfo.waitValues = descriptor->waitValues;
+    submitInfo.waitSemaphoreCount = descriptor->waitSemaphoreCount;
+    submitInfo.signalSemaphores = reinterpret_cast<Semaphore**>(descriptor->signalSemaphores);
+    submitInfo.signalValues = descriptor->signalValues;
+    submitInfo.signalSemaphoreCount = descriptor->signalSemaphoreCount;
     return submitInfo;
 }
 

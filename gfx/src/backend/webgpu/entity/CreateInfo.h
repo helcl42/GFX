@@ -13,6 +13,7 @@ namespace gfx::webgpu {
 // Forward declarations for SubmitInfo
 class CommandEncoder;
 class Fence;
+class Semaphore;
 
 // ============================================================================
 // Internal Type Definitions
@@ -83,6 +84,14 @@ struct SubmitInfo {
     CommandEncoder** commandEncoders;
     uint32_t commandEncoderCount;
     Fence* signalFence;
+
+    // Semaphores (stored but not used by WebGPU backend)
+    Semaphore** waitSemaphores;
+    uint64_t* waitValues;
+    uint32_t waitSemaphoreCount;
+    Semaphore** signalSemaphores;
+    uint64_t* signalValues;
+    uint32_t signalSemaphoreCount;
 };
 
 struct SamplerCreateInfo {

@@ -935,7 +935,7 @@ gfx::vulkan::BindGroupLayoutCreateInfo gfxDescriptorToBindGroupLayoutCreateInfo(
 gfx::vulkan::BindGroupCreateInfo gfxDescriptorToBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor)
 {
     gfx::vulkan::BindGroupCreateInfo createInfo{};
-    auto* layout = reinterpret_cast<gfx::vulkan::BindGroupLayout*>(descriptor->layout);
+    auto* layout = converter::toNative<BindGroupLayout>(descriptor->layout);
     createInfo.layout = layout->handle();
 
     for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
@@ -945,17 +945,17 @@ gfx::vulkan::BindGroupCreateInfo gfxDescriptorToBindGroupCreateInfo(const GfxBin
         bindEntry.binding = entry.binding;
 
         if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_BUFFER) {
-            auto* buffer = reinterpret_cast<gfx::vulkan::Buffer*>(entry.resource.buffer.buffer);
+            auto* buffer = converter::toNative<Buffer>(entry.resource.buffer.buffer);
             bindEntry.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             bindEntry.buffer = buffer->handle();
             bindEntry.bufferOffset = entry.resource.buffer.offset;
             bindEntry.bufferSize = entry.resource.buffer.size;
         } else if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER) {
-            auto* sampler = reinterpret_cast<gfx::vulkan::Sampler*>(entry.resource.sampler);
+            auto* sampler = converter::toNative<Sampler>(entry.resource.sampler);
             bindEntry.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
             bindEntry.sampler = sampler->handle();
         } else if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW) {
-            auto* textureView = reinterpret_cast<gfx::vulkan::TextureView*>(entry.resource.textureView);
+            auto* textureView = converter::toNative<TextureView>(entry.resource.textureView);
             bindEntry.descriptorType = layout->getBindingType(entry.binding);
             bindEntry.imageView = textureView->handle();
 
@@ -979,12 +979,12 @@ gfx::vulkan::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(co
 
     // Bind group layouts
     for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
-        auto* layout = reinterpret_cast<gfx::vulkan::BindGroupLayout*>(descriptor->bindGroupLayouts[i]);
+        auto* layout = converter::toNative<BindGroupLayout>(descriptor->bindGroupLayouts[i]);
         createInfo.bindGroupLayouts.push_back(layout->handle());
     }
 
     // Vertex state
-    auto* vertShader = reinterpret_cast<gfx::vulkan::Shader*>(descriptor->vertex->module);
+    auto* vertShader = converter::toNative<Shader>(descriptor->vertex->module);
     createInfo.vertex.module = vertShader->handle();
     createInfo.vertex.entryPoint = vertShader->entryPoint();
 
@@ -1012,7 +1012,7 @@ gfx::vulkan::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(co
 
     // Fragment state
     if (descriptor->fragment) {
-        auto* fragShader = reinterpret_cast<gfx::vulkan::Shader*>(descriptor->fragment->module);
+        auto* fragShader = converter::toNative<Shader>(descriptor->fragment->module);
         createInfo.fragment.module = fragShader->handle();
         createInfo.fragment.entryPoint = fragShader->entryPoint();
 
@@ -1080,12 +1080,12 @@ gfx::vulkan::ComputePipelineCreateInfo gfxDescriptorToComputePipelineCreateInfo(
 
     // Bind group layouts
     for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
-        auto* layout = reinterpret_cast<gfx::vulkan::BindGroupLayout*>(descriptor->bindGroupLayouts[i]);
+        auto* layout = converter::toNative<BindGroupLayout>(descriptor->bindGroupLayouts[i]);
         createInfo.bindGroupLayouts.push_back(layout->handle());
     }
 
     // Compute shader
-    auto* computeShader = reinterpret_cast<gfx::vulkan::Shader*>(descriptor->compute);
+    auto* computeShader = converter::toNative<Shader>(descriptor->compute);
     createInfo.module = computeShader->handle();
     createInfo.entryPoint = computeShader->entryPoint();
 
