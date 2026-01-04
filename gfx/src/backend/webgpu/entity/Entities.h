@@ -418,10 +418,10 @@ public:
 
         // Determine map mode based on buffer usage
         WGPUMapMode mapMode = WGPUMapMode_None;
-        if (m_usage & GFX_BUFFER_USAGE_MAP_READ) {
+        if (m_usage & WGPUBufferUsage_MapRead) {
             mapMode |= WGPUMapMode_Read;
         }
-        if (m_usage & GFX_BUFFER_USAGE_MAP_WRITE) {
+        if (m_usage & WGPUBufferUsage_MapWrite) {
             mapMode |= WGPUMapMode_Write;
         }
 
