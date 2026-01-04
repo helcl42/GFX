@@ -417,6 +417,16 @@ GfxExtent3D vkExtent3DToGfxExtent3D(const VkExtent3D& vkExtent)
     return { vkExtent.width, vkExtent.height, vkExtent.depth };
 }
 
+VkExtent3D gfxExtent3DToVkExtent3D(const GfxExtent3D* gfxExtent)
+{
+    return { gfxExtent->width, gfxExtent->height, gfxExtent->depth };
+}
+
+VkOffset3D gfxOrigin3DToVkOffset3D(const GfxOrigin3D* gfxOrigin)
+{
+    return { gfxOrigin->x, gfxOrigin->y, gfxOrigin->z };
+}
+
 VkCullModeFlags gfxCullModeToVkCullMode(GfxCullMode cullMode)
 {
     switch (cullMode) {

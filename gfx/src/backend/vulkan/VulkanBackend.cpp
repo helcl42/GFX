@@ -923,12 +923,7 @@ void VulkanBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEn
     auto* srcBuf = converter::toNative<Buffer>(source);
     auto* dstBuf = converter::toNative<Buffer>(destination);
 
-    VkBufferCopy copyRegion{};
-    copyRegion.srcOffset = sourceOffset;
-    copyRegion.dstOffset = destinationOffset;
-    copyRegion.size = size;
-
-    vkCmdCopyBuffer(enc->handle(), srcBuf->handle(), dstBuf->handle(), 1, &copyRegion);
+    enc->copyBufferToBuffer(srcBuf, sourceOffset, dstBuf, destinationOffset, size);
 }
 
 void VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
@@ -945,53 +940,11 @@ void VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandE
     auto* srcBuf = converter::toNative<Buffer>(source);
     auto* dstTex = converter::toNative<Texture>(destination);
 
-    VkCommandBuffer cmdBuf = enc->handle();
+    VkOffset3D vkOrigin = converter::gfxOrigin3DToVkOffset3D(origin);
+    VkExtent3D vkExtent = converter::gfxExtent3DToVkExtent3D(extent);
+    VkImageLayout vkLayout = converter::gfxLayoutToVkImageLayout(finalLayout);
 
-    // Transition image layout to transfer dst optimal
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = dstTex->getLayout();
-    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = dstTex->handle();
-    barrier.subresourceRange.aspectMask = converter::getImageAspectMask(dstTex->getFormat());
-    barrier.subresourceRange.baseMipLevel = mipLevel;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-    barrier.srcAccessMask = 0;
-    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-    // Copy buffer to image
-    VkBufferImageCopy region{};
-    region.bufferOffset = sourceOffset;
-    region.bufferRowLength = 0; // Tightly packed
-    region.bufferImageHeight = 0; // Tightly packed
-    region.imageSubresource.aspectMask = converter::getImageAspectMask(dstTex->getFormat());
-    region.imageSubresource.mipLevel = mipLevel;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
-    region.imageOffset = { origin->x, origin->y, origin->z };
-    region.imageExtent = { extent->width, extent->height, extent->depth };
-
-    vkCmdCopyBufferToImage(cmdBuf, srcBuf->handle(), dstTex->handle(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-    // Transition image layout to final layout
-    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrier.newLayout = converter::gfxLayoutToVkImageLayout(finalLayout);
-    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrier.dstAccessMask = static_cast<VkAccessFlags>(gfxGetAccessFlagsForLayout(finalLayout));
-
-    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-    // Update tracked layout
-    dstTex->setLayout(converter::gfxLayoutToVkImageLayout(finalLayout));
+    enc->copyBufferToTexture(srcBuf, sourceOffset, dstTex, vkOrigin, vkExtent, mipLevel, vkLayout);
 
     (void)bytesPerRow; // Unused - assuming tightly packed data
 }
@@ -1009,53 +962,11 @@ void VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandE
     auto* srcTex = converter::toNative<Texture>(source);
     auto* dstBuf = converter::toNative<Buffer>(destination);
 
-    VkCommandBuffer cmdBuf = enc->handle();
+    VkOffset3D vkOrigin = converter::gfxOrigin3DToVkOffset3D(origin);
+    VkExtent3D vkExtent = converter::gfxExtent3DToVkExtent3D(extent);
+    VkImageLayout vkLayout = converter::gfxLayoutToVkImageLayout(finalLayout);
 
-    // Transition image layout to transfer src optimal
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = srcTex->getLayout();
-    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = srcTex->handle();
-    barrier.subresourceRange.aspectMask = converter::getImageAspectMask(srcTex->getFormat());
-    barrier.subresourceRange.baseMipLevel = mipLevel;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-    barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-    // Copy image to buffer
-    VkBufferImageCopy region{};
-    region.bufferOffset = destinationOffset;
-    region.bufferRowLength = 0; // Tightly packed
-    region.bufferImageHeight = 0; // Tightly packed
-    region.imageSubresource.aspectMask = converter::getImageAspectMask(srcTex->getFormat());
-    region.imageSubresource.mipLevel = mipLevel;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
-    region.imageOffset = { origin->x, origin->y, origin->z };
-    region.imageExtent = { extent->width, extent->height, extent->depth };
-
-    vkCmdCopyImageToBuffer(cmdBuf, srcTex->handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        dstBuf->handle(), 1, &region);
-
-    // Transition image layout to final layout
-    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    barrier.newLayout = converter::gfxLayoutToVkImageLayout(finalLayout);
-    barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-    barrier.dstAccessMask = static_cast<VkAccessFlags>(gfxGetAccessFlagsForLayout(finalLayout));
-
-    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-    // Update tracked layout
-    srcTex->setLayout(converter::gfxLayoutToVkImageLayout(finalLayout));
+    enc->copyTextureToBuffer(srcTex, vkOrigin, mipLevel, dstBuf, destinationOffset, vkExtent, vkLayout);
 
     (void)bytesPerRow; // Unused - assuming tightly packed data
 }
@@ -1073,94 +984,15 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
     auto* srcTex = converter::toNative<Texture>(source);
     auto* dstTex = converter::toNative<Texture>(destination);
 
-    VkCommandBuffer cmdBuf = enc->handle();
+    VkOffset3D vkSrcOrigin = converter::gfxOrigin3DToVkOffset3D(sourceOrigin);
+    VkOffset3D vkDstOrigin = converter::gfxOrigin3DToVkOffset3D(destinationOrigin);
+    VkExtent3D vkExtent = converter::gfxExtent3DToVkExtent3D(extent);
+    VkImageLayout vkSrcLayout = converter::gfxLayoutToVkImageLayout(srcFinalLayout);
+    VkImageLayout vkDstLayout = converter::gfxLayoutToVkImageLayout(dstFinalLayout);
 
-    // For 2D textures and arrays, extent->depth represents layer count
-    // For 3D textures, it represents actual depth
-    uint32_t layerCount = extent->depth;
-    uint32_t copyDepth = extent->depth;
-
-    // Check if source is a 3D texture (depth > 1 and not an array)
-    VkExtent3D srcSize = srcTex->getSize();
-    bool is3DTexture = (srcSize.depth > 1);
-
-    if (!is3DTexture) {
-        // For 2D/array textures, extent->depth is layer count, actual depth is 1
-        copyDepth = 1;
-    } else {
-        // For 3D textures, there are no array layers
-        layerCount = 1;
-    }
-
-    // Transition source image to transfer src optimal
-    VkImageMemoryBarrier barriers[2] = {};
-    barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barriers[0].oldLayout = srcTex->getLayout();
-    barriers[0].newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barriers[0].image = srcTex->handle();
-    barriers[0].subresourceRange.aspectMask = converter::getImageAspectMask(srcTex->getFormat());
-    barriers[0].subresourceRange.baseMipLevel = sourceMipLevel;
-    barriers[0].subresourceRange.levelCount = 1;
-    barriers[0].subresourceRange.baseArrayLayer = sourceOrigin->z;
-    barriers[0].subresourceRange.layerCount = layerCount;
-    barriers[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    barriers[0].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-    // Transition destination image to transfer dst optimal
-    barriers[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barriers[1].oldLayout = dstTex->getLayout();
-    barriers[1].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barriers[1].image = dstTex->handle();
-    barriers[1].subresourceRange.aspectMask = converter::getImageAspectMask(dstTex->getFormat());
-    barriers[1].subresourceRange.baseMipLevel = destinationMipLevel;
-    barriers[1].subresourceRange.levelCount = 1;
-    barriers[1].subresourceRange.baseArrayLayer = destinationOrigin->z;
-    barriers[1].subresourceRange.layerCount = layerCount;
-    barriers[1].srcAccessMask = 0;
-    barriers[1].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-    vkCmdPipelineBarrier(cmdBuf,
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 2, barriers);
-
-    // Copy image to image
-    VkImageCopy region{};
-    region.srcSubresource.aspectMask = converter::getImageAspectMask(srcTex->getFormat());
-    region.srcSubresource.mipLevel = sourceMipLevel;
-    region.srcSubresource.baseArrayLayer = is3DTexture ? 0 : sourceOrigin->z;
-    region.srcSubresource.layerCount = layerCount;
-    region.srcOffset = { sourceOrigin->x, sourceOrigin->y, is3DTexture ? sourceOrigin->z : 0 };
-    region.dstSubresource.aspectMask = converter::getImageAspectMask(dstTex->getFormat());
-    region.dstSubresource.mipLevel = destinationMipLevel;
-    region.dstSubresource.baseArrayLayer = is3DTexture ? 0 : destinationOrigin->z;
-    region.dstSubresource.layerCount = layerCount;
-    region.dstOffset = { destinationOrigin->x, destinationOrigin->y, is3DTexture ? destinationOrigin->z : 0 };
-    region.extent = { extent->width, extent->height, copyDepth };
-
-    vkCmdCopyImage(cmdBuf, srcTex->handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        dstTex->handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-    // Transition images to final layouts
-    barriers[0].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    barriers[0].newLayout = converter::gfxLayoutToVkImageLayout(srcFinalLayout);
-    barriers[0].srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-    barriers[0].dstAccessMask = static_cast<VkAccessFlags>(gfxGetAccessFlagsForLayout(srcFinalLayout));
-
-    barriers[1].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barriers[1].newLayout = converter::gfxLayoutToVkImageLayout(dstFinalLayout);
-    barriers[1].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    barriers[1].dstAccessMask = static_cast<VkAccessFlags>(gfxGetAccessFlagsForLayout(dstFinalLayout));
-
-    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 2, barriers);
-
-    // Update tracked layouts
-    srcTex->setLayout(converter::gfxLayoutToVkImageLayout(srcFinalLayout));
-    dstTex->setLayout(converter::gfxLayoutToVkImageLayout(dstFinalLayout));
+    enc->copyTextureToTexture(srcTex, vkSrcOrigin, sourceMipLevel,
+        dstTex, vkDstOrigin, destinationMipLevel,
+        vkExtent, vkSrcLayout, vkDstLayout);
 }
 
 void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
