@@ -13,6 +13,7 @@ namespace gfx::vulkan {
 class CommandEncoder;
 class Fence;
 class Semaphore;
+struct RenderPassEncoderCreateInfo;
 
 // ============================================================================
 // Internal Type Definitions
@@ -247,6 +248,63 @@ struct ComputePipelineCreateInfo {
     std::vector<VkDescriptorSetLayout> bindGroupLayouts;
     VkShaderModule module;
     const char* entryPoint;
+};
+
+struct ColorAttachmentOps {
+    VkAttachmentLoadOp loadOp;
+    VkAttachmentStoreOp storeOp;
+    VkClearColorValue clearColor;
+};
+
+struct ColorAttachmentTarget {
+    VkImageView view;
+    VkFormat format;
+    VkSampleCountFlagBits sampleCount;
+    ColorAttachmentOps ops;
+    VkImageLayout finalLayout;
+    uint32_t width;
+    uint32_t height;
+};
+
+struct ColorAttachment {
+    ColorAttachmentTarget target;
+    std::optional<ColorAttachmentTarget> resolveTarget;
+};
+
+struct DepthAttachmentOps {
+    VkAttachmentLoadOp loadOp;
+    VkAttachmentStoreOp storeOp;
+    float clearValue;
+};
+
+struct StencilAttachmentOps {
+    VkAttachmentLoadOp loadOp;
+    VkAttachmentStoreOp storeOp;
+    uint32_t clearValue;
+};
+
+struct DepthStencilAttachmentTarget {
+    VkImageView view;
+    VkFormat format;
+    VkSampleCountFlagBits sampleCount;
+    std::optional<DepthAttachmentOps> depthOps;
+    std::optional<StencilAttachmentOps> stencilOps;
+    VkImageLayout finalLayout;
+    uint32_t width;
+    uint32_t height;
+};
+
+struct DepthStencilAttachment {
+    DepthStencilAttachmentTarget target;
+};
+
+struct RenderPassEncoderCreateInfo {
+    std::vector<ColorAttachment> colorAttachments;
+    std::optional<DepthStencilAttachment> depthStencilAttachment;
+};
+
+struct ComputePassEncoderCreateInfo {
+    const char* label;
 };
 
 struct SubmitInfo {

@@ -1113,4 +1113,95 @@ gfx::vulkan::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitInfo* descripto
     return submitInfo;
 }
 
+gfx::vulkan::RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(const GfxRenderPassDescriptor* descriptor)
+{
+    gfx::vulkan::RenderPassEncoderCreateInfo createInfo{};
+
+    // Convert color attachments
+    for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
+        const GfxColorAttachment& gfxColor = descriptor->colorAttachments[i];
+        ColorAttachment colorAttachment{};
+
+        // Convert target
+        if (gfxColor.target.view) {
+            auto* viewPtr = toNative<TextureView>(gfxColor.target.view);
+            auto size = viewPtr->getTexture()->getSize();
+            colorAttachment.target.view = viewPtr->handle();
+            colorAttachment.target.format = viewPtr->getFormat();
+            colorAttachment.target.sampleCount = viewPtr->getTexture()->getSampleCount();
+            colorAttachment.target.ops.loadOp = gfxLoadOpToVkLoadOp(gfxColor.target.ops.loadOp);
+            colorAttachment.target.ops.storeOp = gfxStoreOpToVkStoreOp(gfxColor.target.ops.storeOp);
+            const GfxColor& color = gfxColor.target.ops.clearColor;
+            colorAttachment.target.ops.clearColor = {{ color.r, color.g, color.b, color.a }};
+            colorAttachment.target.finalLayout = gfxLayoutToVkImageLayout(gfxColor.target.finalLayout);
+            colorAttachment.target.width = size.width;
+            colorAttachment.target.height = size.height;
+
+            // Convert resolve target if present
+            if (gfxColor.resolveTarget && gfxColor.resolveTarget->view) {
+                ColorAttachmentTarget resolveTarget{};
+                auto* resolveViewPtr = toNative<TextureView>(gfxColor.resolveTarget->view);
+                auto resolveSize = resolveViewPtr->getTexture()->getSize();
+                resolveTarget.view = resolveViewPtr->handle();
+                resolveTarget.format = resolveViewPtr->getFormat();
+                resolveTarget.sampleCount = VK_SAMPLE_COUNT_1_BIT;
+                resolveTarget.ops.loadOp = gfxLoadOpToVkLoadOp(gfxColor.resolveTarget->ops.loadOp);
+                resolveTarget.ops.storeOp = gfxStoreOpToVkStoreOp(gfxColor.resolveTarget->ops.storeOp);
+                const GfxColor& resolveColor = gfxColor.resolveTarget->ops.clearColor;
+                resolveTarget.ops.clearColor = {{ resolveColor.r, resolveColor.g, resolveColor.b, resolveColor.a }};
+                resolveTarget.finalLayout = gfxLayoutToVkImageLayout(gfxColor.resolveTarget->finalLayout);
+                resolveTarget.width = resolveSize.width;
+                resolveTarget.height = resolveSize.height;
+                colorAttachment.resolveTarget = resolveTarget;
+            }
+        }
+        createInfo.colorAttachments.push_back(colorAttachment);
+    }
+
+    // Convert depth/stencil attachment
+    if (descriptor->depthStencilAttachment) {
+        const GfxDepthStencilAttachment& gfxDepthStencil = *descriptor->depthStencilAttachment;
+        DepthStencilAttachment depthStencilAttachment{};
+
+        const GfxDepthStencilAttachmentTarget& target = gfxDepthStencil.target;
+        auto* viewPtr = toNative<TextureView>(target.view);
+        auto size = viewPtr->getTexture()->getSize();
+        depthStencilAttachment.target.view = viewPtr->handle();
+        depthStencilAttachment.target.format = viewPtr->getFormat();
+        depthStencilAttachment.target.sampleCount = viewPtr->getTexture()->getSampleCount();
+        depthStencilAttachment.target.finalLayout = gfxLayoutToVkImageLayout(target.finalLayout);
+        depthStencilAttachment.target.width = size.width;
+        depthStencilAttachment.target.height = size.height;
+
+        // Convert depth operations
+        if (target.depthOps) {
+            DepthAttachmentOps depthOps{};
+            depthOps.loadOp = gfxLoadOpToVkLoadOp(target.depthOps->loadOp);
+            depthOps.storeOp = gfxStoreOpToVkStoreOp(target.depthOps->storeOp);
+            depthOps.clearValue = target.depthOps->clearValue;
+            depthStencilAttachment.target.depthOps = depthOps;
+        }
+
+        // Convert stencil operations
+        if (target.stencilOps) {
+            StencilAttachmentOps stencilOps{};
+            stencilOps.loadOp = gfxLoadOpToVkLoadOp(target.stencilOps->loadOp);
+            stencilOps.storeOp = gfxStoreOpToVkStoreOp(target.stencilOps->storeOp);
+            stencilOps.clearValue = target.stencilOps->clearValue;
+            depthStencilAttachment.target.stencilOps = stencilOps;
+        }
+
+        createInfo.depthStencilAttachment = depthStencilAttachment;
+    }
+
+    return createInfo;
+}
+
+gfx::vulkan::ComputePassEncoderCreateInfo gfxComputePassDescriptorToCreateInfo(const GfxComputePassDescriptor* descriptor)
+{
+    gfx::vulkan::ComputePassEncoderCreateInfo createInfo{};
+    createInfo.label = descriptor->label;
+    return createInfo;
+}
+
 } // namespace gfx::vulkan::converter

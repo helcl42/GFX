@@ -864,284 +864,33 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    // Extract parameters from descriptor
-    const GfxColorAttachment* colorAttachments = descriptor->colorAttachments;
-    uint32_t colorAttachmentCount = descriptor->colorAttachmentCount;
-    const GfxDepthStencilAttachment* depthStencilAttachment = descriptor->depthStencilAttachment;
-
     // Must have at least one attachment (color or depth)
-    if (colorAttachmentCount == 0 && !depthStencilAttachment) {
+    if (descriptor->colorAttachmentCount == 0 && !descriptor->depthStencilAttachment) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
     // Validate all color attachments have valid targets
-    for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-        if (!colorAttachments[i].target.view) {
+    for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
+        if (!descriptor->colorAttachments[i].target.view) {
             return GFX_RESULT_ERROR_INVALID_PARAMETER;
         }
     }
 
-    for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-        if (colorAttachments[i].target.finalLayout == GFX_TEXTURE_LAYOUT_UNDEFINED) {
+    for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
+        if (descriptor->colorAttachments[i].target.finalLayout == GFX_TEXTURE_LAYOUT_UNDEFINED) {
             return GFX_RESULT_ERROR_INVALID_PARAMETER;
         }
     }
 
-    auto* enc = converter::toNative<CommandEncoder>(commandEncoder);
-    VkCommandBuffer cmdBuf = enc->handle();
-
-    // Determine framebuffer dimensions from first available attachment with valid texture
-    uint32_t width = 0;
-    uint32_t height = 0;
-
-    // Try to get dimensions from color attachments
-    if (colorAttachmentCount > 0 && colorAttachments) {
-        for (uint32_t i = 0; i < colorAttachmentCount && (width == 0 || height == 0); ++i) {
-            auto* view = converter::toNative<TextureView>(colorAttachments[i].target.view);
-            auto size = view->getTexture()->getSize();
-            width = size.width;
-            height = size.height;
-        }
-    }
-
-    // Fall back to depth attachment if no color attachment had valid dimensions
-    if ((width == 0 || height == 0) && depthStencilAttachment) {
-        auto* depthView = converter::toNative<TextureView>(depthStencilAttachment->target.view);
-        auto size = depthView->getTexture()->getSize();
-        width = size.width;
-        height = size.height;
-    }
-
-    // Build Vulkan attachments and references
-    std::vector<VkAttachmentDescription> attachments;
-    std::vector<VkAttachmentReference> colorRefs;
-    std::vector<VkAttachmentReference> resolveRefs;
-
-    uint32_t attachmentIndex = 0;
-    uint32_t numColorRefs = 0; // Track actual color attachments (not resolve targets)
-
-    // Process color attachments
-    for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-        const GfxColorAttachmentTarget* target = &colorAttachments[i].target;
-        auto* colorView = converter::toNative<TextureView>(target->view);
-        VkSampleCountFlagBits samples = colorView->getTexture()->getSampleCount();
-
-        bool isMSAA = (samples > VK_SAMPLE_COUNT_1_BIT);
-
-        // Add color attachment
-        VkAttachmentDescription colorAttachment{};
-        colorAttachment.format = colorView->getFormat();
-        colorAttachment.samples = samples;
-        colorAttachment.loadOp = converter::gfxLoadOpToVkLoadOp(target->ops.loadOp);
-        colorAttachment.storeOp = converter::gfxStoreOpToVkStoreOp(target->ops.storeOp);
-        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        // Use UNDEFINED if we're clearing or don't care, otherwise preserve contents with COLOR_ATTACHMENT_OPTIMAL
-        colorAttachment.initialLayout = (target->ops.loadOp == GFX_LOAD_OP_LOAD)
-            ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-            : VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = converter::gfxLayoutToVkImageLayout(target->finalLayout);
-        attachments.push_back(colorAttachment);
-
-        VkAttachmentReference colorRef{};
-        colorRef.attachment = attachmentIndex++;
-        colorRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        colorRefs.push_back(colorRef);
-        ++numColorRefs;
-
-        // Check if this attachment has a resolve target
-        bool hasResolve = false;
-        if (colorAttachments[i].resolveTarget) {
-            const GfxColorAttachmentTarget* resolveTarget = colorAttachments[i].resolveTarget;
-            auto* resolveView = converter::toNative<TextureView>(resolveTarget->view);
-
-            VkAttachmentDescription resolveAttachment{};
-            resolveAttachment.format = resolveView->getFormat();
-            resolveAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-            resolveAttachment.loadOp = converter::gfxLoadOpToVkLoadOp(resolveTarget->ops.loadOp);
-            resolveAttachment.storeOp = converter::gfxStoreOpToVkStoreOp(resolveTarget->ops.storeOp);
-            resolveAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            resolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            // Use UNDEFINED if we're clearing or don't care, otherwise preserve contents with COLOR_ATTACHMENT_OPTIMAL
-            resolveAttachment.initialLayout = (resolveTarget->ops.loadOp == GFX_LOAD_OP_LOAD)
-                ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-                : VK_IMAGE_LAYOUT_UNDEFINED;
-            resolveAttachment.finalLayout = converter::gfxLayoutToVkImageLayout(resolveTarget->finalLayout);
-            attachments.push_back(resolveAttachment);
-
-            VkAttachmentReference resolveRef{};
-            resolveRef.attachment = attachmentIndex++;
-            resolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            resolveRefs.push_back(resolveRef);
-
-            hasResolve = true;
-        }
-
-        // MSAA without resolve needs unused reference
-        if (isMSAA && !hasResolve) {
-            VkAttachmentReference unusedRef{};
-            unusedRef.attachment = VK_ATTACHMENT_UNUSED;
-            unusedRef.layout = VK_IMAGE_LAYOUT_UNDEFINED;
-            resolveRefs.push_back(unusedRef);
-        }
-    }
-
-    // Add depth/stencil attachment if provided
-    VkAttachmentReference depthRef{};
-    bool hasDepth = false;
-
-    if (depthStencilAttachment) {
-        const GfxDepthStencilAttachmentTarget* target = &depthStencilAttachment->target;
-        auto* depthView = converter::toNative<TextureView>(target->view);
-
-        VkAttachmentDescription depthAttachment{};
-        depthAttachment.format = depthView->getFormat();
-        depthAttachment.samples = depthView->getTexture()->getSampleCount();
-
-        // Handle depth operations (required if depth pointer is set)
-        if (target->depthOps) {
-            depthAttachment.loadOp = converter::gfxLoadOpToVkLoadOp(target->depthOps->loadOp);
-            depthAttachment.storeOp = converter::gfxStoreOpToVkStoreOp(target->depthOps->storeOp);
-        } else {
-            depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        }
-
-        // Handle stencil operations (required if stencil pointer is set)
-        if (target->stencilOps) {
-            depthAttachment.stencilLoadOp = converter::gfxLoadOpToVkLoadOp(target->stencilOps->loadOp);
-            depthAttachment.stencilStoreOp = converter::gfxStoreOpToVkStoreOp(target->stencilOps->storeOp);
-        } else {
-            depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        }
-
-        // Use UNDEFINED if we're clearing or don't care about both depth AND stencil, otherwise preserve contents
-        bool loadDepth = (target->depthOps && target->depthOps->loadOp == GFX_LOAD_OP_LOAD);
-        bool loadStencil = (target->stencilOps && target->stencilOps->loadOp == GFX_LOAD_OP_LOAD);
-        depthAttachment.initialLayout = (loadDepth || loadStencil)
-            ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-            : VK_IMAGE_LAYOUT_UNDEFINED;
-        depthAttachment.finalLayout = converter::gfxLayoutToVkImageLayout(target->finalLayout);
-        attachments.push_back(depthAttachment);
-
-        depthRef.attachment = attachmentIndex++;
-        depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        hasDepth = true;
-    }
-
-    // Create subpass
-    VkSubpassDescription subpass{};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = static_cast<uint32_t>(colorRefs.size());
-    subpass.pColorAttachments = colorRefs.empty() ? nullptr : colorRefs.data();
-    subpass.pResolveAttachments = resolveRefs.empty() ? nullptr : resolveRefs.data();
-    subpass.pDepthStencilAttachment = hasDepth ? &depthRef : nullptr;
-
-    // Create render pass
-    VkRenderPassCreateInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-    renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-
-    VkRenderPass renderPass;
-    VkResult result = vkCreateRenderPass(enc->device(), &renderPassInfo, nullptr, &renderPass);
-    if (result != VK_SUCCESS) {
+    try {
+        auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
+        auto createInfo = converter::gfxRenderPassDescriptorToCreateInfo(descriptor);
+        RenderPassEncoder* renderPassEncoder = new RenderPassEncoder(encoderPtr, createInfo);
+        *outRenderPass = converter::toGfx<GfxRenderPassEncoder>(renderPassEncoder);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception&) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
-
-    // Create framebuffer with all views (color + resolve + depth) in same order as attachments
-    std::vector<VkImageView> fbAttachments;
-    fbAttachments.reserve(attachments.size());
-
-    for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-        // Add color attachment
-        auto* colorView = converter::toNative<TextureView>(colorAttachments[i].target.view);
-        fbAttachments.push_back(colorView->handle());
-
-        // Add resolve target if present
-        if (colorAttachments[i].resolveTarget) {
-            auto* resolveView = converter::toNative<TextureView>(colorAttachments[i].resolveTarget->view);
-            fbAttachments.push_back(resolveView->handle());
-        }
-    }
-
-    if (depthStencilAttachment) {
-        auto* depthView = converter::toNative<TextureView>(depthStencilAttachment->target.view);
-        fbAttachments.push_back(depthView->handle());
-    }
-
-    VkFramebufferCreateInfo framebufferInfo{};
-    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebufferInfo.renderPass = renderPass;
-    framebufferInfo.attachmentCount = static_cast<uint32_t>(fbAttachments.size());
-    framebufferInfo.pAttachments = fbAttachments.data();
-    framebufferInfo.width = width;
-    framebufferInfo.height = height;
-    framebufferInfo.layers = 1;
-
-    VkFramebuffer framebuffer;
-    result = vkCreateFramebuffer(enc->device(), &framebufferInfo, nullptr, &framebuffer);
-    if (result != VK_SUCCESS) {
-        vkDestroyRenderPass(enc->device(), renderPass, nullptr);
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
-
-    // Track for cleanup
-    enc->trackRenderPass(renderPass, framebuffer);
-
-    // Build clear values matching attachment descriptions order
-    std::vector<VkClearValue> clearValues;
-    clearValues.reserve(attachments.size());
-
-    uint32_t clearColorIdx = 0;
-    for (size_t i = 0; i < attachments.size(); ++i) {
-        VkClearValue clearValue{};
-
-        if (converter::isDepthFormat(attachments[i].format)) {
-            // Depth/stencil attachment
-            float depthClear = (depthStencilAttachment->target.depthOps) ? depthStencilAttachment->target.depthOps->clearValue : 1.0f;
-            uint32_t stencilClear = (depthStencilAttachment->target.stencilOps) ? depthStencilAttachment->target.stencilOps->clearValue : 0;
-            clearValue.depthStencil = { depthClear, stencilClear };
-        } else {
-            // Color attachment - check if it's a resolve target
-            bool isPrevMSAA = (i > 0 && attachments[i - 1].samples > VK_SAMPLE_COUNT_1_BIT);
-            bool isResolve = (attachments[i].samples == VK_SAMPLE_COUNT_1_BIT && isPrevMSAA);
-
-            if (isResolve) {
-                // Resolve target doesn't need clear value (loadOp is DONT_CARE)
-                clearValue.color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-            } else {
-                // MSAA or regular color attachment - use provided clear color
-                if (clearColorIdx < numColorRefs) {
-                    const GfxColor& color = colorAttachments[clearColorIdx].target.ops.clearColor;
-                    clearValue.color = { { color.r, color.g, color.b, color.a } };
-                    clearColorIdx++;
-                } else {
-                    clearValue.color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-                }
-            }
-        }
-
-        clearValues.push_back(clearValue);
-    }
-
-    // Begin render pass
-    VkRenderPassBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    beginInfo.renderPass = renderPass;
-    beginInfo.framebuffer = framebuffer;
-    beginInfo.renderArea.offset = { 0, 0 };
-    beginInfo.renderArea.extent = { width, height };
-    beginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    beginInfo.pClearValues = clearValues.data();
-
-    vkCmdBeginRenderPass(cmdBuf, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    *outRenderPass = converter::toGfx<GfxRenderPassEncoder>(commandEncoder);
-    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult VulkanBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassDescriptor* descriptor, GfxComputePassEncoder* outComputePass) const
@@ -1150,12 +899,15 @@ GfxResult VulkanBackend::commandEncoderBeginComputePass(GfxCommandEncoder comman
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    // In Vulkan, compute passes don't require special setup like render passes
-    // We just return the command encoder cast to a compute pass encoder
-    *outComputePass = converter::toGfx<GfxComputePassEncoder>(commandEncoder);
-
-    (void)descriptor->label; // Unused for now
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
+        auto createInfo = converter::gfxComputePassDescriptorToCreateInfo(descriptor);
+        ComputePassEncoder* computePassEncoder = new ComputePassEncoder(encoderPtr, createInfo);
+        *outComputePass = converter::toGfx<GfxComputePassEncoder>(computePassEncoder);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception&) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 void VulkanBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
@@ -1555,8 +1307,9 @@ void VulkanBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
 // RenderPassEncoder functions
 void VulkanBackend::renderPassEncoderDestroy(GfxRenderPassEncoder renderPassEncoder) const
 {
+    // Encoder is already deleted in renderPassEncoderEnd()
+    // This is a no-op for safety if user calls destroy after end
     (void)renderPassEncoder;
-    // Render pass encoder is just a view of command encoder, no separate cleanup
 }
 
 void VulkanBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
@@ -1564,12 +1317,12 @@ void VulkanBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPass
     if (!renderPassEncoder || !pipeline) {
         return;
     }
-    auto* enc = converter::toNative<CommandEncoder>(renderPassEncoder);
+    auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* pipe = converter::toNative<RenderPipeline>(pipeline);
 
-    VkCommandBuffer cmdBuf = enc->handle();
+    VkCommandBuffer cmdBuf = rpe->handle();
     vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe->handle());
-    enc->setCurrentPipelineLayout(pipe->layout());
+    rpe->commandEncoder()->setCurrentPipelineLayout(pipe->layout());
 }
 
 void VulkanBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
@@ -1577,11 +1330,11 @@ void VulkanBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPas
     if (!renderPassEncoder || !bindGroup) {
         return;
     }
-    auto* enc = converter::toNative<CommandEncoder>(renderPassEncoder);
+    auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* bg = converter::toNative<BindGroup>(bindGroup);
 
-    VkCommandBuffer cmdBuf = enc->handle();
-    VkPipelineLayout layout = enc->currentPipelineLayout();
+    VkCommandBuffer cmdBuf = rpe->handle();
+    VkPipelineLayout layout = rpe->commandEncoder()->currentPipelineLayout();
 
     if (layout != VK_NULL_HANDLE) {
         VkDescriptorSet set = bg->handle();
@@ -1594,10 +1347,10 @@ void VulkanBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder render
     if (!renderPassEncoder || !buffer) {
         return;
     }
-    auto* enc = converter::toNative<CommandEncoder>(renderPassEncoder);
+    auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* buf = converter::toNative<Buffer>(buffer);
 
-    VkCommandBuffer cmdBuf = enc->handle();
+    VkCommandBuffer cmdBuf = rpe->handle();
     VkBuffer vkBuf = buf->handle();
     VkDeviceSize offsets[] = { offset };
     vkCmdBindVertexBuffers(cmdBuf, slot, 1, &vkBuf, offsets);
@@ -1610,10 +1363,10 @@ void VulkanBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderP
     if (!renderPassEncoder || !buffer) {
         return;
     }
-    auto* enc = converter::toNative<CommandEncoder>(renderPassEncoder);
+    auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* buf = converter::toNative<Buffer>(buffer);
 
-    VkCommandBuffer cmdBuf = enc->handle();
+    VkCommandBuffer cmdBuf = rpe->handle();
     VkIndexType indexType = (format == GFX_INDEX_FORMAT_UINT16) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
     vkCmdBindIndexBuffer(cmdBuf, buf->handle(), offset, indexType);
 
@@ -1625,7 +1378,7 @@ void VulkanBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPass
     if (!renderPassEncoder || !viewport) {
         return;
     }
-    auto* enc = converter::toNative<CommandEncoder>(renderPassEncoder);
+    auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
 
     VkViewport vkViewport{};
     vkViewport.x = viewport->x;
@@ -1634,7 +1387,7 @@ void VulkanBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPass
     vkViewport.height = viewport->height;
     vkViewport.minDepth = viewport->minDepth;
     vkViewport.maxDepth = viewport->maxDepth;
-    vkCmdSetViewport(enc->handle(), 0, 1, &vkViewport);
+    vkCmdSetViewport(rpe->handle(), 0, 1, &vkViewport);
 }
 
 void VulkanBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
@@ -1642,12 +1395,12 @@ void VulkanBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderP
     if (!renderPassEncoder || !scissor) {
         return;
     }
-    auto* enc = converter::toNative<CommandEncoder>(renderPassEncoder);
+    auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
 
     VkRect2D vkScissor{};
     vkScissor.offset = { scissor->x, scissor->y };
     vkScissor.extent = { scissor->width, scissor->height };
-    vkCmdSetScissor(enc->handle(), 0, 1, &vkScissor);
+    vkCmdSetScissor(rpe->handle(), 0, 1, &vkScissor);
 }
 
 void VulkanBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
@@ -1655,9 +1408,9 @@ void VulkanBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder
     if (!renderPassEncoder) {
         return;
     }
-    auto* enc = converter::toNative<CommandEncoder>(renderPassEncoder);
+    auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
 
-    VkCommandBuffer cmdBuf = enc->handle();
+    VkCommandBuffer cmdBuf = rpe->handle();
     vkCmdDraw(cmdBuf, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
@@ -1666,9 +1419,9 @@ void VulkanBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPass
     if (!renderPassEncoder) {
         return;
     }
-    auto* enc = converter::toNative<CommandEncoder>(renderPassEncoder);
+    auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
 
-    VkCommandBuffer cmdBuf = enc->handle();
+    VkCommandBuffer cmdBuf = rpe->handle();
     vkCmdDrawIndexed(cmdBuf, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 }
 
@@ -1677,14 +1430,16 @@ void VulkanBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder)
     if (!renderPassEncoder) {
         return;
     }
-    auto* enc = converter::toNative<CommandEncoder>(renderPassEncoder);
-    vkCmdEndRenderPass(enc->handle());
+    auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
+    vkCmdEndRenderPass(rpe->handle());
+    delete rpe;
 }
 
 // ComputePassEncoder functions
 void VulkanBackend::computePassEncoderDestroy(GfxComputePassEncoder computePassEncoder) const
 {
-    // Compute pass encoder is just a view of command encoder, no separate cleanup
+    // Encoder is already deleted in computePassEncoderEnd()
+    // This is a no-op for safety if user calls destroy after end
     (void)computePassEncoder;
 }
 
@@ -1694,12 +1449,12 @@ void VulkanBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computeP
         return;
     }
 
-    auto* enc = converter::toNative<CommandEncoder>(computePassEncoder);
+    auto* cpe = converter::toNative<ComputePassEncoder>(computePassEncoder);
     auto* pipe = converter::toNative<ComputePipeline>(pipeline);
 
-    VkCommandBuffer cmdBuf = enc->handle();
+    VkCommandBuffer cmdBuf = cpe->handle();
     vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipe->handle());
-    enc->setCurrentPipelineLayout(pipe->layout());
+    cpe->commandEncoder()->setCurrentPipelineLayout(pipe->layout());
 }
 
 void VulkanBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
@@ -1708,11 +1463,11 @@ void VulkanBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder compute
         return;
     }
 
-    auto* enc = converter::toNative<CommandEncoder>(computePassEncoder);
+    auto* cpe = converter::toNative<ComputePassEncoder>(computePassEncoder);
     auto* bg = converter::toNative<BindGroup>(bindGroup);
 
-    VkCommandBuffer cmdBuf = enc->handle();
-    VkPipelineLayout layout = enc->currentPipelineLayout();
+    VkCommandBuffer cmdBuf = cpe->handle();
+    VkPipelineLayout layout = cpe->commandEncoder()->currentPipelineLayout();
 
     if (layout != VK_NULL_HANDLE) {
         VkDescriptorSet set = bg->handle();
@@ -1726,16 +1481,18 @@ void VulkanBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder c
         return;
     }
 
-    auto* enc = converter::toNative<CommandEncoder>(computePassEncoder);
-    VkCommandBuffer cmdBuf = enc->handle();
+    auto* cpe = converter::toNative<ComputePassEncoder>(computePassEncoder);
+    VkCommandBuffer cmdBuf = cpe->handle();
     vkCmdDispatch(cmdBuf, workgroupCountX, workgroupCountY, workgroupCountZ);
 }
 
 void VulkanBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
 {
-    // No special cleanup needed for compute pass in Vulkan
-    // The command encoder handles all cleanup
-    (void)computePassEncoder;
+    if (!computePassEncoder) {
+        return;
+    }
+    auto* cpe = converter::toNative<ComputePassEncoder>(computePassEncoder);
+    delete cpe;
 }
 
 // Fence functions

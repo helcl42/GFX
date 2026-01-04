@@ -1925,6 +1925,7 @@ public:
 
     VkCommandBuffer handle() const { return m_commandBuffer; }
     VkDevice device() const { return m_device->handle(); }
+    Device* getDevice() const { return m_device; }
     VkPipelineLayout currentPipelineLayout() const { return m_currentPipelineLayout; }
 
     void setCurrentPipelineLayout(VkPipelineLayout layout)
@@ -1984,6 +1985,50 @@ private:
     // Track resources for cleanup - RAII handles lifetime automatically!
     std::vector<VkRenderPass> m_renderPasses;
     std::vector<VkFramebuffer> m_framebuffers;
+};
+
+class RenderPassEncoder {
+public:
+    RenderPassEncoder(const RenderPassEncoder&) = delete;
+    RenderPassEncoder& operator=(const RenderPassEncoder&) = delete;
+
+    RenderPassEncoder(CommandEncoder* commandEncoder, const RenderPassEncoderCreateInfo& createInfo);
+
+    ~RenderPassEncoder()
+    {
+        // Render pass is ended by CommandEncoder tracking
+    }
+
+    VkCommandBuffer handle() const { return m_commandBuffer; }
+    Device* device() const { return m_device; }
+    CommandEncoder* commandEncoder() const { return m_commandEncoder; }
+
+private:
+    VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
+    Device* m_device = nullptr;
+    CommandEncoder* m_commandEncoder = nullptr;
+};
+
+class ComputePassEncoder {
+public:
+    ComputePassEncoder(const ComputePassEncoder&) = delete;
+    ComputePassEncoder& operator=(const ComputePassEncoder&) = delete;
+
+    ComputePassEncoder(CommandEncoder* commandEncoder, const ComputePassEncoderCreateInfo& createInfo);
+
+    ~ComputePassEncoder()
+    {
+        // Compute pass has no special cleanup
+    }
+
+    VkCommandBuffer handle() const { return m_commandBuffer; }
+    Device* device() const { return m_device; }
+    CommandEncoder* commandEncoder() const { return m_commandEncoder; }
+
+private:
+    VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
+    Device* m_device = nullptr;
+    CommandEncoder* m_commandEncoder = nullptr;
 };
 
 } // namespace gfx::vulkan
