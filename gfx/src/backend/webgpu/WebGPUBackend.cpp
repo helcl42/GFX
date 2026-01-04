@@ -687,10 +687,9 @@ GfxResult WebGPUBackend::textureCreateView(GfxTexture texture, const GfxTextureV
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
-    auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
-    auto createInfo = gfx::convertor::gfxDescriptorToWebGPUTextureViewCreateInfo(descriptor);
-
     try {
+        auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
+        auto createInfo = gfx::convertor::gfxDescriptorToWebGPUTextureViewCreateInfo(descriptor);
         auto* view = new gfx::webgpu::TextureView(texturePtr, createInfo);
         *outView = reinterpret_cast<GfxTextureView>(view);
         return GFX_RESULT_SUCCESS;

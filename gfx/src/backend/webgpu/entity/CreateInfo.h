@@ -75,6 +75,10 @@ struct FenceCreateInfo {
     bool signaled; // true = create in signaled state
 };
 
+struct CommandEncoderCreateInfo {
+    const char* label; // nullptr means no label
+};
+
 struct SubmitInfo {
     CommandEncoder** commandEncoders;
     uint32_t commandEncoderCount;

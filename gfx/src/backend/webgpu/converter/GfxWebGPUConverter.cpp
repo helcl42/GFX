@@ -485,6 +485,13 @@ gfx::webgpu::ComputePipelineCreateInfo gfxDescriptorToWebGPUComputePipelineCreat
     return createInfo;
 }
 
+gfx::webgpu::CommandEncoderCreateInfo gfxDescriptorToWebGPUCommandEncoderCreateInfo(const GfxCommandEncoderDescriptor* descriptor)
+{
+    gfx::webgpu::CommandEncoderCreateInfo createInfo;
+    createInfo.label = descriptor->label;
+    return createInfo;
+}
+
 gfx::webgpu::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitInfo* descriptor)
 {
     gfx::webgpu::SubmitInfo submitInfo{};

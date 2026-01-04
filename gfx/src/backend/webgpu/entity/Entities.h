@@ -1007,11 +1007,19 @@ public:
     CommandEncoder(const CommandEncoder&) = delete;
     CommandEncoder& operator=(const CommandEncoder&) = delete;
 
-    CommandEncoder(WGPUDevice device, WGPUCommandEncoder encoder)
+    CommandEncoder(Device* device, const CommandEncoderCreateInfo& createInfo)
         : m_device(device)
-        , m_encoder(encoder)
         , m_finished(false)
     {
+        WGPUCommandEncoderDescriptor desc = WGPU_COMMAND_ENCODER_DESCRIPTOR_INIT;
+        if (createInfo.label) {
+            desc.label = toStringView(createInfo.label);
+        }
+
+        m_encoder = wgpuDeviceCreateCommandEncoder(m_device->handle(), &desc);
+        if (!m_encoder) {
+            throw std::runtime_error("Failed to create WebGPU CommandEncoder");
+        }
     }
 
     ~CommandEncoder()
@@ -1041,7 +1049,7 @@ public:
 
         // Create new encoder
         WGPUCommandEncoderDescriptor desc = WGPU_COMMAND_ENCODER_DESCRIPTOR_INIT;
-        m_encoder = wgpuDeviceCreateCommandEncoder(m_device, &desc);
+        m_encoder = wgpuDeviceCreateCommandEncoder(m_device->handle(), &desc);
         if (!m_encoder) {
             return false;
         }
@@ -1051,7 +1059,7 @@ public:
     }
 
 private:
-    WGPUDevice m_device = nullptr;
+    Device* m_device = nullptr; // Non-owning pointer
     WGPUCommandEncoder m_encoder = nullptr;
     bool m_finished = false;
 };
