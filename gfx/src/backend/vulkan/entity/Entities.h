@@ -1,8 +1,9 @@
 #pragma once
 
+#include "CreateInfo.h" // Internal CreateInfo structs
+
 #include "../common/VulkanCommon.h"
 #include "../converter/GfxVulkanConverter.h"
-#include "CreateInfo.h" // Internal CreateInfo structs
 
 #include <cassert>
 #include <cstdio>
