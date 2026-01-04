@@ -12,6 +12,7 @@ if(EMSCRIPTEN)
     # Force options for web builds
     set(BUILD_VULKAN_BACKEND OFF CACHE BOOL "Vulkan not available on web" FORCE)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "Static libraries for web" FORCE)
+    set(ENABLE_ASAN OFF CACHE BOOL "ASan not well supported on web" FORCE)
 else()
     set(BUILD_FOR_WEB FALSE)
 endif()
@@ -22,7 +23,7 @@ option(BUILD_CPP_WRAPPER "Build C++ wrapper library" ON)
 option(BUILD_VULKAN_BACKEND "Build Vulkan backend" ON)
 option(BUILD_WEBGPU_BACKEND "Build WebGPU backend" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
-option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
+option(ENABLE_ASAN "Enable Address Sanitizer" ON)
 
 # Find required packages
 find_package(PkgConfig REQUIRED)
