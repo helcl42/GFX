@@ -779,26 +779,7 @@ GfxTextureUsage WebGPUBackend::textureGetUsage(GfxTexture texture) const
     }
 
     auto* texturePtr = reinterpret_cast<gfx::webgpu::Texture*>(texture);
-    WGPUTextureUsage wgpuUsage = texturePtr->getUsage();
-
-    uint32_t usage = GFX_TEXTURE_USAGE_NONE;
-    if (wgpuUsage & WGPUTextureUsage_CopySrc) {
-        usage |= GFX_TEXTURE_USAGE_COPY_SRC;
-    }
-    if (wgpuUsage & WGPUTextureUsage_CopyDst) {
-        usage |= GFX_TEXTURE_USAGE_COPY_DST;
-    }
-    if (wgpuUsage & WGPUTextureUsage_TextureBinding) {
-        usage |= GFX_TEXTURE_USAGE_TEXTURE_BINDING;
-    }
-    if (wgpuUsage & WGPUTextureUsage_StorageBinding) {
-        usage |= GFX_TEXTURE_USAGE_STORAGE_BINDING;
-    }
-    if (wgpuUsage & WGPUTextureUsage_RenderAttachment) {
-        usage |= GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
-    }
-
-    return static_cast<GfxTextureUsage>(usage);
+    return gfx::convertor::wgpuTextureUsageToGfxTextureUsage(texturePtr->getUsage());
 }
 
 GfxTextureLayout WebGPUBackend::textureGetLayout(GfxTexture texture) const

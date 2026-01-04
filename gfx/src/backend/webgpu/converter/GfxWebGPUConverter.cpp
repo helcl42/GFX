@@ -753,6 +753,27 @@ WGPUTextureUsage gfxTextureUsageToWGPU(GfxTextureUsage usage)
     return wgpu_usage;
 }
 
+GfxTextureUsage wgpuTextureUsageToGfxTextureUsage(WGPUTextureUsage usage)
+{
+    uint32_t gfx_usage = GFX_TEXTURE_USAGE_NONE;
+    if (usage & WGPUTextureUsage_CopySrc) {
+        gfx_usage |= GFX_TEXTURE_USAGE_COPY_SRC;
+    }
+    if (usage & WGPUTextureUsage_CopyDst) {
+        gfx_usage |= GFX_TEXTURE_USAGE_COPY_DST;
+    }
+    if (usage & WGPUTextureUsage_TextureBinding) {
+        gfx_usage |= GFX_TEXTURE_USAGE_TEXTURE_BINDING;
+    }
+    if (usage & WGPUTextureUsage_StorageBinding) {
+        gfx_usage |= GFX_TEXTURE_USAGE_STORAGE_BINDING;
+    }
+    if (usage & WGPUTextureUsage_RenderAttachment) {
+        gfx_usage |= GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
+    }
+    return static_cast<GfxTextureUsage>(gfx_usage);
+}
+
 WGPUAddressMode gfxAddressModeToWGPU(GfxAddressMode mode)
 {
     switch (mode) {

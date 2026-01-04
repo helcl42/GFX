@@ -101,6 +101,7 @@ WGPUBufferUsage gfxBufferUsageToWGPU(GfxBufferUsage usage);
 
 // Texture usage conversions
 WGPUTextureUsage gfxTextureUsageToWGPU(GfxTextureUsage usage);
+GfxTextureUsage wgpuTextureUsageToGfxTextureUsage(WGPUTextureUsage usage);
 
 // Sampler conversions
 WGPUAddressMode gfxAddressModeToWGPU(GfxAddressMode mode);
