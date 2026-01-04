@@ -3,8 +3,25 @@
 namespace gfx::vulkan {
 
 // ============================================================================
-// Queue::submit Implementation
+// Queue Implementation
 // ============================================================================
+
+Queue::Queue(Device* device, uint32_t queueFamily)
+    : m_device(device)
+    , m_queueFamily(queueFamily)
+{
+    vkGetDeviceQueue(device->handle(), queueFamily, 0, &m_queue);
+}
+
+VkDevice Queue::device() const
+{
+    return m_device->handle();
+}
+
+VkPhysicalDevice Queue::physicalDevice() const
+{
+    return m_device->getAdapter()->handle();
+}
 
 VkResult Queue::submit(const SubmitInfo& submitInfo)
 {
