@@ -1433,7 +1433,7 @@ public:
         , m_height(createInfo.height)
         , m_format(createInfo.format)
         , m_presentMode(createInfo.presentMode)
-        , m_bufferCount(createInfo.bufferCount)
+        , m_imageCount(createInfo.imageCount)
     {
 
         // Get surface capabilities
@@ -1514,7 +1514,7 @@ public:
     uint32_t getHeight() const { return m_height; }
     WGPUTextureFormat getFormat() const { return m_format; }
     WGPUPresentMode getPresentMode() const { return m_presentMode; }
-    uint32_t getBufferCount() const { return m_bufferCount; }
+    uint32_t getImageCount() const { return m_imageCount; }
 
     // Swapchain operations (call in order: acquireNextImage -> getCurrentTextureView -> present)
     WGPUSurfaceGetCurrentTextureStatus acquireNextImage()
@@ -1579,7 +1579,7 @@ private:
     uint32_t m_height = 0;
     WGPUTextureFormat m_format = WGPUTextureFormat_Undefined;
     WGPUPresentMode m_presentMode = WGPUPresentMode_Fifo;
-    uint32_t m_bufferCount = 0;
+    uint32_t m_imageCount = 0;
     WGPUTexture m_currentTexture = nullptr; // Current frame texture from Dawn
     gfx::webgpu::TextureView* m_currentView = nullptr; // Current frame view (owned)
 };

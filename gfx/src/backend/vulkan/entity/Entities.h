@@ -838,7 +838,7 @@ public:
         VkSwapchainCreateInfoKHR vkCreateInfo{};
         vkCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         vkCreateInfo.surface = m_surface->handle();
-        vkCreateInfo.minImageCount = std::min(createInfo.bufferCount, capabilities.minImageCount + 1);
+        vkCreateInfo.minImageCount = std::min(createInfo.imageCount, capabilities.minImageCount + 1);
         if (capabilities.maxImageCount > 0) {
             vkCreateInfo.minImageCount = std::min(vkCreateInfo.minImageCount, capabilities.maxImageCount);
         }

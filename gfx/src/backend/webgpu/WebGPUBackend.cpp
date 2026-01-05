@@ -533,12 +533,12 @@ GfxTextureFormat WebGPUBackend::swapchainGetFormat(GfxSwapchain swapchain) const
     return converter::wgpuFormatToGfxFormat(swapchainPtr->getFormat());
 }
 
-uint32_t WebGPUBackend::swapchainGetBufferCount(GfxSwapchain swapchain) const
+uint32_t WebGPUBackend::swapchainGetImageCount(GfxSwapchain swapchain) const
 {
     if (!swapchain) {
         return 0;
     }
-    return converter::toNative<Swapchain>(swapchain)->getBufferCount();
+    return converter::toNative<Swapchain>(swapchain)->getImageCount();
 }
 
 GfxResult WebGPUBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const

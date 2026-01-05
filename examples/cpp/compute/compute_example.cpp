@@ -727,7 +727,7 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         swapchainDesc.format = COLOR_FORMAT;
         swapchainDesc.usage = TextureUsage::RenderAttachment;
         swapchainDesc.presentMode = PresentMode::Fifo;
-        swapchainDesc.bufferCount = MAX_FRAMES_IN_FLIGHT;
+        swapchainDesc.imageCount = MAX_FRAMES_IN_FLIGHT;
 
         swapchain = device->createSwapchain(surface, swapchainDesc);
         if (!swapchain) {

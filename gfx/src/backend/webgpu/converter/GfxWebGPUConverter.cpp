@@ -256,7 +256,7 @@ gfx::webgpu::SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const 
     createInfo.format = gfxFormatToWGPUFormat(descriptor->format);
     createInfo.usage = gfxTextureUsageToWGPU(descriptor->usage);
     createInfo.presentMode = gfxPresentModeToWGPU(descriptor->presentMode);
-    createInfo.bufferCount = descriptor->bufferCount;
+    createInfo.imageCount = descriptor->imageCount;
     return createInfo;
 }
 

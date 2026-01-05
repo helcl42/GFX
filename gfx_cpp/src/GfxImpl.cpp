@@ -1073,7 +1073,7 @@ public:
     uint32_t getWidth() const override { return gfxSwapchainGetWidth(m_handle); }
     uint32_t getHeight() const override { return gfxSwapchainGetHeight(m_handle); }
     TextureFormat getFormat() const override { return cFormatToCppFormat(gfxSwapchainGetFormat(m_handle)); }
-    uint32_t getBufferCount() const override { return gfxSwapchainGetBufferCount(m_handle); }
+    uint32_t getImageCount() const override { return gfxSwapchainGetImageCount(m_handle); }
 
     std::shared_ptr<TextureView> getCurrentTextureView() override
     {
@@ -1178,7 +1178,7 @@ public:
         cDesc.format = cppFormatToCFormat(descriptor.format);
         cDesc.usage = cppTextureUsageToCUsage(descriptor.usage);
         cDesc.presentMode = static_cast<GfxPresentMode>(descriptor.presentMode);
-        cDesc.bufferCount = descriptor.bufferCount;
+        cDesc.imageCount = descriptor.imageCount;
 
         GfxSwapchain swapchain = nullptr;
         GfxResult result = gfxDeviceCreateSwapchain(m_handle, surfaceImpl->getHandle(), &cDesc, &swapchain);

@@ -532,7 +532,7 @@ GfxTextureFormat gfxSwapchainGetFormat(GfxSwapchain swapchain)
     return api->swapchainGetFormat(gfx::native(swapchain));
 }
 
-uint32_t gfxSwapchainGetBufferCount(GfxSwapchain swapchain)
+uint32_t gfxSwapchainGetImageCount(GfxSwapchain swapchain)
 {
     if (!swapchain) {
         return 0;
@@ -541,7 +541,7 @@ uint32_t gfxSwapchainGetBufferCount(GfxSwapchain swapchain)
     if (!api) {
         return 0;
     }
-    return api->swapchainGetBufferCount(gfx::native(swapchain));
+    return api->swapchainGetImageCount(gfx::native(swapchain));
 }
 
 GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs,

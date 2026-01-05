@@ -1109,7 +1109,7 @@ gfx::vulkan::SwapchainCreateInfo gfxDescriptorToSwapchainCreateInfo(const GfxSwa
     createInfo.height = descriptor->height;
     createInfo.format = gfxFormatToVkFormat(descriptor->format);
     createInfo.presentMode = gfxPresentModeToVkPresentMode(descriptor->presentMode);
-    createInfo.bufferCount = descriptor->bufferCount;
+    createInfo.imageCount = descriptor->imageCount;
     return createInfo;
 }
 

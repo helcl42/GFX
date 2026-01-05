@@ -763,7 +763,7 @@ struct SwapchainDescriptor {
     TextureFormat format = TextureFormat::B8G8R8A8Unorm;
     TextureUsage usage = TextureUsage::RenderAttachment;
     PresentMode presentMode = PresentMode::Fifo;
-    uint32_t bufferCount = 2; // Double buffering by default
+    uint32_t imageCount = 2; // Double buffering by default
 };
 
 struct FenceDescriptor {
@@ -916,7 +916,7 @@ public:
     virtual uint32_t getWidth() const = 0;
     virtual uint32_t getHeight() const = 0;
     virtual TextureFormat getFormat() const = 0;
-    virtual uint32_t getBufferCount() const = 0;
+    virtual uint32_t getImageCount() const = 0;
 
     // Get the current frame's texture view for rendering
     virtual std::shared_ptr<TextureView> getCurrentTextureView() = 0;

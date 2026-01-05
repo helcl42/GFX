@@ -361,7 +361,7 @@ static bool initGraphics(ComputeApp* app)
         .format = COLOR_FORMAT,
         .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT,
         .presentMode = GFX_PRESENT_MODE_FIFO,
-        .bufferCount = MAX_FRAMES_IN_FLIGHT
+        .imageCount = MAX_FRAMES_IN_FLIGHT
     };
 
     if (gfxDeviceCreateSwapchain(app->device, app->surface, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {

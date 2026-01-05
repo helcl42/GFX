@@ -261,7 +261,7 @@ struct SwapchainCreateInfo {
     VkFormat format;
     VkColorSpaceKHR colorSpace;
     VkPresentModeKHR presentMode;
-    uint32_t bufferCount;
+    uint32_t imageCount;
 };
 
 // Pipeline CreateInfo structs - these are complex

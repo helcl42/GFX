@@ -556,7 +556,7 @@ GfxTextureFormat VulkanBackend::swapchainGetFormat(GfxSwapchain swapchain) const
     return converter::vkFormatToGfxFormat(sc->getFormat());
 }
 
-uint32_t VulkanBackend::swapchainGetBufferCount(GfxSwapchain swapchain) const
+uint32_t VulkanBackend::swapchainGetImageCount(GfxSwapchain swapchain) const
 {
     if (!swapchain) {
         return 0;

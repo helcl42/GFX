@@ -52,7 +52,7 @@ public:
     uint32_t swapchainGetWidth(GfxSwapchain swapchain) const override;
     uint32_t swapchainGetHeight(GfxSwapchain swapchain) const override;
     GfxTextureFormat swapchainGetFormat(GfxSwapchain swapchain) const override;
-    uint32_t swapchainGetBufferCount(GfxSwapchain swapchain) const override;
+    uint32_t swapchainGetImageCount(GfxSwapchain swapchain) const override;
     GfxResult swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const override;
     GfxTextureView swapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex) const override;
     GfxTextureView swapchainGetCurrentTextureView(GfxSwapchain swapchain) const override;
