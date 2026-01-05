@@ -2033,6 +2033,113 @@ public:
         }
     }
 
+    void pipelineBarrier(
+        const MemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
+        const BufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
+        const TextureBarrier* textureBarriers, uint32_t textureBarrierCount)
+    {
+        std::vector<VkMemoryBarrier> memBarriers;
+        memBarriers.reserve(memoryBarrierCount);
+
+        std::vector<VkBufferMemoryBarrier> bufferMemoryBarriers;
+        bufferMemoryBarriers.reserve(bufferBarrierCount);
+
+        std::vector<VkImageMemoryBarrier> imageBarriers;
+        imageBarriers.reserve(textureBarrierCount);
+
+        // Combine pipeline stages from all barriers
+        VkPipelineStageFlags srcStage = 0;
+        VkPipelineStageFlags dstStage = 0;
+
+        // Process memory barriers
+        for (uint32_t i = 0; i < memoryBarrierCount; ++i) {
+            const auto& barrier = memoryBarriers[i];
+
+            VkMemoryBarrier vkBarrier{};
+            vkBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+            vkBarrier.srcAccessMask = barrier.srcAccessMask;
+            vkBarrier.dstAccessMask = barrier.dstAccessMask;
+
+            memBarriers.push_back(vkBarrier);
+
+            srcStage |= barrier.srcStageMask;
+            dstStage |= barrier.dstStageMask;
+        }
+
+        // Process buffer barriers
+        for (uint32_t i = 0; i < bufferBarrierCount; ++i) {
+            const auto& barrier = bufferBarriers[i];
+
+            VkBufferMemoryBarrier vkBarrier{};
+            vkBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            vkBarrier.buffer = barrier.buffer->handle();
+            vkBarrier.offset = barrier.offset;
+            vkBarrier.size = barrier.size == 0 ? VK_WHOLE_SIZE : barrier.size;
+            vkBarrier.srcAccessMask = barrier.srcAccessMask;
+            vkBarrier.dstAccessMask = barrier.dstAccessMask;
+            vkBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            vkBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+            bufferMemoryBarriers.push_back(vkBarrier);
+
+            srcStage |= barrier.srcStageMask;
+            dstStage |= barrier.dstStageMask;
+        }
+
+        // Process texture barriers
+        for (uint32_t i = 0; i < textureBarrierCount; ++i) {
+            const auto& barrier = textureBarriers[i];
+
+            VkImageMemoryBarrier vkBarrier{};
+            vkBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            vkBarrier.image = barrier.texture->handle();
+
+            // Determine aspect mask based on texture format
+            VkFormat format = barrier.texture->getFormat();
+            if (converter::isDepthFormat(format)) {
+                vkBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+                if (converter::hasStencilComponent(format)) {
+                    vkBarrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+                }
+            } else {
+                vkBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            }
+
+            vkBarrier.subresourceRange.baseMipLevel = barrier.baseMipLevel;
+            vkBarrier.subresourceRange.levelCount = barrier.mipLevelCount;
+            vkBarrier.subresourceRange.baseArrayLayer = barrier.baseArrayLayer;
+            vkBarrier.subresourceRange.layerCount = barrier.arrayLayerCount;
+
+            vkBarrier.oldLayout = barrier.oldLayout;
+            vkBarrier.newLayout = barrier.newLayout;
+            vkBarrier.srcAccessMask = barrier.srcAccessMask;
+            vkBarrier.dstAccessMask = barrier.dstAccessMask;
+
+            vkBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            vkBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+            imageBarriers.push_back(vkBarrier);
+
+            srcStage |= barrier.srcStageMask;
+            dstStage |= barrier.dstStageMask;
+
+            // Update tracked layout
+            barrier.texture->setLayout(barrier.newLayout);
+        }
+
+        vkCmdPipelineBarrier(
+            m_commandBuffer,
+            srcStage,
+            dstStage,
+            0,
+            static_cast<uint32_t>(memBarriers.size()),
+            memBarriers.empty() ? nullptr : memBarriers.data(),
+            static_cast<uint32_t>(bufferMemoryBarriers.size()),
+            bufferMemoryBarriers.empty() ? nullptr : bufferMemoryBarriers.data(),
+            static_cast<uint32_t>(imageBarriers.size()),
+            imageBarriers.empty() ? nullptr : imageBarriers.data());
+    }
+
     void copyBufferToBuffer(Buffer* source, uint64_t sourceOffset,
         Buffer* destination, uint64_t destinationOffset,
         uint64_t size)

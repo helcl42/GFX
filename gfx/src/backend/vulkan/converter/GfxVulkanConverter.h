@@ -27,6 +27,9 @@ struct ComputePipelineCreateInfo;
 struct RenderPassEncoderCreateInfo;
 struct ComputePassEncoderCreateInfo;
 struct SubmitInfo;
+struct MemoryBarrier;
+struct BufferBarrier;
+struct TextureBarrier;
 
 enum class DebugMessageSeverity;
 enum class DebugMessageType;
@@ -74,6 +77,16 @@ VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsage gfxUsage);
 GfxBufferUsage vkBufferUsageToGfxBufferUsage(VkBufferUsageFlags vkUsage);
 VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsage gfxUsage, VkFormat format);
 GfxTextureUsage vkImageUsageToGfxTextureUsage(VkImageUsageFlags vkUsage);
+VkPipelineStageFlags gfxPipelineStageFlagsToVkPipelineStageFlags(GfxPipelineStage gfxStage);
+VkAccessFlags gfxAccessFlagsToVkAccessFlags(GfxAccessFlags gfxAccessFlags);
+
+// ============================================================================
+// Barrier Conversion
+// ============================================================================
+
+MemoryBarrier gfxMemoryBarrierToMemoryBarrier(const GfxMemoryBarrier& barrier);
+BufferBarrier gfxBufferBarrierToBufferBarrier(const GfxBufferBarrier& barrier);
+TextureBarrier gfxTextureBarrierToTextureBarrier(const GfxTextureBarrier& barrier);
 
 // ============================================================================
 // Device Limits Conversion

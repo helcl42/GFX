@@ -766,6 +766,120 @@ VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsage gfxUsage, VkForm
     return usage;
 }
 
+VkPipelineStageFlags gfxPipelineStageFlagsToVkPipelineStageFlags(GfxPipelineStage gfxStage)
+{
+    VkPipelineStageFlags vkStage = 0;
+    if (gfxStage & GFX_PIPELINE_STAGE_TOP_OF_PIPE)
+        vkStage |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_DRAW_INDIRECT)
+        vkStage |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_VERTEX_INPUT)
+        vkStage |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_VERTEX_SHADER)
+        vkStage |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER)
+        vkStage |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER)
+        vkStage |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_GEOMETRY_SHADER)
+        vkStage |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_FRAGMENT_SHADER)
+        vkStage |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS)
+        vkStage |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_LATE_FRAGMENT_TESTS)
+        vkStage |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT)
+        vkStage |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_COMPUTE_SHADER)
+        vkStage |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_TRANSFER)
+        vkStage |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_BOTTOM_OF_PIPE)
+        vkStage |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_ALL_GRAPHICS)
+        vkStage |= VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+    if (gfxStage & GFX_PIPELINE_STAGE_ALL_COMMANDS)
+        vkStage |= VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    return vkStage;
+}
+
+VkAccessFlags gfxAccessFlagsToVkAccessFlags(GfxAccessFlags gfxAccessFlags)
+{
+    VkAccessFlags vkAccessFlags = 0;
+    if (gfxAccessFlags & GFX_ACCESS_INDIRECT_COMMAND_READ)
+        vkAccessFlags |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_INDEX_READ)
+        vkAccessFlags |= VK_ACCESS_INDEX_READ_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_VERTEX_ATTRIBUTE_READ)
+        vkAccessFlags |= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_UNIFORM_READ)
+        vkAccessFlags |= VK_ACCESS_UNIFORM_READ_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_INPUT_ATTACHMENT_READ)
+        vkAccessFlags |= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_SHADER_READ)
+        vkAccessFlags |= VK_ACCESS_SHADER_READ_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_SHADER_WRITE)
+        vkAccessFlags |= VK_ACCESS_SHADER_WRITE_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_COLOR_ATTACHMENT_READ)
+        vkAccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_COLOR_ATTACHMENT_WRITE)
+        vkAccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ)
+        vkAccessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE)
+        vkAccessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_TRANSFER_READ)
+        vkAccessFlags |= VK_ACCESS_TRANSFER_READ_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_TRANSFER_WRITE)
+        vkAccessFlags |= VK_ACCESS_TRANSFER_WRITE_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_MEMORY_READ)
+        vkAccessFlags |= VK_ACCESS_MEMORY_READ_BIT;
+    if (gfxAccessFlags & GFX_ACCESS_MEMORY_WRITE)
+        vkAccessFlags |= VK_ACCESS_MEMORY_WRITE_BIT;
+    return vkAccessFlags;
+}
+
+MemoryBarrier gfxMemoryBarrierToMemoryBarrier(const GfxMemoryBarrier& barrier)
+{
+    return {
+        gfxPipelineStageFlagsToVkPipelineStageFlags(barrier.srcStageMask),
+        gfxPipelineStageFlagsToVkPipelineStageFlags(barrier.dstStageMask),
+        gfxAccessFlagsToVkAccessFlags(barrier.srcAccessMask),
+        gfxAccessFlagsToVkAccessFlags(barrier.dstAccessMask)
+    };
+}
+
+BufferBarrier gfxBufferBarrierToBufferBarrier(const GfxBufferBarrier& barrier)
+{
+    return {
+        toNative<Buffer>(barrier.buffer),
+        gfxPipelineStageFlagsToVkPipelineStageFlags(barrier.srcStageMask),
+        gfxPipelineStageFlagsToVkPipelineStageFlags(barrier.dstStageMask),
+        gfxAccessFlagsToVkAccessFlags(barrier.srcAccessMask),
+        gfxAccessFlagsToVkAccessFlags(barrier.dstAccessMask),
+        barrier.offset,
+        barrier.size
+    };
+}
+
+TextureBarrier gfxTextureBarrierToTextureBarrier(const GfxTextureBarrier& barrier)
+{
+    return {
+        toNative<Texture>(barrier.texture),
+        gfxPipelineStageFlagsToVkPipelineStageFlags(barrier.srcStageMask),
+        gfxPipelineStageFlagsToVkPipelineStageFlags(barrier.dstStageMask),
+        gfxAccessFlagsToVkAccessFlags(barrier.srcAccessMask),
+        gfxAccessFlagsToVkAccessFlags(barrier.dstAccessMask),
+        gfxLayoutToVkImageLayout(barrier.oldLayout),
+        gfxLayoutToVkImageLayout(barrier.newLayout),
+        barrier.baseMipLevel,
+        barrier.mipLevelCount,
+        barrier.baseArrayLayer,
+        barrier.arrayLayerCount
+    };
+}
+
 gfx::vulkan::BufferCreateInfo gfxDescriptorToBufferCreateInfo(const GfxBufferDescriptor* descriptor)
 {
     gfx::vulkan::BufferCreateInfo createInfo{};

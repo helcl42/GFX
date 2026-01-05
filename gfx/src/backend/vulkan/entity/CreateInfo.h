@@ -15,6 +15,10 @@ class Fence;
 class Semaphore;
 struct RenderPassEncoderCreateInfo;
 
+// Forward declarations for barriers
+class Buffer;
+class Texture;
+
 // ============================================================================
 // Internal Type Definitions
 // ============================================================================
@@ -101,6 +105,37 @@ struct SemaphoreCreateInfo {
 
 struct FenceCreateInfo {
     bool signaled; // true = create in signaled state
+};
+
+struct MemoryBarrier {
+    VkPipelineStageFlags srcStageMask;
+    VkPipelineStageFlags dstStageMask;
+    VkAccessFlags srcAccessMask;
+    VkAccessFlags dstAccessMask;
+};
+
+struct BufferBarrier {
+    class Buffer* buffer;
+    VkPipelineStageFlags srcStageMask;
+    VkPipelineStageFlags dstStageMask;
+    VkAccessFlags srcAccessMask;
+    VkAccessFlags dstAccessMask;
+    uint64_t offset;
+    uint64_t size; // 0 means whole buffer
+};
+
+struct TextureBarrier {
+    class Texture* texture;
+    VkPipelineStageFlags srcStageMask;
+    VkPipelineStageFlags dstStageMask;
+    VkAccessFlags srcAccessMask;
+    VkAccessFlags dstAccessMask;
+    VkImageLayout oldLayout;
+    VkImageLayout newLayout;
+    uint32_t baseMipLevel;
+    uint32_t mipLevelCount;
+    uint32_t baseArrayLayer;
+    uint32_t arrayLayerCount;
 };
 
 struct SamplerCreateInfo {

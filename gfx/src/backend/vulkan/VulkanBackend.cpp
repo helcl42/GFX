@@ -1049,113 +1049,30 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
     }
 
     auto* encoder = converter::toNative<CommandEncoder>(commandEncoder);
-    VkCommandBuffer cmdBuffer = encoder->handle();
 
-    std::vector<VkMemoryBarrier> memBarriers;
-    memBarriers.reserve(memoryBarrierCount);
-
-    std::vector<VkBufferMemoryBarrier> bufferMemoryBarriers;
-    bufferMemoryBarriers.reserve(bufferBarrierCount);
-
-    std::vector<VkImageMemoryBarrier> imageBarriers;
-    imageBarriers.reserve(textureBarrierCount);
-
-    // Combine pipeline stages from all barriers
-    VkPipelineStageFlags srcStage = 0;
-    VkPipelineStageFlags dstStage = 0;
-
-    // Process memory barriers
+    // Convert GFX barriers to internal Vulkan barriers
+    std::vector<MemoryBarrier> internalMemBarriers;
+    internalMemBarriers.reserve(memoryBarrierCount);
     for (uint32_t i = 0; i < memoryBarrierCount; ++i) {
-        const auto& barrier = memoryBarriers[i];
-
-        VkMemoryBarrier vkBarrier{};
-        vkBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-        vkBarrier.srcAccessMask = static_cast<VkAccessFlags>(barrier.srcAccessMask);
-        vkBarrier.dstAccessMask = static_cast<VkAccessFlags>(barrier.dstAccessMask);
-
-        memBarriers.push_back(vkBarrier);
-
-        srcStage |= static_cast<VkPipelineStageFlags>(barrier.srcStageMask);
-        dstStage |= static_cast<VkPipelineStageFlags>(barrier.dstStageMask);
+        internalMemBarriers.push_back(converter::gfxMemoryBarrierToMemoryBarrier(memoryBarriers[i]));
     }
 
-    // Process buffer barriers
+    std::vector<BufferBarrier> internalBufBarriers;
+    internalBufBarriers.reserve(bufferBarrierCount);
     for (uint32_t i = 0; i < bufferBarrierCount; ++i) {
-        const auto& barrier = bufferBarriers[i];
-        auto* buffer = converter::toNative<Buffer>(barrier.buffer);
-
-        VkBufferMemoryBarrier vkBarrier{};
-        vkBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-        vkBarrier.buffer = buffer->handle();
-        vkBarrier.offset = barrier.offset;
-        vkBarrier.size = barrier.size == 0 ? VK_WHOLE_SIZE : barrier.size;
-        vkBarrier.srcAccessMask = static_cast<VkAccessFlags>(barrier.srcAccessMask);
-        vkBarrier.dstAccessMask = static_cast<VkAccessFlags>(barrier.dstAccessMask);
-        vkBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        vkBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-        bufferMemoryBarriers.push_back(vkBarrier);
-
-        srcStage |= static_cast<VkPipelineStageFlags>(barrier.srcStageMask);
-        dstStage |= static_cast<VkPipelineStageFlags>(barrier.dstStageMask);
+        internalBufBarriers.push_back(converter::gfxBufferBarrierToBufferBarrier(bufferBarriers[i]));
     }
 
+    std::vector<TextureBarrier> internalTexBarriers;
+    internalTexBarriers.reserve(textureBarrierCount);
     for (uint32_t i = 0; i < textureBarrierCount; ++i) {
-        const auto& barrier = textureBarriers[i];
-        auto* texture = converter::toNative<Texture>(barrier.texture);
-
-        VkImageMemoryBarrier vkBarrier{};
-        vkBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        vkBarrier.image = texture->handle();
-
-        // Determine aspect mask based on texture format
-        VkFormat format = texture->getFormat();
-        if (converter::isDepthFormat(format)) {
-            vkBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            if (converter::hasStencilComponent(format)) {
-                vkBarrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-            }
-        } else {
-            vkBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        }
-
-        vkBarrier.subresourceRange.baseMipLevel = barrier.baseMipLevel;
-        vkBarrier.subresourceRange.levelCount = barrier.mipLevelCount;
-        vkBarrier.subresourceRange.baseArrayLayer = barrier.baseArrayLayer;
-        vkBarrier.subresourceRange.layerCount = barrier.arrayLayerCount;
-
-        // Convert layouts
-        vkBarrier.oldLayout = converter::gfxLayoutToVkImageLayout(barrier.oldLayout);
-        vkBarrier.newLayout = converter::gfxLayoutToVkImageLayout(barrier.newLayout);
-
-        // Convert access masks
-        vkBarrier.srcAccessMask = static_cast<VkAccessFlags>(barrier.srcAccessMask);
-        vkBarrier.dstAccessMask = static_cast<VkAccessFlags>(barrier.dstAccessMask);
-
-        vkBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        vkBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-        imageBarriers.push_back(vkBarrier);
-
-        // Combine pipeline stages from all barriers
-        srcStage |= static_cast<VkPipelineStageFlags>(barrier.srcStageMask);
-        dstStage |= static_cast<VkPipelineStageFlags>(barrier.dstStageMask);
-
-        // Update tracked layout (simplified - tracks whole texture, not per-subresource)
-        texture->setLayout(converter::gfxLayoutToVkImageLayout(barrier.newLayout));
+        internalTexBarriers.push_back(converter::gfxTextureBarrierToTextureBarrier(textureBarriers[i]));
     }
 
-    vkCmdPipelineBarrier(
-        cmdBuffer,
-        srcStage,
-        dstStage,
-        0,
-        static_cast<uint32_t>(memBarriers.size()),
-        memBarriers.empty() ? nullptr : memBarriers.data(),
-        static_cast<uint32_t>(bufferMemoryBarriers.size()),
-        bufferMemoryBarriers.empty() ? nullptr : bufferMemoryBarriers.data(),
-        static_cast<uint32_t>(imageBarriers.size()),
-        imageBarriers.empty() ? nullptr : imageBarriers.data());
+    encoder->pipelineBarrier(
+        internalMemBarriers.data(), static_cast<uint32_t>(internalMemBarriers.size()),
+        internalBufBarriers.data(), static_cast<uint32_t>(internalBufBarriers.size()),
+        internalTexBarriers.data(), static_cast<uint32_t>(internalTexBarriers.size()));
 }
 
 void VulkanBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
