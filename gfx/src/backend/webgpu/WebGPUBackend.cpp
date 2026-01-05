@@ -1046,7 +1046,7 @@ void WebGPUBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPass
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* pipelinePtr = converter::toNative<RenderPipeline>(pipeline);
 
-    wgpuRenderPassEncoderSetPipeline(encoderPtr->handle(), pipelinePtr->handle());
+    encoderPtr->setPipeline(pipelinePtr->handle());
 }
 
 void WebGPUBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
@@ -1058,7 +1058,7 @@ void WebGPUBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPas
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* bindGroupPtr = converter::toNative<BindGroup>(bindGroup);
 
-    wgpuRenderPassEncoderSetBindGroup(encoderPtr->handle(), index, bindGroupPtr->handle(), dynamicOffsetCount, dynamicOffsets);
+    encoderPtr->setBindGroup(index, bindGroupPtr->handle(), dynamicOffsets, dynamicOffsetCount);
 }
 
 void WebGPUBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
@@ -1070,7 +1070,7 @@ void WebGPUBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder render
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* bufferPtr = converter::toNative<Buffer>(buffer);
 
-    wgpuRenderPassEncoderSetVertexBuffer(encoderPtr->handle(), slot, bufferPtr->handle(), offset, size);
+    encoderPtr->setVertexBuffer(slot, bufferPtr->handle(), offset, size);
 }
 
 void WebGPUBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const
@@ -1082,8 +1082,7 @@ void WebGPUBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderP
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* bufferPtr = converter::toNative<Buffer>(buffer);
 
-    wgpuRenderPassEncoderSetIndexBuffer(encoderPtr->handle(), bufferPtr->handle(),
-        converter::gfxIndexFormatToWGPU(format), offset, size);
+    encoderPtr->setIndexBuffer(bufferPtr->handle(), converter::gfxIndexFormatToWGPU(format), offset, size);
 }
 
 void WebGPUBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
@@ -1093,8 +1092,7 @@ void WebGPUBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPass
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
-    wgpuRenderPassEncoderSetViewport(encoderPtr->handle(),
-        viewport->x, viewport->y, viewport->width, viewport->height,
+    encoderPtr->setViewport(viewport->x, viewport->y, viewport->width, viewport->height,
         viewport->minDepth, viewport->maxDepth);
 }
 
@@ -1105,8 +1103,7 @@ void WebGPUBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderP
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
-    wgpuRenderPassEncoderSetScissorRect(encoderPtr->handle(),
-        scissor->x, scissor->y, scissor->width, scissor->height);
+    encoderPtr->setScissorRect(scissor->x, scissor->y, scissor->width, scissor->height);
 }
 
 void WebGPUBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
@@ -1116,7 +1113,7 @@ void WebGPUBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
-    wgpuRenderPassEncoderDraw(encoderPtr->handle(), vertexCount, instanceCount, firstVertex, firstInstance);
+    encoderPtr->draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 void WebGPUBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
@@ -1126,8 +1123,7 @@ void WebGPUBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPass
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
-    wgpuRenderPassEncoderDrawIndexed(encoderPtr->handle(), indexCount, instanceCount,
-        firstIndex, baseVertex, firstInstance);
+    encoderPtr->drawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 }
 
 void WebGPUBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
@@ -1137,7 +1133,6 @@ void WebGPUBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder)
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
-    encoderPtr->end();
     delete encoderPtr;
 }
 
@@ -1151,7 +1146,7 @@ void WebGPUBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computeP
     auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
     auto* pipelinePtr = converter::toNative<ComputePipeline>(pipeline);
 
-    wgpuComputePassEncoderSetPipeline(encoderPtr->handle(), pipelinePtr->handle());
+    encoderPtr->setPipeline(pipelinePtr->handle());
 }
 
 void WebGPUBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
@@ -1163,7 +1158,7 @@ void WebGPUBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder compute
     auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
     auto* bindGroupPtr = converter::toNative<BindGroup>(bindGroup);
 
-    wgpuComputePassEncoderSetBindGroup(encoderPtr->handle(), index, bindGroupPtr->handle(), dynamicOffsetCount, dynamicOffsets);
+    encoderPtr->setBindGroup(index, bindGroupPtr->handle(), dynamicOffsets, dynamicOffsetCount);
 }
 
 void WebGPUBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
@@ -1173,7 +1168,7 @@ void WebGPUBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder c
     }
 
     auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
-    wgpuComputePassEncoderDispatchWorkgroups(encoderPtr->handle(), workgroupCountX, workgroupCountY, workgroupCountZ);
+    encoderPtr->dispatchWorkgroups(workgroupCountX, workgroupCountY, workgroupCountZ);
 }
 
 void WebGPUBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
@@ -1183,7 +1178,6 @@ void WebGPUBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncod
     }
 
     auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
-    encoderPtr->end();
     delete encoderPtr;
 }
 

@@ -1149,12 +1149,44 @@ public:
         }
     }
 
-    void end()
+    void setPipeline(WGPURenderPipeline pipeline)
     {
-        if (m_encoder && !m_ended) {
-            wgpuRenderPassEncoderEnd(m_encoder);
-            m_ended = true;
-        }
+        wgpuRenderPassEncoderSetPipeline(m_encoder, pipeline);
+    }
+
+    void setBindGroup(uint32_t index, WGPUBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
+    {
+        wgpuRenderPassEncoderSetBindGroup(m_encoder, index, bindGroup, dynamicOffsetCount, dynamicOffsets);
+    }
+
+    void setVertexBuffer(uint32_t slot, WGPUBuffer buffer, uint64_t offset, uint64_t size)
+    {
+        wgpuRenderPassEncoderSetVertexBuffer(m_encoder, slot, buffer, offset, size);
+    }
+
+    void setIndexBuffer(WGPUBuffer buffer, WGPUIndexFormat format, uint64_t offset, uint64_t size)
+    {
+        wgpuRenderPassEncoderSetIndexBuffer(m_encoder, buffer, format, offset, size);
+    }
+
+    void setViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+    {
+        wgpuRenderPassEncoderSetViewport(m_encoder, x, y, width, height, minDepth, maxDepth);
+    }
+
+    void setScissorRect(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+    {
+        wgpuRenderPassEncoderSetScissorRect(m_encoder, x, y, width, height);
+    }
+
+    void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+    {
+        wgpuRenderPassEncoderDraw(m_encoder, vertexCount, instanceCount, firstVertex, firstInstance);
+    }
+
+    void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance)
+    {
+        wgpuRenderPassEncoderDrawIndexed(m_encoder, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
     }
 
     WGPURenderPassEncoder handle() const { return m_encoder; }
@@ -1182,12 +1214,19 @@ public:
         }
     }
 
-    void end()
+    void setPipeline(WGPUComputePipeline pipeline)
     {
-        if (m_encoder && !m_ended) {
-            wgpuComputePassEncoderEnd(m_encoder);
-            m_ended = true;
-        }
+        wgpuComputePassEncoderSetPipeline(m_encoder, pipeline);
+    }
+
+    void setBindGroup(uint32_t index, WGPUBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
+    {
+        wgpuComputePassEncoderSetBindGroup(m_encoder, index, bindGroup, dynamicOffsetCount, dynamicOffsets);
+    }
+
+    void dispatchWorkgroups(uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ)
+    {
+        wgpuComputePassEncoderDispatchWorkgroups(m_encoder, workgroupCountX, workgroupCountY, workgroupCountZ);
     }
 
     WGPUComputePassEncoder handle() const { return m_encoder; }
