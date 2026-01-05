@@ -875,31 +875,30 @@ void CubeApp::render()
         renderPassDesc.colorAttachments = { colorAttachment };
         renderPassDesc.depthStencilAttachment = &depthAttachment;
 
-        auto renderPass = commandEncoder->beginRenderPass(renderPassDesc);
+        {
+            auto renderPass = commandEncoder->beginRenderPass(renderPassDesc);
 
-        // Set pipeline, bind groups, and buffers (using current frame's bind group)
-        renderPass->setPipeline(renderPipeline);
+            // Set pipeline, bind groups, and buffers (using current frame's bind group)
+            renderPass->setPipeline(renderPipeline);
 
-        // Set viewport and scissor to fill the entire render target
-        uint32_t swapWidth = swapchain->getWidth();
-        uint32_t swapHeight = swapchain->getHeight();
-        renderPass->setViewport(0.0f, 0.0f, static_cast<float>(swapWidth), static_cast<float>(swapHeight), 0.0f, 1.0f);
-        renderPass->setScissorRect(0, 0, swapWidth, swapHeight);
+            // Set viewport and scissor to fill the entire render target
+            uint32_t swapWidth = swapchain->getWidth();
+            uint32_t swapHeight = swapchain->getHeight();
+            renderPass->setViewport(0.0f, 0.0f, static_cast<float>(swapWidth), static_cast<float>(swapHeight), 0.0f, 1.0f);
+            renderPass->setScissorRect(0, 0, swapWidth, swapHeight);
 
-        renderPass->setVertexBuffer(0, vertexBuffer);
-        renderPass->setIndexBuffer(indexBuffer, IndexFormat::Uint16);
+            renderPass->setVertexBuffer(0, vertexBuffer);
+            renderPass->setIndexBuffer(indexBuffer, IndexFormat::Uint16);
 
-        // Draw CUBE_COUNT cubes at different positions
-        for (int i = 0; i < CUBE_COUNT; ++i) {
-            // Bind the specific cube's bind group (no dynamic offsets)
-            renderPass->setBindGroup(0, uniformBindGroups[currentFrame][i]);
+            // Draw CUBE_COUNT cubes at different positions
+            for (int i = 0; i < CUBE_COUNT; ++i) {
+                // Bind the specific cube's bind group (no dynamic offsets)
+                renderPass->setBindGroup(0, uniformBindGroups[currentFrame][i]);
 
-            // Draw indexed (36 indices for the cube)
-            renderPass->drawIndexed(36, 1, 0, 0, 0);
-        }
-
-        // End render pass
-        renderPass->end();
+                // Draw indexed (36 indices for the cube)
+                renderPass->drawIndexed(36, 1, 0, 0, 0);
+            }
+        } // renderPass destroyed here, ending the render pass
 
         // Finish command encoding
         commandEncoder->end();

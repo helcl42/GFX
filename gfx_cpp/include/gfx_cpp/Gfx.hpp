@@ -1030,8 +1030,6 @@ public:
 
     virtual void draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) = 0;
     virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t baseVertex = 0, uint32_t firstInstance = 0) = 0;
-
-    virtual void end() = 0;
 };
 
 class ComputePassEncoder {
@@ -1041,8 +1039,6 @@ public:
     virtual void setPipeline(std::shared_ptr<ComputePipeline> pipeline) = 0;
     virtual void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets = nullptr, uint32_t dynamicOffsetCount = 0) = 0;
     virtual void dispatchWorkgroups(uint32_t workgroupCountX, uint32_t workgroupCountY = 1, uint32_t workgroupCountZ = 1) = 0;
-
-    virtual void end() = 0;
 };
 
 class CommandEncoder {

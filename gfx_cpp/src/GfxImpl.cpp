@@ -508,14 +508,6 @@ public:
         gfxRenderPassEncoderDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
     }
 
-    void end() override
-    {
-        if (m_handle) {
-            gfxRenderPassEncoderEnd(m_handle);
-            m_handle = nullptr;
-        }
-    }
-
 private:
     GfxRenderPassEncoder m_handle;
 };
@@ -552,14 +544,6 @@ public:
     void dispatchWorkgroups(uint32_t workgroupCountX, uint32_t workgroupCountY = 1, uint32_t workgroupCountZ = 1) override
     {
         gfxComputePassEncoderDispatchWorkgroups(m_handle, workgroupCountX, workgroupCountY, workgroupCountZ);
-    }
-
-    void end() override
-    {
-        if (m_handle) {
-            gfxComputePassEncoderEnd(m_handle);
-            m_handle = nullptr;
-        }
     }
 
 private:

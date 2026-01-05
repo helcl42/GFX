@@ -800,17 +800,17 @@ void ComputeApp::render()
         encoder->pipelineBarrier({}, {}, { readToWriteBarrier });
 
         // Compute pass: Generate pattern
-        ComputePassDescriptor computePassDesc;
-        computePassDesc.label = "Generate Pattern";
-        auto computePass = encoder->beginComputePass(computePassDesc);
-        computePass->setPipeline(computePipeline);
-        computePass->setBindGroup(0, computeBindGroups[frameIndex]);
+        {
+            ComputePassDescriptor computePassDesc;
+            computePassDesc.label = "Generate Pattern";
+            auto computePass = encoder->beginComputePass(computePassDesc);
+            computePass->setPipeline(computePipeline);
+            computePass->setBindGroup(0, computeBindGroups[frameIndex]);
 
-        uint32_t workGroupsX = (COMPUTE_TEXTURE_WIDTH + 15) / 16;
-        uint32_t workGroupsY = (COMPUTE_TEXTURE_HEIGHT + 15) / 16;
-        computePass->dispatchWorkgroups(workGroupsX, workGroupsY, 1);
-
-        computePass->end();
+            uint32_t workGroupsX = (COMPUTE_TEXTURE_WIDTH + 15) / 16;
+            uint32_t workGroupsY = (COMPUTE_TEXTURE_HEIGHT + 15) / 16;
+            computePass->dispatchWorkgroups(workGroupsX, workGroupsY, 1);
+        } // computePass destroyed here
 
         // Transition compute texture for shader read
         TextureBarrier computeToReadBarrier{
@@ -851,21 +851,21 @@ void ComputeApp::render()
         renderPassDesc.colorAttachments = { colorAttachment };
         renderPassDesc.depthStencilAttachment = nullptr;
 
-        auto renderPass = encoder->beginRenderPass(renderPassDesc);
+        {
+            auto renderPass = encoder->beginRenderPass(renderPassDesc);
 
-        renderPass->setPipeline(renderPipeline);
-        renderPass->setBindGroup(0, renderBindGroups[frameIndex]);
+            renderPass->setPipeline(renderPipeline);
+            renderPass->setBindGroup(0, renderBindGroups[frameIndex]);
 
-        renderPass->setViewport(0.0f, 0.0f,
-            static_cast<float>(windowWidth),
-            static_cast<float>(windowHeight),
-            0.0f, 1.0f);
-        renderPass->setScissorRect(0, 0, windowWidth, windowHeight);
+            renderPass->setViewport(0.0f, 0.0f,
+                static_cast<float>(windowWidth),
+                static_cast<float>(windowHeight),
+                0.0f, 1.0f);
+            renderPass->setScissorRect(0, 0, windowWidth, windowHeight);
 
-        // Draw fullscreen quad (6 vertices, no buffers needed)
-        renderPass->draw(6, 1, 0, 0);
-
-        renderPass->end();
+            // Draw fullscreen quad (6 vertices, no buffers needed)
+            renderPass->draw(6, 1, 0, 0);
+        } // renderPass destroyed here
 
         encoder->end();
 
