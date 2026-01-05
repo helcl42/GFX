@@ -97,6 +97,14 @@ gfx::webgpu::BufferCreateInfo gfxDescriptorToWebGPUBufferCreateInfo(const GfxBuf
     return createInfo;
 }
 
+gfx::webgpu::BufferImportInfo gfxExternalDescriptorToWebGPUBufferImportInfo(const GfxExternalBufferDescriptor* descriptor)
+{
+    gfx::webgpu::BufferImportInfo importInfo{};
+    importInfo.size = descriptor->size;
+    importInfo.usage = gfxBufferUsageToWGPU(descriptor->usage);
+    return importInfo;
+}
+
 gfx::webgpu::TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxTextureDescriptor* descriptor)
 {
     gfx::webgpu::TextureCreateInfo createInfo{};
@@ -113,6 +121,24 @@ gfx::webgpu::TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxT
     createInfo.dimension = gfxTextureTypeToWGPU(descriptor->type);
     createInfo.arrayLayers = descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1;
     return createInfo;
+}
+
+gfx::webgpu::TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(const GfxExternalTextureDescriptor* descriptor)
+{
+    gfx::webgpu::TextureImportInfo importInfo{};
+    importInfo.format = gfxFormatToWGPUFormat(descriptor->format);
+    importInfo.size.width = descriptor->size.width;
+    importInfo.size.height = descriptor->size.height;
+    // For 3D textures, use depth; for 1D/2D textures, use arrayLayerCount
+    importInfo.size.depthOrArrayLayers = (descriptor->type == GFX_TEXTURE_TYPE_3D)
+        ? descriptor->size.depth
+        : (descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1);
+    importInfo.usage = gfxTextureUsageToWGPU(descriptor->usage);
+    importInfo.sampleCount = descriptor->sampleCount;
+    importInfo.mipLevelCount = descriptor->mipLevelCount;
+    importInfo.dimension = gfxTextureTypeToWGPU(descriptor->type);
+    importInfo.arrayLayers = descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1;
+    return importInfo;
 }
 
 gfx::webgpu::TextureViewCreateInfo gfxDescriptorToWebGPUTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor)

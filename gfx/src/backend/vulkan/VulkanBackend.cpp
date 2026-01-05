@@ -249,6 +249,25 @@ GfxResult VulkanBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
     }
 }
 
+GfxResult VulkanBackend::deviceImportBuffer(GfxDevice device, const GfxExternalBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
+{
+    if (!device || !descriptor || !outBuffer || !descriptor->nativeHandle) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+
+    try {
+        auto* dev = converter::toNative<Device>(device);
+        VkBuffer vkBuffer = reinterpret_cast<VkBuffer>(const_cast<void*>(descriptor->nativeHandle));
+        auto importInfo = converter::gfxExternalDescriptorToBufferImportInfo(descriptor);
+        auto* buffer = new gfx::vulkan::Buffer(dev, vkBuffer, importInfo);
+        *outBuffer = converter::toGfx<GfxBuffer>(buffer);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to import buffer: %s\n", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+}
+
 GfxResult VulkanBackend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
 {
     if (!device || !descriptor || !outTexture) {
@@ -263,6 +282,26 @@ GfxResult VulkanBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
         fprintf(stderr, "Failed to create texture: %s\n", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+}
+
+GfxResult VulkanBackend::deviceImportTexture(GfxDevice device, const GfxExternalTextureDescriptor* descriptor, GfxTexture* outTexture) const
+{
+    if (!device || !descriptor || !outTexture || !descriptor->nativeHandle) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+
+    try {
+        auto* dev = converter::toNative<Device>(device);
+        VkImage vkImage = reinterpret_cast<VkImage>(const_cast<void*>(descriptor->nativeHandle));
+        auto importInfo = converter::gfxExternalDescriptorToTextureImportInfo(descriptor);
+        auto* texture = new gfx::vulkan::Texture(dev, vkImage, importInfo);
+        texture->setLayout(converter::gfxLayoutToVkImageLayout(descriptor->currentLayout));
+        *outTexture = converter::toGfx<GfxTexture>(texture);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to import texture: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -995,6 +1034,7 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
         vkExtent, vkSrcLayout, vkDstLayout);
 }
 
+// TODO - add member function to CommandEncoder for pipeline barrier
 void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
     const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,

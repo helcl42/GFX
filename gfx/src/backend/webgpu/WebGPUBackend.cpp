@@ -207,6 +207,24 @@ GfxResult WebGPUBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
     }
 }
 
+GfxResult WebGPUBackend::deviceImportBuffer(GfxDevice device, const GfxExternalBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
+{
+    if (!device || !descriptor || !outBuffer || !descriptor->nativeHandle) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+
+    try {
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto wgpuBuffer = reinterpret_cast<WGPUBuffer>(const_cast<void*>(descriptor->nativeHandle));
+        auto importInfo = converter::gfxExternalDescriptorToWebGPUBufferImportInfo(descriptor);
+        auto* buffer = new gfx::webgpu::Buffer(devicePtr, wgpuBuffer, importInfo);
+        *outBuffer = converter::toGfx<GfxBuffer>(buffer);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+}
+
 GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
 {
     if (!device || !descriptor || !outTexture) {
@@ -217,6 +235,24 @@ GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
         auto* devicePtr = converter::toNative<Device>(device);
         auto createInfo = converter::gfxDescriptorToWebGPUTextureCreateInfo(descriptor);
         auto* texture = new gfx::webgpu::Texture(devicePtr, createInfo);
+        *outTexture = converter::toGfx<GfxTexture>(texture);
+        return GFX_RESULT_SUCCESS;
+    } catch (...) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+}
+
+GfxResult WebGPUBackend::deviceImportTexture(GfxDevice device, const GfxExternalTextureDescriptor* descriptor, GfxTexture* outTexture) const
+{
+    if (!device || !descriptor || !outTexture || !descriptor->nativeHandle) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+
+    try {
+        auto* devicePtr = converter::toNative<Device>(device);
+        auto wgpuTexture = reinterpret_cast<WGPUTexture>(const_cast<void*>(descriptor->nativeHandle));
+        auto importInfo = converter::gfxExternalDescriptorToWebGPUTextureImportInfo(descriptor);
+        auto* texture = new gfx::webgpu::Texture(devicePtr, wgpuTexture, importInfo);
         *outTexture = converter::toGfx<GfxTexture>(texture);
         return GFX_RESULT_SUCCESS;
     } catch (...) {

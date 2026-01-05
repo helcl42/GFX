@@ -959,8 +959,10 @@ public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
+    // Owning constructor - creates and manages VkBuffer and memory
     Buffer(Device* device, const BufferCreateInfo& createInfo)
         : m_device(device)
+        , m_ownsResources(true)
         , m_size(createInfo.size)
         , m_usage(createInfo.usage)
     {
@@ -1011,13 +1013,25 @@ public:
         vkBindBufferMemory(m_device->handle(), m_buffer, m_memory, 0);
     }
 
+    // Non-owning constructor - wraps an existing VkBuffer
+    Buffer(Device* device, VkBuffer buffer, const BufferImportInfo& importInfo)
+        : m_device(device)
+        , m_ownsResources(false)
+        , m_buffer(buffer)
+        , m_size(importInfo.size)
+        , m_usage(importInfo.usage)
+    {
+    }
+
     ~Buffer()
     {
-        if (m_memory != VK_NULL_HANDLE) {
-            vkFreeMemory(m_device->handle(), m_memory, nullptr);
-        }
-        if (m_buffer != VK_NULL_HANDLE) {
-            vkDestroyBuffer(m_device->handle(), m_buffer, nullptr);
+        if (m_ownsResources) {
+            if (m_memory != VK_NULL_HANDLE) {
+                vkFreeMemory(m_device->handle(), m_memory, nullptr);
+            }
+            if (m_buffer != VK_NULL_HANDLE) {
+                vkDestroyBuffer(m_device->handle(), m_buffer, nullptr);
+            }
         }
     }
 
@@ -1039,9 +1053,10 @@ public:
     VkBufferUsageFlags getUsage() const { return m_usage; }
 
 private:
+    Device* m_device = nullptr;
+    bool m_ownsResources = true;
     VkBuffer m_buffer = VK_NULL_HANDLE;
     VkDeviceMemory m_memory = VK_NULL_HANDLE;
-    Device* m_device = nullptr;
     size_t m_size = 0;
     VkBufferUsageFlags m_usage = 0;
 };
@@ -1118,6 +1133,19 @@ public:
         , m_mipLevelCount(createInfo.mipLevelCount)
         , m_sampleCount(createInfo.sampleCount)
         , m_usage(createInfo.usage)
+        , m_image(image)
+    {
+    }
+
+    // Non-owning constructor for imported textures
+    Texture(Device* device, VkImage image, const TextureImportInfo& importInfo)
+        : m_device(device)
+        , m_ownsResources(false)
+        , m_size(importInfo.size)
+        , m_format(importInfo.format)
+        , m_mipLevelCount(importInfo.mipLevelCount)
+        , m_sampleCount(importInfo.sampleCount)
+        , m_usage(importInfo.usage)
         , m_image(image)
     {
     }

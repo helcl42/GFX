@@ -52,7 +52,23 @@ struct BufferCreateInfo {
     VkBufferUsageFlags usage;
 };
 
+struct BufferImportInfo {
+    size_t size;
+    VkBufferUsageFlags usage;
+};
+
 struct TextureCreateInfo {
+    VkFormat format;
+    VkExtent3D size;
+    VkImageUsageFlags usage;
+    VkSampleCountFlagBits sampleCount;
+    uint32_t mipLevelCount;
+    VkImageType imageType;
+    uint32_t arrayLayers;
+    VkImageCreateFlags flags; // For cube maps, etc.
+};
+
+struct TextureImportInfo {
     VkFormat format;
     VkExtent3D size;
     VkImageUsageFlags usage;

@@ -43,7 +43,22 @@ struct BufferCreateInfo {
     WGPUBufferUsage usage;
 };
 
+struct BufferImportInfo {
+    size_t size;
+    WGPUBufferUsage usage;
+};
+
 struct TextureCreateInfo {
+    WGPUTextureFormat format;
+    WGPUExtent3D size;
+    WGPUTextureUsage usage;
+    uint32_t sampleCount;
+    uint32_t mipLevelCount;
+    WGPUTextureDimension dimension;
+    uint32_t arrayLayers;
+};
+
+struct TextureImportInfo {
     WGPUTextureFormat format;
     WGPUExtent3D size;
     WGPUTextureUsage usage;

@@ -430,7 +430,7 @@ VkOffset3D gfxOrigin3DToVkOffset3D(const GfxOrigin3D* gfxOrigin)
 GfxAccessFlags vkAccessFlagsToGfxAccessFlags(VkAccessFlags vkAccessFlags)
 {
     GfxAccessFlags flags = GFX_ACCESS_NONE;
-    
+
     if (vkAccessFlags & VK_ACCESS_INDIRECT_COMMAND_READ_BIT)
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_INDIRECT_COMMAND_READ);
     if (vkAccessFlags & VK_ACCESS_INDEX_READ_BIT)
@@ -465,7 +465,7 @@ GfxAccessFlags vkAccessFlagsToGfxAccessFlags(VkAccessFlags vkAccessFlags)
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_READ);
     if (vkAccessFlags & VK_ACCESS_MEMORY_WRITE_BIT)
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_WRITE);
-    
+
     return flags;
 }
 
@@ -713,34 +713,72 @@ const char* vkResultToString(VkResult result)
 // CreateInfo Conversion Functions - GfxDescriptor to Internal CreateInfo
 // ============================================================================
 
+VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsage gfxUsage)
+{
+    VkBufferUsageFlags usage = 0;
+    if (gfxUsage & GFX_BUFFER_USAGE_COPY_SRC) {
+        usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    }
+    if (gfxUsage & GFX_BUFFER_USAGE_COPY_DST) {
+        usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    }
+    if (gfxUsage & GFX_BUFFER_USAGE_UNIFORM) {
+        usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    }
+    if (gfxUsage & GFX_BUFFER_USAGE_STORAGE) {
+        usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    }
+    if (gfxUsage & GFX_BUFFER_USAGE_INDEX) {
+        usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    }
+    if (gfxUsage & GFX_BUFFER_USAGE_VERTEX) {
+        usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    }
+    if (gfxUsage & GFX_BUFFER_USAGE_INDIRECT) {
+        usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    }
+    return usage;
+}
+
+VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsage gfxUsage, VkFormat format)
+{
+    VkImageUsageFlags usage = 0;
+    if (gfxUsage & GFX_TEXTURE_USAGE_COPY_SRC) {
+        usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    }
+    if (gfxUsage & GFX_TEXTURE_USAGE_COPY_DST) {
+        usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
+    if (gfxUsage & GFX_TEXTURE_USAGE_TEXTURE_BINDING) {
+        usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
+    if (gfxUsage & GFX_TEXTURE_USAGE_STORAGE_BINDING) {
+        usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+    }
+    if (gfxUsage & GFX_TEXTURE_USAGE_RENDER_ATTACHMENT) {
+        // Check if this is a depth/stencil format
+        if (isDepthFormat(format)) {
+            usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        } else {
+            usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        }
+    }
+    return usage;
+}
+
 gfx::vulkan::BufferCreateInfo gfxDescriptorToBufferCreateInfo(const GfxBufferDescriptor* descriptor)
 {
     gfx::vulkan::BufferCreateInfo createInfo{};
     createInfo.size = descriptor->size;
+    createInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
+    return createInfo;
+}
 
-    createInfo.usage = 0;
-    if (descriptor->usage & GFX_BUFFER_USAGE_COPY_SRC) {
-        createInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    }
-    if (descriptor->usage & GFX_BUFFER_USAGE_COPY_DST) {
-        createInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    }
-    if (descriptor->usage & GFX_BUFFER_USAGE_UNIFORM) {
-        createInfo.usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    }
-    if (descriptor->usage & GFX_BUFFER_USAGE_STORAGE) {
-        createInfo.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    }
-    if (descriptor->usage & GFX_BUFFER_USAGE_INDEX) {
-        createInfo.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    }
-    if (descriptor->usage & GFX_BUFFER_USAGE_VERTEX) {
-        createInfo.usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    }
-    if (descriptor->usage & GFX_BUFFER_USAGE_INDIRECT) {
-        createInfo.usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-    }
-
+gfx::vulkan::BufferImportInfo gfxExternalDescriptorToBufferImportInfo(const GfxExternalBufferDescriptor* descriptor)
+{
+    gfx::vulkan::BufferImportInfo createInfo{};
+    createInfo.size = descriptor->size;
+    createInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
     return createInfo;
 }
 
@@ -785,36 +823,34 @@ gfx::vulkan::TextureCreateInfo gfxDescriptorToTextureCreateInfo(const GfxTexture
     // Set cube map flag if needed
     if (descriptor->type == GFX_TEXTURE_TYPE_CUBE) {
         createInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-        // Cube maps must have 6 or 6*N array layers
-        if (createInfo.arrayLayers < 6) {
-            createInfo.arrayLayers = 6;
-        }
     }
 
-    // Convert GfxTextureUsage to VkImageUsageFlags
-    createInfo.usage = 0;
-    if (descriptor->usage & GFX_TEXTURE_USAGE_COPY_SRC) {
-        createInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    }
-    if (descriptor->usage & GFX_TEXTURE_USAGE_COPY_DST) {
-        createInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    }
-    if (descriptor->usage & GFX_TEXTURE_USAGE_TEXTURE_BINDING) {
-        createInfo.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-    }
-    if (descriptor->usage & GFX_TEXTURE_USAGE_STORAGE_BINDING) {
-        createInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
-    }
-    if (descriptor->usage & GFX_TEXTURE_USAGE_RENDER_ATTACHMENT) {
-        // Check if this is a depth/stencil format
-        if (isDepthFormat(createInfo.format)) {
-            createInfo.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        } else {
-            createInfo.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        }
-    }
+    createInfo.usage = gfxTextureUsageToVkImageUsage(descriptor->usage, createInfo.format);
 
     return createInfo;
+}
+
+gfx::vulkan::TextureImportInfo gfxExternalDescriptorToTextureImportInfo(const GfxExternalTextureDescriptor* descriptor)
+{
+    gfx::vulkan::TextureImportInfo importInfo{};
+    importInfo.format = gfxFormatToVkFormat(descriptor->format);
+    importInfo.size.width = descriptor->size.width;
+    importInfo.size.height = descriptor->size.height;
+    importInfo.size.depth = descriptor->size.depth;
+    importInfo.sampleCount = sampleCountToVkSampleCount(descriptor->sampleCount);
+    importInfo.mipLevelCount = descriptor->mipLevelCount;
+    importInfo.imageType = gfxTextureTypeToVkImageType(descriptor->type);
+    importInfo.arrayLayers = descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1;
+    importInfo.flags = 0;
+
+    // Set cube map flag if specified
+    if (descriptor->type == GFX_TEXTURE_TYPE_CUBE) {
+        importInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    }
+
+    importInfo.usage = gfxTextureUsageToVkImageUsage(descriptor->usage, importInfo.format);
+
+    return importInfo;
 }
 
 gfx::vulkan::TextureViewCreateInfo gfxDescriptorToTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor)
@@ -1184,7 +1220,7 @@ gfx::vulkan::RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(con
             colorAttachment.target.ops.loadOp = gfxLoadOpToVkLoadOp(gfxColor.target.ops.loadOp);
             colorAttachment.target.ops.storeOp = gfxStoreOpToVkStoreOp(gfxColor.target.ops.storeOp);
             const GfxColor& color = gfxColor.target.ops.clearColor;
-            colorAttachment.target.ops.clearColor = {{ color.r, color.g, color.b, color.a }};
+            colorAttachment.target.ops.clearColor = { { color.r, color.g, color.b, color.a } };
             colorAttachment.target.finalLayout = gfxLayoutToVkImageLayout(gfxColor.target.finalLayout);
             colorAttachment.target.width = size.width;
             colorAttachment.target.height = size.height;
@@ -1200,7 +1236,7 @@ gfx::vulkan::RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(con
                 resolveTarget.ops.loadOp = gfxLoadOpToVkLoadOp(gfxColor.resolveTarget->ops.loadOp);
                 resolveTarget.ops.storeOp = gfxStoreOpToVkStoreOp(gfxColor.resolveTarget->ops.storeOp);
                 const GfxColor& resolveColor = gfxColor.resolveTarget->ops.clearColor;
-                resolveTarget.ops.clearColor = {{ resolveColor.r, resolveColor.g, resolveColor.b, resolveColor.a }};
+                resolveTarget.ops.clearColor = { { resolveColor.r, resolveColor.g, resolveColor.b, resolveColor.a } };
                 resolveTarget.finalLayout = gfxLayoutToVkImageLayout(gfxColor.resolveTarget->finalLayout);
                 resolveTarget.width = resolveSize.width;
                 resolveTarget.height = resolveSize.height;

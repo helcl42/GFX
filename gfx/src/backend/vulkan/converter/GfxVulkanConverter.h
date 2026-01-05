@@ -7,10 +7,12 @@
 // Forward declare CreateInfo types and internal types
 namespace gfx::vulkan {
 struct BufferCreateInfo;
+struct BufferImportInfo;
 struct ShaderCreateInfo;
 struct SemaphoreCreateInfo;
 struct FenceCreateInfo;
 struct TextureCreateInfo;
+struct TextureImportInfo;
 struct TextureViewCreateInfo;
 struct SamplerCreateInfo;
 struct InstanceCreateInfo;
@@ -68,7 +70,9 @@ gfx::vulkan::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(GfxSemaphoreTyp
 
 VkFormat gfxFormatToVkFormat(GfxTextureFormat format);
 GfxTextureFormat vkFormatToGfxFormat(VkFormat format);
+VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsage gfxUsage);
 GfxBufferUsage vkBufferUsageToGfxBufferUsage(VkBufferUsageFlags vkUsage);
+VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsage gfxUsage, VkFormat format);
 GfxTextureUsage vkImageUsageToGfxTextureUsage(VkImageUsageFlags vkUsage);
 
 // ============================================================================
@@ -115,10 +119,12 @@ const char* vkResultToString(VkResult result);
 // ============================================================================
 
 gfx::vulkan::BufferCreateInfo gfxDescriptorToBufferCreateInfo(const GfxBufferDescriptor* descriptor);
+gfx::vulkan::BufferImportInfo gfxExternalDescriptorToBufferImportInfo(const GfxExternalBufferDescriptor* descriptor);
 gfx::vulkan::ShaderCreateInfo gfxDescriptorToShaderCreateInfo(const GfxShaderDescriptor* descriptor);
 gfx::vulkan::SemaphoreCreateInfo gfxDescriptorToSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor);
 gfx::vulkan::FenceCreateInfo gfxDescriptorToFenceCreateInfo(const GfxFenceDescriptor* descriptor);
 gfx::vulkan::TextureCreateInfo gfxDescriptorToTextureCreateInfo(const GfxTextureDescriptor* descriptor);
+gfx::vulkan::TextureImportInfo gfxExternalDescriptorToTextureImportInfo(const GfxExternalTextureDescriptor* descriptor);
 gfx::vulkan::TextureViewCreateInfo gfxDescriptorToTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor);
 gfx::vulkan::SamplerCreateInfo gfxDescriptorToSamplerCreateInfo(const GfxSamplerDescriptor* descriptor);
 gfx::vulkan::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInstanceDescriptor* descriptor);

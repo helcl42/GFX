@@ -332,6 +332,47 @@ DEVICE_CREATE_FUNC(ComputePipeline, ComputePipeline)
 DEVICE_CREATE_FUNC(Fence, Fence)
 DEVICE_CREATE_FUNC(Semaphore, Semaphore)
 
+// Import functions for external resources
+GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxExternalBufferDescriptor* descriptor, GfxBuffer* outBuffer)
+{
+    if (!device || !descriptor || !outBuffer) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+    *outBuffer = nullptr;
+    auto api = gfx::getAPI(device);
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
+    GfxBackend backend = gfx::getBackend(device);
+    GfxBuffer nativeBuffer = nullptr;
+    GfxResult result = api->deviceImportBuffer(gfx::native(device), descriptor, &nativeBuffer);
+    if (result != GFX_RESULT_SUCCESS) {
+        return result;
+    }
+    *outBuffer = gfx::wrap(backend, nativeBuffer);
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult gfxDeviceImportTexture(GfxDevice device, const GfxExternalTextureDescriptor* descriptor, GfxTexture* outTexture)
+{
+    if (!device || !descriptor || !outTexture) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+    *outTexture = nullptr;
+    auto api = gfx::getAPI(device);
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
+    GfxBackend backend = gfx::getBackend(device);
+    GfxTexture nativeTexture = nullptr;
+    GfxResult result = api->deviceImportTexture(gfx::native(device), descriptor, &nativeTexture);
+    if (result != GFX_RESULT_SUCCESS) {
+        return result;
+    }
+    *outTexture = gfx::wrap(backend, nativeTexture);
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain)
 {
     if (!device || !surface || !descriptor || !outSwapchain) {

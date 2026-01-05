@@ -401,8 +401,10 @@ public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
+    // Owning constructor - creates and manages WGPUBuffer
     Buffer(Device* device, const BufferCreateInfo& createInfo)
         : m_device(device)
+        , m_ownsResources(true)
         , m_size(createInfo.size)
         , m_usage(createInfo.usage)
     {
@@ -417,9 +419,19 @@ public:
         }
     }
 
+    // Non-owning constructor for imported buffers
+    Buffer(Device* device, WGPUBuffer buffer, const BufferImportInfo& importInfo)
+        : m_device(device)
+        , m_ownsResources(false)
+        , m_buffer(buffer)
+        , m_size(importInfo.size)
+        , m_usage(importInfo.usage)
+    {
+    }
+
     ~Buffer()
     {
-        if (m_buffer) {
+        if (m_ownsResources && m_buffer) {
             wgpuBufferRelease(m_buffer);
         }
     }
@@ -497,8 +509,9 @@ public:
     }
 
 private:
-    WGPUBuffer m_buffer = nullptr;
     Device* m_device = nullptr; // Non-owning pointer for device operations
+    bool m_ownsResources = true;
+    WGPUBuffer m_buffer = nullptr;
     uint64_t m_size = 0;
     BufferUsage m_usage = WGPUBufferUsage_None;
 };
@@ -509,8 +522,10 @@ public:
     Texture(const Texture&) = delete;
     Texture& operator=(const Texture&) = delete;
 
+    // Owning constructor - creates and manages WGPUTexture
     Texture(Device* device, const TextureCreateInfo& createInfo)
         : m_device(device)
+        , m_ownsResources(true)
         , m_size(createInfo.size)
         , m_format(createInfo.format)
         , m_mipLevels(createInfo.mipLevelCount)
@@ -533,9 +548,35 @@ public:
         }
     }
 
+    // Non-owning constructor - wraps an existing WGPUTexture
+    Texture(Device* device, WGPUTexture texture, const TextureCreateInfo& createInfo)
+        : m_device(device)
+        , m_ownsResources(false)
+        , m_texture(texture)
+        , m_size(createInfo.size)
+        , m_format(createInfo.format)
+        , m_mipLevels(createInfo.mipLevelCount)
+        , m_sampleCount(createInfo.sampleCount)
+        , m_usage(createInfo.usage)
+    {
+    }
+
+    // Non-owning constructor for imported textures
+    Texture(Device* device, WGPUTexture texture, const TextureImportInfo& importInfo)
+        : m_device(device)
+        , m_ownsResources(false)
+        , m_texture(texture)
+        , m_size(importInfo.size)
+        , m_format(importInfo.format)
+        , m_mipLevels(importInfo.mipLevelCount)
+        , m_sampleCount(importInfo.sampleCount)
+        , m_usage(importInfo.usage)
+    {
+    }
+
     ~Texture()
     {
-        if (m_texture) {
+        if (m_ownsResources && m_texture) {
             wgpuTextureRelease(m_texture);
         }
     }
@@ -548,8 +589,9 @@ public:
     WGPUTextureUsage getUsage() const { return m_usage; }
 
 private:
-    WGPUTexture m_texture = nullptr;
     Device* m_device = nullptr; // Non-owning pointer for device operations
+    bool m_ownsResources = true;
+    WGPUTexture m_texture = nullptr;
     WGPUExtent3D m_size = {};
     WGPUTextureFormat m_format = WGPUTextureFormat_Undefined;
     uint32_t m_mipLevels = 0;
