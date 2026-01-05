@@ -2362,12 +2362,69 @@ public:
 
     ~RenderPassEncoder()
     {
-        // Render pass is ended by CommandEncoder tracking
+        vkCmdEndRenderPass(m_commandBuffer);
     }
 
     VkCommandBuffer handle() const { return m_commandBuffer; }
     Device* device() const { return m_device; }
     CommandEncoder* commandEncoder() const { return m_commandEncoder; }
+
+    void setPipeline(RenderPipeline* pipeline)
+    {
+        vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
+        m_commandEncoder->setCurrentPipelineLayout(pipeline->layout());
+    }
+
+    void setBindGroup(uint32_t index, BindGroup* bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
+    {
+        VkPipelineLayout layout = m_commandEncoder->currentPipelineLayout();
+        if (layout != VK_NULL_HANDLE) {
+            VkDescriptorSet set = bindGroup->handle();
+            vkCmdBindDescriptorSets(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, index, 1, &set, dynamicOffsetCount, dynamicOffsets);
+        }
+    }
+
+    void setVertexBuffer(uint32_t slot, Buffer* buffer, uint64_t offset)
+    {
+        VkBuffer vkBuf = buffer->handle();
+        VkDeviceSize offsets[] = { offset };
+        vkCmdBindVertexBuffers(m_commandBuffer, slot, 1, &vkBuf, offsets);
+    }
+
+    void setIndexBuffer(Buffer* buffer, VkIndexType indexType, uint64_t offset)
+    {
+        vkCmdBindIndexBuffer(m_commandBuffer, buffer->handle(), offset, indexType);
+    }
+
+    void setViewport(const Viewport& viewport)
+    {
+        VkViewport vkViewport{};
+        vkViewport.x = viewport.x;
+        vkViewport.y = viewport.y;
+        vkViewport.width = viewport.width;
+        vkViewport.height = viewport.height;
+        vkViewport.minDepth = viewport.minDepth;
+        vkViewport.maxDepth = viewport.maxDepth;
+        vkCmdSetViewport(m_commandBuffer, 0, 1, &vkViewport);
+    }
+
+    void setScissorRect(const ScissorRect& scissor)
+    {
+        VkRect2D vkScissor{};
+        vkScissor.offset = { scissor.x, scissor.y };
+        vkScissor.extent = { scissor.width, scissor.height };
+        vkCmdSetScissor(m_commandBuffer, 0, 1, &vkScissor);
+    }
+
+    void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+    {
+        vkCmdDraw(m_commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+    }
+
+    void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance)
+    {
+        vkCmdDrawIndexed(m_commandBuffer, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+    }
 
 private:
     VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
@@ -2390,6 +2447,26 @@ public:
     VkCommandBuffer handle() const { return m_commandBuffer; }
     Device* device() const { return m_device; }
     CommandEncoder* commandEncoder() const { return m_commandEncoder; }
+
+    void setPipeline(ComputePipeline* pipeline)
+    {
+        vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->handle());
+        m_commandEncoder->setCurrentPipelineLayout(pipeline->layout());
+    }
+
+    void setBindGroup(uint32_t index, BindGroup* bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
+    {
+        VkPipelineLayout layout = m_commandEncoder->currentPipelineLayout();
+        if (layout != VK_NULL_HANDLE) {
+            VkDescriptorSet set = bindGroup->handle();
+            vkCmdBindDescriptorSets(m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, layout, index, 1, &set, dynamicOffsetCount, dynamicOffsets);
+        }
+    }
+
+    void dispatchWorkgroups(uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ)
+    {
+        vkCmdDispatch(m_commandBuffer, workgroupCountX, workgroupCountY, workgroupCountZ);
+    }
 
 private:
     VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;

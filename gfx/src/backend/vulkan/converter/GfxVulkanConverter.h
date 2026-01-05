@@ -30,6 +30,8 @@ struct SubmitInfo;
 struct MemoryBarrier;
 struct BufferBarrier;
 struct TextureBarrier;
+struct Viewport;
+struct ScissorRect;
 
 enum class DebugMessageSeverity;
 enum class DebugMessageType;
@@ -79,6 +81,9 @@ VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsage gfxUsage, VkForm
 GfxTextureUsage vkImageUsageToGfxTextureUsage(VkImageUsageFlags vkUsage);
 VkPipelineStageFlags gfxPipelineStageFlagsToVkPipelineStageFlags(GfxPipelineStage gfxStage);
 VkAccessFlags gfxAccessFlagsToVkAccessFlags(GfxAccessFlags gfxAccessFlags);
+VkIndexType gfxIndexFormatToVkIndexType(GfxIndexFormat format);
+Viewport gfxViewportToViewport(const GfxViewport* viewport);
+ScissorRect gfxScissorRectToScissorRect(const GfxScissorRect* scissor);
 
 // ============================================================================
 // Barrier Conversion

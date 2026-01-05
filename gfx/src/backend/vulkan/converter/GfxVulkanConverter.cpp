@@ -840,6 +840,28 @@ VkAccessFlags gfxAccessFlagsToVkAccessFlags(GfxAccessFlags gfxAccessFlags)
     return vkAccessFlags;
 }
 
+VkIndexType gfxIndexFormatToVkIndexType(GfxIndexFormat format)
+{
+    switch (format) {
+    case GFX_INDEX_FORMAT_UINT16:
+        return VK_INDEX_TYPE_UINT16;
+    case GFX_INDEX_FORMAT_UINT32:
+        return VK_INDEX_TYPE_UINT32;
+    default:
+        return VK_INDEX_TYPE_UINT32;
+    }
+}
+
+Viewport gfxViewportToViewport(const GfxViewport* viewport)
+{
+    return { viewport->x, viewport->y, viewport->width, viewport->height, viewport->minDepth, viewport->maxDepth };
+}
+
+ScissorRect gfxScissorRectToScissorRect(const GfxScissorRect* scissor)
+{
+    return { scissor->x, scissor->y, scissor->width, scissor->height };
+}
+
 MemoryBarrier gfxMemoryBarrierToMemoryBarrier(const GfxMemoryBarrier& barrier)
 {
     return {

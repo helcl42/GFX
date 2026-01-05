@@ -1101,10 +1101,7 @@ void VulkanBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPass
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* pipe = converter::toNative<RenderPipeline>(pipeline);
-
-    VkCommandBuffer cmdBuf = rpe->handle();
-    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe->handle());
-    rpe->commandEncoder()->setCurrentPipelineLayout(pipe->layout());
+    rpe->setPipeline(pipe);
 }
 
 void VulkanBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
@@ -1114,14 +1111,7 @@ void VulkanBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPas
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* bg = converter::toNative<BindGroup>(bindGroup);
-
-    VkCommandBuffer cmdBuf = rpe->handle();
-    VkPipelineLayout layout = rpe->commandEncoder()->currentPipelineLayout();
-
-    if (layout != VK_NULL_HANDLE) {
-        VkDescriptorSet set = bg->handle();
-        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, index, 1, &set, dynamicOffsetCount, dynamicOffsets);
-    }
+    rpe->setBindGroup(index, bg, dynamicOffsets, dynamicOffsetCount);
 }
 
 void VulkanBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
@@ -1131,11 +1121,7 @@ void VulkanBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder render
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* buf = converter::toNative<Buffer>(buffer);
-
-    VkCommandBuffer cmdBuf = rpe->handle();
-    VkBuffer vkBuf = buf->handle();
-    VkDeviceSize offsets[] = { offset };
-    vkCmdBindVertexBuffers(cmdBuf, slot, 1, &vkBuf, offsets);
+    rpe->setVertexBuffer(slot, buf, offset);
 
     (void)size;
 }
@@ -1147,10 +1133,8 @@ void VulkanBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderP
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* buf = converter::toNative<Buffer>(buffer);
-
-    VkCommandBuffer cmdBuf = rpe->handle();
-    VkIndexType indexType = (format == GFX_INDEX_FORMAT_UINT16) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
-    vkCmdBindIndexBuffer(cmdBuf, buf->handle(), offset, indexType);
+    VkIndexType indexType = converter::gfxIndexFormatToVkIndexType(format);
+    rpe->setIndexBuffer(buf, indexType, offset);
 
     (void)size;
 }
@@ -1161,15 +1145,8 @@ void VulkanBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPass
         return;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
-
-    VkViewport vkViewport{};
-    vkViewport.x = viewport->x;
-    vkViewport.y = viewport->y;
-    vkViewport.width = viewport->width;
-    vkViewport.height = viewport->height;
-    vkViewport.minDepth = viewport->minDepth;
-    vkViewport.maxDepth = viewport->maxDepth;
-    vkCmdSetViewport(rpe->handle(), 0, 1, &vkViewport);
+    Viewport vkViewport = converter::gfxViewportToViewport(viewport);
+    rpe->setViewport(vkViewport);
 }
 
 void VulkanBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
@@ -1178,11 +1155,8 @@ void VulkanBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderP
         return;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
-
-    VkRect2D vkScissor{};
-    vkScissor.offset = { scissor->x, scissor->y };
-    vkScissor.extent = { scissor->width, scissor->height };
-    vkCmdSetScissor(rpe->handle(), 0, 1, &vkScissor);
+    ScissorRect vkScissor = converter::gfxScissorRectToScissorRect(scissor);
+    rpe->setScissorRect(vkScissor);
 }
 
 void VulkanBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
@@ -1191,9 +1165,7 @@ void VulkanBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder
         return;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
-
-    VkCommandBuffer cmdBuf = rpe->handle();
-    vkCmdDraw(cmdBuf, vertexCount, instanceCount, firstVertex, firstInstance);
+    rpe->draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 void VulkanBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
@@ -1202,9 +1174,7 @@ void VulkanBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPass
         return;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
-
-    VkCommandBuffer cmdBuf = rpe->handle();
-    vkCmdDrawIndexed(cmdBuf, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+    rpe->drawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 }
 
 void VulkanBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
@@ -1213,7 +1183,6 @@ void VulkanBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder)
         return;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
-    vkCmdEndRenderPass(rpe->handle());
     delete rpe;
 }
 
@@ -1223,13 +1192,9 @@ void VulkanBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computeP
     if (!computePassEncoder || !pipeline) {
         return;
     }
-
     auto* cpe = converter::toNative<ComputePassEncoder>(computePassEncoder);
     auto* pipe = converter::toNative<ComputePipeline>(pipeline);
-
-    VkCommandBuffer cmdBuf = cpe->handle();
-    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipe->handle());
-    cpe->commandEncoder()->setCurrentPipelineLayout(pipe->layout());
+    cpe->setPipeline(pipe);
 }
 
 void VulkanBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
@@ -1237,17 +1202,9 @@ void VulkanBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder compute
     if (!computePassEncoder || !bindGroup) {
         return;
     }
-
     auto* cpe = converter::toNative<ComputePassEncoder>(computePassEncoder);
     auto* bg = converter::toNative<BindGroup>(bindGroup);
-
-    VkCommandBuffer cmdBuf = cpe->handle();
-    VkPipelineLayout layout = cpe->commandEncoder()->currentPipelineLayout();
-
-    if (layout != VK_NULL_HANDLE) {
-        VkDescriptorSet set = bg->handle();
-        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, index, 1, &set, dynamicOffsetCount, dynamicOffsets);
-    }
+    cpe->setBindGroup(index, bg, dynamicOffsets, dynamicOffsetCount);
 }
 
 void VulkanBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
@@ -1257,8 +1214,7 @@ void VulkanBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder c
     }
 
     auto* cpe = converter::toNative<ComputePassEncoder>(computePassEncoder);
-    VkCommandBuffer cmdBuf = cpe->handle();
-    vkCmdDispatch(cmdBuf, workgroupCountX, workgroupCountY, workgroupCountZ);
+    cpe->dispatchWorkgroups(workgroupCountX, workgroupCountY, workgroupCountZ);
 }
 
 void VulkanBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const

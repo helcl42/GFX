@@ -138,6 +138,22 @@ struct TextureBarrier {
     uint32_t arrayLayerCount;
 };
 
+struct Viewport {
+    float x;
+    float y;
+    float width;
+    float height;
+    float minDepth;
+    float maxDepth;
+};
+
+struct ScissorRect {
+    int32_t x;
+    int32_t y;
+    uint32_t width;
+    uint32_t height;
+};
+
 struct SamplerCreateInfo {
     VkSamplerAddressMode addressModeU;
     VkSamplerAddressMode addressModeV;
