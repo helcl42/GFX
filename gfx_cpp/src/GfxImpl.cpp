@@ -1210,7 +1210,6 @@ public:
         cDesc.label = descriptor.label.c_str();
         cDesc.size = descriptor.size;
         cDesc.usage = cppBufferUsageToCUsage(descriptor.usage);
-        cDesc.mappedAtCreation = descriptor.mappedAtCreation;
 
         GfxBuffer buffer = nullptr;
         GfxResult result = gfxDeviceCreateBuffer(m_handle, &cDesc, &buffer);

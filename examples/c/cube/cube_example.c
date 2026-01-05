@@ -605,8 +605,7 @@ bool createRenderingResources(CubeApp* app)
     GfxBufferDescriptor vertexBufferDesc = {
         .label = "Cube Vertices",
         .size = sizeof(vertices),
-        .usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST,
-        .mappedAtCreation = false
+        .usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST
     };
 
     if (gfxDeviceCreateBuffer(app->device, &vertexBufferDesc, &app->vertexBuffer) != GFX_RESULT_SUCCESS) {
@@ -618,8 +617,7 @@ bool createRenderingResources(CubeApp* app)
     GfxBufferDescriptor indexBufferDesc = {
         .label = "Cube Indices",
         .size = sizeof(indices),
-        .usage = GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_COPY_DST,
-        .mappedAtCreation = false
+        .usage = GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_COPY_DST
     };
 
     if (gfxDeviceCreateBuffer(app->device, &indexBufferDesc, &app->indexBuffer) != GFX_RESULT_SUCCESS) {
@@ -643,8 +641,7 @@ bool createRenderingResources(CubeApp* app)
     GfxBufferDescriptor uniformBufferDesc = {
         .label = "Shared Transform Uniforms",
         .size = totalBufferSize,
-        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST,
-        .mappedAtCreation = false
+        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST
     };
 
     if (gfxDeviceCreateBuffer(app->device, &uniformBufferDesc, &app->sharedUniformBuffer) != GFX_RESULT_SUCCESS) {

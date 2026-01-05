@@ -522,7 +522,6 @@ bool CubeApp::createRenderingResources()
         vertexBufferDesc.label = "Cube Vertices";
         vertexBufferDesc.size = sizeof(vertices);
         vertexBufferDesc.usage = BufferUsage::Vertex | BufferUsage::CopyDst;
-        vertexBufferDesc.mappedAtCreation = false;
 
         vertexBuffer = device->createBuffer(vertexBufferDesc);
         if (!vertexBuffer) {
@@ -535,7 +534,6 @@ bool CubeApp::createRenderingResources()
         indexBufferDesc.label = "Cube Indices";
         indexBufferDesc.size = sizeof(indices);
         indexBufferDesc.usage = BufferUsage::Index | BufferUsage::CopyDst;
-        indexBufferDesc.mappedAtCreation = false;
 
         indexBuffer = device->createBuffer(indexBufferDesc);
         if (!indexBuffer) {
@@ -558,7 +556,6 @@ bool CubeApp::createRenderingResources()
         uniformBufferDesc.label = "Shared Transform Uniforms";
         uniformBufferDesc.size = totalBufferSize;
         uniformBufferDesc.usage = BufferUsage::Uniform | BufferUsage::CopyDst;
-        uniformBufferDesc.mappedAtCreation = false;
 
         sharedUniformBuffer = device->createBuffer(uniformBufferDesc);
         if (!sharedUniformBuffer) {

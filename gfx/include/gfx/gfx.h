@@ -639,7 +639,6 @@ typedef struct {
     const char* label;
     uint64_t size;
     GfxBufferUsage usage;
-    bool mappedAtCreation;
 } GfxBufferDescriptor;
 
 typedef struct {

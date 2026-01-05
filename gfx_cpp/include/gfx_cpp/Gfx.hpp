@@ -554,7 +554,6 @@ struct BufferDescriptor {
     std::string label;
     uint64_t size = 0;
     BufferUsage usage = BufferUsage::None;
-    bool mappedAtCreation = false;
 };
 
 struct TextureDescriptor {

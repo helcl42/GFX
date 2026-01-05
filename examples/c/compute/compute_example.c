@@ -448,8 +448,7 @@ static bool createComputeResources(ComputeApp* app)
     // Create compute uniform buffers (one per frame in flight)
     GfxBufferDescriptor computeUniformBufferDesc = {
         .size = sizeof(ComputeUniformData),
-        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST,
-        .mappedAtCreation = false
+        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST
     };
 
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
@@ -672,8 +671,7 @@ static bool createRenderResources(ComputeApp* app)
     // Create render uniform buffers (one per frame in flight)
     GfxBufferDescriptor renderUniformBufferDesc = {
         .size = sizeof(RenderUniformData),
-        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST,
-        .mappedAtCreation = false
+        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST
     };
 
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {

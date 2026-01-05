@@ -369,7 +369,6 @@ bool ComputeApp::createComputeResources()
         computeUniformBufferDesc.label = "Compute Uniform Buffer";
         computeUniformBufferDesc.size = sizeof(ComputeUniformData);
         computeUniformBufferDesc.usage = BufferUsage::Uniform | BufferUsage::CopyDst;
-        computeUniformBufferDesc.mappedAtCreation = false;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
             computeUniformBuffers[i] = device->createBuffer(computeUniformBufferDesc);
@@ -555,7 +554,6 @@ bool ComputeApp::createRenderResources()
         renderUniformBufferDesc.label = "Render Uniform Buffer";
         renderUniformBufferDesc.size = sizeof(RenderUniformData);
         renderUniformBufferDesc.usage = BufferUsage::Uniform | BufferUsage::CopyDst;
-        renderUniformBufferDesc.mappedAtCreation = false;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
             renderUniformBuffers[i] = device->createBuffer(renderUniformBufferDesc);
