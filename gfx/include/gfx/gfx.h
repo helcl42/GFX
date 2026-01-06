@@ -377,6 +377,45 @@ typedef enum {
     GFX_STORE_OP_MAX_ENUM = 0x7FFFFFFF
 } GfxStoreOp;
 
+// Color write mask flags (can be combined with bitwise OR)
+typedef enum {
+    GFX_COLOR_WRITE_MASK_NONE = 0x0,
+    GFX_COLOR_WRITE_MASK_RED = 0x1,
+    GFX_COLOR_WRITE_MASK_GREEN = 0x2,
+    GFX_COLOR_WRITE_MASK_BLUE = 0x4,
+    GFX_COLOR_WRITE_MASK_ALPHA = 0x8,
+    GFX_COLOR_WRITE_MASK_ALL = GFX_COLOR_WRITE_MASK_RED | GFX_COLOR_WRITE_MASK_GREEN | GFX_COLOR_WRITE_MASK_BLUE | GFX_COLOR_WRITE_MASK_ALPHA,
+    GFX_COLOR_WRITE_MASK_MAX_ENUM = 0x7FFFFFFF
+} GfxColorWriteMask;
+
+typedef enum {
+    GFX_BIND_GROUP_ENTRY_TYPE_BUFFER = 0,
+    GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER = 1,
+    GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW = 2,
+    GFX_BIND_GROUP_ENTRY_TYPE_MAX_ENUM = 0x7FFFFFFF
+} GfxBindGroupEntryType;
+
+typedef enum {
+    GFX_BINDING_TYPE_BUFFER = 0,
+    GFX_BINDING_TYPE_SAMPLER = 1,
+    GFX_BINDING_TYPE_TEXTURE = 2,
+    GFX_BINDING_TYPE_STORAGE_TEXTURE = 3,
+    GFX_BINDING_TYPE_MAX_ENUM = 0x7FFFFFFF
+} GfxBindingType;
+
+typedef enum {
+    GFX_FENCE_STATUS_UNSIGNALED = 0,
+    GFX_FENCE_STATUS_SIGNALED = 1,
+    GFX_FENCE_STATUS_ERROR = 2,
+    GFX_FENCE_STATUS_MAX_ENUM = 0x7FFFFFFF
+} GfxFenceStatus;
+
+typedef enum {
+    GFX_SEMAPHORE_TYPE_BINARY = 0,
+    GFX_SEMAPHORE_TYPE_TIMELINE = 1,
+    GFX_SEMAPHORE_TYPE_MAX_ENUM = 0x7FFFFFFF
+} GfxSemaphoreType;
+
 // ============================================================================
 // Forward Declarations (Opaque Handles)
 // ============================================================================
@@ -534,94 +573,6 @@ typedef struct {
     const char* label;
 } GfxComputePassDescriptor;
 
-// ============================================================================
-// Platform Abstraction
-// ============================================================================
-
-// Common windowing system enum for all platforms
-typedef enum {
-    GFX_WINDOWING_SYSTEM_WIN32 = 0,
-    GFX_WINDOWING_SYSTEM_XLIB = 1,
-    GFX_WINDOWING_SYSTEM_WAYLAND = 2,
-    GFX_WINDOWING_SYSTEM_XCB = 3,
-    GFX_WINDOWING_SYSTEM_METAL = 4,
-    GFX_WINDOWING_SYSTEM_EMSCRIPTEN = 5,
-    GFX_WINDOWING_SYSTEM_ANDROID = 6,
-    GFX_WINDOWING_SYSTEM_MAX_ENUM = 0x7FFFFFFF
-} GfxWindowingSystem;
-
-// Common platform window handle struct with union for all windowing systems
-typedef struct GfxWin32Handle {
-    void* hwnd; // HWND - Window handle
-    void* hinstance; // HINSTANCE - Application instance
-} GfxWin32Handle;
-
-typedef struct GfxXlibHandle {
-    unsigned long window; // Window
-    void* display; // Display*
-} GfxXlibHandle;
-
-typedef struct GfxX11Handle {
-    void* connection;
-    uint32_t window;
-} GfxX11Handle;
-
-typedef struct GfxWaylandHandle {
-    void* surface; // wl_surface*
-    void* display; // wl_display*
-} GfxWaylandHandle;
-
-typedef struct GfxXcbHandle {
-    void* connection; // xcb_connection_t*
-    uint32_t window; // xcb_window_t
-} GfxXcbHandle;
-
-typedef struct GfxMetalHandle {
-    void* layer; // CAMetalLayer* (optional)
-} GfxMetalHandle;
-
-typedef struct GfxEmscriptenHandle {
-    const char* canvasSelector; // CSS selector for canvas element (e.g., "#canvas")
-} GfxEmscriptenHandle;
-
-typedef struct GfxAndroidHandle {
-    void* window;
-} GfxAndroidHandle;
-
-typedef struct {
-    GfxWindowingSystem windowingSystem;
-    union {
-        GfxWin32Handle win32;
-        GfxXlibHandle xlib;
-        GfxXcbHandle xcb;
-        GfxWaylandHandle wayland;
-        GfxMetalHandle metal;
-        GfxEmscriptenHandle emscripten;
-        GfxAndroidHandle android;
-    };
-} GfxPlatformWindowHandle;
-
-// ============================================================================
-// Synchronization Enumerations
-// ============================================================================
-
-typedef enum {
-    GFX_FENCE_STATUS_UNSIGNALED = 0,
-    GFX_FENCE_STATUS_SIGNALED = 1,
-    GFX_FENCE_STATUS_ERROR = 2,
-    GFX_FENCE_STATUS_MAX_ENUM = 0x7FFFFFFF
-} GfxFenceStatus;
-
-typedef enum {
-    GFX_SEMAPHORE_TYPE_BINARY = 0,
-    GFX_SEMAPHORE_TYPE_TIMELINE = 1,
-    GFX_SEMAPHORE_TYPE_MAX_ENUM = 0x7FFFFFFF
-} GfxSemaphoreType;
-
-// ============================================================================
-// Descriptor Structures
-// ============================================================================
-
 typedef struct {
     GfxBackend backend;
     bool enableValidation;
@@ -670,21 +621,6 @@ typedef struct {
     const char** requiredFeatures;
     uint32_t requiredFeatureCount;
 } GfxDeviceDescriptor;
-
-typedef struct {
-    const char* label;
-    GfxPlatformWindowHandle windowHandle;
-} GfxSurfaceDescriptor;
-
-typedef struct {
-    const char* label;
-    uint32_t width;
-    uint32_t height;
-    GfxTextureFormat format;
-    GfxTextureUsage usage;
-    GfxPresentMode presentMode;
-    uint32_t imageCount;
-} GfxSwapchainDescriptor;
 
 typedef struct {
     const char* label;
@@ -765,17 +701,6 @@ typedef struct {
     GfxBlendComponent color;
     GfxBlendComponent alpha;
 } GfxBlendState;
-
-// Color write mask flags (can be combined with bitwise OR)
-typedef enum {
-    GFX_COLOR_WRITE_MASK_NONE = 0x0,
-    GFX_COLOR_WRITE_MASK_RED = 0x1,
-    GFX_COLOR_WRITE_MASK_GREEN = 0x2,
-    GFX_COLOR_WRITE_MASK_BLUE = 0x4,
-    GFX_COLOR_WRITE_MASK_ALPHA = 0x8,
-    GFX_COLOR_WRITE_MASK_ALL = GFX_COLOR_WRITE_MASK_RED | GFX_COLOR_WRITE_MASK_GREEN | GFX_COLOR_WRITE_MASK_BLUE | GFX_COLOR_WRITE_MASK_ALPHA,
-    GFX_COLOR_WRITE_MASK_MAX_ENUM = 0x7FFFFFFF
-} GfxColorWriteMask;
 
 typedef struct {
     GfxTextureFormat format;
@@ -858,21 +783,6 @@ typedef struct {
     GfxBindGroupLayout* bindGroupLayouts;
     uint32_t bindGroupLayoutCount;
 } GfxComputePipelineDescriptor;
-
-typedef enum {
-    GFX_BIND_GROUP_ENTRY_TYPE_BUFFER = 0,
-    GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER = 1,
-    GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW = 2,
-    GFX_BIND_GROUP_ENTRY_TYPE_MAX_ENUM = 0x7FFFFFFF
-} GfxBindGroupEntryType;
-
-typedef enum {
-    GFX_BINDING_TYPE_BUFFER = 0,
-    GFX_BINDING_TYPE_SAMPLER = 1,
-    GFX_BINDING_TYPE_TEXTURE = 2,
-    GFX_BINDING_TYPE_STORAGE_TEXTURE = 3,
-    GFX_BINDING_TYPE_MAX_ENUM = 0x7FFFFFFF
-} GfxBindingType;
 
 typedef struct {
     uint32_t binding;
@@ -967,6 +877,88 @@ typedef struct {
     GfxSemaphore* waitSemaphores;
     uint32_t waitSemaphoreCount;
 } GfxPresentInfo;
+
+// ============================================================================
+// Platform Specific
+// ============================================================================
+
+// Common windowing system enum for all platforms
+typedef enum {
+    GFX_WINDOWING_SYSTEM_WIN32 = 0,
+    GFX_WINDOWING_SYSTEM_XLIB = 1,
+    GFX_WINDOWING_SYSTEM_WAYLAND = 2,
+    GFX_WINDOWING_SYSTEM_XCB = 3,
+    GFX_WINDOWING_SYSTEM_METAL = 4,
+    GFX_WINDOWING_SYSTEM_EMSCRIPTEN = 5,
+    GFX_WINDOWING_SYSTEM_ANDROID = 6,
+    GFX_WINDOWING_SYSTEM_MAX_ENUM = 0x7FFFFFFF
+} GfxWindowingSystem;
+
+// Common platform window handle struct with union for all windowing systems
+typedef struct GfxWin32Handle {
+    void* hwnd; // HWND - Window handle
+    void* hinstance; // HINSTANCE - Application instance
+} GfxWin32Handle;
+
+typedef struct GfxXlibHandle {
+    unsigned long window; // Window
+    void* display; // Display*
+} GfxXlibHandle;
+
+typedef struct GfxX11Handle {
+    void* connection;
+    uint32_t window;
+} GfxX11Handle;
+
+typedef struct GfxWaylandHandle {
+    void* surface; // wl_surface*
+    void* display; // wl_display*
+} GfxWaylandHandle;
+
+typedef struct GfxXcbHandle {
+    void* connection; // xcb_connection_t*
+    uint32_t window; // xcb_window_t
+} GfxXcbHandle;
+
+typedef struct GfxMetalHandle {
+    void* layer; // CAMetalLayer* (optional)
+} GfxMetalHandle;
+
+typedef struct GfxEmscriptenHandle {
+    const char* canvasSelector; // CSS selector for canvas element (e.g., "#canvas")
+} GfxEmscriptenHandle;
+
+typedef struct GfxAndroidHandle {
+    void* window;
+} GfxAndroidHandle;
+
+typedef struct {
+    GfxWindowingSystem windowingSystem;
+    union {
+        GfxWin32Handle win32;
+        GfxXlibHandle xlib;
+        GfxXcbHandle xcb;
+        GfxWaylandHandle wayland;
+        GfxMetalHandle metal;
+        GfxEmscriptenHandle emscripten;
+        GfxAndroidHandle android;
+    };
+} GfxPlatformWindowHandle;
+
+typedef struct {
+    const char* label;
+    GfxPlatformWindowHandle windowHandle;
+} GfxSurfaceDescriptor;
+
+typedef struct {
+    const char* label;
+    uint32_t width;
+    uint32_t height;
+    GfxTextureFormat format;
+    GfxTextureUsage usage;
+    GfxPresentMode presentMode;
+    uint32_t imageCount;
+} GfxSwapchainDescriptor;
 
 // ============================================================================
 // API Functions
