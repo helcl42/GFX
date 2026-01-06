@@ -324,9 +324,10 @@ public:
     }
 
     VkPhysicalDevice handle() const { return m_physicalDevice; }
-    const char* getName() const { return m_properties.deviceName; }
     uint32_t getGraphicsQueueFamily() const { return m_graphicsQueueFamily; }
     Instance* getInstance() const { return m_instance; }
+    
+    const VkPhysicalDeviceProperties& getProperties() const { return m_properties; }
 
     VkPhysicalDeviceProperties getLimits() const
     {

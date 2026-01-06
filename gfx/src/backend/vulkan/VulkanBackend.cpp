@@ -155,19 +155,14 @@ GfxResult VulkanBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDevice
     }
 }
 
-const char* VulkanBackend::adapterGetName(GfxAdapter adapter) const
+void VulkanBackend::adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const
 {
-    if (!adapter) {
-        return nullptr;
+    if (!adapter || !outInfo) {
+        return;
     }
-    auto* adap = converter::toNative<Adapter>(adapter);
-    return adap->getName();
-}
 
-GfxBackend VulkanBackend::adapterGetBackend(GfxAdapter adapter) const
-{
-    (void)adapter;
-    return GFX_BACKEND_VULKAN;
+    auto* adap = converter::toNative<Adapter>(adapter);
+    *outInfo = converter::vkPropertiesToGfxAdapterInfo(adap->getProperties());
 }
 
 void VulkanBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const

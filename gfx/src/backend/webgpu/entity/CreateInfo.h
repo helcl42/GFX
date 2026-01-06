@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <vector>
 #include <webgpu/webgpu.h>
 
@@ -36,6 +37,14 @@ enum class SemaphoreType {
 struct AdapterCreateInfo {
     WGPUPowerPreference powerPreference;
     bool forceFallbackAdapter;
+};
+
+struct AdapterInfo {
+    std::string name; // Device name (e.g., "NVIDIA GeForce RTX 4090")
+    std::string driverDescription; // Driver description (may be NULL for WebGPU)
+    uint32_t vendorID; // PCI vendor ID (0x1002=AMD, 0x10DE=NVIDIA, 0x8086=Intel, 0=Unknown)
+    uint32_t deviceID; // PCI device ID (0=Unknown)
+    WGPUAdapterType adapterType; // Discrete, Integrated, CPU, or Unknown
 };
 
 struct BufferCreateInfo {

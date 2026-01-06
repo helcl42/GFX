@@ -27,6 +27,13 @@ enum class Backend {
     Auto
 };
 
+enum class AdapterType {
+    DiscreteGPU,
+    IntegratedGPU,
+    CPU,
+    Unknown
+};
+
 enum class AdapterPreference {
     Undefined,
     LowPower,
@@ -793,6 +800,15 @@ struct DeviceLimits {
     uint32_t maxTextureArrayLayers = 0;
 };
 
+struct AdapterInfo {
+    std::string name;              // Device name (e.g., "NVIDIA GeForce RTX 4090")
+    std::string driverDescription; // Driver description (may be empty for WebGPU)
+    uint32_t vendorID = 0;         // PCI vendor ID (0x1002=AMD, 0x10DE=NVIDIA, 0x8086=Intel, 0=Unknown)
+    uint32_t deviceID = 0;         // PCI device ID (0=Unknown)
+    AdapterType adapterType = AdapterType::Unknown; // Discrete, Integrated, CPU, or Unknown
+    Backend backend = Backend::Auto;                 // Vulkan or WebGPU
+};
+
 struct SubmitInfo {
     std::vector<std::shared_ptr<CommandEncoder>> commandEncoders;
 
@@ -1170,8 +1186,7 @@ public:
     virtual ~Adapter() = default;
 
     virtual std::shared_ptr<Device> createDevice(const DeviceDescriptor& descriptor = {}) = 0;
-    virtual std::string getName() const = 0;
-    virtual Backend getBackend() const = 0;
+    virtual AdapterInfo getInfo() const = 0;
     virtual DeviceLimits getLimits() const = 0;
 };
 

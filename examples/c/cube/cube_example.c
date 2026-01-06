@@ -95,6 +95,7 @@ typedef struct {
 
     GfxInstance instance;
     GfxAdapter adapter;
+    GfxAdapterInfo adapterInfo; // Cached adapter info
     GfxDevice device;
     GfxQueue queue;
     GfxSurface surface;
@@ -303,8 +304,15 @@ bool initializeGraphics(CubeApp* app)
         return false;
     }
 
-    printf("Using adapter: %s\n", gfxAdapterGetName(app->adapter));
-    printf("Backend: %s\n", gfxAdapterGetBackend(app->adapter) == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU");
+    // Query and store adapter info
+    gfxAdapterGetInfo(app->adapter, &app->adapterInfo);
+    printf("Using adapter: %s\n", app->adapterInfo.name);
+    printf("  Vendor ID: 0x%04X, Device ID: 0x%04X\n", app->adapterInfo.vendorID, app->adapterInfo.deviceID);
+    printf("  Type: %s\n",
+        app->adapterInfo.adapterType == GFX_ADAPTER_TYPE_DISCRETE_GPU ? "Discrete GPU" : app->adapterInfo.adapterType == GFX_ADAPTER_TYPE_INTEGRATED_GPU ? "Integrated GPU"
+            : app->adapterInfo.adapterType == GFX_ADAPTER_TYPE_CPU                                                                                       ? "CPU"
+                                                                                                                                                         : "Unknown");
+    printf("  Backend: %s\n", app->adapterInfo.backend == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU");
 
     // Create device
     GfxDeviceDescriptor deviceDesc = {
@@ -706,8 +714,7 @@ bool createRenderingResources(CubeApp* app)
     void* fragmentShaderCode = NULL;
 
     GfxShaderSourceType sourceType;
-    GfxBackend backend = gfxAdapterGetBackend(app->adapter);
-    if (backend == GFX_BACKEND_WEBGPU) {
+    if (app->adapterInfo.backend == GFX_BACKEND_WEBGPU) {
         sourceType = GFX_SHADER_SOURCE_WGSL;
         // Load WGSL shaders for WebGPU (both native and web)
         printf("Loading WGSL shaders...\n");
@@ -898,14 +905,13 @@ void updateCube(CubeApp* app, int cubeIndex)
         0.0f, 1.0f, 0.0f); // up vector
 
     // Create perspective projection matrix
-    GfxBackend backend = gfxAdapterGetBackend(app->adapter);
     float aspect = (float)gfxSwapchainGetWidth(app->swapchain) / (float)gfxSwapchainGetHeight(app->swapchain);
     matrixPerspective(uniforms.projection,
         45.0f * M_PI / 180.0f, // 45 degree FOV
         aspect,
         0.1f, // near plane
         100.0f, // far plane
-        backend); // Adjust for clip space differences
+        app->adapterInfo.backend); // Adjust for clip space differences
 
     // Upload uniform data to buffer at aligned offset
     // Formula: (frame * CUBE_COUNT + cube) * alignedSize

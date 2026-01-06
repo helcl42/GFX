@@ -108,6 +108,7 @@ private:
     GLFWwindow* window = nullptr;
     std::shared_ptr<Instance> instance;
     std::shared_ptr<Adapter> adapter;
+    AdapterInfo adapterInfo; // Cached adapter info
     std::shared_ptr<Device> device;
     std::shared_ptr<Queue> queue;
     std::shared_ptr<Surface> surface;
@@ -276,8 +277,12 @@ bool CubeApp::initializeGraphics()
             return false;
         }
 
-        std::cout << "Using adapter: " << adapter->getName() << std::endl;
-        std::cout << "Backend: " << (adapter->getBackend() == Backend::Vulkan ? "Vulkan" : "WebGPU") << std::endl;
+        // Query and store adapter info
+        adapterInfo = adapter->getInfo();
+        std::cout << "Using adapter: " << adapterInfo.name << std::endl;
+        std::cout << "Backend: " << (adapterInfo.backend == Backend::Vulkan ? "Vulkan" : "WebGPU") << std::endl;
+        std::cout << "  Vendor ID: 0x" << std::hex << adapterInfo.vendorID << std::dec
+                  << ", Device ID: 0x" << std::hex << adapterInfo.deviceID << std::dec << std::endl;
 
         // Create device
         DeviceDescriptor deviceDesc{};
@@ -605,12 +610,11 @@ bool CubeApp::createRenderingResources()
         }
 
         // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
-        Backend backend = adapter->getBackend();
         ShaderSourceType shaderSourceType;
         std::string vertexShaderCode;
         std::string fragmentShaderCode;
 
-        if (backend == Backend::WebGPU) {
+        if (adapterInfo.backend == Backend::WebGPU) {
             shaderSourceType = ShaderSourceType::WGSL;
             // Load WGSL shaders for WebGPU
             vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl");
@@ -763,7 +767,7 @@ void CubeApp::updateCube(int cubeIndex)
 
     // Create projection matrix
     float aspect = (float)swapchain->getWidth() / (float)swapchain->getHeight();
-    matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f, adapter->getBackend());
+    matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f, adapterInfo.backend);
 
     // Upload uniform data to buffer at aligned offset
     // Formula: (frame * CUBE_COUNT + cube) * alignedSize

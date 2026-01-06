@@ -112,19 +112,14 @@ GfxResult WebGPUBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDevice
     }
 }
 
-const char* WebGPUBackend::adapterGetName(GfxAdapter adapter) const
+void WebGPUBackend::adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const
 {
-    if (!adapter) {
-        return nullptr;
+    if (!adapter || !outInfo) {
+        return;
     }
-    auto* adapterPtr = converter::toNative<Adapter>(adapter);
-    return adapterPtr->getName();
-}
 
-GfxBackend WebGPUBackend::adapterGetBackend(GfxAdapter adapter) const
-{
-    (void)adapter;
-    return GFX_BACKEND_WEBGPU;
+    auto* adapterPtr = converter::toNative<Adapter>(adapter);
+    *outInfo = converter::wgpuAdapterToGfxAdapterInfo(adapterPtr->getInfo());
 }
 
 void WebGPUBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const

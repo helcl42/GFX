@@ -48,6 +48,13 @@ typedef enum {
 } GfxBackend;
 
 typedef enum {
+    GFX_ADAPTER_TYPE_DISCRETE_GPU,
+    GFX_ADAPTER_TYPE_INTEGRATED_GPU,
+    GFX_ADAPTER_TYPE_CPU,
+    GFX_ADAPTER_TYPE_UNKNOWN
+} GfxAdapterType;
+
+typedef enum {
     GFX_ADAPTER_PREFERENCE_UNDEFINED,
     GFX_ADAPTER_PREFERENCE_LOW_POWER,
     GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE,
@@ -597,6 +604,16 @@ typedef struct {
     GfxAdapterPreference preference;
 } GfxAdapterDescriptor;
 
+// Adapter information
+typedef struct {
+    const char* name;
+    const char* driverDescription;
+    uint32_t vendorID;
+    uint32_t deviceID;
+    GfxAdapterType adapterType;
+    GfxBackend backend;
+} GfxAdapterInfo;
+
 // Device limits
 typedef struct {
     uint32_t minUniformBufferOffsetAlignment;
@@ -932,13 +949,14 @@ GFX_API GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, Gfx
 GFX_API void gfxInstanceDestroy(GfxInstance instance);
 GFX_API void gfxInstanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData);
 GFX_API GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter);
+// TODO should we ruturn GfxResult from every function?
+// should we return GfxResult here too and use same logic as Vulkan?
 GFX_API uint32_t gfxInstanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters);
 
 // Adapter functions
 GFX_API void gfxAdapterDestroy(GfxAdapter adapter);
 GFX_API GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice);
-GFX_API const char* gfxAdapterGetName(GfxAdapter adapter);
-GFX_API GfxBackend gfxAdapterGetBackend(GfxAdapter adapter);
+GFX_API void gfxAdapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo);
 GFX_API void gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits);
 
 // Device functions

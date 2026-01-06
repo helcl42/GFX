@@ -1654,15 +1654,37 @@ public:
         return std::make_shared<CDeviceImpl>(device);
     }
 
-    std::string getName() const override
+    AdapterInfo getInfo() const override
     {
-        const char* name = gfxAdapterGetName(m_handle);
-        return name ? name : "Unknown";
-    }
+        GfxAdapterInfo cInfo = {};
+        gfxAdapterGetInfo(m_handle, &cInfo);
 
-    Backend getBackend() const override
-    {
-        return cBackendToCppBackend(gfxAdapterGetBackend(m_handle));
+        AdapterInfo info;
+        info.name = cInfo.name ? cInfo.name : "Unknown";
+        info.driverDescription = cInfo.driverDescription ? cInfo.driverDescription : "";
+        info.vendorID = cInfo.vendorID;
+        info.deviceID = cInfo.deviceID;
+
+        // Convert adapter type
+        switch (cInfo.adapterType) {
+        case GFX_ADAPTER_TYPE_DISCRETE_GPU:
+            info.adapterType = AdapterType::DiscreteGPU;
+            break;
+        case GFX_ADAPTER_TYPE_INTEGRATED_GPU:
+            info.adapterType = AdapterType::IntegratedGPU;
+            break;
+        case GFX_ADAPTER_TYPE_CPU:
+            info.adapterType = AdapterType::CPU;
+            break;
+        default:
+            info.adapterType = AdapterType::Unknown;
+            break;
+        }
+
+        // Convert backend
+        info.backend = cBackendToCppBackend(cInfo.backend);
+
+        return info;
     }
 
     DeviceLimits getLimits() const override

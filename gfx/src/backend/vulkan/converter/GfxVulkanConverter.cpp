@@ -27,6 +27,42 @@ GfxDeviceLimits vkPropertiesToGfxDeviceLimits(const VkPhysicalDeviceProperties& 
 }
 
 // ============================================================================
+// Adapter Type Conversion
+// ============================================================================
+
+GfxAdapterType vkDeviceTypeToGfxAdapterType(VkPhysicalDeviceType deviceType)
+{
+    switch (deviceType) {
+    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+        return GFX_ADAPTER_TYPE_DISCRETE_GPU;
+    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+        return GFX_ADAPTER_TYPE_INTEGRATED_GPU;
+    case VK_PHYSICAL_DEVICE_TYPE_CPU:
+        return GFX_ADAPTER_TYPE_CPU;
+    case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+    case VK_PHYSICAL_DEVICE_TYPE_OTHER:
+    default:
+        return GFX_ADAPTER_TYPE_UNKNOWN;
+    }
+}
+
+// ============================================================================
+// Adapter Info Conversion
+// ============================================================================
+
+GfxAdapterInfo vkPropertiesToGfxAdapterInfo(const VkPhysicalDeviceProperties& properties)
+{
+    GfxAdapterInfo info{};
+    info.name = properties.deviceName;
+    info.driverDescription = nullptr; // Vulkan doesn't provide driver description in properties
+    info.vendorID = properties.vendorID;
+    info.deviceID = properties.deviceID;
+    info.backend = GFX_BACKEND_VULKAN;
+    info.adapterType = vkDeviceTypeToGfxAdapterType(properties.deviceType);
+    return info;
+}
+
+// ============================================================================
 // Debug Message Conversion Functions
 // ============================================================================
 

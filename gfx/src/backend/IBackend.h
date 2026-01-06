@@ -18,8 +18,7 @@ public:
     // Adapter functions
     virtual void adapterDestroy(GfxAdapter adapter) const = 0;
     virtual GfxResult adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const = 0;
-    virtual const char* adapterGetName(GfxAdapter adapter) const = 0;
-    virtual GfxBackend adapterGetBackend(GfxAdapter adapter) const = 0;
+    virtual void adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const = 0;
     virtual void adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const = 0;
 
     // Device functions

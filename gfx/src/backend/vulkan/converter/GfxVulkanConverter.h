@@ -100,6 +100,18 @@ TextureBarrier gfxTextureBarrierToTextureBarrier(const GfxTextureBarrier& barrie
 GfxDeviceLimits vkPropertiesToGfxDeviceLimits(const VkPhysicalDeviceProperties& properties);
 
 // ============================================================================
+// Adapter Type Conversion
+// ============================================================================
+
+GfxAdapterType vkDeviceTypeToGfxAdapterType(VkPhysicalDeviceType deviceType);
+
+// ============================================================================
+// Adapter Info Conversion
+// ============================================================================
+
+GfxAdapterInfo vkPropertiesToGfxAdapterInfo(const VkPhysicalDeviceProperties& properties);
+
+// ============================================================================
 // Other Format Functions
 // ============================================================================
 

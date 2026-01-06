@@ -41,6 +41,41 @@ gfx::webgpu::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreTyp
 }
 
 // ============================================================================
+// Adapter Type Conversion
+// ============================================================================
+
+GfxAdapterType wgpuAdapterTypeToGfxAdapterType(WGPUAdapterType adapterType)
+{
+    switch (adapterType) {
+    case WGPUAdapterType_DiscreteGPU:
+        return GFX_ADAPTER_TYPE_DISCRETE_GPU;
+    case WGPUAdapterType_IntegratedGPU:
+        return GFX_ADAPTER_TYPE_INTEGRATED_GPU;
+    case WGPUAdapterType_CPU:
+        return GFX_ADAPTER_TYPE_CPU;
+    case WGPUAdapterType_Unknown:
+    default:
+        return GFX_ADAPTER_TYPE_UNKNOWN;
+    }
+}
+
+// ============================================================================
+// Adapter Info Conversion
+// ============================================================================
+
+GfxAdapterInfo wgpuAdapterToGfxAdapterInfo(const gfx::webgpu::AdapterInfo& info)
+{
+    GfxAdapterInfo adapterInfo{};
+    adapterInfo.name = info.name.c_str();
+    adapterInfo.driverDescription = info.driverDescription.c_str();
+    adapterInfo.vendorID = info.vendorID;
+    adapterInfo.deviceID = info.deviceID;
+    adapterInfo.backend = GFX_BACKEND_WEBGPU;
+    adapterInfo.adapterType = wgpuAdapterTypeToGfxAdapterType(info.adapterType);
+    return adapterInfo;
+}
+
+// ============================================================================
 // CreateInfo Conversion Functions - GfxDescriptor to Internal CreateInfo
 // ============================================================================
 

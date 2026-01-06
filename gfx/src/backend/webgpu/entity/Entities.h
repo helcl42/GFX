@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../common/WebGPUCommon.h"
 #include "CreateInfo.h"
+
+#include "../common/WebGPUCommon.h"
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
@@ -103,7 +104,6 @@ public:
     Adapter(Instance* instance, const AdapterCreateInfo& createInfo)
         : m_adapter(nullptr)
         , m_instance(instance)
-        , m_name("WebGPU Adapter")
     {
         if (!instance) {
             throw std::runtime_error("Invalid instance for adapter creation");
@@ -151,13 +151,15 @@ public:
         if (!m_adapter) {
             throw std::runtime_error("Failed to request adapter");
         }
+
+        m_info = createAdapterInfo();
     }
 
     // Constructor 2: Wrap existing WGPUAdapter (used by enumerate)
     Adapter(WGPUAdapter adapter, Instance* instance)
         : m_adapter(adapter)
         , m_instance(instance)
-        , m_name("WebGPU Adapter")
+        , m_info(createAdapterInfo())
     {
     }
 
@@ -201,8 +203,9 @@ public:
     }
 
     WGPUAdapter handle() const { return m_adapter; }
-    const char* getName() const { return m_name.c_str(); }
     Instance* getInstance() const { return m_instance; }
+
+    const gfx::webgpu::AdapterInfo& getInfo() const { return m_info; }
 
     WGPULimits getLimits() const
     {
@@ -215,9 +218,36 @@ public:
     }
 
 private:
+    AdapterInfo createAdapterInfo() const
+    {
+        gfx::webgpu::AdapterInfo adapterInfo{};
+
+#ifdef __EMSCRIPTEN__
+        // Emscripten's wgpuAdapterGetInfo has issues - provide reasonable defaults
+        adapterInfo.name = "WebGPU Adapter";
+        adapterInfo.driverDescription = "WebGPU";
+        adapterInfo.vendorID = 0;
+        adapterInfo.deviceID = 0;
+        adapterInfo.adapterType = WGPUAdapterType_Unknown;
+#else
+        WGPUAdapterInfo info = WGPU_ADAPTER_INFO_INIT;
+        wgpuAdapterGetInfo(m_adapter, &info);
+
+        adapterInfo.name = info.device.data ? std::string(info.device.data, info.device.length) : "Unknown";
+        adapterInfo.driverDescription = info.description.data ? std::string(info.description.data, info.description.length) : "";
+        adapterInfo.vendorID = info.vendorID;
+        adapterInfo.deviceID = info.deviceID;
+        adapterInfo.adapterType = info.adapterType;
+
+        wgpuAdapterInfoFreeMembers(info);
+#endif
+        return adapterInfo;
+    }
+
+private:
     WGPUAdapter m_adapter = nullptr;
     Instance* m_instance = nullptr; // Non-owning
-    std::string m_name;
+    gfx::webgpu::AdapterInfo m_info;
 };
 
 class Queue {

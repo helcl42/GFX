@@ -88,6 +88,7 @@ typedef struct {
 
     GfxInstance instance;
     GfxAdapter adapter;
+    GfxAdapterInfo adapterInfo; // Cached adapter info
     GfxDevice device;
     GfxQueue queue;
     GfxSurface surface;
@@ -331,8 +332,10 @@ static bool initGraphics(ComputeApp* app)
         return false;
     }
 
-    const char* adapterName = gfxAdapterGetName(app->adapter);
-    printf("Using adapter: %s\n", adapterName ? adapterName : "Unknown");
+    // Query and store adapter info
+    gfxAdapterGetInfo(app->adapter, &app->adapterInfo);
+    printf("Using adapter: %s\n", app->adapterInfo.name);
+    printf("  Backend: %s\n", app->adapterInfo.backend == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU");
 
     // Create device
     GfxDeviceDescriptor deviceDesc = { 0 };
@@ -409,7 +412,7 @@ static bool createComputeResources(ComputeApp* app)
     // Load compute shader based on backend
     void* computeCode = NULL;
     size_t computeSize = 0;
-    GfxBackend backend = gfxAdapterGetBackend(app->adapter);
+    GfxBackend backend = app->adapterInfo.backend;
     printf("Backend: %s\n", backend == GFX_BACKEND_WEBGPU ? "WebGPU" : "Vulkan");
     if (backend == GFX_BACKEND_WEBGPU) {
         sourceType = GFX_SHADER_SOURCE_WGSL;
@@ -586,7 +589,7 @@ static bool createRenderResources(ComputeApp* app)
     // Load shaders based on backend
     void* vertexCode = NULL;
     size_t vertexSize = 0;
-    GfxBackend backend = gfxAdapterGetBackend(app->adapter);
+    GfxBackend backend = app->adapterInfo.backend;
     if (backend == GFX_BACKEND_WEBGPU) {
         vertexSourceType = GFX_SHADER_SOURCE_WGSL;
         // Load WGSL shader for WebGPU

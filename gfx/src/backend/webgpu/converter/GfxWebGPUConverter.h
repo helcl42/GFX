@@ -6,6 +6,8 @@
 
 // Forward declare internal WebGPU types
 namespace gfx::webgpu {
+struct AdapterInfo;
+
 struct AdapterCreateInfo;
 struct InstanceCreateInfo;
 struct DeviceCreateInfo;
@@ -29,9 +31,8 @@ struct RenderPassEncoderCreateInfo;
 struct ComputePassEncoderCreateInfo;
 struct SubmitInfo;
 struct PlatformWindowHandle;
+
 enum class SemaphoreType;
-class CommandEncoder;
-// BufferUsage is an alias to WGPUBufferUsage, so we use WGPUBufferUsage directly
 } // namespace gfx::webgpu
 
 // ============================================================================
@@ -61,6 +62,18 @@ inline InternalType* toNative(GfxHandle handle)
 // ============================================================================
 
 gfx::webgpu::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreType gfxType);
+
+// ============================================================================
+// Adapter Type Conversion
+// ============================================================================
+
+GfxAdapterType wgpuAdapterTypeToGfxAdapterType(WGPUAdapterType adapterType);
+
+// ============================================================================
+// Adapter Info Conversion
+// ============================================================================
+
+GfxAdapterInfo wgpuAdapterToGfxAdapterInfo(const gfx::webgpu::AdapterInfo& info);
 
 // ============================================================================
 // CreateInfo Conversion Functions - GfxDescriptor to Internal CreateInfo

@@ -17,8 +17,7 @@ public:
     // Adapter functions
     void adapterDestroy(GfxAdapter adapter) const override;
     GfxResult adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const override;
-    const char* adapterGetName(GfxAdapter adapter) const override;
-    GfxBackend adapterGetBackend(GfxAdapter adapter) const override;
+    void adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const override;
     void adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const override;
 
     // Device functions

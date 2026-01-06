@@ -240,21 +240,16 @@ GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* 
     return GFX_RESULT_SUCCESS;
 }
 
-const char* gfxAdapterGetName(GfxAdapter adapter)
+void gfxAdapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo)
 {
-    if (!adapter) {
-        return nullptr;
+    if (!adapter || !outInfo) {
+        return;
     }
     auto api = gfx::getAPI(adapter);
     if (!api) {
-        return nullptr;
+        return;
     }
-    return api->adapterGetName(gfx::native(adapter));
-}
-
-GfxBackend gfxAdapterGetBackend(GfxAdapter adapter)
-{
-    return gfx::getBackend(adapter);
+    api->adapterGetInfo(gfx::native(adapter), outInfo);
 }
 
 void gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits)

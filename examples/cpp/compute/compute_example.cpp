@@ -94,6 +94,7 @@ private:
 
     std::shared_ptr<Instance> instance;
     std::shared_ptr<Adapter> adapter;
+    AdapterInfo adapterInfo; // Cached adapter info
     std::shared_ptr<Device> device;
     std::shared_ptr<Queue> queue;
     std::shared_ptr<Surface> surface;
@@ -257,8 +258,12 @@ bool ComputeApp::initializeGraphics()
             return false;
         }
 
-        std::cout << "Using adapter: " << adapter->getName() << std::endl;
-        std::cout << "Backend: " << (adapter->getBackend() == Backend::Vulkan ? "Vulkan" : "WebGPU") << std::endl;
+        // Query and store adapter info
+        adapterInfo = adapter->getInfo();
+        std::cout << "Using adapter: " << adapterInfo.name << std::endl;
+        std::cout << "Backend: " << (adapterInfo.backend == Backend::Vulkan ? "Vulkan" : "WebGPU") << std::endl;
+        std::cout << "  Vendor ID: 0x" << std::hex << adapterInfo.vendorID << std::dec
+                  << ", Device ID: 0x" << std::hex << adapterInfo.deviceID << std::dec << std::endl;
 
         // Create device
         DeviceDescriptor deviceDesc{};
@@ -334,11 +339,10 @@ bool ComputeApp::createComputeResources()
         }
 
         // Load compute shader (WGSL for WebGPU, SPIR-V for Vulkan)
-        Backend backend = adapter->getBackend();
         ShaderSourceType shaderSourceType;
         std::string computeShaderCode;
 
-        if (backend == Backend::WebGPU) {
+        if (adapterInfo.backend == Backend::WebGPU) {
             shaderSourceType = ShaderSourceType::WGSL;
             computeShaderCode = loadTextFile("shaders/generate.comp.wgsl");
         } else {
@@ -491,11 +495,10 @@ bool ComputeApp::createRenderResources()
 {
     try {
         // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
-        Backend backend = adapter->getBackend();
         ShaderSourceType shaderSourceType;
         std::string vertexShaderCode, fragmentShaderCode;
 
-        if (backend == Backend::WebGPU) {
+        if (adapterInfo.backend == Backend::WebGPU) {
             shaderSourceType = ShaderSourceType::WGSL;
             vertexShaderCode = loadTextFile("shaders/fullscreen.vert.wgsl");
             fragmentShaderCode = loadTextFile("shaders/postprocess.frag.wgsl");
