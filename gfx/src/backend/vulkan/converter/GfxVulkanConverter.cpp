@@ -1173,6 +1173,9 @@ gfx::vulkan::BindGroupLayoutCreateInfo gfxDescriptorToBindGroupLayoutCreateInfo(
         case GFX_BINDING_TYPE_STORAGE_TEXTURE:
             layoutEntry.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
             break;
+        default:
+            // Unknown type - leave as Undefined
+            break;
         }
 
         // Convert GfxShaderStage to VkShaderStageFlags

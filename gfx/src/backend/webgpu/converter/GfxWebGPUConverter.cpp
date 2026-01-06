@@ -356,6 +356,9 @@ gfx::webgpu::BindGroupLayoutCreateInfo gfxDescriptorToWebGPUBindGroupLayoutCreat
             layoutEntry.storageTextureFormat = gfxFormatToWGPUFormat(entry.storageTexture.format);
             layoutEntry.storageTextureViewDimension = gfxTextureViewTypeToWGPU(entry.storageTexture.viewDimension);
             break;
+        default:
+            // Unknown type - leave as Undefined
+            break;
         }
 
         createInfo.entries.push_back(layoutEntry);
@@ -396,6 +399,9 @@ gfx::webgpu::BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const 
                 bindEntry.textureView = textureView->handle();
                 break;
             }
+            default:
+                // Unknown type - skip
+                break;
             }
 
             createInfo.entries.push_back(bindEntry);
