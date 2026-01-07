@@ -382,6 +382,20 @@ VkImageType gfxTextureTypeToVkImageType(GfxTextureType type)
     }
 }
 
+GfxTextureType vkImageTypeToGfxTextureType(VkImageType type)
+{
+    switch (type) {
+    case VK_IMAGE_TYPE_1D:
+        return GFX_TEXTURE_TYPE_1D;
+    case VK_IMAGE_TYPE_2D:
+        return GFX_TEXTURE_TYPE_2D; // Note: Can't distinguish CUBE from this alone
+    case VK_IMAGE_TYPE_3D:
+        return GFX_TEXTURE_TYPE_3D;
+    default:
+        return GFX_TEXTURE_TYPE_2D;
+    }
+}
+
 VkImageViewType gfxTextureViewTypeToVkImageViewType(GfxTextureViewType type)
 {
     switch (type) {

@@ -715,50 +715,19 @@ void VulkanBackend::textureDestroy(GfxTexture texture) const
     delete converter::toNative<Texture>(texture);
 }
 
-GfxExtent3D VulkanBackend::textureGetSize(GfxTexture texture) const
+void VulkanBackend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const
 {
-    if (!texture) {
-        GfxExtent3D empty = { 0, 0, 0 };
-        return empty;
+    if (!texture || !outInfo) {
+        return;
     }
     auto* tex = converter::toNative<Texture>(texture);
-    return converter::vkExtent3DToGfxExtent3D(tex->getSize());
-}
-
-GfxTextureFormat VulkanBackend::textureGetFormat(GfxTexture texture) const
-{
-    if (!texture) {
-        return GFX_TEXTURE_FORMAT_UNDEFINED;
-    }
-    auto* tex = converter::toNative<Texture>(texture);
-    return converter::vkFormatToGfxFormat(tex->getFormat());
-}
-
-uint32_t VulkanBackend::textureGetMipLevelCount(GfxTexture texture) const
-{
-    if (!texture) {
-        return 0;
-    }
-    auto* tex = converter::toNative<Texture>(texture);
-    return tex->getMipLevelCount();
-}
-
-GfxSampleCount VulkanBackend::textureGetSampleCount(GfxTexture texture) const
-{
-    if (!texture) {
-        return GFX_SAMPLE_COUNT_1;
-    }
-    auto* tex = converter::toNative<Texture>(texture);
-    return converter::vkSampleCountToGfxSampleCount(tex->getSampleCount());
-}
-
-GfxTextureUsage VulkanBackend::textureGetUsage(GfxTexture texture) const
-{
-    if (!texture) {
-        return static_cast<GfxTextureUsage>(0);
-    }
-    auto* tex = converter::toNative<Texture>(texture);
-    return converter::vkImageUsageToGfxTextureUsage(tex->getUsage());
+    outInfo->type = converter::vkImageTypeToGfxTextureType(tex->getImageType());
+    outInfo->size = converter::vkExtent3DToGfxExtent3D(tex->getSize());
+    outInfo->arrayLayerCount = tex->getArrayLayers();
+    outInfo->mipLevelCount = tex->getMipLevelCount();
+    outInfo->sampleCount = converter::vkSampleCountToGfxSampleCount(tex->getSampleCount());
+    outInfo->format = converter::vkFormatToGfxFormat(tex->getFormat());
+    outInfo->usage = converter::vkImageUsageToGfxTextureUsage(tex->getUsage());
 }
 
 GfxTextureLayout VulkanBackend::textureGetLayout(GfxTexture texture) const
@@ -1029,6 +998,33 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
         vkExtent, vkSrcLayout, vkDstLayout);
 }
 
+void VulkanBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
+    GfxFilterMode filter, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
+{
+    if (!commandEncoder || !source || !destination || !sourceOrigin || !sourceExtent || !destinationOrigin || !destinationExtent) {
+        return;
+    }
+
+    auto* enc = converter::toNative<CommandEncoder>(commandEncoder);
+    auto* srcTex = converter::toNative<Texture>(source);
+    auto* dstTex = converter::toNative<Texture>(destination);
+
+    VkOffset3D vkSrcOrigin = converter::gfxOrigin3DToVkOffset3D(sourceOrigin);
+    VkExtent3D vkSrcExtent = converter::gfxExtent3DToVkExtent3D(sourceExtent);
+    VkOffset3D vkDstOrigin = converter::gfxOrigin3DToVkOffset3D(destinationOrigin);
+    VkExtent3D vkDstExtent = converter::gfxExtent3DToVkExtent3D(destinationExtent);
+    VkFilter vkFilter = converter::gfxFilterToVkFilter(filter);
+    VkImageLayout vkSrcLayout = converter::gfxLayoutToVkImageLayout(srcFinalLayout);
+    VkImageLayout vkDstLayout = converter::gfxLayoutToVkImageLayout(dstFinalLayout);
+
+    enc->blitTextureToTexture(srcTex, vkSrcOrigin, vkSrcExtent, sourceMipLevel,
+        dstTex, vkDstOrigin, vkDstExtent, destinationMipLevel,
+        vkFilter, vkSrcLayout, vkDstLayout);
+}
+
+
 // TODO - add member function to CommandEncoder for pipeline barrier
 void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
@@ -1068,6 +1064,31 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
         internalMemBarriers.data(), static_cast<uint32_t>(internalMemBarriers.size()),
         internalBufBarriers.data(), static_cast<uint32_t>(internalBufBarriers.size()),
         internalTexBarriers.data(), static_cast<uint32_t>(internalTexBarriers.size()));
+}
+
+void VulkanBackend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const
+{
+    if (!commandEncoder || !texture) {
+        return;
+    }
+
+    auto* encoder = converter::toNative<CommandEncoder>(commandEncoder);
+    auto* tex = converter::toNative<Texture>(texture);
+
+    tex->generateMipmaps(encoder);
+}
+
+void VulkanBackend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+    uint32_t baseMipLevel, uint32_t levelCount) const
+{
+    if (!commandEncoder || !texture) {
+        return;
+    }
+
+    auto* encoder = converter::toNative<CommandEncoder>(commandEncoder);
+    auto* tex = converter::toNative<Texture>(texture);
+
+    tex->generateMipmapsRange(encoder, baseMipLevel, levelCount);
 }
 
 void VulkanBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const

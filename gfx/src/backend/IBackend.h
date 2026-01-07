@@ -67,11 +67,7 @@ public:
 
     // Texture functions
     virtual void textureDestroy(GfxTexture texture) const = 0;
-    virtual GfxExtent3D textureGetSize(GfxTexture texture) const = 0;
-    virtual GfxTextureFormat textureGetFormat(GfxTexture texture) const = 0;
-    virtual uint32_t textureGetMipLevelCount(GfxTexture texture) const = 0;
-    virtual GfxSampleCount textureGetSampleCount(GfxTexture texture) const = 0;
-    virtual GfxTextureUsage textureGetUsage(GfxTexture texture) const = 0;
+    virtual void textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const = 0;
     virtual GfxTextureLayout textureGetLayout(GfxTexture texture) const = 0;
     virtual GfxResult textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const = 0;
 
@@ -134,10 +130,19 @@ public:
         GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
         const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
         = 0;
+    virtual void commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+        GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
+        GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
+        GfxFilterMode filter, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
+        = 0;
     virtual void commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
         const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
         const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
         const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
+        = 0;
+    virtual void commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const = 0;
+    virtual void commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+        uint32_t baseMipLevel, uint32_t levelCount) const
         = 0;
     virtual void commandEncoderEnd(GfxCommandEncoder commandEncoder) const = 0;
     virtual void commandEncoderBegin(GfxCommandEncoder commandEncoder) const = 0;

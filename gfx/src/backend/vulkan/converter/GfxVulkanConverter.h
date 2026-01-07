@@ -125,6 +125,7 @@ VkImageAspectFlags getImageAspectMask(VkFormat format);
 VkImageLayout gfxLayoutToVkImageLayout(GfxTextureLayout layout);
 GfxTextureLayout vkImageLayoutToGfxLayout(VkImageLayout layout);
 VkImageType gfxTextureTypeToVkImageType(GfxTextureType type);
+GfxTextureType vkImageTypeToGfxTextureType(VkImageType type);
 VkImageViewType gfxTextureViewTypeToVkImageViewType(GfxTextureViewType type);
 VkSampleCountFlagBits sampleCountToVkSampleCount(GfxSampleCount sampleCount);
 GfxSampleCount vkSampleCountToGfxSampleCount(VkSampleCountFlagBits vkSampleCount);

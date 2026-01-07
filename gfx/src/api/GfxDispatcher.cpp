@@ -658,64 +658,16 @@ void gfxBufferUnmap(GfxBuffer buffer)
 }
 
 // Texture Functions
-GfxExtent3D gfxTextureGetSize(GfxTexture texture)
+void gfxTextureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo)
 {
-    if (!texture) {
-        return { 0, 0, 0 };
+    if (!texture || !outInfo) {
+        return;
     }
     auto api = gfx::getAPI(texture);
     if (!api) {
-        return { 0, 0, 0 };
+        return;
     }
-    return api->textureGetSize(gfx::native(texture));
-}
-
-GfxTextureFormat gfxTextureGetFormat(GfxTexture texture)
-{
-    if (!texture) {
-        return GFX_TEXTURE_FORMAT_UNDEFINED;
-    }
-    auto api = gfx::getAPI(texture);
-    if (!api) {
-        return GFX_TEXTURE_FORMAT_UNDEFINED;
-    }
-    return api->textureGetFormat(gfx::native(texture));
-}
-
-uint32_t gfxTextureGetMipLevelCount(GfxTexture texture)
-{
-    if (!texture) {
-        return 0;
-    }
-    auto api = gfx::getAPI(texture);
-    if (!api) {
-        return 0;
-    }
-    return api->textureGetMipLevelCount(gfx::native(texture));
-}
-
-GfxSampleCount gfxTextureGetSampleCount(GfxTexture texture)
-{
-    if (!texture) {
-        return GFX_SAMPLE_COUNT_1;
-    }
-    auto api = gfx::getAPI(texture);
-    if (!api) {
-        return GFX_SAMPLE_COUNT_1;
-    }
-    return api->textureGetSampleCount(gfx::native(texture));
-}
-
-GfxTextureUsage gfxTextureGetUsage(GfxTexture texture)
-{
-    if (!texture) {
-        return GFX_TEXTURE_USAGE_NONE;
-    }
-    auto api = gfx::getAPI(texture);
-    if (!api) {
-        return GFX_TEXTURE_USAGE_NONE;
-    }
-    return api->textureGetUsage(gfx::native(texture));
+    api->textureGetInfo(gfx::native(texture), outInfo);
 }
 
 GfxTextureLayout gfxTextureGetLayout(GfxTexture texture)
@@ -812,6 +764,29 @@ void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     auto api = gfx::getAPI(commandEncoder);
     if (api) {
         api->commandEncoderPipelineBarrier(gfx::native(commandEncoder), memoryBarriers, memoryBarrierCount, bufferBarriers, bufferBarrierCount, textureBarriers, textureBarrierCount);
+    }
+}
+
+void gfxCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture)
+{
+    if (!commandEncoder || !texture) {
+        return;
+    }
+    auto api = gfx::getAPI(commandEncoder);
+    if (api) {
+        api->commandEncoderGenerateMipmaps(gfx::native(commandEncoder), gfx::native(texture));
+    }
+}
+
+void gfxCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+    uint32_t baseMipLevel, uint32_t levelCount)
+{
+    if (!commandEncoder || !texture) {
+        return;
+    }
+    auto api = gfx::getAPI(commandEncoder);
+    if (api) {
+        api->commandEncoderGenerateMipmapsRange(gfx::native(commandEncoder), gfx::native(texture), baseMipLevel, levelCount);
     }
 }
 
@@ -1167,6 +1142,23 @@ void gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
             gfx::native(source), sourceOrigin, sourceMipLevel,
             gfx::native(destination), destinationOrigin, destinationMipLevel,
             extent, sourceFinalLayout, destinationFinalLayout);
+    }
+}
+
+void gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
+    GfxFilterMode filter, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout)
+{
+    if (!commandEncoder || !source || !destination) {
+        return;
+    }
+    auto api = gfx::getAPI(commandEncoder);
+    if (api) {
+        api->commandEncoderBlitTextureToTexture(gfx::native(commandEncoder),
+            gfx::native(source), sourceOrigin, sourceExtent, sourceMipLevel,
+            gfx::native(destination), destinationOrigin, destinationExtent, destinationMipLevel,
+            filter, sourceFinalLayout, destinationFinalLayout);
     }
 }
 

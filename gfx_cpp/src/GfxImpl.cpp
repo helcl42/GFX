@@ -276,6 +276,7 @@ public:
     explicit CTextureImpl(GfxTexture h)
         : m_handle(h)
     {
+        gfxTextureGetInfo(m_handle, &m_info);
     }
     ~CTextureImpl() override
     {
@@ -288,18 +289,29 @@ public:
 
     Extent3D getSize() const override
     {
-        GfxExtent3D size = gfxTextureGetSize(m_handle);
-        return Extent3D(size.width, size.height, size.depth);
+        return Extent3D(m_info.size.width, m_info.size.height, m_info.size.depth);
     }
 
     TextureFormat getFormat() const override
     {
-        return cFormatToCppFormat(gfxTextureGetFormat(m_handle));
+        return cFormatToCppFormat(m_info.format);
     }
 
-    uint32_t getMipLevelCount() const override { return gfxTextureGetMipLevelCount(m_handle); }
-    uint32_t getSampleCount() const override { return gfxTextureGetSampleCount(m_handle); }
-    TextureUsage getUsage() const override { return static_cast<TextureUsage>(gfxTextureGetUsage(m_handle)); }
+    uint32_t getMipLevelCount() const override
+    {
+        return m_info.mipLevelCount;
+    }
+
+    uint32_t getSampleCount() const override
+    {
+        return static_cast<uint32_t>(m_info.sampleCount);
+    }
+
+    TextureUsage getUsage() const override
+    {
+        return static_cast<TextureUsage>(m_info.usage);
+    }
+
     TextureLayout getLayout() const override { return static_cast<TextureLayout>(gfxTextureGetLayout(m_handle)); }
 
     std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) override
@@ -324,6 +336,7 @@ public:
 
 private:
     GfxTexture m_handle;
+    GfxTextureInfo m_info;
 };
 
 class CSamplerImpl : public Sampler {
@@ -740,6 +753,25 @@ public:
         }
     }
 
+    void blitTextureToTexture(
+        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, const Extent3D& sourceExtent, uint32_t sourceMipLevel,
+        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, const Extent3D& destinationExtent, uint32_t destinationMipLevel,
+        FilterMode filter, TextureLayout sourceFinalLayout, TextureLayout destinationFinalLayout) override
+    {
+        auto src = std::dynamic_pointer_cast<CTextureImpl>(source);
+        auto dst = std::dynamic_pointer_cast<CTextureImpl>(destination);
+        if (src && dst) {
+            GfxOrigin3D cSourceOrigin = { sourceOrigin.x, sourceOrigin.y, sourceOrigin.z };
+            GfxExtent3D cSourceExtent = { sourceExtent.width, sourceExtent.height, sourceExtent.depth };
+            GfxOrigin3D cDestOrigin = { destinationOrigin.x, destinationOrigin.y, destinationOrigin.z };
+            GfxExtent3D cDestExtent = { destinationExtent.width, destinationExtent.height, destinationExtent.depth };
+            gfxCommandEncoderBlitTextureToTexture(m_handle,
+                src->getHandle(), &cSourceOrigin, &cSourceExtent, sourceMipLevel,
+                dst->getHandle(), &cDestOrigin, &cDestExtent, destinationMipLevel,
+                static_cast<GfxFilterMode>(filter), static_cast<GfxTextureLayout>(sourceFinalLayout), static_cast<GfxTextureLayout>(destinationFinalLayout));
+        }
+    }
+
     void pipelineBarrier(
         const std::vector<MemoryBarrier>& memoryBarriers = {},
         const std::vector<BufferBarrier>& bufferBarriers = {},
@@ -816,6 +848,22 @@ public:
                 static_cast<uint32_t>(cBufferBarriers.size()),
                 cTextureBarriers.empty() ? nullptr : cTextureBarriers.data(),
                 static_cast<uint32_t>(cTextureBarriers.size()));
+        }
+    }
+
+    void generateMipmaps(std::shared_ptr<Texture> texture) override
+    {
+        auto tex = std::dynamic_pointer_cast<CTextureImpl>(texture);
+        if (tex) {
+            gfxCommandEncoderGenerateMipmaps(m_handle, tex->getHandle());
+        }
+    }
+
+    void generateMipmapsRange(std::shared_ptr<Texture> texture, uint32_t baseMipLevel, uint32_t levelCount) override
+    {
+        auto tex = std::dynamic_pointer_cast<CTextureImpl>(texture);
+        if (tex) {
+            gfxCommandEncoderGenerateMipmapsRange(m_handle, tex->getHandle(), baseMipLevel, levelCount);
         }
     }
 

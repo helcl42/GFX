@@ -153,7 +153,7 @@ gfx::webgpu::TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxT
     createInfo.usage = gfxTextureUsageToWGPU(descriptor->usage);
     createInfo.sampleCount = descriptor->sampleCount;
     createInfo.mipLevelCount = descriptor->mipLevelCount;
-    createInfo.dimension = gfxTextureTypeToWGPU(descriptor->type);
+    createInfo.dimension = gfxTextureTypeToWGPUTextureDimension(descriptor->type);
     createInfo.arrayLayers = descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1;
     return createInfo;
 }
@@ -171,7 +171,7 @@ gfx::webgpu::TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(co
     importInfo.usage = gfxTextureUsageToWGPU(descriptor->usage);
     importInfo.sampleCount = descriptor->sampleCount;
     importInfo.mipLevelCount = descriptor->mipLevelCount;
-    importInfo.dimension = gfxTextureTypeToWGPU(descriptor->type);
+    importInfo.dimension = gfxTextureTypeToWGPUTextureDimension(descriptor->type);
     importInfo.arrayLayers = descriptor->arrayLayerCount > 0 ? descriptor->arrayLayerCount : 1;
     return importInfo;
 }
@@ -1100,7 +1100,7 @@ WGPUVertexFormat gfxFormatToWGPUVertexFormat(GfxTextureFormat format)
     }
 }
 
-WGPUTextureDimension gfxTextureTypeToWGPU(GfxTextureType type)
+WGPUTextureDimension gfxTextureTypeToWGPUTextureDimension(GfxTextureType type)
 {
     switch (type) {
     case GFX_TEXTURE_TYPE_1D:
@@ -1113,6 +1113,20 @@ WGPUTextureDimension gfxTextureTypeToWGPU(GfxTextureType type)
         return WGPUTextureDimension_3D;
     default:
         return WGPUTextureDimension_2D;
+    }
+}
+
+GfxTextureType wgpuTextureDimensionToGfxTextureType(WGPUTextureDimension dimension)
+{
+    switch (dimension) {
+    case WGPUTextureDimension_1D:
+        return GFX_TEXTURE_TYPE_1D;
+    case WGPUTextureDimension_2D:
+        return GFX_TEXTURE_TYPE_2D; // Note: Can't distinguish CUBE from this alone
+    case WGPUTextureDimension_3D:
+        return GFX_TEXTURE_TYPE_3D;
+    default:
+        return GFX_TEXTURE_TYPE_2D;
     }
 }
 

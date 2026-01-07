@@ -556,7 +556,9 @@ public:
     Texture(Device* device, const TextureCreateInfo& createInfo)
         : m_device(device)
         , m_ownsResources(true)
+        , m_dimension(createInfo.dimension)
         , m_size(createInfo.size)
+        , m_arrayLayers(createInfo.size.depthOrArrayLayers)
         , m_format(createInfo.format)
         , m_mipLevels(createInfo.mipLevelCount)
         , m_sampleCount(createInfo.sampleCount)
@@ -583,7 +585,9 @@ public:
         : m_device(device)
         , m_ownsResources(false)
         , m_texture(texture)
+        , m_dimension(createInfo.dimension)
         , m_size(createInfo.size)
+        , m_arrayLayers(createInfo.size.depthOrArrayLayers)
         , m_format(createInfo.format)
         , m_mipLevels(createInfo.mipLevelCount)
         , m_sampleCount(createInfo.sampleCount)
@@ -596,7 +600,9 @@ public:
         : m_device(device)
         , m_ownsResources(false)
         , m_texture(texture)
+        , m_dimension(importInfo.dimension)
         , m_size(importInfo.size)
+        , m_arrayLayers(importInfo.size.depthOrArrayLayers)
         , m_format(importInfo.format)
         , m_mipLevels(importInfo.mipLevelCount)
         , m_sampleCount(importInfo.sampleCount)
@@ -612,17 +618,24 @@ public:
     }
 
     WGPUTexture handle() const { return m_texture; }
+    WGPUTextureDimension getDimension() const { return m_dimension; }
     WGPUExtent3D getSize() const { return m_size; }
+    uint32_t getArrayLayers() const { return m_arrayLayers; }
     WGPUTextureFormat getFormat() const { return m_format; }
     uint32_t getMipLevels() const { return m_mipLevels; }
     uint32_t getSampleCount() const { return m_sampleCount; }
     WGPUTextureUsage getUsage() const { return m_usage; }
 
+    void generateMipmaps(CommandEncoder* encoder);
+    void generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLevel, uint32_t levelCount);
+
 private:
     Device* m_device = nullptr; // Non-owning pointer for device operations
     bool m_ownsResources = true;
     WGPUTexture m_texture = nullptr;
+    WGPUTextureDimension m_dimension = WGPUTextureDimension_2D;
     WGPUExtent3D m_size = {};
+    uint32_t m_arrayLayers = 1;
     WGPUTextureFormat m_format = WGPUTextureFormat_Undefined;
     uint32_t m_mipLevels = 0;
     uint32_t m_sampleCount = 0;

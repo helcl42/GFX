@@ -1089,11 +1089,20 @@ public:
         const Extent3D& extent, TextureLayout sourceFinalLayout, TextureLayout destinationFinalLayout)
         = 0;
 
+    virtual void blitTextureToTexture(
+        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, const Extent3D& sourceExtent, uint32_t sourceMipLevel,
+        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, const Extent3D& destinationExtent, uint32_t destinationMipLevel,
+        FilterMode filter, TextureLayout sourceFinalLayout, TextureLayout destinationFinalLayout)
+        = 0;
+
     virtual void pipelineBarrier(
         const std::vector<MemoryBarrier>& memoryBarriers = {},
         const std::vector<BufferBarrier>& bufferBarriers = {},
         const std::vector<TextureBarrier>& textureBarriers = {})
         = 0;
+
+    virtual void generateMipmaps(std::shared_ptr<Texture> texture) = 0;
+    virtual void generateMipmapsRange(std::shared_ptr<Texture> texture, uint32_t baseMipLevel, uint32_t levelCount) = 0;
 
     virtual void end() = 0;
     virtual void begin() = 0;

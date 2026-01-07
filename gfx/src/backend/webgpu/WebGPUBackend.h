@@ -68,11 +68,7 @@ public:
 
     // Texture functions
     void textureDestroy(GfxTexture texture) const override;
-    GfxExtent3D textureGetSize(GfxTexture texture) const override;
-    GfxTextureFormat textureGetFormat(GfxTexture texture) const override;
-    uint32_t textureGetMipLevelCount(GfxTexture texture) const override;
-    GfxSampleCount textureGetSampleCount(GfxTexture texture) const override;
-    GfxTextureUsage textureGetUsage(GfxTexture texture) const override;
+    void textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const override;
     GfxTextureLayout textureGetLayout(GfxTexture texture) const override;
     GfxResult textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const override;
 
@@ -121,10 +117,17 @@ public:
     void commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
         GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, const GfxExtent3D* extent,
         GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const override;
+    void commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+        GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
+        GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
+        GfxFilterMode filter, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const override;
     void commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
         const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
         const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
         const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const override;
+    void commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const override;
+    void commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+        uint32_t baseMipLevel, uint32_t levelCount) const override;
     void commandEncoderEnd(GfxCommandEncoder commandEncoder) const override;
     void commandEncoderBegin(GfxCommandEncoder commandEncoder) const override;
 

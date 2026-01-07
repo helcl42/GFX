@@ -599,6 +599,17 @@ typedef struct {
     GfxBackend backend;
 } GfxAdapterInfo;
 
+// Texture information
+typedef struct {
+    GfxTextureType type;
+    GfxExtent3D size;
+    uint32_t arrayLayerCount;
+    uint32_t mipLevelCount;
+    GfxSampleCount sampleCount;
+    GfxTextureFormat format;
+    GfxTextureUsage usage;
+} GfxTextureInfo;
+
 // Device limits
 typedef struct {
     uint32_t minUniformBufferOffsetAlignment;
@@ -1035,11 +1046,7 @@ GFX_API void gfxBufferUnmap(GfxBuffer buffer);
 
 // Texture functions
 GFX_API void gfxTextureDestroy(GfxTexture texture);
-GFX_API GfxExtent3D gfxTextureGetSize(GfxTexture texture);
-GFX_API GfxTextureFormat gfxTextureGetFormat(GfxTexture texture);
-GFX_API uint32_t gfxTextureGetMipLevelCount(GfxTexture texture);
-GFX_API GfxSampleCount gfxTextureGetSampleCount(GfxTexture texture);
-GFX_API GfxTextureUsage gfxTextureGetUsage(GfxTexture texture);
+GFX_API void gfxTextureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo);
 GFX_API GfxTextureLayout gfxTextureGetLayout(GfxTexture texture);
 GFX_API GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView);
 
@@ -1095,10 +1102,17 @@ GFX_API void gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEnco
     GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
     const GfxExtent3D* extent, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout);
+GFX_API void gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
+    GfxFilterMode filter, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout);
 GFX_API void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
     const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount);
+GFX_API void gfxCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture);
+GFX_API void gfxCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+    uint32_t baseMipLevel, uint32_t levelCount);
 GFX_API void gfxCommandEncoderEnd(GfxCommandEncoder commandEncoder);
 GFX_API void gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder);
 

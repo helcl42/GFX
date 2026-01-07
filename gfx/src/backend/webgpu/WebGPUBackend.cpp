@@ -684,50 +684,20 @@ void WebGPUBackend::textureDestroy(GfxTexture texture) const
     delete converter::toNative<Texture>(texture);
 }
 
-GfxExtent3D WebGPUBackend::textureGetSize(GfxTexture texture) const
+void WebGPUBackend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const
 {
-    if (!texture) {
-        return { 0, 0, 0 };
+    if (!texture || !outInfo) {
+        return;
     }
     auto* texturePtr = converter::toNative<Texture>(texture);
     WGPUExtent3D size = texturePtr->getSize();
-    return { size.width, size.height, size.depthOrArrayLayers };
-}
-
-GfxTextureFormat WebGPUBackend::textureGetFormat(GfxTexture texture) const
-{
-    if (!texture) {
-        return GFX_TEXTURE_FORMAT_UNDEFINED;
-    }
-    auto* texturePtr = converter::toNative<Texture>(texture);
-    return converter::wgpuFormatToGfxFormat(texturePtr->getFormat());
-}
-
-uint32_t WebGPUBackend::textureGetMipLevelCount(GfxTexture texture) const
-{
-    if (!texture) {
-        return 0;
-    }
-    return converter::toNative<Texture>(texture)->getMipLevels();
-}
-
-GfxSampleCount WebGPUBackend::textureGetSampleCount(GfxTexture texture) const
-{
-    if (!texture) {
-        return GFX_SAMPLE_COUNT_1;
-    }
-    auto* texturePtr = converter::toNative<Texture>(texture);
-    return converter::wgpuSampleCountToGfxSampleCount(texturePtr->getSampleCount());
-}
-
-GfxTextureUsage WebGPUBackend::textureGetUsage(GfxTexture texture) const
-{
-    if (!texture) {
-        return GFX_TEXTURE_USAGE_NONE;
-    }
-
-    auto* texturePtr = converter::toNative<Texture>(texture);
-    return converter::wgpuTextureUsageToGfxTextureUsage(texturePtr->getUsage());
+    outInfo->type = converter::wgpuTextureDimensionToGfxTextureType(texturePtr->getDimension());
+    outInfo->size = { size.width, size.height, size.depthOrArrayLayers };
+    outInfo->arrayLayerCount = texturePtr->getArrayLayers();
+    outInfo->mipLevelCount = texturePtr->getMipLevels();
+    outInfo->sampleCount = converter::wgpuSampleCountToGfxSampleCount(texturePtr->getSampleCount());
+    outInfo->format = converter::wgpuFormatToGfxFormat(texturePtr->getFormat());
+    outInfo->usage = converter::wgpuTextureUsageToGfxTextureUsage(texturePtr->getUsage());
 }
 
 GfxTextureLayout WebGPUBackend::textureGetLayout(GfxTexture texture) const
@@ -996,6 +966,29 @@ void WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
     (void)dstFinalLayout;
 }
 
+void WebGPUBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
+    GfxFilterMode filter, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
+{
+    // WebGPU doesn't have a direct blit operation - would need to be implemented via compute or render pipeline
+    // For now, log a warning
+    std::fprintf(stderr, "Warning: blitTextureToTexture is not implemented for WebGPU backend - requires compute/render pipeline implementation\\n");
+    
+    (void)commandEncoder;
+    (void)source;
+    (void)sourceOrigin;
+    (void)sourceExtent;
+    (void)sourceMipLevel;
+    (void)destination;
+    (void)destinationOrigin;
+    (void)destinationExtent;
+    (void)destinationMipLevel;
+    (void)filter;
+    (void)srcFinalLayout;
+    (void)dstFinalLayout;
+}
+
 void WebGPUBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
     const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
@@ -1010,6 +1003,31 @@ void WebGPUBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
     (void)bufferBarrierCount;
     (void)textureBarriers;
     (void)textureBarrierCount;
+}
+
+void WebGPUBackend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const
+{
+    if (!commandEncoder || !texture) {
+        return;
+    }
+
+    auto* encoder = converter::toNative<CommandEncoder>(commandEncoder);
+    auto* tex = converter::toNative<Texture>(texture);
+
+    tex->generateMipmaps(encoder);
+}
+
+void WebGPUBackend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+    uint32_t baseMipLevel, uint32_t levelCount) const
+{
+    if (!commandEncoder || !texture) {
+        return;
+    }
+
+    auto* encoder = converter::toNative<CommandEncoder>(commandEncoder);
+    auto* tex = converter::toNative<Texture>(texture);
+
+    tex->generateMipmapsRange(encoder, baseMipLevel, levelCount);
 }
 
 void WebGPUBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const

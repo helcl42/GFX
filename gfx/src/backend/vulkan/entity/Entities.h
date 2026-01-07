@@ -326,7 +326,6 @@ public:
     VkPhysicalDevice handle() const { return m_physicalDevice; }
     uint32_t getGraphicsQueueFamily() const { return m_graphicsQueueFamily; }
     Instance* getInstance() const { return m_instance; }
-    
     const VkPhysicalDeviceProperties& getProperties() const { return m_properties; }
 
     VkPhysicalDeviceProperties getLimits() const
@@ -1071,7 +1070,9 @@ public:
     Texture(Device* device, const TextureCreateInfo& createInfo)
         : m_device(device)
         , m_ownsResources(true)
+        , m_imageType(createInfo.imageType)
         , m_size(createInfo.size)
+        , m_arrayLayers(createInfo.arrayLayers)
         , m_format(createInfo.format)
         , m_mipLevelCount(createInfo.mipLevelCount)
         , m_sampleCount(createInfo.sampleCount)
@@ -1129,7 +1130,9 @@ public:
     Texture(Device* device, VkImage image, const TextureCreateInfo& createInfo)
         : m_device(device)
         , m_ownsResources(false)
+        , m_imageType(createInfo.imageType)
         , m_size(createInfo.size)
+        , m_arrayLayers(createInfo.arrayLayers)
         , m_format(createInfo.format)
         , m_mipLevelCount(createInfo.mipLevelCount)
         , m_sampleCount(createInfo.sampleCount)
@@ -1142,7 +1145,9 @@ public:
     Texture(Device* device, VkImage image, const TextureImportInfo& importInfo)
         : m_device(device)
         , m_ownsResources(false)
+        , m_imageType(importInfo.imageType)
         , m_size(importInfo.size)
+        , m_arrayLayers(importInfo.arrayLayers)
         , m_format(importInfo.format)
         , m_mipLevelCount(importInfo.mipLevelCount)
         , m_sampleCount(importInfo.sampleCount)
@@ -1165,18 +1170,28 @@ public:
 
     VkImage handle() const { return m_image; }
     VkDevice device() const { return m_device->handle(); }
+    VkImageType getImageType() const { return m_imageType; }
     VkExtent3D getSize() const { return m_size; }
+    uint32_t getArrayLayers() const { return m_arrayLayers; }
     VkFormat getFormat() const { return m_format; }
     uint32_t getMipLevelCount() const { return m_mipLevelCount; }
     VkSampleCountFlagBits getSampleCount() const { return m_sampleCount; }
     VkImageUsageFlags getUsage() const { return m_usage; }
     VkImageLayout getLayout() const { return m_currentLayout; }
+    // TODO - remove this
     void setLayout(VkImageLayout layout) { m_currentLayout = layout; }
+
+    void transitionLayout(CommandEncoder* encoder, VkImageLayout newLayout, uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount);
+    void transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout, uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount);
+    void generateMipmaps(CommandEncoder* encoder);
+    void generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLevel, uint32_t levelCount);
 
 private:
     Device* m_device = nullptr;
     bool m_ownsResources = true;
+    VkImageType m_imageType = VK_IMAGE_TYPE_2D;
     VkExtent3D m_size;
+    uint32_t m_arrayLayers = 1;
     VkFormat m_format;
     uint32_t m_mipLevelCount;
     VkSampleCountFlagBits m_sampleCount;
@@ -1208,17 +1223,7 @@ public:
         viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-        // Set aspect mask based on format
-        if (gfx::vulkan::converter::isDepthFormat(viewInfo.format)) {
-            viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            if (gfx::vulkan::converter::hasStencilComponent(viewInfo.format)) {
-                viewInfo.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-            }
-        } else {
-            viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        }
-
+        viewInfo.subresourceRange.aspectMask = converter::getImageAspectMask(viewInfo.format);
         viewInfo.subresourceRange.baseMipLevel = createInfo.baseMipLevel;
         viewInfo.subresourceRange.levelCount = createInfo.mipLevelCount;
         viewInfo.subresourceRange.baseArrayLayer = createInfo.baseArrayLayer;
@@ -2094,18 +2099,7 @@ public:
             VkImageMemoryBarrier vkBarrier{};
             vkBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
             vkBarrier.image = barrier.texture->handle();
-
-            // Determine aspect mask based on texture format
-            VkFormat format = barrier.texture->getFormat();
-            if (converter::isDepthFormat(format)) {
-                vkBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-                if (converter::hasStencilComponent(format)) {
-                    vkBarrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-                }
-            } else {
-                vkBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            }
-
+            vkBarrier.subresourceRange.aspectMask = converter::getImageAspectMask(barrier.texture->getFormat());
             vkBarrier.subresourceRange.baseMipLevel = barrier.baseMipLevel;
             vkBarrier.subresourceRange.levelCount = barrier.mipLevelCount;
             vkBarrier.subresourceRange.baseArrayLayer = barrier.baseArrayLayer;
@@ -2158,23 +2152,7 @@ public:
         VkExtent3D extent, uint32_t mipLevel, VkImageLayout finalLayout)
     {
         // Transition image layout to transfer dst optimal
-        VkImageMemoryBarrier barrier{};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.oldLayout = destination->getLayout();
-        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = destination->handle();
-        barrier.subresourceRange.aspectMask = converter::getImageAspectMask(destination->getFormat());
-        barrier.subresourceRange.baseMipLevel = mipLevel;
-        barrier.subresourceRange.levelCount = 1;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-        vkCmdPipelineBarrier(m_commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+        destination->transitionLayout(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel, 1, 0, 1);
 
         // Copy buffer to image
         VkBufferImageCopy region{};
@@ -2192,15 +2170,7 @@ public:
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
         // Transition image layout to final layout
-        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barrier.newLayout = finalLayout;
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = getVkAccessFlagsForLayout(finalLayout);
-
-        vkCmdPipelineBarrier(m_commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-        destination->setLayout(finalLayout);
+        destination->transitionLayout(this, finalLayout, mipLevel, 1, 0, 1);
     }
 
     void copyTextureToBuffer(Texture* source, VkOffset3D origin, uint32_t mipLevel,
@@ -2208,23 +2178,7 @@ public:
         VkExtent3D extent, VkImageLayout finalLayout)
     {
         // Transition image layout to transfer src optimal
-        VkImageMemoryBarrier barrier{};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.oldLayout = source->getLayout();
-        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = source->handle();
-        barrier.subresourceRange.aspectMask = converter::getImageAspectMask(source->getFormat());
-        barrier.subresourceRange.baseMipLevel = mipLevel;
-        barrier.subresourceRange.levelCount = 1;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
-        barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-        vkCmdPipelineBarrier(m_commandBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+        source->transitionLayout(this, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, mipLevel, 1, 0, 1);
 
         // Copy image to buffer
         VkBufferImageCopy region{};
@@ -2242,15 +2196,7 @@ public:
             destination->handle(), 1, &region);
 
         // Transition image layout to final layout
-        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barrier.newLayout = finalLayout;
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        barrier.dstAccessMask = getVkAccessFlagsForLayout(finalLayout);
-
-        vkCmdPipelineBarrier(m_commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-        source->setLayout(finalLayout);
+        source->transitionLayout(this, finalLayout, mipLevel, 1, 0, 1);
     }
 
     void copyTextureToTexture(Texture* source, VkOffset3D sourceOrigin, uint32_t sourceMipLevel,
@@ -2271,40 +2217,9 @@ public:
             layerCount = 1;
         }
 
-        // Transition source image to transfer src optimal
-        VkImageMemoryBarrier barriers[2] = {};
-        barriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barriers[0].oldLayout = source->getLayout();
-        barriers[0].newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barriers[0].image = source->handle();
-        barriers[0].subresourceRange.aspectMask = converter::getImageAspectMask(source->getFormat());
-        barriers[0].subresourceRange.baseMipLevel = sourceMipLevel;
-        barriers[0].subresourceRange.levelCount = 1;
-        barriers[0].subresourceRange.baseArrayLayer = sourceOrigin.z;
-        barriers[0].subresourceRange.layerCount = layerCount;
-        barriers[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-        barriers[0].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-        // Transition destination image to transfer dst optimal
-        barriers[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barriers[1].oldLayout = destination->getLayout();
-        barriers[1].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barriers[1].image = destination->handle();
-        barriers[1].subresourceRange.aspectMask = converter::getImageAspectMask(destination->getFormat());
-        barriers[1].subresourceRange.baseMipLevel = destinationMipLevel;
-        barriers[1].subresourceRange.levelCount = 1;
-        barriers[1].subresourceRange.baseArrayLayer = destinationOrigin.z;
-        barriers[1].subresourceRange.layerCount = layerCount;
-        barriers[1].srcAccessMask = 0;
-        barriers[1].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-        vkCmdPipelineBarrier(m_commandBuffer,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 2, barriers);
+        // Transition images to transfer layouts
+        source->transitionLayout(this, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, sourceMipLevel, 1, sourceOrigin.z, layerCount);
+        destination->transitionLayout(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, destinationMipLevel, 1, destinationOrigin.z, layerCount);
 
         // Copy image to image
         VkImageCopy region{};
@@ -2324,21 +2239,59 @@ public:
             destination->handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
         // Transition images to final layouts
-        barriers[0].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barriers[0].newLayout = srcFinalLayout;
-        barriers[0].srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        barriers[0].dstAccessMask = getVkAccessFlagsForLayout(srcFinalLayout);
+        source->transitionLayout(this, srcFinalLayout, sourceMipLevel, 1, sourceOrigin.z, layerCount);
+        destination->transitionLayout(this, dstFinalLayout, destinationMipLevel, 1, destinationOrigin.z, layerCount);
+    }
 
-        barriers[1].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barriers[1].newLayout = dstFinalLayout;
-        barriers[1].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barriers[1].dstAccessMask = getVkAccessFlagsForLayout(dstFinalLayout);
+    void blitTextureToTexture(Texture* source, VkOffset3D sourceOrigin, VkExtent3D sourceExtent, uint32_t sourceMipLevel,
+        Texture* destination, VkOffset3D destinationOrigin, VkExtent3D destinationExtent, uint32_t destinationMipLevel,
+        VkFilter filter, VkImageLayout srcFinalLayout, VkImageLayout dstFinalLayout)
+    {
+        // For 2D textures and arrays, extent.depth represents layer count
+        // For 3D textures, it represents actual depth
+        uint32_t layerCount = sourceExtent.depth;
+        uint32_t srcDepth = sourceExtent.depth;
+        uint32_t dstDepth = destinationExtent.depth;
 
-        vkCmdPipelineBarrier(m_commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 2, barriers);
+        VkExtent3D srcSize = source->getSize();
+        bool is3DTexture = (srcSize.depth > 1);
 
-        source->setLayout(srcFinalLayout);
-        destination->setLayout(dstFinalLayout);
+        if (!is3DTexture) {
+            srcDepth = 1;
+            dstDepth = 1;
+        } else {
+            layerCount = 1;
+        }
+
+        // Transition images to transfer layouts
+        source->transitionLayout(this, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, sourceMipLevel, 1, sourceOrigin.z, layerCount);
+        destination->transitionLayout(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, destinationMipLevel, 1, destinationOrigin.z, layerCount);
+
+        // Blit image to image with scaling and filtering
+        VkImageBlit region{};
+        region.srcSubresource.aspectMask = converter::getImageAspectMask(source->getFormat());
+        region.srcSubresource.mipLevel = sourceMipLevel;
+        region.srcSubresource.baseArrayLayer = is3DTexture ? 0 : sourceOrigin.z;
+        region.srcSubresource.layerCount = layerCount;
+        region.srcOffsets[0] = { sourceOrigin.x, sourceOrigin.y, is3DTexture ? sourceOrigin.z : 0 };
+        region.srcOffsets[1] = { static_cast<int32_t>(sourceOrigin.x + sourceExtent.width),
+            static_cast<int32_t>(sourceOrigin.y + sourceExtent.height),
+            is3DTexture ? static_cast<int32_t>(sourceOrigin.z + srcDepth) : 1 };
+        region.dstSubresource.aspectMask = converter::getImageAspectMask(destination->getFormat());
+        region.dstSubresource.mipLevel = destinationMipLevel;
+        region.dstSubresource.baseArrayLayer = is3DTexture ? 0 : destinationOrigin.z;
+        region.dstSubresource.layerCount = layerCount;
+        region.dstOffsets[0] = { destinationOrigin.x, destinationOrigin.y, is3DTexture ? destinationOrigin.z : 0 };
+        region.dstOffsets[1] = { static_cast<int32_t>(destinationOrigin.x + destinationExtent.width),
+            static_cast<int32_t>(destinationOrigin.y + destinationExtent.height),
+            is3DTexture ? static_cast<int32_t>(destinationOrigin.z + dstDepth) : 1 };
+
+        vkCmdBlitImage(m_commandBuffer, source->handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            destination->handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region, filter);
+
+        // Transition images to final layouts
+        source->transitionLayout(this, srcFinalLayout, sourceMipLevel, 1, sourceOrigin.z, layerCount);
+        destination->transitionLayout(this, dstFinalLayout, destinationMipLevel, 1, destinationOrigin.z, layerCount);
     }
 
 private:

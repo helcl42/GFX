@@ -172,7 +172,8 @@ WGPUTextureSampleType gfxTextureSampleTypeToWGPU(GfxTextureSampleType sampleType
 WGPUVertexFormat gfxFormatToWGPUVertexFormat(GfxTextureFormat format);
 
 // Texture dimension conversions
-WGPUTextureDimension gfxTextureTypeToWGPU(GfxTextureType type);
+WGPUTextureDimension gfxTextureTypeToWGPUTextureDimension(GfxTextureType type);
+GfxTextureType wgpuTextureDimensionToGfxTextureType(WGPUTextureDimension dimension);
 WGPUTextureViewDimension gfxTextureViewTypeToWGPU(GfxTextureViewType type);
 
 // Geometry conversions
