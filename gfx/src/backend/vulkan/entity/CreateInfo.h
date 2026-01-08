@@ -83,6 +83,16 @@ struct TextureImportInfo {
     VkImageCreateFlags flags; // For cube maps, etc.
 };
 
+struct TextureInfo {
+    VkImageType imageType;
+    VkExtent3D size;
+    uint32_t arrayLayers;
+    VkFormat format;
+    uint32_t mipLevelCount;
+    VkSampleCountFlagBits sampleCount;
+    VkImageUsageFlags usage;
+};
+
 struct TextureViewCreateInfo {
     VkImageViewType viewType;
     VkFormat format; // VK_FORMAT_UNDEFINED means use texture's format

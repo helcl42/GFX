@@ -517,7 +517,7 @@ void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newL
     barrier.image = m_image;
 
     // Determine aspect mask based on format
-    barrier.subresourceRange.aspectMask = converter::getImageAspectMask(m_format);
+    barrier.subresourceRange.aspectMask = converter::getImageAspectMask(m_info.format);
 
     barrier.subresourceRange.baseMipLevel = baseMipLevel;
     barrier.subresourceRange.levelCount = levelCount;
@@ -596,26 +596,26 @@ void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newL
 
 void Texture::generateMipmaps(CommandEncoder* encoder)
 {
-    if (m_mipLevelCount <= 1) {
+    if (m_info.mipLevelCount <= 1) {
         return; // No mipmaps to generate
     }
 
-    generateMipmapsRange(encoder, 0, m_mipLevelCount);
+    generateMipmapsRange(encoder, 0, m_info.mipLevelCount);
 }
 
 void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLevel, uint32_t levelCount)
 {
     // Validate range
-    if (baseMipLevel >= m_mipLevelCount || levelCount == 0) {
+    if (baseMipLevel >= m_info.mipLevelCount || levelCount == 0) {
         return;
     }
-    if (baseMipLevel + levelCount > m_mipLevelCount) {
-        levelCount = m_mipLevelCount - baseMipLevel;
+    if (baseMipLevel + levelCount > m_info.mipLevelCount) {
+        levelCount = m_info.mipLevelCount - baseMipLevel;
     }
 
     VkImageLayout initialLayout = m_currentLayout;
 
-    transitionLayout(encoder, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, baseMipLevel, 1, 0, m_arrayLayers);
+    transitionLayout(encoder, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, baseMipLevel, 1, 0, m_info.arrayLayers);
 
     VkCommandBuffer cmdBuffer = encoder->handle();
 
@@ -625,13 +625,13 @@ void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLeve
         uint32_t dstMip = srcMip + 1;
 
         // Calculate dimensions for src and dst
-        int32_t srcWidth = static_cast<int32_t>(m_size.width >> srcMip);
-        int32_t srcHeight = static_cast<int32_t>(m_size.height >> srcMip);
-        int32_t srcDepth = static_cast<int32_t>(m_size.depth >> srcMip);
+        int32_t srcWidth = static_cast<int32_t>(m_info.size.width >> srcMip);
+        int32_t srcHeight = static_cast<int32_t>(m_info.size.height >> srcMip);
+        int32_t srcDepth = static_cast<int32_t>(m_info.size.depth >> srcMip);
 
-        int32_t dstWidth = static_cast<int32_t>(m_size.width >> dstMip);
-        int32_t dstHeight = static_cast<int32_t>(m_size.height >> dstMip);
-        int32_t dstDepth = static_cast<int32_t>(m_size.depth >> dstMip);
+        int32_t dstWidth = static_cast<int32_t>(m_info.size.width >> dstMip);
+        int32_t dstHeight = static_cast<int32_t>(m_info.size.height >> dstMip);
+        int32_t dstDepth = static_cast<int32_t>(m_info.size.depth >> dstMip);
 
         // Ensure minimum dimension of 1
         srcWidth = std::max(1, srcWidth);
@@ -642,24 +642,24 @@ void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLeve
         dstDepth = std::max(1, dstDepth);
 
         // Transition src mip to TRANSFER_SRC_OPTIMAL
-        transitionLayout(encoder, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, srcMip, 1, 0, m_arrayLayers);
+        transitionLayout(encoder, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, srcMip, 1, 0, m_info.arrayLayers);
 
         // Transition dst mip to TRANSFER_DST_OPTIMAL
-        transitionLayout(encoder, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstMip, 1, 0, m_arrayLayers);
+        transitionLayout(encoder, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstMip, 1, 0, m_info.arrayLayers);
 
         // Blit from src to dst
         VkImageBlit blit = {};
-        blit.srcSubresource.aspectMask = converter::getImageAspectMask(m_format);
+        blit.srcSubresource.aspectMask = converter::getImageAspectMask(m_info.format);
         blit.srcSubresource.mipLevel = srcMip;
         blit.srcSubresource.baseArrayLayer = 0;
-        blit.srcSubresource.layerCount = m_arrayLayers;
+        blit.srcSubresource.layerCount = m_info.arrayLayers;
         blit.srcOffsets[0] = { 0, 0, 0 };
         blit.srcOffsets[1] = { srcWidth, srcHeight, srcDepth };
 
-        blit.dstSubresource.aspectMask = converter::getImageAspectMask(m_format);
+        blit.dstSubresource.aspectMask = converter::getImageAspectMask(m_info.format);
         blit.dstSubresource.mipLevel = dstMip;
         blit.dstSubresource.baseArrayLayer = 0;
-        blit.dstSubresource.layerCount = m_arrayLayers;
+        blit.dstSubresource.layerCount = m_info.arrayLayers;
         blit.dstOffsets[0] = { 0, 0, 0 };
         blit.dstOffsets[1] = { dstWidth, dstHeight, dstDepth };
 
@@ -670,7 +670,7 @@ void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLeve
             VK_FILTER_LINEAR);
     }
 
-    transitionLayout(encoder, initialLayout, baseMipLevel, levelCount, 0, m_arrayLayers);
+    transitionLayout(encoder, initialLayout, baseMipLevel, levelCount, 0, m_info.arrayLayers);
 }
 
 } // namespace gfx::vulkan

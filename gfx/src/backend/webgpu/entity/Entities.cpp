@@ -260,11 +260,11 @@ ComputePassEncoder::ComputePassEncoder(CommandEncoder* commandEncoder, const Com
 
 void Texture::generateMipmaps(CommandEncoder* encoder)
 {
-    if (m_mipLevels <= 1) {
+    if (m_info.mipLevels <= 1) {
         return; // No mipmaps to generate
     }
 
-    generateMipmapsRange(encoder, 0, m_mipLevels);
+    generateMipmapsRange(encoder, 0, m_info.mipLevels);
 }
 
 void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLevel, uint32_t levelCount)
@@ -272,11 +272,11 @@ void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLeve
     // WebGPU doesn't have a built-in mipmap generation function like vkCmdBlitImage
     // This would require implementing a render pass with sampling from previous mip level
     // For now, this is not implemented - users should generate mipmaps on CPU or use compute shaders
-    
+
     (void)encoder;
     (void)baseMipLevel;
     (void)levelCount;
-    
+
     fprintf(stderr, "[WebGPU WARNING] Texture::generateMipmapsRange is not implemented. Use CPU mipmap generation or compute shaders.\n");
 }
 

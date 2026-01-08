@@ -1070,28 +1070,22 @@ public:
     Texture(Device* device, const TextureCreateInfo& createInfo)
         : m_device(device)
         , m_ownsResources(true)
-        , m_imageType(createInfo.imageType)
-        , m_size(createInfo.size)
-        , m_arrayLayers(createInfo.arrayLayers)
-        , m_format(createInfo.format)
-        , m_mipLevelCount(createInfo.mipLevelCount)
-        , m_sampleCount(createInfo.sampleCount)
-        , m_usage(createInfo.usage)
+        , m_info(createTextureInfo(createInfo))
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = createInfo.imageType;
-        imageInfo.extent = m_size;
-        imageInfo.mipLevels = createInfo.mipLevelCount;
-        imageInfo.arrayLayers = createInfo.arrayLayers;
+        imageInfo.imageType = m_info.imageType;
+        imageInfo.extent = m_info.size;
+        imageInfo.mipLevels = m_info.mipLevelCount;
+        imageInfo.arrayLayers = m_info.arrayLayers;
         imageInfo.flags = createInfo.flags;
-        imageInfo.format = m_format;
+        imageInfo.format = m_info.format;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Always create in UNDEFINED, transition explicitly
-        imageInfo.usage = m_usage;
+        imageInfo.usage = m_info.usage;
 
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imageInfo.samples = m_sampleCount;
+        imageInfo.samples = m_info.sampleCount;
 
         VkResult result = vkCreateImage(m_device->handle(), &imageInfo, nullptr, &m_image);
         if (result != VK_SUCCESS) {
@@ -1130,13 +1124,7 @@ public:
     Texture(Device* device, VkImage image, const TextureCreateInfo& createInfo)
         : m_device(device)
         , m_ownsResources(false)
-        , m_imageType(createInfo.imageType)
-        , m_size(createInfo.size)
-        , m_arrayLayers(createInfo.arrayLayers)
-        , m_format(createInfo.format)
-        , m_mipLevelCount(createInfo.mipLevelCount)
-        , m_sampleCount(createInfo.sampleCount)
-        , m_usage(createInfo.usage)
+        , m_info(createTextureInfo(createInfo))
         , m_image(image)
     {
     }
@@ -1145,13 +1133,7 @@ public:
     Texture(Device* device, VkImage image, const TextureImportInfo& importInfo)
         : m_device(device)
         , m_ownsResources(false)
-        , m_imageType(importInfo.imageType)
-        , m_size(importInfo.size)
-        , m_arrayLayers(importInfo.arrayLayers)
-        , m_format(importInfo.format)
-        , m_mipLevelCount(importInfo.mipLevelCount)
-        , m_sampleCount(importInfo.sampleCount)
-        , m_usage(importInfo.usage)
+        , m_info(createTextureInfo(importInfo))
         , m_image(image)
     {
     }
@@ -1170,15 +1152,16 @@ public:
 
     VkImage handle() const { return m_image; }
     VkDevice device() const { return m_device->handle(); }
-    VkImageType getImageType() const { return m_imageType; }
-    VkExtent3D getSize() const { return m_size; }
-    uint32_t getArrayLayers() const { return m_arrayLayers; }
-    VkFormat getFormat() const { return m_format; }
-    uint32_t getMipLevelCount() const { return m_mipLevelCount; }
-    VkSampleCountFlagBits getSampleCount() const { return m_sampleCount; }
-    VkImageUsageFlags getUsage() const { return m_usage; }
+    VkImageType getImageType() const { return m_info.imageType; }
+    VkExtent3D getSize() const { return m_info.size; }
+    uint32_t getArrayLayers() const { return m_info.arrayLayers; }
+    VkFormat getFormat() const { return m_info.format; }
+    uint32_t getMipLevelCount() const { return m_info.mipLevelCount; }
+    VkSampleCountFlagBits getSampleCount() const { return m_info.sampleCount; }
+    VkImageUsageFlags getUsage() const { return m_info.usage; }
+    const TextureInfo& getInfo() const { return m_info; }
+
     VkImageLayout getLayout() const { return m_currentLayout; }
-    // TODO - remove this
     void setLayout(VkImageLayout layout) { m_currentLayout = layout; }
 
     void transitionLayout(CommandEncoder* encoder, VkImageLayout newLayout, uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount);
@@ -1187,15 +1170,37 @@ public:
     void generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLevel, uint32_t levelCount);
 
 private:
+    // Static helper to create TextureInfo from TextureCreateInfo
+    static TextureInfo createTextureInfo(const TextureCreateInfo& info)
+    {
+        return TextureInfo{
+            info.imageType,
+            info.size,
+            info.arrayLayers,
+            info.format,
+            info.mipLevelCount,
+            info.sampleCount,
+            info.usage
+        };
+    }
+
+    // Static helper to create TextureInfo from TextureImportInfo
+    static TextureInfo createTextureInfo(const TextureImportInfo& info)
+    {
+        return TextureInfo{
+            info.imageType,
+            info.size,
+            info.arrayLayers,
+            info.format,
+            info.mipLevelCount,
+            info.sampleCount,
+            info.usage
+        };
+    }
+
     Device* m_device = nullptr;
     bool m_ownsResources = true;
-    VkImageType m_imageType = VK_IMAGE_TYPE_2D;
-    VkExtent3D m_size;
-    uint32_t m_arrayLayers = 1;
-    VkFormat m_format;
-    uint32_t m_mipLevelCount;
-    VkSampleCountFlagBits m_sampleCount;
-    VkImageUsageFlags m_usage;
+    TextureInfo m_info{};
     VkImage m_image = VK_NULL_HANDLE;
     VkDeviceMemory m_memory = VK_NULL_HANDLE;
     VkImageLayout m_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;

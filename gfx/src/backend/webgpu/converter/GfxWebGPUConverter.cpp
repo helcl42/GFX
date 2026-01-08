@@ -623,6 +623,19 @@ GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(gfx::webgpu::SemaphoreTyp
     }
 }
 
+GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const gfx::webgpu::TextureInfo& info)
+{
+    GfxTextureInfo gfxInfo{};
+    gfxInfo.type = wgpuTextureDimensionToGfxTextureType(info.dimension);
+    gfxInfo.size = wgpuExtent3DToGfxExtent3D(info.size);
+    gfxInfo.arrayLayerCount = info.arrayLayers;
+    gfxInfo.mipLevelCount = info.mipLevels;
+    gfxInfo.sampleCount = wgpuSampleCountToGfxSampleCount(info.sampleCount);
+    gfxInfo.format = wgpuFormatToGfxFormat(info.format);
+    gfxInfo.usage = wgpuTextureUsageToGfxTextureUsage(info.usage);
+    return gfxInfo;
+}
+
 // ============================================================================
 // Conversion Function Implementations
 // ============================================================================
@@ -1166,6 +1179,11 @@ WGPUExtent3D gfxExtent3DToWGPUExtent3D(const GfxExtent3D* extent)
         return { 0, 0, 0 };
     }
     return { extent->width, extent->height, extent->depth };
+}
+
+GfxExtent3D wgpuExtent3DToGfxExtent3D(const WGPUExtent3D& extent)
+{
+    return { extent.width, extent.height, extent.depthOrArrayLayers };
 }
 
 RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(

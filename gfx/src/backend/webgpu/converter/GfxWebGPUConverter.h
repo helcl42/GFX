@@ -7,6 +7,7 @@
 // Forward declare internal WebGPU types
 namespace gfx::webgpu {
 struct AdapterInfo;
+struct TextureInfo;
 
 struct AdapterCreateInfo;
 struct InstanceCreateInfo;
@@ -108,6 +109,7 @@ gfx::webgpu::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitInfo* des
 
 GfxBufferUsage webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage);
 GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(gfx::webgpu::SemaphoreType type);
+GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const gfx::webgpu::TextureInfo& info);
 
 // ============================================================================
 // String utilities
@@ -179,6 +181,7 @@ WGPUTextureViewDimension gfxTextureViewTypeToWGPU(GfxTextureViewType type);
 // Geometry conversions
 WGPUOrigin3D gfxOrigin3DToWGPUOrigin3D(const GfxOrigin3D* origin);
 WGPUExtent3D gfxExtent3DToWGPUExtent3D(const GfxExtent3D* extent);
+GfxExtent3D wgpuExtent3DToGfxExtent3D(const WGPUExtent3D& extent);
 
 // CreateInfo conversions
 RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(

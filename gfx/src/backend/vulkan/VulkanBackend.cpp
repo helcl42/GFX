@@ -721,13 +721,7 @@ void VulkanBackend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) 
         return;
     }
     auto* tex = converter::toNative<Texture>(texture);
-    outInfo->type = converter::vkImageTypeToGfxTextureType(tex->getImageType());
-    outInfo->size = converter::vkExtent3DToGfxExtent3D(tex->getSize());
-    outInfo->arrayLayerCount = tex->getArrayLayers();
-    outInfo->mipLevelCount = tex->getMipLevelCount();
-    outInfo->sampleCount = converter::vkSampleCountToGfxSampleCount(tex->getSampleCount());
-    outInfo->format = converter::vkFormatToGfxFormat(tex->getFormat());
-    outInfo->usage = converter::vkImageUsageToGfxTextureUsage(tex->getUsage());
+    *outInfo = converter::vkTextureInfoToGfxTextureInfo(tex->getInfo());
 }
 
 GfxTextureLayout VulkanBackend::textureGetLayout(GfxTexture texture) const

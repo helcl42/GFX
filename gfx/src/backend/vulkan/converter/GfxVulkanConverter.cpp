@@ -462,6 +462,19 @@ GfxSampleCount vkSampleCountToGfxSampleCount(VkSampleCountFlagBits vkSampleCount
     }
 }
 
+GfxTextureInfo vkTextureInfoToGfxTextureInfo(const TextureInfo& info)
+{
+    GfxTextureInfo gfxInfo{};
+    gfxInfo.type = vkImageTypeToGfxTextureType(info.imageType);
+    gfxInfo.size = vkExtent3DToGfxExtent3D(info.size);
+    gfxInfo.arrayLayerCount = info.arrayLayers;
+    gfxInfo.mipLevelCount = info.mipLevelCount;
+    gfxInfo.sampleCount = vkSampleCountToGfxSampleCount(info.sampleCount);
+    gfxInfo.format = vkFormatToGfxFormat(info.format);
+    gfxInfo.usage = vkImageUsageToGfxTextureUsage(info.usage);
+    return gfxInfo;
+}
+
 GfxExtent3D vkExtent3DToGfxExtent3D(const VkExtent3D& vkExtent)
 {
     return { vkExtent.width, vkExtent.height, vkExtent.depth };

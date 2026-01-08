@@ -690,14 +690,7 @@ void WebGPUBackend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) 
         return;
     }
     auto* texturePtr = converter::toNative<Texture>(texture);
-    WGPUExtent3D size = texturePtr->getSize();
-    outInfo->type = converter::wgpuTextureDimensionToGfxTextureType(texturePtr->getDimension());
-    outInfo->size = { size.width, size.height, size.depthOrArrayLayers };
-    outInfo->arrayLayerCount = texturePtr->getArrayLayers();
-    outInfo->mipLevelCount = texturePtr->getMipLevels();
-    outInfo->sampleCount = converter::wgpuSampleCountToGfxSampleCount(texturePtr->getSampleCount());
-    outInfo->format = converter::wgpuFormatToGfxFormat(texturePtr->getFormat());
-    outInfo->usage = converter::wgpuTextureUsageToGfxTextureUsage(texturePtr->getUsage());
+    *outInfo = converter::wgpuTextureInfoToGfxTextureInfo(texturePtr->getInfo());
 }
 
 GfxTextureLayout WebGPUBackend::textureGetLayout(GfxTexture texture) const
