@@ -171,7 +171,7 @@ void VulkanBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLim
         return;
     }
     auto* adap = converter::toNative<Adapter>(adapter);
-    *outLimits = converter::vkPropertiesToGfxDeviceLimits(adap->getLimits());
+    *outLimits = converter::vkPropertiesToGfxDeviceLimits(adap->getProperties());
 }
 
 // Device functions
@@ -469,7 +469,7 @@ void VulkanBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits
         return;
     }
     auto* dev = converter::toNative<Device>(device);
-    *outLimits = converter::vkPropertiesToGfxDeviceLimits(dev->getLimits());
+    *outLimits = converter::vkPropertiesToGfxDeviceLimits(dev->getProperties());
 }
 
 // Surface functions
@@ -1017,7 +1017,6 @@ void VulkanBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder command
         dstTex, vkDstOrigin, vkDstExtent, destinationMipLevel,
         vkFilter, vkSrcLayout, vkDstLayout);
 }
-
 
 // TODO - add member function to CommandEncoder for pipeline barrier
 void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,

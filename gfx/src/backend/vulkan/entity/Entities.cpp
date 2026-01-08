@@ -108,8 +108,121 @@ void Queue::writeBuffer(Buffer* buffer, uint64_t offset, const void* data, uint6
 {
     void* mapped = buffer->map();
     if (mapped) {
+        // Buffer is host-visible, can map directly
         memcpy(static_cast<char*>(mapped) + offset, data, size);
         buffer->unmap();
+    } else {
+        // Buffer is not host-visible (device-local), use staging buffer
+        VkDevice vkDevice = device();
+        
+        // Create staging buffer
+        VkBufferCreateInfo stagingInfo{};
+        stagingInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        stagingInfo.size = size;
+        stagingInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        stagingInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        
+        VkBuffer stagingBuffer;
+        if (vkCreateBuffer(vkDevice, &stagingInfo, nullptr, &stagingBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create staging buffer for writeBuffer");
+        }
+        
+        // Allocate staging buffer memory (host-visible)
+        VkMemoryRequirements memReq;
+        vkGetBufferMemoryRequirements(vkDevice, stagingBuffer, &memReq);
+        
+        const VkPhysicalDeviceMemoryProperties& memProps = m_device->getAdapter()->getMemoryProperties();
+        
+        uint32_t memTypeIndex = UINT32_MAX;
+        VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        for (uint32_t i = 0; i < memProps.memoryTypeCount; ++i) {
+            if ((memReq.memoryTypeBits & (1 << i)) && 
+                (memProps.memoryTypes[i].propertyFlags & flags) == flags) {
+                memTypeIndex = i;
+                break;
+            }
+        }
+        
+        if (memTypeIndex == UINT32_MAX) {
+            vkDestroyBuffer(vkDevice, stagingBuffer, nullptr);
+            throw std::runtime_error("Failed to find suitable memory type for staging buffer");
+        }
+        
+        VkMemoryAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = memReq.size;
+        allocInfo.memoryTypeIndex = memTypeIndex;
+        
+        VkDeviceMemory stagingMemory;
+        if (vkAllocateMemory(vkDevice, &allocInfo, nullptr, &stagingMemory) != VK_SUCCESS) {
+            vkDestroyBuffer(vkDevice, stagingBuffer, nullptr);
+            throw std::runtime_error("Failed to allocate staging buffer memory");
+        }
+        
+        vkBindBufferMemory(vkDevice, stagingBuffer, stagingMemory, 0);
+        
+        // Map and copy data to staging buffer
+        void* stagingMapped;
+        vkMapMemory(vkDevice, stagingMemory, 0, size, 0, &stagingMapped);
+        memcpy(stagingMapped, data, size);
+        vkUnmapMemory(vkDevice, stagingMemory);
+        
+        // Create and submit copy command
+        VkCommandBufferAllocateInfo cmdAllocInfo{};
+        cmdAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        cmdAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        cmdAllocInfo.commandBufferCount = 1;
+        
+        VkCommandPool cmdPool;
+        VkCommandPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        poolInfo.queueFamilyIndex = family();
+        poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        
+        if (vkCreateCommandPool(vkDevice, &poolInfo, nullptr, &cmdPool) != VK_SUCCESS) {
+            vkFreeMemory(vkDevice, stagingMemory, nullptr);
+            vkDestroyBuffer(vkDevice, stagingBuffer, nullptr);
+            throw std::runtime_error("Failed to create command pool for buffer write");
+        }
+        
+        cmdAllocInfo.commandPool = cmdPool;
+        
+        VkCommandBuffer cmdBuffer;
+        vkAllocateCommandBuffers(vkDevice, &cmdAllocInfo, &cmdBuffer);
+        
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        
+        vkBeginCommandBuffer(cmdBuffer, &beginInfo);
+        
+        VkBufferCopy copyRegion{};
+        copyRegion.srcOffset = 0;
+        copyRegion.dstOffset = offset;
+        copyRegion.size = size;
+        vkCmdCopyBuffer(cmdBuffer, stagingBuffer, buffer->handle(), 1, &copyRegion);
+        
+        vkEndCommandBuffer(cmdBuffer);
+        
+        // Create fence for synchronization
+        VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        VkFence fence = VK_NULL_HANDLE;
+        vkCreateFence(vkDevice, &fenceInfo, nullptr, &fence);
+        
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &cmdBuffer;
+        
+        vkQueueSubmit(m_queue, 1, &submitInfo, fence);
+        vkWaitForFences(vkDevice, 1, &fence, VK_TRUE, UINT64_MAX);
+        vkDestroyFence(vkDevice, fence, nullptr);
+        
+        // Cleanup
+        vkDestroyCommandPool(vkDevice, cmdPool, nullptr);
+        vkFreeMemory(vkDevice, stagingMemory, nullptr);
+        vkDestroyBuffer(vkDevice, stagingBuffer, nullptr);
     }
 }
 
@@ -137,8 +250,7 @@ void Queue::writeTexture(Texture* texture, const VkOffset3D& origin, uint32_t mi
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(device, stagingBuffer, &memRequirements);
 
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice(), &memProperties);
+    const VkPhysicalDeviceMemoryProperties& memProperties = m_device->getAdapter()->getMemoryProperties();
 
     uint32_t memoryTypeIndex = UINT32_MAX;
     VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;

@@ -327,18 +327,13 @@ public:
     uint32_t getGraphicsQueueFamily() const { return m_graphicsQueueFamily; }
     Instance* getInstance() const { return m_instance; }
     const VkPhysicalDeviceProperties& getProperties() const { return m_properties; }
-
-    VkPhysicalDeviceProperties getLimits() const
-    {
-        VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(m_physicalDevice, &properties);
-        return properties;
-    }
+    const VkPhysicalDeviceMemoryProperties& getMemoryProperties() const { return m_memoryProperties; }
 
 private:
     void initializeAdapterInfo()
     {
         vkGetPhysicalDeviceProperties(m_physicalDevice, &m_properties);
+        vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &m_memoryProperties);
 
         // Find graphics queue family
         uint32_t queueFamilyCount = 0;
@@ -362,6 +357,7 @@ private:
     Instance* m_instance = nullptr;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkPhysicalDeviceProperties m_properties{};
+    VkPhysicalDeviceMemoryProperties m_memoryProperties{};
     uint32_t m_graphicsQueueFamily = UINT32_MAX;
 };
 
@@ -446,12 +442,9 @@ public:
     VkDevice handle() const { return m_device; }
     Queue* getQueue() { return m_queue.get(); }
     Adapter* getAdapter() { return m_adapter; }
-
-    VkPhysicalDeviceProperties getLimits() const
+    const VkPhysicalDeviceProperties& getProperties() const
     {
-        VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(m_adapter->handle(), &properties);
-        return properties;
+        return m_adapter->getProperties();
     }
 
     void waitIdle()
