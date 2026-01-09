@@ -964,20 +964,21 @@ void WebGPUBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder command
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
     GfxFilterMode filter, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
 {
-    // WebGPU doesn't have a direct blit operation - would need to be implemented via compute or render pipeline
-    // For now, log a warning
-    std::fprintf(stderr, "Warning: blitTextureToTexture is not implemented for WebGPU backend - requires compute/render pipeline implementation\\n");
-    
-    (void)commandEncoder;
-    (void)source;
-    (void)sourceOrigin;
-    (void)sourceExtent;
-    (void)sourceMipLevel;
-    (void)destination;
-    (void)destinationOrigin;
-    (void)destinationExtent;
-    (void)destinationMipLevel;
-    (void)filter;
+    auto* encoder = toNative<CommandEncoder>(commandEncoder);
+    auto* srcTexture = toNative<Texture>(source);
+    auto* dstTexture = toNative<Texture>(destination);
+
+    WGPUOrigin3D wgpuSrcOrigin = converter::gfxOrigin3DToWGPUOrigin3D(sourceOrigin);
+    WGPUOrigin3D wgpuDstOrigin = converter::gfxOrigin3DToWGPUOrigin3D(destinationOrigin);
+    WGPUExtent3D wgpuSrcExtent = converter::gfxExtent3DToWGPUExtent3D(sourceExtent);
+    WGPUExtent3D wgpuDstExtent = converter::gfxExtent3DToWGPUExtent3D(destinationExtent);
+    WGPUFilterMode wgpuFilter = converter::gfxFilterModeToWGPU(filter);
+
+    encoder->blitTextureToTexture(srcTexture, wgpuSrcOrigin, wgpuSrcExtent,
+        sourceMipLevel, dstTexture, wgpuDstOrigin, wgpuDstExtent,
+        destinationMipLevel, wgpuFilter);
+
+    // WebGPU handles layout transitions automatically
     (void)srcFinalLayout;
     (void)dstFinalLayout;
 }

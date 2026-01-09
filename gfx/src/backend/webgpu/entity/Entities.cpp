@@ -172,6 +172,18 @@ void CommandEncoder::copyTextureToTexture(Texture* source, const WGPUOrigin3D& s
     wgpuCommandEncoderCopyTextureToTexture(m_encoder, &sourceInfo, &destInfo, &extent);
 }
 
+void CommandEncoder::blitTextureToTexture(Texture* source, const WGPUOrigin3D& sourceOrigin, const WGPUExtent3D& sourceExtent, uint32_t sourceMipLevel,
+    Texture* destination, const WGPUOrigin3D& destinationOrigin, const WGPUExtent3D& destinationExtent, uint32_t destinationMipLevel,
+    WGPUFilterMode filter)
+{
+    // Get the Blit helper from the device
+    Blit* blit = m_device->getBlit();
+    blit->execute(m_encoder,
+        source->handle(), sourceOrigin, sourceExtent, sourceMipLevel,
+        destination->handle(), destinationOrigin, destinationExtent, destinationMipLevel,
+        filter);
+}
+
 RenderPassEncoder::RenderPassEncoder(CommandEncoder* commandEncoder, const RenderPassEncoderCreateInfo& createInfo)
 {
     WGPURenderPassDescriptor wgpuDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
@@ -269,15 +281,35 @@ void Texture::generateMipmaps(CommandEncoder* encoder)
 
 void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLevel, uint32_t levelCount)
 {
-    // WebGPU doesn't have a built-in mipmap generation function like vkCmdBlitImage
-    // This would require implementing a render pass with sampling from previous mip level
-    // For now, this is not implemented - users should generate mipmaps on CPU or use compute shaders
+    if (levelCount <= 1) {
+        return; // Nothing to generate
+    }
 
-    (void)encoder;
-    (void)baseMipLevel;
-    (void)levelCount;
+    // Get the Blit helper from the device
+    Blit* blit = encoder->getDevice()->getBlit();
 
-    fprintf(stderr, "[WebGPU WARNING] Texture::generateMipmapsRange is not implemented. Use CPU mipmap generation or compute shaders.\n");
+    // Generate each mip level by blitting from the previous level
+    for (uint32_t i = 0; i < levelCount - 1; ++i) {
+        uint32_t srcMip = baseMipLevel + i;
+        uint32_t dstMip = srcMip + 1;
+
+        // Calculate extents for each mip level
+        WGPUExtent3D srcSize = m_info.size;
+        uint32_t srcWidth = std::max(1u, srcSize.width >> srcMip);
+        uint32_t srcHeight = std::max(1u, srcSize.height >> srcMip);
+        uint32_t dstWidth = std::max(1u, srcSize.width >> dstMip);
+        uint32_t dstHeight = std::max(1u, srcSize.height >> dstMip);
+
+        WGPUOrigin3D origin = { 0, 0, 0 };
+        WGPUExtent3D srcExtent = { srcWidth, srcHeight, 1 };
+        WGPUExtent3D dstExtent = { dstWidth, dstHeight, 1 };
+
+        // Use linear filtering for mipmap generation
+        blit->execute(encoder->handle(),
+            m_texture, origin, srcExtent, srcMip,
+            m_texture, origin, dstExtent, dstMip,
+            WGPUFilterMode_Linear);
+    }
 }
 
 } // namespace gfx::webgpu
