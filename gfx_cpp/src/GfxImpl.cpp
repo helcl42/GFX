@@ -97,6 +97,44 @@ static GfxTextureType cppTextureTypeToCType(TextureType type)
     }
 }
 
+static TextureType cTextureTypeToCppType(GfxTextureType type)
+{
+    switch (type) {
+    case GFX_TEXTURE_TYPE_1D:
+        return TextureType::Texture1D;
+    case GFX_TEXTURE_TYPE_2D:
+        return TextureType::Texture2D;
+    case GFX_TEXTURE_TYPE_3D:
+        return TextureType::Texture3D;
+    case GFX_TEXTURE_TYPE_CUBE:
+        return TextureType::TextureCube;
+    default:
+        return TextureType::Texture2D;
+    }
+}
+
+static SampleCount cSampleCountToCppCount(GfxSampleCount sampleCount)
+{
+    switch (sampleCount) {
+    case GFX_SAMPLE_COUNT_1:
+        return SampleCount::Count1;
+    case GFX_SAMPLE_COUNT_2:
+        return SampleCount::Count2;
+    case GFX_SAMPLE_COUNT_4:
+        return SampleCount::Count4;
+    case GFX_SAMPLE_COUNT_8:
+        return SampleCount::Count8;
+    case GFX_SAMPLE_COUNT_16:
+        return SampleCount::Count16;
+    case GFX_SAMPLE_COUNT_32:
+        return SampleCount::Count32;
+    case GFX_SAMPLE_COUNT_64:
+        return SampleCount::Count64;
+    default:
+        return SampleCount::Count1;
+    }
+}
+
 static GfxTextureViewType cppTextureViewTypeToCType(TextureViewType type)
 {
     switch (type) {
@@ -217,6 +255,7 @@ public:
     explicit CBufferImpl(GfxBuffer h)
         : m_handle(h)
     {
+        gfxBufferGetInfo(m_handle, &m_info);
     }
     ~CBufferImpl() override
     {
@@ -227,8 +266,13 @@ public:
 
     GfxBuffer getHandle() const { return m_handle; }
 
-    uint64_t getSize() const override { return gfxBufferGetSize(m_handle); }
-    BufferUsage getUsage() const override { return static_cast<BufferUsage>(gfxBufferGetUsage(m_handle)); }
+    BufferInfo getInfo() const override
+    {
+        BufferInfo info;
+        info.size = m_info.size;
+        info.usage = static_cast<BufferUsage>(m_info.usage);
+        return info;
+    }
 
     void* map(uint64_t offset = 0, uint64_t size = 0) override
     {
@@ -247,6 +291,7 @@ public:
 
 private:
     GfxBuffer m_handle;
+    GfxBufferInfo m_info;
 };
 
 class CTextureViewImpl : public TextureView {
@@ -287,29 +332,17 @@ public:
 
     GfxTexture getHandle() const { return m_handle; }
 
-    Extent3D getSize() const override
+    TextureInfo getInfo() override
     {
-        return Extent3D(m_info.size.width, m_info.size.height, m_info.size.depth);
-    }
-
-    TextureFormat getFormat() const override
-    {
-        return cFormatToCppFormat(m_info.format);
-    }
-
-    uint32_t getMipLevelCount() const override
-    {
-        return m_info.mipLevelCount;
-    }
-
-    uint32_t getSampleCount() const override
-    {
-        return static_cast<uint32_t>(m_info.sampleCount);
-    }
-
-    TextureUsage getUsage() const override
-    {
-        return static_cast<TextureUsage>(m_info.usage);
+        TextureInfo info;
+        info.type = cTextureTypeToCppType(m_info.type);
+        info.size = Extent3D(m_info.size.width, m_info.size.height, m_info.size.depth);
+        info.arrayLayerCount = m_info.arrayLayerCount;
+        info.mipLevelCount = m_info.mipLevelCount;
+        info.sampleCount = cSampleCountToCppCount(m_info.sampleCount);
+        info.format = cFormatToCppFormat(m_info.format);
+        info.usage = static_cast<TextureUsage>(m_info.usage);
+        return info;
     }
 
     TextureLayout getLayout() const override { return static_cast<TextureLayout>(gfxTextureGetLayout(m_handle)); }
@@ -648,7 +681,7 @@ public:
         return std::make_shared<CRenderPassEncoderImpl>(encoder);
     }
 
-    std::shared_ptr<ComputePassEncoder> beginComputePass(const ComputePassDescriptor& descriptor) override
+    std::shared_ptr<ComputePassEncoder> beginComputePass(const ComputePassBeginDescriptor& descriptor) override
     {
         GfxComputePassBeginDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();

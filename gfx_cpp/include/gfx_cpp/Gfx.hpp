@@ -565,6 +565,21 @@ struct BufferDescriptor {
     BufferUsage usage = BufferUsage::None;
 };
 
+struct BufferInfo {
+    uint64_t size = 0;
+    BufferUsage usage = BufferUsage::None;
+};
+
+struct TextureInfo {
+    TextureType type = TextureType::Texture2D;
+    Extent3D size;
+    uint32_t arrayLayerCount = 1;
+    uint32_t mipLevelCount = 1;
+    SampleCount sampleCount = SampleCount::Count1;
+    TextureFormat format = TextureFormat::Undefined;
+    TextureUsage usage = TextureUsage::None;
+};
+
 struct TextureDescriptor {
     std::string label;
     TextureType type = TextureType::Texture2D;
@@ -983,7 +998,7 @@ struct RenderPassDescriptor {
     DepthStencilAttachment* depthStencilAttachment = nullptr; // nullptr if not used
 };
 
-struct ComputePassDescriptor {
+struct ComputePassBeginDescriptor {
     std::string label;
 };
 
@@ -1031,8 +1046,7 @@ class Buffer {
 public:
     virtual ~Buffer() = default;
 
-    virtual uint64_t getSize() const = 0;
-    virtual BufferUsage getUsage() const = 0;
+    virtual BufferInfo getInfo() const = 0;
 
     // Mapping functions
     virtual void* map(uint64_t offset = 0, uint64_t size = 0) = 0;
@@ -1060,11 +1074,7 @@ class Texture {
 public:
     virtual ~Texture() = default;
 
-    virtual Extent3D getSize() const = 0;
-    virtual TextureFormat getFormat() const = 0;
-    virtual uint32_t getMipLevelCount() const = 0;
-    virtual uint32_t getSampleCount() const = 0;
-    virtual TextureUsage getUsage() const = 0;
+    virtual TextureInfo getInfo() = 0;
     virtual TextureLayout getLayout() const = 0;
 
     virtual std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) = 0;
@@ -1145,7 +1155,7 @@ public:
 
     virtual std::shared_ptr<RenderPassEncoder> beginRenderPass(const RenderPassBeginDescriptor& descriptor) = 0;
 
-    virtual std::shared_ptr<ComputePassEncoder> beginComputePass(const ComputePassDescriptor& descriptor) = 0;
+    virtual std::shared_ptr<ComputePassEncoder> beginComputePass(const ComputePassBeginDescriptor& descriptor) = 0;
 
     virtual void copyBufferToBuffer(
         std::shared_ptr<Buffer> source, uint64_t sourceOffset,
