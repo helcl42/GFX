@@ -893,7 +893,7 @@ public:
         // This ensures VkImageViews are destroyed before the swapchain's VkImages
         m_textureViews.clear();
         m_textures.clear();
-        
+
         if (m_swapchain != VK_NULL_HANDLE) {
             vkDestroySwapchainKHR(m_device->handle(), m_swapchain, nullptr);
         }
@@ -1955,13 +1955,6 @@ public:
 
     ~CommandEncoder()
     {
-        // Automatic cleanup in reverse order - C++ RAII magic!
-        for (auto fb : m_framebuffers) {
-            vkDestroyFramebuffer(m_device->handle(), fb, nullptr);
-        }
-        for (auto rp : m_renderPasses) {
-            vkDestroyRenderPass(m_device->handle(), rp, nullptr);
-        }
         if (m_commandPool != VK_NULL_HANDLE) {
             vkDestroyCommandPool(m_device->handle(), m_commandPool, nullptr);
         }
@@ -1977,27 +1970,9 @@ public:
         m_currentPipelineLayout = layout;
     }
 
-    // Can we remove this???
-    void trackRenderPass(VkRenderPass rp, VkFramebuffer fb)
-    {
-        m_renderPasses.push_back(rp);
-        m_framebuffers.push_back(fb);
-        m_currentRenderPass = rp;
-    }
-
     void reset()
     {
-        // Clean up per-frame resources
-        for (auto fb : m_framebuffers) {
-            vkDestroyFramebuffer(m_device->handle(), fb, nullptr);
-        }
-        for (auto rp : m_renderPasses) {
-            vkDestroyRenderPass(m_device->handle(), rp, nullptr);
-        }
-        m_framebuffers.clear();
-        m_renderPasses.clear();
         m_currentPipelineLayout = VK_NULL_HANDLE;
-        m_currentRenderPass = VK_NULL_HANDLE;
 
         // Reset the command pool (this implicitly resets all command buffers)
         vkResetCommandPool(m_device->handle(), m_commandPool, 0);
@@ -2280,11 +2255,6 @@ private:
     Device* m_device = nullptr;
     bool m_isRecording = false;
     VkPipelineLayout m_currentPipelineLayout = VK_NULL_HANDLE;
-    VkRenderPass m_currentRenderPass = VK_NULL_HANDLE;
-
-    // Track resources for cleanup - RAII handles lifetime automatically!
-    std::vector<VkRenderPass> m_renderPasses;
-    std::vector<VkFramebuffer> m_framebuffers;
 };
 
 class RenderPassEncoder {
