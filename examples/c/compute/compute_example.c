@@ -93,6 +93,7 @@ typedef struct {
     GfxQueue queue;
     GfxSurface surface;
     GfxSwapchain swapchain;
+    GfxSwapchainInfo swapchainInfo;
 
     // Compute resources
     GfxTexture computeTexture;
@@ -106,11 +107,13 @@ typedef struct {
     // Render resources (fullscreen quad)
     GfxShader vertexShader;
     GfxShader fragmentShader;
+    GfxRenderPass renderPass;
     GfxRenderPipeline renderPipeline;
     GfxBindGroupLayout renderBindGroupLayout;
     GfxSampler sampler;
     GfxBindGroup renderBindGroup[MAX_FRAMES_IN_FLIGHT];
     GfxBuffer renderUniformBuffer[MAX_FRAMES_IN_FLIGHT];
+    GfxFramebuffer framebuffers[MAX_FRAMES_IN_FLIGHT];
 
     uint32_t windowWidth;
     uint32_t windowHeight;
@@ -283,6 +286,26 @@ static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
     return handle;
 }
 
+static bool createSwapchain(ComputeApp* app, uint32_t width, uint32_t height)
+{
+    GfxSwapchainDescriptor swapchainDesc = {
+        .width = width,
+        .height = height,
+        .format = COLOR_FORMAT,
+        .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT,
+        .presentMode = GFX_PRESENT_MODE_FIFO,
+        .imageCount = MAX_FRAMES_IN_FLIGHT
+    };
+
+    if (gfxDeviceCreateSwapchain(app->device, app->surface, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create swapchain\n");
+        return false;
+    }
+
+    gfxSwapchainGetInfo(app->swapchain, &app->swapchainInfo);
+    return true;
+}
+
 static bool initGraphics(ComputeApp* app)
 {
     printf("Loading graphics backend...\n");
@@ -357,27 +380,11 @@ static bool initGraphics(ComputeApp* app)
         return false;
     }
 
-    // Create swapchain
-    GfxSwapchainDescriptor swapchainDesc = {
-        .width = app->windowWidth,
-        .height = app->windowHeight,
-        .format = COLOR_FORMAT,
-        .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT,
-        .presentMode = GFX_PRESENT_MODE_FIFO,
-        .imageCount = MAX_FRAMES_IN_FLIGHT
-    };
-
-    if (gfxDeviceCreateSwapchain(app->device, app->surface, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create swapchain\n");
-        return false;
-    }
-
     return true;
 }
 
-static bool createComputeResources(ComputeApp* app)
+static bool createComputeTexture(ComputeApp* app)
 {
-    // Create compute output texture (storage image)
     GfxTextureDescriptor textureDesc = {
         .type = GFX_TEXTURE_TYPE_2D,
         .size = { COMPUTE_TEXTURE_WIDTH, COMPUTE_TEXTURE_HEIGHT, 1 },
@@ -408,6 +415,11 @@ static bool createComputeResources(ComputeApp* app)
         return false;
     }
 
+    return true;
+}
+
+static bool createComputeShaders(ComputeApp* app)
+{
     GfxShaderSourceType sourceType;
     // Load compute shader based on backend
     void* computeCode = NULL;
@@ -447,8 +459,11 @@ static bool createComputeResources(ComputeApp* app)
         return false;
     }
     free(computeCode);
+    return true;
+}
 
-    // Create compute uniform buffers (one per frame in flight)
+static bool createComputeUniformBuffers(ComputeApp* app)
+{
     GfxBufferDescriptor computeUniformBufferDesc = {
         .size = sizeof(ComputeUniformData),
         .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST
@@ -461,7 +476,11 @@ static bool createComputeResources(ComputeApp* app)
         }
     }
 
-    // Create compute bind group layout
+    return true;
+}
+
+static bool createComputeBindGroup(ComputeApp* app)
+{
     GfxBindGroupLayoutEntry computeLayoutEntries[2] = {
         {
             .binding = 0,
@@ -528,8 +547,11 @@ static bool createComputeResources(ComputeApp* app)
             return false;
         }
     }
+    return true;
+}
 
-    // Create compute pipeline
+static bool createComputePipeline(ComputeApp* app)
+{
     GfxComputePipelineDescriptor computePipelineDesc = {
         .compute = app->computeShader,
         .entryPoint = "main",
@@ -541,7 +563,11 @@ static bool createComputeResources(ComputeApp* app)
         fprintf(stderr, "Failed to create compute pipeline\n");
         return false;
     }
+    return true;
+}
 
+static bool transitionComputeTexture(ComputeApp* app)
+{
     // Transition compute texture to SHADER_READ_ONLY layout initially
     // This way we don't need special handling for the first frame
     GfxCommandEncoder initEncoder = NULL;
@@ -578,12 +604,109 @@ static bool createComputeResources(ComputeApp* app)
     gfxDeviceWaitIdle(app->device);
 
     gfxCommandEncoderDestroy(initEncoder);
+    return true;
+}
+
+static bool createComputeResources(ComputeApp* app)
+{
+    if (!createComputeTexture(app)) {
+        return false;
+    }
+
+    if (!createComputeShaders(app)) {
+        return false;
+    }
+
+    if (!createComputeUniformBuffers(app)) {
+        return false;
+    }
+
+    if (!createComputeBindGroup(app)) {
+        return false;
+    }
+
+    if (!createComputePipeline(app)) {
+        return false;
+    }
+
+    if (!transitionComputeTexture(app)) {
+        return false;
+    }
 
     printf("Compute resources created successfully\n");
     return true;
 }
 
-static bool createRenderResources(ComputeApp* app)
+static bool createRenderPass(ComputeApp* app)
+{
+    // Define color attachment target
+    GfxRenderPassColorAttachmentTarget colorTarget = {
+        .format = COLOR_FORMAT,
+        .sampleCount = GFX_SAMPLE_COUNT_1,
+        .ops = {
+            .loadOp = GFX_LOAD_OP_CLEAR,
+            .storeOp = GFX_STORE_OP_STORE },
+        .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
+    };
+
+    GfxRenderPassColorAttachment colorAttachment = {
+        .target = colorTarget,
+        .resolveTarget = NULL
+    };
+
+    GfxRenderPassDescriptor renderPassDesc = {
+        .label = "Fullscreen Render Pass",
+        .colorAttachments = &colorAttachment,
+        .colorAttachmentCount = 1,
+        .depthStencilAttachment = NULL
+    };
+
+    if (gfxDeviceCreateRenderPass(app->device, &renderPassDesc, &app->renderPass) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create render pass\n");
+        return false;
+    }
+
+    return true;
+}
+
+static bool createFramebuffers(ComputeApp* app)
+{
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        GfxTextureView backbuffer = gfxSwapchainGetImageView(app->swapchain, i);
+
+        GfxFramebufferColorAttachment fbColorAttachment = {
+            .view = backbuffer,
+            .resolveTarget = NULL
+        };
+
+        GfxFramebufferDepthStencilAttachment fbDepthAttachment = {
+            .view = NULL,
+            .resolveTarget = NULL
+        };
+
+        char label[64];
+        snprintf(label, sizeof(label), "Framebuffer %u", i);
+
+        GfxFramebufferDescriptor fbDesc = {
+            .label = label,
+            .renderPass = app->renderPass,
+            .colorAttachments = &fbColorAttachment,
+            .colorAttachmentCount = 1,
+            .depthStencilAttachment = fbDepthAttachment,
+            .width = app->swapchainInfo.width,
+            .height = app->swapchainInfo.height
+        };
+
+        if (gfxDeviceCreateFramebuffer(app->device, &fbDesc, &app->framebuffers[i]) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create framebuffer %u\n", i);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool createRenderShaders(ComputeApp* app)
 {
     GfxShaderSourceType vertexSourceType;
     // Load shaders based on backend
@@ -656,8 +779,11 @@ static bool createRenderResources(ComputeApp* app)
         return false;
     }
     free(fragmentCode);
+    return true;
+}
 
-    // Create sampler
+static bool createSampler(ComputeApp* app)
+{
     GfxSamplerDescriptor samplerDesc = {
         .magFilter = GFX_FILTER_MODE_LINEAR,
         .minFilter = GFX_FILTER_MODE_LINEAR,
@@ -671,6 +797,11 @@ static bool createRenderResources(ComputeApp* app)
         return false;
     }
 
+    return true;
+}
+
+static bool createRenderUniformBuffers(ComputeApp* app)
+{
     // Create render uniform buffers (one per frame in flight)
     GfxBufferDescriptor renderUniformBufferDesc = {
         .size = sizeof(RenderUniformData),
@@ -684,6 +815,11 @@ static bool createRenderResources(ComputeApp* app)
         }
     }
 
+    return true;
+}
+
+static bool createRenderBindGroups(ComputeApp* app)
+{
     // Create render bind group layout
     GfxBindGroupLayoutEntry renderLayoutEntries[3] = {
         {
@@ -767,7 +903,11 @@ static bool createRenderResources(ComputeApp* app)
         }
     }
 
-    // Create render pipeline
+    return true;
+}
+
+static bool createRenderPipeline(ComputeApp* app)
+{
     GfxVertexState vertexState = {
         .module = app->vertexShader,
         .entryPoint = "main",
@@ -775,7 +915,7 @@ static bool createRenderResources(ComputeApp* app)
     };
 
     GfxColorTargetState colorTarget = {
-        .format = gfxSwapchainGetFormat(app->swapchain),
+        .format = app->swapchainInfo.format,
         .writeMask = GFX_COLOR_WRITE_MASK_ALL
     };
 
@@ -794,6 +934,7 @@ static bool createRenderResources(ComputeApp* app)
     };
 
     GfxRenderPipelineDescriptor pipelineDesc = {
+        .renderPass = app->renderPass,
         .vertex = &vertexState,
         .fragment = &fragmentState,
         .primitive = &primitiveState,
@@ -808,10 +949,38 @@ static bool createRenderResources(ComputeApp* app)
         return false;
     }
 
-    printf("Render resources created successfully\n");
     return true;
 }
 
+static bool createRenderResources(ComputeApp* app)
+{
+    if (!createRenderPass(app)) {
+        return false;
+    }
+
+    if (!createRenderShaders(app)) {
+        return false;
+    }
+
+    if (!createSampler(app)) {
+        return false;
+    }
+
+    if (!createRenderUniformBuffers(app)) {
+        return false;
+    }
+
+    if (!createRenderBindGroups(app)) {
+        return false;
+    }
+
+    if (!createRenderPipeline(app)) {
+        return false;
+    }
+
+    printf("Render resources created successfully\n");
+    return true;
+}
 static bool createSyncObjects(ComputeApp* app)
 {
     GfxSemaphoreDescriptor semaphoreDesc = {
@@ -912,7 +1081,7 @@ static void render(ComputeApp* app)
     gfxCommandEncoderPipelineBarrier(encoder, NULL, 0, NULL, 0, &readToWriteBarrier, 1);
 
     // --- COMPUTE PASS: Generate pattern ---
-    GfxComputePassDescriptor computePassDesc = {
+    GfxComputePassBeginDescriptor computePassDesc = {
         .label = "Generate Pattern"
     };
     GfxComputePassEncoder computePass = NULL;
@@ -949,32 +1118,20 @@ static void render(ComputeApp* app)
     gfxCommandEncoderPipelineBarrier(encoder, NULL, 0, NULL, 0, &computeToReadBarrier, 1);
 
     // --- RENDER PASS: Post-process and display ---
-    GfxTextureView swapchainView = gfxSwapchainGetCurrentTextureView(app->swapchain);
+    GfxColor clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-    GfxColorAttachmentTarget colorTarget = {
-        .view = swapchainView,
-        .ops = {
-            .loadOp = GFX_LOAD_OP_CLEAR,
-            .storeOp = GFX_STORE_OP_STORE,
-            .clearColor = { 0.0f, 0.0f, 0.0f, 1.0f },
-        },
-        .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
-    };
-
-    GfxColorAttachment colorAttachment = {
-        .target = colorTarget,
-        .resolveTarget = NULL
-    };
-
-    GfxRenderPassDescriptor renderPassDesc = {
+    GfxRenderPassBeginDescriptor renderPassBeginDesc = {
         .label = "Fullscreen Render Pass",
-        .colorAttachments = &colorAttachment,
-        .colorAttachmentCount = 1,
-        .depthStencilAttachment = NULL
+        .renderPass = app->renderPass,
+        .framebuffer = app->framebuffers[imageIndex],
+        .colorClearValues = &clearColor,
+        .colorClearValueCount = 1,
+        .depthClearValue = 0.0f,
+        .stencilClearValue = 0
     };
 
     GfxRenderPassEncoder renderPass = NULL;
-    if (gfxCommandEncoderBeginRenderPass(encoder, &renderPassDesc, &renderPass) != GFX_RESULT_SUCCESS) {
+    if (gfxCommandEncoderBeginRenderPass(encoder, &renderPassBeginDesc, &renderPass) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to begin render pass\n");
         return;
     }
@@ -1058,12 +1215,18 @@ static void cleanup(ComputeApp* app)
         gfxRenderPipelineDestroy(app->renderPipeline);
     }
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        if (app->framebuffers[i]) {
+            gfxFramebufferDestroy(app->framebuffers[i]);
+        }
         if (app->renderBindGroup[i]) {
             gfxBindGroupDestroy(app->renderBindGroup[i]);
         }
         if (app->renderUniformBuffer[i]) {
             gfxBufferDestroy(app->renderUniformBuffer[i]);
         }
+    }
+    if (app->renderPass) {
+        gfxRenderPassDestroy(app->renderPass);
     }
     if (app->renderBindGroupLayout) {
         gfxBindGroupLayoutDestroy(app->renderBindGroupLayout);
@@ -1120,6 +1283,9 @@ static void cleanup(ComputeApp* app)
         gfxInstanceDestroy(app->instance);
     }
 
+    // Unload the backend API after destroying all instances
+    gfxUnloadBackend(GFX_BACKEND_API);
+
     if (app->window) {
         glfwDestroyWindow(app->window);
         glfwTerminate();
@@ -1129,6 +1295,13 @@ static void cleanup(ComputeApp* app)
 // Helper function to cleanup size-dependent resources
 static void cleanupSizeDependentResources(ComputeApp* app)
 {
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        if (app->framebuffers[i]) {
+            gfxFramebufferDestroy(app->framebuffers[i]);
+            app->framebuffers[i] = NULL;
+        }
+    }
+
     if (app->swapchain) {
         gfxSwapchainDestroy(app->swapchain);
         app->swapchain = NULL;
@@ -1140,16 +1313,12 @@ static bool createSizeDependentResources(ComputeApp* app, uint32_t width, uint32
 {
     // Create swapchain with new dimensions
     // Compute texture stays at fixed resolution and is sampled with linear filtering
-    GfxSwapchainDescriptor swapchainDesc = {
-        .width = width,
-        .height = height,
-        .format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB,
-        .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT,
-        .presentMode = GFX_PRESENT_MODE_FIFO
-    };
+    if (!createSwapchain(app, width, height)) {
+        return false;
+    }
 
-    if (gfxDeviceCreateSwapchain(app->device, app->surface, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create swapchain\n");
+    // Recreate framebuffers with new swapchain images
+    if (!createFramebuffers(app)) {
         return false;
     }
 
@@ -1238,6 +1407,11 @@ int main(void)
     }
 
     if (!createRenderResources(&app)) {
+        cleanup(&app);
+        return 1;
+    }
+
+    if (!createSizeDependentResources(&app, app.windowWidth, app.windowHeight)) {
         cleanup(&app);
         return 1;
     }

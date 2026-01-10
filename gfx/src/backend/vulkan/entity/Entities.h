@@ -758,10 +758,6 @@ public:
     Swapchain(Device* device, Surface* surface, const SwapchainCreateInfo& createInfo)
         : m_device(device)
         , m_surface(surface)
-        , m_width(createInfo.width)
-        , m_height(createInfo.height)
-        , m_format(createInfo.format)
-        , m_presentMode(createInfo.presentMode)
     {
         uint32_t queueFamily = device->getAdapter()->getGraphicsQueueFamily();
 
@@ -788,7 +784,7 @@ public:
                 break;
             }
         }
-        m_format = selectedFormat.format;
+        m_info.format = selectedFormat.format;
 
         // Query and choose present mode
         uint32_t presentModeCount;
@@ -799,10 +795,10 @@ public:
         std::vector<VkPresentModeKHR> presentModes(presentModeCount);
         vkGetPhysicalDeviceSurfacePresentModesKHR(m_surface->physicalDevice(), m_surface->handle(), &presentModeCount, presentModes.data());
 
-        m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
+        m_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
         for (const auto& availableMode : presentModes) {
             if (availableMode == createInfo.presentMode) {
-                m_presentMode = availableMode;
+                m_info.presentMode = availableMode;
                 break;
             }
         }
@@ -811,22 +807,18 @@ public:
         VkSurfaceCapabilitiesKHR capabilities;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_surface->physicalDevice(), m_surface->handle(), &capabilities);
 
-        // Determine actual swapchain extent
+        // Determine actual swapchain extent and store directly in m_info
         // If currentExtent is defined, we MUST use it. Otherwise, we can choose within min/max bounds.
-        VkExtent2D actualExtent;
         if (capabilities.currentExtent.width != UINT32_MAX) {
             // Window manager is telling us the size - we must use it
-            actualExtent = capabilities.currentExtent;
-            m_width = actualExtent.width;
-            m_height = actualExtent.height;
+            m_info.width = capabilities.currentExtent.width;
+            m_info.height = capabilities.currentExtent.height;
         } else {
             // We can choose the extent within bounds
-            actualExtent.width = std::max(capabilities.minImageExtent.width,
-                std::min(m_width, capabilities.maxImageExtent.width));
-            actualExtent.height = std::max(capabilities.minImageExtent.height,
-                std::min(m_height, capabilities.maxImageExtent.height));
-            m_width = actualExtent.width;
-            m_height = actualExtent.height;
+            m_info.width = std::max(capabilities.minImageExtent.width,
+                std::min(createInfo.width, capabilities.maxImageExtent.width));
+            m_info.height = std::max(capabilities.minImageExtent.height,
+                std::min(createInfo.height, capabilities.maxImageExtent.height));
         }
 
         // Create swapchain
@@ -837,15 +829,15 @@ public:
         if (capabilities.maxImageCount > 0) {
             vkCreateInfo.minImageCount = std::min(vkCreateInfo.minImageCount, capabilities.maxImageCount);
         }
-        vkCreateInfo.imageFormat = m_format;
+        vkCreateInfo.imageFormat = m_info.format;
         vkCreateInfo.imageColorSpace = selectedFormat.colorSpace;
-        vkCreateInfo.imageExtent = actualExtent;
+        vkCreateInfo.imageExtent = { m_info.width, m_info.height };
         vkCreateInfo.imageArrayLayers = 1;
         vkCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         vkCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         vkCreateInfo.preTransform = capabilities.currentTransform;
         vkCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        vkCreateInfo.presentMode = m_presentMode;
+        vkCreateInfo.presentMode = m_info.presentMode;
         vkCreateInfo.clipped = VK_TRUE;
 
         VkResult result = vkCreateSwapchainKHR(m_device->handle(), &vkCreateInfo, nullptr, &m_swapchain);
@@ -859,13 +851,16 @@ public:
         m_images.resize(imageCount);
         vkGetSwapchainImagesKHR(m_device->handle(), m_swapchain, &imageCount, m_images.data());
 
+        // Update SwapchainInfo with final imageCount (width/height/format/presentMode already set)
+        m_info.imageCount = imageCount;
+
         m_textures.reserve(imageCount);
         m_textureViews.reserve(imageCount);
         for (size_t i = 0; i < imageCount; ++i) {
             // Create non-owning Texture wrapper for swapchain image
             gfx::vulkan::TextureCreateInfo textureCreateInfo{};
-            textureCreateInfo.format = m_format;
-            textureCreateInfo.size = { m_width, m_height, 1 };
+            textureCreateInfo.format = m_info.format;
+            textureCreateInfo.size = { m_info.width, m_info.height, 1 };
             textureCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             textureCreateInfo.sampleCount = VK_SAMPLE_COUNT_1_BIT;
             textureCreateInfo.mipLevelCount = 1;
@@ -894,23 +889,28 @@ public:
 
     ~Swapchain()
     {
-        // Texture and TextureView objects will be automatically destroyed by unique_ptr
+        // Explicitly destroy TextureViews and Textures before destroying the swapchain
+        // This ensures VkImageViews are destroyed before the swapchain's VkImages
+        m_textureViews.clear();
+        m_textures.clear();
+        
         if (m_swapchain != VK_NULL_HANDLE) {
             vkDestroySwapchainKHR(m_device->handle(), m_swapchain, nullptr);
         }
     }
 
     VkSwapchainKHR handle() const { return m_swapchain; }
-    uint32_t getImageCount() const { return static_cast<uint32_t>(m_images.size()); }
+    uint32_t getImageCount() const { return m_info.imageCount; }
     Texture* getTexture(uint32_t index) const { return m_textures[index].get(); }
     Texture* getCurrentTexture() const { return m_textures[m_currentImageIndex].get(); }
     TextureView* getTextureView(uint32_t index) const { return m_textureViews[index].get(); }
     TextureView* getCurrentTextureView() const { return m_textureViews[m_currentImageIndex].get(); }
-    VkFormat getFormat() const { return m_format; }
-    uint32_t getWidth() const { return m_width; }
-    uint32_t getHeight() const { return m_height; }
+    VkFormat getFormat() const { return m_info.format; }
+    uint32_t getWidth() const { return m_info.width; }
+    uint32_t getHeight() const { return m_info.height; }
     uint32_t getCurrentImageIndex() const { return m_currentImageIndex; }
-    VkPresentModeKHR getPresentMode() const { return m_presentMode; }
+    VkPresentModeKHR getPresentMode() const { return m_info.presentMode; }
+    const SwapchainInfo& getInfo() const { return m_info; }
 
     VkResult acquireNextImage(uint64_t timeoutNs, VkSemaphore semaphore, VkFence fence, uint32_t* outImageIndex)
     {
@@ -942,11 +942,8 @@ private:
     std::vector<VkImage> m_images;
     std::vector<std::unique_ptr<Texture>> m_textures;
     std::vector<std::unique_ptr<TextureView>> m_textureViews;
-    uint32_t m_width = 0;
-    uint32_t m_height = 0;
-    VkFormat m_format = VK_FORMAT_UNDEFINED;
+    SwapchainInfo m_info{};
     uint32_t m_currentImageIndex = 0;
-    VkPresentModeKHR m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
 };
 
 class Buffer {
@@ -1712,7 +1709,7 @@ private:
     Device* m_device = nullptr;
     uint32_t m_colorAttachmentCount = 0;
     bool m_hasDepthStencil = false;
-    std::vector<bool> m_colorHasResolve;  // Track which color attachments have resolve targets
+    std::vector<bool> m_colorHasResolve; // Track which color attachments have resolve targets
 };
 
 class Framebuffer {
@@ -1980,6 +1977,7 @@ public:
         m_currentPipelineLayout = layout;
     }
 
+    // Can we remove this???
     void trackRenderPass(VkRenderPass rp, VkFramebuffer fb)
     {
         m_renderPasses.push_back(rp);

@@ -560,40 +560,19 @@ void VulkanBackend::swapchainDestroy(GfxSwapchain swapchain) const
     delete converter::toNative<Swapchain>(swapchain);
 }
 
-uint32_t VulkanBackend::swapchainGetWidth(GfxSwapchain swapchain) const
+void VulkanBackend::swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const
 {
-    if (!swapchain) {
-        return 0;
+    if (!swapchain || !outInfo) {
+        if (outInfo) {
+            outInfo->width = 0;
+            outInfo->height = 0;
+            outInfo->format = GFX_TEXTURE_FORMAT_UNDEFINED;
+            outInfo->imageCount = 0;
+        }
+        return;
     }
     auto* sc = converter::toNative<Swapchain>(swapchain);
-    return sc->getWidth();
-}
-
-uint32_t VulkanBackend::swapchainGetHeight(GfxSwapchain swapchain) const
-{
-    if (!swapchain) {
-        return 0;
-    }
-    auto* sc = converter::toNative<Swapchain>(swapchain);
-    return sc->getHeight();
-}
-
-GfxTextureFormat VulkanBackend::swapchainGetFormat(GfxSwapchain swapchain) const
-{
-    if (!swapchain) {
-        return GFX_TEXTURE_FORMAT_UNDEFINED;
-    }
-    auto* sc = converter::toNative<Swapchain>(swapchain);
-    return converter::vkFormatToGfxFormat(sc->getFormat());
-}
-
-uint32_t VulkanBackend::swapchainGetImageCount(GfxSwapchain swapchain) const
-{
-    if (!swapchain) {
-        return 0;
-    }
-    auto* sc = converter::toNative<Swapchain>(swapchain);
-    return sc->getImageCount();
+    *outInfo = converter::vkSwapchainInfoToGfxSwapchainInfo(sc->getInfo());
 }
 
 GfxResult VulkanBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const

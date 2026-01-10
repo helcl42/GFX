@@ -8,6 +8,7 @@
 namespace gfx::webgpu {
 struct AdapterInfo;
 struct TextureInfo;
+struct SwapchainInfo;
 
 struct AdapterCreateInfo;
 struct InstanceCreateInfo;
@@ -32,6 +33,7 @@ struct RenderPassCreateInfo;
 struct FramebufferCreateInfo;
 struct RenderPassEncoderBeginInfo;
 struct ComputePassEncoderCreateInfo;
+
 struct SubmitInfo;
 struct PlatformWindowHandle;
 
@@ -112,6 +114,7 @@ gfx::webgpu::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitInfo* des
 GfxBufferUsage webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage);
 GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(gfx::webgpu::SemaphoreType type);
 GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const gfx::webgpu::TextureInfo& info);
+GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const gfx::webgpu::SwapchainInfo& info);
 
 // ============================================================================
 // String utilities

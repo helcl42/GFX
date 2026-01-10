@@ -475,6 +475,17 @@ GfxTextureInfo vkTextureInfoToGfxTextureInfo(const TextureInfo& info)
     return gfxInfo;
 }
 
+GfxSwapchainInfo vkSwapchainInfoToGfxSwapchainInfo(const SwapchainInfo& info)
+{
+    GfxSwapchainInfo gfxInfo{};
+    gfxInfo.width = info.width;
+    gfxInfo.height = info.height;
+    gfxInfo.format = vkFormatToGfxFormat(info.format);
+    gfxInfo.imageCount = info.imageCount;
+    gfxInfo.presentMode = vkPresentModeToGfxPresentMode(info.presentMode);
+    return gfxInfo;
+}
+
 GfxExtent3D vkExtent3DToGfxExtent3D(const VkExtent3D& vkExtent)
 {
     return { vkExtent.width, vkExtent.height, vkExtent.depth };

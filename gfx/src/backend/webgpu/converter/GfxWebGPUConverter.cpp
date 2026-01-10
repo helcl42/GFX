@@ -461,14 +461,20 @@ gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateI
         fragState.module = fragmentShader->handle();
         fragState.entryPoint = descriptor->fragment->entryPoint;
 
-        // Convert color targets
-        if (descriptor->fragment->targetCount > 0) {
-            fragState.targets.reserve(descriptor->fragment->targetCount);
+        // RenderPass is mandatory - always extract formats from it
+        auto* renderPass = toNative<RenderPass>(descriptor->renderPass);
+        const auto& rpInfo = renderPass->getCreateInfo();
 
-            for (uint32_t i = 0; i < descriptor->fragment->targetCount; ++i) {
+        // Use render pass formats, blend/writeMask from fragment descriptor if provided
+        fragState.targets.reserve(rpInfo.colorAttachments.size());
+
+        for (uint32_t i = 0; i < rpInfo.colorAttachments.size(); ++i) {
+            gfx::webgpu::ColorTargetState colorTarget{};
+            colorTarget.format = rpInfo.colorAttachments[i].format;
+
+            // Use writeMask and blend from fragment descriptor if available
+            if (descriptor->fragment->targetCount > i) {
                 const auto& target = descriptor->fragment->targets[i];
-                gfx::webgpu::ColorTargetState colorTarget{};
-                colorTarget.format = gfxFormatToWGPUFormat(target.format);
                 colorTarget.writeMask = target.writeMask;
 
                 if (target.blend) {
@@ -481,9 +487,12 @@ gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateI
                     blend.alpha.dstFactor = gfxBlendFactorToWGPU(target.blend->alpha.dstFactor);
                     colorTarget.blend = blend;
                 }
-
-                fragState.targets.push_back(std::move(colorTarget));
+            } else {
+                // Default write mask if not specified
+                colorTarget.writeMask = GFX_COLOR_WRITE_MASK_ALL;
             }
+
+            fragState.targets.push_back(std::move(colorTarget));
         }
 
         createInfo.fragment = std::move(fragState);
@@ -633,6 +642,17 @@ GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const gfx::webgpu::TextureInfo& i
     gfxInfo.sampleCount = wgpuSampleCountToGfxSampleCount(info.sampleCount);
     gfxInfo.format = wgpuFormatToGfxFormat(info.format);
     gfxInfo.usage = wgpuTextureUsageToGfxTextureUsage(info.usage);
+    return gfxInfo;
+}
+
+GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const gfx::webgpu::SwapchainInfo& info)
+{
+    GfxSwapchainInfo gfxInfo{};
+    gfxInfo.width = info.width;
+    gfxInfo.height = info.height;
+    gfxInfo.format = wgpuFormatToGfxFormat(info.format);
+    gfxInfo.imageCount = info.imageCount;
+    gfxInfo.presentMode = wgpuPresentModeToGfxPresentMode(info.presentMode);
     return gfxInfo;
 }
 
@@ -1198,6 +1218,7 @@ RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(
         const GfxRenderPassColorAttachmentTarget& target = colorAtt.target;
 
         RenderPassColorAttachment attachment{};
+        attachment.format = gfxFormatToWGPUFormat(target.format);
         attachment.loadOp = gfxLoadOpToWGPULoadOp(target.ops.loadOp);
         attachment.storeOp = gfxStoreOpToWGPUStoreOp(target.ops.storeOp);
 
@@ -1232,12 +1253,12 @@ FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(
         const GfxFramebufferColorAttachment& colorAtt = descriptor->colorAttachments[i];
 
         auto* view = toNative<TextureView>(colorAtt.view);
-        createInfo.colorAttachmentViews.push_back(view);  // Store pointer
+        createInfo.colorAttachmentViews.push_back(view); // Store pointer
 
         // Add resolve target if provided
         if (colorAtt.resolveTarget) {
             auto* resolveView = toNative<TextureView>(colorAtt.resolveTarget);
-            createInfo.colorResolveTargetViews.push_back(resolveView);  // Store pointer
+            createInfo.colorResolveTargetViews.push_back(resolveView); // Store pointer
         } else {
             createInfo.colorResolveTargetViews.push_back(nullptr);
         }
@@ -1246,12 +1267,12 @@ FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(
     // Convert depth/stencil attachment view if present
     if (descriptor->depthStencilAttachment.view) {
         auto* view = toNative<TextureView>(descriptor->depthStencilAttachment.view);
-        createInfo.depthStencilAttachmentView = view;  // Store pointer
+        createInfo.depthStencilAttachmentView = view; // Store pointer
 
         // Convert depth/stencil resolve target if present
         if (descriptor->depthStencilAttachment.resolveTarget) {
             auto* resolveView = toNative<TextureView>(descriptor->depthStencilAttachment.resolveTarget);
-            createInfo.depthStencilResolveTargetView = resolveView;  // Store pointer
+            createInfo.depthStencilResolveTargetView = resolveView; // Store pointer
         }
     }
 

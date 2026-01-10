@@ -6,6 +6,9 @@
 
 // Forward declare CreateInfo types and internal types
 namespace gfx::vulkan {
+struct TextureInfo;
+struct SwapchainInfo;
+
 struct BufferCreateInfo;
 struct BufferImportInfo;
 struct ShaderCreateInfo;
@@ -13,7 +16,6 @@ struct SemaphoreCreateInfo;
 struct FenceCreateInfo;
 struct TextureCreateInfo;
 struct TextureImportInfo;
-struct TextureInfo;
 struct TextureViewCreateInfo;
 struct SamplerCreateInfo;
 struct InstanceCreateInfo;
@@ -134,6 +136,7 @@ VkImageViewType gfxTextureViewTypeToVkImageViewType(GfxTextureViewType type);
 VkSampleCountFlagBits sampleCountToVkSampleCount(GfxSampleCount sampleCount);
 GfxSampleCount vkSampleCountToGfxSampleCount(VkSampleCountFlagBits vkSampleCount);
 GfxTextureInfo vkTextureInfoToGfxTextureInfo(const TextureInfo& info);
+GfxSwapchainInfo vkSwapchainInfoToGfxSwapchainInfo(const gfx::vulkan::SwapchainInfo& info);
 GfxExtent3D vkExtent3DToGfxExtent3D(const VkExtent3D& vkExtent);
 VkExtent3D gfxExtent3DToVkExtent3D(const GfxExtent3D* gfxExtent);
 VkOffset3D gfxOrigin3DToVkOffset3D(const GfxOrigin3D* gfxOrigin);

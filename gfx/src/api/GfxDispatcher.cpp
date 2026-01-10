@@ -537,52 +537,26 @@ uint32_t gfxSurfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* 
 }
 
 // Swapchain Functions
-uint32_t gfxSwapchainGetWidth(GfxSwapchain swapchain)
+void gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo)
 {
-    if (!swapchain) {
-        return 0;
+    if (!swapchain || !outInfo) {
+        if (outInfo) {
+            outInfo->width = 0;
+            outInfo->height = 0;
+            outInfo->format = GFX_TEXTURE_FORMAT_UNDEFINED;
+            outInfo->imageCount = 0;
+        }
+        return;
     }
     auto api = gfx::getAPI(swapchain);
     if (!api) {
-        return 0;
+        outInfo->width = 0;
+        outInfo->height = 0;
+        outInfo->format = GFX_TEXTURE_FORMAT_UNDEFINED;
+        outInfo->imageCount = 0;
+        return;
     }
-    return api->swapchainGetWidth(gfx::native(swapchain));
-}
-
-uint32_t gfxSwapchainGetHeight(GfxSwapchain swapchain)
-{
-    if (!swapchain) {
-        return 0;
-    }
-    auto api = gfx::getAPI(swapchain);
-    if (!api) {
-        return 0;
-    }
-    return api->swapchainGetHeight(gfx::native(swapchain));
-}
-
-GfxTextureFormat gfxSwapchainGetFormat(GfxSwapchain swapchain)
-{
-    if (!swapchain) {
-        return GFX_TEXTURE_FORMAT_UNDEFINED;
-    }
-    auto api = gfx::getAPI(swapchain);
-    if (!api) {
-        return GFX_TEXTURE_FORMAT_UNDEFINED;
-    }
-    return api->swapchainGetFormat(gfx::native(swapchain));
-}
-
-uint32_t gfxSwapchainGetImageCount(GfxSwapchain swapchain)
-{
-    if (!swapchain) {
-        return 0;
-    }
-    auto api = gfx::getAPI(swapchain);
-    if (!api) {
-        return 0;
-    }
-    return api->swapchainGetImageCount(gfx::native(swapchain));
+    api->swapchainGetInfo(gfx::native(swapchain), outInfo);
 }
 
 GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs,

@@ -652,6 +652,15 @@ typedef struct {
     GfxTextureUsage usage;
 } GfxTextureInfo;
 
+// Swapchain information
+typedef struct {
+    uint32_t width;
+    uint32_t height;
+    GfxTextureFormat format;
+    uint32_t imageCount;
+    GfxPresentMode presentMode;
+} GfxSwapchainInfo;
+
 // Device limits
 typedef struct {
     uint32_t minUniformBufferOffsetAlignment;
@@ -1072,12 +1081,8 @@ GFX_API uint32_t gfxSurfaceGetSupportedPresentModes(GfxSurface surface, GfxPrese
 
 // Swapchain functions
 GFX_API void gfxSwapchainDestroy(GfxSwapchain swapchain);
-GFX_API uint32_t gfxSwapchainGetWidth(GfxSwapchain swapchain);
-GFX_API uint32_t gfxSwapchainGetHeight(GfxSwapchain swapchain);
-GFX_API GfxTextureFormat gfxSwapchainGetFormat(GfxSwapchain swapchain);
-GFX_API uint32_t gfxSwapchainGetImageCount(GfxSwapchain swapchain);
-GFX_API GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs,
-    GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex);
+GFX_API void gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo);
+GFX_API GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex);
 GFX_API GfxTextureView gfxSwapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex);
 GFX_API GfxTextureView gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain);
 GFX_API GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo);

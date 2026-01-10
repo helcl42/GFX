@@ -68,6 +68,14 @@ struct TextureInfo {
     WGPUTextureUsage usage;
 };
 
+struct SwapchainInfo {
+    uint32_t width;
+    uint32_t height;
+    WGPUTextureFormat format;
+    uint32_t imageCount;
+    WGPUPresentMode presentMode;
+};
+
 struct TextureCreateInfo {
     WGPUTextureFormat format;
     WGPUExtent3D size;
@@ -335,6 +343,7 @@ struct ComputePipelineCreateInfo {
 
 // Simplified color attachment info for RenderPass (ops only, no views)
 struct RenderPassColorAttachment {
+    WGPUTextureFormat format;
     WGPULoadOp loadOp;
     WGPUStoreOp storeOp;
 };

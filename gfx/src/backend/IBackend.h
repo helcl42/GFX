@@ -51,10 +51,7 @@ public:
 
     // Swapchain functions
     virtual void swapchainDestroy(GfxSwapchain swapchain) const = 0;
-    virtual uint32_t swapchainGetWidth(GfxSwapchain swapchain) const = 0;
-    virtual uint32_t swapchainGetHeight(GfxSwapchain swapchain) const = 0;
-    virtual GfxTextureFormat swapchainGetFormat(GfxSwapchain swapchain) const = 0;
-    virtual uint32_t swapchainGetImageCount(GfxSwapchain swapchain) const = 0;
+    virtual void swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const = 0;
     virtual GfxResult swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const = 0;
     virtual GfxTextureView swapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex) const = 0;
     virtual GfxTextureView swapchainGetCurrentTextureView(GfxSwapchain swapchain) const = 0;

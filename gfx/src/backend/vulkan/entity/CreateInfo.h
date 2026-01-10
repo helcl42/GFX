@@ -93,6 +93,14 @@ struct TextureInfo {
     VkImageUsageFlags usage;
 };
 
+struct SwapchainInfo {
+    uint32_t width;
+    uint32_t height;
+    VkFormat format;
+    uint32_t imageCount;
+    VkPresentModeKHR presentMode;
+};
+
 struct TextureViewCreateInfo {
     VkImageViewType viewType;
     VkFormat format; // VK_FORMAT_UNDEFINED means use texture's format

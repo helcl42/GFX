@@ -100,6 +100,7 @@ typedef struct {
     GfxQueue queue;
     GfxSurface surface;
     GfxSwapchain swapchain;
+    GfxSwapchainInfo swapchainInfo;
 
     GfxBuffer vertexBuffer;
     GfxBuffer indexBuffer;
@@ -361,9 +362,8 @@ bool initializeGraphics(CubeApp* app)
     return true;
 }
 
-bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
+static bool createSwapchain(CubeApp* app, uint32_t width, uint32_t height)
 {
-    // Create swapchain
     GfxSwapchainDescriptor swapchainDesc = {
         .label = "Main Swapchain",
         .width = (uint32_t)width,
@@ -380,9 +380,14 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
     }
 
     // Query the actual swapchain format (may differ from requested format on web)
-    GfxTextureFormat swapchainFormat = gfxSwapchainGetFormat(app->swapchain);
-    fprintf(stderr, "[INFO] Requested format: %d, Actual swapchain format: %d\n", COLOR_FORMAT, swapchainFormat);
+    gfxSwapchainGetInfo(app->swapchain, &app->swapchainInfo);
+    fprintf(stderr, "[INFO] Requested format: %d, Actual swapchain format: %d\n", COLOR_FORMAT, app->swapchainInfo.format);
 
+    return true;
+}
+
+static bool createTextures(CubeApp* app, uint32_t width, uint32_t height)
+{
     // Create depth texture (MSAA must match color attachment)
     GfxTextureDescriptor depthTextureDesc = {
         .label = "Depth Buffer",
@@ -430,7 +435,7 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = MSAA_SAMPLE_COUNT,
-        .format = gfxSwapchainGetFormat(app->swapchain),
+        .format = app->swapchainInfo.format,
         .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT
     };
 
@@ -443,7 +448,7 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
     GfxTextureViewDescriptor msaaColorViewDesc = {
         .label = "MSAA Color Buffer View",
         .viewType = GFX_TEXTURE_VIEW_TYPE_2D,
-        .format = gfxSwapchainGetFormat(app->swapchain),
+        .format = app->swapchainInfo.format,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -455,6 +460,11 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
         return false;
     }
 
+    return true;
+}
+
+static bool createFrameBuffers(CubeApp* app, uint32_t width, uint32_t height)
+{
     // Create framebuffers (one per swapchain image)
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         GfxTextureView backbuffer = gfxSwapchainGetImageView(app->swapchain, i);
@@ -488,6 +498,23 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
             fprintf(stderr, "Failed to create framebuffer %u\n", i);
             return false;
         }
+    }
+
+    return true;
+}
+
+bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
+{
+    if (!createSwapchain(app, width, height)) {
+        return false;
+    }
+
+    if (!createTextures(app, width, height)) {
+        return false;
+    }
+
+    if (!createFrameBuffers(app, width, height)) {
+        return false;
     }
 
     return true;
@@ -624,10 +651,8 @@ void cleanupRenderingResources(CubeApp* app)
     }
 }
 
-bool createRenderingResources(CubeApp* app)
+static bool createGeometry(CubeApp* app)
 {
-    printf("[DEBUG] createRenderingResources called\n");
-
     // Create cube vertices (8 vertices for a cube)
     Vertex vertices[] = {
         // Front face
@@ -688,6 +713,11 @@ bool createRenderingResources(CubeApp* app)
     gfxQueueWriteBuffer(app->queue, app->vertexBuffer, 0, vertices, sizeof(vertices));
     gfxQueueWriteBuffer(app->queue, app->indexBuffer, 0, indices, sizeof(indices));
 
+    return true;
+}
+
+static bool createUniformBuffer(CubeApp* app)
+{
     // Create single large uniform buffer for all frames with proper alignment
     GfxDeviceLimits limits;
     gfxDeviceGetLimits(app->device, &limits);
@@ -708,6 +738,11 @@ bool createRenderingResources(CubeApp* app)
         return false;
     }
 
+    return true;
+}
+
+static bool createBindGroup(CubeApp* app)
+{
     // Create bind group layout for uniforms
     GfxBindGroupLayoutEntry uniformLayoutEntry = {
         .binding = 0,
@@ -759,6 +794,11 @@ bool createRenderingResources(CubeApp* app)
         }
     }
 
+    return true;
+}
+
+static bool createShaders(CubeApp* app)
+{
     // Load shaders from files (works for both native and web)
     size_t vertexShaderSize, fragmentShaderSize;
     void* vertexShaderCode = NULL;
@@ -825,7 +865,11 @@ bool createRenderingResources(CubeApp* app)
 
     free(vertexShaderCode);
     free(fragmentShaderCode);
+    return true;
+}
 
+static bool createRenderPass(CubeApp* app)
+{
     // Create render pass (persistent, reusable across frames)
     // Define color attachment target with MSAA
     GfxRenderPassColorAttachmentTarget colorTarget = {
@@ -881,6 +925,33 @@ bool createRenderingResources(CubeApp* app)
         return false;
     }
 
+    return true;
+}
+
+bool createRenderingResources(CubeApp* app)
+{
+    printf("[DEBUG] createRenderingResources called\n");
+
+    if (!createGeometry(app)) {
+        return false;
+    }
+
+    if (!createUniformBuffer(app)) {
+        return false;
+    }
+
+    if (!createBindGroup(app)) {
+        return false;
+    }
+
+    if (!createShaders(app)) {
+        return false;
+    }
+
+    if (!createRenderPass(app)) {
+        return false;
+    }
+
     // Initialize animation state
     app->rotationAngleX = 0.0f;
     app->rotationAngleY = 0.0f;
@@ -921,7 +992,7 @@ bool createRenderPipeline(CubeApp* app)
     // layout(location = 0) out vec4 outColor;
     // Use actual swapchain format (may differ from requested format on web)
     GfxColorTargetState colorTarget = {
-        .format = gfxSwapchainGetFormat(app->swapchain),
+        .format = app->swapchainInfo.format,
         .blend = NULL,
         .writeMask = GFX_COLOR_WRITE_MASK_ALL
     };
@@ -1012,7 +1083,7 @@ void updateCube(CubeApp* app, int cubeIndex)
         0.0f, 1.0f, 0.0f); // up vector
 
     // Create perspective projection matrix
-    float aspect = (float)gfxSwapchainGetWidth(app->swapchain) / (float)gfxSwapchainGetHeight(app->swapchain);
+    float aspect = (float)app->swapchainInfo.width / (float)app->swapchainInfo.height;
     matrixPerspective(uniforms.projection,
         45.0f * M_PI / 180.0f, // 45 degree FOV
         aspect,
@@ -1083,10 +1154,8 @@ void render(CubeApp* app)
         gfxRenderPassEncoderSetPipeline(renderPass, app->renderPipeline);
 
         // Set viewport and scissor to fill the entire render target
-        uint32_t swapWidth = gfxSwapchainGetWidth(app->swapchain);
-        uint32_t swapHeight = gfxSwapchainGetHeight(app->swapchain);
-        GfxViewport viewport = { 0.0f, 0.0f, (float)swapWidth, (float)swapHeight, 0.0f, 1.0f };
-        GfxScissorRect scissor = { 0, 0, swapWidth, swapHeight };
+        GfxViewport viewport = { 0.0f, 0.0f, (float)app->swapchainInfo.width, (float)app->swapchainInfo.height, 0.0f, 1.0f };
+        GfxScissorRect scissor = { 0, 0, app->swapchainInfo.width, app->swapchainInfo.height };
         gfxRenderPassEncoderSetViewport(renderPass, &viewport);
         gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
 

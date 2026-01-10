@@ -539,37 +539,19 @@ void WebGPUBackend::swapchainDestroy(GfxSwapchain swapchain) const
     delete converter::toNative<Swapchain>(swapchain);
 }
 
-uint32_t WebGPUBackend::swapchainGetWidth(GfxSwapchain swapchain) const
+void WebGPUBackend::swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const
 {
-    if (!swapchain) {
-        return 0;
-    }
-    return converter::toNative<Swapchain>(swapchain)->getWidth();
-}
-
-uint32_t WebGPUBackend::swapchainGetHeight(GfxSwapchain swapchain) const
-{
-    if (!swapchain) {
-        return 0;
-    }
-    return converter::toNative<Swapchain>(swapchain)->getHeight();
-}
-
-GfxTextureFormat WebGPUBackend::swapchainGetFormat(GfxSwapchain swapchain) const
-{
-    if (!swapchain) {
-        return GFX_TEXTURE_FORMAT_UNDEFINED;
+    if (!swapchain || !outInfo) {
+        if (outInfo) {
+            outInfo->width = 0;
+            outInfo->height = 0;
+            outInfo->format = GFX_TEXTURE_FORMAT_UNDEFINED;
+            outInfo->imageCount = 0;
+        }
+        return;
     }
     auto* swapchainPtr = converter::toNative<Swapchain>(swapchain);
-    return converter::wgpuFormatToGfxFormat(swapchainPtr->getFormat());
-}
-
-uint32_t WebGPUBackend::swapchainGetImageCount(GfxSwapchain swapchain) const
-{
-    if (!swapchain) {
-        return 0;
-    }
-    return converter::toNative<Swapchain>(swapchain)->getImageCount();
+    *outInfo = converter::wgpuSwapchainInfoToGfxSwapchainInfo(swapchainPtr->getInfo());
 }
 
 GfxResult WebGPUBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const
