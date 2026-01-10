@@ -521,6 +521,8 @@ class BindGroup;
 class BindGroupLayout;
 class Surface;
 class Swapchain;
+class RenderPass;
+class Framebuffer;
 class Fence;
 class Semaphore;
 
@@ -686,6 +688,7 @@ struct DepthStencilState {
 
 struct RenderPipelineDescriptor {
     std::string label;
+    std::shared_ptr<RenderPass> renderPass; // Render pass this pipeline will be used with
     VertexState vertex;
     std::optional<FragmentState> fragment;
     PrimitiveState primitive;
@@ -771,6 +774,14 @@ struct SwapchainDescriptor {
     TextureUsage usage = TextureUsage::RenderAttachment;
     PresentMode presentMode = PresentMode::Fifo;
     uint32_t imageCount = 2; // Double buffering by default
+};
+
+struct SwapchainInfo {
+    uint32_t width = 0;
+    uint32_t height = 0;
+    TextureFormat format = TextureFormat::Undefined;
+    PresentMode presentMode = PresentMode::Fifo;
+    uint32_t imageCount = 0;
 };
 
 struct FenceDescriptor {
@@ -873,6 +884,70 @@ struct ColorAttachmentTarget {
     TextureLayout finalLayout = TextureLayout::Undefined;
 };
 
+// Render Pass API structures (cached, reusable render pass objects)
+struct RenderPassColorAttachmentTarget {
+    TextureFormat format = TextureFormat::Undefined;
+    SampleCount sampleCount = SampleCount::Count1;
+    LoadOp loadOp = LoadOp::Clear;
+    StoreOp storeOp = StoreOp::Store;
+    TextureLayout finalLayout = TextureLayout::Undefined;
+};
+
+struct RenderPassColorAttachment {
+    RenderPassColorAttachmentTarget target;
+    RenderPassColorAttachmentTarget* resolveTarget = nullptr;
+};
+
+struct RenderPassDepthStencilAttachmentTarget {
+    TextureFormat format = TextureFormat::Undefined;
+    SampleCount sampleCount = SampleCount::Count1;
+    LoadOp depthLoadOp = LoadOp::Clear;
+    StoreOp depthStoreOp = StoreOp::Store;
+    LoadOp stencilLoadOp = LoadOp::Clear;
+    StoreOp stencilStoreOp = StoreOp::Store;
+    TextureLayout finalLayout = TextureLayout::Undefined;
+};
+
+struct RenderPassDepthStencilAttachment {
+    RenderPassDepthStencilAttachmentTarget target;
+    RenderPassDepthStencilAttachmentTarget* resolveTarget = nullptr;
+};
+
+struct RenderPassCreateDescriptor {
+    std::string label;
+    std::vector<RenderPassColorAttachment> colorAttachments;
+    RenderPassDepthStencilAttachment* depthStencilAttachment = nullptr;
+};
+
+// Framebuffer structures
+struct FramebufferColorAttachment {
+    std::shared_ptr<TextureView> view;
+    std::shared_ptr<TextureView> resolveTarget; // nullptr if not used
+};
+
+struct FramebufferDepthStencilAttachment {
+    std::shared_ptr<TextureView> view;
+    std::shared_ptr<TextureView> resolveTarget; // nullptr if not used
+};
+
+struct FramebufferDescriptor {
+    std::string label;
+    std::shared_ptr<RenderPass> renderPass;
+    std::vector<FramebufferColorAttachment> colorAttachments;
+    FramebufferDepthStencilAttachment* depthStencilAttachment = nullptr;
+    uint32_t width;
+    uint32_t height;
+};
+
+// Render pass begin descriptor (runtime values)
+struct RenderPassBeginDescriptor {
+    std::shared_ptr<Framebuffer> framebuffer;
+    std::vector<Color> colorClearValues;
+    float depthClearValue = 1.0f;
+    uint32_t stencilClearValue = 0;
+};
+
+// Legacy inline render pass structures (for backwards compatibility)
 struct ColorAttachment {
     ColorAttachmentTarget target;
     ColorAttachmentTarget* resolveTarget = nullptr;
@@ -929,10 +1004,7 @@ class Swapchain {
 public:
     virtual ~Swapchain() = default;
 
-    virtual uint32_t getWidth() const = 0;
-    virtual uint32_t getHeight() const = 0;
-    virtual TextureFormat getFormat() const = 0;
-    virtual uint32_t getImageCount() const = 0;
+    virtual SwapchainInfo getInfo() const = 0;
 
     // Get the current frame's texture view for rendering
     virtual std::shared_ptr<TextureView> getCurrentTextureView() = 0;
@@ -1033,6 +1105,16 @@ public:
     virtual ~ComputePipeline() = default;
 };
 
+class RenderPass {
+public:
+    virtual ~RenderPass() = default;
+};
+
+class Framebuffer {
+public:
+    virtual ~Framebuffer() = default;
+};
+
 class RenderPassEncoder {
 public:
     virtual ~RenderPassEncoder() = default;
@@ -1061,7 +1143,7 @@ class CommandEncoder {
 public:
     virtual ~CommandEncoder() = default;
 
-    virtual std::shared_ptr<RenderPassEncoder> beginRenderPass(const RenderPassDescriptor& descriptor) = 0;
+    virtual std::shared_ptr<RenderPassEncoder> beginRenderPass(const RenderPassBeginDescriptor& descriptor) = 0;
 
     virtual std::shared_ptr<ComputePassEncoder> beginComputePass(const ComputePassDescriptor& descriptor) = 0;
 
@@ -1179,6 +1261,9 @@ public:
 
     virtual std::shared_ptr<RenderPipeline> createRenderPipeline(const RenderPipelineDescriptor& descriptor) = 0;
     virtual std::shared_ptr<ComputePipeline> createComputePipeline(const ComputePipelineDescriptor& descriptor) = 0;
+
+    virtual std::shared_ptr<RenderPass> createRenderPass(const RenderPassCreateDescriptor& descriptor) = 0;
+    virtual std::shared_ptr<Framebuffer> createFramebuffer(const FramebufferDescriptor& descriptor) = 0;
 
     virtual std::shared_ptr<CommandEncoder> createCommandEncoder(const CommandEncoderDescriptor& descriptor = {}) = 0;
 

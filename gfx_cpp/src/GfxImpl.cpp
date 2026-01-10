@@ -453,6 +453,47 @@ private:
     GfxComputePipeline m_handle;
 };
 
+class CRenderPassImpl : public RenderPass {
+public:
+    explicit CRenderPassImpl(GfxRenderPass h)
+        : m_handle(h)
+    {
+    }
+    ~CRenderPassImpl() override
+    {
+        if (m_handle) {
+            gfxRenderPassDestroy(m_handle);
+        }
+    }
+
+    GfxRenderPass getHandle() const { return m_handle; }
+
+private:
+    GfxRenderPass m_handle;
+};
+
+class CFramebufferImpl : public Framebuffer {
+public:
+    explicit CFramebufferImpl(GfxFramebuffer h, GfxRenderPass renderPass)
+        : m_handle(h)
+        , m_renderPass(renderPass)
+    {
+    }
+    ~CFramebufferImpl() override
+    {
+        if (m_handle) {
+            gfxFramebufferDestroy(m_handle);
+        }
+    }
+
+    GfxFramebuffer getHandle() const { return m_handle; }
+    GfxRenderPass getRenderPass() const { return m_renderPass; }
+
+private:
+    GfxFramebuffer m_handle;
+    GfxRenderPass m_renderPass;
+};
+
 class CRenderPassEncoderImpl : public RenderPassEncoder {
 public:
     explicit CRenderPassEncoderImpl(GfxRenderPassEncoder h)
@@ -578,101 +619,29 @@ public:
 
     GfxCommandEncoder getHandle() const { return m_handle; }
 
-    std::shared_ptr<RenderPassEncoder> beginRenderPass(const RenderPassDescriptor& descriptor) override
+    std::shared_ptr<RenderPassEncoder> beginRenderPass(const RenderPassBeginDescriptor& descriptor) override
     {
-        // Convert C++ descriptor to C descriptor
-        std::vector<GfxColorAttachmentTarget> cColorTargets;
-        std::vector<GfxColorAttachmentTarget> cResolveTargets;
-        std::vector<GfxColorAttachment> cColorAttachments;
-
-        cColorTargets.reserve(descriptor.colorAttachments.size());
-        cColorAttachments.reserve(descriptor.colorAttachments.size());
-
-        for (const auto& colorAttachment : descriptor.colorAttachments) {
-            // Main target
-            GfxColorAttachmentTarget cTarget{};
-            auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(colorAttachment.target.view);
-            if (viewImpl) {
-                cTarget.view = viewImpl->getHandle();
-            }
-            cTarget.ops.loadOp = static_cast<GfxLoadOp>(colorAttachment.target.ops.loadOp);
-            cTarget.ops.storeOp = static_cast<GfxStoreOp>(colorAttachment.target.ops.storeOp);
-            cTarget.ops.clearColor = { colorAttachment.target.ops.clearColor.r, colorAttachment.target.ops.clearColor.g,
-                colorAttachment.target.ops.clearColor.b, colorAttachment.target.ops.clearColor.a };
-            cTarget.finalLayout = static_cast<GfxTextureLayout>(colorAttachment.target.finalLayout);
-            cColorTargets.push_back(cTarget);
-
-            GfxColorAttachment cAttachment{};
-            cAttachment.target = cColorTargets.back();
-
-            // Handle resolve target if present
-            if (colorAttachment.resolveTarget) {
-                GfxColorAttachmentTarget cResolveTarget{};
-                auto resolveImpl = std::dynamic_pointer_cast<CTextureViewImpl>(colorAttachment.resolveTarget->view);
-                if (resolveImpl) {
-                    cResolveTarget.view = resolveImpl->getHandle();
-                }
-                cResolveTarget.ops.loadOp = static_cast<GfxLoadOp>(colorAttachment.resolveTarget->ops.loadOp);
-                cResolveTarget.ops.storeOp = static_cast<GfxStoreOp>(colorAttachment.resolveTarget->ops.storeOp);
-                cResolveTarget.ops.clearColor = { colorAttachment.resolveTarget->ops.clearColor.r, colorAttachment.resolveTarget->ops.clearColor.g,
-                    colorAttachment.resolveTarget->ops.clearColor.b, colorAttachment.resolveTarget->ops.clearColor.a };
-                cResolveTarget.finalLayout = static_cast<GfxTextureLayout>(colorAttachment.resolveTarget->finalLayout);
-                cResolveTargets.push_back(cResolveTarget);
-                cAttachment.resolveTarget = &cResolveTargets.back();
-            } else {
-                cAttachment.resolveTarget = nullptr;
-            }
-
-            cColorAttachments.push_back(cAttachment);
+        auto framebufferImpl = std::dynamic_pointer_cast<CFramebufferImpl>(descriptor.framebuffer);
+        if (!framebufferImpl) {
+            throw std::runtime_error("Invalid framebuffer type");
         }
 
-        GfxDepthAttachmentOps cDepthOps{};
-        GfxStencilAttachmentOps cStencilOps{};
-        GfxDepthStencilAttachmentTarget cDepthTarget{};
-        GfxDepthStencilAttachment cDepthStencil{};
-        GfxDepthStencilAttachment* cDepthStencilPtr = nullptr;
-
-        if (descriptor.depthStencilAttachment) {
-            auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(descriptor.depthStencilAttachment->target.view);
-            if (viewImpl) {
-                cDepthTarget.view = viewImpl->getHandle();
-            }
-
-            // Handle depth ops if present
-            if (descriptor.depthStencilAttachment->target.depthOps) {
-                cDepthOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->target.depthOps->loadOp);
-                cDepthOps.storeOp = static_cast<GfxStoreOp>(descriptor.depthStencilAttachment->target.depthOps->storeOp);
-                cDepthOps.clearValue = descriptor.depthStencilAttachment->target.depthOps->clearValue;
-                cDepthTarget.depthOps = &cDepthOps;
-            } else {
-                cDepthTarget.depthOps = nullptr;
-            }
-
-            // Handle stencil ops if present
-            if (descriptor.depthStencilAttachment->target.stencilOps) {
-                cStencilOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->target.stencilOps->loadOp);
-                cStencilOps.storeOp = static_cast<GfxStoreOp>(descriptor.depthStencilAttachment->target.stencilOps->storeOp);
-                cStencilOps.clearValue = descriptor.depthStencilAttachment->target.stencilOps->clearValue;
-                cDepthTarget.stencilOps = &cStencilOps;
-            } else {
-                cDepthTarget.stencilOps = nullptr;
-            }
-
-            cDepthTarget.finalLayout = static_cast<GfxTextureLayout>(descriptor.depthStencilAttachment->target.finalLayout);
-            cDepthStencil.target = cDepthTarget;
-            cDepthStencil.resolveTarget = nullptr; // TODO: handle resolve if needed
-            cDepthStencilPtr = &cDepthStencil;
+        // Convert clear values
+        std::vector<GfxColor> cClearValues;
+        for (const auto& color : descriptor.colorClearValues) {
+            cClearValues.push_back({ color.r, color.g, color.b, color.a });
         }
 
-        GfxRenderPassDescriptor cDescriptor{};
-        cDescriptor.label = descriptor.label.c_str();
-        cDescriptor.colorAttachments = cColorAttachments.data();
-        cDescriptor.colorAttachmentCount = static_cast<uint32_t>(cColorAttachments.size());
-        cDescriptor.depthStencilAttachment = cDepthStencilPtr;
+        GfxRenderPassBeginDescriptor cDesc = {};
+        cDesc.renderPass = framebufferImpl->getRenderPass();
+        cDesc.framebuffer = framebufferImpl->getHandle();
+        cDesc.colorClearValues = cClearValues.empty() ? nullptr : cClearValues.data();
+        cDesc.colorClearValueCount = static_cast<uint32_t>(cClearValues.size());
+        cDesc.depthClearValue = descriptor.depthClearValue;
+        cDesc.stencilClearValue = descriptor.stencilClearValue;
 
         GfxRenderPassEncoder encoder = nullptr;
-        GfxResult result = gfxCommandEncoderBeginRenderPass(m_handle, &cDescriptor, &encoder);
-
+        GfxResult result = gfxCommandEncoderBeginRenderPass(m_handle, &cDesc, &encoder);
         if (result != GFX_RESULT_SUCCESS || !encoder) {
             throw std::runtime_error("Failed to begin render pass");
         }
@@ -681,7 +650,7 @@ public:
 
     std::shared_ptr<ComputePassEncoder> beginComputePass(const ComputePassDescriptor& descriptor) override
     {
-        GfxComputePassDescriptor cDesc = {};
+        GfxComputePassBeginDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
 
         GfxComputePassEncoder encoder = nullptr;
@@ -1118,10 +1087,18 @@ public:
         }
     }
 
-    uint32_t getWidth() const override { return gfxSwapchainGetWidth(m_handle); }
-    uint32_t getHeight() const override { return gfxSwapchainGetHeight(m_handle); }
-    TextureFormat getFormat() const override { return cFormatToCppFormat(gfxSwapchainGetFormat(m_handle)); }
-    uint32_t getImageCount() const override { return gfxSwapchainGetImageCount(m_handle); }
+    SwapchainInfo getInfo() const override {
+        GfxSwapchainInfo cInfo;
+        gfxSwapchainGetInfo(m_handle, &cInfo);
+        
+        SwapchainInfo info;
+        info.width = cInfo.width;
+        info.height = cInfo.height;
+        info.format = cFormatToCppFormat(cInfo.format);
+        info.presentMode = static_cast<PresentMode>(cInfo.presentMode);
+        info.imageCount = cInfo.imageCount;
+        return info;
+    }
 
     std::shared_ptr<TextureView> getCurrentTextureView() override
     {
@@ -1549,6 +1526,14 @@ public:
         // Create pipeline descriptor
         GfxRenderPipelineDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
+        
+        // Extract render pass handle
+        auto renderPassImpl = std::dynamic_pointer_cast<CRenderPassImpl>(descriptor.renderPass);
+        if (!renderPassImpl) {
+            throw std::runtime_error("Invalid render pass type");
+        }
+        cDesc.renderPass = renderPassImpl->getHandle();
+        
         cDesc.vertex = &cVertexState;
         cDesc.fragment = pFragmentState;
         cDesc.primitive = &cPrimitiveState;
@@ -1603,6 +1588,154 @@ public:
             throw std::runtime_error("Failed to create compute pipeline");
         }
         return std::make_shared<CComputePipelineImpl>(pipeline);
+    }
+
+    std::shared_ptr<RenderPass> createRenderPass(const RenderPassCreateDescriptor& descriptor) override
+    {
+        // Convert color attachments
+        std::vector<GfxRenderPassColorAttachment> cColorAttachments;
+        std::vector<GfxRenderPassColorAttachmentTarget> cColorTargets;
+        std::vector<GfxRenderPassColorAttachmentTarget> cColorResolveTargets;
+
+        for (const auto& attachment : descriptor.colorAttachments) {
+            GfxRenderPassColorAttachment cAttachment = {};
+            
+            GfxRenderPassColorAttachmentTarget cTarget = {};
+            cTarget.format = cppFormatToCFormat(attachment.target.format);
+            cTarget.sampleCount = cppSampleCountToCCount(attachment.target.sampleCount);
+            cTarget.ops.loadOp = static_cast<GfxLoadOp>(attachment.target.loadOp);
+            cTarget.ops.storeOp = static_cast<GfxStoreOp>(attachment.target.storeOp);
+            cTarget.finalLayout = static_cast<GfxTextureLayout>(attachment.target.finalLayout);
+            cColorTargets.push_back(cTarget);
+            cAttachment.target = cColorTargets.back();
+
+            if (attachment.resolveTarget) {
+                GfxRenderPassColorAttachmentTarget cResolveTarget = {};
+                cResolveTarget.format = cppFormatToCFormat(attachment.resolveTarget->format);
+                cResolveTarget.sampleCount = cppSampleCountToCCount(attachment.resolveTarget->sampleCount);
+                cResolveTarget.ops.loadOp = static_cast<GfxLoadOp>(attachment.resolveTarget->loadOp);
+                cResolveTarget.ops.storeOp = static_cast<GfxStoreOp>(attachment.resolveTarget->storeOp);
+                cResolveTarget.finalLayout = static_cast<GfxTextureLayout>(attachment.resolveTarget->finalLayout);
+                cColorResolveTargets.push_back(cResolveTarget);
+                cAttachment.resolveTarget = &cColorResolveTargets.back();
+            } else {
+                cAttachment.resolveTarget = nullptr;
+            }
+
+            cColorAttachments.push_back(cAttachment);
+        }
+
+        // Convert depth/stencil attachment if present
+        GfxRenderPassDepthStencilAttachment cDepthStencilAttachment = {};
+        GfxRenderPassDepthStencilAttachmentTarget cDepthTarget = {};
+        GfxRenderPassDepthStencilAttachmentTarget cDepthResolveTarget = {};
+        const GfxRenderPassDepthStencilAttachment* cDepthStencilPtr = nullptr;
+
+        if (descriptor.depthStencilAttachment) {
+            cDepthTarget.format = cppFormatToCFormat(descriptor.depthStencilAttachment->target.format);
+            cDepthTarget.sampleCount = cppSampleCountToCCount(descriptor.depthStencilAttachment->target.sampleCount);
+            cDepthTarget.depthOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->target.depthLoadOp);
+            cDepthTarget.depthOps.storeOp = static_cast<GfxStoreOp>(descriptor.depthStencilAttachment->target.depthStoreOp);
+            cDepthTarget.stencilOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->target.stencilLoadOp);
+            cDepthTarget.stencilOps.storeOp = static_cast<GfxStoreOp>(descriptor.depthStencilAttachment->target.stencilStoreOp);
+            cDepthTarget.finalLayout = static_cast<GfxTextureLayout>(descriptor.depthStencilAttachment->target.finalLayout);
+            cDepthStencilAttachment.target = cDepthTarget;
+
+            if (descriptor.depthStencilAttachment->resolveTarget) {
+                cDepthResolveTarget.format = cppFormatToCFormat(descriptor.depthStencilAttachment->resolveTarget->format);
+                cDepthResolveTarget.sampleCount = cppSampleCountToCCount(descriptor.depthStencilAttachment->resolveTarget->sampleCount);
+                cDepthResolveTarget.depthOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->resolveTarget->depthLoadOp);
+                cDepthResolveTarget.depthOps.storeOp = static_cast<GfxStoreOp>(descriptor.depthStencilAttachment->resolveTarget->depthStoreOp);
+                cDepthResolveTarget.stencilOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->resolveTarget->stencilLoadOp);
+                cDepthResolveTarget.stencilOps.storeOp = static_cast<GfxStoreOp>(descriptor.depthStencilAttachment->resolveTarget->stencilStoreOp);
+                cDepthResolveTarget.finalLayout = static_cast<GfxTextureLayout>(descriptor.depthStencilAttachment->resolveTarget->finalLayout);
+                cDepthStencilAttachment.resolveTarget = &cDepthResolveTarget;
+            } else {
+                cDepthStencilAttachment.resolveTarget = nullptr;
+            }
+
+            cDepthStencilPtr = &cDepthStencilAttachment;
+        }
+
+        GfxRenderPassDescriptor cDesc = {};
+        cDesc.label = descriptor.label.c_str();
+        cDesc.colorAttachments = cColorAttachments.empty() ? nullptr : cColorAttachments.data();
+        cDesc.colorAttachmentCount = static_cast<uint32_t>(cColorAttachments.size());
+        cDesc.depthStencilAttachment = cDepthStencilPtr;
+
+        GfxRenderPass renderPass = nullptr;
+        GfxResult result = gfxDeviceCreateRenderPass(m_handle, &cDesc, &renderPass);
+        if (result != GFX_RESULT_SUCCESS || !renderPass) {
+            throw std::runtime_error("Failed to create render pass");
+        }
+        return std::make_shared<CRenderPassImpl>(renderPass);
+    }
+
+    std::shared_ptr<Framebuffer> createFramebuffer(const FramebufferDescriptor& descriptor) override
+    {
+        auto renderPassImpl = std::dynamic_pointer_cast<CRenderPassImpl>(descriptor.renderPass);
+        if (!renderPassImpl) {
+            throw std::runtime_error("Invalid render pass type");
+        }
+
+        // Convert color attachments
+        std::vector<GfxFramebufferColorAttachment> cColorAttachments;
+        for (const auto& attachment : descriptor.colorAttachments) {
+            GfxFramebufferColorAttachment cAttachment = {};
+            
+            auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(attachment.view);
+            if (!viewImpl) {
+                throw std::runtime_error("Invalid texture view type");
+            }
+            cAttachment.view = viewImpl->getHandle();
+
+            if (attachment.resolveTarget) {
+                auto resolveImpl = std::dynamic_pointer_cast<CTextureViewImpl>(attachment.resolveTarget);
+                if (!resolveImpl) {
+                    throw std::runtime_error("Invalid resolve target texture view type");
+                }
+                cAttachment.resolveTarget = resolveImpl->getHandle();
+            } else {
+                cAttachment.resolveTarget = nullptr;
+            }
+
+            cColorAttachments.push_back(cAttachment);
+        }
+
+        // Convert depth/stencil attachment if present
+        GfxFramebufferDepthStencilAttachment cDepthStencilAttachment = {nullptr, nullptr};
+
+        if (descriptor.depthStencilAttachment) {
+            auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(descriptor.depthStencilAttachment->view);
+            if (!viewImpl) {
+                throw std::runtime_error("Invalid depth/stencil texture view type");
+            }
+            cDepthStencilAttachment.view = viewImpl->getHandle();
+
+            if (descriptor.depthStencilAttachment->resolveTarget) {
+                auto resolveImpl = std::dynamic_pointer_cast<CTextureViewImpl>(descriptor.depthStencilAttachment->resolveTarget);
+                if (!resolveImpl) {
+                    throw std::runtime_error("Invalid depth/stencil resolve target texture view type");
+                }
+                cDepthStencilAttachment.resolveTarget = resolveImpl->getHandle();
+            }
+        }
+
+        GfxFramebufferDescriptor cDesc = {};
+        cDesc.label = descriptor.label.c_str();
+        cDesc.renderPass = renderPassImpl->getHandle();
+        cDesc.colorAttachments = cColorAttachments.empty() ? nullptr : cColorAttachments.data();
+        cDesc.colorAttachmentCount = static_cast<uint32_t>(cColorAttachments.size());
+        cDesc.depthStencilAttachment = cDepthStencilAttachment;
+        cDesc.width = descriptor.width;
+        cDesc.height = descriptor.height;
+
+        GfxFramebuffer framebuffer = nullptr;
+        GfxResult result = gfxDeviceCreateFramebuffer(m_handle, &cDesc, &framebuffer);
+        if (result != GFX_RESULT_SUCCESS || !framebuffer) {
+            throw std::runtime_error("Failed to create framebuffer");
+        }
+        return std::make_shared<CFramebufferImpl>(framebuffer, renderPassImpl->getHandle());
     }
 
     std::shared_ptr<CommandEncoder> createCommandEncoder(const CommandEncoderDescriptor& descriptor = {}) override

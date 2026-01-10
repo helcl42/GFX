@@ -117,6 +117,8 @@ private:
     std::shared_ptr<Sampler> sampler;
     std::array<std::shared_ptr<BindGroup>, MAX_FRAMES_IN_FLIGHT> renderBindGroups;
     std::array<std::shared_ptr<Buffer>, MAX_FRAMES_IN_FLIGHT> renderUniformBuffers;
+    std::shared_ptr<RenderPass> renderPass;
+    std::vector<std::shared_ptr<Framebuffer>> framebuffers;
 
     uint32_t windowWidth = WINDOW_WIDTH;
     uint32_t windowHeight = WINDOW_HEIGHT;
@@ -638,7 +640,7 @@ bool ComputeApp::createRenderResources()
         vertexState.buffers = {};
 
         ColorTargetState colorTarget{};
-        colorTarget.format = swapchain->getFormat();
+        colorTarget.format = swapchain->getInfo().format;
         colorTarget.writeMask = ColorWriteMask::All;
 
         FragmentState fragmentState{};
@@ -659,6 +661,7 @@ bool ComputeApp::createRenderResources()
         pipelineDesc.primitive = primitiveState;
         pipelineDesc.sampleCount = SampleCount::Count1;
         pipelineDesc.bindGroupLayouts = { renderBindGroupLayout };
+        pipelineDesc.renderPass = renderPass;
 
         renderPipeline = device->createRenderPipeline(pipelineDesc);
         if (!renderPipeline) {
@@ -736,6 +739,48 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         if (!swapchain) {
             std::cerr << "Failed to create swapchain" << std::endl;
             return false;
+        }
+
+        auto swapchainInfo = swapchain->getInfo();
+
+        // Create render pass
+        RenderPassCreateDescriptor renderPassDesc{};
+        renderPassDesc.label = "Main Render Pass";
+
+        // Color attachment
+        RenderPassColorAttachment colorAttachment{};
+        colorAttachment.target.format = COLOR_FORMAT;
+        colorAttachment.target.sampleCount = SampleCount::Count1;
+        colorAttachment.target.loadOp = LoadOp::Clear;
+        colorAttachment.target.storeOp = StoreOp::Store;
+        colorAttachment.target.finalLayout = TextureLayout::PresentSrc;
+
+        renderPassDesc.colorAttachments.push_back(colorAttachment);
+
+        renderPass = device->createRenderPass(renderPassDesc);
+        if (!renderPass) {
+            std::cerr << "Failed to create render pass" << std::endl;
+            return false;
+        }
+
+        // Create framebuffers for each swapchain image
+        framebuffers.resize(swapchainInfo.imageCount);
+
+        for (uint32_t i = 0; i < swapchainInfo.imageCount; ++i) {
+            FramebufferDescriptor framebufferDesc{};
+            framebufferDesc.label = "Framebuffer " + std::to_string(i);
+            framebufferDesc.renderPass = renderPass;
+            framebufferDesc.width = width;
+            framebufferDesc.height = height;
+
+            // Color attachment
+            framebufferDesc.colorAttachments.push_back({ swapchain->getImageView(i) });
+
+            framebuffers[i] = device->createFramebuffer(framebufferDesc);
+            if (!framebuffers[i]) {
+                std::cerr << "Failed to create framebuffer " << i << std::endl;
+                return false;
+            }
         }
 
         return true;
@@ -832,43 +877,27 @@ void ComputeApp::render()
         encoder->pipelineBarrier({}, {}, { computeToReadBarrier });
 
         // Render pass: Post-process and display
-        auto swapchainView = swapchain->getImageView(imageIndex);
-        if (!swapchainView) {
-            return;
-        }
+        Color clearColor{ 0.0f, 0.0f, 0.0f, 1.0f };
 
-        RenderPassDescriptor renderPassDesc;
-        renderPassDesc.label = "Fullscreen Render Pass";
-
-        ColorAttachmentTarget colorTarget;
-        colorTarget.view = swapchainView;
-        colorTarget.ops.loadOp = LoadOp::Clear;
-        colorTarget.ops.storeOp = StoreOp::Store;
-        colorTarget.ops.clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-        colorTarget.finalLayout = TextureLayout::PresentSrc;
-
-        ColorAttachment colorAttachment;
-        colorAttachment.target = colorTarget;
-        colorAttachment.resolveTarget = nullptr;
-
-        renderPassDesc.colorAttachments = { colorAttachment };
-        renderPassDesc.depthStencilAttachment = nullptr;
+        RenderPassBeginDescriptor renderPassBeginDesc{};
+        renderPassBeginDesc.framebuffer = framebuffers[imageIndex];
+        renderPassBeginDesc.colorClearValues = { clearColor };
 
         {
-            auto renderPass = encoder->beginRenderPass(renderPassDesc);
+            auto renderPassEncoder = encoder->beginRenderPass(renderPassBeginDesc);
 
-            renderPass->setPipeline(renderPipeline);
-            renderPass->setBindGroup(0, renderBindGroups[frameIndex]);
+            renderPassEncoder->setPipeline(renderPipeline);
+            renderPassEncoder->setBindGroup(0, renderBindGroups[frameIndex]);
 
-            renderPass->setViewport(0.0f, 0.0f,
+            renderPassEncoder->setViewport(0.0f, 0.0f,
                 static_cast<float>(windowWidth),
                 static_cast<float>(windowHeight),
                 0.0f, 1.0f);
-            renderPass->setScissorRect(0, 0, windowWidth, windowHeight);
+            renderPassEncoder->setScissorRect(0, 0, windowWidth, windowHeight);
 
             // Draw fullscreen quad (6 vertices, no buffers needed)
-            renderPass->draw(6, 1, 0, 0);
-        } // renderPass destroyed here
+            renderPassEncoder->draw(6, 1, 0, 0);
+        } // renderPassEncoder destroyed here
 
         encoder->end();
 
@@ -924,7 +953,8 @@ bool ComputeApp::mainLoopIteration()
 
         previousWidth = windowWidth;
         previousHeight = windowHeight;
-        std::cout << "Window resized: " << swapchain->getWidth() << "x" << swapchain->getHeight() << std::endl;
+        auto swapchainInfo = swapchain->getInfo();
+        std::cout << "Window resized: " << swapchainInfo.width << "x" << swapchainInfo.height << std::endl;
         return true; // Skip rendering this frame
     }
 

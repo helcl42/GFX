@@ -129,6 +129,10 @@ private:
     std::shared_ptr<Texture> msaaColorTexture;
     std::shared_ptr<TextureView> msaaColorTextureView;
 
+    // Render pass and framebuffers
+    std::shared_ptr<RenderPass> renderPass;
+    std::vector<std::shared_ptr<Framebuffer>> framebuffers;
+
     uint32_t windowWidth = WINDOW_WIDTH;
     uint32_t windowHeight = WINDOW_HEIGHT;
     uint32_t previousWidth = WINDOW_WIDTH;
@@ -372,6 +376,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         }
 
         // Create MSAA color texture
+        auto swapchainInfo = swapchain->getInfo();
         TextureDescriptor msaaColorTextureDesc{};
         msaaColorTextureDesc.label = "MSAA Color Buffer";
         msaaColorTextureDesc.type = TextureType::Texture2D;
@@ -379,7 +384,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         msaaColorTextureDesc.arrayLayerCount = 1;
         msaaColorTextureDesc.mipLevelCount = 1;
         msaaColorTextureDesc.sampleCount = MSAA_SAMPLE_COUNT;
-        msaaColorTextureDesc.format = swapchain->getFormat();
+        msaaColorTextureDesc.format = swapchainInfo.format;
         msaaColorTextureDesc.usage = TextureUsage::RenderAttachment;
 
         msaaColorTexture = device->createTexture(msaaColorTextureDesc);
@@ -392,7 +397,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         TextureViewDescriptor msaaColorViewDesc{};
         msaaColorViewDesc.label = "MSAA Color Buffer View";
         msaaColorViewDesc.viewType = TextureViewType::View2D;
-        msaaColorViewDesc.format = swapchain->getFormat();
+        msaaColorViewDesc.format = swapchainInfo.format;
         msaaColorViewDesc.baseMipLevel = 0;
         msaaColorViewDesc.mipLevelCount = 1;
         msaaColorViewDesc.baseArrayLayer = 0;
@@ -402,6 +407,84 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         if (!msaaColorTextureView) {
             std::cerr << "Failed to create MSAA color texture view" << std::endl;
             return false;
+        }
+
+        // Create render pass
+        RenderPassCreateDescriptor renderPassDesc{};
+        renderPassDesc.label = "Main Render Pass";
+
+        // Color attachment
+        RenderPassColorAttachment colorAttachment{};
+        RenderPassColorAttachmentTarget resolveTarget{}; // Declare outside to prevent dangling pointer
+        
+        colorAttachment.target.format = COLOR_FORMAT;
+        colorAttachment.target.sampleCount = MSAA_SAMPLE_COUNT;
+        colorAttachment.target.loadOp = LoadOp::Clear;
+        colorAttachment.target.storeOp = StoreOp::DontCare; // MSAA buffer doesn't need to be stored
+        colorAttachment.target.finalLayout = TextureLayout::ColorAttachment;
+
+        if (MSAA_SAMPLE_COUNT != SampleCount::Count1) {
+            // MSAA: Add resolve target
+            resolveTarget.format = COLOR_FORMAT;
+            resolveTarget.sampleCount = SampleCount::Count1;
+            resolveTarget.loadOp = LoadOp::DontCare;
+            resolveTarget.storeOp = StoreOp::Store;
+            resolveTarget.finalLayout = TextureLayout::PresentSrc;
+            colorAttachment.resolveTarget = &resolveTarget;
+        } else {
+            // No MSAA: Store directly
+            colorAttachment.target.storeOp = StoreOp::Store;
+            colorAttachment.target.finalLayout = TextureLayout::PresentSrc;
+        }
+
+        renderPassDesc.colorAttachments.push_back(colorAttachment);
+
+        // Depth/stencil attachment
+        RenderPassDepthStencilAttachment depthAttachment{};
+        depthAttachment.target.format = DEPTH_FORMAT;
+        depthAttachment.target.sampleCount = MSAA_SAMPLE_COUNT;
+        depthAttachment.target.depthLoadOp = LoadOp::Clear;
+        depthAttachment.target.depthStoreOp = StoreOp::DontCare;
+        depthAttachment.target.stencilLoadOp = LoadOp::DontCare;
+        depthAttachment.target.stencilStoreOp = StoreOp::DontCare;
+        depthAttachment.target.finalLayout = TextureLayout::DepthStencilAttachment;
+
+        renderPassDesc.depthStencilAttachment = &depthAttachment;
+
+        renderPass = device->createRenderPass(renderPassDesc);
+        if (!renderPass) {
+            std::cerr << "Failed to create render pass" << std::endl;
+            return false;
+        }
+
+        // Create framebuffers for each swapchain image
+        framebuffers.resize(swapchainInfo.imageCount);
+
+        for (uint32_t i = 0; i < swapchainInfo.imageCount; ++i) {
+            FramebufferDescriptor framebufferDesc{};
+            framebufferDesc.label = "Framebuffer " + std::to_string(i);
+            framebufferDesc.renderPass = renderPass;
+            framebufferDesc.width = width;
+            framebufferDesc.height = height;
+
+            // Color attachment
+            if (MSAA_SAMPLE_COUNT != SampleCount::Count1) {
+                // MSAA: Single attachment with MSAA buffer and resolve target
+                framebufferDesc.colorAttachments.push_back({ msaaColorTextureView, swapchain->getImageView(i) });
+            } else {
+                // No MSAA: Attach swapchain image directly
+                framebufferDesc.colorAttachments.push_back({ swapchain->getImageView(i) });
+            }
+
+            // Depth attachment (must be a pointer)
+            FramebufferDepthStencilAttachment depthAttachment{ depthTextureView };
+            framebufferDesc.depthStencilAttachment = &depthAttachment;
+
+            framebuffers[i] = device->createFramebuffer(framebufferDesc);
+            if (!framebuffers[i]) {
+                std::cerr << "Failed to create framebuffer " << i << std::endl;
+                return false;
+            }
         }
 
         return true;
@@ -462,6 +545,10 @@ bool CubeApp::createSyncObjects()
 
 void CubeApp::cleanupSizeDependentResources()
 {
+    // Clean up framebuffers and render pass
+    framebuffers.clear();
+    renderPass.reset();
+    
     // Clean up size-dependent resources
     msaaColorTextureView.reset();
     msaaColorTexture.reset();
@@ -698,8 +785,9 @@ bool CubeApp::createRenderPipeline()
         vertexState.entryPoint = "main";
         vertexState.buffers = { vertexLayout };
 
+        auto swapchainInfo = swapchain->getInfo();
         ColorTargetState colorTarget{};
-        colorTarget.format = swapchain->getFormat();
+        colorTarget.format = swapchainInfo.format;
         colorTarget.writeMask = ColorWriteMask::All;
 
         FragmentState fragmentState{};
@@ -727,6 +815,7 @@ bool CubeApp::createRenderPipeline()
         pipelineDesc.depthStencil = depthStencilState;
         pipelineDesc.sampleCount = MSAA_SAMPLE_COUNT;
         pipelineDesc.bindGroupLayouts = { uniformBindGroupLayout }; // Pass the bind group layout
+        pipelineDesc.renderPass = renderPass;
 
         renderPipeline = device->createRenderPipeline(pipelineDesc);
         if (!renderPipeline) {
@@ -766,7 +855,8 @@ void CubeApp::updateCube(int cubeIndex)
         0.0f, 1.0f, 0.0f); // up vector
 
     // Create projection matrix
-    float aspect = (float)swapchain->getWidth() / (float)swapchain->getHeight();
+    auto swapchainInfo = swapchain->getInfo();
+    float aspect = (float)swapchainInfo.width / (float)swapchainInfo.height;
     matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f, adapterInfo.backend);
 
     // Upload uniform data to buffer at aligned offset
@@ -813,96 +903,42 @@ void CubeApp::render()
             return;
         }
 
-        // Get the texture view for the acquired image
-        auto backbuffer = swapchain->getImageView(imageIndex);
-        if (!backbuffer) {
-            return; // Skip frame if no backbuffer available
-        }
         // Begin command encoder for reuse
         auto commandEncoder = commandEncoders[currentFrame];
         commandEncoder->begin();
 
-        // Begin render pass
+        // Begin render pass with the new API
         Color clearColor{ 0.1f, 0.2f, 0.3f, 1.0f }; // Dark blue background
 
-        // Setup render pass descriptor based on MSAA setting
-        RenderPassDescriptor renderPassDesc;
-        renderPassDesc.label = "Main Render Pass";
-
-        DepthAttachmentOps depthOps;
-        depthOps.loadOp = LoadOp::Clear;
-        depthOps.storeOp = StoreOp::DontCare;
-        depthOps.clearValue = 1.0f;
-
-        DepthStencilAttachmentTarget depthTarget;
-        depthTarget.view = depthTextureView;
-        depthTarget.depthOps = &depthOps;
-        depthTarget.stencilOps = nullptr; // No stencil
-        depthTarget.finalLayout = TextureLayout::DepthStencilAttachment;
-
-        DepthStencilAttachment depthAttachment;
-        depthAttachment.target = depthTarget;
-        depthAttachment.resolveTarget = nullptr;
-
-        // Declare targets outside if/else scope to avoid dangling pointers
-        ColorAttachmentTarget colorTargets[2];
-        ColorAttachment colorAttachment;
-
-        if (MSAA_SAMPLE_COUNT == SampleCount::Count1) {
-            // No MSAA: render directly to backbuffer
-            colorTargets[0].view = backbuffer;
-            colorTargets[0].ops.loadOp = LoadOp::Clear;
-            colorTargets[0].ops.storeOp = StoreOp::Store;
-            colorTargets[0].ops.clearColor = clearColor;
-            colorTargets[0].finalLayout = TextureLayout::PresentSrc;
-
-            colorAttachment.target = colorTargets[0];
-            colorAttachment.resolveTarget = nullptr;
-        } else {
-            // MSAA: render to MSAA buffer, resolve to backbuffer
-            colorTargets[0].view = msaaColorTextureView;
-            colorTargets[0].ops.loadOp = LoadOp::Clear;
-            colorTargets[0].ops.storeOp = StoreOp::DontCare; // MSAA buffer doesn't need to be stored
-            colorTargets[0].ops.clearColor = clearColor;
-            colorTargets[0].finalLayout = TextureLayout::ColorAttachment;
-
-            colorTargets[1].view = backbuffer;
-            colorTargets[1].ops.loadOp = LoadOp::DontCare; // Don't care about resolve target before resolve
-            colorTargets[1].ops.storeOp = StoreOp::Store; // Store the resolved result
-            colorTargets[1].ops.clearColor = clearColor;
-            colorTargets[1].finalLayout = TextureLayout::PresentSrc;
-
-            colorAttachment.target = colorTargets[0];
-            colorAttachment.resolveTarget = &colorTargets[1];
-        }
-
-        renderPassDesc.colorAttachments = { colorAttachment };
-        renderPassDesc.depthStencilAttachment = &depthAttachment;
+        RenderPassBeginDescriptor renderPassBeginDesc{};
+        renderPassBeginDesc.framebuffer = framebuffers[imageIndex];
+        renderPassBeginDesc.colorClearValues = { clearColor };
+        renderPassBeginDesc.depthClearValue = 1.0f;
+        renderPassBeginDesc.stencilClearValue = 0;
 
         {
-            auto renderPass = commandEncoder->beginRenderPass(renderPassDesc);
+            auto renderPassEncoder = commandEncoder->beginRenderPass(renderPassBeginDesc);
 
             // Set pipeline, bind groups, and buffers (using current frame's bind group)
-            renderPass->setPipeline(renderPipeline);
+            renderPassEncoder->setPipeline(renderPipeline);
 
             // Set viewport and scissor to fill the entire render target
-            uint32_t swapWidth = swapchain->getWidth();
-            uint32_t swapHeight = swapchain->getHeight();
-            renderPass->setViewport(0.0f, 0.0f, static_cast<float>(swapWidth), static_cast<float>(swapHeight), 0.0f, 1.0f);
-            renderPass->setScissorRect(0, 0, swapWidth, swapHeight);
+            auto swapchainInfo = swapchain->getInfo();
+            renderPassEncoder->setViewport(0.0f, 0.0f, static_cast<float>(swapchainInfo.width), static_cast<float>(swapchainInfo.height), 0.0f, 1.0f);
+            renderPassEncoder->setScissorRect(0, 0, swapchainInfo.width, swapchainInfo.height);
 
-            renderPass->setVertexBuffer(0, vertexBuffer);
-            renderPass->setIndexBuffer(indexBuffer, IndexFormat::Uint16);
+            renderPassEncoder->setVertexBuffer(0, vertexBuffer);
+            renderPassEncoder->setIndexBuffer(indexBuffer, IndexFormat::Uint16);
 
             // Draw CUBE_COUNT cubes at different positions
             for (int i = 0; i < CUBE_COUNT; ++i) {
                 // Bind the specific cube's bind group (no dynamic offsets)
-                renderPass->setBindGroup(0, uniformBindGroups[currentFrame][i]);
+                renderPassEncoder->setBindGroup(0, uniformBindGroups[currentFrame][i]);
 
                 // Draw indexed (36 indices for the cube)
-                renderPass->drawIndexed(36, 1, 0, 0, 0);
+                renderPassEncoder->drawIndexed(36, 1, 0, 0, 0);
             }
-        } // renderPass destroyed here, ending the render pass
+        } // renderPassEncoder destroyed here, ending the render pass
 
         // Finish command encoding
         commandEncoder->end();
@@ -1014,7 +1050,8 @@ bool CubeApp::mainLoopIteration()
 
         previousWidth = windowWidth;
         previousHeight = windowHeight;
-        std::cout << "Window resized: " << swapchain->getWidth() << "x" << swapchain->getHeight() << std::endl;
+        auto swapchainInfo = swapchain->getInfo();
+        std::cout << "Window resized: " << swapchainInfo.width << "x" << swapchainInfo.height << std::endl;
         return true; // Skip rendering this frame
     }
 
@@ -1090,6 +1127,8 @@ void CubeApp::cleanup()
     uniformBindGroupLayout.reset();
     indexBuffer.reset();
     vertexBuffer.reset();
+    framebuffers.clear();
+    renderPass.reset();
     msaaColorTextureView.reset();
     msaaColorTexture.reset();
     depthTextureView.reset();
