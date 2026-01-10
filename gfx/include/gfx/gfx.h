@@ -652,6 +652,12 @@ typedef struct {
     GfxTextureUsage usage;
 } GfxTextureInfo;
 
+// Buffer information
+typedef struct {
+    uint64_t size;
+    GfxBufferUsage usage;
+} GfxBufferInfo;
+
 // Swapchain information
 typedef struct {
     uint32_t width;
@@ -1089,8 +1095,7 @@ GFX_API GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentIn
 
 // Buffer functions
 GFX_API void gfxBufferDestroy(GfxBuffer buffer);
-GFX_API uint64_t gfxBufferGetSize(GfxBuffer buffer);
-GFX_API GfxBufferUsage gfxBufferGetUsage(GfxBuffer buffer);
+GFX_API void gfxBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo);
 GFX_API GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer);
 GFX_API void gfxBufferUnmap(GfxBuffer buffer);
 

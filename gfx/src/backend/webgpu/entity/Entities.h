@@ -448,12 +448,12 @@ public:
     Buffer(Device* device, const BufferCreateInfo& createInfo)
         : m_device(device)
         , m_ownsResources(true)
-        , m_size(createInfo.size)
-        , m_usage(createInfo.usage)
+        , m_buffer(nullptr)
+        , m_info(createBufferInfo(createInfo))
     {
         WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
-        desc.size = m_size;
-        desc.usage = m_usage;
+        desc.size = m_info.size;
+        desc.usage = m_info.usage;
         desc.mappedAtCreation = false;
 
         m_buffer = wgpuDeviceCreateBuffer(m_device->handle(), &desc);
@@ -467,8 +467,7 @@ public:
         : m_device(device)
         , m_ownsResources(false)
         , m_buffer(buffer)
-        , m_size(importInfo.size)
-        , m_usage(importInfo.usage)
+        , m_info(createBufferInfo(importInfo))
     {
     }
 
@@ -480,8 +479,9 @@ public:
     }
 
     WGPUBuffer handle() const { return m_buffer; }
-    uint64_t getSize() const { return m_size; }
-    BufferUsage getUsage() const { return m_usage; }
+    uint64_t getSize() const { return m_info.size; }
+    BufferUsage getUsage() const { return m_info.usage; }
+    const BufferInfo& getInfo() const { return m_info; }
     Device* getDevice() const { return m_device; }
 
     // Map buffer for CPU access
@@ -491,15 +491,15 @@ public:
         // If size is 0, map the entire buffer from offset
         uint64_t mapSize = size;
         if (mapSize == 0) {
-            mapSize = m_size - offset;
+            mapSize = m_info.size - offset;
         }
 
         // Determine map mode based on buffer usage
         WGPUMapMode mapMode = WGPUMapMode_None;
-        if (m_usage & WGPUBufferUsage_MapRead) {
+        if (m_info.usage & WGPUBufferUsage_MapRead) {
             mapMode |= WGPUMapMode_Read;
         }
-        if (m_usage & WGPUBufferUsage_MapWrite) {
+        if (m_info.usage & WGPUBufferUsage_MapWrite) {
             mapMode |= WGPUMapMode_Write;
         }
 
@@ -552,11 +552,27 @@ public:
     }
 
 private:
+    static BufferInfo createBufferInfo(const BufferCreateInfo& createInfo)
+    {
+        BufferInfo info{};
+        info.size = createInfo.size;
+        info.usage = createInfo.usage;
+        return info;
+    }
+
+    static BufferInfo createBufferInfo(const BufferImportInfo& importInfo)
+    {
+        BufferInfo info{};
+        info.size = importInfo.size;
+        info.usage = importInfo.usage;
+        return info;
+    }
+
+private:
     Device* m_device = nullptr; // Non-owning pointer for device operations
     bool m_ownsResources = true;
     WGPUBuffer m_buffer = nullptr;
-    uint64_t m_size = 0;
-    BufferUsage m_usage = WGPUBufferUsage_None;
+    BufferInfo m_info{};
 };
 
 class Texture {

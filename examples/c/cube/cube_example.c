@@ -1160,13 +1160,17 @@ void render(CubeApp* app)
         gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
 
         // Set vertex buffer
+        GfxBufferInfo vertexBufferInfo;
+        gfxBufferGetInfo(app->vertexBuffer, &vertexBufferInfo);
         gfxRenderPassEncoderSetVertexBuffer(renderPass, 0, app->vertexBuffer, 0,
-            gfxBufferGetSize(app->vertexBuffer));
+            vertexBufferInfo.size);
 
         // Set index buffer
+        GfxBufferInfo indexBufferInfo;
+        gfxBufferGetInfo(app->indexBuffer, &indexBufferInfo);
         gfxRenderPassEncoderSetIndexBuffer(renderPass, app->indexBuffer,
             GFX_INDEX_FORMAT_UINT16, 0,
-            gfxBufferGetSize(app->indexBuffer));
+            indexBufferInfo.size);
 
         // Draw CUBE_COUNT cubes at different positions
         for (int i = 0; i < CUBE_COUNT; ++i) {

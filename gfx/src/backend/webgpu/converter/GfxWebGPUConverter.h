@@ -6,7 +6,12 @@
 
 // Forward declare internal WebGPU types
 namespace gfx::webgpu {
+class Buffer;
+class Texture;
+class Swapchain;
+
 struct AdapterInfo;
+struct BufferInfo;
 struct TextureInfo;
 struct SwapchainInfo;
 
@@ -115,6 +120,7 @@ GfxBufferUsage webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage);
 GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(gfx::webgpu::SemaphoreType type);
 GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const gfx::webgpu::TextureInfo& info);
 GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const gfx::webgpu::SwapchainInfo& info);
+GfxBufferInfo wgpuBufferToGfxBufferInfo(const BufferInfo& info);
 
 // ============================================================================
 // String utilities

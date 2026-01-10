@@ -486,6 +486,14 @@ GfxSwapchainInfo vkSwapchainInfoToGfxSwapchainInfo(const SwapchainInfo& info)
     return gfxInfo;
 }
 
+GfxBufferInfo vkBufferToGfxBufferInfo(const BufferInfo& info)
+{
+    GfxBufferInfo gfxInfo{};
+    gfxInfo.size = info.size;
+    gfxInfo.usage = static_cast<GfxBufferUsage>(vkBufferUsageToGfxBufferUsage(info.usage) | mappedFlagToVkBufferUsage(info.mapped));
+    return gfxInfo;
+}
+
 GfxExtent3D vkExtent3DToGfxExtent3D(const VkExtent3D& vkExtent)
 {
     return { vkExtent.width, vkExtent.height, vkExtent.depth };
@@ -814,6 +822,26 @@ VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsage gfxUsage)
     return usage;
 }
 
+bool gfxBufferUsageToMappedFlag(GfxBufferUsage gfxUsage)
+{
+    bool mapped = false;
+    if (gfxUsage & GFX_BUFFER_USAGE_MAP_READ) {
+        mapped = true;
+    }
+    if (gfxUsage & GFX_BUFFER_USAGE_MAP_WRITE) {
+        mapped = true;
+    }
+    return mapped;
+}
+
+GfxBufferUsage mappedFlagToVkBufferUsage(bool mapped)
+{
+    if (mapped) {
+        return static_cast<GfxBufferUsage>(GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_MAP_WRITE);
+    }
+    return GFX_BUFFER_USAGE_NONE;
+}
+
 VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsage gfxUsage, VkFormat format)
 {
     VkImageUsageFlags usage = 0;
@@ -981,6 +1009,7 @@ gfx::vulkan::BufferCreateInfo gfxDescriptorToBufferCreateInfo(const GfxBufferDes
     gfx::vulkan::BufferCreateInfo createInfo{};
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
+    createInfo.mapped = gfxBufferUsageToMappedFlag(descriptor->usage);
     return createInfo;
 }
 
@@ -989,6 +1018,7 @@ gfx::vulkan::BufferImportInfo gfxExternalDescriptorToBufferImportInfo(const GfxE
     gfx::vulkan::BufferImportInfo createInfo{};
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
+    createInfo.mapped = gfxBufferUsageToMappedFlag(descriptor->usage);
     return createInfo;
 }
 
@@ -1446,21 +1476,21 @@ gfx::vulkan::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(
         attachment.target.loadOp = gfxLoadOpToVkLoadOp(target.ops.loadOp);
         attachment.target.storeOp = gfxStoreOpToVkStoreOp(target.ops.storeOp);
         attachment.target.finalLayout = gfxLayoutToVkImageLayout(target.finalLayout);
-        
+
         // Convert resolve target if present
         if (colorAtt.resolveTarget) {
             const GfxRenderPassColorAttachmentTarget& resolveTarget = *colorAtt.resolveTarget;
-            
+
             gfx::vulkan::RenderPassColorAttachmentTarget resolveTargetInfo{};
             resolveTargetInfo.format = gfxFormatToVkFormat(resolveTarget.format);
             resolveTargetInfo.sampleCount = sampleCountToVkSampleCount(resolveTarget.sampleCount);
             resolveTargetInfo.loadOp = gfxLoadOpToVkLoadOp(resolveTarget.ops.loadOp);
             resolveTargetInfo.storeOp = gfxStoreOpToVkStoreOp(resolveTarget.ops.storeOp);
             resolveTargetInfo.finalLayout = gfxLayoutToVkImageLayout(resolveTarget.finalLayout);
-            
+
             attachment.resolveTarget = resolveTargetInfo;
         }
-        
+
         createInfo.colorAttachments.push_back(attachment);
     }
 
@@ -1477,11 +1507,11 @@ gfx::vulkan::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(
         depthStencilAttachment.target.stencilLoadOp = gfxLoadOpToVkLoadOp(target.stencilOps.loadOp);
         depthStencilAttachment.target.stencilStoreOp = gfxStoreOpToVkStoreOp(target.stencilOps.storeOp);
         depthStencilAttachment.target.finalLayout = gfxLayoutToVkImageLayout(target.finalLayout);
-        
+
         // Convert resolve target if present
         if (depthAtt.resolveTarget) {
             const GfxRenderPassDepthStencilAttachmentTarget& resolveTarget = *depthAtt.resolveTarget;
-            
+
             gfx::vulkan::RenderPassDepthStencilAttachmentTarget resolveTargetInfo{};
             resolveTargetInfo.format = gfxFormatToVkFormat(resolveTarget.format);
             resolveTargetInfo.sampleCount = sampleCountToVkSampleCount(resolveTarget.sampleCount);
@@ -1490,10 +1520,10 @@ gfx::vulkan::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(
             resolveTargetInfo.stencilLoadOp = gfxLoadOpToVkLoadOp(resolveTarget.stencilOps.loadOp);
             resolveTargetInfo.stencilStoreOp = gfxStoreOpToVkStoreOp(resolveTarget.stencilOps.storeOp);
             resolveTargetInfo.finalLayout = gfxLayoutToVkImageLayout(resolveTarget.finalLayout);
-            
+
             depthStencilAttachment.resolveTarget = resolveTargetInfo;
         }
-        
+
         createInfo.depthStencilAttachment = depthStencilAttachment;
     }
 
@@ -1511,15 +1541,15 @@ gfx::vulkan::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateIn
     }
 
     createInfo.colorAttachmentCount = descriptor->colorAttachmentCount;
-    
+
     // In Vulkan, attachments are ordered: [color0, resolve0, color1, resolve1, ..., depth, depthResolve]
     // But only if resolve targets exist
     for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
         const GfxFramebufferColorAttachment& colorAtt = descriptor->colorAttachments[i];
-        
+
         auto* view = toNative<TextureView>(colorAtt.view);
         createInfo.attachments.push_back(view->handle());
-        
+
         // Add resolve target if provided
         if (colorAtt.resolveTarget) {
             auto* resolveView = toNative<TextureView>(colorAtt.resolveTarget);
@@ -1531,7 +1561,7 @@ gfx::vulkan::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateIn
     if (descriptor->depthStencilAttachment.view) {
         auto* view = toNative<TextureView>(descriptor->depthStencilAttachment.view);
         createInfo.attachments.push_back(view->handle());
-        
+
         // Add depth resolve target if provided
         if (descriptor->depthStencilAttachment.resolveTarget) {
             auto* resolveView = toNative<TextureView>(descriptor->depthStencilAttachment.resolveTarget);

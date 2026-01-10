@@ -656,6 +656,14 @@ GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const gfx::webgpu::Swapchai
     return gfxInfo;
 }
 
+GfxBufferInfo wgpuBufferToGfxBufferInfo(const BufferInfo& info)
+{
+    GfxBufferInfo gfxInfo{};
+    gfxInfo.size = info.size;
+    gfxInfo.usage = webgpuBufferUsageToGfxBufferUsage(info.usage);
+    return gfxInfo;
+}
+
 // ============================================================================
 // Conversion Function Implementations
 // ============================================================================

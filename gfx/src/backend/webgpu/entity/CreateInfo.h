@@ -58,6 +58,11 @@ struct BufferImportInfo {
     WGPUBufferUsage usage;
 };
 
+struct BufferInfo {
+    uint64_t size;
+    WGPUBufferUsage usage;
+};
+
 struct TextureInfo {
     WGPUTextureDimension dimension;
     WGPUExtent3D size;

@@ -650,21 +650,13 @@ void WebGPUBackend::bufferDestroy(GfxBuffer buffer) const
     delete converter::toNative<Buffer>(buffer);
 }
 
-uint64_t WebGPUBackend::bufferGetSize(GfxBuffer buffer) const
+void WebGPUBackend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
 {
-    if (!buffer) {
-        return 0;
+    if (!buffer || !outInfo) {
+        return;
     }
-    return converter::toNative<Buffer>(buffer)->getSize();
-}
-
-GfxBufferUsage WebGPUBackend::bufferGetUsage(GfxBuffer buffer) const
-{
-    if (!buffer) {
-        return GFX_BUFFER_USAGE_NONE;
-    }
-    auto usage = converter::toNative<Buffer>(buffer)->getUsage();
-    return converter::webgpuBufferUsageToGfxBufferUsage(usage);
+    auto* buf = converter::toNative<Buffer>(buffer);
+    *outInfo = converter::wgpuBufferToGfxBufferInfo(buf->getInfo());
 }
 
 GfxResult WebGPUBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const

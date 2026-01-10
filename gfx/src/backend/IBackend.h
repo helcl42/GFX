@@ -59,8 +59,7 @@ public:
 
     // Buffer functions
     virtual void bufferDestroy(GfxBuffer buffer) const = 0;
-    virtual uint64_t bufferGetSize(GfxBuffer buffer) const = 0;
-    virtual GfxBufferUsage bufferGetUsage(GfxBuffer buffer) const = 0;
+    virtual void bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const = 0;
     virtual GfxResult bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const = 0;
     virtual void bufferUnmap(GfxBuffer buffer) const = 0;
 

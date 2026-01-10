@@ -6,6 +6,11 @@
 
 // Forward declare CreateInfo types and internal types
 namespace gfx::vulkan {
+class Buffer;
+class Texture;
+class Swapchain;
+
+struct BufferInfo;
 struct TextureInfo;
 struct SwapchainInfo;
 
@@ -83,6 +88,8 @@ VkFormat gfxFormatToVkFormat(GfxTextureFormat format);
 GfxTextureFormat vkFormatToGfxFormat(VkFormat format);
 VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsage gfxUsage);
 GfxBufferUsage vkBufferUsageToGfxBufferUsage(VkBufferUsageFlags vkUsage);
+bool gfxBufferUsageToMappedFlag(GfxBufferUsage gfxUsage);
+GfxBufferUsage mappedFlagToVkBufferUsage(bool mapped);
 VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsage gfxUsage, VkFormat format);
 GfxTextureUsage vkImageUsageToGfxTextureUsage(VkImageUsageFlags vkUsage);
 VkPipelineStageFlags gfxPipelineStageFlagsToVkPipelineStageFlags(GfxPipelineStage gfxStage);
@@ -137,6 +144,7 @@ VkSampleCountFlagBits sampleCountToVkSampleCount(GfxSampleCount sampleCount);
 GfxSampleCount vkSampleCountToGfxSampleCount(VkSampleCountFlagBits vkSampleCount);
 GfxTextureInfo vkTextureInfoToGfxTextureInfo(const TextureInfo& info);
 GfxSwapchainInfo vkSwapchainInfoToGfxSwapchainInfo(const gfx::vulkan::SwapchainInfo& info);
+GfxBufferInfo vkBufferToGfxBufferInfo(const BufferInfo& info);
 GfxExtent3D vkExtent3DToGfxExtent3D(const VkExtent3D& vkExtent);
 VkExtent3D gfxExtent3DToVkExtent3D(const GfxExtent3D* gfxExtent);
 VkOffset3D gfxOrigin3DToVkOffset3D(const GfxOrigin3D* gfxOrigin);

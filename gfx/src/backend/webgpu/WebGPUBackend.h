@@ -60,8 +60,7 @@ public:
 
     // Buffer functions
     void bufferDestroy(GfxBuffer buffer) const override;
-    uint64_t bufferGetSize(GfxBuffer buffer) const override;
-    GfxBufferUsage bufferGetUsage(GfxBuffer buffer) const override;
+    void bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const override;
     GfxResult bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const override;
     void bufferUnmap(GfxBuffer buffer) const override;
 

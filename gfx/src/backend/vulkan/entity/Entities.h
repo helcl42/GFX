@@ -955,13 +955,13 @@ public:
     Buffer(Device* device, const BufferCreateInfo& createInfo)
         : m_device(device)
         , m_ownsResources(true)
-        , m_size(createInfo.size)
-        , m_usage(createInfo.usage)
+        , m_memory(VK_NULL_HANDLE)
+        , m_info(createBufferInfo(createInfo))
     {
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferInfo.size = m_size;
-        bufferInfo.usage = m_usage;
+        bufferInfo.size = m_info.size;
+        bufferInfo.usage = m_info.usage;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         VkResult result = vkCreateBuffer(m_device->handle(), &bufferInfo, nullptr, &m_buffer);
@@ -977,7 +977,9 @@ public:
         vkGetPhysicalDeviceMemoryProperties(m_device->getAdapter()->handle(), &memProperties);
 
         uint32_t memoryTypeIndex = UINT32_MAX;
-        VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        VkMemoryPropertyFlags properties = createInfo.mapped
+            ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
         for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
             if ((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
@@ -1010,8 +1012,8 @@ public:
         : m_device(device)
         , m_ownsResources(false)
         , m_buffer(buffer)
-        , m_size(importInfo.size)
-        , m_usage(importInfo.usage)
+        , m_memory(VK_NULL_HANDLE)
+        , m_info(createBufferInfo(importInfo))
     {
     }
 
@@ -1031,26 +1033,53 @@ public:
 
     void* map()
     {
+        if (!m_info.mapped) {
+            return nullptr;
+        }
+
         void* data;
-        vkMapMemory(m_device->handle(), m_memory, 0, m_size, 0, &data);
+        vkMapMemory(m_device->handle(), m_memory, 0, m_info.size, 0, &data);
         return data;
     }
 
     void unmap()
     {
+        if (!m_info.mapped) {
+            return;
+        }
+
         vkUnmapMemory(m_device->handle(), m_memory);
     }
 
-    size_t size() const { return m_size; }
-    VkBufferUsageFlags getUsage() const { return m_usage; }
+    size_t size() const { return m_info.size; }
+    VkBufferUsageFlags getUsage() const { return m_info.usage; }
+    const BufferInfo& getInfo() const { return m_info; }
+
+private:
+    static BufferInfo createBufferInfo(const BufferCreateInfo& createInfo)
+    {
+        BufferInfo info{};
+        info.size = createInfo.size;
+        info.usage = createInfo.usage;
+        info.mapped = createInfo.mapped;
+        return info;
+    }
+
+    static BufferInfo createBufferInfo(const BufferImportInfo& importInfo)
+    {
+        BufferInfo info{};
+        info.size = importInfo.size;
+        info.usage = importInfo.usage;
+        info.mapped = importInfo.mapped;
+        return info;
+    }
 
 private:
     Device* m_device = nullptr;
     bool m_ownsResources = true;
     VkBuffer m_buffer = VK_NULL_HANDLE;
     VkDeviceMemory m_memory = VK_NULL_HANDLE;
-    size_t m_size = 0;
-    VkBufferUsageFlags m_usage = 0;
+    BufferInfo m_info{};
 };
 
 class Texture {

@@ -683,22 +683,13 @@ void VulkanBackend::bufferDestroy(GfxBuffer buffer) const
     delete converter::toNative<Buffer>(buffer);
 }
 
-uint64_t VulkanBackend::bufferGetSize(GfxBuffer buffer) const
+void VulkanBackend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
 {
-    if (!buffer) {
-        return 0;
+    if (!buffer || !outInfo) {
+        return;
     }
     auto* buf = converter::toNative<Buffer>(buffer);
-    return buf->size();
-}
-
-GfxBufferUsage VulkanBackend::bufferGetUsage(GfxBuffer buffer) const
-{
-    if (!buffer) {
-        return static_cast<GfxBufferUsage>(0);
-    }
-    auto* buf = converter::toNative<Buffer>(buffer);
-    return converter::vkBufferUsageToGfxBufferUsage(buf->getUsage());
+    *outInfo = converter::vkBufferToGfxBufferInfo(buf->getInfo());
 }
 
 GfxResult VulkanBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const

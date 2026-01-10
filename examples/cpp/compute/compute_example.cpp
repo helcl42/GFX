@@ -849,7 +849,7 @@ void ComputeApp::render()
 
         // Compute pass: Generate pattern
         {
-            ComputePassDescriptor computePassDesc;
+            ComputePassBeginDescriptor computePassDesc;
             computePassDesc.label = "Generate Pattern";
             auto computePass = encoder->beginComputePass(computePassDesc);
             computePass->setPipeline(computePipeline);

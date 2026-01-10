@@ -630,28 +630,16 @@ GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* pres
 }
 
 // Buffer Functions
-uint64_t gfxBufferGetSize(GfxBuffer buffer)
+void gfxBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo)
 {
-    if (!buffer) {
-        return 0;
+    if (!buffer || !outInfo) {
+        return;
     }
     auto api = gfx::getAPI(buffer);
     if (!api) {
-        return 0;
+        return;
     }
-    return api->bufferGetSize(gfx::native(buffer));
-}
-
-GfxBufferUsage gfxBufferGetUsage(GfxBuffer buffer)
-{
-    if (!buffer) {
-        return GFX_BUFFER_USAGE_NONE;
-    }
-    auto api = gfx::getAPI(buffer);
-    if (!api) {
-        return GFX_BUFFER_USAGE_NONE;
-    }
-    return api->bufferGetUsage(gfx::native(buffer));
+    api->bufferGetInfo(gfx::native(buffer), outInfo);
 }
 
 GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer)

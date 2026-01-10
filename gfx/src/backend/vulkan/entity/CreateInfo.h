@@ -54,13 +54,19 @@ enum class DeviceTypePreference {
 struct BufferCreateInfo {
     size_t size;
     VkBufferUsageFlags usage;
+    bool mapped;
 };
 
 struct BufferImportInfo {
     size_t size;
     VkBufferUsageFlags usage;
+    bool mapped;
 };
-
+struct BufferInfo {
+    uint64_t size;
+    VkBufferUsageFlags usage;
+    bool mapped;
+};
 struct TextureCreateInfo {
     VkFormat format;
     VkExtent3D size;
