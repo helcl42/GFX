@@ -28,7 +28,9 @@ struct BindGroupCreateInfo;
 struct RenderPipelineCreateInfo;
 struct ComputePipelineCreateInfo;
 struct CommandEncoderCreateInfo;
-struct RenderPassEncoderCreateInfo;
+struct RenderPassCreateInfo;
+struct FramebufferCreateInfo;
+struct RenderPassEncoderBeginInfo;
 struct ComputePassEncoderCreateInfo;
 struct SubmitInfo;
 struct PlatformWindowHandle;
@@ -184,10 +186,16 @@ WGPUExtent3D gfxExtent3DToWGPUExtent3D(const GfxExtent3D* extent);
 GfxExtent3D wgpuExtent3DToGfxExtent3D(const WGPUExtent3D& extent);
 
 // CreateInfo conversions
-RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(
+RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(
     const GfxRenderPassDescriptor* descriptor);
 
-ComputePassEncoderCreateInfo gfxComputePassDescriptorToCreateInfo(
-    const GfxComputePassDescriptor* descriptor);
+FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(
+    const GfxFramebufferDescriptor* descriptor);
+
+RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(
+    const GfxRenderPassBeginDescriptor* descriptor);
+
+ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(
+    const GfxComputePassBeginDescriptor* descriptor);
 
 } // namespace gfx::webgpu::converter

@@ -440,6 +440,8 @@ typedef struct GfxSurface_T* GfxSurface;
 typedef struct GfxSwapchain_T* GfxSwapchain;
 typedef struct GfxFence_T* GfxFence;
 typedef struct GfxSemaphore_T* GfxSemaphore;
+typedef struct GfxRenderPass_T* GfxRenderPass;
+typedef struct GfxFramebuffer_T* GfxFramebuffer;
 
 // ============================================================================
 // Callback Function Types
@@ -521,57 +523,97 @@ typedef struct {
     uint32_t arrayLayerCount;
 } GfxTextureBarrier;
 
+// Simple load/store operations (clear values specified separately)
 typedef struct {
     GfxLoadOp loadOp;
     GfxStoreOp storeOp;
-    GfxColor clearColor;
-} GfxColorAttachmentOps;
+} GfxLoadStoreOps;
 
+// Color attachment target for render pass (main or resolve)
 typedef struct {
-    GfxTextureView view;
-    GfxColorAttachmentOps ops;
+    GfxTextureFormat format;
+    GfxSampleCount sampleCount;
+    GfxLoadStoreOps ops;
     GfxTextureLayout finalLayout;
-} GfxColorAttachmentTarget;
+} GfxRenderPassColorAttachmentTarget;
 
+// Color attachment description for render pass
 typedef struct {
-    GfxColorAttachmentTarget target;
-    GfxColorAttachmentTarget* resolveTarget; // Optional: set to nullptr if not used
-} GfxColorAttachment;
+    GfxRenderPassColorAttachmentTarget target;
+    const GfxRenderPassColorAttachmentTarget* resolveTarget; // NULL if no resolve needed
+} GfxRenderPassColorAttachment;
 
+// Depth/stencil attachment target for render pass (main or resolve)
 typedef struct {
-    GfxLoadOp loadOp;
-    GfxStoreOp storeOp;
-    float clearValue;
-} GfxDepthAttachmentOps;
-
-typedef struct {
-    GfxLoadOp loadOp;
-    GfxStoreOp storeOp;
-    uint32_t clearValue;
-} GfxStencilAttachmentOps;
-
-typedef struct {
-    GfxTextureView view;
-    GfxDepthAttachmentOps* depthOps; // Optional: set to nullptr if not used
-    GfxStencilAttachmentOps* stencilOps; // Optional: set to nullptr if not used
+    GfxTextureFormat format;
+    GfxSampleCount sampleCount;
+    GfxLoadStoreOps depthOps;
+    GfxLoadStoreOps stencilOps;
     GfxTextureLayout finalLayout;
-} GfxDepthStencilAttachmentTarget;
+} GfxRenderPassDepthStencilAttachmentTarget;
 
+// Depth/stencil attachment description for render pass
 typedef struct {
-    GfxDepthStencilAttachmentTarget target;
-    GfxDepthStencilAttachmentTarget* resolveTarget; // Optional: set to nullptr if not used
-} GfxDepthStencilAttachment;
+    GfxRenderPassDepthStencilAttachmentTarget target;
+    const GfxRenderPassDepthStencilAttachmentTarget* resolveTarget; // NULL if no resolve needed
+} GfxRenderPassDepthStencilAttachment;
 
+// Render pass descriptor: defines attachment formats and load/store operations (cached, reusable)
 typedef struct {
     const char* label;
-    const GfxColorAttachment* colorAttachments;
+
+    // Color attachments
+    const GfxRenderPassColorAttachment* colorAttachments;
     uint32_t colorAttachmentCount;
-    const GfxDepthStencilAttachment* depthStencilAttachment; // NULL if not used
+
+    // Depth/stencil attachment (optional)
+    const GfxRenderPassDepthStencilAttachment* depthStencilAttachment; // NULL if not used
 } GfxRenderPassDescriptor;
 
+// Framebuffer color attachment with optional resolve target
+typedef struct {
+    GfxTextureView view;
+    GfxTextureView resolveTarget; // NULL if no resolve needed
+} GfxFramebufferColorAttachment;
+
+// Framebuffer depth/stencil attachment with optional resolve target
+typedef struct {
+    GfxTextureView view;
+    GfxTextureView resolveTarget; // NULL if no resolve needed
+} GfxFramebufferDepthStencilAttachment;
+
+// Framebuffer descriptor: binds actual image views to a render pass
 typedef struct {
     const char* label;
-} GfxComputePassDescriptor;
+    GfxRenderPass renderPass; // The render pass this framebuffer is compatible with
+
+    // Color attachments with optional resolve targets
+    const GfxFramebufferColorAttachment* colorAttachments;
+    uint32_t colorAttachmentCount;
+
+    // Depth/stencil attachment with optional resolve target (use {NULL, NULL} if not used)
+    GfxFramebufferDepthStencilAttachment depthStencilAttachment;
+
+    uint32_t width; // Framebuffer width
+    uint32_t height; // Framebuffer height
+} GfxFramebufferDescriptor;
+
+// Render pass begin descriptor: used to BEGIN a render pass (with clear values)
+typedef struct {
+    const char* label;
+    GfxRenderPass renderPass; // The render pass to begin
+    GfxFramebuffer framebuffer; // The framebuffer to render into
+
+    // Clear values (per-frame data)
+    const GfxColor* colorClearValues; // Array of clear colors (used when loadOp = CLEAR)
+    uint32_t colorClearValueCount; // Number of color clear values (should match render pass color attachment count)
+    float depthClearValue; // Used when depth loadOp = CLEAR
+    uint32_t stencilClearValue; // Used when stencil loadOp = CLEAR
+} GfxRenderPassBeginDescriptor;
+
+typedef struct {
+    const char* label;
+} GfxComputePassBeginDescriptor;
 
 typedef struct {
     GfxBackend backend;
@@ -776,6 +818,7 @@ typedef struct {
 
 typedef struct {
     const char* label;
+    GfxRenderPass renderPass; // Render pass this pipeline will be used with
     GfxVertexState* vertex;
     GfxFragmentState* fragment; // NULL if not used
     GfxPrimitiveState* primitive;
@@ -1015,6 +1058,8 @@ GFX_API GfxResult gfxDeviceCreateBindGroup(GfxDevice device, const GfxBindGroupD
 GFX_API GfxResult gfxDeviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline);
 GFX_API GfxResult gfxDeviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline);
 GFX_API GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder);
+GFX_API GfxResult gfxDeviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass);
+GFX_API GfxResult gfxDeviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer);
 GFX_API GfxResult gfxDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence);
 GFX_API GfxResult gfxDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore);
 GFX_API void gfxDeviceWaitIdle(GfxDevice device);
@@ -1071,6 +1116,12 @@ GFX_API void gfxRenderPipelineDestroy(GfxRenderPipeline renderPipeline);
 // ComputePipeline functions
 GFX_API void gfxComputePipelineDestroy(GfxComputePipeline computePipeline);
 
+// RenderPass functions
+GFX_API void gfxRenderPassDestroy(GfxRenderPass renderPass);
+
+// Framebuffer functions
+GFX_API void gfxFramebufferDestroy(GfxFramebuffer framebuffer);
+
 // Queue functions
 GFX_API GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo);
 GFX_API void gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size);
@@ -1081,10 +1132,10 @@ GFX_API GfxResult gfxQueueWaitIdle(GfxQueue queue);
 // CommandEncoder functions
 GFX_API void gfxCommandEncoderDestroy(GfxCommandEncoder commandEncoder);
 GFX_API GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-    const GfxRenderPassDescriptor* descriptor,
+    const GfxRenderPassBeginDescriptor* beginDescriptor,
     GfxRenderPassEncoder* outRenderPass);
 GFX_API GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder commandEncoder,
-    const GfxComputePassDescriptor* descriptor,
+    const GfxComputePassBeginDescriptor* beginDescriptor,
     GfxComputePassEncoder* outComputePass);
 GFX_API void gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
     GfxBuffer source, uint64_t sourceOffset,

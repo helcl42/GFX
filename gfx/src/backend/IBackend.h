@@ -37,6 +37,8 @@ public:
     virtual GfxResult deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const = 0;
     virtual GfxResult deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const = 0;
     virtual GfxResult deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const = 0;
+    virtual GfxResult deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const = 0;
+    virtual GfxResult deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const = 0;
     virtual GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const = 0;
     virtual GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const = 0;
     virtual void deviceWaitIdle(GfxDevice device) const = 0;
@@ -92,6 +94,12 @@ public:
     // ComputePipeline functions
     virtual void computePipelineDestroy(GfxComputePipeline computePipeline) const = 0;
 
+    // RenderPass functions
+    virtual void renderPassDestroy(GfxRenderPass renderPass) const = 0;
+
+    // Framebuffer functions
+    virtual void framebufferDestroy(GfxFramebuffer framebuffer) const = 0;
+
     // Queue functions
     virtual GfxResult queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo) const = 0;
     virtual void queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const = 0;
@@ -103,11 +111,11 @@ public:
     // CommandEncoder functions
     virtual void commandEncoderDestroy(GfxCommandEncoder commandEncoder) const = 0;
     virtual GfxResult commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-        const GfxRenderPassDescriptor* descriptor,
+        const GfxRenderPassBeginDescriptor* beginDescriptor,
         GfxRenderPassEncoder* outRenderPass) const
         = 0;
     virtual GfxResult commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder,
-        const GfxComputePassDescriptor* descriptor,
+        const GfxComputePassBeginDescriptor* beginDescriptor,
         GfxComputePassEncoder* outComputePass) const
         = 0;
     virtual void commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,

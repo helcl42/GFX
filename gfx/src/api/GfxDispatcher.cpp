@@ -416,6 +416,50 @@ GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncode
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult gfxDeviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass)
+{
+    if (!device || !descriptor || !outRenderPass) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+    *outRenderPass = nullptr;
+    auto api = gfx::getAPI(device);
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
+
+    GfxBackend backend = gfx::getBackend(device);
+    GfxRenderPass nativeRenderPass = nullptr;
+    GfxResult result = api->deviceCreateRenderPass(gfx::native(device), descriptor, &nativeRenderPass);
+    if (result != GFX_RESULT_SUCCESS) {
+        return result;
+    }
+
+    *outRenderPass = gfx::wrap(backend, nativeRenderPass);
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult gfxDeviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer)
+{
+    if (!device || !descriptor || !outFramebuffer) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+    *outFramebuffer = nullptr;
+    auto api = gfx::getAPI(device);
+    if (!api) {
+        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+    }
+
+    GfxBackend backend = gfx::getBackend(device);
+    GfxFramebuffer nativeFramebuffer = nullptr;
+    GfxResult result = api->deviceCreateFramebuffer(gfx::native(device), descriptor, &nativeFramebuffer);
+    if (result != GFX_RESULT_SUCCESS) {
+        return result;
+    }
+
+    *outFramebuffer = gfx::wrap(backend, nativeFramebuffer);
+    return GFX_RESULT_SUCCESS;
+}
+
 void gfxDeviceWaitIdle(GfxDevice device)
 {
     if (!device) {
@@ -462,6 +506,8 @@ DESTROY_FUNC(BindGroupLayout, bindGroupLayout)
 DESTROY_FUNC(BindGroup, bindGroup)
 DESTROY_FUNC(RenderPipeline, renderPipeline)
 DESTROY_FUNC(ComputePipeline, computePipeline)
+DESTROY_FUNC(RenderPass, renderPass)
+DESTROY_FUNC(Framebuffer, framebuffer)
 DESTROY_FUNC(CommandEncoder, commandEncoder)
 DESTROY_FUNC(Fence, fence)
 DESTROY_FUNC(Semaphore, semaphore)
@@ -813,10 +859,10 @@ void gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder)
 }
 
 GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
-    const GfxRenderPassDescriptor* descriptor,
+    const GfxRenderPassBeginDescriptor* beginDescriptor,
     GfxRenderPassEncoder* outEncoder)
 {
-    if (!encoder || !outEncoder || !descriptor) {
+    if (!encoder || !outEncoder || !beginDescriptor) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
     *outEncoder = nullptr;
@@ -829,7 +875,7 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     GfxRenderPassEncoder nativePass = nullptr;
     GfxResult result = api->commandEncoderBeginRenderPass(
         gfx::native(encoder),
-        descriptor,
+        beginDescriptor,
         &nativePass);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
@@ -839,9 +885,9 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const GfxComputePassDescriptor* descriptor, GfxComputePassEncoder* outEncoder)
+GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outEncoder)
 {
-    if (!encoder || !descriptor || !outEncoder) {
+    if (!encoder || !beginDescriptor || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
     *outEncoder = nullptr;
@@ -852,7 +898,7 @@ GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const Gfx
 
     GfxBackend backend = gfx::getBackend(encoder);
     GfxComputePassEncoder nativePass = nullptr;
-    GfxResult result = api->commandEncoderBeginComputePass(gfx::native(encoder), descriptor, &nativePass);
+    GfxResult result = api->commandEncoderBeginComputePass(gfx::native(encoder), beginDescriptor, &nativePass);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }

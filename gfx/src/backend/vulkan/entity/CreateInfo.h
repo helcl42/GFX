@@ -313,6 +313,7 @@ struct DepthStencilState {
 };
 
 struct RenderPipelineCreateInfo {
+    VkRenderPass renderPass = VK_NULL_HANDLE; // Render pass this pipeline will be used with
     std::vector<VkDescriptorSetLayout> bindGroupLayouts;
     VertexState vertex;
     FragmentState fragment;
@@ -327,57 +328,56 @@ struct ComputePipelineCreateInfo {
     const char* entryPoint;
 };
 
-struct ColorAttachmentOps {
-    VkAttachmentLoadOp loadOp;
-    VkAttachmentStoreOp storeOp;
-    VkClearColorValue clearColor;
-};
-
-struct ColorAttachmentTarget {
-    VkImageView view;
+// Color attachment target for render pass (main or resolve)
+struct RenderPassColorAttachmentTarget {
     VkFormat format;
     VkSampleCountFlagBits sampleCount;
-    ColorAttachmentOps ops;
+    VkAttachmentLoadOp loadOp;
+    VkAttachmentStoreOp storeOp;
     VkImageLayout finalLayout;
-    uint32_t width;
-    uint32_t height;
 };
 
-struct ColorAttachment {
-    ColorAttachmentTarget target;
-    std::optional<ColorAttachmentTarget> resolveTarget;
+// Color attachment with optional resolve target
+struct RenderPassColorAttachment {
+    RenderPassColorAttachmentTarget target;
+    std::optional<RenderPassColorAttachmentTarget> resolveTarget;
 };
 
-struct DepthAttachmentOps {
-    VkAttachmentLoadOp loadOp;
-    VkAttachmentStoreOp storeOp;
-    float clearValue;
-};
-
-struct StencilAttachmentOps {
-    VkAttachmentLoadOp loadOp;
-    VkAttachmentStoreOp storeOp;
-    uint32_t clearValue;
-};
-
-struct DepthStencilAttachmentTarget {
-    VkImageView view;
+// Depth/stencil attachment target for render pass (main or resolve)
+struct RenderPassDepthStencilAttachmentTarget {
     VkFormat format;
     VkSampleCountFlagBits sampleCount;
-    std::optional<DepthAttachmentOps> depthOps;
-    std::optional<StencilAttachmentOps> stencilOps;
+    VkAttachmentLoadOp depthLoadOp;
+    VkAttachmentStoreOp depthStoreOp;
+    VkAttachmentLoadOp stencilLoadOp;
+    VkAttachmentStoreOp stencilStoreOp;
     VkImageLayout finalLayout;
-    uint32_t width;
-    uint32_t height;
 };
 
-struct DepthStencilAttachment {
-    DepthStencilAttachmentTarget target;
+// Depth/stencil attachment with optional resolve target
+struct RenderPassDepthStencilAttachment {
+    RenderPassDepthStencilAttachmentTarget target;
+    std::optional<RenderPassDepthStencilAttachmentTarget> resolveTarget;
 };
 
-struct RenderPassEncoderCreateInfo {
-    std::vector<ColorAttachment> colorAttachments;
-    std::optional<DepthStencilAttachment> depthStencilAttachment;
+struct RenderPassCreateInfo {
+    std::vector<RenderPassColorAttachment> colorAttachments;
+    std::optional<RenderPassDepthStencilAttachment> depthStencilAttachment;
+};
+
+struct FramebufferCreateInfo {
+    VkRenderPass renderPass = VK_NULL_HANDLE;
+    std::vector<VkImageView> attachments; // Interleaved: [color0, resolve0, color1, resolve1, ..., depth, depthResolve]
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint32_t colorAttachmentCount = 0; // Number of color attachments (not including resolves)
+    bool hasDepthResolve = false;
+};
+
+struct RenderPassEncoderBeginInfo {
+    std::vector<VkClearColorValue> colorClearValues;
+    float depthClearValue;
+    uint32_t stencilClearValue;
 };
 
 struct ComputePassEncoderCreateInfo {

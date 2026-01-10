@@ -105,6 +105,7 @@ typedef struct {
     GfxBuffer indexBuffer;
     GfxShader vertexShader;
     GfxShader fragmentShader;
+    GfxRenderPass renderPass;
     GfxRenderPipeline renderPipeline;
     GfxBindGroupLayout uniformBindGroupLayout;
 
@@ -115,6 +116,9 @@ typedef struct {
     // MSAA color buffer
     GfxTexture msaaColorTexture;
     GfxTextureView msaaColorTextureView;
+
+    // Framebuffers (one per swapchain image)
+    GfxFramebuffer framebuffers[MAX_FRAMES_IN_FLIGHT];
 
     uint32_t windowWidth;
     uint32_t windowHeight;
@@ -451,6 +455,41 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
         return false;
     }
 
+    // Create framebuffers (one per swapchain image)
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        GfxTextureView backbuffer = gfxSwapchainGetImageView(app->swapchain, i);
+
+        // Bundle color view with resolve target
+        GfxFramebufferColorAttachment fbColorAttachment = {
+            .view = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? app->msaaColorTextureView : backbuffer,
+            .resolveTarget = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? backbuffer : NULL
+        };
+
+        // Depth/stencil attachment (no resolve)
+        GfxFramebufferDepthStencilAttachment fbDepthAttachment = {
+            .view = app->depthTextureView,
+            .resolveTarget = NULL
+        };
+
+        char label[64];
+        snprintf(label, sizeof(label), "Framebuffer %u", i);
+
+        GfxFramebufferDescriptor fbDesc = {
+            .label = label,
+            .renderPass = app->renderPass,
+            .colorAttachments = &fbColorAttachment,
+            .colorAttachmentCount = 1,
+            .depthStencilAttachment = fbDepthAttachment,
+            .width = width,
+            .height = height
+        };
+
+        if (gfxDeviceCreateFramebuffer(app->device, &fbDesc, &app->framebuffers[i]) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create framebuffer %u\n", i);
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -508,6 +547,14 @@ bool createSyncObjects(CubeApp* app)
 
 void cleanupSizeDependentResources(CubeApp* app)
 {
+    // Clean up framebuffers
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        if (app->framebuffers[i]) {
+            gfxFramebufferDestroy(app->framebuffers[i]);
+            app->framebuffers[i] = NULL;
+        }
+    }
+
     // Clean up size-dependent resources
     if (app->msaaColorTextureView) {
         gfxTextureViewDestroy(app->msaaColorTextureView);
@@ -535,6 +582,10 @@ void cleanupSizeDependentResources(CubeApp* app)
 void cleanupRenderingResources(CubeApp* app)
 {
     // Clean up size-independent rendering resources
+    if (app->renderPass) {
+        gfxRenderPassDestroy(app->renderPass);
+        app->renderPass = NULL;
+    }
     if (app->renderPipeline) {
         gfxRenderPipelineDestroy(app->renderPipeline);
         app->renderPipeline = NULL;
@@ -775,6 +826,61 @@ bool createRenderingResources(CubeApp* app)
     free(vertexShaderCode);
     free(fragmentShaderCode);
 
+    // Create render pass (persistent, reusable across frames)
+    // Define color attachment target with MSAA
+    GfxRenderPassColorAttachmentTarget colorTarget = {
+        .format = COLOR_FORMAT,
+        .sampleCount = MSAA_SAMPLE_COUNT,
+        .ops = {
+            .loadOp = GFX_LOAD_OP_CLEAR,
+            .storeOp = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? GFX_STORE_OP_DONT_CARE : GFX_STORE_OP_STORE },
+        .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
+    };
+
+    // Define resolve target (for MSAA -> non-MSAA resolve)
+    GfxRenderPassColorAttachmentTarget resolveTarget = {
+        .format = COLOR_FORMAT,
+        .sampleCount = GFX_SAMPLE_COUNT_1,
+        .ops = {
+            .loadOp = GFX_LOAD_OP_DONT_CARE,
+            .storeOp = GFX_STORE_OP_STORE },
+        .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
+    };
+
+    // Bundle color attachment with optional resolve
+    GfxRenderPassColorAttachment colorAttachment = {
+        .target = colorTarget,
+        .resolveTarget = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? &resolveTarget : NULL
+    };
+
+    // Define depth/stencil attachment target
+    GfxRenderPassDepthStencilAttachmentTarget depthTarget = {
+        .format = DEPTH_FORMAT,
+        .sampleCount = MSAA_SAMPLE_COUNT,
+        .depthOps = {
+            .loadOp = GFX_LOAD_OP_CLEAR,
+            .storeOp = GFX_STORE_OP_DONT_CARE },
+        .stencilOps = { .loadOp = GFX_LOAD_OP_DONT_CARE, .storeOp = GFX_STORE_OP_DONT_CARE },
+        .finalLayout = GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT
+    };
+
+    GfxRenderPassDepthStencilAttachment depthAttachment = {
+        .target = depthTarget,
+        .resolveTarget = NULL
+    };
+
+    GfxRenderPassDescriptor renderPassDesc = {
+        .label = "Main Render Pass",
+        .colorAttachments = &colorAttachment,
+        .colorAttachmentCount = 1,
+        .depthStencilAttachment = &depthAttachment
+    };
+
+    if (gfxDeviceCreateRenderPass(app->device, &renderPassDesc, &app->renderPass) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create render pass\n");
+        return false;
+    }
+
     // Initialize animation state
     app->rotationAngleX = 0.0f;
     app->rotationAngleY = 0.0f;
@@ -866,6 +972,7 @@ bool createRenderPipeline(CubeApp* app)
         .primitive = &primitiveState,
         .depthStencil = &depthStencilState,
         .sampleCount = MSAA_SAMPLE_COUNT,
+        .renderPass = app->renderPass,
         .bindGroupLayouts = bindGroupLayouts,
         .bindGroupLayoutCount = 1
     };
@@ -953,91 +1060,24 @@ void render(CubeApp* app)
         return;
     }
 
-    // Get texture view for acquired image (for later blit/present)
-    GfxTextureView backbuffer = gfxSwapchainGetImageView(app->swapchain, imageIndex);
-    if (!backbuffer) {
-        fprintf(stderr, "Failed to get swapchain texture view\n");
-        return;
-    }
-
     GfxCommandEncoder encoder = app->commandEncoders[app->currentFrame];
     gfxCommandEncoderBegin(encoder);
 
-    // Begin render pass with dark blue clear color
-    // Pass both MSAA color buffer and swapchain image for resolve
-    GfxColor clearColor = (GfxColor){ 0.1f, 0.2f, 0.3f, 1.0f };
+    // Begin render pass using pre-created render pass and framebuffer
+    GfxColor clearColor = { 0.1f, 0.2f, 0.3f, 1.0f };
 
-    GfxColorAttachmentTarget colorTargets[2];
-    GfxColorAttachment colorAttachment;
-    uint32_t colorAttachmentCount;
-
-    if (MSAA_SAMPLE_COUNT == GFX_SAMPLE_COUNT_1) {
-        colorTargets[0] = (GfxColorAttachmentTarget){
-            .view = backbuffer,
-            .ops = {
-                .loadOp = GFX_LOAD_OP_CLEAR,
-                .storeOp = GFX_STORE_OP_STORE,
-                .clearColor = clearColor,
-            },
-            .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
-        };
-        colorAttachment = (GfxColorAttachment){
-            .target = colorTargets[0],
-            .resolveTarget = NULL
-        };
-        colorAttachmentCount = 1;
-    } else {
-        colorTargets[0] = (GfxColorAttachmentTarget){
-            .view = app->msaaColorTextureView,
-            .ops = {
-                .loadOp = GFX_LOAD_OP_CLEAR,
-                .storeOp = GFX_STORE_OP_DONT_CARE, // MSAA buffer doesn't need to be stored
-                .clearColor = clearColor,
-            },
-            .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
-        };
-        colorTargets[1] = (GfxColorAttachmentTarget){
-            .view = backbuffer,
-            .ops = {
-                .loadOp = GFX_LOAD_OP_DONT_CARE, // Don't care about resolve target before resolve
-                .storeOp = GFX_STORE_OP_STORE, // Store the resolved result
-                .clearColor = clearColor,
-            },
-            .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
-        };
-        colorAttachment = (GfxColorAttachment){
-            .target = colorTargets[0],
-            .resolveTarget = &colorTargets[1]
-        };
-        colorAttachmentCount = 1;
-    }
-
-    GfxDepthAttachmentOps depthOps = {
-        .loadOp = GFX_LOAD_OP_CLEAR,
-        .storeOp = GFX_STORE_OP_DONT_CARE, // Depth buffer contents not needed after render
-        .clearValue = 1.0f
-    };
-
-    GfxDepthStencilAttachmentTarget depthTarget = {
-        .view = app->depthTextureView,
-        .depthOps = &depthOps,
-        .stencilOps = NULL, // No stencil
-        .finalLayout = GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT
-    };
-
-    GfxDepthStencilAttachment depthAttachment = {
-        .target = depthTarget,
-    };
-
-    GfxRenderPassDescriptor renderPassDesc = {
+    GfxRenderPassBeginDescriptor beginDesc = {
         .label = "Main Render Pass",
-        .colorAttachments = &colorAttachment,
-        .colorAttachmentCount = colorAttachmentCount,
-        .depthStencilAttachment = &depthAttachment
+        .renderPass = app->renderPass,
+        .framebuffer = app->framebuffers[imageIndex],
+        .colorClearValues = &clearColor,
+        .colorClearValueCount = 1,
+        .depthClearValue = 1.0f,
+        .stencilClearValue = 0
     };
 
     GfxRenderPassEncoder renderPass;
-    if (gfxCommandEncoderBeginRenderPass(encoder, &renderPassDesc, &renderPass) == GFX_RESULT_SUCCESS) {
+    if (gfxCommandEncoderBeginRenderPass(encoder, &beginDesc, &renderPass) == GFX_RESULT_SUCCESS) {
 
         // Set pipeline
         gfxRenderPassEncoderSetPipeline(renderPass, app->renderPipeline);
@@ -1505,17 +1545,17 @@ int main(void)
         return -1;
     }
 
+    if (!createRenderingResources(&app)) {
+        cleanup(&app);
+        return -1;
+    }
+
     if (!createSizeDependentResources(&app, app.windowWidth, app.windowHeight)) {
         cleanup(&app);
         return -1;
     }
 
     if (!createSyncObjects(&app)) {
-        cleanup(&app);
-        return -1;
-    }
-
-    if (!createRenderingResources(&app)) {
         cleanup(&app);
         return -1;
     }

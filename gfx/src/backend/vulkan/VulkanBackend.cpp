@@ -418,6 +418,42 @@ GfxResult VulkanBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxC
     (void)descriptor->label; // Unused for now
 }
 
+GfxResult VulkanBackend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
+{
+    if (!device || !descriptor || !outRenderPass) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+
+    try {
+        auto* dev = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxRenderPassDescriptorToRenderPassCreateInfo(descriptor);
+        auto* renderPass = new gfx::vulkan::RenderPass(dev, createInfo);
+        *outRenderPass = converter::toGfx<GfxRenderPass>(renderPass);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create render pass: %s\n", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+}
+
+GfxResult VulkanBackend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const
+{
+    if (!device || !descriptor || !outFramebuffer) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+
+    try {
+        auto* dev = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxFramebufferDescriptorToFramebufferCreateInfo(descriptor);
+        auto* framebuffer = new gfx::vulkan::Framebuffer(dev, createInfo);
+        *outFramebuffer = converter::toGfx<GfxFramebuffer>(framebuffer);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create framebuffer: %s\n", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+}
+
 GfxResult VulkanBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
 {
     if (!device || !outFence) {
@@ -793,6 +829,16 @@ void VulkanBackend::computePipelineDestroy(GfxComputePipeline computePipeline) c
     delete converter::toNative<ComputePipeline>(computePipeline);
 }
 
+void VulkanBackend::renderPassDestroy(GfxRenderPass renderPass) const
+{
+    delete converter::toNative<RenderPass>(renderPass);
+}
+
+void VulkanBackend::framebufferDestroy(GfxFramebuffer framebuffer) const
+{
+    delete converter::toNative<Framebuffer>(framebuffer);
+}
+
 // Queue functions
 GfxResult VulkanBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo) const
 {
@@ -854,51 +900,36 @@ void VulkanBackend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) cons
 }
 
 GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-    const GfxRenderPassDescriptor* descriptor,
+    const GfxRenderPassBeginDescriptor* beginDescriptor,
     GfxRenderPassEncoder* outRenderPass) const
 {
-    if (!commandEncoder || !outRenderPass || !descriptor) {
+    if (!commandEncoder || !outRenderPass || !beginDescriptor || !beginDescriptor->renderPass || !beginDescriptor->framebuffer) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
-    }
-
-    // Must have at least one attachment (color or depth)
-    if (descriptor->colorAttachmentCount == 0 && !descriptor->depthStencilAttachment) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
-    }
-
-    // Validate all color attachments have valid targets
-    for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
-        if (!descriptor->colorAttachments[i].target.view) {
-            return GFX_RESULT_ERROR_INVALID_PARAMETER;
-        }
-    }
-
-    for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
-        if (descriptor->colorAttachments[i].target.finalLayout == GFX_TEXTURE_LAYOUT_UNDEFINED) {
-            return GFX_RESULT_ERROR_INVALID_PARAMETER;
-        }
     }
 
     try {
         auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
-        auto createInfo = converter::gfxRenderPassDescriptorToCreateInfo(descriptor);
-        auto* renderPassEncoder = new RenderPassEncoder(encoderPtr, createInfo);
+        auto* renderPass = converter::toNative<RenderPass>(beginDescriptor->renderPass);
+        auto* framebuffer = converter::toNative<Framebuffer>(beginDescriptor->framebuffer);
+        auto beginInfo = converter::gfxRenderPassBeginDescriptorToBeginInfo(beginDescriptor);
+        auto* renderPassEncoder = new RenderPassEncoder(encoderPtr, renderPass, framebuffer, beginInfo);
         *outRenderPass = converter::toGfx<GfxRenderPassEncoder>(renderPassEncoder);
         return GFX_RESULT_SUCCESS;
-    } catch (const std::exception&) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to begin render pass: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
 
-GfxResult VulkanBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassDescriptor* descriptor, GfxComputePassEncoder* outComputePass) const
+GfxResult VulkanBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outComputePass) const
 {
-    if (!commandEncoder || !descriptor || !outComputePass) {
+    if (!commandEncoder || !beginDescriptor || !outComputePass) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
     try {
         auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
-        auto createInfo = converter::gfxComputePassDescriptorToCreateInfo(descriptor);
+        auto createInfo = converter::gfxComputePassBeginDescriptorToCreateInfo(beginDescriptor);
         auto* computePassEncoder = new ComputePassEncoder(encoderPtr, createInfo);
         *outComputePass = converter::toGfx<GfxComputePassEncoder>(computePassEncoder);
         return GFX_RESULT_SUCCESS;

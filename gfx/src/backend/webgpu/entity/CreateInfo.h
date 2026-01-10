@@ -16,6 +16,7 @@ namespace gfx::webgpu {
 class CommandEncoder;
 class Fence;
 class Semaphore;
+class TextureView;
 
 // ============================================================================
 // Internal Type Definitions
@@ -332,48 +333,39 @@ struct ComputePipelineCreateInfo {
     const char* entryPoint;
 };
 
-struct ColorAttachmentOps {
+// Simplified color attachment info for RenderPass (ops only, no views)
+struct RenderPassColorAttachment {
     WGPULoadOp loadOp;
     WGPUStoreOp storeOp;
-    WGPUColor clearColor;
 };
 
-struct ColorAttachmentTarget {
-    WGPUTextureView view;
-    ColorAttachmentOps ops;
+// Simplified depth/stencil attachment info for RenderPass (ops only, no views)
+struct RenderPassDepthStencilAttachment {
+    WGPUTextureFormat format;
+    WGPULoadOp depthLoadOp;
+    WGPUStoreOp depthStoreOp;
+    WGPULoadOp stencilLoadOp;
+    WGPUStoreOp stencilStoreOp;
 };
 
-struct ColorAttachment {
-    ColorAttachmentTarget target;
-    std::optional<ColorAttachmentTarget> resolveTarget;
+struct RenderPassCreateInfo {
+    std::vector<RenderPassColorAttachment> colorAttachments;
+    std::optional<RenderPassDepthStencilAttachment> depthStencilAttachment;
 };
 
-struct DepthAttachmentOps {
-    WGPULoadOp loadOp;
-    WGPUStoreOp storeOp;
-    float clearValue;
+struct FramebufferCreateInfo {
+    std::vector<TextureView*> colorAttachmentViews; // Pointers to TextureView objects
+    std::vector<TextureView*> colorResolveTargetViews; // Optional resolve targets for MSAA
+    TextureView* depthStencilAttachmentView = nullptr;
+    TextureView* depthStencilResolveTargetView = nullptr;
+    uint32_t width = 0;
+    uint32_t height = 0;
 };
 
-struct StencilAttachmentOps {
-    WGPULoadOp loadOp;
-    WGPUStoreOp storeOp;
-    uint32_t clearValue;
-};
-
-struct DepthStencilAttachmentTarget {
-    WGPUTextureView view;
-    WGPUTextureFormat format; // Cached format for stencil checking
-    std::optional<DepthAttachmentOps> depthOps;
-    std::optional<StencilAttachmentOps> stencilOps;
-};
-
-struct DepthStencilAttachment {
-    DepthStencilAttachmentTarget target;
-};
-
-struct RenderPassEncoderCreateInfo {
-    std::vector<ColorAttachment> colorAttachments;
-    std::optional<DepthStencilAttachment> depthStencilAttachment;
+struct RenderPassEncoderBeginInfo {
+    std::vector<WGPUColor> colorClearValues;
+    float depthClearValue;
+    uint32_t stencilClearValue;
 };
 
 struct ComputePassEncoderCreateInfo {

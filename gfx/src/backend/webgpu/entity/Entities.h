@@ -55,6 +55,8 @@ class Shader;
 class RenderPipeline;
 class ComputePipeline;
 class CommandEncoder;
+class RenderPass;
+class Framebuffer;
 class RenderPassEncoder;
 class ComputePassEncoder;
 class BindGroupLayout;
@@ -688,6 +690,13 @@ public:
         }
     }
 
+    TextureView(Swapchain* swapchain)
+        : m_view(nullptr)
+        , m_texture(nullptr)
+        , m_swapchain(swapchain)
+    {
+    }
+
     ~TextureView()
     {
         if (m_view) {
@@ -695,12 +704,13 @@ public:
         }
     }
 
-    WGPUTextureView handle() const { return m_view; }
+    WGPUTextureView handle() const;
     Texture* getTexture() { return m_texture; }
 
 private:
     WGPUTextureView m_view = nullptr;
     Texture* m_texture = nullptr; // Non-owning
+    Swapchain* m_swapchain = nullptr; // Non-owning
 };
 
 class Sampler {
@@ -1194,13 +1204,61 @@ private:
     bool m_finished = false;
 };
 
+class RenderPass {
+public:
+    // Prevent copying
+    RenderPass(const RenderPass&) = delete;
+    RenderPass& operator=(const RenderPass&) = delete;
+
+    RenderPass(Device* device, const RenderPassCreateInfo& createInfo)
+        : m_device(device)
+        , m_createInfo(createInfo)
+    {
+        // WebGPU doesn't create persistent render pass objects
+        // Just store the configuration for later use
+    }
+
+    ~RenderPass() = default;
+
+    const RenderPassCreateInfo& getCreateInfo() const { return m_createInfo; }
+    Device* getDevice() const { return m_device; }
+
+private:
+    Device* m_device = nullptr; // Non-owning pointer
+    RenderPassCreateInfo m_createInfo;
+};
+
+class Framebuffer {
+public:
+    // Prevent copying
+    Framebuffer(const Framebuffer&) = delete;
+    Framebuffer& operator=(const Framebuffer&) = delete;
+
+    Framebuffer(Device* device, const FramebufferCreateInfo& createInfo)
+        : m_device(device)
+        , m_createInfo(createInfo)
+    {
+        // WebGPU doesn't have framebuffer objects
+        // Just store the views for use in beginRenderPass
+    }
+
+    ~Framebuffer() = default;
+
+    const FramebufferCreateInfo& getCreateInfo() const { return m_createInfo; }
+    Device* getDevice() const { return m_device; }
+
+private:
+    Device* m_device = nullptr; // Non-owning pointer
+    FramebufferCreateInfo m_createInfo;
+};
+
 class RenderPassEncoder {
 public:
     // Prevent copying
     RenderPassEncoder(const RenderPassEncoder&) = delete;
     RenderPassEncoder& operator=(const RenderPassEncoder&) = delete;
 
-    RenderPassEncoder(CommandEncoder* commandEncoder, const RenderPassEncoderCreateInfo& createInfo);
+    RenderPassEncoder(CommandEncoder* commandEncoder, RenderPass* renderPass, Framebuffer* framebuffer, const RenderPassEncoderBeginInfo& beginInfo);
 
     ~RenderPassEncoder()
     {
@@ -1490,7 +1548,7 @@ public:
     Swapchain& operator=(const Swapchain&) = delete;
 
     Swapchain(gfx::webgpu::Device* device, gfx::webgpu::Surface* surface, const SwapchainCreateInfo& createInfo)
-        : m_device(device->handle())
+        : m_device(device)
         , m_surface(surface->handle())
         , m_width(createInfo.width)
         , m_height(createInfo.height)
@@ -1544,9 +1602,13 @@ public:
 
         m_presentMode = selectedPresentMode;
 
-        // Configure surface
+        // Create stable TextureView wrapper ONCE (never deleted until swapchain destroyed)
+        // This allows multiple framebuffers to reference the same TextureView*
+        m_currentView = new gfx::webgpu::TextureView(this);
+
+        // Configure surface for direct rendering
         WGPUSurfaceConfiguration config = WGPU_SURFACE_CONFIGURATION_INIT;
-        config.device = m_device;
+        config.device = m_device->handle();
         config.format = m_format;
         config.usage = createInfo.usage;
         config.width = createInfo.width;
@@ -1565,14 +1627,17 @@ public:
         if (m_currentView) {
             delete m_currentView;
         }
+        if (m_currentRawView) {
+            wgpuTextureViewRelease(m_currentRawView);
+        }
         if (m_currentTexture) {
             wgpuTextureRelease(m_currentTexture);
         }
     }
 
     // Accessors
-    WGPUDevice device() const { return m_device; }
-    WGPUSurface surface() const { return m_surface; }
+    WGPUSurface handle() const { return m_surface; }
+    WGPUDevice device() const { return m_device->handle(); }
     uint32_t getWidth() const { return m_width; }
     uint32_t getHeight() const { return m_height; }
     WGPUTextureFormat getFormat() const { return m_format; }
@@ -1582,10 +1647,11 @@ public:
     // Swapchain operations (call in order: acquireNextImage -> getCurrentTextureView -> present)
     WGPUSurfaceGetCurrentTextureStatus acquireNextImage()
     {
-        // Clean up previous frame's view
-        if (m_currentView) {
-            delete m_currentView;
-            m_currentView = nullptr;
+        // Clean up previous frame's raw view handle only
+        // Keep m_currentView wrapper stable for framebuffer references
+        if (m_currentRawView) {
+            wgpuTextureViewRelease(m_currentRawView);
+            m_currentRawView = nullptr;
         }
 
         WGPUSurfaceTexture surfaceTexture = WGPU_SURFACE_TEXTURE_INIT;
@@ -1596,6 +1662,12 @@ public:
                 wgpuTextureRelease(m_currentTexture);
             }
             m_currentTexture = surfaceTexture.texture;
+
+            // Create the view from the new texture
+            m_currentRawView = wgpuTextureCreateView(m_currentTexture, nullptr);
+            if (!m_currentRawView) {
+                fprintf(stderr, "[WebGPU] Failed to create texture view\n");
+            }
         } else if (surfaceTexture.texture) {
             wgpuTextureRelease(surfaceTexture.texture);
         }
@@ -1605,23 +1677,15 @@ public:
 
     gfx::webgpu::TextureView* getCurrentTextureView()
     {
-        if (m_currentView) {
-            return m_currentView;
-        }
-
-        if (!m_currentTexture) {
-            fprintf(stderr, "[WebGPU] No texture available! Call acquireNextImage first.\n");
-            return nullptr;
-        }
-
-        WGPUTextureView wgpuView = wgpuTextureCreateView(m_currentTexture, nullptr);
-        if (!wgpuView) {
-            fprintf(stderr, "[WebGPU] Failed to create texture view\n");
-            return nullptr;
-        }
-
-        m_currentView = new gfx::webgpu::TextureView(wgpuView, nullptr);
+        // Just return the stable wrapper (created in constructor)
+        // It will dynamically resolve to the current texture when handle() is called
+        // No need to check m_currentTexture here - that's checked in handle()
         return m_currentView;
+    }
+
+    WGPUTextureView getRawCurrentTextureView() const
+    {
+        return m_currentRawView;
     }
 
     void present()
@@ -1636,15 +1700,16 @@ public:
     }
 
 private:
-    WGPUDevice m_device = nullptr; // Non-owning
+    Device* m_device = nullptr; // Non-owning
     WGPUSurface m_surface = nullptr; // Non-owning
     uint32_t m_width = 0;
     uint32_t m_height = 0;
     WGPUTextureFormat m_format = WGPUTextureFormat_Undefined;
     WGPUPresentMode m_presentMode = WGPUPresentMode_Fifo;
     uint32_t m_imageCount = 0;
-    WGPUTexture m_currentTexture = nullptr; // Current frame texture from Dawn
-    gfx::webgpu::TextureView* m_currentView = nullptr; // Current frame view (owned)
+    WGPUTexture m_currentTexture = nullptr; // Current frame texture from surface
+    WGPUTextureView m_currentRawView = nullptr; // Current frame raw view handle
+    gfx::webgpu::TextureView* m_currentView = nullptr; // Current frame view wrapper (owned)
 };
 
 class Fence {

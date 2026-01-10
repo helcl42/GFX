@@ -25,6 +25,9 @@ struct BindGroupLayoutCreateInfo;
 struct BindGroupCreateInfo;
 struct RenderPipelineCreateInfo;
 struct ComputePipelineCreateInfo;
+struct RenderPassCreateInfo;
+struct FramebufferCreateInfo;
+struct RenderPassEncoderBeginInfo;
 struct RenderPassEncoderCreateInfo;
 struct ComputePassEncoderCreateInfo;
 struct SubmitInfo;
@@ -175,8 +178,11 @@ gfx::vulkan::BindGroupLayoutCreateInfo gfxDescriptorToBindGroupLayoutCreateInfo(
 gfx::vulkan::BindGroupCreateInfo gfxDescriptorToBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor);
 gfx::vulkan::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor);
 gfx::vulkan::ComputePipelineCreateInfo gfxDescriptorToComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor);
+gfx::vulkan::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(const GfxRenderPassDescriptor* descriptor);
+gfx::vulkan::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(const GfxFramebufferDescriptor* descriptor);
 gfx::vulkan::RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(const GfxRenderPassDescriptor* descriptor);
-gfx::vulkan::ComputePassEncoderCreateInfo gfxComputePassDescriptorToCreateInfo(const GfxComputePassDescriptor* descriptor);
+gfx::vulkan::RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(const GfxRenderPassBeginDescriptor* descriptor);
+gfx::vulkan::ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(const GfxComputePassBeginDescriptor* descriptor);
 gfx::vulkan::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitInfo* descriptor);
 
 } // namespace gfx::vulkan::converter

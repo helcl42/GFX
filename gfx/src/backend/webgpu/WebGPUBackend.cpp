@@ -358,6 +358,42 @@ GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
     }
 }
 
+GfxResult WebGPUBackend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
+{
+    if (!device || !descriptor || !outRenderPass) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+
+    try {
+        auto* dev = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxRenderPassDescriptorToRenderPassCreateInfo(descriptor);
+        auto* renderPass = new gfx::webgpu::RenderPass(dev, createInfo);
+        *outRenderPass = converter::toGfx<GfxRenderPass>(renderPass);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create render pass: %s\n", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+}
+
+GfxResult WebGPUBackend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const
+{
+    if (!device || !descriptor || !outFramebuffer) {
+        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+    }
+
+    try {
+        auto* dev = converter::toNative<Device>(device);
+        auto createInfo = converter::gfxFramebufferDescriptorToFramebufferCreateInfo(descriptor);
+        auto* framebuffer = new gfx::webgpu::Framebuffer(dev, createInfo);
+        *outFramebuffer = converter::toGfx<GfxFramebuffer>(framebuffer);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create framebuffer: %s\n", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+}
+
 GfxResult WebGPUBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
 {
     if (!device || !descriptor || !outEncoder) {
@@ -782,6 +818,22 @@ void WebGPUBackend::computePipelineDestroy(GfxComputePipeline computePipeline) c
     delete converter::toNative<ComputePipeline>(computePipeline);
 }
 
+void WebGPUBackend::renderPassDestroy(GfxRenderPass renderPass) const
+{
+    if (!renderPass) {
+        return;
+    }
+    delete converter::toNative<RenderPass>(renderPass);
+}
+
+void WebGPUBackend::framebufferDestroy(GfxFramebuffer framebuffer) const
+{
+    if (!framebuffer) {
+        return;
+    }
+    delete converter::toNative<Framebuffer>(framebuffer);
+}
+
 // Queue functions
 GfxResult WebGPUBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo) const
 {
@@ -845,34 +897,36 @@ void WebGPUBackend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) cons
 }
 
 GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-    const GfxRenderPassDescriptor* descriptor,
+    const GfxRenderPassBeginDescriptor* beginDescriptor,
     GfxRenderPassEncoder* outRenderPass) const
 {
-    if (!commandEncoder || !descriptor || !outRenderPass) {
+    if (!commandEncoder || !beginDescriptor || !outRenderPass || !beginDescriptor->framebuffer) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
     try {
         auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
-        auto createInfo = converter::gfxRenderPassDescriptorToCreateInfo(descriptor);
-        RenderPassEncoder* renderPassEncoder = new RenderPassEncoder(encoderPtr, createInfo);
+        auto* renderPass = converter::toNative<RenderPass>(beginDescriptor->renderPass);
+        auto* framebuffer = converter::toNative<Framebuffer>(beginDescriptor->framebuffer);
+        auto beginInfo = converter::gfxRenderPassBeginDescriptorToBeginInfo(beginDescriptor);
+        auto* renderPassEncoder = new RenderPassEncoder(encoderPtr, renderPass, framebuffer, beginInfo);
         *outRenderPass = converter::toGfx<GfxRenderPassEncoder>(renderPassEncoder);
-    } catch (const std::exception&) {
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to begin render pass: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
-
-    return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassDescriptor* descriptor, GfxComputePassEncoder* outComputePass) const
+GfxResult WebGPUBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outComputePass) const
 {
-    if (!commandEncoder || !descriptor || !outComputePass) {
+    if (!commandEncoder || !beginDescriptor || !outComputePass) {
         return GFX_RESULT_ERROR_INVALID_PARAMETER;
     }
 
     try {
         auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
-        auto createInfo = converter::gfxComputePassDescriptorToCreateInfo(descriptor);
+        auto createInfo = converter::gfxComputePassBeginDescriptorToCreateInfo(beginDescriptor);
         auto* computePassEncoder = new ComputePassEncoder(encoderPtr, createInfo);
         *outComputePass = converter::toGfx<GfxComputePassEncoder>(computePassEncoder);
         return GFX_RESULT_SUCCESS;

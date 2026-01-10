@@ -2,6 +2,7 @@
 #include "../converter/GfxWebGPUConverter.h"
 
 namespace gfx::webgpu {
+
 bool Queue::submit(const SubmitInfo& submitInfo)
 {
     // WebGPU doesn't support semaphore-based sync - just submit command buffers
@@ -184,23 +185,33 @@ void CommandEncoder::blitTextureToTexture(Texture* source, const WGPUOrigin3D& s
         filter);
 }
 
-RenderPassEncoder::RenderPassEncoder(CommandEncoder* commandEncoder, const RenderPassEncoderCreateInfo& createInfo)
+RenderPassEncoder::RenderPassEncoder(CommandEncoder* commandEncoder, RenderPass* renderPass, Framebuffer* framebuffer, const RenderPassEncoderBeginInfo& beginInfo)
 {
+    // Combine render pass ops with framebuffer views
+    const RenderPassCreateInfo& passInfo = renderPass->getCreateInfo();
+    const FramebufferCreateInfo& fbInfo = framebuffer->getCreateInfo();
+
     WGPURenderPassDescriptor wgpuDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
 
-    // Convert color attachments
+    // Build color attachments directly with clear values from begin info
     std::vector<WGPURenderPassColorAttachment> wgpuColorAttachments;
-    for (const ColorAttachment& colorAttachment : createInfo.colorAttachments) {
+    for (size_t i = 0; i < fbInfo.colorAttachmentViews.size(); ++i) {
         WGPURenderPassColorAttachment attachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
-        attachment.view = colorAttachment.target.view;
-        attachment.loadOp = colorAttachment.target.ops.loadOp;
-        attachment.storeOp = colorAttachment.target.ops.storeOp;
-        attachment.clearValue = colorAttachment.target.ops.clearColor;
+        // Get actual WGPUTextureView handle from TextureView pointer
+        attachment.view = fbInfo.colorAttachmentViews[i] ? fbInfo.colorAttachmentViews[i]->handle() : nullptr;
+        attachment.loadOp = passInfo.colorAttachments[i].loadOp;
+        attachment.storeOp = passInfo.colorAttachments[i].storeOp;
 
-        // Handle resolve target if present
-        if (colorAttachment.resolveTarget.has_value()) {
-            attachment.resolveTarget = colorAttachment.resolveTarget->view;
+        // Set resolve target if provided
+        if (i < fbInfo.colorResolveTargetViews.size() && fbInfo.colorResolveTargetViews[i]) {
+            attachment.resolveTarget = fbInfo.colorResolveTargetViews[i]->handle();
         }
+
+        // Set clear color from begin info
+        if (i < beginInfo.colorClearValues.size()) {
+            attachment.clearValue = beginInfo.colorClearValues[i];
+        }
+
         wgpuColorAttachments.push_back(attachment);
     }
 
@@ -209,35 +220,24 @@ RenderPassEncoder::RenderPassEncoder(CommandEncoder* commandEncoder, const Rende
         wgpuDesc.colorAttachmentCount = static_cast<uint32_t>(wgpuColorAttachments.size());
     }
 
-    // Convert depth/stencil attachment
+    // Build depth/stencil attachment directly
     WGPURenderPassDepthStencilAttachment wgpuDepthStencil = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
-    if (createInfo.depthStencilAttachment.has_value()) {
-        const DepthStencilAttachmentTarget& target = createInfo.depthStencilAttachment->target;
-        wgpuDepthStencil.view = target.view;
+    if (fbInfo.depthStencilAttachmentView) {
+        const auto& depthStencilAtt = passInfo.depthStencilAttachment.value();
 
-        // Handle depth operations
-        if (target.depthOps.has_value()) {
-            wgpuDepthStencil.depthLoadOp = target.depthOps->loadOp;
-            wgpuDepthStencil.depthStoreOp = target.depthOps->storeOp;
-            wgpuDepthStencil.depthClearValue = target.depthOps->clearValue;
-        } else {
-            wgpuDepthStencil.depthLoadOp = WGPULoadOp_Undefined;
-            wgpuDepthStencil.depthStoreOp = WGPUStoreOp_Undefined;
-            wgpuDepthStencil.depthClearValue = 1.0f;
-        }
+        // Get actual WGPUTextureView handle from TextureView pointer
+        wgpuDepthStencil.view = fbInfo.depthStencilAttachmentView->handle();
+        wgpuDepthStencil.depthLoadOp = depthStencilAtt.depthLoadOp;
+        wgpuDepthStencil.depthStoreOp = depthStencilAtt.depthStoreOp;
+        wgpuDepthStencil.depthClearValue = beginInfo.depthClearValue;
 
         // Only set stencil operations for formats that have a stencil aspect
-        GfxTextureFormat format = converter::wgpuFormatToGfxFormat(target.format);
+        WGPUTextureFormat wgpuFormat = fbInfo.depthStencilAttachmentView->getTexture()->getFormat();
+        GfxTextureFormat format = converter::wgpuFormatToGfxFormat(wgpuFormat);
         if (converter::formatHasStencil(format)) {
-            if (target.stencilOps.has_value()) {
-                wgpuDepthStencil.stencilLoadOp = target.stencilOps->loadOp;
-                wgpuDepthStencil.stencilStoreOp = target.stencilOps->storeOp;
-                wgpuDepthStencil.stencilClearValue = target.stencilOps->clearValue;
-            } else {
-                wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Undefined;
-                wgpuDepthStencil.stencilStoreOp = WGPUStoreOp_Undefined;
-                wgpuDepthStencil.stencilClearValue = 0;
-            }
+            wgpuDepthStencil.stencilLoadOp = depthStencilAtt.stencilLoadOp;
+            wgpuDepthStencil.stencilStoreOp = depthStencilAtt.stencilStoreOp;
+            wgpuDepthStencil.stencilClearValue = beginInfo.stencilClearValue;
         } else {
             wgpuDepthStencil.stencilLoadOp = WGPULoadOp_Undefined;
             wgpuDepthStencil.stencilStoreOp = WGPUStoreOp_Undefined;
@@ -310,6 +310,15 @@ void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLeve
             m_texture, origin, dstExtent, dstMip,
             WGPUFilterMode_Linear);
     }
+}
+
+WGPUTextureView TextureView::handle() const
+{
+    if (m_swapchain) {  
+        // Get the raw view handle from swapchain (created on-demand in acquireNextImage)
+        return m_swapchain->getRawCurrentTextureView();
+    }
+    return m_view;
 }
 
 } // namespace gfx::webgpu

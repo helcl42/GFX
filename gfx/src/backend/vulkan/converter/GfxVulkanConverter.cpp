@@ -1272,6 +1272,12 @@ gfx::vulkan::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(co
 {
     gfx::vulkan::RenderPipelineCreateInfo createInfo{};
 
+    // Render pass (if provided)
+    if (descriptor->renderPass) {
+        auto* renderPass = converter::toNative<RenderPass>(descriptor->renderPass);
+        createInfo.renderPass = renderPass->handle();
+    }
+
     // Bind group layouts
     for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
         auto* layout = converter::toNative<BindGroupLayout>(descriptor->bindGroupLayouts[i]);
@@ -1403,91 +1409,154 @@ gfx::vulkan::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitInfo* descripto
     return submitInfo;
 }
 
+// DEPRECATED: This function uses the old pre-refactor API
+// TODO: Remove once C++ wrapper is updated to use new two-phase API
+/*
 gfx::vulkan::RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(const GfxRenderPassDescriptor* descriptor)
 {
-    gfx::vulkan::RenderPassEncoderCreateInfo createInfo{};
+    // Old implementation removed - incompatible with new API
+    (void)descriptor;
+    return {};
+}
+*/
+
+gfx::vulkan::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(const GfxRenderPassDescriptor* descriptor)
+{
+    gfx::vulkan::RenderPassCreateInfo createInfo{};
 
     // Convert color attachments
     for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
-        const GfxColorAttachment& gfxColor = descriptor->colorAttachments[i];
-        ColorAttachment colorAttachment{};
+        const GfxRenderPassColorAttachment& colorAtt = descriptor->colorAttachments[i];
+        const GfxRenderPassColorAttachmentTarget& target = colorAtt.target;
 
-        // Convert target
-        if (gfxColor.target.view) {
-            auto* viewPtr = toNative<TextureView>(gfxColor.target.view);
-            auto size = viewPtr->getTexture()->getSize();
-            colorAttachment.target.view = viewPtr->handle();
-            colorAttachment.target.format = viewPtr->getFormat();
-            colorAttachment.target.sampleCount = viewPtr->getTexture()->getSampleCount();
-            colorAttachment.target.ops.loadOp = gfxLoadOpToVkLoadOp(gfxColor.target.ops.loadOp);
-            colorAttachment.target.ops.storeOp = gfxStoreOpToVkStoreOp(gfxColor.target.ops.storeOp);
-            const GfxColor& color = gfxColor.target.ops.clearColor;
-            colorAttachment.target.ops.clearColor = { { color.r, color.g, color.b, color.a } };
-            colorAttachment.target.finalLayout = gfxLayoutToVkImageLayout(gfxColor.target.finalLayout);
-            colorAttachment.target.width = size.width;
-            colorAttachment.target.height = size.height;
-
-            // Convert resolve target if present
-            if (gfxColor.resolveTarget && gfxColor.resolveTarget->view) {
-                ColorAttachmentTarget resolveTarget{};
-                auto* resolveViewPtr = toNative<TextureView>(gfxColor.resolveTarget->view);
-                auto resolveSize = resolveViewPtr->getTexture()->getSize();
-                resolveTarget.view = resolveViewPtr->handle();
-                resolveTarget.format = resolveViewPtr->getFormat();
-                resolveTarget.sampleCount = VK_SAMPLE_COUNT_1_BIT;
-                resolveTarget.ops.loadOp = gfxLoadOpToVkLoadOp(gfxColor.resolveTarget->ops.loadOp);
-                resolveTarget.ops.storeOp = gfxStoreOpToVkStoreOp(gfxColor.resolveTarget->ops.storeOp);
-                const GfxColor& resolveColor = gfxColor.resolveTarget->ops.clearColor;
-                resolveTarget.ops.clearColor = { { resolveColor.r, resolveColor.g, resolveColor.b, resolveColor.a } };
-                resolveTarget.finalLayout = gfxLayoutToVkImageLayout(gfxColor.resolveTarget->finalLayout);
-                resolveTarget.width = resolveSize.width;
-                resolveTarget.height = resolveSize.height;
-                colorAttachment.resolveTarget = resolveTarget;
-            }
+        gfx::vulkan::RenderPassColorAttachment attachment{};
+        attachment.target.format = gfxFormatToVkFormat(target.format);
+        attachment.target.sampleCount = sampleCountToVkSampleCount(target.sampleCount);
+        attachment.target.loadOp = gfxLoadOpToVkLoadOp(target.ops.loadOp);
+        attachment.target.storeOp = gfxStoreOpToVkStoreOp(target.ops.storeOp);
+        attachment.target.finalLayout = gfxLayoutToVkImageLayout(target.finalLayout);
+        
+        // Convert resolve target if present
+        if (colorAtt.resolveTarget) {
+            const GfxRenderPassColorAttachmentTarget& resolveTarget = *colorAtt.resolveTarget;
+            
+            gfx::vulkan::RenderPassColorAttachmentTarget resolveTargetInfo{};
+            resolveTargetInfo.format = gfxFormatToVkFormat(resolveTarget.format);
+            resolveTargetInfo.sampleCount = sampleCountToVkSampleCount(resolveTarget.sampleCount);
+            resolveTargetInfo.loadOp = gfxLoadOpToVkLoadOp(resolveTarget.ops.loadOp);
+            resolveTargetInfo.storeOp = gfxStoreOpToVkStoreOp(resolveTarget.ops.storeOp);
+            resolveTargetInfo.finalLayout = gfxLayoutToVkImageLayout(resolveTarget.finalLayout);
+            
+            attachment.resolveTarget = resolveTargetInfo;
         }
-        createInfo.colorAttachments.push_back(colorAttachment);
+        
+        createInfo.colorAttachments.push_back(attachment);
     }
 
     // Convert depth/stencil attachment
     if (descriptor->depthStencilAttachment) {
-        const GfxDepthStencilAttachment& gfxDepthStencil = *descriptor->depthStencilAttachment;
-        DepthStencilAttachment depthStencilAttachment{};
+        const GfxRenderPassDepthStencilAttachment& depthAtt = *descriptor->depthStencilAttachment;
+        const GfxRenderPassDepthStencilAttachmentTarget& target = depthAtt.target;
 
-        const GfxDepthStencilAttachmentTarget& target = gfxDepthStencil.target;
-        auto* viewPtr = toNative<TextureView>(target.view);
-        auto size = viewPtr->getTexture()->getSize();
-        depthStencilAttachment.target.view = viewPtr->handle();
-        depthStencilAttachment.target.format = viewPtr->getFormat();
-        depthStencilAttachment.target.sampleCount = viewPtr->getTexture()->getSampleCount();
+        gfx::vulkan::RenderPassDepthStencilAttachment depthStencilAttachment{};
+        depthStencilAttachment.target.format = gfxFormatToVkFormat(target.format);
+        depthStencilAttachment.target.sampleCount = sampleCountToVkSampleCount(target.sampleCount);
+        depthStencilAttachment.target.depthLoadOp = gfxLoadOpToVkLoadOp(target.depthOps.loadOp);
+        depthStencilAttachment.target.depthStoreOp = gfxStoreOpToVkStoreOp(target.depthOps.storeOp);
+        depthStencilAttachment.target.stencilLoadOp = gfxLoadOpToVkLoadOp(target.stencilOps.loadOp);
+        depthStencilAttachment.target.stencilStoreOp = gfxStoreOpToVkStoreOp(target.stencilOps.storeOp);
         depthStencilAttachment.target.finalLayout = gfxLayoutToVkImageLayout(target.finalLayout);
-        depthStencilAttachment.target.width = size.width;
-        depthStencilAttachment.target.height = size.height;
-
-        // Convert depth operations
-        if (target.depthOps) {
-            DepthAttachmentOps depthOps{};
-            depthOps.loadOp = gfxLoadOpToVkLoadOp(target.depthOps->loadOp);
-            depthOps.storeOp = gfxStoreOpToVkStoreOp(target.depthOps->storeOp);
-            depthOps.clearValue = target.depthOps->clearValue;
-            depthStencilAttachment.target.depthOps = depthOps;
+        
+        // Convert resolve target if present
+        if (depthAtt.resolveTarget) {
+            const GfxRenderPassDepthStencilAttachmentTarget& resolveTarget = *depthAtt.resolveTarget;
+            
+            gfx::vulkan::RenderPassDepthStencilAttachmentTarget resolveTargetInfo{};
+            resolveTargetInfo.format = gfxFormatToVkFormat(resolveTarget.format);
+            resolveTargetInfo.sampleCount = sampleCountToVkSampleCount(resolveTarget.sampleCount);
+            resolveTargetInfo.depthLoadOp = gfxLoadOpToVkLoadOp(resolveTarget.depthOps.loadOp);
+            resolveTargetInfo.depthStoreOp = gfxStoreOpToVkStoreOp(resolveTarget.depthOps.storeOp);
+            resolveTargetInfo.stencilLoadOp = gfxLoadOpToVkLoadOp(resolveTarget.stencilOps.loadOp);
+            resolveTargetInfo.stencilStoreOp = gfxStoreOpToVkStoreOp(resolveTarget.stencilOps.storeOp);
+            resolveTargetInfo.finalLayout = gfxLayoutToVkImageLayout(resolveTarget.finalLayout);
+            
+            depthStencilAttachment.resolveTarget = resolveTargetInfo;
         }
-
-        // Convert stencil operations
-        if (target.stencilOps) {
-            StencilAttachmentOps stencilOps{};
-            stencilOps.loadOp = gfxLoadOpToVkLoadOp(target.stencilOps->loadOp);
-            stencilOps.storeOp = gfxStoreOpToVkStoreOp(target.stencilOps->storeOp);
-            stencilOps.clearValue = target.stencilOps->clearValue;
-            depthStencilAttachment.target.stencilOps = stencilOps;
-        }
-
+        
         createInfo.depthStencilAttachment = depthStencilAttachment;
     }
 
     return createInfo;
 }
 
-gfx::vulkan::ComputePassEncoderCreateInfo gfxComputePassDescriptorToCreateInfo(const GfxComputePassDescriptor* descriptor)
+gfx::vulkan::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(const GfxFramebufferDescriptor* descriptor)
+{
+    gfx::vulkan::FramebufferCreateInfo createInfo{};
+
+    // Extract render pass handle
+    if (descriptor->renderPass) {
+        auto* renderPass = toNative<RenderPass>(descriptor->renderPass);
+        createInfo.renderPass = renderPass->handle();
+    }
+
+    createInfo.colorAttachmentCount = descriptor->colorAttachmentCount;
+    
+    // In Vulkan, attachments are ordered: [color0, resolve0, color1, resolve1, ..., depth, depthResolve]
+    // But only if resolve targets exist
+    for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
+        const GfxFramebufferColorAttachment& colorAtt = descriptor->colorAttachments[i];
+        
+        auto* view = toNative<TextureView>(colorAtt.view);
+        createInfo.attachments.push_back(view->handle());
+        
+        // Add resolve target if provided
+        if (colorAtt.resolveTarget) {
+            auto* resolveView = toNative<TextureView>(colorAtt.resolveTarget);
+            createInfo.attachments.push_back(resolveView->handle());
+        }
+    }
+
+    // Convert depth/stencil attachment view
+    if (descriptor->depthStencilAttachment.view) {
+        auto* view = toNative<TextureView>(descriptor->depthStencilAttachment.view);
+        createInfo.attachments.push_back(view->handle());
+        
+        // Add depth resolve target if provided
+        if (descriptor->depthStencilAttachment.resolveTarget) {
+            auto* resolveView = toNative<TextureView>(descriptor->depthStencilAttachment.resolveTarget);
+            createInfo.attachments.push_back(resolveView->handle());
+            createInfo.hasDepthResolve = true;
+        }
+    }
+
+    createInfo.width = descriptor->width;
+    createInfo.height = descriptor->height;
+
+    return createInfo;
+}
+
+gfx::vulkan::RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(const GfxRenderPassBeginDescriptor* descriptor)
+{
+    gfx::vulkan::RenderPassEncoderBeginInfo beginInfo{};
+
+    // Convert color clear values
+    for (uint32_t i = 0; i < descriptor->colorClearValueCount; ++i) {
+        const GfxColor& color = descriptor->colorClearValues[i];
+        VkClearColorValue clearValue{};
+        clearValue.float32[0] = color.r;
+        clearValue.float32[1] = color.g;
+        clearValue.float32[2] = color.b;
+        clearValue.float32[3] = color.a;
+        beginInfo.colorClearValues.push_back(clearValue);
+    }
+
+    beginInfo.depthClearValue = descriptor->depthClearValue;
+    beginInfo.stencilClearValue = descriptor->stencilClearValue;
+
+    return beginInfo;
+}
+
+gfx::vulkan::ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(const GfxComputePassBeginDescriptor* descriptor)
 {
     gfx::vulkan::ComputePassEncoderCreateInfo createInfo{};
     createInfo.label = descriptor->label;

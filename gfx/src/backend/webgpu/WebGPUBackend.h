@@ -37,6 +37,8 @@ public:
     GfxResult deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const override;
     GfxResult deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const override;
     GfxResult deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const override;
+    GfxResult deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const override;
+    GfxResult deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const override;
     GfxResult deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const override;
     GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const override;
     GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const override;
@@ -93,6 +95,12 @@ public:
     // ComputePipeline functions
     void computePipelineDestroy(GfxComputePipeline computePipeline) const override;
 
+    // RenderPass functions
+    void renderPassDestroy(GfxRenderPass renderPass) const override;
+
+    // Framebuffer functions
+    void framebufferDestroy(GfxFramebuffer framebuffer) const override;
+
     // Queue functions
     GfxResult queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo) const override;
     void queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const override;
@@ -103,10 +111,10 @@ public:
     // CommandEncoder functions
     void commandEncoderDestroy(GfxCommandEncoder commandEncoder) const override;
     GfxResult commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-        const GfxRenderPassDescriptor* descriptor,
+        const GfxRenderPassBeginDescriptor* beginDescriptor,
         GfxRenderPassEncoder* outRenderPass) const override;
     GfxResult commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder,
-        const GfxComputePassDescriptor* descriptor,
+        const GfxComputePassBeginDescriptor* beginDescriptor,
         GfxComputePassEncoder* outComputePass) const override;
     void commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset,
         GfxBuffer destination, uint64_t destinationOffset, uint64_t size) const override;

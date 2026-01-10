@@ -1186,67 +1186,35 @@ GfxExtent3D wgpuExtent3DToGfxExtent3D(const WGPUExtent3D& extent)
     return { extent.width, extent.height, extent.depthOrArrayLayers };
 }
 
-RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(
+RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(
     const GfxRenderPassDescriptor* descriptor)
 {
-    RenderPassEncoderCreateInfo createInfo{};
+    RenderPassCreateInfo createInfo{};
 
-    // Convert color attachments
+    // For WebGPU, RenderPass stores ops info (views come from framebuffer at begin time)
+    // Convert color attachment ops
     for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
-        const GfxColorAttachment& gfxColor = descriptor->colorAttachments[i];
-        ColorAttachment colorAttachment{};
+        const GfxRenderPassColorAttachment& colorAtt = descriptor->colorAttachments[i];
+        const GfxRenderPassColorAttachmentTarget& target = colorAtt.target;
 
-        // Convert target
-        if (gfxColor.target.view) {
-            auto* viewPtr = toNative<TextureView>(gfxColor.target.view);
-            colorAttachment.target.view = viewPtr->handle();
-            colorAttachment.target.ops.loadOp = gfxLoadOpToWGPULoadOp(gfxColor.target.ops.loadOp);
-            colorAttachment.target.ops.storeOp = gfxStoreOpToWGPUStoreOp(gfxColor.target.ops.storeOp);
-            const GfxColor& color = gfxColor.target.ops.clearColor;
-            colorAttachment.target.ops.clearColor = { color.r, color.g, color.b, color.a };
+        RenderPassColorAttachment attachment{};
+        attachment.loadOp = gfxLoadOpToWGPULoadOp(target.ops.loadOp);
+        attachment.storeOp = gfxStoreOpToWGPUStoreOp(target.ops.storeOp);
 
-            // Convert resolve target if present
-            if (gfxColor.resolveTarget && gfxColor.resolveTarget->view) {
-                ColorAttachmentTarget resolveTarget{};
-                auto* resolveViewPtr = toNative<TextureView>(gfxColor.resolveTarget->view);
-                resolveTarget.view = resolveViewPtr->handle();
-                resolveTarget.ops.loadOp = gfxLoadOpToWGPULoadOp(gfxColor.resolveTarget->ops.loadOp);
-                resolveTarget.ops.storeOp = gfxStoreOpToWGPUStoreOp(gfxColor.resolveTarget->ops.storeOp);
-                const GfxColor& resolveColor = gfxColor.resolveTarget->ops.clearColor;
-                resolveTarget.ops.clearColor = { resolveColor.r, resolveColor.g, resolveColor.b, resolveColor.a };
-                colorAttachment.resolveTarget = resolveTarget;
-            }
-        }
-        createInfo.colorAttachments.push_back(colorAttachment);
+        createInfo.colorAttachments.push_back(attachment);
     }
 
-    // Convert depth/stencil attachment
+    // Convert depth/stencil attachment ops if present
     if (descriptor->depthStencilAttachment) {
-        const GfxDepthStencilAttachment& gfxDepthStencil = *descriptor->depthStencilAttachment;
-        DepthStencilAttachment depthStencilAttachment{};
+        const GfxRenderPassDepthStencilAttachment& depthAtt = *descriptor->depthStencilAttachment;
+        const GfxRenderPassDepthStencilAttachmentTarget& target = depthAtt.target;
 
-        const GfxDepthStencilAttachmentTarget& target = gfxDepthStencil.target;
-        auto* viewPtr = toNative<TextureView>(target.view);
-        depthStencilAttachment.target.view = viewPtr->handle();
-        depthStencilAttachment.target.format = viewPtr->getTexture()->getFormat();
-
-        // Convert depth operations
-        if (target.depthOps) {
-            DepthAttachmentOps depthOps{};
-            depthOps.loadOp = gfxLoadOpToWGPULoadOp(target.depthOps->loadOp);
-            depthOps.storeOp = gfxStoreOpToWGPUStoreOp(target.depthOps->storeOp);
-            depthOps.clearValue = target.depthOps->clearValue;
-            depthStencilAttachment.target.depthOps = depthOps;
-        }
-
-        // Convert stencil operations
-        if (target.stencilOps) {
-            StencilAttachmentOps stencilOps{};
-            stencilOps.loadOp = gfxLoadOpToWGPULoadOp(target.stencilOps->loadOp);
-            stencilOps.storeOp = gfxStoreOpToWGPUStoreOp(target.stencilOps->storeOp);
-            stencilOps.clearValue = target.stencilOps->clearValue;
-            depthStencilAttachment.target.stencilOps = stencilOps;
-        }
+        RenderPassDepthStencilAttachment depthStencilAttachment{};
+        depthStencilAttachment.format = gfxFormatToWGPUFormat(target.format);
+        depthStencilAttachment.depthLoadOp = gfxLoadOpToWGPULoadOp(target.depthOps.loadOp);
+        depthStencilAttachment.depthStoreOp = gfxStoreOpToWGPUStoreOp(target.depthOps.storeOp);
+        depthStencilAttachment.stencilLoadOp = gfxLoadOpToWGPULoadOp(target.stencilOps.loadOp);
+        depthStencilAttachment.stencilStoreOp = gfxStoreOpToWGPUStoreOp(target.stencilOps.storeOp);
 
         createInfo.depthStencilAttachment = depthStencilAttachment;
     }
@@ -1254,8 +1222,64 @@ RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(
     return createInfo;
 }
 
-ComputePassEncoderCreateInfo gfxComputePassDescriptorToCreateInfo(
-    const GfxComputePassDescriptor* descriptor)
+FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(
+    const GfxFramebufferDescriptor* descriptor)
+{
+    FramebufferCreateInfo createInfo{};
+
+    // Convert color attachment views and resolve targets - store pointers
+    for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
+        const GfxFramebufferColorAttachment& colorAtt = descriptor->colorAttachments[i];
+
+        auto* view = toNative<TextureView>(colorAtt.view);
+        createInfo.colorAttachmentViews.push_back(view);  // Store pointer
+
+        // Add resolve target if provided
+        if (colorAtt.resolveTarget) {
+            auto* resolveView = toNative<TextureView>(colorAtt.resolveTarget);
+            createInfo.colorResolveTargetViews.push_back(resolveView);  // Store pointer
+        } else {
+            createInfo.colorResolveTargetViews.push_back(nullptr);
+        }
+    }
+
+    // Convert depth/stencil attachment view if present
+    if (descriptor->depthStencilAttachment.view) {
+        auto* view = toNative<TextureView>(descriptor->depthStencilAttachment.view);
+        createInfo.depthStencilAttachmentView = view;  // Store pointer
+
+        // Convert depth/stencil resolve target if present
+        if (descriptor->depthStencilAttachment.resolveTarget) {
+            auto* resolveView = toNative<TextureView>(descriptor->depthStencilAttachment.resolveTarget);
+            createInfo.depthStencilResolveTargetView = resolveView;  // Store pointer
+        }
+    }
+
+    createInfo.width = descriptor->width;
+    createInfo.height = descriptor->height;
+
+    return createInfo;
+}
+
+RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(
+    const GfxRenderPassBeginDescriptor* descriptor)
+{
+    RenderPassEncoderBeginInfo beginInfo{};
+
+    // Convert color clear values
+    for (uint32_t i = 0; i < descriptor->colorClearValueCount; ++i) {
+        const GfxColor& color = descriptor->colorClearValues[i];
+        beginInfo.colorClearValues.push_back({ color.r, color.g, color.b, color.a });
+    }
+
+    beginInfo.depthClearValue = descriptor->depthClearValue;
+    beginInfo.stencilClearValue = descriptor->stencilClearValue;
+
+    return beginInfo;
+}
+
+ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(
+    const GfxComputePassBeginDescriptor* descriptor)
 {
     ComputePassEncoderCreateInfo createInfo{};
     createInfo.label = descriptor->label;
