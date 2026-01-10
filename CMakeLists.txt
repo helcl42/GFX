@@ -262,7 +262,7 @@ target_link_libraries(gfx PUBLIC ${PLATFORM_LIBS})
 if(BUILD_CPP_WRAPPER)
     set(GFX_CPP_SOURCES
         gfx_cpp/include/gfx_cpp/Gfx.hpp
-        gfx_cpp/src/GfxImpl.cpp  # Single unified C++ wrapper for all backends
+        gfx_cpp/src/Gfx.cpp  # Single unified C++ wrapper for all backends
     )
 
     # Create library based on BUILD_SHARED_LIBS option
