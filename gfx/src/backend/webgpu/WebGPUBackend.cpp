@@ -1313,14 +1313,15 @@ GfxResult WebGPUBackend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
     return fencePtr->isSignaled() ? GFX_RESULT_SUCCESS : GFX_RESULT_TIMEOUT;
 }
 
-void WebGPUBackend::fenceReset(GfxFence fence) const
+GfxResult WebGPUBackend::fenceReset(GfxFence fence) const
 {
     if (!fence) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* fencePtr = converter::toNative<Fence>(fence);
     fencePtr->setSignaled(false);
+    return GFX_RESULT_SUCCESS;
 }
 
 // Semaphore functions
@@ -1333,13 +1334,14 @@ GfxResult WebGPUBackend::semaphoreDestroy(GfxSemaphore semaphore) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxSemaphoreType WebGPUBackend::semaphoreGetType(GfxSemaphore semaphore) const
+GfxResult WebGPUBackend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType) const
 {
-    if (!semaphore) {
-        return GFX_SEMAPHORE_TYPE_BINARY;
+    if (!semaphore || !outType) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto type = converter::toNative<Semaphore>(semaphore)->getType();
-    return converter::webgpuSemaphoreTypeToGfxSemaphoreType(type);
+    *outType = converter::webgpuSemaphoreTypeToGfxSemaphoreType(type);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult WebGPUBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
@@ -1369,12 +1371,13 @@ GfxResult WebGPUBackend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, u
     return GFX_RESULT_SUCCESS;
 }
 
-uint64_t WebGPUBackend::semaphoreGetValue(GfxSemaphore semaphore) const
+GfxResult WebGPUBackend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const
 {
-    if (!semaphore) {
-        return 0;
+    if (!semaphore || !outValue) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    return converter::toNative<Semaphore>(semaphore)->getValue();
+    *outValue = converter::toNative<Semaphore>(semaphore)->getValue();
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxAccessFlags WebGPUBackend::getAccessFlagsForLayout(GfxTextureLayout layout) const

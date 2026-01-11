@@ -1025,12 +1025,16 @@ public:
 
     SemaphoreType getType() const override
     {
-        return static_cast<SemaphoreType>(gfxSemaphoreGetType(m_handle));
+        GfxSemaphoreType type;
+        gfxSemaphoreGetType(m_handle, &type);
+        return static_cast<SemaphoreType>(type);
     }
 
     uint64_t getValue() const override
     {
-        return gfxSemaphoreGetValue(m_handle);
+        uint64_t value = 0;
+        gfxSemaphoreGetValue(m_handle, &value);
+        return value;
     }
 
     void signal(uint64_t value) override

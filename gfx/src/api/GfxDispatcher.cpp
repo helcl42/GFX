@@ -1198,41 +1198,42 @@ GfxResult gfxFenceWait(GfxFence fence, uint64_t timeoutNs)
     return api->fenceWait(gfx::native(fence), timeoutNs);
 }
 
-void gfxFenceReset(GfxFence fence)
+GfxResult gfxFenceReset(GfxFence fence)
 {
     if (!fence) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(fence);
-    if (api) {
-        api->fenceReset(gfx::native(fence));
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->fenceReset(gfx::native(fence));
 }
 
 
 // Semaphore Functions
-GfxSemaphoreType gfxSemaphoreGetType(GfxSemaphore semaphore)
+GfxResult gfxSemaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType)
 {
-    if (!semaphore) {
-        return GFX_SEMAPHORE_TYPE_BINARY;
+    if (!semaphore || !outType) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(semaphore);
     if (!api) {
-        return GFX_SEMAPHORE_TYPE_BINARY;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->semaphoreGetType(gfx::native(semaphore));
+    return api->semaphoreGetType(gfx::native(semaphore), outType);
 }
 
-uint64_t gfxSemaphoreGetValue(GfxSemaphore semaphore)
+GfxResult gfxSemaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue)
 {
-    if (!semaphore) {
-        return 0;
+    if (!semaphore || !outValue) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(semaphore);
     if (!api) {
-        return 0;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->semaphoreGetValue(gfx::native(semaphore));
+    return api->semaphoreGetValue(gfx::native(semaphore), outValue);
 }
 
 GfxResult gfxSemaphoreSignal(GfxSemaphore semaphore, uint64_t value)

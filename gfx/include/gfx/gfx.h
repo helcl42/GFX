@@ -1182,14 +1182,14 @@ GFX_API GfxResult gfxComputePassEncoderEnd(GfxComputePassEncoder computePassEnco
 GFX_API GfxResult gfxFenceDestroy(GfxFence fence);
 GFX_API GfxResult gfxFenceGetStatus(GfxFence fence, bool* isSignaled);
 GFX_API GfxResult gfxFenceWait(GfxFence fence, uint64_t timeoutNs);
-GFX_API void gfxFenceReset(GfxFence fence);
+GFX_API GfxResult gfxFenceReset(GfxFence fence);
 
 // Semaphore functions
 GFX_API GfxResult gfxSemaphoreDestroy(GfxSemaphore semaphore);
-GFX_API GfxSemaphoreType gfxSemaphoreGetType(GfxSemaphore semaphore);
+GFX_API GfxResult gfxSemaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType);
 GFX_API GfxResult gfxSemaphoreSignal(GfxSemaphore semaphore, uint64_t value);
 GFX_API GfxResult gfxSemaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs);
-GFX_API uint64_t gfxSemaphoreGetValue(GfxSemaphore semaphore);
+GFX_API GfxResult gfxSemaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue);
 
 // ============================================================================
 // Utility Functions

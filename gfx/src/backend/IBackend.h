@@ -172,14 +172,14 @@ public:
     virtual GfxResult fenceDestroy(GfxFence fence) const = 0;
     virtual GfxResult fenceGetStatus(GfxFence fence, bool* isSignaled) const = 0;
     virtual GfxResult fenceWait(GfxFence fence, uint64_t timeoutNs) const = 0;
-    virtual void fenceReset(GfxFence fence) const = 0;
+    virtual GfxResult fenceReset(GfxFence fence) const = 0;
 
     // Semaphore functions
     virtual GfxResult semaphoreDestroy(GfxSemaphore semaphore) const = 0;
-    virtual GfxSemaphoreType semaphoreGetType(GfxSemaphore semaphore) const = 0;
+    virtual GfxResult semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType) const = 0;
     virtual GfxResult semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const = 0;
     virtual GfxResult semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const = 0;
-    virtual uint64_t semaphoreGetValue(GfxSemaphore semaphore) const = 0;
+    virtual GfxResult semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const = 0;
 
     // Helper functions
     virtual GfxAccessFlags getAccessFlagsForLayout(GfxTextureLayout layout) const = 0;

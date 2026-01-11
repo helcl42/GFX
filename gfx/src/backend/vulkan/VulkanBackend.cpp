@@ -1343,13 +1343,14 @@ GfxResult VulkanBackend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
     }
 }
 
-void VulkanBackend::fenceReset(GfxFence fence) const
+GfxResult VulkanBackend::fenceReset(GfxFence fence) const
 {
     if (!fence) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* f = converter::toNative<Fence>(fence);
     f->reset();
+    return GFX_RESULT_SUCCESS;
 }
 
 // Semaphore functions
@@ -1359,13 +1360,14 @@ GfxResult VulkanBackend::semaphoreDestroy(GfxSemaphore semaphore) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxSemaphoreType VulkanBackend::semaphoreGetType(GfxSemaphore semaphore) const
+GfxResult VulkanBackend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType) const
 {
-    if (!semaphore) {
-        return GFX_SEMAPHORE_TYPE_BINARY;
+    if (!semaphore || !outType) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* s = converter::toNative<Semaphore>(semaphore);
-    return s->getType() == gfx::vulkan::SemaphoreType::Timeline ? GFX_SEMAPHORE_TYPE_TIMELINE : GFX_SEMAPHORE_TYPE_BINARY;
+    *outType = s->getType() == gfx::vulkan::SemaphoreType::Timeline ? GFX_SEMAPHORE_TYPE_TIMELINE : GFX_SEMAPHORE_TYPE_BINARY;
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult VulkanBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
@@ -1387,13 +1389,14 @@ GfxResult VulkanBackend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, u
     return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
-uint64_t VulkanBackend::semaphoreGetValue(GfxSemaphore semaphore) const
+GfxResult VulkanBackend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const
 {
-    if (!semaphore) {
-        return 0;
+    if (!semaphore || !outValue) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* s = converter::toNative<Semaphore>(semaphore);
-    return s->getValue();
+    *outValue = s->getValue();
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxAccessFlags VulkanBackend::getAccessFlagsForLayout(GfxTextureLayout layout) const

@@ -161,14 +161,14 @@ public:
     GfxResult fenceDestroy(GfxFence fence) const override;
     GfxResult fenceGetStatus(GfxFence fence, bool* isSignaled) const override;
     GfxResult fenceWait(GfxFence fence, uint64_t timeoutNs) const override;
-    void fenceReset(GfxFence fence) const override;
+    GfxResult fenceReset(GfxFence fence) const override;
 
     // Semaphore functions
     GfxResult semaphoreDestroy(GfxSemaphore semaphore) const override;
-    GfxSemaphoreType semaphoreGetType(GfxSemaphore semaphore) const override;
+    GfxResult semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType) const override;
     GfxResult semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const override;
     GfxResult semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const override;
-    uint64_t semaphoreGetValue(GfxSemaphore semaphore) const override;
+    GfxResult semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const override;
 
     // Helper functions
     GfxAccessFlags getAccessFlagsForLayout(GfxTextureLayout layout) const override;
