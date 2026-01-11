@@ -4,20 +4,45 @@
 
 #include "../common/WebGPUCommon.h"
 
-#if defined(__EMSCRIPTEN__)
-#include <emscripten.h>
 // Platform-specific includes for surface creation
-#elif defined(_WIN32)
-#include <windows.h>
-#elif defined(__linux__)
-#include <X11/Xlib.h>
-// For Wayland support
-struct wl_display;
-struct wl_surface;
-#elif defined(__APPLE__)
-#include <objc/objc.h>
-#include <objc/runtime.h>
+#ifndef GFX_HEADLESS_BUILD
+#ifdef GFX_HAS_EMSCRIPTEN
+#include <emscripten.h>
 #endif
+#ifdef GFX_HAS_WIN32
+#include <windows.h>
+#endif
+#ifdef GFX_HAS_X11
+#include <X11/Xlib.h>
+#endif
+#ifdef GFX_HAS_XCB
+#include <xcb/xcb.h>
+#endif
+#ifdef GFX_HAS_WAYLAND
+#include <wayland-client.h>
+#endif
+#ifdef GFX_HAS_COCOA
+// Metal layer type needed for MoltenVK
+#ifdef __OBJC__
+#import <Cocoa/Cocoa.h>
+#else
+// Forward declare when compiling as C/C++
+typedef void CAMetalLayer;
+#endif
+#endif
+#ifdef GFX_HAS_UIKIT
+// Metal layer type needed for MoltenVK
+#ifdef __OBJC__
+#import <UIKit/UIKit.h>
+#else
+// Forward declare when compiling as C/C++
+typedef void CAMetalLayer;
+#endif
+#endif
+#ifdef GFX_HAS_ANDROID
+#include <android/native_window.h>
+#endif
+#endif // GFX_HEADLESS_BUILD
 
 #include <memory>
 #include <stdexcept>
@@ -252,7 +277,7 @@ private:
     {
         gfx::webgpu::AdapterInfo adapterInfo{};
 
-#ifdef __EMSCRIPTEN__
+#ifdef GFX_HAS_EMSCRIPTEN
         // Emscripten's wgpuAdapterGetInfo has issues - provide reasonable defaults
         adapterInfo.name = "WebGPU Adapter";
         adapterInfo.driverDescription = "WebGPU";
@@ -1409,29 +1434,37 @@ public:
         : m_adapter(adapter)
     {
         switch (createInfo.windowHandle.platform) {
-#if defined(_WIN32)
+#ifdef GFX_HAS_WIN32
         case gfx::webgpu::PlatformWindowHandle::Platform::Win32:
             m_surface = createSurfaceWin32(instance, createInfo.windowHandle);
             break;
-#elif defined(__ANDROID__)
+#endif
+#ifdef GFX_HAS_ANDROID
         case gfx::webgpu::PlatformWindowHandle::Platform::Android:
             m_surface = createSurfaceAndroid(instance, createInfo.windowHandle);
             break;
-#elif defined(__linux__)
+#endif
+#ifdef GFX_HAS_X11
         case gfx::webgpu::PlatformWindowHandle::Platform::Xlib:
             m_surface = createSurfaceXlib(instance, createInfo.windowHandle);
             break;
+#endif
+#ifdef GFX_HAS_XCB
         case gfx::webgpu::PlatformWindowHandle::Platform::Xcb:
             m_surface = createSurfaceXCB(instance, createInfo.windowHandle);
             break;
+#endif
+#ifdef GFX_HAS_WAYLAND
         case gfx::webgpu::PlatformWindowHandle::Platform::Wayland:
             m_surface = createSurfaceWayland(instance, createInfo.windowHandle);
             break;
-#elif defined(__APPLE__)
+#endif
+#if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
         case gfx::webgpu::PlatformWindowHandle::Platform::Cocoa:
             m_surface = createSurfaceMetal(instance, createInfo.windowHandle);
             break;
-#elif defined(__EMSCRIPTEN__)
+#endif
+#ifdef GFX_HAS_EMSCRIPTEN
         case gfx::webgpu::PlatformWindowHandle::Platform::Emscripten:
             m_surface = createSurfaceEmscripten(instance, createInfo.windowHandle);
             break;
@@ -1461,7 +1494,7 @@ public:
     }
 
 private:
-#if defined(_WIN32)
+#ifdef GFX_HAS_WIN32
     static WGPUSurface createSurfaceWin32(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.win32.hwnd || !windowHandle.handle.win32.hinstance) {
@@ -1478,7 +1511,8 @@ private:
 
         return wgpuInstanceCreateSurface(instance, &surfaceDesc);
     }
-#elif defined(__ANDROID__)
+#endif
+#ifdef GFX_HAS_ANDROID
     static WGPUSurface createSurfaceAndroid(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.android.window) {
@@ -1494,7 +1528,8 @@ private:
 
         return wgpuInstanceCreateSurface(instance, &surfaceDesc);
     }
-#elif defined(__linux__)
+#endif
+#ifdef GFX_HAS_X11
     static WGPUSurface createSurfaceXlib(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.xlib.window || !windowHandle.handle.xlib.display) {
@@ -1511,7 +1546,8 @@ private:
 
         return wgpuInstanceCreateSurface(instance, &surfaceDesc);
     }
-
+#endif
+#ifdef GFX_HAS_XCB
     static WGPUSurface createSurfaceXCB(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.xcb.window || !windowHandle.handle.xcb.connection) {
@@ -1528,7 +1564,8 @@ private:
 
         return wgpuInstanceCreateSurface(instance, &surfaceDesc);
     }
-
+#endif
+#ifdef GFX_HAS_WAYLAND
     static WGPUSurface createSurfaceWayland(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.wayland.surface || !windowHandle.handle.wayland.display) {
@@ -1545,7 +1582,8 @@ private:
 
         return wgpuInstanceCreateSurface(instance, &surfaceDesc);
     }
-#elif defined(__APPLE__)
+#endif
+#if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
     static WGPUSurface createSurfaceMetal(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.metalLayer) {
@@ -1561,7 +1599,8 @@ private:
 
         return wgpuInstanceCreateSurface(instance, &surfaceDesc);
     }
-#elif defined(__EMSCRIPTEN__)
+#endif
+#ifdef GFX_HAS_EMSCRIPTEN
     static WGPUSurface createSurfaceEmscripten(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.emscripten.canvasSelector) {
@@ -1728,7 +1767,7 @@ public:
 
     void present()
     {
-#ifndef __EMSCRIPTEN__
+#ifndef GFX_HAS_EMSCRIPTEN
         wgpuSurfacePresent(m_surface);
 #endif
         if (m_currentTexture) {

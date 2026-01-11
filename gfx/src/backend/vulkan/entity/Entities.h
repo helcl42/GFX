@@ -585,25 +585,32 @@ public:
         throw std::runtime_error("Surface creation is not available in headless builds");
 #else
         switch (createInfo.windowHandle.platform) {
-#if defined(_WIN32)
+#ifdef GFX_HAS_WIN32
         case gfx::vulkan::PlatformWindowHandle::Platform::Win32:
             m_surface = createSurfaceWin32(m_adapter->getInstance()->handle(), createInfo.windowHandle);
             break;
-#elif defined(__ANDROID__)
+#endif
+#ifdef GFX_HAS_ANDROID
         case gfx::vulkan::PlatformWindowHandle::Platform::Android:
             m_surface = createSurfaceAndroid(m_adapter->getInstance()->handle(), createInfo.windowHandle);
             break;
-#elif defined(__linux__)
+#endif
+#ifdef GFX_HAS_X11
         case gfx::vulkan::PlatformWindowHandle::Platform::Xlib:
             m_surface = createSurfaceXlib(m_adapter->getInstance()->handle(), createInfo.windowHandle);
             break;
+#endif
+#ifdef GFX_HAS_XCB
         case gfx::vulkan::PlatformWindowHandle::Platform::Xcb:
             m_surface = createSurfaceXCB(m_adapter->getInstance()->handle(), createInfo.windowHandle);
             break;
+#endif
+#ifdef GFX_HAS_WAYLAND
         case gfx::vulkan::PlatformWindowHandle::Platform::Wayland:
             m_surface = createSurfaceWayland(m_adapter->getInstance()->handle(), createInfo.windowHandle);
             break;
-#elif defined(__APPLE__)
+#endif
+#if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
         case gfx::vulkan::PlatformWindowHandle::Platform::Metal:
             m_surface = createSurfaceMetal(m_adapter->getInstance()->handle(), createInfo.windowHandle);
             break;
@@ -656,7 +663,7 @@ public:
 
 private:
 #ifndef GFX_HEADLESS_BUILD
-#if defined(_WIN32)
+#ifdef GFX_HAS_WIN32
     static VkSurfaceKHR createSurfaceWin32(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.win32.hwnd || !windowHandle.handle.win32.hinstance) {
@@ -674,7 +681,8 @@ private:
         }
         return surface;
     }
-#elif defined(__ANDROID__)
+#endif
+#ifdef GFX_HAS_ANDROID
     static VkSurfaceKHR createSurfaceAndroid(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.android.window) {
@@ -691,7 +699,8 @@ private:
         }
         return surface;
     }
-#elif defined(__linux__)
+#endif
+#ifdef GFX_HAS_X11
     static VkSurfaceKHR createSurfaceXlib(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.xlib.display || !windowHandle.handle.xlib.window) {
@@ -709,7 +718,8 @@ private:
         }
         return surface;
     }
-
+#endif
+#ifdef GFX_HAS_XCB
     static VkSurfaceKHR createSurfaceXCB(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.xcb.window || !windowHandle.handle.xcb.connection) {
@@ -727,7 +737,8 @@ private:
         }
         return surface;
     }
-
+#endif
+#ifdef GFX_HAS_WAYLAND
     static VkSurfaceKHR createSurfaceWayland(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.wayland.surface || !windowHandle.handle.wayland.display) {
@@ -745,7 +756,8 @@ private:
         }
         return surface;
     }
-#elif defined(__APPLE__)
+#endif
+#if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
     static VkSurfaceKHR createSurfaceMetal(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.metalLayer) {
@@ -762,7 +774,7 @@ private:
         }
         return surface;
     }
-#endif // Platform-specific surface creation
+#endif
 #endif // GFX_HEADLESS_BUILD
 
 private:
