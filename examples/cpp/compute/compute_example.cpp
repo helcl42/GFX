@@ -1050,27 +1050,21 @@ PlatformWindowHandle ComputeApp::extractNativeHandle()
     PlatformWindowHandle handle{};
 
 #if defined(__EMSCRIPTEN__)
-    handle.windowingSystem = gfx::WindowingSystem::Emscripten;
-    handle.handle.emscripten.canvasSelector = "#canvas";
+    handle = PlatformWindowHandle::fromEmscripten("#canvas");
 
 #elif defined(_WIN32)
     // Windows: Get HWND and HINSTANCE
-    handle.windowingSystem = gfx::WindowingSystem::Win32;
-    handle.handle.win32.hwnd = glfwGetWin32Window(window);
-    handle.handle.win32.hinstance = GetModuleHandle(nullptr);
+    handle = PlatformWindowHandle::fromWin32(glfwGetWin32Window(window), GetModuleHandle(nullptr));
     std::cout << "Extracted Win32 handle: HWND=" << handle.handle.win32.hwnd << ", HINSTANCE=" << handle.handle.win32.hinstance << std::endl;
 
 #elif defined(__linux__)
     // Linux: Get X11 Window and Display (assuming X11, not Wayland)
-    handle.windowingSystem = gfx::WindowingSystem::Xlib;
-    handle.handle.xlib.window = glfwGetX11Window(window);
-    handle.handle.xlib.display = glfwGetX11Display();
+    handle = PlatformWindowHandle::fromXlib(glfwGetX11Display(), glfwGetX11Window(window));
     std::cout << "Extracted X11 handle: Window=" << handle.handle.xlib.window << ", Display=" << handle.handle.xlib.display << std::endl;
 
 #elif defined(__APPLE__)
     // macOS: Get NSWindow
-    handle.windowingSystem = gfx::WindowingSystem::Metal;
-    handle.handle.metal.layer = glfwGetMetalLayer(window);
+    handle = PlatformWindowHandle::fromMetal(glfwGetMetalLayer(window));
     std::cout << "Extracted Metal handle: Layer=" << handle.handle.metal.layer << std::endl;
 #endif
 

@@ -235,23 +235,17 @@ GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
 {
     GfxPlatformWindowHandle handle = { 0 };
 #if defined(__EMSCRIPTEN__)
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_EMSCRIPTEN;
-    handle.emscripten.canvasSelector = "#canvas";
+    handle = gfxPlatformWindowHandleFromEmscripten("#canvas");
 
 #elif defined(_WIN32)
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_WIN32;
-    handle.win32.hwnd = glfwGetWin32Window(window);
-    handle.win32.hinstance = GetModuleHandle(NULL);
+    handle = gfxPlatformWindowHandleFromWin32(glfwGetWin32Window(window), GetModuleHandle(NULL));
 
 #elif defined(__linux__)
     // Force using Xlib instead of XCB to avoid driver hang
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_XLIB;
-    handle.xlib.display = glfwGetX11Display();
-    handle.xlib.window = glfwGetX11Window(window);
+    handle = gfxPlatformWindowHandleFromXlib(glfwGetX11Display(), glfwGetX11Window(window));
 
 #elif defined(__APPLE__)
-    handle.windowingSystem = GFX_WINDOWING_SYSTEM_METAL;
-    handle.metal.layer = glfwGetMetalLayer(window);
+    handle = gfxPlatformWindowHandleFromMetal(glfwGetMetalLayer(window));
 #endif
 
     return handle;
