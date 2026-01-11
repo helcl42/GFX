@@ -1207,13 +1207,13 @@ GFX_API uint64_t gfxAlignUp(uint64_t value, uint64_t alignment);
 GFX_API uint64_t gfxAlignDown(uint64_t value, uint64_t alignment);
 
 // Cross-platform helpers available on all platforms
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXlib(void* display, unsigned long window);
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWayland(void* surface, void* display);
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXCB(void* connection, uint32_t window);
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWin32(void* hwnd, void* hinstance);
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeEmscripten(const char* canvasSelector);
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeAndroid(void* window);
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeMetal(void* layer);
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromXlib(void* display, unsigned long window);
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromWayland(void* surface, void* display);
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromXCB(void* connection, uint32_t window);
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromWin32(void* hwnd, void* hinstance);
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromEmscripten(const char* canvasSelector);
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromAndroid(void* window);
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromMetal(void* layer);
 
 #ifdef __cplusplus
 }

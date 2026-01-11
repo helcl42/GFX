@@ -1289,7 +1289,7 @@ uint64_t gfxAlignDown(uint64_t value, uint64_t alignment)
     return value & ~(alignment - 1);
 }
 
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXlib(void* display, unsigned long window)
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromXlib(void* display, unsigned long window)
 {
     GfxPlatformWindowHandle handle = {};
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_XLIB;
@@ -1298,7 +1298,7 @@ GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXlib(void* display, unsigned 
     return handle;
 }
 
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWayland(void* surface, void* display)
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromWayland(void* surface, void* display)
 {
     GfxPlatformWindowHandle handle = {};
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_WAYLAND;
@@ -1307,7 +1307,7 @@ GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWayland(void* surface, void* 
     return handle;
 }
 
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXCB(void* connection, uint32_t window)
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromXCB(void* connection, uint32_t window)
 {
     GfxPlatformWindowHandle handle = {};
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_XCB;
@@ -1316,7 +1316,7 @@ GfxPlatformWindowHandle gfxPlatformWindowHandleMakeXCB(void* connection, uint32_
     return handle;
 }
 
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWin32(void* hwnd, void* hinstance)
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromWin32(void* hwnd, void* hinstance)
 {
     GfxPlatformWindowHandle handle = {};
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_WIN32;
@@ -1325,7 +1325,7 @@ GfxPlatformWindowHandle gfxPlatformWindowHandleMakeWin32(void* hwnd, void* hinst
     return handle;
 }
 
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeEmscripten(const char* canvasSelector)
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromEmscripten(const char* canvasSelector)
 {
     GfxPlatformWindowHandle handle = {};
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_EMSCRIPTEN;
@@ -1333,7 +1333,7 @@ GfxPlatformWindowHandle gfxPlatformWindowHandleMakeEmscripten(const char* canvas
     return handle;
 }
 
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeAndroid(void* window)
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromAndroid(void* window)
 {
     GfxPlatformWindowHandle handle = {};
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_ANDROID;
@@ -1341,7 +1341,7 @@ GfxPlatformWindowHandle gfxPlatformWindowHandleMakeAndroid(void* window)
     return handle;
 }
 
-GfxPlatformWindowHandle gfxPlatformWindowHandleMakeMetal(void* layer)
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromMetal(void* layer)
 {
     GfxPlatformWindowHandle handle = {};
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_METAL;

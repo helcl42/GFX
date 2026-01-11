@@ -430,17 +430,13 @@ struct PlatformWindowHandle {
             : win32{}
         {
         }
-
-        // If ALL members are trivial, you can omit this.
-        // If ANY member is non-trivial, you must manage lifetime somewhere.
-        ~WindowHandleUnion() {}
     };
 
     WindowingSystem windowingSystem{};
     WindowHandleUnion handle{};
 
     // Factory methods for each windowing system
-    static PlatformWindowHandle makeWin32(void* hwnd, void* hinstance = nullptr)
+    static PlatformWindowHandle fromWin32(void* hwnd, void* hinstance = nullptr)
     {
         PlatformWindowHandle h{};
         h.windowingSystem = WindowingSystem::Win32;
@@ -449,7 +445,7 @@ struct PlatformWindowHandle {
         return h;
     }
 
-    static PlatformWindowHandle makeXlib(void* display, unsigned long window)
+    static PlatformWindowHandle fromXlib(void* display, unsigned long window)
     {
         PlatformWindowHandle h{};
         h.windowingSystem = WindowingSystem::Xlib;
@@ -458,7 +454,7 @@ struct PlatformWindowHandle {
         return h;
     }
 
-    static PlatformWindowHandle makeWayland(void* surface, void* display)
+    static PlatformWindowHandle fromWayland(void* surface, void* display)
     {
         PlatformWindowHandle h{};
         h.windowingSystem = WindowingSystem::Wayland;
@@ -467,7 +463,7 @@ struct PlatformWindowHandle {
         return h;
     }
 
-    static PlatformWindowHandle makeXCB(void* connection, uint32_t window)
+    static PlatformWindowHandle fromXCB(void* connection, uint32_t window)
     {
         PlatformWindowHandle h{};
         h.windowingSystem = WindowingSystem::XCB;
@@ -476,7 +472,7 @@ struct PlatformWindowHandle {
         return h;
     }
 
-    static PlatformWindowHandle makeMetal(void* layer)
+    static PlatformWindowHandle fromMetal(void* layer)
     {
         PlatformWindowHandle h{};
         h.windowingSystem = WindowingSystem::Metal;
@@ -484,7 +480,7 @@ struct PlatformWindowHandle {
         return h;
     }
 
-    static PlatformWindowHandle makeEmscripten(const char* canvasSelector)
+    static PlatformWindowHandle fromEmscripten(const char* canvasSelector)
     {
         PlatformWindowHandle h{};
         h.windowingSystem = WindowingSystem::Emscripten;
