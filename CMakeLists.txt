@@ -24,6 +24,7 @@ option(BUILD_VULKAN_BACKEND "Build Vulkan backend" ON)
 option(BUILD_WEBGPU_BACKEND "Build WebGPU backend" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
 option(ENABLE_ASAN "Enable Address Sanitizer" ON)
+option(BUILD_HEADLESS "Build without windowing system support (no surface creation)" OFF)
 
 # Find required packages
 find_package(PkgConfig REQUIRED)
@@ -151,6 +152,10 @@ endif()
 if(BUILD_FOR_WEB)
     # Web builds don't need platform libraries
     set(PLATFORM_LIBS "")
+elseif(BUILD_HEADLESS)
+    # Headless builds don't need windowing libraries
+    set(PLATFORM_LIBS "")
+    message(STATUS "Headless build: skipping windowing system libraries")
 elseif(WIN32)
     set(PLATFORM_LIBS user32 gdi32)
 elseif(APPLE)
@@ -253,6 +258,11 @@ if(BUILD_WEBGPU_BACKEND)
     if(TARGET emdawnwebgpu_headers_gen)
         add_dependencies(gfx emdawnwebgpu_headers_gen)
     endif()
+endif()
+
+# Add headless build definition
+if(BUILD_HEADLESS)
+    target_compile_definitions(gfx PUBLIC GFX_HEADLESS_BUILD=1)
 endif()
 
 # Link platform libraries
@@ -384,7 +394,10 @@ endif()
 
 # Examples
 if(BUILD_EXAMPLES)
-    if(BUILD_FOR_WEB)
+    if(BUILD_HEADLESS)
+        message(STATUS "Skipping windowed examples in headless build")
+        # Note: Compute-only examples could be built in headless mode if needed
+    elseif(BUILD_FOR_WEB)
         # Web Cube Example (Emscripten)
         add_executable(cube_example_web examples/c/cube/cube_example.c)
         target_link_libraries(cube_example_web gfx)
@@ -629,6 +642,7 @@ else()
 endif()
 message(STATUS "  Build examples: ${BUILD_EXAMPLES}")
 message(STATUS "  Build C++ wrapper: ${BUILD_CPP_WRAPPER}")
+message(STATUS "  Headless build: ${BUILD_HEADLESS}")
 message(STATUS "  Address Sanitizer: ${ENABLE_ASAN}")
 message(STATUS "  Vulkan backend: ${BUILD_VULKAN_BACKEND}")
 message(STATUS "  WebGPU backend: ${BUILD_WEBGPU_BACKEND}")

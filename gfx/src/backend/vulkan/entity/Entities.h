@@ -98,8 +98,9 @@ public:
 
         // Extensions
         std::vector<const char*> extensions = {};
+#ifndef GFX_HEADLESS_BUILD
         extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-#ifdef _WIN32
+#if defined(_WIN32)
         extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #elif defined(__linux__)
         extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
@@ -111,6 +112,7 @@ public:
 #elif defined(__ANDROID__)
         extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
 #endif
+#endif // GFX_HEADLESS_BUILD
 
         m_validationEnabled = createInfo.enableValidation;
         if (m_validationEnabled) {
@@ -424,7 +426,10 @@ public:
         VkPhysicalDeviceFeatures deviceFeatures{};
 
         // Device extensions
-        std::vector<const char*> extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+        std::vector<const char*> extensions;
+#ifndef GFX_HEADLESS_BUILD
+        extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+#endif // GFX_HEADLESS_BUILD
 
         VkDeviceCreateInfo vkCreateInfo{};
         vkCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -575,6 +580,10 @@ public:
     Surface(Adapter* adapter, const SurfaceCreateInfo& createInfo)
         : m_adapter(adapter)
     {
+#ifdef GFX_HEADLESS_BUILD
+        (void)createInfo;
+        throw std::runtime_error("Surface creation is not available in headless builds");
+#else
         switch (createInfo.windowHandle.platform) {
 #if defined(_WIN32)
         case gfx::vulkan::PlatformWindowHandle::Platform::Win32:
@@ -603,6 +612,7 @@ public:
         default:
             throw std::runtime_error("Unsupported windowing platform");
         }
+#endif // GFX_HEADLESS_BUILD
     }
 
     ~Surface()
@@ -645,6 +655,7 @@ public:
     }
 
 private:
+#ifndef GFX_HEADLESS_BUILD
 #if defined(_WIN32)
     static VkSurfaceKHR createSurfaceWin32(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
     {
@@ -751,7 +762,8 @@ private:
         }
         return surface;
     }
-#endif
+#endif // Platform-specific surface creation
+#endif // GFX_HEADLESS_BUILD
 
 private:
     Adapter* m_adapter = nullptr;

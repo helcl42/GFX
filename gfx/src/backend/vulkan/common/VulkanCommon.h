@@ -1,6 +1,7 @@
 #pragma once
 
-#ifdef _WIN32
+#ifndef GFX_HEADLESS_BUILD
+#if defined(_WIN32)
 #define VK_USE_PLATFORM_WIN32_KHR
 #elif defined(__linux__)
 #define VK_USE_PLATFORM_XLIB_KHR
@@ -9,6 +10,9 @@
 #include <X11/Xlib.h>
 #elif defined(__APPLE__)
 #define VK_USE_PLATFORM_MACOS_MVK
+#elif defined(__ANDROID__)
+#define VK_USE_PLATFORM_ANDROID_KHR
 #endif
+#endif // GFX_HEADLESS_BUILD
 
 #include <vulkan/vulkan.h>

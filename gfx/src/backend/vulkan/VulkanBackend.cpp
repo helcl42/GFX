@@ -200,6 +200,13 @@ GfxResult VulkanBackend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) co
 
 GfxResult VulkanBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
 {
+#ifdef GFX_HEADLESS_BUILD
+    (void)device;
+    (void)descriptor;
+    (void)outSurface;
+    fprintf(stderr, "Surface creation is not available in headless builds\n");
+    return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+#else
     if (!device || !descriptor || !outSurface) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
@@ -214,6 +221,7 @@ GfxResult VulkanBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceD
         fprintf(stderr, "Failed to create surface: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
+#endif
 }
 
 GfxResult VulkanBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const

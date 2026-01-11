@@ -161,6 +161,13 @@ GfxResult WebGPUBackend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) co
 
 GfxResult WebGPUBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
 {
+#ifdef GFX_HEADLESS_BUILD
+    (void)device;
+    (void)descriptor;
+    (void)outSurface;
+    fprintf(stderr, "Surface creation is not available in headless builds\n");
+    return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+#else
     if (!device || !descriptor || !outSurface) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
@@ -174,6 +181,7 @@ GfxResult WebGPUBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceD
     } catch (...) {
         return GFX_RESULT_ERROR_UNKNOWN;
     }
+#endif
 }
 
 GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
