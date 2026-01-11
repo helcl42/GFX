@@ -1153,42 +1153,45 @@ GfxResult VulkanBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) c
 }
 
 // RenderPassEncoder functions
-void VulkanBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
+GfxResult VulkanBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
 {
     if (!renderPassEncoder || !pipeline) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* pipe = converter::toNative<RenderPipeline>(pipeline);
     rpe->setPipeline(pipe);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
+GfxResult VulkanBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
 {
     if (!renderPassEncoder || !bindGroup) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* bg = converter::toNative<BindGroup>(bindGroup);
     rpe->setBindGroup(index, bg, dynamicOffsets, dynamicOffsetCount);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
+GfxResult VulkanBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
 {
     if (!renderPassEncoder || !buffer) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* buf = converter::toNative<Buffer>(buffer);
     rpe->setVertexBuffer(slot, buf, offset);
 
     (void)size;
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const
+GfxResult VulkanBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const
 {
     if (!renderPassEncoder || !buffer) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* buf = converter::toNative<Buffer>(buffer);
@@ -1196,93 +1199,103 @@ void VulkanBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderP
     rpe->setIndexBuffer(buf, indexType, offset);
 
     (void)size;
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
+GfxResult VulkanBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
 {
     if (!renderPassEncoder || !viewport) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     Viewport vkViewport = converter::gfxViewportToViewport(viewport);
     rpe->setViewport(vkViewport);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
+GfxResult VulkanBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
 {
     if (!renderPassEncoder || !scissor) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     ScissorRect vkScissor = converter::gfxScissorRectToScissorRect(scissor);
     rpe->setScissorRect(vkScissor);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
+GfxResult VulkanBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
 {
     if (!renderPassEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     rpe->draw(vertexCount, instanceCount, firstVertex, firstInstance);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
+GfxResult VulkanBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
 {
     if (!renderPassEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     rpe->drawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
+GfxResult VulkanBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
 {
     if (!renderPassEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* rpe = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     delete rpe;
+    return GFX_RESULT_SUCCESS;
 }
 
 // ComputePassEncoder functions
-void VulkanBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
+GfxResult VulkanBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
 {
     if (!computePassEncoder || !pipeline) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* cpe = converter::toNative<ComputePassEncoder>(computePassEncoder);
     auto* pipe = converter::toNative<ComputePipeline>(pipeline);
     cpe->setPipeline(pipe);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
+GfxResult VulkanBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
 {
     if (!computePassEncoder || !bindGroup) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* cpe = converter::toNative<ComputePassEncoder>(computePassEncoder);
     auto* bg = converter::toNative<BindGroup>(bindGroup);
     cpe->setBindGroup(index, bg, dynamicOffsets, dynamicOffsetCount);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
+GfxResult VulkanBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
 {
     if (!computePassEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* cpe = converter::toNative<ComputePassEncoder>(computePassEncoder);
     cpe->dispatchWorkgroups(workgroupCountX, workgroupCountY, workgroupCountZ);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
+GfxResult VulkanBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
 {
     if (!computePassEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* cpe = converter::toNative<ComputePassEncoder>(computePassEncoder);
     delete cpe;
+    return GFX_RESULT_SUCCESS;
 }
 
 // Fence functions

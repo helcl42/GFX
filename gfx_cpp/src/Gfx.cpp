@@ -556,7 +556,10 @@ public:
     ~CRenderPassEncoderImpl() override
     {
         if (m_handle) {
-            gfxRenderPassEncoderEnd(m_handle);
+            GfxResult result = gfxRenderPassEncoderEnd(m_handle);
+            if (result != GFX_RESULT_SUCCESS) {
+                // Can't throw from destructor, just log or ignore
+            }
         }
     }
 
@@ -564,7 +567,10 @@ public:
     {
         auto impl = std::dynamic_pointer_cast<CRenderPipelineImpl>(pipeline);
         if (impl) {
-            gfxRenderPassEncoderSetPipeline(m_handle, impl->getHandle());
+            GfxResult result = gfxRenderPassEncoderSetPipeline(m_handle, impl->getHandle());
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to set render pipeline");
+            }
         }
     }
 
@@ -572,7 +578,10 @@ public:
     {
         auto impl = std::dynamic_pointer_cast<CBindGroupImpl>(bindGroup);
         if (impl) {
-            gfxRenderPassEncoderSetBindGroup(m_handle, index, impl->getHandle(), dynamicOffsets, dynamicOffsetCount);
+            GfxResult result = gfxRenderPassEncoderSetBindGroup(m_handle, index, impl->getHandle(), dynamicOffsets, dynamicOffsetCount);
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to set bind group");
+            }
         }
     }
 
@@ -580,7 +589,10 @@ public:
     {
         auto impl = std::dynamic_pointer_cast<CBufferImpl>(buffer);
         if (impl) {
-            gfxRenderPassEncoderSetVertexBuffer(m_handle, slot, impl->getHandle(), offset, size);
+            GfxResult result = gfxRenderPassEncoderSetVertexBuffer(m_handle, slot, impl->getHandle(), offset, size);
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to set vertex buffer");
+            }
         }
     }
 
@@ -589,30 +601,45 @@ public:
         auto impl = std::dynamic_pointer_cast<CBufferImpl>(buffer);
         if (impl) {
             GfxIndexFormat cFormat = (format == IndexFormat::Uint16) ? GFX_INDEX_FORMAT_UINT16 : GFX_INDEX_FORMAT_UINT32;
-            gfxRenderPassEncoderSetIndexBuffer(m_handle, impl->getHandle(), cFormat, offset, size);
+            GfxResult result = gfxRenderPassEncoderSetIndexBuffer(m_handle, impl->getHandle(), cFormat, offset, size);
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to set index buffer");
+            }
         }
     }
 
     void setViewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f) override
     {
         GfxViewport viewport = { x, y, width, height, minDepth, maxDepth };
-        gfxRenderPassEncoderSetViewport(m_handle, &viewport);
+        GfxResult result = gfxRenderPassEncoderSetViewport(m_handle, &viewport);
+        if (result != GFX_RESULT_SUCCESS) {
+            throw std::runtime_error("Failed to set viewport");
+        }
     }
 
     void setScissorRect(int32_t x, int32_t y, uint32_t width, uint32_t height) override
     {
         GfxScissorRect scissor = { x, y, width, height };
-        gfxRenderPassEncoderSetScissorRect(m_handle, &scissor);
+        GfxResult result = gfxRenderPassEncoderSetScissorRect(m_handle, &scissor);
+        if (result != GFX_RESULT_SUCCESS) {
+            throw std::runtime_error("Failed to set scissor rect");
+        }
     }
 
     void draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) override
     {
-        gfxRenderPassEncoderDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
+        GfxResult result = gfxRenderPassEncoderDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
+        if (result != GFX_RESULT_SUCCESS) {
+            throw std::runtime_error("Failed to draw");
+        }
     }
 
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t baseVertex = 0, uint32_t firstInstance = 0) override
     {
-        gfxRenderPassEncoderDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+        GfxResult result = gfxRenderPassEncoderDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+        if (result != GFX_RESULT_SUCCESS) {
+            throw std::runtime_error("Failed to draw indexed");
+        }
     }
 
 private:
@@ -628,7 +655,10 @@ public:
     ~CComputePassEncoderImpl() override
     {
         if (m_handle) {
-            gfxComputePassEncoderEnd(m_handle);
+            GfxResult result = gfxComputePassEncoderEnd(m_handle);
+            if (result != GFX_RESULT_SUCCESS) {
+                // Can't throw from destructor, just log or ignore
+            }
         }
     }
 
@@ -636,7 +666,10 @@ public:
     {
         auto impl = std::dynamic_pointer_cast<CComputePipelineImpl>(pipeline);
         if (impl) {
-            gfxComputePassEncoderSetPipeline(m_handle, impl->getHandle());
+            GfxResult result = gfxComputePassEncoderSetPipeline(m_handle, impl->getHandle());
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to set compute pipeline");
+            }
         }
     }
 
@@ -644,13 +677,19 @@ public:
     {
         auto impl = std::dynamic_pointer_cast<CBindGroupImpl>(bindGroup);
         if (impl) {
-            gfxComputePassEncoderSetBindGroup(m_handle, index, impl->getHandle(), dynamicOffsets, dynamicOffsetCount);
+            GfxResult result = gfxComputePassEncoderSetBindGroup(m_handle, index, impl->getHandle(), dynamicOffsets, dynamicOffsetCount);
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to set compute bind group");
+            }
         }
     }
 
     void dispatchWorkgroups(uint32_t workgroupCountX, uint32_t workgroupCountY = 1, uint32_t workgroupCountZ = 1) override
     {
-        gfxComputePassEncoderDispatchWorkgroups(m_handle, workgroupCountX, workgroupCountY, workgroupCountZ);
+        GfxResult result = gfxComputePassEncoderDispatchWorkgroups(m_handle, workgroupCountX, workgroupCountY, workgroupCountZ);
+        if (result != GFX_RESULT_SUCCESS) {
+            throw std::runtime_error("Failed to dispatch workgroups");
+        }
     }
 
 private:
@@ -722,8 +761,11 @@ public:
         auto src = std::dynamic_pointer_cast<CBufferImpl>(source);
         auto dst = std::dynamic_pointer_cast<CBufferImpl>(destination);
         if (src && dst) {
-            gfxCommandEncoderCopyBufferToBuffer(m_handle, src->getHandle(), sourceOffset,
+            GfxResult result = gfxCommandEncoderCopyBufferToBuffer(m_handle, src->getHandle(), sourceOffset,
                 dst->getHandle(), destinationOffset, size);
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to copy buffer to buffer");
+            }
         }
     }
 
@@ -737,8 +779,11 @@ public:
         if (src && dst) {
             GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
-            gfxCommandEncoderCopyBufferToTexture(m_handle, src->getHandle(), sourceOffset, bytesPerRow,
+            GfxResult result = gfxCommandEncoderCopyBufferToTexture(m_handle, src->getHandle(), sourceOffset, bytesPerRow,
                 dst->getHandle(), &cOrigin, &cExtent, mipLevel, static_cast<GfxTextureLayout>(finalLayout));
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to copy buffer to texture");
+            }
         }
     }
 
@@ -752,8 +797,11 @@ public:
         if (src && dst) {
             GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
-            gfxCommandEncoderCopyTextureToBuffer(m_handle, src->getHandle(), &cOrigin, mipLevel,
+            GfxResult result = gfxCommandEncoderCopyTextureToBuffer(m_handle, src->getHandle(), &cOrigin, mipLevel,
                 dst->getHandle(), destinationOffset, bytesPerRow, &cExtent, static_cast<GfxTextureLayout>(finalLayout));
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to copy texture to buffer");
+            }
         }
     }
 
@@ -768,10 +816,13 @@ public:
             GfxOrigin3D cSourceOrigin = { sourceOrigin.x, sourceOrigin.y, sourceOrigin.z };
             GfxOrigin3D cDestOrigin = { destinationOrigin.x, destinationOrigin.y, destinationOrigin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
-            gfxCommandEncoderCopyTextureToTexture(m_handle,
+            GfxResult result = gfxCommandEncoderCopyTextureToTexture(m_handle,
                 src->getHandle(), &cSourceOrigin, sourceMipLevel,
                 dst->getHandle(), &cDestOrigin, destinationMipLevel,
                 &cExtent, static_cast<GfxTextureLayout>(sourceFinalLayout), static_cast<GfxTextureLayout>(destinationFinalLayout));
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to copy texture to texture");
+            }
         }
     }
 
@@ -787,10 +838,13 @@ public:
             GfxExtent3D cSourceExtent = { sourceExtent.width, sourceExtent.height, sourceExtent.depth };
             GfxOrigin3D cDestOrigin = { destinationOrigin.x, destinationOrigin.y, destinationOrigin.z };
             GfxExtent3D cDestExtent = { destinationExtent.width, destinationExtent.height, destinationExtent.depth };
-            gfxCommandEncoderBlitTextureToTexture(m_handle,
+            GfxResult result = gfxCommandEncoderBlitTextureToTexture(m_handle,
                 src->getHandle(), &cSourceOrigin, &cSourceExtent, sourceMipLevel,
                 dst->getHandle(), &cDestOrigin, &cDestExtent, destinationMipLevel,
                 static_cast<GfxFilterMode>(filter), static_cast<GfxTextureLayout>(sourceFinalLayout), static_cast<GfxTextureLayout>(destinationFinalLayout));
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to blit texture to texture");
+            }
         }
     }
 
@@ -863,13 +917,16 @@ public:
         }
 
         if (!cMemoryBarriers.empty() || !cBufferBarriers.empty() || !cTextureBarriers.empty()) {
-            gfxCommandEncoderPipelineBarrier(m_handle,
+            GfxResult result = gfxCommandEncoderPipelineBarrier(m_handle,
                 cMemoryBarriers.empty() ? nullptr : cMemoryBarriers.data(),
                 static_cast<uint32_t>(cMemoryBarriers.size()),
                 cBufferBarriers.empty() ? nullptr : cBufferBarriers.data(),
                 static_cast<uint32_t>(cBufferBarriers.size()),
                 cTextureBarriers.empty() ? nullptr : cTextureBarriers.data(),
                 static_cast<uint32_t>(cTextureBarriers.size()));
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to insert pipeline barrier");
+            }
         }
     }
 
@@ -877,7 +934,10 @@ public:
     {
         auto tex = std::dynamic_pointer_cast<CTextureImpl>(texture);
         if (tex) {
-            gfxCommandEncoderGenerateMipmaps(m_handle, tex->getHandle());
+            GfxResult result = gfxCommandEncoderGenerateMipmaps(m_handle, tex->getHandle());
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to generate mipmaps");
+            }
         }
     }
 
@@ -885,18 +945,27 @@ public:
     {
         auto tex = std::dynamic_pointer_cast<CTextureImpl>(texture);
         if (tex) {
-            gfxCommandEncoderGenerateMipmapsRange(m_handle, tex->getHandle(), baseMipLevel, levelCount);
+            GfxResult result = gfxCommandEncoderGenerateMipmapsRange(m_handle, tex->getHandle(), baseMipLevel, levelCount);
+            if (result != GFX_RESULT_SUCCESS) {
+                throw std::runtime_error("Failed to generate mipmaps range");
+            }
         }
     }
 
     void end() override
     {
-        gfxCommandEncoderEnd(m_handle);
+        GfxResult result = gfxCommandEncoderEnd(m_handle);
+        if (result != GFX_RESULT_SUCCESS) {
+            throw std::runtime_error("Failed to end command encoder");
+        }
     }
 
     void begin() override
     {
-        gfxCommandEncoderBegin(m_handle);
+        GfxResult result = gfxCommandEncoderBegin(m_handle);
+        if (result != GFX_RESULT_SUCCESS) {
+            throw std::runtime_error("Failed to begin command encoder");
+        }
     }
 
 private:

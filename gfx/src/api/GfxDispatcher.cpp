@@ -982,182 +982,195 @@ GfxResult gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder
 }
 
 // Render Pass Encoder Functions
-void gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder encoder, GfxRenderPipeline pipeline)
+GfxResult gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder encoder, GfxRenderPipeline pipeline)
 {
     if (!encoder || !pipeline) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->renderPassEncoderSetPipeline(
-            gfx::native(encoder),
-            gfx::native(pipeline));
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->renderPassEncoderSetPipeline(
+        gfx::native(encoder),
+        gfx::native(pipeline));
 }
 
-void gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
+GfxResult gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
     if (!encoder || !bindGroup) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->renderPassEncoderSetBindGroup(
-            gfx::native(encoder),
-            groupIndex,
-            gfx::native(bindGroup),
-            dynamicOffsets,
-            dynamicOffsetCount);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->renderPassEncoderSetBindGroup(
+        gfx::native(encoder),
+        groupIndex,
+        gfx::native(bindGroup),
+        dynamicOffsets,
+        dynamicOffsetCount);
 }
 
-void gfxRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder encoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size)
+GfxResult gfxRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder encoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size)
 {
     if (!encoder || !buffer) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->renderPassEncoderSetVertexBuffer(
-            gfx::native(encoder),
-            slot,
-            gfx::native(buffer),
-            offset,
-            size);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->renderPassEncoderSetVertexBuffer(
+        gfx::native(encoder),
+        slot,
+        gfx::native(buffer),
+        offset,
+        size);
 }
 
-void gfxRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder encoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size)
+GfxResult gfxRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder encoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size)
 {
     if (!encoder || !buffer) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->renderPassEncoderSetIndexBuffer(
-            gfx::native(encoder),
-            gfx::native(buffer),
-            format,
-            offset,
-            size);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->renderPassEncoderSetIndexBuffer(
+        gfx::native(encoder),
+        gfx::native(buffer),
+        format,
+        offset,
+        size);
 }
 
-void gfxRenderPassEncoderSetViewport(GfxRenderPassEncoder encoder, const GfxViewport* viewport)
+GfxResult gfxRenderPassEncoderSetViewport(GfxRenderPassEncoder encoder, const GfxViewport* viewport)
 {
     if (!encoder || !viewport) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->renderPassEncoderSetViewport(
-            gfx::native(encoder),
-            viewport);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->renderPassEncoderSetViewport(
+        gfx::native(encoder),
+        viewport);
 }
 
-void gfxRenderPassEncoderSetScissorRect(GfxRenderPassEncoder encoder, const GfxScissorRect* scissor)
+GfxResult gfxRenderPassEncoderSetScissorRect(GfxRenderPassEncoder encoder, const GfxScissorRect* scissor)
 {
     if (!encoder || !scissor) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->renderPassEncoderSetScissorRect(
-            gfx::native(encoder),
-            scissor);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->renderPassEncoderSetScissorRect(
+        gfx::native(encoder),
+        scissor);
 }
 
-void gfxRenderPassEncoderDraw(GfxRenderPassEncoder encoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+GfxResult gfxRenderPassEncoderDraw(GfxRenderPassEncoder encoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
     if (!encoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->renderPassEncoderDraw(
-            gfx::native(encoder),
-            vertexCount, instanceCount, firstVertex, firstInstance);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->renderPassEncoderDraw(
+        gfx::native(encoder),
+        vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
-void gfxRenderPassEncoderDrawIndexed(GfxRenderPassEncoder encoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance)
+GfxResult gfxRenderPassEncoderDrawIndexed(GfxRenderPassEncoder encoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance)
 {
     if (!encoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->renderPassEncoderDrawIndexed(
-            gfx::native(encoder),
-            indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->renderPassEncoderDrawIndexed(
+        gfx::native(encoder),
+        indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 }
 
-void gfxRenderPassEncoderEnd(GfxRenderPassEncoder encoder)
+GfxResult gfxRenderPassEncoderEnd(GfxRenderPassEncoder encoder)
 {
     if (!encoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->renderPassEncoderEnd(gfx::native(encoder));
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->renderPassEncoderEnd(gfx::native(encoder));
 }
 
 // Compute Pass Encoder Functions
-void gfxComputePassEncoderSetPipeline(GfxComputePassEncoder encoder, GfxComputePipeline pipeline)
+GfxResult gfxComputePassEncoderSetPipeline(GfxComputePassEncoder encoder, GfxComputePipeline pipeline)
 {
     if (!encoder || !pipeline) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->computePassEncoderSetPipeline(
-            gfx::native(encoder),
-            gfx::native(pipeline));
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->computePassEncoderSetPipeline(
+        gfx::native(encoder),
+        gfx::native(pipeline));
 }
 
-void gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
+GfxResult gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
     if (!encoder || !bindGroup) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->computePassEncoderSetBindGroup(
-            gfx::native(encoder),
-            groupIndex,
-            gfx::native(bindGroup),
-            dynamicOffsets,
-            dynamicOffsetCount);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->computePassEncoderSetBindGroup(
+        gfx::native(encoder),
+        groupIndex,
+        gfx::native(bindGroup),
+        dynamicOffsets,
+        dynamicOffsetCount);
 }
 
-void gfxComputePassEncoderDispatchWorkgroups(GfxComputePassEncoder encoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ)
+GfxResult gfxComputePassEncoderDispatchWorkgroups(GfxComputePassEncoder encoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ)
 {
     if (!encoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->computePassEncoderDispatchWorkgroups(
-            gfx::native(encoder),
-            workgroupCountX, workgroupCountY, workgroupCountZ);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->computePassEncoderDispatchWorkgroups(
+        gfx::native(encoder),
+        workgroupCountX, workgroupCountY, workgroupCountZ);
 }
 
-void gfxComputePassEncoderEnd(GfxComputePassEncoder encoder)
+GfxResult gfxComputePassEncoderEnd(GfxComputePassEncoder encoder)
 {
     if (!encoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(encoder);
-    if (api) {
-        api->computePassEncoderEnd(gfx::native(encoder));
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->computePassEncoderEnd(gfx::native(encoder));
 }
 
 // Fence Functions

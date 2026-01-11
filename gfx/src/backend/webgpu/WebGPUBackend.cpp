@@ -1120,148 +1120,161 @@ GfxResult WebGPUBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) c
 }
 
 // RenderPassEncoder functions
-void WebGPUBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
+GfxResult WebGPUBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
 {
     if (!renderPassEncoder || !pipeline) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* pipelinePtr = converter::toNative<RenderPipeline>(pipeline);
 
     encoderPtr->setPipeline(pipelinePtr->handle());
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
+GfxResult WebGPUBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
 {
     if (!renderPassEncoder || !bindGroup) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* bindGroupPtr = converter::toNative<BindGroup>(bindGroup);
 
     encoderPtr->setBindGroup(index, bindGroupPtr->handle(), dynamicOffsets, dynamicOffsetCount);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
+GfxResult WebGPUBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
 {
     if (!renderPassEncoder || !buffer) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* bufferPtr = converter::toNative<Buffer>(buffer);
 
     encoderPtr->setVertexBuffer(slot, bufferPtr->handle(), offset, size);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const
+GfxResult WebGPUBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const
 {
     if (!renderPassEncoder || !buffer) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     auto* bufferPtr = converter::toNative<Buffer>(buffer);
 
     encoderPtr->setIndexBuffer(bufferPtr->handle(), converter::gfxIndexFormatToWGPU(format), offset, size);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
+GfxResult WebGPUBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
 {
     if (!renderPassEncoder || !viewport) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     encoderPtr->setViewport(viewport->x, viewport->y, viewport->width, viewport->height,
         viewport->minDepth, viewport->maxDepth);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
+GfxResult WebGPUBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
 {
     if (!renderPassEncoder || !scissor) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     encoderPtr->setScissorRect(scissor->x, scissor->y, scissor->width, scissor->height);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
+GfxResult WebGPUBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
 {
     if (!renderPassEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     encoderPtr->draw(vertexCount, instanceCount, firstVertex, firstInstance);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
+GfxResult WebGPUBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
 {
     if (!renderPassEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     encoderPtr->drawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
+GfxResult WebGPUBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
 {
     if (!renderPassEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<RenderPassEncoder>(renderPassEncoder);
     delete encoderPtr;
+    return GFX_RESULT_SUCCESS;
 }
 
 // ComputePassEncoder functions
-void WebGPUBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
+GfxResult WebGPUBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
 {
     if (!computePassEncoder || !pipeline) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
     auto* pipelinePtr = converter::toNative<ComputePipeline>(pipeline);
 
     encoderPtr->setPipeline(pipelinePtr->handle());
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
+GfxResult WebGPUBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
 {
     if (!computePassEncoder || !bindGroup) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
     auto* bindGroupPtr = converter::toNative<BindGroup>(bindGroup);
 
     encoderPtr->setBindGroup(index, bindGroupPtr->handle(), dynamicOffsets, dynamicOffsetCount);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
+GfxResult WebGPUBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
 {
     if (!computePassEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
     encoderPtr->dispatchWorkgroups(workgroupCountX, workgroupCountY, workgroupCountZ);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
+GfxResult WebGPUBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
 {
     if (!computePassEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<ComputePassEncoder>(computePassEncoder);
     delete encoderPtr;
+    return GFX_RESULT_SUCCESS;
 }
 
 // Fence functions
