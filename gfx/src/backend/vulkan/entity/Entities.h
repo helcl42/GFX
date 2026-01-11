@@ -2021,6 +2021,9 @@ public:
         // Reset the command pool (this implicitly resets all command buffers)
         vkResetCommandPool(m_device->handle(), m_commandPool, 0);
 
+        // Mark as not recording since the command buffer was reset
+        m_isRecording = false;
+
         // Begin recording again
         begin();
     }
