@@ -100,17 +100,24 @@ public:
         std::vector<const char*> extensions = {};
 #ifndef GFX_HEADLESS_BUILD
         extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-#if defined(_WIN32)
+#ifdef GFX_HAS_WIN32
         extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-#elif defined(__linux__)
+#endif
+#ifdef GFX_HAS_ANDROID
+        extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
+#endif
+#ifdef GFX_HAS_X11
         extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+#endif
+#ifdef GFX_HAS_XCB
         extensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+#endif
+#ifdef GFX_HAS_WAYLAND
         extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
-#elif defined(__APPLE__)
+#endif
+#if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
         extensions.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
         extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-#elif defined(__ANDROID__)
-        extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
 #endif
 #endif // GFX_HEADLESS_BUILD
 
