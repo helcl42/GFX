@@ -35,7 +35,7 @@ GfxResult gfxLoadBackend(GfxBackend backend)
 
     // Check if backend needs to be created
     if (!manager.getBackendAPI(backend)) {
-        const gfx::IBackend* backendImpl = gfx::BackendFactory::createBackend(backend);
+        const gfx::IBackend* backendImpl = gfx::BackendFactory::create(backend);
         if (!backendImpl) {
             return GFX_RESULT_ERROR_BACKEND_NOT_LOADED;
         }
@@ -156,7 +156,7 @@ GfxResult gfxInstanceDestroy(GfxInstance instance)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    GfxResult result = api->instanceDestroy(gfx::native(instance));
+    GfxResult result = api->instanceDestroy(instance);
     gfx::unwrap(instance);
     return result;
 }
@@ -170,7 +170,7 @@ GfxResult gfxInstanceSetDebugCallback(GfxInstance instance, GfxDebugCallback cal
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->instanceSetDebugCallback(gfx::native(instance), callback, userData);
+    return api->instanceSetDebugCallback(instance, callback, userData);
 }
 
 GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter)
@@ -187,7 +187,7 @@ GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescri
 
     GfxBackend backend = gfx::getBackend(instance);
     GfxAdapter nativeAdapter = nullptr;
-    GfxResult result = api->instanceRequestAdapter(gfx::native(instance), descriptor, &nativeAdapter);
+    GfxResult result = api->instanceRequestAdapter(instance, descriptor, &nativeAdapter);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }
@@ -205,7 +205,7 @@ GfxResult gfxInstanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCo
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->instanceEnumerateAdapters(gfx::native(instance), adapterCount, adapters);
+    return api->instanceEnumerateAdapters(instance, adapterCount, adapters);
 }
 
 // Adapter Functions
@@ -218,7 +218,7 @@ GfxResult gfxAdapterDestroy(GfxAdapter adapter)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    GfxResult result = api->adapterDestroy(gfx::native(adapter));
+    GfxResult result = api->adapterDestroy(adapter);
     gfx::unwrap(adapter);
     return result;
 }
@@ -237,7 +237,7 @@ GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* 
 
     GfxBackend backend = gfx::getBackend(adapter);
     GfxDevice nativeDevice = nullptr;
-    GfxResult result = api->adapterCreateDevice(gfx::native(adapter), descriptor, &nativeDevice);
+    GfxResult result = api->adapterCreateDevice(adapter, descriptor, &nativeDevice);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }
@@ -255,7 +255,7 @@ GfxResult gfxAdapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->adapterGetInfo(gfx::native(adapter), outInfo);
+    return api->adapterGetInfo(adapter, outInfo);
 }
 
 GfxResult gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits)
@@ -267,7 +267,7 @@ GfxResult gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->adapterGetLimits(gfx::native(adapter), outLimits);
+    return api->adapterGetLimits(adapter, outLimits);
 }
 
 // Device Functions
@@ -280,7 +280,7 @@ GfxResult gfxDeviceDestroy(GfxDevice device)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    GfxResult result = api->deviceDestroy(gfx::native(device));
+    GfxResult result = api->deviceDestroy(device);
     gfx::unwrap(device);
     return result;
 }
@@ -298,7 +298,7 @@ GfxResult gfxDeviceGetQueue(GfxDevice device, GfxQueue* outQueue)
 
     GfxBackend backend = gfx::getBackend(device);
     GfxQueue nativeQueue = nullptr;
-    GfxResult result = api->deviceGetQueue(gfx::native(device), &nativeQueue);
+    GfxResult result = api->deviceGetQueue(device, &nativeQueue);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }
@@ -319,7 +319,7 @@ GfxResult gfxDeviceGetQueue(GfxDevice device, GfxQueue* outQueue)
             return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
         GfxBackend backend = gfx::getBackend(device);                                                                                \
         Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = api->deviceCreate##funcName(gfx::native(device), descriptor, &native##TypeName);                          \
+        GfxResult result = api->deviceCreate##funcName(device, descriptor, &native##TypeName);                          \
         if (result != GFX_RESULT_SUCCESS)                                                                                            \
             return result;                                                                                                           \
         *out##TypeName = gfx::wrap(backend, native##TypeName);                                                                       \
@@ -351,7 +351,7 @@ GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxExternalBufferDescrip
     }
     GfxBackend backend = gfx::getBackend(device);
     GfxBuffer nativeBuffer = nullptr;
-    GfxResult result = api->deviceImportBuffer(gfx::native(device), descriptor, &nativeBuffer);
+    GfxResult result = api->deviceImportBuffer(device, descriptor, &nativeBuffer);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }
@@ -371,7 +371,7 @@ GfxResult gfxDeviceImportTexture(GfxDevice device, const GfxExternalTextureDescr
     }
     GfxBackend backend = gfx::getBackend(device);
     GfxTexture nativeTexture = nullptr;
-    GfxResult result = api->deviceImportTexture(gfx::native(device), descriptor, &nativeTexture);
+    GfxResult result = api->deviceImportTexture(device, descriptor, &nativeTexture);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }
@@ -393,8 +393,8 @@ GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const G
     GfxBackend backend = gfx::getBackend(device);
     GfxSwapchain nativeSwapchain = nullptr;
     GfxResult result = api->deviceCreateSwapchain(
-        gfx::native(device),
-        gfx::native(surface),
+        device,
+        surface,
         descriptor,
         &nativeSwapchain);
 
@@ -418,7 +418,7 @@ GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncode
 
     GfxBackend backend = gfx::getBackend(device);
     GfxCommandEncoder nativeEncoder = nullptr;
-    GfxResult result = api->deviceCreateCommandEncoder(gfx::native(device), descriptor, &nativeEncoder);
+    GfxResult result = api->deviceCreateCommandEncoder(device, descriptor, &nativeEncoder);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }
@@ -440,7 +440,7 @@ GfxResult gfxDeviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescrip
 
     GfxBackend backend = gfx::getBackend(device);
     GfxRenderPass nativeRenderPass = nullptr;
-    GfxResult result = api->deviceCreateRenderPass(gfx::native(device), descriptor, &nativeRenderPass);
+    GfxResult result = api->deviceCreateRenderPass(device, descriptor, &nativeRenderPass);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }
@@ -462,7 +462,7 @@ GfxResult gfxDeviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescr
 
     GfxBackend backend = gfx::getBackend(device);
     GfxFramebuffer nativeFramebuffer = nullptr;
-    GfxResult result = api->deviceCreateFramebuffer(gfx::native(device), descriptor, &nativeFramebuffer);
+    GfxResult result = api->deviceCreateFramebuffer(device, descriptor, &nativeFramebuffer);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }
@@ -480,7 +480,7 @@ GfxResult gfxDeviceWaitIdle(GfxDevice device)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->deviceWaitIdle(gfx::native(device));
+    return api->deviceWaitIdle(device);
 }
 
 GfxResult gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
@@ -492,7 +492,7 @@ GfxResult gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->deviceGetLimits(gfx::native(device), outLimits);
+    return api->deviceGetLimits(device, outLimits);
 }
 
 // Macro for simple destroy functions
@@ -504,7 +504,7 @@ GfxResult gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
         auto api = gfx::getAPI(typeName);                                 \
         if (!api)                                                         \
             return GFX_RESULT_ERROR_NOT_FOUND;                            \
-        GfxResult result = api->typeName##Destroy(gfx::native(typeName)); \
+        GfxResult result = api->typeName##Destroy(typeName); \
         gfx::unwrap(typeName);                                            \
         return result;                                                    \
     }
@@ -535,7 +535,7 @@ GfxResult gfxSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* form
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->surfaceEnumerateSupportedFormats(gfx::native(surface), formatCount, formats);
+    return api->surfaceEnumerateSupportedFormats(surface, formatCount, formats);
 }
 
 GfxResult gfxSurfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes)
@@ -547,7 +547,7 @@ GfxResult gfxSurfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t*
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->surfaceEnumerateSupportedPresentModes(gfx::native(surface), presentModeCount, presentModes);
+    return api->surfaceEnumerateSupportedPresentModes(surface, presentModeCount, presentModes);
 }
 
 // Swapchain Functions
@@ -570,7 +570,7 @@ GfxResult gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo)
         outInfo->imageCount = 0;
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->swapchainGetInfo(gfx::native(swapchain), outInfo);
+    return api->swapchainGetInfo(swapchain, outInfo);
 }
 
 GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs,
@@ -584,10 +584,10 @@ GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutN
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
-    GfxSemaphore nativeSemaphore = imageAvailableSemaphore ? gfx::native(imageAvailableSemaphore) : nullptr;
-    GfxFence nativeFence = fence ? gfx::native(fence) : nullptr;
+    GfxSemaphore nativeSemaphore = imageAvailableSemaphore ? imageAvailableSemaphore : nullptr;
+    GfxFence nativeFence = fence ? fence : nullptr;
 
-    return api->swapchainAcquireNextImage(gfx::native(swapchain), timeoutNs,
+    return api->swapchainAcquireNextImage(swapchain, timeoutNs,
         nativeSemaphore, nativeFence, outImageIndex);
 }
 
@@ -601,7 +601,7 @@ GfxResult gfxSwapchainGetTextureView(GfxSwapchain swapchain, uint32_t imageIndex
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     // Swapchain texture views are NOT wrapped - managed by swapchain
-    return api->swapchainGetTextureView(gfx::native(swapchain), imageIndex, outView);
+    return api->swapchainGetTextureView(swapchain, imageIndex, outView);
 }
 
 GfxResult gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView)
@@ -614,7 +614,7 @@ GfxResult gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureVi
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     // Swapchain texture views are NOT wrapped - managed by swapchain
-    return api->swapchainGetCurrentTextureView(gfx::native(swapchain), outView);
+    return api->swapchainGetCurrentTextureView(swapchain, outView);
 }
 
 GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo)
@@ -634,13 +634,13 @@ GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* pres
     if (presentInfo && presentInfo->waitSemaphoreCount > 0) {
         nativeSemaphores.reserve(presentInfo->waitSemaphoreCount);
         for (uint32_t i = 0; i < presentInfo->waitSemaphoreCount; ++i) {
-            nativeSemaphores.push_back(gfx::native(presentInfo->waitSemaphores[i]));
+            nativeSemaphores.push_back(presentInfo->waitSemaphores[i]);
         }
         nativePresentInfo.waitSemaphores = nativeSemaphores.data();
         nativePresentInfo.waitSemaphoreCount = presentInfo->waitSemaphoreCount;
     }
 
-    return api->swapchainPresent(gfx::native(swapchain), presentInfo ? &nativePresentInfo : nullptr);
+    return api->swapchainPresent(swapchain, presentInfo ? &nativePresentInfo : nullptr);
 }
 
 // Buffer Functions
@@ -653,7 +653,7 @@ GfxResult gfxBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->bufferGetInfo(gfx::native(buffer), outInfo);
+    return api->bufferGetInfo(buffer, outInfo);
 }
 
 GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer)
@@ -665,7 +665,7 @@ GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** 
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->bufferMap(gfx::native(buffer), offset, size, outMappedPointer);
+    return api->bufferMap(buffer, offset, size, outMappedPointer);
 }
 
 GfxResult gfxBufferUnmap(GfxBuffer buffer)
@@ -677,7 +677,7 @@ GfxResult gfxBufferUnmap(GfxBuffer buffer)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->bufferUnmap(gfx::native(buffer));
+    return api->bufferUnmap(buffer);
 }
 
 // Texture Functions
@@ -690,7 +690,7 @@ GfxResult gfxTextureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->textureGetInfo(gfx::native(texture), outInfo);
+    return api->textureGetInfo(texture, outInfo);
 }
 
 GfxResult gfxTextureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout)
@@ -702,7 +702,7 @@ GfxResult gfxTextureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->textureGetLayout(gfx::native(texture), outLayout);
+    return api->textureGetLayout(texture, outLayout);
 }
 
 GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView)
@@ -718,7 +718,7 @@ GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescripto
 
     GfxBackend backend = gfx::getBackend(texture);
     GfxTextureView nativeView = nullptr;
-    GfxResult result = api->textureCreateView(gfx::native(texture), descriptor, &nativeView);
+    GfxResult result = api->textureCreateView(texture, descriptor, &nativeView);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }
@@ -737,7 +737,7 @@ GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->queueSubmit(gfx::native(queue), submitInfo);
+    return api->queueSubmit(queue, submitInfo);
 }
 
 GfxResult gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size)
@@ -749,7 +749,7 @@ GfxResult gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset,
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->queueWriteBuffer(gfx::native(queue), gfx::native(buffer), offset, data, size);
+    return api->queueWriteBuffer(queue, buffer, offset, data, size);
 }
 
 GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
@@ -763,7 +763,7 @@ GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrig
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
-    return api->queueWriteTexture(gfx::native(queue), gfx::native(texture), origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
+    return api->queueWriteTexture(queue, texture, origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
 }
 
 GfxResult gfxQueueWaitIdle(GfxQueue queue)
@@ -775,7 +775,7 @@ GfxResult gfxQueueWaitIdle(GfxQueue queue)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->queueWaitIdle(gfx::native(queue));
+    return api->queueWaitIdle(queue);
 }
 
 GfxResult gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
@@ -790,7 +790,7 @@ GfxResult gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->commandEncoderPipelineBarrier(gfx::native(commandEncoder), memoryBarriers, memoryBarrierCount, bufferBarriers, bufferBarrierCount, textureBarriers, textureBarrierCount);
+    return api->commandEncoderPipelineBarrier(commandEncoder, memoryBarriers, memoryBarrierCount, bufferBarriers, bufferBarrierCount, textureBarriers, textureBarrierCount);
 }
 
 GfxResult gfxCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture)
@@ -802,7 +802,7 @@ GfxResult gfxCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, Gfx
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->commandEncoderGenerateMipmaps(gfx::native(commandEncoder), gfx::native(texture));
+    return api->commandEncoderGenerateMipmaps(commandEncoder, texture);
 }
 
 GfxResult gfxCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
@@ -815,7 +815,7 @@ GfxResult gfxCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->commandEncoderGenerateMipmapsRange(gfx::native(commandEncoder), gfx::native(texture), baseMipLevel, levelCount);
+    return api->commandEncoderGenerateMipmapsRange(commandEncoder, texture, baseMipLevel, levelCount);
 }
 
 GfxResult gfxCommandEncoderEnd(GfxCommandEncoder commandEncoder)
@@ -827,7 +827,7 @@ GfxResult gfxCommandEncoderEnd(GfxCommandEncoder commandEncoder)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->commandEncoderEnd(gfx::native(commandEncoder));
+    return api->commandEncoderEnd(commandEncoder);
 }
 
 GfxResult gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder)
@@ -839,7 +839,7 @@ GfxResult gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->commandEncoderBegin(gfx::native(commandEncoder));
+    return api->commandEncoderBegin(commandEncoder);
 }
 
 GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
@@ -858,7 +858,7 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     GfxBackend backend = gfx::getBackend(encoder);
     GfxRenderPassEncoder nativePass = nullptr;
     GfxResult result = api->commandEncoderBeginRenderPass(
-        gfx::native(encoder),
+        encoder,
         beginDescriptor,
         &nativePass);
     if (result != GFX_RESULT_SUCCESS) {
@@ -882,7 +882,7 @@ GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const Gfx
 
     GfxBackend backend = gfx::getBackend(encoder);
     GfxComputePassEncoder nativePass = nullptr;
-    GfxResult result = api->commandEncoderBeginComputePass(gfx::native(encoder), beginDescriptor, &nativePass);
+    GfxResult result = api->commandEncoderBeginComputePass(encoder, beginDescriptor, &nativePass);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }
@@ -903,9 +903,9 @@ GfxResult gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->commandEncoderCopyBufferToBuffer(gfx::native(commandEncoder),
-        gfx::native(source), sourceOffset,
-        gfx::native(destination), destinationOffset,
+    return api->commandEncoderCopyBufferToBuffer(commandEncoder,
+        source, sourceOffset,
+        destination, destinationOffset,
         size);
 }
 
@@ -921,9 +921,9 @@ GfxResult gfxCommandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->commandEncoderCopyBufferToTexture(gfx::native(commandEncoder),
-        gfx::native(source), sourceOffset, bytesPerRow,
-        gfx::native(destination), origin,
+    return api->commandEncoderCopyBufferToTexture(commandEncoder,
+        source, sourceOffset, bytesPerRow,
+        destination, origin,
         extent, mipLevel, finalLayout);
 }
 
@@ -939,9 +939,9 @@ GfxResult gfxCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->commandEncoderCopyTextureToBuffer(gfx::native(commandEncoder),
-        gfx::native(source), origin, mipLevel,
-        gfx::native(destination), destinationOffset, bytesPerRow,
+    return api->commandEncoderCopyTextureToBuffer(commandEncoder,
+        source, origin, mipLevel,
+        destination, destinationOffset, bytesPerRow,
         extent, finalLayout);
 }
 
@@ -957,9 +957,9 @@ GfxResult gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->commandEncoderCopyTextureToTexture(gfx::native(commandEncoder),
-        gfx::native(source), sourceOrigin, sourceMipLevel,
-        gfx::native(destination), destinationOrigin, destinationMipLevel,
+    return api->commandEncoderCopyTextureToTexture(commandEncoder,
+        source, sourceOrigin, sourceMipLevel,
+        destination, destinationOrigin, destinationMipLevel,
         extent, sourceFinalLayout, destinationFinalLayout);
 }
 
@@ -975,9 +975,9 @@ GfxResult gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->commandEncoderBlitTextureToTexture(gfx::native(commandEncoder),
-        gfx::native(source), sourceOrigin, sourceExtent, sourceMipLevel,
-        gfx::native(destination), destinationOrigin, destinationExtent, destinationMipLevel,
+    return api->commandEncoderBlitTextureToTexture(commandEncoder,
+        source, sourceOrigin, sourceExtent, sourceMipLevel,
+        destination, destinationOrigin, destinationExtent, destinationMipLevel,
         filter, sourceFinalLayout, destinationFinalLayout);
 }
 
@@ -992,8 +992,8 @@ GfxResult gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder encoder, GfxRende
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->renderPassEncoderSetPipeline(
-        gfx::native(encoder),
-        gfx::native(pipeline));
+        encoder,
+        pipeline);
 }
 
 GfxResult gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
@@ -1006,9 +1006,9 @@ GfxResult gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->renderPassEncoderSetBindGroup(
-        gfx::native(encoder),
+        encoder,
         groupIndex,
-        gfx::native(bindGroup),
+        bindGroup,
         dynamicOffsets,
         dynamicOffsetCount);
 }
@@ -1023,9 +1023,9 @@ GfxResult gfxRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder encoder, uint
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->renderPassEncoderSetVertexBuffer(
-        gfx::native(encoder),
+        encoder,
         slot,
-        gfx::native(buffer),
+        buffer,
         offset,
         size);
 }
@@ -1040,8 +1040,8 @@ GfxResult gfxRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder encoder, GfxBu
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->renderPassEncoderSetIndexBuffer(
-        gfx::native(encoder),
-        gfx::native(buffer),
+        encoder,
+        buffer,
         format,
         offset,
         size);
@@ -1057,7 +1057,7 @@ GfxResult gfxRenderPassEncoderSetViewport(GfxRenderPassEncoder encoder, const Gf
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->renderPassEncoderSetViewport(
-        gfx::native(encoder),
+        encoder,
         viewport);
 }
 
@@ -1071,7 +1071,7 @@ GfxResult gfxRenderPassEncoderSetScissorRect(GfxRenderPassEncoder encoder, const
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->renderPassEncoderSetScissorRect(
-        gfx::native(encoder),
+        encoder,
         scissor);
 }
 
@@ -1085,7 +1085,7 @@ GfxResult gfxRenderPassEncoderDraw(GfxRenderPassEncoder encoder, uint32_t vertex
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->renderPassEncoderDraw(
-        gfx::native(encoder),
+        encoder,
         vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
@@ -1099,7 +1099,7 @@ GfxResult gfxRenderPassEncoderDrawIndexed(GfxRenderPassEncoder encoder, uint32_t
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->renderPassEncoderDrawIndexed(
-        gfx::native(encoder),
+        encoder,
         indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 }
 
@@ -1112,7 +1112,7 @@ GfxResult gfxRenderPassEncoderEnd(GfxRenderPassEncoder encoder)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->renderPassEncoderEnd(gfx::native(encoder));
+    return api->renderPassEncoderEnd(encoder);
 }
 
 // Compute Pass Encoder Functions
@@ -1126,8 +1126,8 @@ GfxResult gfxComputePassEncoderSetPipeline(GfxComputePassEncoder encoder, GfxCom
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->computePassEncoderSetPipeline(
-        gfx::native(encoder),
-        gfx::native(pipeline));
+        encoder,
+        pipeline);
 }
 
 GfxResult gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
@@ -1140,9 +1140,9 @@ GfxResult gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint3
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->computePassEncoderSetBindGroup(
-        gfx::native(encoder),
+        encoder,
         groupIndex,
-        gfx::native(bindGroup),
+        bindGroup,
         dynamicOffsets,
         dynamicOffsetCount);
 }
@@ -1157,7 +1157,7 @@ GfxResult gfxComputePassEncoderDispatchWorkgroups(GfxComputePassEncoder encoder,
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->computePassEncoderDispatchWorkgroups(
-        gfx::native(encoder),
+        encoder,
         workgroupCountX, workgroupCountY, workgroupCountZ);
 }
 
@@ -1170,7 +1170,7 @@ GfxResult gfxComputePassEncoderEnd(GfxComputePassEncoder encoder)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->computePassEncoderEnd(gfx::native(encoder));
+    return api->computePassEncoderEnd(encoder);
 }
 
 // Fence Functions
@@ -1183,7 +1183,7 @@ GfxResult gfxFenceGetStatus(GfxFence fence, bool* isSignaled)
     if (!api) {
         return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
     }
-    return api->fenceGetStatus(gfx::native(fence), isSignaled);
+    return api->fenceGetStatus(fence, isSignaled);
 }
 
 GfxResult gfxFenceWait(GfxFence fence, uint64_t timeoutNs)
@@ -1195,7 +1195,7 @@ GfxResult gfxFenceWait(GfxFence fence, uint64_t timeoutNs)
     if (!api) {
         return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
     }
-    return api->fenceWait(gfx::native(fence), timeoutNs);
+    return api->fenceWait(fence, timeoutNs);
 }
 
 GfxResult gfxFenceReset(GfxFence fence)
@@ -1207,9 +1207,8 @@ GfxResult gfxFenceReset(GfxFence fence)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->fenceReset(gfx::native(fence));
+    return api->fenceReset(fence);
 }
-
 
 // Semaphore Functions
 GfxResult gfxSemaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType)
@@ -1221,7 +1220,7 @@ GfxResult gfxSemaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->semaphoreGetType(gfx::native(semaphore), outType);
+    return api->semaphoreGetType(semaphore, outType);
 }
 
 GfxResult gfxSemaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue)
@@ -1233,7 +1232,7 @@ GfxResult gfxSemaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue)
     if (!api) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->semaphoreGetValue(gfx::native(semaphore), outValue);
+    return api->semaphoreGetValue(semaphore, outValue);
 }
 
 GfxResult gfxSemaphoreSignal(GfxSemaphore semaphore, uint64_t value)
@@ -1245,7 +1244,7 @@ GfxResult gfxSemaphoreSignal(GfxSemaphore semaphore, uint64_t value)
     if (!api) {
         return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
     }
-    return api->semaphoreSignal(gfx::native(semaphore), value);
+    return api->semaphoreSignal(semaphore, value);
 }
 
 GfxResult gfxSemaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs)
@@ -1257,7 +1256,7 @@ GfxResult gfxSemaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t time
     if (!api) {
         return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
     }
-    return api->semaphoreWait(gfx::native(semaphore), value, timeoutNs);
+    return api->semaphoreWait(semaphore, value, timeoutNs);
 }
 
 // Helper function to deduce access flags from texture layout

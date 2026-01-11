@@ -4,7 +4,7 @@
 
 #include "IBackend.h"
 
-#ifndef __EMSCRIPTEN__
+#ifndef GFX_HAS_EMSCRIPTEN
 #include <mutex>
 #endif
 #include <unordered_map>
@@ -12,7 +12,7 @@
 namespace gfx {
 
 // No-op lock for single-threaded environments (Emscripten/WebAssembly)
-#ifdef __EMSCRIPTEN__
+#ifdef GFX_HAS_EMSCRIPTEN
 struct NoOpLock {
     template<typename T>
     NoOpLock(T&) {} // Accept any parameter but do nothing
@@ -152,7 +152,7 @@ private:
 
     const IBackend* m_backends[GFX_BACKEND_AUTO];
     int m_refCounts[GFX_BACKEND_AUTO];
-#ifndef __EMSCRIPTEN__
+#ifndef GFX_HAS_EMSCRIPTEN
     std::mutex m_mutex;
 #else
     int m_mutex;  // Dummy variable for NoOpLock template parameter
@@ -180,13 +180,6 @@ inline const IBackend* getAPI(void* handle)
 inline GfxBackend getBackend(void* handle)
 {
     return BackendManager::getInstance().getBackend(handle);
-}
-
-// Native handle passthrough - template preserves type automatically
-template <typename T>
-inline T native(T handle)
-{
-    return handle;
 }
 
 inline void unwrap(void* handle)

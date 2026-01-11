@@ -10,7 +10,7 @@
 
 namespace gfx {
 
-const IBackend* BackendFactory::createBackend(GfxBackend backend)
+const IBackend* BackendFactory::create(GfxBackend backend)
 {
     switch (backend) {
 #ifdef GFX_ENABLE_VULKAN
