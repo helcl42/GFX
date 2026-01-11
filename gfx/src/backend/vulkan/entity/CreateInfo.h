@@ -221,7 +221,6 @@ struct BindGroupCreateInfo {
 
 struct InstanceCreateInfo {
     bool enableValidation;
-    bool enableHeadless;
     const char* applicationName = "GfxWrapper Application";
     uint32_t applicationVersion = 1;
 };
