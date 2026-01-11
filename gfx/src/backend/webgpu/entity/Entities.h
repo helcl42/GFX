@@ -1921,6 +1921,14 @@ public:
 
     ~Blit()
     {
+        // Release cached pipelines
+        for (auto& pair : m_pipelines) {
+            wgpuRenderPipelineRelease(pair.second);
+        }
+        // Release cached samplers
+        for (auto& pair : m_samplers) {
+            wgpuSamplerRelease(pair.second);
+        }
         if (m_pipelineLayout) {
             wgpuPipelineLayoutRelease(m_pipelineLayout);
         }
@@ -1937,15 +1945,8 @@ public:
         WGPUTexture dstTexture, const WGPUOrigin3D& dstOrigin, const WGPUExtent3D& dstExtent, uint32_t dstMipLevel,
         WGPUFilterMode filterMode)
     {
-        // Create sampler with requested filter mode
-        WGPUSamplerDescriptor samplerDesc = {};
-        samplerDesc.addressModeU = WGPUAddressMode_ClampToEdge;
-        samplerDesc.addressModeV = WGPUAddressMode_ClampToEdge;
-        samplerDesc.addressModeW = WGPUAddressMode_ClampToEdge;
-        samplerDesc.magFilter = filterMode;
-        samplerDesc.minFilter = filterMode;
-        samplerDesc.mipmapFilter = WGPUMipmapFilterMode_Nearest;
-        WGPUSampler sampler = wgpuDeviceCreateSampler(m_device, &samplerDesc);
+        // Get or create sampler with requested filter mode
+        WGPUSampler sampler = getOrCreateSampler(filterMode);
 
         // Query texture dimension - use 2D for now, can be extended for arrays/3D later
         WGPUTextureDimension srcDimension = wgpuTextureGetDimension(srcTexture);
@@ -2057,7 +2058,7 @@ public:
         wgpuBindGroupRelease(bindGroup);
         wgpuBufferRelease(uniformBuffer);
         wgpuTextureViewRelease(srcView);
-        wgpuSamplerRelease(sampler);
+        // Note: sampler is cached, don't release it here
     }
 
 private:
@@ -2092,11 +2093,34 @@ private:
         return pipeline;
     }
 
+    WGPUSampler getOrCreateSampler(WGPUFilterMode filterMode)
+    {
+        // Check cache
+        auto it = m_samplers.find(filterMode);
+        if (it != m_samplers.end()) {
+            return it->second;
+        }
+
+        // Create new sampler for this filter mode
+        WGPUSamplerDescriptor samplerDesc = {};
+        samplerDesc.addressModeU = WGPUAddressMode_ClampToEdge;
+        samplerDesc.addressModeV = WGPUAddressMode_ClampToEdge;
+        samplerDesc.addressModeW = WGPUAddressMode_ClampToEdge;
+        samplerDesc.magFilter = filterMode;
+        samplerDesc.minFilter = filterMode;
+        samplerDesc.mipmapFilter = WGPUMipmapFilterMode_Nearest;
+
+        WGPUSampler sampler = wgpuDeviceCreateSampler(m_device, &samplerDesc);
+        m_samplers[filterMode] = sampler;
+        return sampler;
+    }
+
     WGPUDevice m_device = nullptr;
     WGPUShaderModule m_shaderModule = nullptr;
     WGPUBindGroupLayout m_bindGroupLayout = nullptr;
     WGPUPipelineLayout m_pipelineLayout = nullptr;
     std::unordered_map<WGPUTextureFormat, WGPURenderPipeline> m_pipelines;
+    std::unordered_map<WGPUFilterMode, WGPUSampler> m_samplers;
 };
 
 } // namespace gfx::webgpu
