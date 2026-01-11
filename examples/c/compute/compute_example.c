@@ -644,7 +644,7 @@ static bool createRenderPass(ComputeApp* app)
 {
     // Define color attachment target
     GfxRenderPassColorAttachmentTarget colorTarget = {
-        .format = COLOR_FORMAT,
+        .format = app->swapchainInfo.format,
         .sampleCount = GFX_SAMPLE_COUNT_1,
         .ops = {
             .loadOp = GFX_LOAD_OP_CLEAR,
@@ -1409,17 +1409,17 @@ int main(void)
         return 1;
     }
 
+    if (!createSizeDependentResources(&app, app.windowWidth, app.windowHeight)) {
+        cleanup(&app);
+        return 1;
+    }
+
     if (!createComputeResources(&app)) {
         cleanup(&app);
         return 1;
     }
 
     if (!createRenderResources(&app)) {
-        cleanup(&app);
-        return 1;
-    }
-
-    if (!createSizeDependentResources(&app, app.windowWidth, app.windowHeight)) {
         cleanup(&app);
         return 1;
     }

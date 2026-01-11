@@ -749,7 +749,7 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 
         // Color attachment
         RenderPassColorAttachment colorAttachment{};
-        colorAttachment.target.format = COLOR_FORMAT;
+        colorAttachment.target.format = swapchainInfo.format;
         colorAttachment.target.sampleCount = SampleCount::Count1;
         colorAttachment.target.loadOp = LoadOp::Clear;
         colorAttachment.target.storeOp = StoreOp::Store;

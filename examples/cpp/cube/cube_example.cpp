@@ -417,7 +417,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         RenderPassColorAttachment colorAttachment{};
         RenderPassColorAttachmentTarget resolveTarget{}; // Declare outside to prevent dangling pointer
         
-        colorAttachment.target.format = COLOR_FORMAT;
+        colorAttachment.target.format = swapchainInfo.format;
         colorAttachment.target.sampleCount = MSAA_SAMPLE_COUNT;
         colorAttachment.target.loadOp = LoadOp::Clear;
         colorAttachment.target.storeOp = StoreOp::DontCare; // MSAA buffer doesn't need to be stored
@@ -425,7 +425,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 
         if (MSAA_SAMPLE_COUNT != SampleCount::Count1) {
             // MSAA: Add resolve target
-            resolveTarget.format = COLOR_FORMAT;
+            resolveTarget.format = swapchainInfo.format;
             resolveTarget.sampleCount = SampleCount::Count1;
             resolveTarget.loadOp = LoadOp::DontCare;
             resolveTarget.storeOp = StoreOp::Store;

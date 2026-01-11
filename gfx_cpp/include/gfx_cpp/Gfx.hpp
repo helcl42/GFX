@@ -9,12 +9,6 @@
 #include <variant>
 #include <vector>
 
-// Forward declarations to avoid including heavy headers
-struct WGPUInstanceImpl;
-struct VkInstance_T;
-using WGPUInstance = WGPUInstanceImpl*;
-using VkInstance = VkInstance_T*;
-
 namespace gfx {
 
 // ============================================================================

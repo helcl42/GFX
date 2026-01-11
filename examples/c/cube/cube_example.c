@@ -891,7 +891,7 @@ static bool createRenderPass(CubeApp* app)
     // Create render pass (persistent, reusable across frames)
     // Define color attachment target with MSAA
     GfxRenderPassColorAttachmentTarget colorTarget = {
-        .format = COLOR_FORMAT,
+        .format = app->swapchainInfo.format,
         .sampleCount = MSAA_SAMPLE_COUNT,
         .ops = {
             .loadOp = GFX_LOAD_OP_CLEAR,
@@ -901,7 +901,7 @@ static bool createRenderPass(CubeApp* app)
 
     // Define resolve target (for MSAA -> non-MSAA resolve)
     GfxRenderPassColorAttachmentTarget resolveTarget = {
-        .format = COLOR_FORMAT,
+        .format = app->swapchainInfo.format,
         .sampleCount = GFX_SAMPLE_COUNT_1,
         .ops = {
             .loadOp = GFX_LOAD_OP_DONT_CARE,
@@ -1636,12 +1636,12 @@ int main(void)
         return -1;
     }
 
-    if (!createRenderingResources(&app)) {
+    if (!createSizeDependentResources(&app, app.windowWidth, app.windowHeight)) {
         cleanup(&app);
         return -1;
     }
 
-    if (!createSizeDependentResources(&app, app.windowWidth, app.windowHeight)) {
+    if (!createRenderingResources(&app)) {
         cleanup(&app);
         return -1;
     }
