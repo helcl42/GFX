@@ -153,7 +153,7 @@ public:
 
         VkResult result = vkCreateInstance(&vkCreateInfo, nullptr, &m_instance);
         if (result != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create Vulkan instance: " + std::string(gfx::vulkan::converter::vkResultToString(result)));
+            throw std::runtime_error("Failed to create Vulkan instance: " + std::string(converter::vkResultToString(result)));
         }
 
         // Setup debug messenger if validation enabled
@@ -221,8 +221,8 @@ private:
         auto* instance = static_cast<Instance*>(pUserData);
         if (instance && instance->m_userCallback) {
             // Convert Vulkan types to internal enums
-            DebugMessageSeverity severity = gfx::vulkan::converter::convertVkDebugSeverity(messageSeverity);
-            DebugMessageType type = gfx::vulkan::converter::convertVkDebugType(messageType);
+            DebugMessageSeverity severity = converter::convertVkDebugSeverity(messageSeverity);
+            DebugMessageType type = converter::convertVkDebugType(messageType);
 
             instance->m_userCallback(severity, type, pCallbackData->pMessage, instance->m_userCallbackData);
         }
@@ -586,32 +586,32 @@ public:
 #else
         switch (createInfo.windowHandle.platform) {
 #ifdef GFX_HAS_WIN32
-        case gfx::vulkan::PlatformWindowHandle::Platform::Win32:
+        case PlatformWindowHandle::Platform::Win32:
             m_surface = createSurfaceWin32(m_adapter->getInstance()->handle(), createInfo.windowHandle);
             break;
 #endif
 #ifdef GFX_HAS_ANDROID
-        case gfx::vulkan::PlatformWindowHandle::Platform::Android:
+        case PlatformWindowHandle::Platform::Android:
             m_surface = createSurfaceAndroid(m_adapter->getInstance()->handle(), createInfo.windowHandle);
             break;
 #endif
 #ifdef GFX_HAS_X11
-        case gfx::vulkan::PlatformWindowHandle::Platform::Xlib:
+        case PlatformWindowHandle::Platform::Xlib:
             m_surface = createSurfaceXlib(m_adapter->getInstance()->handle(), createInfo.windowHandle);
             break;
 #endif
 #ifdef GFX_HAS_XCB
-        case gfx::vulkan::PlatformWindowHandle::Platform::Xcb:
+        case PlatformWindowHandle::Platform::Xcb:
             m_surface = createSurfaceXCB(m_adapter->getInstance()->handle(), createInfo.windowHandle);
             break;
 #endif
 #ifdef GFX_HAS_WAYLAND
-        case gfx::vulkan::PlatformWindowHandle::Platform::Wayland:
+        case PlatformWindowHandle::Platform::Wayland:
             m_surface = createSurfaceWayland(m_adapter->getInstance()->handle(), createInfo.windowHandle);
             break;
 #endif
 #if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
-        case gfx::vulkan::PlatformWindowHandle::Platform::Metal:
+        case PlatformWindowHandle::Platform::Metal:
             m_surface = createSurfaceMetal(m_adapter->getInstance()->handle(), createInfo.windowHandle);
             break;
 #endif
@@ -664,7 +664,7 @@ public:
 private:
 #ifndef GFX_HEADLESS_BUILD
 #ifdef GFX_HAS_WIN32
-    static VkSurfaceKHR createSurfaceWin32(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
+    static VkSurfaceKHR createSurfaceWin32(VkInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.win32.hwnd || !windowHandle.handle.win32.hinstance) {
             throw std::runtime_error("Invalid Win32 window or instance handle");
@@ -683,7 +683,7 @@ private:
     }
 #endif
 #ifdef GFX_HAS_ANDROID
-    static VkSurfaceKHR createSurfaceAndroid(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
+    static VkSurfaceKHR createSurfaceAndroid(VkInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.android.window) {
             throw std::runtime_error("Invalid Android window handle");
@@ -701,7 +701,7 @@ private:
     }
 #endif
 #ifdef GFX_HAS_X11
-    static VkSurfaceKHR createSurfaceXlib(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
+    static VkSurfaceKHR createSurfaceXlib(VkInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.xlib.display || !windowHandle.handle.xlib.window) {
             throw std::runtime_error("Invalid Xlib display handle or window handle");
@@ -720,7 +720,7 @@ private:
     }
 #endif
 #ifdef GFX_HAS_XCB
-    static VkSurfaceKHR createSurfaceXCB(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
+    static VkSurfaceKHR createSurfaceXCB(VkInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.xcb.window || !windowHandle.handle.xcb.connection) {
             throw std::runtime_error("Invalid XCB window or connection handle");
@@ -739,7 +739,7 @@ private:
     }
 #endif
 #ifdef GFX_HAS_WAYLAND
-    static VkSurfaceKHR createSurfaceWayland(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
+    static VkSurfaceKHR createSurfaceWayland(VkInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.wayland.surface || !windowHandle.handle.wayland.display) {
             throw std::runtime_error("Invalid Wayland surface or display handle");
@@ -758,7 +758,7 @@ private:
     }
 #endif
 #if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
-    static VkSurfaceKHR createSurfaceMetal(VkInstance instance, const gfx::vulkan::PlatformWindowHandle& windowHandle)
+    static VkSurfaceKHR createSurfaceMetal(VkInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.metalLayer) {
             throw std::runtime_error("Invalid Metal layer handle");
@@ -890,7 +890,7 @@ public:
         m_textureViews.reserve(imageCount);
         for (size_t i = 0; i < imageCount; ++i) {
             // Create non-owning Texture wrapper for swapchain image
-            gfx::vulkan::TextureCreateInfo textureCreateInfo{};
+            TextureCreateInfo textureCreateInfo{};
             textureCreateInfo.format = m_info.format;
             textureCreateInfo.size = { m_info.width, m_info.height, 1 };
             textureCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -902,7 +902,7 @@ public:
             m_textures.push_back(std::make_unique<Texture>(m_device, m_images[i], textureCreateInfo));
 
             // Create TextureView for the texture
-            gfx::vulkan::TextureViewCreateInfo viewCreateInfo{};
+            TextureViewCreateInfo viewCreateInfo{};
             viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
             viewCreateInfo.format = VK_FORMAT_UNDEFINED; // Use texture's format
             viewCreateInfo.baseMipLevel = 0;

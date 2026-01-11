@@ -1,7 +1,15 @@
 #include "Entities.h"
-#include "../converter/GfxWebGPUConverter.h"
 
 namespace gfx::webgpu {
+
+namespace {
+    bool hasStencil(WGPUTextureFormat format)
+    {
+        return format == WGPUTextureFormat_Stencil8 ||
+               format == WGPUTextureFormat_Depth24PlusStencil8 ||
+               format == WGPUTextureFormat_Depth32FloatStencil8;
+    }
+}
 
 bool Queue::submit(const SubmitInfo& submitInfo)
 {
@@ -28,7 +36,7 @@ bool Queue::submit(const SubmitInfo& submitInfo)
     // Signal fence if provided - use queue work done to wait for GPU completion
     if (submitInfo.signalFence) {
         static auto fenceSignalCallback = [](WGPUQueueWorkDoneStatus status, WGPUStringView, void* userdata1, void*) {
-            auto* fence = static_cast<gfx::webgpu::Fence*>(userdata1);
+            auto* fence = static_cast<Fence*>(userdata1);
             if (status == WGPUQueueWorkDoneStatus_Success) {
                 fence->setSignaled(true);
             }
@@ -42,11 +50,9 @@ bool Queue::submit(const SubmitInfo& submitInfo)
         WGPUFuture future = wgpuQueueOnSubmittedWorkDone(m_queue, callbackInfo);
 
         // Wait for the fence to be signaled (GPU work done)
-        if (m_device && m_device->getAdapter() && m_device->getAdapter()->getInstance()) {
-            WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
-            waitInfo.future = future;
-            wgpuInstanceWaitAny(m_device->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
-        }
+        WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
+        waitInfo.future = future;
+        wgpuInstanceWaitAny(m_device->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
     }
 
     return true;
@@ -91,11 +97,9 @@ bool Queue::waitIdle()
     WGPUFuture future = wgpuQueueOnSubmittedWorkDone(m_queue, callbackInfo);
 
     // Properly wait for the queue work to complete
-    if (m_device && m_device->getAdapter() && m_device->getAdapter()->getInstance()) {
-        WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
-        waitInfo.future = future;
-        wgpuInstanceWaitAny(m_device->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
-    }
+    WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
+    waitInfo.future = future;
+    wgpuInstanceWaitAny(m_device->getAdapter()->getInstance()->handle(), 1, &waitInfo, UINT64_MAX);
 
     return workDone;
 }
@@ -150,12 +154,9 @@ void CommandEncoder::copyTextureToTexture(Texture* source, const WGPUOrigin3D& s
 {
     // For 2D textures and arrays, depth represents layer count
     // For 3D textures, it represents actual depth
-    WGPUExtent3D srcSize = source->getSize();
-    bool is3DTexture = (srcSize.depthOrArrayLayers > 1 && srcSize.height > 1);
-
     WGPUOrigin3D srcOrigin = sourceOrigin;
     WGPUOrigin3D dstOrigin = destinationOrigin;
-    if (!is3DTexture) {
+    if (source->getDimension() != WGPUTextureDimension_3D) {
         srcOrigin.z = 0;
         dstOrigin.z = 0;
     }
@@ -232,9 +233,8 @@ RenderPassEncoder::RenderPassEncoder(CommandEncoder* commandEncoder, RenderPass*
         wgpuDepthStencil.depthClearValue = beginInfo.depthClearValue;
 
         // Only set stencil operations for formats that have a stencil aspect
-        WGPUTextureFormat wgpuFormat = fbInfo.depthStencilAttachmentView->getTexture()->getFormat();
-        GfxTextureFormat format = converter::wgpuFormatToGfxFormat(wgpuFormat);
-        if (converter::formatHasStencil(format)) {
+        WGPUTextureFormat format = fbInfo.depthStencilAttachmentView->getTexture()->getFormat();
+        if (hasStencil(format)) {
             wgpuDepthStencil.stencilLoadOp = depthStencilAtt.stencilLoadOp;
             wgpuDepthStencil.stencilStoreOp = depthStencilAtt.stencilStoreOp;
             wgpuDepthStencil.stencilClearValue = beginInfo.stencilClearValue;
@@ -257,7 +257,7 @@ ComputePassEncoder::ComputePassEncoder(CommandEncoder* commandEncoder, const Com
 {
     WGPUComputePassDescriptor wgpuDesc = WGPU_COMPUTE_PASS_DESCRIPTOR_INIT;
     if (createInfo.label) {
-        wgpuDesc.label = converter::gfxStringView(createInfo.label);
+        wgpuDesc.label = toStringView(createInfo.label);
     }
 
     m_encoder = wgpuCommandEncoderBeginComputePass(commandEncoder->handle(), &wgpuDesc);
@@ -314,7 +314,7 @@ void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLeve
 
 WGPUTextureView TextureView::handle() const
 {
-    if (m_swapchain) {  
+    if (m_swapchain) {
         // Get the raw view handle from swapchain (created on-demand in acquireNextImage)
         return m_swapchain->getCurrentNativeTextureView();
     }
