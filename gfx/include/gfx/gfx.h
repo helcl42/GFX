@@ -1097,14 +1097,14 @@ GFX_API GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentIn
 
 // Buffer functions
 GFX_API GfxResult gfxBufferDestroy(GfxBuffer buffer);
-GFX_API void gfxBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo);
+GFX_API GfxResult gfxBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo);
 GFX_API GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer);
-GFX_API void gfxBufferUnmap(GfxBuffer buffer);
+GFX_API GfxResult gfxBufferUnmap(GfxBuffer buffer);
 
 // Texture functions
 GFX_API GfxResult gfxTextureDestroy(GfxTexture texture);
-GFX_API void gfxTextureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo);
-GFX_API GfxTextureLayout gfxTextureGetLayout(GfxTexture texture);
+GFX_API GfxResult gfxTextureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo);
+GFX_API GfxResult gfxTextureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout);
 GFX_API GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView);
 
 // TextureView functions

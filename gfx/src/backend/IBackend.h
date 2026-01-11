@@ -59,14 +59,14 @@ public:
 
     // Buffer functions
     virtual GfxResult bufferDestroy(GfxBuffer buffer) const = 0;
-    virtual void bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const = 0;
+    virtual GfxResult bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const = 0;
     virtual GfxResult bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const = 0;
-    virtual void bufferUnmap(GfxBuffer buffer) const = 0;
+    virtual GfxResult bufferUnmap(GfxBuffer buffer) const = 0;
 
     // Texture functions
     virtual GfxResult textureDestroy(GfxTexture texture) const = 0;
-    virtual void textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const = 0;
-    virtual GfxTextureLayout textureGetLayout(GfxTexture texture) const = 0;
+    virtual GfxResult textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const = 0;
+    virtual GfxResult textureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout) const = 0;
     virtual GfxResult textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const = 0;
 
     // TextureView functions

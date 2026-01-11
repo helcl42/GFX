@@ -255,7 +255,12 @@ public:
     explicit CBufferImpl(GfxBuffer h)
         : m_handle(h)
     {
-        gfxBufferGetInfo(m_handle, &m_info);
+        GfxResult result = gfxBufferGetInfo(m_handle, &m_info);
+        if (result != GFX_RESULT_SUCCESS) {
+            // Handle error - set default values
+            m_info.size = 0;
+            m_info.usage = GFX_BUFFER_USAGE_NONE;
+        }
     }
     ~CBufferImpl() override
     {
@@ -321,7 +326,17 @@ public:
     explicit CTextureImpl(GfxTexture h)
         : m_handle(h)
     {
-        gfxTextureGetInfo(m_handle, &m_info);
+        GfxResult result = gfxTextureGetInfo(m_handle, &m_info);
+        if (result != GFX_RESULT_SUCCESS) {
+            // Handle error - set default values
+            m_info.type = GFX_TEXTURE_TYPE_2D;
+            m_info.size = { 0, 0, 0 };
+            m_info.arrayLayerCount = 1;
+            m_info.mipLevelCount = 1;
+            m_info.sampleCount = GFX_SAMPLE_COUNT_1;
+            m_info.format = GFX_TEXTURE_FORMAT_UNDEFINED;
+            m_info.usage = GFX_TEXTURE_USAGE_NONE;
+        }
     }
     ~CTextureImpl() override
     {
@@ -345,7 +360,12 @@ public:
         return info;
     }
 
-    TextureLayout getLayout() const override { return static_cast<TextureLayout>(gfxTextureGetLayout(m_handle)); }
+    TextureLayout getLayout() const override
+    {
+        GfxTextureLayout layout = GFX_TEXTURE_LAYOUT_UNDEFINED;
+        gfxTextureGetLayout(m_handle, &layout);
+        return static_cast<TextureLayout>(layout);
+    }
 
     std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) override
     {

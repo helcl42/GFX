@@ -705,13 +705,14 @@ GfxResult VulkanBackend::bufferDestroy(GfxBuffer buffer) const
     return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
+GfxResult VulkanBackend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
 {
     if (!buffer || !outInfo) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* buf = converter::toNative<Buffer>(buffer);
     *outInfo = converter::vkBufferToGfxBufferInfo(buf->getInfo());
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult VulkanBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
@@ -728,13 +729,14 @@ GfxResult VulkanBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t s
     return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::bufferUnmap(GfxBuffer buffer) const
+GfxResult VulkanBackend::bufferUnmap(GfxBuffer buffer) const
 {
     if (!buffer) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* buf = converter::toNative<Buffer>(buffer);
     buf->unmap();
+    return GFX_RESULT_SUCCESS;
 }
 
 // Texture functions
@@ -744,22 +746,24 @@ GfxResult VulkanBackend::textureDestroy(GfxTexture texture) const
     return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const
+GfxResult VulkanBackend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const
 {
     if (!texture || !outInfo) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* tex = converter::toNative<Texture>(texture);
     *outInfo = converter::vkTextureInfoToGfxTextureInfo(tex->getInfo());
+    return GFX_RESULT_SUCCESS;
 }
 
-GfxTextureLayout VulkanBackend::textureGetLayout(GfxTexture texture) const
+GfxResult VulkanBackend::textureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout) const
 {
-    if (!texture) {
-        return GFX_TEXTURE_LAYOUT_UNDEFINED;
+    if (!texture || !outLayout) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* tex = converter::toNative<Texture>(texture);
-    return converter::vkImageLayoutToGfxLayout(tex->getLayout());
+    *outLayout = converter::vkImageLayoutToGfxLayout(tex->getLayout());
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult VulkanBackend::textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const

@@ -60,14 +60,14 @@ public:
 
     // Buffer functions
     GfxResult bufferDestroy(GfxBuffer buffer) const override;
-    void bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const override;
+    GfxResult bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const override;
     GfxResult bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const override;
-    void bufferUnmap(GfxBuffer buffer) const override;
+    GfxResult bufferUnmap(GfxBuffer buffer) const override;
 
     // Texture functions
     GfxResult textureDestroy(GfxTexture texture) const override;
-    void textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const override;
-    GfxTextureLayout textureGetLayout(GfxTexture texture) const override;
+    GfxResult textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const override;
+    GfxResult textureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout) const override;
     GfxResult textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const override;
 
     // TextureView functions

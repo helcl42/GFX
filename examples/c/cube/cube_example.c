@@ -1179,13 +1179,19 @@ void render(CubeApp* app)
 
         // Set vertex buffer
         GfxBufferInfo vertexBufferInfo;
-        gfxBufferGetInfo(app->vertexBuffer, &vertexBufferInfo);
+        if (gfxBufferGetInfo(app->vertexBuffer, &vertexBufferInfo) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to get vertex buffer info\n");
+            return;
+        }
         gfxRenderPassEncoderSetVertexBuffer(renderPass, 0, app->vertexBuffer, 0,
             vertexBufferInfo.size);
 
         // Set index buffer
         GfxBufferInfo indexBufferInfo;
-        gfxBufferGetInfo(app->indexBuffer, &indexBufferInfo);
+        if (gfxBufferGetInfo(app->indexBuffer, &indexBufferInfo) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to get index buffer info\n");
+            return;
+        }
         gfxRenderPassEncoderSetIndexBuffer(renderPass, app->indexBuffer,
             GFX_INDEX_FORMAT_UINT16, 0,
             indexBufferInfo.size);

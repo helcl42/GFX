@@ -670,13 +670,14 @@ GfxResult WebGPUBackend::bufferDestroy(GfxBuffer buffer) const
     return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
+GfxResult WebGPUBackend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
 {
     if (!buffer || !outInfo) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* buf = converter::toNative<Buffer>(buffer);
     *outInfo = converter::wgpuBufferToGfxBufferInfo(buf->getInfo());
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult WebGPUBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
@@ -696,13 +697,14 @@ GfxResult WebGPUBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t s
     return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::bufferUnmap(GfxBuffer buffer) const
+GfxResult WebGPUBackend::bufferUnmap(GfxBuffer buffer) const
 {
     if (!buffer) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* bufferPtr = converter::toNative<Buffer>(buffer);
     bufferPtr->unmap();
+    return GFX_RESULT_SUCCESS;
 }
 
 // Texture functions
@@ -715,22 +717,24 @@ GfxResult WebGPUBackend::textureDestroy(GfxTexture texture) const
     return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const
+GfxResult WebGPUBackend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const
 {
     if (!texture || !outInfo) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* texturePtr = converter::toNative<Texture>(texture);
     *outInfo = converter::wgpuTextureInfoToGfxTextureInfo(texturePtr->getInfo());
+    return GFX_RESULT_SUCCESS;
 }
 
-GfxTextureLayout WebGPUBackend::textureGetLayout(GfxTexture texture) const
+GfxResult WebGPUBackend::textureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout) const
 {
     // WebGPU doesn't have explicit layouts, return GENERAL as a reasonable default
-    if (!texture) {
-        return GFX_TEXTURE_LAYOUT_UNDEFINED;
+    if (!texture || !outLayout) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    return GFX_TEXTURE_LAYOUT_GENERAL;
+    *outLayout = GFX_TEXTURE_LAYOUT_GENERAL;
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult WebGPUBackend::textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const

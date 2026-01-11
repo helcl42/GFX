@@ -644,16 +644,16 @@ GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* pres
 }
 
 // Buffer Functions
-void gfxBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo)
+GfxResult gfxBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo)
 {
     if (!buffer || !outInfo) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(buffer);
     if (!api) {
-        return;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    api->bufferGetInfo(gfx::native(buffer), outInfo);
+    return api->bufferGetInfo(gfx::native(buffer), outInfo);
 }
 
 GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer)
@@ -668,40 +668,41 @@ GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** 
     return api->bufferMap(gfx::native(buffer), offset, size, outMappedPointer);
 }
 
-void gfxBufferUnmap(GfxBuffer buffer)
+GfxResult gfxBufferUnmap(GfxBuffer buffer)
 {
     if (!buffer) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(buffer);
-    if (api) {
-        api->bufferUnmap(gfx::native(buffer));
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->bufferUnmap(gfx::native(buffer));
 }
 
 // Texture Functions
-void gfxTextureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo)
+GfxResult gfxTextureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo)
 {
     if (!texture || !outInfo) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(texture);
     if (!api) {
-        return;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    api->textureGetInfo(gfx::native(texture), outInfo);
+    return api->textureGetInfo(gfx::native(texture), outInfo);
 }
 
-GfxTextureLayout gfxTextureGetLayout(GfxTexture texture)
+GfxResult gfxTextureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout)
 {
-    if (!texture) {
-        return GFX_TEXTURE_LAYOUT_UNDEFINED;
+    if (!texture || !outLayout) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(texture);
     if (!api) {
-        return GFX_TEXTURE_LAYOUT_UNDEFINED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->textureGetLayout(gfx::native(texture));
+    return api->textureGetLayout(gfx::native(texture), outLayout);
 }
 
 GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView)
