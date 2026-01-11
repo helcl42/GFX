@@ -1179,11 +1179,11 @@ public:
         // First call: query count
         uint32_t count = 0;
         gfxSurfaceEnumerateSupportedFormats(m_handle, &count, nullptr);
-        
+
         // Second call: get formats
         std::vector<GfxTextureFormat> formats(count);
         gfxSurfaceEnumerateSupportedFormats(m_handle, &count, formats.data());
-        
+
         std::vector<TextureFormat> result;
         result.reserve(count);
         for (uint32_t i = 0; i < count; ++i) {
@@ -1197,11 +1197,11 @@ public:
         // First call: query count
         uint32_t count = 0;
         gfxSurfaceEnumerateSupportedPresentModes(m_handle, &count, nullptr);
-        
+
         // Second call: get present modes
         std::vector<GfxPresentMode> modes(count);
         gfxSurfaceEnumerateSupportedPresentModes(m_handle, &count, modes.data());
-        
+
         std::vector<PresentMode> result;
         result.reserve(count);
         for (uint32_t i = 0; i < count; ++i) {
@@ -1227,10 +1227,11 @@ public:
         }
     }
 
-    SwapchainInfo getInfo() const override {
+    SwapchainInfo getInfo() const override
+    {
         GfxSwapchainInfo cInfo;
         gfxSwapchainGetInfo(m_handle, &cInfo);
-        
+
         SwapchainInfo info;
         info.width = cInfo.width;
         info.height = cInfo.height;
@@ -1670,14 +1671,14 @@ public:
         // Create pipeline descriptor
         GfxRenderPipelineDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
-        
+
         // Extract render pass handle
         auto renderPassImpl = std::dynamic_pointer_cast<CRenderPassImpl>(descriptor.renderPass);
         if (!renderPassImpl) {
             throw std::runtime_error("Invalid render pass type");
         }
         cDesc.renderPass = renderPassImpl->getHandle();
-        
+
         cDesc.vertex = &cVertexState;
         cDesc.fragment = pFragmentState;
         cDesc.primitive = &cPrimitiveState;
@@ -1743,7 +1744,7 @@ public:
 
         for (const auto& attachment : descriptor.colorAttachments) {
             GfxRenderPassColorAttachment cAttachment = {};
-            
+
             GfxRenderPassColorAttachmentTarget cTarget = {};
             cTarget.format = cppFormatToCFormat(attachment.target.format);
             cTarget.sampleCount = cppSampleCountToCCount(attachment.target.sampleCount);
@@ -1826,7 +1827,7 @@ public:
         std::vector<GfxFramebufferAttachment> cColorAttachments;
         for (const auto& attachment : descriptor.colorAttachments) {
             GfxFramebufferAttachment cAttachment = {};
-            
+
             auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(attachment.view);
             if (!viewImpl) {
                 throw std::runtime_error("Invalid texture view type");
@@ -1847,7 +1848,7 @@ public:
         }
 
         // Convert depth/stencil attachment if present
-        GfxFramebufferAttachment cDepthStencilAttachment = {nullptr, nullptr};
+        GfxFramebufferAttachment cDepthStencilAttachment = { nullptr, nullptr };
 
         if (descriptor.depthStencilAttachment) {
             auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(descriptor.depthStencilAttachment->view);
@@ -2050,6 +2051,7 @@ public:
     std::shared_ptr<Adapter> requestAdapter(const AdapterDescriptor& descriptor = {}) override
     {
         GfxAdapterDescriptor cDesc = {};
+        cDesc.adapterIndex = UINT32_MAX; // Use preference-based selection
         cDesc.preference = static_cast<GfxAdapterPreference>(descriptor.preference);
 
         GfxAdapter adapter = nullptr;
@@ -2123,7 +2125,6 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
     GfxInstanceDescriptor cDesc = {};
     cDesc.backend = cBackend;
     cDesc.enableValidation = descriptor.enableValidation;
-    cDesc.enabledHeadless = descriptor.enabledHeadless;
     cDesc.applicationName = descriptor.applicationName.c_str();
     cDesc.applicationVersion = descriptor.applicationVersion;
 

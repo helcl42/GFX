@@ -84,23 +84,32 @@ gfx::webgpu::AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxA
     gfx::webgpu::AdapterCreateInfo createInfo{};
 
     if (descriptor) {
-        switch (descriptor->preference) {
-        case GFX_ADAPTER_PREFERENCE_LOW_POWER:
-            createInfo.powerPreference = WGPUPowerPreference_LowPower;
-            createInfo.forceFallbackAdapter = false;
-            break;
-        case GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE:
-            createInfo.powerPreference = WGPUPowerPreference_HighPerformance;
-            createInfo.forceFallbackAdapter = false;
-            break;
-        case GFX_ADAPTER_PREFERENCE_SOFTWARE:
-            createInfo.powerPreference = WGPUPowerPreference_Undefined;
-            createInfo.forceFallbackAdapter = true;
-            break;
-        default:
+        // Handle adapter index if specified
+        if (descriptor->adapterIndex != UINT32_MAX) {
+            createInfo.adapterIndex = descriptor->adapterIndex;
             createInfo.powerPreference = WGPUPowerPreference_Undefined;
             createInfo.forceFallbackAdapter = false;
-            break;
+        } else {
+            // Fall back to preference-based selection
+            createInfo.adapterIndex = UINT32_MAX;
+            switch (descriptor->preference) {
+            case GFX_ADAPTER_PREFERENCE_LOW_POWER:
+                createInfo.powerPreference = WGPUPowerPreference_LowPower;
+                createInfo.forceFallbackAdapter = false;
+                break;
+            case GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE:
+                createInfo.powerPreference = WGPUPowerPreference_HighPerformance;
+                createInfo.forceFallbackAdapter = false;
+                break;
+            case GFX_ADAPTER_PREFERENCE_SOFTWARE:
+                createInfo.powerPreference = WGPUPowerPreference_Undefined;
+                createInfo.forceFallbackAdapter = true;
+                break;
+            default:
+                createInfo.powerPreference = WGPUPowerPreference_Undefined;
+                createInfo.forceFallbackAdapter = false;
+                break;
+            }
         }
     } else {
         createInfo.powerPreference = WGPUPowerPreference_Undefined;

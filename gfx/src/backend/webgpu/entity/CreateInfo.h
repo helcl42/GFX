@@ -36,6 +36,7 @@ enum class SemaphoreType {
 // ============================================================================
 
 struct AdapterCreateInfo {
+    uint32_t adapterIndex = UINT32_MAX; // Adapter index (UINT32_MAX = use preference)
     WGPUPowerPreference powerPreference;
     bool forceFallbackAdapter;
 };

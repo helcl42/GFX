@@ -278,7 +278,6 @@ bool initializeGraphics(CubeApp* app)
     GfxInstanceDescriptor instanceDesc = {
         .backend = GFX_BACKEND_API,
         .enableValidation = true,
-        .enabledHeadless = false,
         .applicationName = "Cube Example (C)",
         .applicationVersion = 1,
         .requiredExtensions = glfwExtensions,
@@ -295,6 +294,7 @@ bool initializeGraphics(CubeApp* app)
 
     // Get adapter
     GfxAdapterDescriptor adapterDesc = {
+        .adapterIndex = UINT32_MAX, // Use preference-based selection
         .preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE
     };
 

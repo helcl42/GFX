@@ -1125,13 +1125,20 @@ gfx::vulkan::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInsta
 {
     gfx::vulkan::InstanceCreateInfo createInfo{};
     createInfo.enableValidation = descriptor && descriptor->enableValidation;
-    createInfo.enableHeadless = descriptor && descriptor->enabledHeadless;
     return createInfo;
 }
 gfx::vulkan::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)
 {
     gfx::vulkan::AdapterCreateInfo createInfo{};
 
+    // Handle adapter index if specified
+    if (descriptor && descriptor->adapterIndex != UINT32_MAX) {
+        createInfo.adapterIndex = descriptor->adapterIndex;
+    } else {
+        createInfo.adapterIndex = UINT32_MAX; // Indicates no specific adapter index
+    }
+
+    // Fall back to preference-based selection
     if (!descriptor || descriptor->preference == GFX_ADAPTER_PREFERENCE_UNDEFINED) {
         createInfo.devicePreference = gfx::vulkan::DeviceTypePreference::HighPerformance;
     } else if (descriptor->preference == GFX_ADAPTER_PREFERENCE_SOFTWARE) {

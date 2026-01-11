@@ -99,15 +99,18 @@ public:
         // Extensions
         std::vector<const char*> extensions = {};
         if (!createInfo.enableHeadless) {
-            extensions.push_back("VK_KHR_surface");
+            extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 #ifdef _WIN32
-            extensions.push_back("VK_KHR_win32_surface");
+            extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #elif defined(__linux__)
-            extensions.push_back("VK_KHR_xlib_surface");
-            extensions.push_back("VK_KHR_xcb_surface");
-            extensions.push_back("VK_KHR_wayland_surface");
+            extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+            extensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+            extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 #elif defined(__APPLE__)
-            extensions.push_back("VK_MVK_macos_surface");
+            extensions.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
+            extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#elif defined(__ANDROID__)
+            extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
 #endif
         }
 
@@ -253,35 +256,44 @@ public:
         std::vector<VkPhysicalDevice> devices(deviceCount);
         vkEnumeratePhysicalDevices(instance->handle(), &deviceCount, devices.data());
 
-        // Determine preferred device type based on createInfo
-        VkPhysicalDeviceType preferredType;
-        switch (createInfo.devicePreference) {
-        case DeviceTypePreference::SoftwareRenderer:
-            preferredType = VK_PHYSICAL_DEVICE_TYPE_CPU;
-            break;
-        case DeviceTypePreference::LowPower:
-            preferredType = VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
-            break;
-        case DeviceTypePreference::HighPerformance:
-        default:
-            preferredType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-            break;
-        }
-
-        // First pass: try to find preferred device type
-        m_physicalDevice = VK_NULL_HANDLE;
-        for (auto device : devices) {
-            VkPhysicalDeviceProperties props;
-            vkGetPhysicalDeviceProperties(device, &props);
-            if (props.deviceType == preferredType) {
-                m_physicalDevice = device;
+        // If adapter index is specified, use that directly
+        if (createInfo.adapterIndex != UINT32_MAX) {
+            if (createInfo.adapterIndex >= deviceCount) {
+                throw std::runtime_error("Adapter index out of range");
+            }
+            m_physicalDevice = devices[createInfo.adapterIndex];
+        } else {
+            // Otherwise, use preference-based selection
+            // Determine preferred device type based on createInfo
+            VkPhysicalDeviceType preferredType;
+            switch (createInfo.devicePreference) {
+            case DeviceTypePreference::SoftwareRenderer:
+                preferredType = VK_PHYSICAL_DEVICE_TYPE_CPU;
+                break;
+            case DeviceTypePreference::LowPower:
+                preferredType = VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+                break;
+            case DeviceTypePreference::HighPerformance:
+            default:
+                preferredType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
                 break;
             }
-        }
 
-        // Fallback: if preferred type not found, use first available device
-        if (m_physicalDevice == VK_NULL_HANDLE) {
-            m_physicalDevice = devices[0];
+            // First pass: try to find preferred device type
+            m_physicalDevice = VK_NULL_HANDLE;
+            for (auto device : devices) {
+                VkPhysicalDeviceProperties props;
+                vkGetPhysicalDeviceProperties(device, &props);
+                if (props.deviceType == preferredType) {
+                    m_physicalDevice = device;
+                    break;
+                }
+            }
+
+            // Fallback: if preferred type not found, use first available device
+            if (m_physicalDevice == VK_NULL_HANDLE) {
+                m_physicalDevice = devices[0];
+            }
         }
 
         initializeAdapterInfo();

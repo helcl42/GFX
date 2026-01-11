@@ -203,7 +203,6 @@ bool ComputeApp::initializeGraphics()
         instanceDesc.applicationName = "Compute & Postprocess Example (C++)";
         instanceDesc.applicationVersion = 1;
         instanceDesc.enableValidation = true;
-        instanceDesc.enabledHeadless = false;
         instanceDesc.requiredExtensions = extensions;
         instanceDesc.backend = Backend::WebGPU;
 

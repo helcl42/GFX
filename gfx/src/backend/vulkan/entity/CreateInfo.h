@@ -225,7 +225,8 @@ struct InstanceCreateInfo {
 };
 
 struct AdapterCreateInfo {
-    DeviceTypePreference devicePreference = DeviceTypePreference::HighPerformance;
+    uint32_t adapterIndex = UINT32_MAX;                                          // Adapter index (UINT32_MAX = use preference)
+    DeviceTypePreference devicePreference = DeviceTypePreference::HighPerformance; // Only used when adapterIndex is UINT32_MAX
 };
 
 struct DeviceCreateInfo {

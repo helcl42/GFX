@@ -113,47 +113,73 @@ public:
             throw std::runtime_error("Invalid instance for adapter creation");
         }
 
-        WGPURequestAdapterOptions options = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
-        options.powerPreference = createInfo.powerPreference;
-        options.forceFallbackAdapter = createInfo.forceFallbackAdapter ? WGPU_TRUE : WGPU_FALSE;
+        // If adapter index is specified, enumerate and select by index
+        if (createInfo.adapterIndex != UINT32_MAX) {
+            // Enumerate adapters (WebGPU only returns 1 adapter typically)
+            Adapter* adapters[16];
+            uint32_t count = enumerate(instance, adapters, 16);
 
-        // Use a struct to track callback completion
-        struct AdapterRequestContext {
-            WGPUAdapter* outAdapter;
-            bool completed;
-            WGPURequestAdapterStatus status;
-        } context = { &m_adapter, false, WGPURequestAdapterStatus_Error };
-
-        WGPURequestAdapterCallbackInfo callbackInfo = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
-        callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-        callbackInfo.callback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void* userdata2) {
-            auto* ctx = static_cast<AdapterRequestContext*>(userdata1);
-            ctx->status = status;
-            ctx->completed = true;
-
-            if (status == WGPURequestAdapterStatus_Success && adapter) {
-                *ctx->outAdapter = adapter;
-            } else if (message.data) {
-                fprintf(stderr, "Error: Failed to request adapter: %.*s\n",
-                    (int)message.length, message.data);
+            if (createInfo.adapterIndex >= count) {
+                throw std::runtime_error("Adapter index out of range");
             }
-            (void)userdata2; // Unused
-        };
-        callbackInfo.userdata1 = &context;
 
-        WGPUFuture future = wgpuInstanceRequestAdapter(instance->handle(), &options, callbackInfo);
+            // Use the adapter at the specified index
+            m_adapter = adapters[createInfo.adapterIndex]->m_adapter;
+            wgpuAdapterAddRef(m_adapter); // Add reference since we're sharing
 
-        // Use WaitAny to properly wait for the callback
-        WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
-        waitInfo.future = future;
-        wgpuInstanceWaitAny(instance->handle(), 1, &waitInfo, UINT64_MAX);
+            // Clean up other enumerated adapters
+            for (uint32_t i = 0; i < count; i++) {
+                if (i != createInfo.adapterIndex) {
+                    delete adapters[i];
+                } else {
+                    // Don't delete the one we're using, but we need to release it later
+                    delete adapters[i]; // This releases the reference but we already added one
+                }
+            }
+        } else {
+            // Otherwise, use preference-based selection (default behavior)
+            WGPURequestAdapterOptions options = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
+            options.powerPreference = createInfo.powerPreference;
+            options.forceFallbackAdapter = createInfo.forceFallbackAdapter ? WGPU_TRUE : WGPU_FALSE;
 
-        if (!context.completed) {
-            throw std::runtime_error("Adapter request timed out");
-        }
+            // Use a struct to track callback completion
+            struct AdapterRequestContext {
+                WGPUAdapter* outAdapter;
+                bool completed;
+                WGPURequestAdapterStatus status;
+            } context = { &m_adapter, false, WGPURequestAdapterStatus_Error };
 
-        if (!m_adapter) {
-            throw std::runtime_error("Failed to request adapter");
+            WGPURequestAdapterCallbackInfo callbackInfo = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
+            callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+            callbackInfo.callback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void* userdata2) {
+                auto* ctx = static_cast<AdapterRequestContext*>(userdata1);
+                ctx->status = status;
+                ctx->completed = true;
+
+                if (status == WGPURequestAdapterStatus_Success && adapter) {
+                    *ctx->outAdapter = adapter;
+                } else if (message.data) {
+                    fprintf(stderr, "Error: Failed to request adapter: %.*s\n",
+                        (int)message.length, message.data);
+                }
+                (void)userdata2; // Unused
+            };
+            callbackInfo.userdata1 = &context;
+
+            WGPUFuture future = wgpuInstanceRequestAdapter(instance->handle(), &options, callbackInfo);
+
+            // Use WaitAny to properly wait for the callback
+            WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
+            waitInfo.future = future;
+            wgpuInstanceWaitAny(instance->handle(), 1, &waitInfo, UINT64_MAX);
+
+            if (!context.completed) {
+                throw std::runtime_error("Adapter request timed out");
+            }
+
+            if (!m_adapter) {
+                throw std::runtime_error("Failed to request adapter");
+            }
         }
 
         m_info = createAdapterInfo();

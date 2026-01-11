@@ -227,7 +227,6 @@ bool CubeApp::initializeGraphics()
         instanceDesc.applicationName = "Rotating Cube Example (C++)";
         instanceDesc.applicationVersion = 1;
         instanceDesc.enableValidation = true;
-        instanceDesc.enabledHeadless = false;
         instanceDesc.requiredExtensions = extensions;
         instanceDesc.backend = BACKEND_API;
 

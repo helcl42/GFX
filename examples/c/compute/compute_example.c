@@ -325,7 +325,6 @@ static bool initGraphics(ComputeApp* app)
     GfxInstanceDescriptor instanceDesc = {
         .backend = GFX_BACKEND_API,
         .enableValidation = true,
-        .enabledHeadless = false,
         .applicationName = "Compute Example (C)",
         .applicationVersion = 1,
         .requiredExtensions = glfwExtensions,
@@ -342,6 +341,7 @@ static bool initGraphics(ComputeApp* app)
 
     // Get adapter
     GfxAdapterDescriptor adapterDesc = {
+        .adapterIndex = UINT32_MAX, // Use preference-based selection
         .preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE
     };
 

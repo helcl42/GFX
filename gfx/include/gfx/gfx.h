@@ -613,17 +613,17 @@ typedef struct {
 typedef struct {
     GfxBackend backend;
     bool enableValidation;
-    bool enabledHeadless;
     const char* applicationName;
     uint32_t applicationVersion;
     const char** requiredExtensions;
     uint32_t requiredExtensionCount;
 } GfxInstanceDescriptor;
 
-// - list required features Graphics/Compute/Present
-// - pass device override index in ??
+// Adapter selection: specify either an index OR a preference
+// Set adapterIndex to UINT32_MAX to use preference-based selection
 typedef struct {
-    GfxAdapterPreference preference;
+    uint32_t adapterIndex;           // Adapter index from enumeration (use UINT32_MAX to ignore)
+    GfxAdapterPreference preference; // Used only when adapterIndex is UINT32_MAX
 } GfxAdapterDescriptor;
 
 // Adapter information
@@ -675,10 +675,6 @@ typedef struct {
     uint32_t maxTextureArrayLayers;
 } GfxDeviceLimits;
 
-// - query presentable device when not headless
-// - pass device override index in
-// - handle heaadless
-// - additional extensions
 typedef struct {
     const char* label;
     const char** requiredFeatures;

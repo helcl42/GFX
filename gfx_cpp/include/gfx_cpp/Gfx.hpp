@@ -541,7 +541,8 @@ struct InstanceDescriptor {
 };
 
 struct AdapterDescriptor {
-    AdapterPreference preference = AdapterPreference::Undefined;
+    uint32_t adapterIndex = UINT32_MAX;                        // Adapter index from enumeration (use UINT32_MAX to ignore)
+    AdapterPreference preference = AdapterPreference::Undefined; // Used only when adapterIndex is UINT32_MAX
 };
 
 struct DeviceDescriptor {
