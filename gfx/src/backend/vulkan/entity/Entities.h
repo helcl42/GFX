@@ -1974,12 +1974,7 @@ public:
         }
 
         // Begin recording
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
-        m_isRecording = true;
+        begin();
     }
 
     ~CommandEncoder()
@@ -1999,6 +1994,26 @@ public:
         m_currentPipelineLayout = layout;
     }
 
+    void begin()
+    {
+        if (!m_isRecording) {
+            VkCommandBufferBeginInfo beginInfo{};
+            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+            vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
+            m_isRecording = true;
+        }
+    }
+
+    void end()
+    {
+        if (m_isRecording) {
+            vkEndCommandBuffer(m_commandBuffer);
+            m_isRecording = false;
+        }
+    }
+
     void reset()
     {
         m_currentPipelineLayout = VK_NULL_HANDLE;
@@ -2007,20 +2022,7 @@ public:
         vkResetCommandPool(m_device->handle(), m_commandPool, 0);
 
         // Begin recording again
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
-        m_isRecording = true;
-    }
-
-    void finish()
-    {
-        if (m_isRecording) {
-            vkEndCommandBuffer(m_commandBuffer);
-            m_isRecording = false;
-        }
+        begin();
     }
 
     void pipelineBarrier(

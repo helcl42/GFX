@@ -858,22 +858,23 @@ GfxResult VulkanBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submit
     return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
-void VulkanBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
+GfxResult VulkanBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
 {
     if (!queue || !buffer || !data) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* q = converter::toNative<Queue>(queue);
     auto* buf = converter::toNative<Buffer>(buffer);
     q->writeBuffer(buf, offset, data, size);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+GfxResult VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
     const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
 {
     if (!queue || !texture || !data || !extent || dataSize == 0) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* q = converter::toNative<Queue>(queue);
@@ -886,6 +887,7 @@ void VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
     q->writeTexture(tex, vkOrigin, mipLevel, data, dataSize, vkExtent, vkLayout);
 
     (void)bytesPerRow; // Unused - assuming tightly packed data
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult VulkanBackend::queueWaitIdle(GfxQueue queue) const
@@ -945,13 +947,13 @@ GfxResult VulkanBackend::commandEncoderBeginComputePass(GfxCommandEncoder comman
     }
 }
 
-void VulkanBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
+GfxResult VulkanBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
     GfxBuffer source, uint64_t sourceOffset,
     GfxBuffer destination, uint64_t destinationOffset,
     uint64_t size) const
 {
     if (!commandEncoder || !source || !destination) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* enc = converter::toNative<CommandEncoder>(commandEncoder);
@@ -959,16 +961,17 @@ void VulkanBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEn
     auto* dstBuf = converter::toNative<Buffer>(destination);
 
     enc->copyBufferToBuffer(srcBuf, sourceOffset, dstBuf, destinationOffset, size);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
+GfxResult VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
     GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
     GfxTexture destination, const GfxOrigin3D* origin,
     const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const
 {
 
     if (!commandEncoder || !source || !destination || !origin || !extent) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* enc = converter::toNative<CommandEncoder>(commandEncoder);
@@ -982,15 +985,16 @@ void VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandE
     enc->copyBufferToTexture(srcBuf, sourceOffset, dstTex, vkOrigin, vkExtent, mipLevel, vkLayout);
 
     (void)bytesPerRow; // Unused - assuming tightly packed data
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
+GfxResult VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
     GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
     const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
 {
     if (!commandEncoder || !source || !destination || !origin || !extent) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* enc = converter::toNative<CommandEncoder>(commandEncoder);
@@ -1004,15 +1008,16 @@ void VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandE
     enc->copyTextureToBuffer(srcTex, vkOrigin, mipLevel, dstBuf, destinationOffset, vkExtent, vkLayout);
 
     (void)bytesPerRow; // Unused - assuming tightly packed data
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
+GfxResult VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
     const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
 {
     if (!commandEncoder || !source || !destination || !sourceOrigin || !destinationOrigin || !extent) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* enc = converter::toNative<CommandEncoder>(commandEncoder);
@@ -1028,15 +1033,16 @@ void VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
     enc->copyTextureToTexture(srcTex, vkSrcOrigin, sourceMipLevel,
         dstTex, vkDstOrigin, destinationMipLevel,
         vkExtent, vkSrcLayout, vkDstLayout);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+GfxResult VulkanBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
     GfxFilterMode filter, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
 {
     if (!commandEncoder || !source || !destination || !sourceOrigin || !sourceExtent || !destinationOrigin || !destinationExtent) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* enc = converter::toNative<CommandEncoder>(commandEncoder);
@@ -1054,20 +1060,21 @@ void VulkanBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder command
     enc->blitTextureToTexture(srcTex, vkSrcOrigin, vkSrcExtent, sourceMipLevel,
         dstTex, vkDstOrigin, vkDstExtent, destinationMipLevel,
         vkFilter, vkSrcLayout, vkDstLayout);
+    return GFX_RESULT_SUCCESS;
 }
 
 // TODO - add member function to CommandEncoder for pipeline barrier
-void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+GfxResult VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
     const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
 {
     if (!commandEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     if (memoryBarrierCount == 0 && bufferBarrierCount == 0 && textureBarrierCount == 0) {
-        return;
+        return GFX_RESULT_SUCCESS;
     }
 
     auto* encoder = converter::toNative<CommandEncoder>(commandEncoder);
@@ -1095,49 +1102,54 @@ void VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
         internalMemBarriers.data(), static_cast<uint32_t>(internalMemBarriers.size()),
         internalBufBarriers.data(), static_cast<uint32_t>(internalBufBarriers.size()),
         internalTexBarriers.data(), static_cast<uint32_t>(internalTexBarriers.size()));
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const
+GfxResult VulkanBackend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const
 {
     if (!commandEncoder || !texture) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoder = converter::toNative<CommandEncoder>(commandEncoder);
     auto* tex = converter::toNative<Texture>(texture);
 
     tex->generateMipmaps(encoder);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+GfxResult VulkanBackend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
     uint32_t baseMipLevel, uint32_t levelCount) const
 {
     if (!commandEncoder || !texture) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoder = converter::toNative<CommandEncoder>(commandEncoder);
     auto* tex = converter::toNative<Texture>(texture);
 
     tex->generateMipmapsRange(encoder, baseMipLevel, levelCount);
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
+GfxResult VulkanBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
 {
     if (!commandEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* encoder = converter::toNative<CommandEncoder>(commandEncoder);
-    encoder->finish();
+    encoder->end();
+    return GFX_RESULT_SUCCESS;
 }
 
-void VulkanBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
+GfxResult VulkanBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
 {
     if (!commandEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* encoder = converter::toNative<CommandEncoder>(commandEncoder);
     encoder->reset();
+    return GFX_RESULT_SUCCESS;
 }
 
 // RenderPassEncoder functions

@@ -855,23 +855,24 @@ GfxResult WebGPUBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submit
     return queuePtr->submit(submit) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
-void WebGPUBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
+GfxResult WebGPUBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
 {
     if (!queue || !buffer || !data) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* queuePtr = converter::toNative<Queue>(queue);
     auto* bufferPtr = converter::toNative<Buffer>(buffer);
 
     queuePtr->writeBuffer(bufferPtr, offset, data, size);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+GfxResult WebGPUBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
     const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
 {
     if (!queue || !texture || !origin || !extent || !data) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* queuePtr = converter::toNative<Queue>(queue);
@@ -883,6 +884,7 @@ void WebGPUBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const 
     queuePtr->writeTexture(texturePtr, mipLevel, wgpuOrigin, data, dataSize, bytesPerRow, wgpuExtent);
 
     (void)finalLayout; // WebGPU handles layout transitions automatically
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult WebGPUBackend::queueWaitIdle(GfxQueue queue) const
@@ -944,11 +946,11 @@ GfxResult WebGPUBackend::commandEncoderBeginComputePass(GfxCommandEncoder comman
     }
 }
 
-void WebGPUBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset,
+GfxResult WebGPUBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset,
     GfxBuffer destination, uint64_t destinationOffset, uint64_t size) const
 {
     if (!commandEncoder || !source || !destination) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
@@ -956,13 +958,14 @@ void WebGPUBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEn
     auto* dstPtr = converter::toNative<Buffer>(destination);
 
     encoderPtr->copyBufferToBuffer(srcPtr, sourceOffset, dstPtr, destinationOffset, size);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
+GfxResult WebGPUBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
     GfxTexture destination, const GfxOrigin3D* origin, const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const
 {
     if (!commandEncoder || !source || !destination || !origin || !extent) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
@@ -976,13 +979,14 @@ void WebGPUBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandE
         wgpuOrigin, wgpuExtent, mipLevel);
 
     (void)finalLayout; // WebGPU handles layout transitions automatically
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
+GfxResult WebGPUBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
     GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
 {
     if (!commandEncoder || !source || !destination || !origin || !extent) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
@@ -996,14 +1000,15 @@ void WebGPUBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandE
         mipLevel, dstPtr, destinationOffset, bytesPerRow, wgpuExtent);
 
     (void)finalLayout; // WebGPU handles layout transitions automatically
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
+GfxResult WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, const GfxExtent3D* extent,
     GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
 {
     if (!commandEncoder || !source || !destination || !sourceOrigin || !destinationOrigin || !extent) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
@@ -1020,9 +1025,10 @@ void WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder command
 
     (void)srcFinalLayout; // WebGPU handles layout transitions automatically
     (void)dstFinalLayout;
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+GfxResult WebGPUBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
     GfxFilterMode filter, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
@@ -1044,9 +1050,10 @@ void WebGPUBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder command
     // WebGPU handles layout transitions automatically
     (void)srcFinalLayout;
     (void)dstFinalLayout;
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+GfxResult WebGPUBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
     const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
@@ -1060,42 +1067,46 @@ void WebGPUBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncod
     (void)bufferBarrierCount;
     (void)textureBarriers;
     (void)textureBarrierCount;
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const
+GfxResult WebGPUBackend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const
 {
     if (!commandEncoder || !texture) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoder = converter::toNative<CommandEncoder>(commandEncoder);
     auto* tex = converter::toNative<Texture>(texture);
 
     tex->generateMipmaps(encoder);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+GfxResult WebGPUBackend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
     uint32_t baseMipLevel, uint32_t levelCount) const
 {
     if (!commandEncoder || !texture) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoder = converter::toNative<CommandEncoder>(commandEncoder);
     auto* tex = converter::toNative<Texture>(texture);
 
     tex->generateMipmapsRange(encoder, baseMipLevel, levelCount);
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
+GfxResult WebGPUBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
 {
     (void)commandEncoder; // Parameter unused - handled in queueSubmit
+    return GFX_RESULT_SUCCESS;
 }
 
-void WebGPUBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
+GfxResult WebGPUBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
 {
     if (!commandEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<CommandEncoder>(commandEncoder);
@@ -1103,7 +1114,9 @@ void WebGPUBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
     // WebGPU encoders can't be reused after Finish() - recreate if needed
     if (!encoderPtr->recreateIfNeeded()) {
         fprintf(stderr, "[WebGPU ERROR] Failed to recreate command encoder\n");
+        return GFX_RESULT_ERROR_UNKNOWN;
     }
+    return GFX_RESULT_SUCCESS;
 }
 
 // RenderPassEncoder functions

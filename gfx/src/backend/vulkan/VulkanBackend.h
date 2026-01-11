@@ -97,8 +97,8 @@ public:
 
     // Queue functions
     GfxResult queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo) const override;
-    void queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const override;
-    void queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+    GfxResult queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const override;
+    GfxResult queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
         const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const override;
     GfxResult queueWaitIdle(GfxQueue queue) const override;
 
@@ -110,35 +110,35 @@ public:
     GfxResult commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder,
         const GfxComputePassBeginDescriptor* beginDescriptor,
         GfxComputePassEncoder* outComputePass) const override;
-    void commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
+    GfxResult commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
         GfxBuffer source, uint64_t sourceOffset,
         GfxBuffer destination, uint64_t destinationOffset,
         uint64_t size) const override;
-    void commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
+    GfxResult commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
         GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
         GfxTexture destination, const GfxOrigin3D* origin,
         const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const override;
-    void commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
+    GfxResult commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
         GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
         GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
         const GfxExtent3D* extent, GfxTextureLayout finalLayout) const override;
-    void commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
+    GfxResult commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
         GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
         GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
         const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const override;
-    void commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+    GfxResult commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
         GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
         GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
         GfxFilterMode filter, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const override;
-    void commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+    GfxResult commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
         const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
         const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
         const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const override;
-    void commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const override;
-    void commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+    GfxResult commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const override;
+    GfxResult commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
         uint32_t baseMipLevel, uint32_t levelCount) const override;
-    void commandEncoderEnd(GfxCommandEncoder commandEncoder) const override;
-    void commandEncoderBegin(GfxCommandEncoder commandEncoder) const override;
+    GfxResult commandEncoderEnd(GfxCommandEncoder commandEncoder) const override;
+    GfxResult commandEncoderBegin(GfxCommandEncoder commandEncoder) const override;
 
     // RenderPassEncoder functions
     void renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const override;

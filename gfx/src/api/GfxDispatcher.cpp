@@ -740,30 +740,30 @@ GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo)
     return api->queueSubmit(gfx::native(queue), submitInfo);
 }
 
-void gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size)
+GfxResult gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size)
 {
     if (!queue || !buffer) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(queue);
     if (!api) {
-        return;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    api->queueWriteBuffer(gfx::native(queue), gfx::native(buffer), offset, data, size);
+    return api->queueWriteBuffer(gfx::native(queue), gfx::native(buffer), offset, data, size);
 }
 
-void gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
     const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout)
 {
     if (!queue || !texture) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(queue);
     if (!api) {
-        return;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
-    api->queueWriteTexture(gfx::native(queue), gfx::native(texture), origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
+    return api->queueWriteTexture(gfx::native(queue), gfx::native(texture), origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
 }
 
 GfxResult gfxQueueWaitIdle(GfxQueue queue)
@@ -778,64 +778,68 @@ GfxResult gfxQueueWaitIdle(GfxQueue queue)
     return api->queueWaitIdle(gfx::native(queue));
 }
 
-// Command Encoder Functions
-void gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+GfxResult gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
     const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount)
 {
     if (!commandEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(commandEncoder);
-    if (api) {
-        api->commandEncoderPipelineBarrier(gfx::native(commandEncoder), memoryBarriers, memoryBarrierCount, bufferBarriers, bufferBarrierCount, textureBarriers, textureBarrierCount);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->commandEncoderPipelineBarrier(gfx::native(commandEncoder), memoryBarriers, memoryBarrierCount, bufferBarriers, bufferBarrierCount, textureBarriers, textureBarrierCount);
 }
 
-void gfxCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture)
+GfxResult gfxCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture)
 {
     if (!commandEncoder || !texture) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(commandEncoder);
-    if (api) {
-        api->commandEncoderGenerateMipmaps(gfx::native(commandEncoder), gfx::native(texture));
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->commandEncoderGenerateMipmaps(gfx::native(commandEncoder), gfx::native(texture));
 }
 
-void gfxCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+GfxResult gfxCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
     uint32_t baseMipLevel, uint32_t levelCount)
 {
     if (!commandEncoder || !texture) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(commandEncoder);
-    if (api) {
-        api->commandEncoderGenerateMipmapsRange(gfx::native(commandEncoder), gfx::native(texture), baseMipLevel, levelCount);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->commandEncoderGenerateMipmapsRange(gfx::native(commandEncoder), gfx::native(texture), baseMipLevel, levelCount);
 }
 
-void gfxCommandEncoderEnd(GfxCommandEncoder commandEncoder)
+GfxResult gfxCommandEncoderEnd(GfxCommandEncoder commandEncoder)
 {
     if (!commandEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(commandEncoder);
-    if (api) {
-        api->commandEncoderEnd(gfx::native(commandEncoder));
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->commandEncoderEnd(gfx::native(commandEncoder));
 }
 
-void gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder)
+GfxResult gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder)
 {
     if (!commandEncoder) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(commandEncoder);
-    if (api) {
-        api->commandEncoderBegin(gfx::native(commandEncoder));
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->commandEncoderBegin(gfx::native(commandEncoder));
 }
 
 GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
@@ -885,6 +889,96 @@ GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const Gfx
 
     *outEncoder = gfx::wrap(backend, nativePass);
     return GFX_RESULT_SUCCESS;
+}
+
+GfxResult gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
+    GfxBuffer source, uint64_t sourceOffset,
+    GfxBuffer destination, uint64_t destinationOffset,
+    uint64_t size)
+{
+    if (!commandEncoder || !source || !destination) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto api = gfx::getAPI(commandEncoder);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return api->commandEncoderCopyBufferToBuffer(gfx::native(commandEncoder),
+        gfx::native(source), sourceOffset,
+        gfx::native(destination), destinationOffset,
+        size);
+}
+
+GfxResult gfxCommandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
+    GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
+    GfxTexture destination, const GfxOrigin3D* origin,
+    const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout)
+{
+    if (!commandEncoder || !source || !destination) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto api = gfx::getAPI(commandEncoder);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return api->commandEncoderCopyBufferToTexture(gfx::native(commandEncoder),
+        gfx::native(source), sourceOffset, bytesPerRow,
+        gfx::native(destination), origin,
+        extent, mipLevel, finalLayout);
+}
+
+GfxResult gfxCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
+    GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
+    GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
+    const GfxExtent3D* extent, GfxTextureLayout finalLayout)
+{
+    if (!commandEncoder || !source || !destination) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto api = gfx::getAPI(commandEncoder);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return api->commandEncoderCopyTextureToBuffer(gfx::native(commandEncoder),
+        gfx::native(source), origin, mipLevel,
+        gfx::native(destination), destinationOffset, bytesPerRow,
+        extent, finalLayout);
+}
+
+GfxResult gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
+    const GfxExtent3D* extent, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout)
+{
+    if (!commandEncoder || !source || !destination) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto api = gfx::getAPI(commandEncoder);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return api->commandEncoderCopyTextureToTexture(gfx::native(commandEncoder),
+        gfx::native(source), sourceOrigin, sourceMipLevel,
+        gfx::native(destination), destinationOrigin, destinationMipLevel,
+        extent, sourceFinalLayout, destinationFinalLayout);
+}
+
+GfxResult gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
+    GfxFilterMode filter, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout)
+{
+    if (!commandEncoder || !source || !destination) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto api = gfx::getAPI(commandEncoder);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return api->commandEncoderBlitTextureToTexture(gfx::native(commandEncoder),
+        gfx::native(source), sourceOrigin, sourceExtent, sourceMipLevel,
+        gfx::native(destination), destinationOrigin, destinationExtent, destinationMipLevel,
+        filter, sourceFinalLayout, destinationFinalLayout);
 }
 
 // Render Pass Encoder Functions
@@ -1102,91 +1196,6 @@ void gfxFenceReset(GfxFence fence)
     }
 }
 
-// CommandEncoder Copy Functions
-void gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
-    GfxBuffer source, uint64_t sourceOffset,
-    GfxBuffer destination, uint64_t destinationOffset,
-    uint64_t size)
-{
-    if (!commandEncoder || !source || !destination) {
-        return;
-    }
-    auto api = gfx::getAPI(commandEncoder);
-    if (api) {
-        api->commandEncoderCopyBufferToBuffer(gfx::native(commandEncoder),
-            gfx::native(source), sourceOffset,
-            gfx::native(destination), destinationOffset,
-            size);
-    }
-}
-
-void gfxCommandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
-    GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
-    GfxTexture destination, const GfxOrigin3D* origin,
-    const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout)
-{
-    if (!commandEncoder || !source || !destination) {
-        return;
-    }
-    auto api = gfx::getAPI(commandEncoder);
-    if (api) {
-        api->commandEncoderCopyBufferToTexture(gfx::native(commandEncoder),
-            gfx::native(source), sourceOffset, bytesPerRow,
-            gfx::native(destination), origin,
-            extent, mipLevel, finalLayout);
-    }
-}
-
-void gfxCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
-    GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
-    const GfxExtent3D* extent, GfxTextureLayout finalLayout)
-{
-    if (!commandEncoder || !source || !destination) {
-        return;
-    }
-    auto api = gfx::getAPI(commandEncoder);
-    if (api) {
-        api->commandEncoderCopyTextureToBuffer(gfx::native(commandEncoder),
-            gfx::native(source), origin, mipLevel,
-            gfx::native(destination), destinationOffset, bytesPerRow,
-            extent, finalLayout);
-    }
-}
-
-void gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
-    const GfxExtent3D* extent, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout)
-{
-    if (!commandEncoder || !source || !destination) {
-        return;
-    }
-    auto api = gfx::getAPI(commandEncoder);
-    if (api) {
-        api->commandEncoderCopyTextureToTexture(gfx::native(commandEncoder),
-            gfx::native(source), sourceOrigin, sourceMipLevel,
-            gfx::native(destination), destinationOrigin, destinationMipLevel,
-            extent, sourceFinalLayout, destinationFinalLayout);
-    }
-}
-
-void gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
-    GfxFilterMode filter, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout)
-{
-    if (!commandEncoder || !source || !destination) {
-        return;
-    }
-    auto api = gfx::getAPI(commandEncoder);
-    if (api) {
-        api->commandEncoderBlitTextureToTexture(gfx::native(commandEncoder),
-            gfx::native(source), sourceOrigin, sourceExtent, sourceMipLevel,
-            gfx::native(destination), destinationOrigin, destinationExtent, destinationMipLevel,
-            filter, sourceFinalLayout, destinationFinalLayout);
-    }
-}
 
 // Semaphore Functions
 GfxSemaphoreType gfxSemaphoreGetType(GfxSemaphore semaphore)

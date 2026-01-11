@@ -98,8 +98,8 @@ public:
 
     // Queue functions
     virtual GfxResult queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo) const = 0;
-    virtual void queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const = 0;
-    virtual void queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+    virtual GfxResult queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const = 0;
+    virtual GfxResult queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
         const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
         = 0;
     virtual GfxResult queueWaitIdle(GfxQueue queue) const = 0;
@@ -114,42 +114,42 @@ public:
         const GfxComputePassBeginDescriptor* beginDescriptor,
         GfxComputePassEncoder* outComputePass) const
         = 0;
-    virtual void commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
+    virtual GfxResult commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
         GfxBuffer source, uint64_t sourceOffset,
         GfxBuffer destination, uint64_t destinationOffset,
         uint64_t size) const
         = 0;
-    virtual void commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
+    virtual GfxResult commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
         GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
         GfxTexture destination, const GfxOrigin3D* origin,
         const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const
         = 0;
-    virtual void commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
+    virtual GfxResult commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
         GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
         GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
         const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
         = 0;
-    virtual void commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
+    virtual GfxResult commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
         GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
         GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
         const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
         = 0;
-    virtual void commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+    virtual GfxResult commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
         GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
         GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
         GfxFilterMode filter, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
         = 0;
-    virtual void commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+    virtual GfxResult commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
         const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
         const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
         const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
         = 0;
-    virtual void commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const = 0;
-    virtual void commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+    virtual GfxResult commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const = 0;
+    virtual GfxResult commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
         uint32_t baseMipLevel, uint32_t levelCount) const
         = 0;
-    virtual void commandEncoderEnd(GfxCommandEncoder commandEncoder) const = 0;
-    virtual void commandEncoderBegin(GfxCommandEncoder commandEncoder) const = 0;
+    virtual GfxResult commandEncoderEnd(GfxCommandEncoder commandEncoder) const = 0;
+    virtual GfxResult commandEncoderBegin(GfxCommandEncoder commandEncoder) const = 0;
 
     // RenderPassEncoder functions
     virtual void renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const = 0;
