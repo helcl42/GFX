@@ -470,10 +470,10 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
             // Color attachment
             if (MSAA_SAMPLE_COUNT != SampleCount::Count1) {
                 // MSAA: Single attachment with MSAA buffer and resolve target
-                framebufferDesc.colorAttachments.push_back({ msaaColorTextureView, swapchain->getImageView(i) });
+                framebufferDesc.colorAttachments.push_back({ msaaColorTextureView, swapchain->getTextureView(i) });
             } else {
                 // No MSAA: Attach swapchain image directly
-                framebufferDesc.colorAttachments.push_back({ swapchain->getImageView(i) });
+                framebufferDesc.colorAttachments.push_back({ swapchain->getTextureView(i) });
             }
 
             // Depth attachment (must be a pointer)

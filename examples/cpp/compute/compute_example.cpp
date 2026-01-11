@@ -774,7 +774,7 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
             framebufferDesc.height = height;
 
             // Color attachment
-            framebufferDesc.colorAttachments.push_back({ swapchain->getImageView(i) });
+            framebufferDesc.colorAttachments.push_back({ swapchain->getTextureView(i) });
 
             framebuffers[i] = device->createFramebuffer(framebufferDesc);
             if (!framebuffers[i]) {

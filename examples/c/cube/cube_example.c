@@ -262,7 +262,7 @@ bool initializeGraphics(CubeApp* app)
     // Load the graphics backend BEFORE creating an instance
     // This is now decoupled - you load the backend API once at startup
     printf("Loading graphics backend...\n");
-    if (!gfxLoadBackend(GFX_BACKEND_API)) {
+    if (gfxLoadBackend(GFX_BACKEND_API) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to load any graphics backend\n");
         return false;
     }
@@ -333,7 +333,10 @@ bool initializeGraphics(CubeApp* app)
 
     // Query and print device limits
     GfxDeviceLimits limits;
-    gfxDeviceGetLimits(app->device, &limits);
+    if (gfxDeviceGetLimits(app->device, &limits) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to get device limits\n");
+        return false;
+    }
     printf("Device Limits:\n");
     printf("  Min Uniform Buffer Offset Alignment: %u bytes\n", limits.minUniformBufferOffsetAlignment);
     printf("  Min Storage Buffer Offset Alignment: %u bytes\n", limits.minStorageBufferOffsetAlignment);
@@ -345,7 +348,10 @@ bool initializeGraphics(CubeApp* app)
     printf("  Max Texture Dimension 3D: %u\n", limits.maxTextureDimension3D);
     printf("  Max Texture Array Layers: %u\n", limits.maxTextureArrayLayers);
 
-    app->queue = gfxDeviceGetQueue(app->device);
+    if (gfxDeviceGetQueue(app->device, &app->queue) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to get device queue\n");
+        return false;
+    }
 
     // Create surface
     GfxPlatformWindowHandle windowHandle = getPlatformWindowHandle(app->window);
@@ -380,7 +386,11 @@ static bool createSwapchain(CubeApp* app, uint32_t width, uint32_t height)
     }
 
     // Query the actual swapchain format (may differ from requested format on web)
-    gfxSwapchainGetInfo(app->swapchain, &app->swapchainInfo);
+    GfxResult result = gfxSwapchainGetInfo(app->swapchain, &app->swapchainInfo);
+    if (result != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "[ERROR] Failed to get swapchain info\n");
+        return false;
+    }
     fprintf(stderr, "[INFO] Requested format: %d, Actual swapchain format: %d\n", COLOR_FORMAT, app->swapchainInfo.format);
 
     return true;
@@ -467,7 +477,12 @@ static bool createFrameBuffers(CubeApp* app, uint32_t width, uint32_t height)
 {
     // Create framebuffers (one per swapchain image)
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        GfxTextureView backbuffer = gfxSwapchainGetImageView(app->swapchain, i);
+        GfxTextureView backbuffer = NULL;
+        GfxResult result = gfxSwapchainGetTextureView(app->swapchain, i, &backbuffer);
+        if (result != GFX_RESULT_SUCCESS || !backbuffer) {
+            fprintf(stderr, "[ERROR] Failed to get swapchain image view %d\n", i);
+            return false;
+        }
 
         // Bundle color view with resolve target
         GfxFramebufferColorAttachment fbColorAttachment = {
@@ -720,7 +735,10 @@ static bool createUniformBuffer(CubeApp* app)
 {
     // Create single large uniform buffer for all frames with proper alignment
     GfxDeviceLimits limits;
-    gfxDeviceGetLimits(app->device, &limits);
+    if (gfxDeviceGetLimits(app->device, &limits) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to get device limits\n");
+        return false;
+    }
 
     size_t uniformSize = sizeof(UniformData);
     app->uniformAlignedSize = gfxAlignUp(uniformSize, limits.minUniformBufferOffsetAlignment);

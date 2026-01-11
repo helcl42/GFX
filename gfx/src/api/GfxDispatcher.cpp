@@ -11,24 +11,24 @@
 
 extern "C" {
 
-bool gfxLoadBackend(GfxBackend backend)
+GfxResult gfxLoadBackend(GfxBackend backend)
 {
     if (backend == GFX_BACKEND_AUTO) {
 #ifdef GFX_ENABLE_VULKAN
-        if (gfxLoadBackend(GFX_BACKEND_VULKAN)) {
-            return true;
+        if (gfxLoadBackend(GFX_BACKEND_VULKAN) == GFX_RESULT_SUCCESS) {
+            return GFX_RESULT_SUCCESS;
         }
 #endif
 #ifdef GFX_ENABLE_WEBGPU
-        if (gfxLoadBackend(GFX_BACKEND_WEBGPU)) {
-            return true;
+        if (gfxLoadBackend(GFX_BACKEND_WEBGPU) == GFX_RESULT_SUCCESS) {
+            return GFX_RESULT_SUCCESS;
         }
 #endif
-        return false;
+        return GFX_RESULT_ERROR_BACKEND_NOT_LOADED;
     }
 
     if (backend < 0 || backend >= GFX_BACKEND_AUTO) {
-        return false;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto& manager = gfx::BackendManager::getInstance();
@@ -37,58 +37,58 @@ bool gfxLoadBackend(GfxBackend backend)
     if (!manager.getBackendAPI(backend)) {
         const gfx::IBackend* backendImpl = gfx::BackendFactory::createBackend(backend);
         if (!backendImpl) {
-            return false;
+            return GFX_RESULT_ERROR_BACKEND_NOT_LOADED;
         }
 
-        return manager.loadBackend(backend, backendImpl);
+        return manager.loadBackend(backend, backendImpl) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
     }
 
     // Backend already loaded, just increment refcount
-    return manager.loadBackend(backend, manager.getBackendAPI(backend));
+    return manager.loadBackend(backend, manager.getBackendAPI(backend)) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
-void gfxUnloadBackend(GfxBackend backend)
+GfxResult gfxUnloadBackend(GfxBackend backend)
 {
     if (backend == GFX_BACKEND_AUTO) {
         // Unload the first loaded backend
         auto& manager = gfx::BackendManager::getInstance();
 #ifdef GFX_ENABLE_VULKAN
         if (manager.getBackendAPI(GFX_BACKEND_VULKAN)) {
-            gfxUnloadBackend(GFX_BACKEND_VULKAN);
-            return;
+            return gfxUnloadBackend(GFX_BACKEND_VULKAN);
         }
 #endif
 #ifdef GFX_ENABLE_WEBGPU
         if (manager.getBackendAPI(GFX_BACKEND_WEBGPU)) {
-            gfxUnloadBackend(GFX_BACKEND_WEBGPU);
-            return;
+            return gfxUnloadBackend(GFX_BACKEND_WEBGPU);
         }
 #endif
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     if (backend >= 0 && backend < GFX_BACKEND_AUTO) {
         gfx::BackendManager::getInstance().unloadBackend(backend);
+        return GFX_RESULT_SUCCESS;
     }
+    return GFX_RESULT_ERROR_INVALID_ARGUMENT;
 }
 
-bool gfxLoadAllBackends(void)
+GfxResult gfxLoadAllBackends(void)
 {
     bool loadedAny = false;
 #ifdef GFX_ENABLE_VULKAN
-    if (gfxLoadBackend(GFX_BACKEND_VULKAN)) {
+    if (gfxLoadBackend(GFX_BACKEND_VULKAN) == GFX_RESULT_SUCCESS) {
         loadedAny = true;
     }
 #endif
 #ifdef GFX_ENABLE_WEBGPU
-    if (gfxLoadBackend(GFX_BACKEND_WEBGPU)) {
+    if (gfxLoadBackend(GFX_BACKEND_WEBGPU) == GFX_RESULT_SUCCESS) {
         loadedAny = true;
     }
 #endif
-    return loadedAny;
+    return loadedAny ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_BACKEND_NOT_LOADED;
 }
 
-void gfxUnloadAllBackends(void)
+GfxResult gfxUnloadAllBackends(void)
 {
     auto& manager = gfx::BackendManager::getInstance();
 #ifdef GFX_ENABLE_VULKAN
@@ -101,13 +101,14 @@ void gfxUnloadAllBackends(void)
         gfxUnloadBackend(GFX_BACKEND_WEBGPU);
     }
 #endif
+    return GFX_RESULT_SUCCESS;
 }
 
 // Instance Functions
 GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance)
 {
     if (!descriptor || !outInstance) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     *outInstance = nullptr;
@@ -146,39 +147,42 @@ GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance
     return GFX_RESULT_SUCCESS;
 }
 
-void gfxInstanceDestroy(GfxInstance instance)
+GfxResult gfxInstanceDestroy(GfxInstance instance)
 {
     if (!instance) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(instance);
-    if (api) {
-        api->instanceDestroy(gfx::native(instance));
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    GfxResult result = api->instanceDestroy(gfx::native(instance));
     gfx::unwrap(instance);
+    return result;
 }
 
-void gfxInstanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData)
+GfxResult gfxInstanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData)
 {
     if (!instance) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(instance);
-    if (api) {
-        api->instanceSetDebugCallback(gfx::native(instance), callback, userData);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->instanceSetDebugCallback(gfx::native(instance), callback, userData);
 }
 
 GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter)
 {
     if (!instance || !outAdapter) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     *outAdapter = nullptr;
     auto api = gfx::getAPI(instance);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     GfxBackend backend = gfx::getBackend(instance);
@@ -192,41 +196,43 @@ GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescri
     return GFX_RESULT_SUCCESS;
 }
 
-uint32_t gfxInstanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters)
+GfxResult gfxInstanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters)
 {
-    if (!instance) {
-        return 0;
+    if (!instance || !adapterCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(instance);
     if (!api) {
-        return 0;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->instanceEnumerateAdapters(gfx::native(instance), adapters, maxAdapters);
+    return api->instanceEnumerateAdapters(gfx::native(instance), adapterCount, adapters);
 }
 
 // Adapter Functions
-void gfxAdapterDestroy(GfxAdapter adapter)
+GfxResult gfxAdapterDestroy(GfxAdapter adapter)
 {
     if (!adapter) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(adapter);
-    if (api) {
-        api->adapterDestroy(gfx::native(adapter));
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    GfxResult result = api->adapterDestroy(gfx::native(adapter));
     gfx::unwrap(adapter);
+    return result;
 }
 
 GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice)
 {
     if (!adapter || !outDevice) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     *outDevice = nullptr;
     auto api = gfx::getAPI(adapter);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     GfxBackend backend = gfx::getBackend(adapter);
@@ -240,60 +246,65 @@ GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* 
     return GFX_RESULT_SUCCESS;
 }
 
-void gfxAdapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo)
+GfxResult gfxAdapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo)
 {
     if (!adapter || !outInfo) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(adapter);
     if (!api) {
-        return;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    api->adapterGetInfo(gfx::native(adapter), outInfo);
+    return api->adapterGetInfo(gfx::native(adapter), outInfo);
 }
 
-void gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits)
+GfxResult gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits)
 {
     if (!adapter || !outLimits) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(adapter);
     if (!api) {
-        return;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    api->adapterGetLimits(gfx::native(adapter), outLimits);
+    return api->adapterGetLimits(gfx::native(adapter), outLimits);
 }
 
 // Device Functions
-void gfxDeviceDestroy(GfxDevice device)
+GfxResult gfxDeviceDestroy(GfxDevice device)
 {
     if (!device) {
-        return;
-    }
-    auto api = gfx::getAPI(device);
-    if (api) {
-        api->deviceDestroy(gfx::native(device));
-    }
-    gfx::unwrap(device);
-}
-
-GfxQueue gfxDeviceGetQueue(GfxDevice device)
-{
-    if (!device) {
-        return nullptr;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(device);
     if (!api) {
-        return nullptr;
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    GfxResult result = api->deviceDestroy(gfx::native(device));
+    gfx::unwrap(device);
+    return result;
+}
+
+GfxResult gfxDeviceGetQueue(GfxDevice device, GfxQueue* outQueue)
+{
+    if (!device || !outQueue) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    *outQueue = nullptr;
+    auto api = gfx::getAPI(device);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     GfxBackend backend = gfx::getBackend(device);
-    GfxQueue nativeQueue = api->deviceGetQueue(gfx::native(device));
-    if (!nativeQueue) {
-        return nullptr;
+    GfxQueue nativeQueue = nullptr;
+    GfxResult result = api->deviceGetQueue(gfx::native(device), &nativeQueue);
+    if (result != GFX_RESULT_SUCCESS) {
+        return result;
     }
 
-    return gfx::wrap(backend, nativeQueue);
+    *outQueue = gfx::wrap(backend, nativeQueue);
+    return GFX_RESULT_SUCCESS;
 }
 
 // Macro to generate device create functions with less code duplication
@@ -301,11 +312,11 @@ GfxQueue gfxDeviceGetQueue(GfxDevice device)
     GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
     {                                                                                                                                \
         if (!device || !descriptor || !out##TypeName)                                                                                \
-            return GFX_RESULT_ERROR_INVALID_PARAMETER;                                                                               \
+            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
         *out##TypeName = nullptr;                                                                                                    \
         auto api = gfx::getAPI(device);                                                                                              \
         if (!api)                                                                                                                    \
-            return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;                                                                           \
+            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
         GfxBackend backend = gfx::getBackend(device);                                                                                \
         Gfx##TypeName native##TypeName = nullptr;                                                                                    \
         GfxResult result = api->deviceCreate##funcName(gfx::native(device), descriptor, &native##TypeName);                          \
@@ -331,12 +342,12 @@ DEVICE_CREATE_FUNC(Semaphore, Semaphore)
 GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxExternalBufferDescriptor* descriptor, GfxBuffer* outBuffer)
 {
     if (!device || !descriptor || !outBuffer) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     *outBuffer = nullptr;
     auto api = gfx::getAPI(device);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
     GfxBackend backend = gfx::getBackend(device);
     GfxBuffer nativeBuffer = nullptr;
@@ -351,12 +362,12 @@ GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxExternalBufferDescrip
 GfxResult gfxDeviceImportTexture(GfxDevice device, const GfxExternalTextureDescriptor* descriptor, GfxTexture* outTexture)
 {
     if (!device || !descriptor || !outTexture) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     *outTexture = nullptr;
     auto api = gfx::getAPI(device);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
     GfxBackend backend = gfx::getBackend(device);
     GfxTexture nativeTexture = nullptr;
@@ -371,12 +382,12 @@ GfxResult gfxDeviceImportTexture(GfxDevice device, const GfxExternalTextureDescr
 GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain)
 {
     if (!device || !surface || !descriptor || !outSwapchain) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     *outSwapchain = nullptr;
     auto api = gfx::getAPI(device);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     GfxBackend backend = gfx::getBackend(device);
@@ -397,12 +408,12 @@ GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const G
 GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder)
 {
     if (!device || !descriptor || !outEncoder) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     *outEncoder = nullptr;
     auto api = gfx::getAPI(device);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     GfxBackend backend = gfx::getBackend(device);
@@ -419,12 +430,12 @@ GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncode
 GfxResult gfxDeviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass)
 {
     if (!device || !descriptor || !outRenderPass) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     *outRenderPass = nullptr;
     auto api = gfx::getAPI(device);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     GfxBackend backend = gfx::getBackend(device);
@@ -441,12 +452,12 @@ GfxResult gfxDeviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescrip
 GfxResult gfxDeviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer)
 {
     if (!device || !descriptor || !outFramebuffer) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     *outFramebuffer = nullptr;
     auto api = gfx::getAPI(device);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     GfxBackend backend = gfx::getBackend(device);
@@ -460,41 +471,43 @@ GfxResult gfxDeviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescr
     return GFX_RESULT_SUCCESS;
 }
 
-void gfxDeviceWaitIdle(GfxDevice device)
+GfxResult gfxDeviceWaitIdle(GfxDevice device)
 {
     if (!device) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(device);
-    if (api) {
-        api->deviceWaitIdle(gfx::native(device));
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->deviceWaitIdle(gfx::native(device));
 }
 
-void gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
+GfxResult gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
 {
     if (!device || !outLimits) {
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(device);
-    if (api) {
-        api->deviceGetLimits(gfx::native(device), outLimits);
+    if (!api) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
+    return api->deviceGetLimits(gfx::native(device), outLimits);
 }
 
 // Macro for simple destroy functions
-#define DESTROY_FUNC(TypeName, typeName)                   \
-    void gfx##TypeName##Destroy(Gfx##TypeName typeName)    \
-    {                                                      \
-        if (!typeName)                                     \
-            return;                                        \
-        auto api = gfx::getAPI(typeName);                  \
-        if (api) {                                         \
-            api->typeName##Destroy(gfx::native(typeName)); \
-        }                                                  \
-        gfx::unwrap(typeName);                             \
+#define DESTROY_FUNC(TypeName, typeName)                                  \
+    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)              \
+    {                                                                     \
+        if (!typeName)                                                    \
+            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                     \
+        auto api = gfx::getAPI(typeName);                                 \
+        if (!api)                                                         \
+            return GFX_RESULT_ERROR_NOT_FOUND;                            \
+        GfxResult result = api->typeName##Destroy(gfx::native(typeName)); \
+        gfx::unwrap(typeName);                                            \
+        return result;                                                    \
     }
-
 DESTROY_FUNC(Surface, surface)
 DESTROY_FUNC(Swapchain, swapchain)
 DESTROY_FUNC(Buffer, buffer)
@@ -512,32 +525,33 @@ DESTROY_FUNC(CommandEncoder, commandEncoder)
 DESTROY_FUNC(Fence, fence)
 DESTROY_FUNC(Semaphore, semaphore)
 
-uint32_t gfxSurfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats)
+// Surface Functions
+GfxResult gfxSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats)
 {
-    if (!surface) {
-        return 0;
+    if (!surface || !formatCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(surface);
     if (!api) {
-        return 0;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->surfaceGetSupportedFormats(gfx::native(surface), formats, maxFormats);
+    return api->surfaceEnumerateSupportedFormats(gfx::native(surface), formatCount, formats);
 }
 
-uint32_t gfxSurfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes)
+GfxResult gfxSurfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes)
 {
-    if (!surface) {
-        return 0;
+    if (!surface || !presentModeCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(surface);
     if (!api) {
-        return 0;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return api->surfaceGetSupportedPresentModes(gfx::native(surface), presentModes, maxModes);
+    return api->surfaceEnumerateSupportedPresentModes(gfx::native(surface), presentModeCount, presentModes);
 }
 
 // Swapchain Functions
-void gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo)
+GfxResult gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo)
 {
     if (!swapchain || !outInfo) {
         if (outInfo) {
@@ -546,7 +560,7 @@ void gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo)
             outInfo->format = GFX_TEXTURE_FORMAT_UNDEFINED;
             outInfo->imageCount = 0;
         }
-        return;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(swapchain);
     if (!api) {
@@ -554,20 +568,20 @@ void gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo)
         outInfo->height = 0;
         outInfo->format = GFX_TEXTURE_FORMAT_UNDEFINED;
         outInfo->imageCount = 0;
-        return;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    api->swapchainGetInfo(gfx::native(swapchain), outInfo);
+    return api->swapchainGetInfo(gfx::native(swapchain), outInfo);
 }
 
 GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs,
     GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex)
 {
     if (!swapchain || !outImageIndex) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(swapchain);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     GfxSemaphore nativeSemaphore = imageAvailableSemaphore ? gfx::native(imageAvailableSemaphore) : nullptr;
@@ -577,40 +591,40 @@ GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutN
         nativeSemaphore, nativeFence, outImageIndex);
 }
 
-GfxTextureView gfxSwapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex)
+GfxResult gfxSwapchainGetTextureView(GfxSwapchain swapchain, uint32_t imageIndex, GfxTextureView* outView)
 {
-    if (!swapchain) {
-        return nullptr;
+    if (!swapchain || !outView) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(swapchain);
     if (!api) {
-        return nullptr;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
     // Swapchain texture views are NOT wrapped - managed by swapchain
-    return api->swapchainGetImageView(gfx::native(swapchain), imageIndex);
+    return api->swapchainGetTextureView(gfx::native(swapchain), imageIndex, outView);
 }
 
-GfxTextureView gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain)
+GfxResult gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView)
 {
-    if (!swapchain) {
-        return nullptr;
+    if (!swapchain || !outView) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(swapchain);
     if (!api) {
-        return nullptr;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
     // Swapchain texture views are NOT wrapped - managed by swapchain
-    return api->swapchainGetCurrentTextureView(gfx::native(swapchain));
+    return api->swapchainGetCurrentTextureView(gfx::native(swapchain), outView);
 }
 
 GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo)
 {
     if (!swapchain) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(swapchain);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     // Convert semaphores to native handles
@@ -645,11 +659,11 @@ void gfxBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo)
 GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer)
 {
     if (!buffer || !outMappedPointer) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(buffer);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->bufferMap(gfx::native(buffer), offset, size, outMappedPointer);
 }
@@ -693,12 +707,12 @@ GfxTextureLayout gfxTextureGetLayout(GfxTexture texture)
 GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView)
 {
     if (!texture || !outView) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     *outView = nullptr;
     auto api = gfx::getAPI(texture);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     GfxBackend backend = gfx::getBackend(texture);
@@ -716,11 +730,11 @@ GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescripto
 GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo)
 {
     if (!queue || !submitInfo) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(queue);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->queueSubmit(gfx::native(queue), submitInfo);
 }
@@ -731,9 +745,10 @@ void gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, cons
         return;
     }
     auto api = gfx::getAPI(queue);
-    if (api) {
-        api->queueWriteBuffer(gfx::native(queue), gfx::native(buffer), offset, data, size);
+    if (!api) {
+        return;
     }
+    api->queueWriteBuffer(gfx::native(queue), gfx::native(buffer), offset, data, size);
 }
 
 void gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
@@ -743,19 +758,21 @@ void gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D*
         return;
     }
     auto api = gfx::getAPI(queue);
-    if (api) {
-        api->queueWriteTexture(gfx::native(queue), gfx::native(texture), origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
+    if (!api) {
+        return;
     }
+
+    api->queueWriteTexture(gfx::native(queue), gfx::native(texture), origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
 }
 
 GfxResult gfxQueueWaitIdle(GfxQueue queue)
 {
     if (!queue) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(queue);
     if (!api) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->queueWaitIdle(gfx::native(queue));
 }
@@ -825,7 +842,7 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     GfxRenderPassEncoder* outEncoder)
 {
     if (!encoder || !outEncoder || !beginDescriptor) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     *outEncoder = nullptr;
     auto api = gfx::getAPI(encoder);
@@ -850,7 +867,7 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
 GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outEncoder)
 {
     if (!encoder || !beginDescriptor || !outEncoder) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     *outEncoder = nullptr;
     auto api = gfx::getAPI(encoder);
@@ -1052,7 +1069,7 @@ void gfxComputePassEncoderEnd(GfxComputePassEncoder encoder)
 GfxResult gfxFenceGetStatus(GfxFence fence, bool* isSignaled)
 {
     if (!fence) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(fence);
     if (!api) {
@@ -1064,7 +1081,7 @@ GfxResult gfxFenceGetStatus(GfxFence fence, bool* isSignaled)
 GfxResult gfxFenceWait(GfxFence fence, uint64_t timeoutNs)
 {
     if (!fence) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(fence);
     if (!api) {
@@ -1198,7 +1215,7 @@ uint64_t gfxSemaphoreGetValue(GfxSemaphore semaphore)
 GfxResult gfxSemaphoreSignal(GfxSemaphore semaphore, uint64_t value)
 {
     if (!semaphore) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(semaphore);
     if (!api) {
@@ -1210,7 +1227,7 @@ GfxResult gfxSemaphoreSignal(GfxSemaphore semaphore, uint64_t value)
 GfxResult gfxSemaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs)
 {
     if (!semaphore) {
-        return GFX_RESULT_ERROR_INVALID_PARAMETER;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto api = gfx::getAPI(semaphore);
     if (!api) {

@@ -335,17 +335,18 @@ typedef enum GfxResult {
     GFX_RESULT_NOT_READY = 2,
 
     // General errors
-    GFX_RESULT_ERROR_INVALID_PARAMETER = -1,
-    GFX_RESULT_ERROR_OUT_OF_MEMORY = -2,
-    GFX_RESULT_ERROR_DEVICE_LOST = -3,
-    GFX_RESULT_ERROR_SURFACE_LOST = -4,
-    GFX_RESULT_ERROR_OUT_OF_DATE = -5,
+    GFX_RESULT_ERROR_INVALID_ARGUMENT = -1,
+    GFX_RESULT_ERROR_NOT_FOUND = -2,
+    GFX_RESULT_ERROR_OUT_OF_MEMORY = -3,
+    GFX_RESULT_ERROR_DEVICE_LOST = -4,
+    GFX_RESULT_ERROR_SURFACE_LOST = -5,
+    GFX_RESULT_ERROR_OUT_OF_DATE = -6,
     // Backend errors
-    GFX_RESULT_ERROR_BACKEND_NOT_LOADED = -6,
-    GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED = -7,
+    GFX_RESULT_ERROR_BACKEND_NOT_LOADED = -7,
+    GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED = -8,
 
     // Unknown/generic
-    GFX_RESULT_ERROR_UNKNOWN = -8,
+    GFX_RESULT_ERROR_UNKNOWN = -9,
     GFX_RESULT_MAX_ENUM = 0x7FFFFFFF
 } GfxResult;
 
@@ -1037,29 +1038,28 @@ typedef struct {
 // These should be called before creating any instances
 // Call gfxLoadBackend or gfxLoadAllBackends at application startup
 // Call gfxUnloadBackend or gfxUnloadAllBackends at application shutdown
-GFX_API bool gfxLoadBackend(GfxBackend backend);
-GFX_API void gfxUnloadBackend(GfxBackend backend);
-GFX_API bool gfxLoadAllBackends(void);
-GFX_API void gfxUnloadAllBackends(void);
+GFX_API GfxResult gfxLoadBackend(GfxBackend backend);
+GFX_API GfxResult gfxUnloadBackend(GfxBackend backend);
+GFX_API GfxResult gfxLoadAllBackends(void);
+GFX_API GfxResult gfxUnloadAllBackends(void);
 
 // Instance functions
 GFX_API GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance);
-GFX_API void gfxInstanceDestroy(GfxInstance instance);
-GFX_API void gfxInstanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData);
+GFX_API GfxResult gfxInstanceDestroy(GfxInstance instance);
+GFX_API GfxResult gfxInstanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData);
 GFX_API GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter);
-// TODO should we ruturn GfxResult from every function?
-// should we return GfxResult here too and use same logic as Vulkan?
-GFX_API uint32_t gfxInstanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters);
+// Vulkan-style enumeration: call with adapters=NULL to get count, then call again with allocated array
+GFX_API GfxResult gfxInstanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters);
 
 // Adapter functions
-GFX_API void gfxAdapterDestroy(GfxAdapter adapter);
+GFX_API GfxResult gfxAdapterDestroy(GfxAdapter adapter);
 GFX_API GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice);
-GFX_API void gfxAdapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo);
-GFX_API void gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits);
+GFX_API GfxResult gfxAdapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo);
+GFX_API GfxResult gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits);
 
 // Device functions
-GFX_API void gfxDeviceDestroy(GfxDevice device);
-GFX_API GfxQueue gfxDeviceGetQueue(GfxDevice device);
+GFX_API GfxResult gfxDeviceDestroy(GfxDevice device);
+GFX_API GfxResult gfxDeviceGetQueue(GfxDevice device, GfxQueue* outQueue);
 GFX_API GfxResult gfxDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface);
 GFX_API GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain);
 GFX_API GfxResult gfxDeviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer);
@@ -1077,60 +1077,62 @@ GFX_API GfxResult gfxDeviceCreateRenderPass(GfxDevice device, const GfxRenderPas
 GFX_API GfxResult gfxDeviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer);
 GFX_API GfxResult gfxDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence);
 GFX_API GfxResult gfxDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore);
-GFX_API void gfxDeviceWaitIdle(GfxDevice device);
-GFX_API void gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
+GFX_API GfxResult gfxDeviceWaitIdle(GfxDevice device);
+GFX_API GfxResult gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
 
 // Surface functions
-GFX_API void gfxSurfaceDestroy(GfxSurface surface);
-GFX_API uint32_t gfxSurfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats);
-GFX_API uint32_t gfxSurfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes);
+GFX_API GfxResult gfxSurfaceDestroy(GfxSurface surface);
+// Vulkan-style enumeration: call with formats=NULL to get count, then call again with allocated array
+GFX_API GfxResult gfxSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats);
+// Vulkan-style enumeration: call with presentModes=NULL to get count, then call again with allocated array
+GFX_API GfxResult gfxSurfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes);
 
 // Swapchain functions
-GFX_API void gfxSwapchainDestroy(GfxSwapchain swapchain);
-GFX_API void gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo);
+GFX_API GfxResult gfxSwapchainDestroy(GfxSwapchain swapchain);
+GFX_API GfxResult gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo);
 GFX_API GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex);
-GFX_API GfxTextureView gfxSwapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex);
-GFX_API GfxTextureView gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain);
+GFX_API GfxResult gfxSwapchainGetTextureView(GfxSwapchain swapchain, uint32_t imageIndex, GfxTextureView* outView);
+GFX_API GfxResult gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView);
 GFX_API GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo);
 
 // Buffer functions
-GFX_API void gfxBufferDestroy(GfxBuffer buffer);
+GFX_API GfxResult gfxBufferDestroy(GfxBuffer buffer);
 GFX_API void gfxBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo);
 GFX_API GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer);
 GFX_API void gfxBufferUnmap(GfxBuffer buffer);
 
 // Texture functions
-GFX_API void gfxTextureDestroy(GfxTexture texture);
+GFX_API GfxResult gfxTextureDestroy(GfxTexture texture);
 GFX_API void gfxTextureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo);
 GFX_API GfxTextureLayout gfxTextureGetLayout(GfxTexture texture);
 GFX_API GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView);
 
 // TextureView functions
-GFX_API void gfxTextureViewDestroy(GfxTextureView textureView);
+GFX_API GfxResult gfxTextureViewDestroy(GfxTextureView textureView);
 
 // Sampler functions
-GFX_API void gfxSamplerDestroy(GfxSampler sampler);
+GFX_API GfxResult gfxSamplerDestroy(GfxSampler sampler);
 
 // Shader functions
-GFX_API void gfxShaderDestroy(GfxShader shader);
+GFX_API GfxResult gfxShaderDestroy(GfxShader shader);
 
 // BindGroupLayout functions
-GFX_API void gfxBindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout);
+GFX_API GfxResult gfxBindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout);
 
 // BindGroup functions
-GFX_API void gfxBindGroupDestroy(GfxBindGroup);
+GFX_API GfxResult gfxBindGroupDestroy(GfxBindGroup);
 
 // RenderPipeline functions
-GFX_API void gfxRenderPipelineDestroy(GfxRenderPipeline renderPipeline);
+GFX_API GfxResult gfxRenderPipelineDestroy(GfxRenderPipeline renderPipeline);
 
 // ComputePipeline functions
-GFX_API void gfxComputePipelineDestroy(GfxComputePipeline computePipeline);
+GFX_API GfxResult gfxComputePipelineDestroy(GfxComputePipeline computePipeline);
 
 // RenderPass functions
-GFX_API void gfxRenderPassDestroy(GfxRenderPass renderPass);
+GFX_API GfxResult gfxRenderPassDestroy(GfxRenderPass renderPass);
 
 // Framebuffer functions
-GFX_API void gfxFramebufferDestroy(GfxFramebuffer framebuffer);
+GFX_API GfxResult gfxFramebufferDestroy(GfxFramebuffer framebuffer);
 
 // Queue functions
 GFX_API GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo);
@@ -1140,7 +1142,7 @@ GFX_API void gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxO
 GFX_API GfxResult gfxQueueWaitIdle(GfxQueue queue);
 
 // CommandEncoder functions
-GFX_API void gfxCommandEncoderDestroy(GfxCommandEncoder commandEncoder);
+GFX_API GfxResult gfxCommandEncoderDestroy(GfxCommandEncoder commandEncoder);
 GFX_API GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
     const GfxRenderPassBeginDescriptor* beginDescriptor,
     GfxRenderPassEncoder* outRenderPass);
@@ -1201,13 +1203,13 @@ GFX_API void gfxComputePassEncoderDispatchWorkgroups(GfxComputePassEncoder compu
 GFX_API void gfxComputePassEncoderEnd(GfxComputePassEncoder computePassEncoder);
 
 // Fence functions
-GFX_API void gfxFenceDestroy(GfxFence fence);
+GFX_API GfxResult gfxFenceDestroy(GfxFence fence);
 GFX_API GfxResult gfxFenceGetStatus(GfxFence fence, bool* isSignaled);
 GFX_API GfxResult gfxFenceWait(GfxFence fence, uint64_t timeoutNs);
 GFX_API void gfxFenceReset(GfxFence fence);
 
 // Semaphore functions
-GFX_API void gfxSemaphoreDestroy(GfxSemaphore semaphore);
+GFX_API GfxResult gfxSemaphoreDestroy(GfxSemaphore semaphore);
 GFX_API GfxSemaphoreType gfxSemaphoreGetType(GfxSemaphore semaphore);
 GFX_API GfxResult gfxSemaphoreSignal(GfxSemaphore semaphore, uint64_t value);
 GFX_API GfxResult gfxSemaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs);

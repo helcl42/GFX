@@ -309,7 +309,7 @@ static bool createSwapchain(ComputeApp* app, uint32_t width, uint32_t height)
 static bool initGraphics(ComputeApp* app)
 {
     printf("Loading graphics backend...\n");
-    if (!gfxLoadBackend(GFX_BACKEND_API)) {
+    if (gfxLoadBackend(GFX_BACKEND_API) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to load any graphics backend\n");
         return false;
     }
@@ -367,7 +367,10 @@ static bool initGraphics(ComputeApp* app)
         return false;
     }
 
-    app->queue = gfxDeviceGetQueue(app->device);
+    if (gfxDeviceGetQueue(app->device, &app->queue) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to get device queue\n");
+        return false;
+    }
 
     GfxPlatformWindowHandle windowHandle = getPlatformWindowHandle(app->window);
     GfxSurfaceDescriptor surfaceDesc = {
@@ -672,7 +675,12 @@ static bool createRenderPass(ComputeApp* app)
 static bool createFramebuffers(ComputeApp* app)
 {
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        GfxTextureView backbuffer = gfxSwapchainGetImageView(app->swapchain, i);
+        GfxTextureView backbuffer = NULL;
+        GfxResult result = gfxSwapchainGetTextureView(app->swapchain, i, &backbuffer);
+        if (result != GFX_RESULT_SUCCESS || !backbuffer) {
+            fprintf(stderr, "[ERROR] Failed to get swapchain image view %d\n", i);
+            return false;
+        }
 
         GfxFramebufferColorAttachment fbColorAttachment = {
             .view = backbuffer,

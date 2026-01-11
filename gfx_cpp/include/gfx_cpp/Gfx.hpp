@@ -1032,7 +1032,7 @@ public:
         = 0;
 
     // Get texture view for a specific swapchain image index
-    virtual std::shared_ptr<TextureView> getImageView(uint32_t index) = 0;
+    virtual std::shared_ptr<TextureView> getTextureView(uint32_t index) = 0;
 
     // Present with explicit synchronization
     virtual Result present(const PresentInfo& info) = 0;

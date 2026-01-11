@@ -1083,9 +1083,16 @@ public:
 
     std::vector<TextureFormat> getSupportedFormats() const override
     {
-        GfxTextureFormat formats[16];
-        uint32_t count = gfxSurfaceGetSupportedFormats(m_handle, formats, 16);
+        // First call: query count
+        uint32_t count = 0;
+        gfxSurfaceEnumerateSupportedFormats(m_handle, &count, nullptr);
+        
+        // Second call: get formats
+        std::vector<GfxTextureFormat> formats(count);
+        gfxSurfaceEnumerateSupportedFormats(m_handle, &count, formats.data());
+        
         std::vector<TextureFormat> result;
+        result.reserve(count);
         for (uint32_t i = 0; i < count; ++i) {
             result.push_back(cFormatToCppFormat(formats[i]));
         }
@@ -1094,9 +1101,16 @@ public:
 
     std::vector<PresentMode> getSupportedPresentModes() const override
     {
-        GfxPresentMode modes[8];
-        uint32_t count = gfxSurfaceGetSupportedPresentModes(m_handle, modes, 8);
+        // First call: query count
+        uint32_t count = 0;
+        gfxSurfaceEnumerateSupportedPresentModes(m_handle, &count, nullptr);
+        
+        // Second call: get present modes
+        std::vector<GfxPresentMode> modes(count);
+        gfxSurfaceEnumerateSupportedPresentModes(m_handle, &count, modes.data());
+        
         std::vector<PresentMode> result;
+        result.reserve(count);
         for (uint32_t i = 0; i < count; ++i) {
             result.push_back(static_cast<PresentMode>(modes[i]));
         }
@@ -1135,8 +1149,9 @@ public:
 
     std::shared_ptr<TextureView> getCurrentTextureView() override
     {
-        GfxTextureView view = gfxSwapchainGetCurrentTextureView(m_handle);
-        if (!view) {
+        GfxTextureView view = nullptr;
+        GfxResult result = gfxSwapchainGetCurrentTextureView(m_handle, &view);
+        if (result != GFX_RESULT_SUCCESS || !view) {
             return nullptr;
         }
         // Swapchain texture views are owned by the swapchain, not by the wrapper
@@ -1155,10 +1170,11 @@ public:
         return cResultToCppResult(result);
     }
 
-    std::shared_ptr<TextureView> getImageView(uint32_t index) override
+    std::shared_ptr<TextureView> getTextureView(uint32_t index) override
     {
-        GfxTextureView view = gfxSwapchainGetImageView(m_handle, index);
-        if (!view) {
+        GfxTextureView view = nullptr;
+        GfxResult result = gfxSwapchainGetTextureView(m_handle, index, &view);
+        if (result != GFX_RESULT_SUCCESS || !view) {
             return nullptr;
         }
         // Swapchain texture views are now cached by the backend (both Vulkan and WebGPU)
@@ -1193,8 +1209,10 @@ public:
     explicit CDeviceImpl(GfxDevice h)
         : m_handle(h)
     {
-        GfxQueue queueHandle = gfxDeviceGetQueue(m_handle);
-        m_queue = std::make_shared<CQueueImpl>(queueHandle);
+        GfxQueue queueHandle = nullptr;
+        if (gfxDeviceGetQueue(m_handle, &queueHandle) == GFX_RESULT_SUCCESS && queueHandle) {
+            m_queue = std::make_shared<CQueueImpl>(queueHandle);
+        }
     }
     ~CDeviceImpl() override
     {
@@ -1951,14 +1969,25 @@ public:
 
     std::vector<std::shared_ptr<Adapter>> enumerateAdapters() override
     {
-        GfxAdapter adapters[16];
-        uint32_t count = gfxInstanceEnumerateAdapters(m_handle, adapters, 16);
-
-        std::vector<std::shared_ptr<Adapter>> result;
-        for (uint32_t i = 0; i < count; ++i) {
-            result.push_back(std::make_shared<CAdapterImpl>(adapters[i]));
+        // First call: get count
+        uint32_t count = 0;
+        GfxResult result = gfxInstanceEnumerateAdapters(m_handle, &count, nullptr);
+        if (result != GFX_RESULT_SUCCESS || count == 0) {
+            return {};
         }
-        return result;
+
+        // Second call: get adapters
+        std::vector<GfxAdapter> adapters(count);
+        result = gfxInstanceEnumerateAdapters(m_handle, &count, adapters.data());
+        if (result != GFX_RESULT_SUCCESS) {
+            return {};
+        }
+
+        std::vector<std::shared_ptr<Adapter>> resultVec;
+        for (uint32_t i = 0; i < count; ++i) {
+            resultVec.push_back(std::make_shared<CAdapterImpl>(adapters[i]));
+        }
+        return resultVec;
     }
 
     void setDebugCallback(DebugCallback callback) override
@@ -1994,7 +2023,7 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
 {
     // Load the backend first (required by the C API)
     GfxBackend cBackend = cppBackendToCBackend(descriptor.backend);
-    if (!gfxLoadBackend(cBackend)) {
+    if (gfxLoadBackend(cBackend) != GFX_RESULT_SUCCESS) {
         throw std::runtime_error("Failed to load graphics backend");
     }
 

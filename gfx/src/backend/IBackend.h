@@ -10,20 +10,20 @@ public:
 
     // Instance functions
     virtual GfxResult createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const = 0;
-    virtual void instanceDestroy(GfxInstance instance) const = 0;
-    virtual void instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const = 0;
+    virtual GfxResult instanceDestroy(GfxInstance instance) const = 0;
+    virtual GfxResult instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const = 0;
     virtual GfxResult instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const = 0;
-    virtual uint32_t instanceEnumerateAdapters(GfxInstance instance, GfxAdapter* adapters, uint32_t maxAdapters) const = 0;
+    virtual GfxResult instanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters) const = 0;
 
     // Adapter functions
-    virtual void adapterDestroy(GfxAdapter adapter) const = 0;
+    virtual GfxResult adapterDestroy(GfxAdapter adapter) const = 0;
     virtual GfxResult adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const = 0;
-    virtual void adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const = 0;
-    virtual void adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const = 0;
+    virtual GfxResult adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const = 0;
+    virtual GfxResult adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const = 0;
 
     // Device functions
-    virtual void deviceDestroy(GfxDevice device) const = 0;
-    virtual GfxQueue deviceGetQueue(GfxDevice device) const = 0;
+    virtual GfxResult deviceDestroy(GfxDevice device) const = 0;
+    virtual GfxResult deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const = 0;
     virtual GfxResult deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const = 0;
     virtual GfxResult deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const = 0;
     virtual GfxResult deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const = 0;
@@ -41,60 +41,60 @@ public:
     virtual GfxResult deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const = 0;
     virtual GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const = 0;
     virtual GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const = 0;
-    virtual void deviceWaitIdle(GfxDevice device) const = 0;
-    virtual void deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const = 0;
+    virtual GfxResult deviceWaitIdle(GfxDevice device) const = 0;
+    virtual GfxResult deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const = 0;
 
     // Surface functions
-    virtual void surfaceDestroy(GfxSurface surface) const = 0;
-    virtual uint32_t surfaceGetSupportedFormats(GfxSurface surface, GfxTextureFormat* formats, uint32_t maxFormats) const = 0;
-    virtual uint32_t surfaceGetSupportedPresentModes(GfxSurface surface, GfxPresentMode* presentModes, uint32_t maxModes) const = 0;
+    virtual GfxResult surfaceDestroy(GfxSurface surface) const = 0;
+    virtual GfxResult surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const = 0;
+    virtual GfxResult surfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes) const = 0;
 
     // Swapchain functions
-    virtual void swapchainDestroy(GfxSwapchain swapchain) const = 0;
-    virtual void swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const = 0;
+    virtual GfxResult swapchainDestroy(GfxSwapchain swapchain) const = 0;
+    virtual GfxResult swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const = 0;
     virtual GfxResult swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const = 0;
-    virtual GfxTextureView swapchainGetImageView(GfxSwapchain swapchain, uint32_t imageIndex) const = 0;
-    virtual GfxTextureView swapchainGetCurrentTextureView(GfxSwapchain swapchain) const = 0;
+    virtual GfxResult swapchainGetTextureView(GfxSwapchain swapchain, uint32_t imageIndex, GfxTextureView* outView) const = 0;
+    virtual GfxResult swapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView) const = 0;
     virtual GfxResult swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const = 0;
 
     // Buffer functions
-    virtual void bufferDestroy(GfxBuffer buffer) const = 0;
+    virtual GfxResult bufferDestroy(GfxBuffer buffer) const = 0;
     virtual void bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const = 0;
     virtual GfxResult bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const = 0;
     virtual void bufferUnmap(GfxBuffer buffer) const = 0;
 
     // Texture functions
-    virtual void textureDestroy(GfxTexture texture) const = 0;
+    virtual GfxResult textureDestroy(GfxTexture texture) const = 0;
     virtual void textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const = 0;
     virtual GfxTextureLayout textureGetLayout(GfxTexture texture) const = 0;
     virtual GfxResult textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const = 0;
 
     // TextureView functions
-    virtual void textureViewDestroy(GfxTextureView textureView) const = 0;
+    virtual GfxResult textureViewDestroy(GfxTextureView textureView) const = 0;
 
     // Sampler functions
-    virtual void samplerDestroy(GfxSampler sampler) const = 0;
+    virtual GfxResult samplerDestroy(GfxSampler sampler) const = 0;
 
     // Shader functions
-    virtual void shaderDestroy(GfxShader shader) const = 0;
+    virtual GfxResult shaderDestroy(GfxShader shader) const = 0;
 
     // BindGroupLayout functions
-    virtual void bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const = 0;
+    virtual GfxResult bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const = 0;
 
     // BindGroup functions
-    virtual void bindGroupDestroy(GfxBindGroup bindGroup) const = 0;
+    virtual GfxResult bindGroupDestroy(GfxBindGroup bindGroup) const = 0;
 
     // RenderPipeline functions
-    virtual void renderPipelineDestroy(GfxRenderPipeline renderPipeline) const = 0;
+    virtual GfxResult renderPipelineDestroy(GfxRenderPipeline renderPipeline) const = 0;
 
     // ComputePipeline functions
-    virtual void computePipelineDestroy(GfxComputePipeline computePipeline) const = 0;
+    virtual GfxResult computePipelineDestroy(GfxComputePipeline computePipeline) const = 0;
 
     // RenderPass functions
-    virtual void renderPassDestroy(GfxRenderPass renderPass) const = 0;
+    virtual GfxResult renderPassDestroy(GfxRenderPass renderPass) const = 0;
 
     // Framebuffer functions
-    virtual void framebufferDestroy(GfxFramebuffer framebuffer) const = 0;
+    virtual GfxResult framebufferDestroy(GfxFramebuffer framebuffer) const = 0;
 
     // Queue functions
     virtual GfxResult queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo) const = 0;
@@ -105,7 +105,7 @@ public:
     virtual GfxResult queueWaitIdle(GfxQueue queue) const = 0;
 
     // CommandEncoder functions
-    virtual void commandEncoderDestroy(GfxCommandEncoder commandEncoder) const = 0;
+    virtual GfxResult commandEncoderDestroy(GfxCommandEncoder commandEncoder) const = 0;
     virtual GfxResult commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
         const GfxRenderPassBeginDescriptor* beginDescriptor,
         GfxRenderPassEncoder* outRenderPass) const
@@ -169,13 +169,13 @@ public:
     virtual void computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const = 0;
 
     // Fence functions
-    virtual void fenceDestroy(GfxFence fence) const = 0;
+    virtual GfxResult fenceDestroy(GfxFence fence) const = 0;
     virtual GfxResult fenceGetStatus(GfxFence fence, bool* isSignaled) const = 0;
     virtual GfxResult fenceWait(GfxFence fence, uint64_t timeoutNs) const = 0;
     virtual void fenceReset(GfxFence fence) const = 0;
 
     // Semaphore functions
-    virtual void semaphoreDestroy(GfxSemaphore semaphore) const = 0;
+    virtual GfxResult semaphoreDestroy(GfxSemaphore semaphore) const = 0;
     virtual GfxSemaphoreType semaphoreGetType(GfxSemaphore semaphore) const = 0;
     virtual GfxResult semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const = 0;
     virtual GfxResult semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const = 0;
