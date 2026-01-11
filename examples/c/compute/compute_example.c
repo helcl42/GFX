@@ -943,10 +943,6 @@ static bool createRenderPipeline(ComputeApp* app)
 
 static bool createRenderResources(ComputeApp* app)
 {
-    if (!createRenderPass(app)) {
-        return false;
-    }
-
     if (!createRenderShaders(app)) {
         return false;
     }
@@ -1291,6 +1287,11 @@ static void cleanupSizeDependentResources(ComputeApp* app)
         }
     }
 
+    if (app->renderPass) {
+        gfxRenderPassDestroy(app->renderPass);
+        app->renderPass = NULL;
+    }
+
     if (app->swapchain) {
         gfxSwapchainDestroy(app->swapchain);
         app->swapchain = NULL;
@@ -1303,6 +1304,10 @@ static bool createSizeDependentResources(ComputeApp* app, uint32_t width, uint32
     // Create swapchain with new dimensions
     // Compute texture stays at fixed resolution and is sampled with linear filtering
     if (!createSwapchain(app, width, height)) {
+        return false;
+    }
+
+    if (!createRenderPass(app)) {
         return false;
     }
 
