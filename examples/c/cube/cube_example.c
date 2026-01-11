@@ -479,13 +479,13 @@ static bool createFrameBuffers(CubeApp* app, uint32_t width, uint32_t height)
         }
 
         // Bundle color view with resolve target
-        GfxFramebufferColorAttachment fbColorAttachment = {
+        GfxFramebufferAttachment fbColorAttachment = {
             .view = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? app->msaaColorTextureView : backbuffer,
             .resolveTarget = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? backbuffer : NULL
         };
 
         // Depth/stencil attachment (no resolve)
-        GfxFramebufferDepthStencilAttachment fbDepthAttachment = {
+        GfxFramebufferAttachment fbDepthAttachment = {
             .view = app->depthTextureView,
             .resolveTarget = NULL
         };

@@ -1823,9 +1823,9 @@ public:
         }
 
         // Convert color attachments
-        std::vector<GfxFramebufferColorAttachment> cColorAttachments;
+        std::vector<GfxFramebufferAttachment> cColorAttachments;
         for (const auto& attachment : descriptor.colorAttachments) {
-            GfxFramebufferColorAttachment cAttachment = {};
+            GfxFramebufferAttachment cAttachment = {};
             
             auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(attachment.view);
             if (!viewImpl) {
@@ -1847,7 +1847,7 @@ public:
         }
 
         // Convert depth/stencil attachment if present
-        GfxFramebufferDepthStencilAttachment cDepthStencilAttachment = {nullptr, nullptr};
+        GfxFramebufferAttachment cDepthStencilAttachment = {nullptr, nullptr};
 
         if (descriptor.depthStencilAttachment) {
             auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(descriptor.depthStencilAttachment->view);

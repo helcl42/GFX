@@ -571,17 +571,11 @@ typedef struct {
     const GfxRenderPassDepthStencilAttachment* depthStencilAttachment; // NULL if not used
 } GfxRenderPassDescriptor;
 
-// Framebuffer color attachment with optional resolve target
+// Framebuffer attachment with optional resolve target
 typedef struct {
     GfxTextureView view;
     GfxTextureView resolveTarget; // NULL if no resolve needed
-} GfxFramebufferColorAttachment;
-
-// Framebuffer depth/stencil attachment with optional resolve target
-typedef struct {
-    GfxTextureView view;
-    GfxTextureView resolveTarget; // NULL if no resolve needed
-} GfxFramebufferDepthStencilAttachment;
+} GfxFramebufferAttachment;
 
 // Framebuffer descriptor: binds actual image views to a render pass
 typedef struct {
@@ -589,11 +583,11 @@ typedef struct {
     GfxRenderPass renderPass; // The render pass this framebuffer is compatible with
 
     // Color attachments with optional resolve targets
-    const GfxFramebufferColorAttachment* colorAttachments;
+    const GfxFramebufferAttachment* colorAttachments;
     uint32_t colorAttachmentCount;
 
     // Depth/stencil attachment with optional resolve target (use {NULL, NULL} if not used)
-    GfxFramebufferDepthStencilAttachment depthStencilAttachment;
+    GfxFramebufferAttachment depthStencilAttachment;
 
     uint32_t width; // Framebuffer width
     uint32_t height; // Framebuffer height

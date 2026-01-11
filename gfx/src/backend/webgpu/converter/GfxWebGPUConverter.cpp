@@ -1258,7 +1258,7 @@ FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(
 
     // Convert color attachment views and resolve targets - store pointers
     for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
-        const GfxFramebufferColorAttachment& colorAtt = descriptor->colorAttachments[i];
+        const GfxFramebufferAttachment& colorAtt = descriptor->colorAttachments[i];
 
         auto* view = toNative<TextureView>(colorAtt.view);
         createInfo.colorAttachmentViews.push_back(view); // Store pointer

@@ -677,12 +677,12 @@ static bool createFramebuffers(ComputeApp* app)
             return false;
         }
 
-        GfxFramebufferColorAttachment fbColorAttachment = {
+        GfxFramebufferAttachment fbColorAttachment = {
             .view = backbuffer,
             .resolveTarget = NULL
         };
 
-        GfxFramebufferDepthStencilAttachment fbDepthAttachment = {
+        GfxFramebufferAttachment fbDepthAttachment = {
             .view = NULL,
             .resolveTarget = NULL
         };

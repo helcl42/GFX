@@ -1545,7 +1545,7 @@ gfx::vulkan::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateIn
     // In Vulkan, attachments are ordered: [color0, resolve0, color1, resolve1, ..., depth, depthResolve]
     // But only if resolve targets exist
     for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
-        const GfxFramebufferColorAttachment& colorAtt = descriptor->colorAttachments[i];
+        const GfxFramebufferAttachment& colorAtt = descriptor->colorAttachments[i];
 
         auto* view = toNative<TextureView>(colorAtt.view);
         createInfo.attachments.push_back(view->handle());
