@@ -1760,7 +1760,7 @@ public:
         return m_currentView;
     }
 
-    WGPUTextureView getRawCurrentTextureView() const
+    WGPUTextureView getCurrentNativeTextureView() const
     {
         return m_currentRawView;
     }

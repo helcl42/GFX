@@ -316,7 +316,7 @@ WGPUTextureView TextureView::handle() const
 {
     if (m_swapchain) {  
         // Get the raw view handle from swapchain (created on-demand in acquireNextImage)
-        return m_swapchain->getRawCurrentTextureView();
+        return m_swapchain->getCurrentNativeTextureView();
     }
     return m_view;
 }
