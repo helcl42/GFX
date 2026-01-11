@@ -159,6 +159,8 @@ struct SamplerCreateInfo {
 
 struct InstanceCreateInfo {
     bool enableValidation;
+    const char* applicationName = "GfxWrapper Application";
+    uint32_t applicationVersion = 1;
 };
 
 struct DeviceCreateInfo {

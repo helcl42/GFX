@@ -532,12 +532,8 @@ using DebugCallback = std::function<void(
 struct InstanceDescriptor {
     Backend backend = Backend::Auto;
     bool enableValidation = false;
-    bool enabledHeadless = false;
     std::string applicationName = "GfxWrapper Application";
     uint32_t applicationVersion = 1;
-
-    // Optional: Required extensions (backend-specific)
-    std::vector<std::string> requiredExtensions;
 };
 
 struct AdapterDescriptor {

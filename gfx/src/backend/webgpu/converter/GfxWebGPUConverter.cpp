@@ -123,6 +123,8 @@ gfx::webgpu::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const Gf
 {
     gfx::webgpu::InstanceCreateInfo createInfo{};
     createInfo.enableValidation = descriptor ? descriptor->enableValidation : false;
+    createInfo.applicationName = descriptor && descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
+    createInfo.applicationVersion = descriptor ? descriptor->applicationVersion : 1;
     return createInfo;
 }
 

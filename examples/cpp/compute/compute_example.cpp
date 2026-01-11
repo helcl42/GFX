@@ -190,20 +190,10 @@ bool ComputeApp::initializeGLFW()
 bool ComputeApp::initializeGraphics()
 {
     try {
-        // Get required extensions from GLFW
-        std::vector<std::string> extensions;
-#if !defined(__EMSCRIPTEN__)
-        uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-        for (uint32_t i = 0; i < glfwExtensionCount; ++i) {
-            extensions.emplace_back(glfwExtensions[i]);
-        }
-#endif
         InstanceDescriptor instanceDesc{};
         instanceDesc.applicationName = "Compute & Postprocess Example (C++)";
         instanceDesc.applicationVersion = 1;
         instanceDesc.enableValidation = true;
-        instanceDesc.requiredExtensions = extensions;
         instanceDesc.backend = Backend::WebGPU;
 
         instance = createInstance(instanceDesc);

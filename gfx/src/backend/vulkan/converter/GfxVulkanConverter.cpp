@@ -1125,6 +1125,8 @@ gfx::vulkan::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInsta
 {
     gfx::vulkan::InstanceCreateInfo createInfo{};
     createInfo.enableValidation = descriptor && descriptor->enableValidation;
+    createInfo.applicationName = descriptor && descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
+    createInfo.applicationVersion = descriptor ? descriptor->applicationVersion : 1;
     return createInfo;
 }
 gfx::vulkan::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)

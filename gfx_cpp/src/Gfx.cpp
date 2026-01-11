@@ -2128,14 +2128,6 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
     cDesc.applicationName = descriptor.applicationName.c_str();
     cDesc.applicationVersion = descriptor.applicationVersion;
 
-    // Convert extensions
-    std::vector<const char*> extensions;
-    for (const auto& ext : descriptor.requiredExtensions) {
-        extensions.push_back(ext.c_str());
-    }
-    cDesc.requiredExtensions = extensions.empty() ? nullptr : extensions.data();
-    cDesc.requiredExtensionCount = static_cast<uint32_t>(extensions.size());
-
     GfxInstance instance = nullptr;
     GfxResult result = gfxCreateInstance(&cDesc, &instance);
     if (result != GFX_RESULT_SUCCESS || !instance) {

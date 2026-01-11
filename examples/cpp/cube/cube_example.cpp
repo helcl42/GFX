@@ -214,20 +214,10 @@ bool CubeApp::initializeGLFW()
 bool CubeApp::initializeGraphics()
 {
     try {
-        // Create graphics instance with required extensions from GLFW
-        std::vector<std::string> extensions;
-#if !defined(__EMSCRIPTEN__)
-        uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-        for (uint32_t i = 0; i < glfwExtensionCount; ++i) {
-            extensions.emplace_back(glfwExtensions[i]);
-        }
-#endif
         InstanceDescriptor instanceDesc{};
         instanceDesc.applicationName = "Rotating Cube Example (C++)";
         instanceDesc.applicationVersion = 1;
         instanceDesc.enableValidation = true;
-        instanceDesc.requiredExtensions = extensions;
         instanceDesc.backend = BACKEND_API;
 
         instance = createInstance(instanceDesc);
@@ -415,7 +405,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         // Color attachment
         RenderPassColorAttachment colorAttachment{};
         RenderPassColorAttachmentTarget resolveTarget{}; // Declare outside to prevent dangling pointer
-        
+
         colorAttachment.target.format = swapchainInfo.format;
         colorAttachment.target.sampleCount = MSAA_SAMPLE_COUNT;
         colorAttachment.target.loadOp = LoadOp::Clear;
@@ -547,7 +537,7 @@ void CubeApp::cleanupSizeDependentResources()
     // Clean up framebuffers and render pass
     framebuffers.clear();
     renderPass.reset();
-    
+
     // Clean up size-dependent resources
     msaaColorTextureView.reset();
     msaaColorTexture.reset();

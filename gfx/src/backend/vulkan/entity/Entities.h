@@ -86,8 +86,8 @@ public:
     {
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = "GfxWrapper Application";
-        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+        appInfo.pApplicationName = createInfo.applicationName;
+        appInfo.applicationVersion = createInfo.applicationVersion;
         appInfo.pEngineName = "GfxWrapper";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.apiVersion = VK_API_VERSION_1_1;

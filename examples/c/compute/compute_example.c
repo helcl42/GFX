@@ -309,26 +309,12 @@ static bool initGraphics(ComputeApp* app)
         return false;
     }
 
-    // Get required extensions from GLFW (only needed for native builds)
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions = NULL;
-
-#if !defined(__EMSCRIPTEN__)
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-    printf("[DEBUG] GLFW requires %u extensions:\n", glfwExtensionCount);
-    for (uint32_t i = 0; i < glfwExtensionCount; ++i) {
-        printf("[DEBUG]   - %s\n", glfwExtensions[i]);
-    }
-#endif
-
     // Create graphics instance
     GfxInstanceDescriptor instanceDesc = {
         .backend = GFX_BACKEND_API,
         .enableValidation = true,
         .applicationName = "Compute Example (C)",
-        .applicationVersion = 1,
-        .requiredExtensions = glfwExtensions,
-        .requiredExtensionCount = glfwExtensionCount
+        .applicationVersion = 1
     };
 
     if (gfxCreateInstance(&instanceDesc, &app->instance) != GFX_RESULT_SUCCESS) {

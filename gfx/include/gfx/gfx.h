@@ -615,8 +615,6 @@ typedef struct {
     bool enableValidation;
     const char* applicationName;
     uint32_t applicationVersion;
-    const char** requiredExtensions;
-    uint32_t requiredExtensionCount;
 } GfxInstanceDescriptor;
 
 // Adapter selection: specify either an index OR a preference
