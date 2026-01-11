@@ -130,8 +130,8 @@ gfx::webgpu::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const Gf
 
 gfx::webgpu::DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
 {
-    (void)descriptor;
     gfx::webgpu::DeviceCreateInfo createInfo{};
+    createInfo.queuePriority = descriptor ? descriptor->queuePriority : 1.0f;
     return createInfo;
 }
 

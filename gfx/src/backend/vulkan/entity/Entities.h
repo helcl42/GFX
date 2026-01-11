@@ -414,10 +414,8 @@ public:
     Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
         : m_adapter(adapter)
     {
-        (void)createInfo; // Currently unused
-
         // Queue create info
-        float queuePriority = 1.0f;
+        float queuePriority = createInfo.queuePriority;
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = m_adapter->getGraphicsQueueFamily();

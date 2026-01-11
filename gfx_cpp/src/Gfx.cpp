@@ -1970,7 +1970,7 @@ public:
     {
         GfxDeviceDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
-        // Convert required features if needed
+        cDesc.queuePriority = descriptor.queuePriority;
 
         GfxDevice device = nullptr;
         GfxResult result = gfxAdapterCreateDevice(m_handle, &cDesc, &device);

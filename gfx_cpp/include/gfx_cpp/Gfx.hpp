@@ -543,7 +543,7 @@ struct AdapterDescriptor {
 
 struct DeviceDescriptor {
     std::string label;
-    std::vector<std::string> requiredFeatures;
+    float queuePriority = 1.0f; // Queue priority (0.0 to 1.0, higher = more priority)
 };
 
 struct BufferDescriptor {

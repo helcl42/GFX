@@ -675,8 +675,7 @@ typedef struct {
 
 typedef struct {
     const char* label;
-    const char** requiredFeatures;
-    uint32_t requiredFeatureCount;
+    float queuePriority; // Queue priority (0.0 to 1.0, higher = more priority). Default: 1.0
 } GfxDeviceDescriptor;
 
 typedef struct {

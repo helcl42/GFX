@@ -164,8 +164,7 @@ struct InstanceCreateInfo {
 };
 
 struct DeviceCreateInfo {
-    // Currently Device doesn't use descriptor parameters
-    // Placeholder for future extensibility
+    float queuePriority = 1.0f; // Unused in WebGPU but kept for API consistency
 };
 
 // Platform-specific window handles (WebGPU native)

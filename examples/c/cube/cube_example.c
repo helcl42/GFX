@@ -301,9 +301,7 @@ bool initializeGraphics(CubeApp* app)
 
     // Create device
     GfxDeviceDescriptor deviceDesc = {
-        .label = "Main Device",
-        .requiredFeatures = NULL,
-        .requiredFeatureCount = 0
+        .label = "Main Device"
     };
 
     if (gfxAdapterCreateDevice(app->adapter, &deviceDesc, &app->device) != GFX_RESULT_SUCCESS) {

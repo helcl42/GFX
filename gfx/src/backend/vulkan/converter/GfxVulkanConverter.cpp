@@ -1155,8 +1155,8 @@ gfx::vulkan::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapter
 }
 gfx::vulkan::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
 {
-    (void)descriptor;
     gfx::vulkan::DeviceCreateInfo createInfo{};
+    createInfo.queuePriority = descriptor ? descriptor->queuePriority : 1.0f;
     return createInfo;
 }
 
