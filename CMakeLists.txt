@@ -609,6 +609,29 @@ if(BUILD_EXAMPLES)
                 ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
         COMMENT "Copying WGSL shaders for WebGPU runtime"
     )
+        
+        # Native C Threaded Cube Example (uses pthreads)
+        add_executable(cube_example_c_threaded examples/c/cube/cube_example_threaded.c)
+        target_link_libraries(cube_example_c_threaded gfx glfw m pthread)  # Add pthread library
+        if(ENABLE_ASAN AND NOT MSVC)
+            target_link_options(cube_example_c_threaded PRIVATE -fsanitize=address)
+        endif()
+        
+        # Compile WGSL shaders to SPIR-V for threaded C example
+        compile_wgsl_shader(cube_example_c_threaded ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl)
+        compile_wgsl_shader(cube_example_c_threaded ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl)
+        
+        # Copy WGSL shaders to build directory for threaded example
+        add_custom_command(TARGET cube_example_c_threaded POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl
+                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.wgsl
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl
+                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
+        COMMENT "Copying WGSL shaders for threaded example"
+    )
     endif()  # BUILD_FOR_WEB
     
     # C++ and Compute examples only for native builds (for now)
