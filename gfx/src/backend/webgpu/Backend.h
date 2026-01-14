@@ -1,5 +1,5 @@
-#ifndef GFX_WEBGPU_BACKEND_H
-#define GFX_WEBGPU_BACKEND_H
+#ifndef GFX_BACKEND_WEBGPU_H
+#define GFX_BACKEND_WEBGPU_H
 
 #include <gfx/gfx.h>
 

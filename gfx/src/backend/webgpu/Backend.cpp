@@ -1,7 +1,7 @@
-#include "common/WebGPUCommon.h"
+#include "common/Common.h"
 
-#include "WebGPUBackend.h"
-#include "converter/GfxWebGPUConverter.h"
+#include "Backend.h"
+#include "converter/Conversions.h"
 #include "core/Entities.h"
 
 #include <cassert>

@@ -1,5 +1,5 @@
-#ifndef GFX_BACKEND_FACTORY_H
-#define GFX_BACKEND_FACTORY_H
+#ifndef GFX_FACTORY_H
+#define GFX_FACTORY_H
 
 #include <gfx/gfx.h>
 

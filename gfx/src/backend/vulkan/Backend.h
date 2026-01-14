@@ -1,5 +1,5 @@
-#ifndef GFX_VULKAN_BACKEND_H
-#define GFX_VULKAN_BACKEND_H
+#ifndef GFX_BACKEND_VULKAN_H
+#define GFX_BACKEND_VULKAN_H
 
 #include "../IBackend.h"
 

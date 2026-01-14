@@ -1,5 +1,5 @@
-#ifndef GFX_BACKEND_MANAGER_H
-#define GFX_BACKEND_MANAGER_H
+#ifndef GFX_MANAGER_H
+#define GFX_MANAGER_H
 
 #include <gfx/gfx.h>
 

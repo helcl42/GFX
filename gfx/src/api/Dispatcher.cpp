@@ -1,5 +1,5 @@
-#include "backend/BackendFactory.h"
-#include "backend/BackendManager.h"
+#include "backend/Factory.h"
+#include "backend/Manager.h"
 
 #include <gfx/gfx.h>
 

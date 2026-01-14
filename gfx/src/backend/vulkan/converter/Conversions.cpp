@@ -1,6 +1,6 @@
-#include "GfxVulkanConverter.h"
+#include "Conversions.h"
 
-#include "../common/VulkanCommon.h"
+#include "../common/Common.h"
 #include "../core/Entities.h"
 
 #include <vector>

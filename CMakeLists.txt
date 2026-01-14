@@ -218,23 +218,24 @@ endif()
 set(GFX_C_SOURCES
     gfx/include/gfx/gfx.h
     gfx/src/backend/IBackend.h
-    gfx/src/backend/BackendFactory.cpp
-    gfx/src/backend/BackendManager.cpp
-    gfx/src/api/GfxDispatcher.cpp
+    gfx/src/backend/Factory.cpp
+    gfx/src/backend/Manager.cpp
+    gfx/src/api/Dispatcher.cpp
 )
 
 if(BUILD_VULKAN_BACKEND)
     list(APPEND GFX_C_SOURCES 
-        gfx/src/backend/vulkan/VulkanBackend.cpp
-        gfx/src/backend/vulkan/converter/GfxVulkanConverter.cpp
+        gfx/src/backend/vulkan/Backend.cpp
+        gfx/src/backend/vulkan/converter/Conversions.cpp
         gfx/src/backend/vulkan/core/Entities.cpp
+        gfx/src/backend/vulkan/core/Instance.cpp
     )
 endif()
 
 if(BUILD_WEBGPU_BACKEND)
     list(APPEND GFX_C_SOURCES 
-        gfx/src/backend/webgpu/WebGPUBackend.cpp
-        gfx/src/backend/webgpu/converter/GfxWebGPUConverter.cpp
+        gfx/src/backend/webgpu/Backend.cpp
+        gfx/src/backend/webgpu/converter/Conversions.cpp
         gfx/src/backend/webgpu/core/Entities.cpp
     )
 endif()

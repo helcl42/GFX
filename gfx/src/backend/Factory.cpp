@@ -1,11 +1,11 @@
-#include "BackendFactory.h"
+#include "Factory.h"
 #include "IBackend.h"
 
 #ifdef GFX_ENABLE_VULKAN
-#include "vulkan/VulkanBackend.h"
+#include "vulkan/Backend.h"
 #endif
 #ifdef GFX_ENABLE_WEBGPU
-#include "webgpu/WebGPUBackend.h"
+#include "webgpu/Backend.h"
 #endif
 
 namespace gfx::backend {

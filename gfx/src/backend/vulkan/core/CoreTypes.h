@@ -1,7 +1,7 @@
-#ifndef GFX_VULKAN_CREATEINFO_H
-#define GFX_VULKAN_CREATEINFO_H
+#ifndef GFX_VULKAN_CORE_TYPES_H
+#define GFX_VULKAN_CORE_TYPES_H
 
-#include "../common/VulkanCommon.h"
+#include "../common/Common.h"
 
 #include <cstddef>
 #include <cstdint>

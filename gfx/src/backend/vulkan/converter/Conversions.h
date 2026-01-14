@@ -1,7 +1,7 @@
-#ifndef GFX_VULKAN_CONVERTER_H
-#define GFX_VULKAN_CONVERTER_H
+#ifndef GFX_VULKAN_CONVERSIONS_H
+#define GFX_VULKAN_CONVERSIONS_H
 
-#include "../common/VulkanCommon.h"
+#include "../common/Common.h"
 
 #include <gfx/gfx.h>
 

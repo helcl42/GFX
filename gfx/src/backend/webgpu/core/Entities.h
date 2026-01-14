@@ -1,9 +1,9 @@
 #ifndef GFX_WEBGPU_ENTITIES_H
 #define GFX_WEBGPU_ENTITIES_H
 
-#include "CreateInfo.h"
+#include "CoreTypes.h"
 
-#include "../common/WebGPUCommon.h"
+#include "../common/Common.h"
 
 // Platform-specific includes for surface creation
 #ifndef GFX_HEADLESS_BUILD

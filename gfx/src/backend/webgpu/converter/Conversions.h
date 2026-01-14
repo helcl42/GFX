@@ -1,7 +1,7 @@
-#ifndef GFX_WEBGPU_CONVERTER_H
-#define GFX_WEBGPU_CONVERTER_H
+#ifndef GFX_WEBGPU_CONVERSIONS_H
+#define GFX_WEBGPU_CONVERSIONS_H
 
-#include "../common/WebGPUCommon.h"
+#include "../common/Common.h"
 
 #include <gfx/gfx.h>
 

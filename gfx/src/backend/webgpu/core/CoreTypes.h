@@ -1,7 +1,7 @@
-#ifndef GFX_WEBGPU_CREATEINFO_H
-#define GFX_WEBGPU_CREATEINFO_H
+#ifndef GFX_WEBGPU_CORE_TYPES_H
+#define GFX_WEBGPU_CORE_TYPES_H
 
-#include "../common/WebGPUCommon.h"
+#include "../common/Common.h"
 
 #include <cstddef>
 #include <cstdint>
