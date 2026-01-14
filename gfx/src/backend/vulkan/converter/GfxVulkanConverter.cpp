@@ -1,7 +1,7 @@
 #include "GfxVulkanConverter.h"
 
 #include "../common/VulkanCommon.h"
-#include "../entity/Entities.h"
+#include "../core/Entities.h"
 
 #include <vector>
 

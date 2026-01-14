@@ -2,7 +2,7 @@
 
 #include "WebGPUBackend.h"
 #include "converter/GfxWebGPUConverter.h"
-#include "entity/Entities.h"
+#include "core/Entities.h"
 
 #include <cassert>
 #include <cstdio>

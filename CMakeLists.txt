@@ -227,7 +227,7 @@ if(BUILD_VULKAN_BACKEND)
     list(APPEND GFX_C_SOURCES 
         gfx/src/backend/vulkan/VulkanBackend.cpp
         gfx/src/backend/vulkan/converter/GfxVulkanConverter.cpp
-        gfx/src/backend/vulkan/entity/Entities.cpp
+        gfx/src/backend/vulkan/core/Entities.cpp
     )
 endif()
 
@@ -235,7 +235,7 @@ if(BUILD_WEBGPU_BACKEND)
     list(APPEND GFX_C_SOURCES 
         gfx/src/backend/webgpu/WebGPUBackend.cpp
         gfx/src/backend/webgpu/converter/GfxWebGPUConverter.cpp
-        gfx/src/backend/webgpu/entity/Entities.cpp
+        gfx/src/backend/webgpu/core/Entities.cpp
     )
 endif()
 

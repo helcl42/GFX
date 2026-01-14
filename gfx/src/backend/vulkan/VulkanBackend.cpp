@@ -3,7 +3,7 @@
 
 #include "VulkanBackend.h"
 #include "converter/GfxVulkanConverter.h"
-#include "entity/Entities.h"
+#include "core/Entities.h"
 
 #include <cassert>
 #include <cstdio>

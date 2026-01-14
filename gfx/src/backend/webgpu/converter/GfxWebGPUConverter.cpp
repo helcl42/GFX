@@ -1,7 +1,7 @@
 #include "GfxWebGPUConverter.h"
 
-#include "../entity/CreateInfo.h"
-#include "../entity/Entities.h"
+#include "../core/CreateInfo.h"
+#include "../core/Entities.h"
 
 namespace gfx::webgpu::converter {
 
