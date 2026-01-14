@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_GFX_H
+#define GFX_GFX_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -620,7 +621,7 @@ typedef struct {
 // Adapter selection: specify either an index OR a preference
 // Set adapterIndex to UINT32_MAX to use preference-based selection
 typedef struct {
-    uint32_t adapterIndex;           // Adapter index from enumeration (use UINT32_MAX to ignore)
+    uint32_t adapterIndex; // Adapter index from enumeration (use UINT32_MAX to ignore)
     GfxAdapterPreference preference; // Used only when adapterIndex is UINT32_MAX
 } GfxAdapterDescriptor;
 
@@ -1205,3 +1206,5 @@ GfxPlatformWindowHandle gfxPlatformWindowHandleFromMetal(void* layer);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // GFX_GFX_H

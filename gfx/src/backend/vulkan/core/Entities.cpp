@@ -1,6 +1,6 @@
 #include "Entities.h"
 
-namespace gfx::vulkan {
+namespace gfx::backend::vulkan {
 
 // ============================================================================
 // Queue Implementation
@@ -382,12 +382,12 @@ RenderPassEncoder::RenderPassEncoder(CommandEncoder* commandEncoder, RenderPass*
         VkClearValue clearValue{};
         clearValue.color = beginInfo.colorClearValues[i];
         clearValues.push_back(clearValue);
-        
+
         // If this color attachment has a resolve target, add a dummy clear value for it
         // (resolve attachments use LOAD_OP_DONT_CARE so the value doesn't matter)
         if (i < colorHasResolve.size() && colorHasResolve[i]) {
             VkClearValue dummyClear{};
-            dummyClear.color = {{0.0f, 0.0f, 0.0f, 0.0f}};
+            dummyClear.color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
             clearValues.push_back(dummyClear);
         }
     }
@@ -667,7 +667,7 @@ RenderPass::RenderPass(Device* device, const RenderPassCreateInfo& createInfo)
             resolveRef.attachment = attachmentIndex++;
             resolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             resolveRefs.push_back(resolveRef);
-            
+
             m_colorHasResolve.push_back(true);
         } else if (isMSAA) {
             // MSAA without resolve needs unused reference
@@ -675,7 +675,7 @@ RenderPass::RenderPass(Device* device, const RenderPassCreateInfo& createInfo)
             unusedRef.attachment = VK_ATTACHMENT_UNUSED;
             unusedRef.layout = VK_IMAGE_LAYOUT_UNDEFINED;
             resolveRefs.push_back(unusedRef);
-            
+
             m_colorHasResolve.push_back(false);
         } else {
             m_colorHasResolve.push_back(false);
@@ -769,4 +769,4 @@ RenderPass::~RenderPass()
     }
 }
 
-} // namespace gfx::vulkan
+} // namespace gfx::backend::vulkan

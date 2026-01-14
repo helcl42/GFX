@@ -8,7 +8,7 @@
 #include "webgpu/WebGPUBackend.h"
 #endif
 
-namespace gfx {
+namespace gfx::backend {
 
 const IBackend* BackendFactory::create(GfxBackend backend)
 {
@@ -26,4 +26,4 @@ const IBackend* BackendFactory::create(GfxBackend backend)
     }
 }
 
-} // namespace gfx
+} // namespace gfx::backend

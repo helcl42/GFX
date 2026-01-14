@@ -3,7 +3,7 @@
 #include "../core/CreateInfo.h"
 #include "../core/Entities.h"
 
-namespace gfx::webgpu::converter {
+namespace gfx::backend::webgpu::converter {
 
 // ============================================================================
 // Device Limits Conversion
@@ -28,15 +28,15 @@ GfxDeviceLimits wgpuLimitsToGfxDeviceLimits(const WGPULimits& limits)
 // Type Conversion Functions
 // ============================================================================
 
-gfx::webgpu::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreType gfxType)
+SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreType gfxType)
 {
     switch (gfxType) {
     case GFX_SEMAPHORE_TYPE_BINARY:
-        return gfx::webgpu::SemaphoreType::Binary;
+        return SemaphoreType::Binary;
     case GFX_SEMAPHORE_TYPE_TIMELINE:
-        return gfx::webgpu::SemaphoreType::Timeline;
+        return SemaphoreType::Timeline;
     default:
-        return gfx::webgpu::SemaphoreType::Binary;
+        return SemaphoreType::Binary;
     }
 }
 
@@ -63,7 +63,7 @@ GfxAdapterType wgpuAdapterTypeToGfxAdapterType(WGPUAdapterType adapterType)
 // Adapter Info Conversion
 // ============================================================================
 
-GfxAdapterInfo wgpuAdapterToGfxAdapterInfo(const gfx::webgpu::AdapterInfo& info)
+GfxAdapterInfo wgpuAdapterToGfxAdapterInfo(const AdapterInfo& info)
 {
     GfxAdapterInfo adapterInfo{};
     adapterInfo.name = info.name.c_str();
@@ -79,9 +79,9 @@ GfxAdapterInfo wgpuAdapterToGfxAdapterInfo(const gfx::webgpu::AdapterInfo& info)
 // CreateInfo Conversion Functions - GfxDescriptor to Internal CreateInfo
 // ============================================================================
 
-gfx::webgpu::AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)
+AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)
 {
-    gfx::webgpu::AdapterCreateInfo createInfo{};
+    AdapterCreateInfo createInfo{};
 
     if (descriptor) {
         // Handle adapter index if specified
@@ -119,41 +119,41 @@ gfx::webgpu::AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxA
     return createInfo;
 }
 
-gfx::webgpu::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstanceDescriptor* descriptor)
+InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstanceDescriptor* descriptor)
 {
-    gfx::webgpu::InstanceCreateInfo createInfo{};
+    InstanceCreateInfo createInfo{};
     createInfo.enableValidation = descriptor ? descriptor->enableValidation : false;
     createInfo.applicationName = descriptor && descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
     createInfo.applicationVersion = descriptor ? descriptor->applicationVersion : 1;
     return createInfo;
 }
 
-gfx::webgpu::DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
+DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
 {
-    gfx::webgpu::DeviceCreateInfo createInfo{};
+    DeviceCreateInfo createInfo{};
     createInfo.queuePriority = descriptor ? descriptor->queuePriority : 1.0f;
     return createInfo;
 }
 
-gfx::webgpu::BufferCreateInfo gfxDescriptorToWebGPUBufferCreateInfo(const GfxBufferDescriptor* descriptor)
+BufferCreateInfo gfxDescriptorToWebGPUBufferCreateInfo(const GfxBufferDescriptor* descriptor)
 {
-    gfx::webgpu::BufferCreateInfo createInfo{};
+    BufferCreateInfo createInfo{};
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToWGPU(descriptor->usage);
     return createInfo;
 }
 
-gfx::webgpu::BufferImportInfo gfxExternalDescriptorToWebGPUBufferImportInfo(const GfxExternalBufferDescriptor* descriptor)
+BufferImportInfo gfxExternalDescriptorToWebGPUBufferImportInfo(const GfxExternalBufferDescriptor* descriptor)
 {
-    gfx::webgpu::BufferImportInfo importInfo{};
+    BufferImportInfo importInfo{};
     importInfo.size = descriptor->size;
     importInfo.usage = gfxBufferUsageToWGPU(descriptor->usage);
     return importInfo;
 }
 
-gfx::webgpu::TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxTextureDescriptor* descriptor)
+TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxTextureDescriptor* descriptor)
 {
-    gfx::webgpu::TextureCreateInfo createInfo{};
+    TextureCreateInfo createInfo{};
     createInfo.format = gfxFormatToWGPUFormat(descriptor->format);
     createInfo.size.width = descriptor->size.width;
     createInfo.size.height = descriptor->size.height;
@@ -169,9 +169,9 @@ gfx::webgpu::TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxT
     return createInfo;
 }
 
-gfx::webgpu::TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(const GfxExternalTextureDescriptor* descriptor)
+TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(const GfxExternalTextureDescriptor* descriptor)
 {
-    gfx::webgpu::TextureImportInfo importInfo{};
+    TextureImportInfo importInfo{};
     importInfo.format = gfxFormatToWGPUFormat(descriptor->format);
     importInfo.size.width = descriptor->size.width;
     importInfo.size.height = descriptor->size.height;
@@ -187,9 +187,9 @@ gfx::webgpu::TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(co
     return importInfo;
 }
 
-gfx::webgpu::TextureViewCreateInfo gfxDescriptorToWebGPUTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor)
+TextureViewCreateInfo gfxDescriptorToWebGPUTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor)
 {
-    gfx::webgpu::TextureViewCreateInfo createInfo{};
+    TextureViewCreateInfo createInfo{};
     createInfo.viewDimension = gfxTextureViewTypeToWGPU(descriptor->viewType);
     createInfo.format = gfxFormatToWGPUFormat(descriptor->format);
     createInfo.baseMipLevel = descriptor ? descriptor->baseMipLevel : 0;
@@ -199,18 +199,18 @@ gfx::webgpu::TextureViewCreateInfo gfxDescriptorToWebGPUTextureViewCreateInfo(co
     return createInfo;
 }
 
-gfx::webgpu::ShaderCreateInfo gfxDescriptorToWebGPUShaderCreateInfo(const GfxShaderDescriptor* descriptor)
+ShaderCreateInfo gfxDescriptorToWebGPUShaderCreateInfo(const GfxShaderDescriptor* descriptor)
 {
-    gfx::webgpu::ShaderCreateInfo createInfo{};
+    ShaderCreateInfo createInfo{};
     createInfo.code = descriptor->code;
     createInfo.codeSize = descriptor->codeSize;
     createInfo.entryPoint = descriptor->entryPoint;
     return createInfo;
 }
 
-gfx::webgpu::SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxSamplerDescriptor* descriptor)
+SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxSamplerDescriptor* descriptor)
 {
-    gfx::webgpu::SamplerCreateInfo createInfo{};
+    SamplerCreateInfo createInfo{};
     createInfo.addressModeU = gfxAddressModeToWGPU(descriptor->addressModeU);
     createInfo.addressModeV = gfxAddressModeToWGPU(descriptor->addressModeV);
     createInfo.addressModeW = gfxAddressModeToWGPU(descriptor->addressModeW);
@@ -224,79 +224,79 @@ gfx::webgpu::SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxS
     return createInfo;
 }
 
-gfx::webgpu::SemaphoreCreateInfo gfxDescriptorToWebGPUSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor)
+SemaphoreCreateInfo gfxDescriptorToWebGPUSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor)
 {
-    gfx::webgpu::SemaphoreCreateInfo createInfo{};
+    SemaphoreCreateInfo createInfo{};
     createInfo.type = descriptor ? gfxSemaphoreTypeToWebGPUSemaphoreType(descriptor->type)
-                                 : gfx::webgpu::SemaphoreType::Binary;
+                                 : SemaphoreType::Binary;
     createInfo.initialValue = descriptor ? descriptor->initialValue : 0;
     return createInfo;
 }
 
-gfx::webgpu::FenceCreateInfo gfxDescriptorToWebGPUFenceCreateInfo(const GfxFenceDescriptor* descriptor)
+FenceCreateInfo gfxDescriptorToWebGPUFenceCreateInfo(const GfxFenceDescriptor* descriptor)
 {
-    gfx::webgpu::FenceCreateInfo createInfo{};
+    FenceCreateInfo createInfo{};
     createInfo.signaled = descriptor && descriptor->signaled;
     return createInfo;
 }
 
-gfx::webgpu::PlatformWindowHandle gfxWindowHandleToWebGPUPlatformWindowHandle(const GfxPlatformWindowHandle& gfxHandle)
+PlatformWindowHandle gfxWindowHandleToWebGPUPlatformWindowHandle(const GfxPlatformWindowHandle& gfxHandle)
 {
-    gfx::webgpu::PlatformWindowHandle handle{};
+    PlatformWindowHandle handle{};
 
     switch (gfxHandle.windowingSystem) {
     case GFX_WINDOWING_SYSTEM_XCB:
-        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Xcb;
+        handle.platform = PlatformWindowHandle::Platform::Xcb;
         handle.handle.xcb.connection = gfxHandle.xcb.connection;
         handle.handle.xcb.window = gfxHandle.xcb.window;
         break;
     case GFX_WINDOWING_SYSTEM_XLIB:
-        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Xlib;
+        handle.platform = PlatformWindowHandle::Platform::Xlib;
         handle.handle.xlib.display = gfxHandle.xlib.display;
         handle.handle.xlib.window = gfxHandle.xlib.window;
         break;
     case GFX_WINDOWING_SYSTEM_WAYLAND:
-        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Wayland;
+        handle.platform = PlatformWindowHandle::Platform::Wayland;
         handle.handle.wayland.display = gfxHandle.wayland.display;
         handle.handle.wayland.surface = gfxHandle.wayland.surface;
         break;
     case GFX_WINDOWING_SYSTEM_WIN32:
-        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Win32;
+        handle.platform = PlatformWindowHandle::Platform::Win32;
         handle.handle.win32.hinstance = gfxHandle.win32.hinstance;
         handle.handle.win32.hwnd = gfxHandle.win32.hwnd;
         break;
     case GFX_WINDOWING_SYSTEM_METAL:
-        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Metal;
+        handle.platform = PlatformWindowHandle::Platform::Metal;
         handle.handle.metal.layer = gfxHandle.metal.layer;
         break;
     case GFX_WINDOWING_SYSTEM_EMSCRIPTEN:
-        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Emscripten;
+        handle.platform = PlatformWindowHandle::Platform::Emscripten;
         handle.handle.emscripten.canvasSelector = gfxHandle.emscripten.canvasSelector;
         break;
     case GFX_WINDOWING_SYSTEM_ANDROID:
-        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Android;
+        handle.platform = PlatformWindowHandle::Platform::Android;
         handle.handle.android.window = gfxHandle.android.window;
         break;
     default:
-        handle.platform = gfx::webgpu::PlatformWindowHandle::Platform::Unknown;
+        handle.platform = PlatformWindowHandle::Platform::Unknown;
         break;
     }
 
     return handle;
 }
 
-gfx::webgpu::SurfaceCreateInfo gfxDescriptorToWebGPUSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor)
+SurfaceCreateInfo gfxDescriptorToWebGPUSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor)
 {
-    gfx::webgpu::SurfaceCreateInfo createInfo{};
+    SurfaceCreateInfo createInfo{};
     if (descriptor) {
         createInfo.windowHandle = gfxWindowHandleToWebGPUPlatformWindowHandle(descriptor->windowHandle);
     }
     return createInfo;
 }
 
-gfx::webgpu::SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor)
+SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor)
 {
-    gfx::webgpu::SwapchainCreateInfo createInfo{};
+    SwapchainCreateInfo createInfo{};
     createInfo.width = descriptor->width;
     createInfo.height = descriptor->height;
     createInfo.format = gfxFormatToWGPUFormat(descriptor->format);
@@ -306,14 +306,14 @@ gfx::webgpu::SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const 
     return createInfo;
 }
 
-gfx::webgpu::BindGroupLayoutCreateInfo gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor)
+BindGroupLayoutCreateInfo gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor)
 {
-    gfx::webgpu::BindGroupLayoutCreateInfo createInfo{};
+    BindGroupLayoutCreateInfo createInfo{};
 
     for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
         const auto& entry = descriptor->entries[i];
 
-        gfx::webgpu::BindGroupLayoutEntry layoutEntry{};
+        BindGroupLayoutEntry layoutEntry{};
         layoutEntry.binding = entry.binding;
 
         // Convert visibility flags (bitwise)
@@ -378,9 +378,9 @@ gfx::webgpu::BindGroupLayoutCreateInfo gfxDescriptorToWebGPUBindGroupLayoutCreat
     return createInfo;
 }
 
-gfx::webgpu::BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor, WGPUBindGroupLayout layout)
+BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor, WGPUBindGroupLayout layout)
 {
-    gfx::webgpu::BindGroupCreateInfo createInfo{};
+    BindGroupCreateInfo createInfo{};
     createInfo.layout = layout;
 
     if (descriptor->entryCount > 0 && descriptor->entries) {
@@ -388,7 +388,7 @@ gfx::webgpu::BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const 
 
         for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
             const auto& entry = descriptor->entries[i];
-            gfx::webgpu::BindGroupEntry bindEntry{};
+            BindGroupEntry bindEntry{};
 
             bindEntry.binding = entry.binding;
 
@@ -422,9 +422,9 @@ gfx::webgpu::BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const 
     return createInfo;
 }
 
-gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor)
+RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor)
 {
-    gfx::webgpu::RenderPipelineCreateInfo createInfo{};
+    RenderPipelineCreateInfo createInfo{};
 
     // Extract bind group layouts
     if (descriptor->bindGroupLayoutCount > 0 && descriptor->bindGroupLayouts) {
@@ -446,7 +446,7 @@ gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateI
 
         for (uint32_t i = 0; i < descriptor->vertex->bufferCount; ++i) {
             const auto& buffer = descriptor->vertex->buffers[i];
-            gfx::webgpu::VertexBufferLayout vbLayout{};
+            VertexBufferLayout vbLayout{};
             vbLayout.arrayStride = buffer.arrayStride;
             vbLayout.stepMode = buffer.stepModeInstance ? WGPUVertexStepMode_Instance : WGPUVertexStepMode_Vertex;
 
@@ -454,7 +454,7 @@ gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateI
             vbLayout.attributes.reserve(buffer.attributeCount);
             for (uint32_t j = 0; j < buffer.attributeCount; ++j) {
                 const auto& attr = buffer.attributes[j];
-                gfx::webgpu::VertexAttribute vbAttr{};
+                VertexAttribute vbAttr{};
                 vbAttr.format = gfxFormatToWGPUVertexFormat(attr.format);
                 vbAttr.offset = attr.offset;
                 vbAttr.shaderLocation = attr.shaderLocation;
@@ -467,7 +467,7 @@ gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateI
 
     // Fragment state (optional)
     if (descriptor->fragment) {
-        gfx::webgpu::FragmentState fragState{};
+        FragmentState fragState{};
         auto* fragmentShader = toNative<Shader>(descriptor->fragment->module);
         fragState.module = fragmentShader->handle();
         fragState.entryPoint = descriptor->fragment->entryPoint;
@@ -480,7 +480,7 @@ gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateI
         fragState.targets.reserve(rpInfo.colorAttachments.size());
 
         for (uint32_t i = 0; i < rpInfo.colorAttachments.size(); ++i) {
-            gfx::webgpu::ColorTargetState colorTarget{};
+            ColorTargetState colorTarget{};
             colorTarget.format = rpInfo.colorAttachments[i].format;
 
             // Use writeMask and blend from fragment descriptor if available
@@ -489,7 +489,7 @@ gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateI
                 colorTarget.writeMask = target.writeMask;
 
                 if (target.blend) {
-                    gfx::webgpu::BlendState blend{};
+                    BlendState blend{};
                     blend.color.operation = gfxBlendOperationToWGPU(target.blend->color.operation);
                     blend.color.srcFactor = gfxBlendFactorToWGPU(target.blend->color.srcFactor);
                     blend.color.dstFactor = gfxBlendFactorToWGPU(target.blend->color.dstFactor);
@@ -519,7 +519,7 @@ gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateI
 
     // Depth/stencil state (optional)
     if (descriptor->depthStencil) {
-        gfx::webgpu::DepthStencilState dsState{};
+        DepthStencilState dsState{};
         dsState.format = gfxFormatToWGPUFormat(descriptor->depthStencil->format);
         dsState.depthWriteEnabled = descriptor->depthStencil->depthWriteEnabled;
         dsState.depthCompare = gfxCompareFunctionToWGPU(descriptor->depthStencil->depthCompare);
@@ -550,9 +550,9 @@ gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateI
     return createInfo;
 }
 
-gfx::webgpu::ComputePipelineCreateInfo gfxDescriptorToWebGPUComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor)
+ComputePipelineCreateInfo gfxDescriptorToWebGPUComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor)
 {
-    gfx::webgpu::ComputePipelineCreateInfo createInfo{};
+    ComputePipelineCreateInfo createInfo{};
 
     // Extract bind group layouts
     if (descriptor->bindGroupLayoutCount > 0 && descriptor->bindGroupLayouts) {
@@ -571,16 +571,16 @@ gfx::webgpu::ComputePipelineCreateInfo gfxDescriptorToWebGPUComputePipelineCreat
     return createInfo;
 }
 
-gfx::webgpu::CommandEncoderCreateInfo gfxDescriptorToWebGPUCommandEncoderCreateInfo(const GfxCommandEncoderDescriptor* descriptor)
+CommandEncoderCreateInfo gfxDescriptorToWebGPUCommandEncoderCreateInfo(const GfxCommandEncoderDescriptor* descriptor)
 {
-    gfx::webgpu::CommandEncoderCreateInfo createInfo;
+    CommandEncoderCreateInfo createInfo;
     createInfo.label = descriptor->label;
     return createInfo;
 }
 
-gfx::webgpu::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitInfo* descriptor)
+SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitInfo* descriptor)
 {
-    gfx::webgpu::SubmitInfo submitInfo{};
+    SubmitInfo submitInfo{};
     // Note: Array pointer conversions use reinterpret_cast as toNative<> is for individual objects
     submitInfo.commandEncoders = reinterpret_cast<CommandEncoder**>(descriptor->commandEncoders);
     submitInfo.commandEncoderCount = descriptor->commandEncoderCount;
@@ -631,19 +631,19 @@ GfxBufferUsage webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage)
     return static_cast<GfxBufferUsage>(gfxUsage);
 }
 
-GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(gfx::webgpu::SemaphoreType type)
+GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(SemaphoreType type)
 {
     switch (type) {
-    case gfx::webgpu::SemaphoreType::Binary:
+    case SemaphoreType::Binary:
         return GFX_SEMAPHORE_TYPE_BINARY;
-    case gfx::webgpu::SemaphoreType::Timeline:
+    case SemaphoreType::Timeline:
         return GFX_SEMAPHORE_TYPE_TIMELINE;
     default:
         return GFX_SEMAPHORE_TYPE_BINARY;
     }
 }
 
-GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const gfx::webgpu::TextureInfo& info)
+GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const TextureInfo& info)
 {
     GfxTextureInfo gfxInfo{};
     gfxInfo.type = wgpuTextureDimensionToGfxTextureType(info.dimension);
@@ -656,7 +656,7 @@ GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const gfx::webgpu::TextureInfo& i
     return gfxInfo;
 }
 
-GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const gfx::webgpu::SwapchainInfo& info)
+GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const SwapchainInfo& info)
 {
     GfxSwapchainInfo gfxInfo{};
     gfxInfo.width = info.width;
@@ -1326,4 +1326,4 @@ ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(
     return createInfo;
 }
 
-} // namespace gfx::webgpu::converter
+} // namespace gfx::backend::webgpu::converter

@@ -1,8 +1,9 @@
-#pragma once
+#ifndef GFX_BACKEND_IBACKEND_H
+#define GFX_BACKEND_IBACKEND_H
 
 #include <gfx/gfx.h>
 
-namespace gfx {
+namespace gfx::backend {
 // Backend interface - each backend implements this
 class IBackend {
 public:
@@ -184,4 +185,6 @@ public:
     // Helper functions
     virtual GfxAccessFlags getAccessFlagsForLayout(GfxTextureLayout layout) const = 0;
 };
-} // namespace gfx
+} // namespace gfx::backend
+
+#endif // GFX_BACKEND_IBACKEND_H

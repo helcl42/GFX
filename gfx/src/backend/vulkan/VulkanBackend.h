@@ -1,8 +1,11 @@
+#ifndef GFX_VULKAN_BACKEND_H
+#define GFX_VULKAN_BACKEND_H
+
 #include "../IBackend.h"
 
 #include <gfx/gfx.h>
 
-namespace gfx::vulkan {
+namespace gfx::backend::vulkan {
 
 // Vulkan backend implementation
 class VulkanBackend : public IBackend {
@@ -178,4 +181,6 @@ public:
     static const IBackend* create();
 };
 
-} // namespace gfx::vulkan
+} // namespace gfx::backend::vulkan
+
+#endif // GFX_VULKAN_BACKEND_H

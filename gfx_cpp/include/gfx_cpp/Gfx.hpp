@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_CPP_GFX_HPP
+#define GFX_CPP_GFX_HPP
 
 #include <cstdint>
 #include <cstring>
@@ -537,7 +538,7 @@ struct InstanceDescriptor {
 };
 
 struct AdapterDescriptor {
-    uint32_t adapterIndex = UINT32_MAX;                        // Adapter index from enumeration (use UINT32_MAX to ignore)
+    uint32_t adapterIndex = UINT32_MAX; // Adapter index from enumeration (use UINT32_MAX to ignore)
     AdapterPreference preference = AdapterPreference::Undefined; // Used only when adapterIndex is UINT32_MAX
 };
 
@@ -814,12 +815,12 @@ struct DeviceLimits {
 };
 
 struct AdapterInfo {
-    std::string name;              // Device name (e.g., "NVIDIA GeForce RTX 4090")
+    std::string name; // Device name (e.g., "NVIDIA GeForce RTX 4090")
     std::string driverDescription; // Driver description (may be empty for WebGPU)
-    uint32_t vendorID = 0;         // PCI vendor ID (0x1002=AMD, 0x10DE=NVIDIA, 0x8086=Intel, 0=Unknown)
-    uint32_t deviceID = 0;         // PCI device ID (0=Unknown)
+    uint32_t vendorID = 0; // PCI vendor ID (0x1002=AMD, 0x10DE=NVIDIA, 0x8086=Intel, 0=Unknown)
+    uint32_t deviceID = 0; // PCI device ID (0=Unknown)
     AdapterType adapterType = AdapterType::Unknown; // Discrete, Integrated, CPU, or Unknown
-    Backend backend = Backend::Auto;                 // Vulkan or WebGPU
+    Backend backend = Backend::Auto; // Vulkan or WebGPU
 };
 
 struct SubmitInfo {
@@ -1309,3 +1310,5 @@ namespace utils {
 std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor = {});
 
 } // namespace gfx
+
+#endif // GFX_CPP_GFX_HPP

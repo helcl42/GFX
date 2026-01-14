@@ -5,7 +5,7 @@
 
 #include "../IBackend.h"
 
-namespace gfx::webgpu {
+namespace gfx::backend::webgpu {
 // WebGPU backend implementation
 class WebGPUBackend : public IBackend {
 public:
@@ -172,6 +172,6 @@ public:
     static const IBackend* create();
 };
 
-} // namespace gfx::webgpu
+} // namespace gfx::backend::webgpu
 
 #endif // GFX_WEBGPU_BACKEND_H

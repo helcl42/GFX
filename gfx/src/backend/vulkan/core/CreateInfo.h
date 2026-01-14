@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_VULKAN_CREATEINFO_H
+#define GFX_VULKAN_CREATEINFO_H
 
 #include "../common/VulkanCommon.h"
 
@@ -7,7 +8,7 @@
 #include <optional>
 #include <vector>
 
-namespace gfx::vulkan {
+namespace gfx::backend::vulkan {
 
 // Forward declarations for SubmitInfo
 class CommandEncoder;
@@ -226,7 +227,7 @@ struct InstanceCreateInfo {
 };
 
 struct AdapterCreateInfo {
-    uint32_t adapterIndex = UINT32_MAX;                                          // Adapter index (UINT32_MAX = use preference)
+    uint32_t adapterIndex = UINT32_MAX; // Adapter index (UINT32_MAX = use preference)
     DeviceTypePreference devicePreference = DeviceTypePreference::HighPerformance; // Only used when adapterIndex is UINT32_MAX
 };
 
@@ -411,4 +412,6 @@ struct SubmitInfo {
     uint32_t signalSemaphoreCount;
 };
 
-} // namespace gfx::vulkan
+} // namespace gfx::backend::vulkan
+
+#endif // GFX_VULKAN_CREATEINFO_H

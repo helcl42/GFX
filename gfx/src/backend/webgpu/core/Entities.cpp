@@ -1,15 +1,13 @@
 #include "Entities.h"
 
-namespace gfx::webgpu {
+namespace gfx::backend::webgpu {
 
 namespace {
     bool hasStencil(WGPUTextureFormat format)
     {
-        return format == WGPUTextureFormat_Stencil8 ||
-               format == WGPUTextureFormat_Depth24PlusStencil8 ||
-               format == WGPUTextureFormat_Depth32FloatStencil8;
+        return format == WGPUTextureFormat_Stencil8 || format == WGPUTextureFormat_Depth24PlusStencil8 || format == WGPUTextureFormat_Depth32FloatStencil8;
     }
-}
+} // namespace
 
 bool Queue::submit(const SubmitInfo& submitInfo)
 {
@@ -321,4 +319,4 @@ WGPUTextureView TextureView::handle() const
     return m_view;
 }
 
-} // namespace gfx::webgpu
+} // namespace gfx::backend::webgpu

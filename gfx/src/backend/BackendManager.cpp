@@ -1,6 +1,6 @@
 #include "BackendManager.h"
 
-namespace gfx {
+namespace gfx::backend {
 
 BackendManager& BackendManager::getInstance()
 {
@@ -56,7 +56,7 @@ bool BackendManager::loadBackend(GfxBackend backend, const IBackend* backendImpl
     if (backend < 0 || backend >= GFX_BACKEND_AUTO) {
         return false;
     }
-    
+
     SCOPED_LOCK(m_mutex);
     if (!m_backends[backend]) {
         m_backends[backend] = backendImpl;
@@ -71,7 +71,7 @@ void BackendManager::unloadBackend(GfxBackend backend)
     if (backend < 0 || backend >= GFX_BACKEND_AUTO) {
         return;
     }
-    
+
     SCOPED_LOCK(m_mutex);
     if (m_backends[backend] && m_refCounts[backend] > 0) {
         --m_refCounts[backend];
@@ -89,4 +89,4 @@ BackendManager::BackendManager()
     }
 }
 
-} // namespace gfx
+} // namespace gfx::backend

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VULKAN_COMMON_H
+#define VULKAN_COMMON_H
 
 #ifndef GFX_HEADLESS_BUILD
 #ifdef GFX_HAS_WIN32
@@ -50,3 +51,5 @@ typedef void CAMetalLayer;
 #endif // GFX_HEADLESS_BUILD
 
 #include <vulkan/vulkan.h>
+
+#endif // VULKAN_COMMON_H

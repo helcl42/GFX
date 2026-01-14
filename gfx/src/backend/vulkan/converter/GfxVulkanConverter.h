@@ -1,11 +1,12 @@
-#pragma once
+#ifndef GFX_VULKAN_CONVERTER_H
+#define GFX_VULKAN_CONVERTER_H
 
 #include "../common/VulkanCommon.h"
 
 #include <gfx/gfx.h>
 
 // Forward declare CreateInfo types and internal types
-namespace gfx::vulkan {
+namespace gfx::backend::vulkan {
 class Buffer;
 class Texture;
 class Swapchain;
@@ -47,9 +48,9 @@ struct ScissorRect;
 enum class DebugMessageSeverity;
 enum class DebugMessageType;
 enum class SemaphoreType;
-} // namespace gfx::vulkan
+} // namespace gfx::backend::vulkan
 
-namespace gfx::vulkan::converter {
+namespace gfx::backend::vulkan::converter {
 
 // Template function to convert internal C++ pointer to opaque C handle
 // Usage: toGfx<GfxDevice>(devicePtr)
@@ -71,14 +72,14 @@ inline InternalType* toNative(GfxHandle handle)
 // Debug Message Conversion Functions
 // ============================================================================
 
-gfx::vulkan::DebugMessageSeverity convertVkDebugSeverity(VkDebugUtilsMessageSeverityFlagBitsEXT vkSeverity);
-gfx::vulkan::DebugMessageType convertVkDebugType(VkDebugUtilsMessageTypeFlagsEXT vkType);
+DebugMessageSeverity convertVkDebugSeverity(VkDebugUtilsMessageSeverityFlagBitsEXT vkSeverity);
+DebugMessageType convertVkDebugType(VkDebugUtilsMessageTypeFlagsEXT vkType);
 
 // ============================================================================
 // Type Conversion Functions
 // ============================================================================
 
-gfx::vulkan::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(GfxSemaphoreType type);
+SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(GfxSemaphoreType type);
 
 // ============================================================================
 // Format Conversion Functions
@@ -143,7 +144,7 @@ VkImageViewType gfxTextureViewTypeToVkImageViewType(GfxTextureViewType type);
 VkSampleCountFlagBits sampleCountToVkSampleCount(GfxSampleCount sampleCount);
 GfxSampleCount vkSampleCountToGfxSampleCount(VkSampleCountFlagBits vkSampleCount);
 GfxTextureInfo vkTextureInfoToGfxTextureInfo(const TextureInfo& info);
-GfxSwapchainInfo vkSwapchainInfoToGfxSwapchainInfo(const gfx::vulkan::SwapchainInfo& info);
+GfxSwapchainInfo vkSwapchainInfoToGfxSwapchainInfo(const SwapchainInfo& info);
 GfxBufferInfo vkBufferToGfxBufferInfo(const BufferInfo& info);
 GfxExtent3D vkExtent3DToGfxExtent3D(const VkExtent3D& vkExtent);
 VkExtent3D gfxExtent3DToVkExtent3D(const GfxExtent3D* gfxExtent);
@@ -165,35 +166,37 @@ const char* vkResultToString(VkResult result);
 // CreateInfo Conversion Functions - GfxDescriptor to Internal CreateInfo
 // ============================================================================
 
-gfx::vulkan::BufferCreateInfo gfxDescriptorToBufferCreateInfo(const GfxBufferDescriptor* descriptor);
-gfx::vulkan::BufferImportInfo gfxExternalDescriptorToBufferImportInfo(const GfxExternalBufferDescriptor* descriptor);
-gfx::vulkan::ShaderCreateInfo gfxDescriptorToShaderCreateInfo(const GfxShaderDescriptor* descriptor);
-gfx::vulkan::SemaphoreCreateInfo gfxDescriptorToSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor);
-gfx::vulkan::FenceCreateInfo gfxDescriptorToFenceCreateInfo(const GfxFenceDescriptor* descriptor);
-gfx::vulkan::TextureCreateInfo gfxDescriptorToTextureCreateInfo(const GfxTextureDescriptor* descriptor);
-gfx::vulkan::TextureImportInfo gfxExternalDescriptorToTextureImportInfo(const GfxExternalTextureDescriptor* descriptor);
-gfx::vulkan::TextureViewCreateInfo gfxDescriptorToTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor);
-gfx::vulkan::SamplerCreateInfo gfxDescriptorToSamplerCreateInfo(const GfxSamplerDescriptor* descriptor);
-gfx::vulkan::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInstanceDescriptor* descriptor);
-gfx::vulkan::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescriptor* descriptor);
-gfx::vulkan::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDescriptor* descriptor);
-gfx::vulkan::SurfaceCreateInfo gfxDescriptorToSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor);
-gfx::vulkan::SwapchainCreateInfo gfxDescriptorToSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor);
-gfx::vulkan::BindGroupLayoutCreateInfo gfxDescriptorToBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor);
+BufferCreateInfo gfxDescriptorToBufferCreateInfo(const GfxBufferDescriptor* descriptor);
+BufferImportInfo gfxExternalDescriptorToBufferImportInfo(const GfxExternalBufferDescriptor* descriptor);
+ShaderCreateInfo gfxDescriptorToShaderCreateInfo(const GfxShaderDescriptor* descriptor);
+SemaphoreCreateInfo gfxDescriptorToSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor);
+FenceCreateInfo gfxDescriptorToFenceCreateInfo(const GfxFenceDescriptor* descriptor);
+TextureCreateInfo gfxDescriptorToTextureCreateInfo(const GfxTextureDescriptor* descriptor);
+TextureImportInfo gfxExternalDescriptorToTextureImportInfo(const GfxExternalTextureDescriptor* descriptor);
+TextureViewCreateInfo gfxDescriptorToTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor);
+SamplerCreateInfo gfxDescriptorToSamplerCreateInfo(const GfxSamplerDescriptor* descriptor);
+InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInstanceDescriptor* descriptor);
+AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescriptor* descriptor);
+DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDescriptor* descriptor);
+SurfaceCreateInfo gfxDescriptorToSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor);
+SwapchainCreateInfo gfxDescriptorToSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor);
+BindGroupLayoutCreateInfo gfxDescriptorToBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor);
 
 // ============================================================================
 // Entity-dependent CreateInfo Conversion Functions
 // These require full entity definitions (Shader, BindGroupLayout, etc.)
 // ============================================================================
 
-gfx::vulkan::BindGroupCreateInfo gfxDescriptorToBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor);
-gfx::vulkan::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor);
-gfx::vulkan::ComputePipelineCreateInfo gfxDescriptorToComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor);
-gfx::vulkan::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(const GfxRenderPassDescriptor* descriptor);
-gfx::vulkan::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(const GfxFramebufferDescriptor* descriptor);
-gfx::vulkan::RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(const GfxRenderPassDescriptor* descriptor);
-gfx::vulkan::RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(const GfxRenderPassBeginDescriptor* descriptor);
-gfx::vulkan::ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(const GfxComputePassBeginDescriptor* descriptor);
-gfx::vulkan::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitInfo* descriptor);
+BindGroupCreateInfo gfxDescriptorToBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor);
+RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor);
+ComputePipelineCreateInfo gfxDescriptorToComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor);
+RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(const GfxRenderPassDescriptor* descriptor);
+FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(const GfxFramebufferDescriptor* descriptor);
+RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(const GfxRenderPassDescriptor* descriptor);
+RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(const GfxRenderPassBeginDescriptor* descriptor);
+ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(const GfxComputePassBeginDescriptor* descriptor);
+SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitInfo* descriptor);
 
-} // namespace gfx::vulkan::converter
+} // namespace gfx::backend::vulkan::converter
+
+#endif // GFX_VULKAN_CONVERTER_H

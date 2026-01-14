@@ -1,11 +1,12 @@
-#pragma once
+#ifndef GFX_WEBGPU_CONVERTER_H
+#define GFX_WEBGPU_CONVERTER_H
 
 #include "../common/WebGPUCommon.h"
 
 #include <gfx/gfx.h>
 
 // Forward declare internal WebGPU types
-namespace gfx::webgpu {
+namespace gfx::backend::webgpu {
 class Buffer;
 class Texture;
 class Swapchain;
@@ -43,13 +44,13 @@ struct SubmitInfo;
 struct PlatformWindowHandle;
 
 enum class SemaphoreType;
-} // namespace gfx::webgpu
+} // namespace gfx::backend::webgpu
 
 // ============================================================================
 // WebGPU Conversion Functions
 // ============================================================================
 
-namespace gfx::webgpu::converter {
+namespace gfx::backend::webgpu::converter {
 
 // Template function to convert internal C++ pointer to opaque C handle
 // Usage: toGfx<GfxDevice>(devicePtr)
@@ -71,7 +72,7 @@ inline InternalType* toNative(GfxHandle handle)
 // Type Conversion Functions
 // ============================================================================
 
-gfx::webgpu::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreType gfxType);
+SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreType gfxType);
 
 // ============================================================================
 // Adapter Type Conversion
@@ -83,43 +84,43 @@ GfxAdapterType wgpuAdapterTypeToGfxAdapterType(WGPUAdapterType adapterType);
 // Adapter Info Conversion
 // ============================================================================
 
-GfxAdapterInfo wgpuAdapterToGfxAdapterInfo(const gfx::webgpu::AdapterInfo& info);
+GfxAdapterInfo wgpuAdapterToGfxAdapterInfo(const AdapterInfo& info);
 
 // ============================================================================
 // CreateInfo Conversion Functions - GfxDescriptor to Internal CreateInfo
 // ============================================================================
 
-gfx::webgpu::AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxAdapterDescriptor* descriptor);
-gfx::webgpu::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstanceDescriptor* descriptor);
-gfx::webgpu::DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDescriptor* descriptor);
-gfx::webgpu::BufferCreateInfo gfxDescriptorToWebGPUBufferCreateInfo(const GfxBufferDescriptor* descriptor);
-gfx::webgpu::BufferImportInfo gfxExternalDescriptorToWebGPUBufferImportInfo(const GfxExternalBufferDescriptor* descriptor);
-gfx::webgpu::TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxTextureDescriptor* descriptor);
-gfx::webgpu::TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(const GfxExternalTextureDescriptor* descriptor);
-gfx::webgpu::TextureViewCreateInfo gfxDescriptorToWebGPUTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor);
-gfx::webgpu::ShaderCreateInfo gfxDescriptorToWebGPUShaderCreateInfo(const GfxShaderDescriptor* descriptor);
-gfx::webgpu::SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxSamplerDescriptor* descriptor);
-gfx::webgpu::SemaphoreCreateInfo gfxDescriptorToWebGPUSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor);
-gfx::webgpu::FenceCreateInfo gfxDescriptorToWebGPUFenceCreateInfo(const GfxFenceDescriptor* descriptor);
-gfx::webgpu::SurfaceCreateInfo gfxDescriptorToWebGPUSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor);
-gfx::webgpu::SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor);
-gfx::webgpu::BindGroupLayoutCreateInfo gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor);
+AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxAdapterDescriptor* descriptor);
+InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstanceDescriptor* descriptor);
+DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDescriptor* descriptor);
+BufferCreateInfo gfxDescriptorToWebGPUBufferCreateInfo(const GfxBufferDescriptor* descriptor);
+BufferImportInfo gfxExternalDescriptorToWebGPUBufferImportInfo(const GfxExternalBufferDescriptor* descriptor);
+TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxTextureDescriptor* descriptor);
+TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(const GfxExternalTextureDescriptor* descriptor);
+TextureViewCreateInfo gfxDescriptorToWebGPUTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor);
+ShaderCreateInfo gfxDescriptorToWebGPUShaderCreateInfo(const GfxShaderDescriptor* descriptor);
+SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxSamplerDescriptor* descriptor);
+SemaphoreCreateInfo gfxDescriptorToWebGPUSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor);
+FenceCreateInfo gfxDescriptorToWebGPUFenceCreateInfo(const GfxFenceDescriptor* descriptor);
+SurfaceCreateInfo gfxDescriptorToWebGPUSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor);
+SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor);
+BindGroupLayoutCreateInfo gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor);
 
 // Entity-dependent CreateInfo Conversion Functions
-gfx::webgpu::BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor, WGPUBindGroupLayout layout);
-gfx::webgpu::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor);
-gfx::webgpu::ComputePipelineCreateInfo gfxDescriptorToWebGPUComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor);
-gfx::webgpu::CommandEncoderCreateInfo gfxDescriptorToWebGPUCommandEncoderCreateInfo(const GfxCommandEncoderDescriptor* descriptor);
-gfx::webgpu::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitInfo* descriptor);
+BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor, WGPUBindGroupLayout layout);
+RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor);
+ComputePipelineCreateInfo gfxDescriptorToWebGPUComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor);
+CommandEncoderCreateInfo gfxDescriptorToWebGPUCommandEncoderCreateInfo(const GfxCommandEncoderDescriptor* descriptor);
+SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitInfo* descriptor);
 
 // ============================================================================
 // Reverse conversions - internal to Gfx API types
 // ============================================================================
 
 GfxBufferUsage webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage);
-GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(gfx::webgpu::SemaphoreType type);
-GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const gfx::webgpu::TextureInfo& info);
-GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const gfx::webgpu::SwapchainInfo& info);
+GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(SemaphoreType type);
+GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const TextureInfo& info);
+GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const SwapchainInfo& info);
 GfxBufferInfo wgpuBufferToGfxBufferInfo(const BufferInfo& info);
 
 // ============================================================================
@@ -207,4 +208,6 @@ RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(
 ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(
     const GfxComputePassBeginDescriptor* descriptor);
 
-} // namespace gfx::webgpu::converter
+} // namespace gfx::backend::webgpu::converter
+
+#endif // GFX_WEBGPU_CONVERTER_H

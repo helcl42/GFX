@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_BACKEND_MANAGER_H
+#define GFX_BACKEND_MANAGER_H
 
 #include <gfx/gfx.h>
 
@@ -9,7 +10,7 @@
 #endif
 #include <unordered_map>
 
-namespace gfx {
+namespace gfx::backend {
 
 // No-op lock and mutex for single-threaded environments (Emscripten/WebAssembly)
 #ifdef GFX_HAS_EMSCRIPTEN
@@ -73,4 +74,6 @@ private:
     std::unordered_map<void*, HandleMeta> m_handles;
 };
 
-} // namespace gfx
+} // namespace gfx::backend
+
+#endif // GFX_BACKEND_MANAGER_H

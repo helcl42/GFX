@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_WEBGPU_ENTITIES_H
+#define GFX_WEBGPU_ENTITIES_H
 
 #include "CreateInfo.h"
 
@@ -53,7 +54,7 @@ typedef void CAMetalLayer;
 // Internal C++ Classes with RAII
 // ============================================================================
 
-namespace gfx::webgpu {
+namespace gfx::backend::webgpu {
 
 namespace {
     WGPUStringView toStringView(const char* str)
@@ -260,7 +261,7 @@ public:
     WGPUAdapter handle() const { return m_adapter; }
     Instance* getInstance() const { return m_instance; }
 
-    const gfx::webgpu::AdapterInfo& getInfo() const { return m_info; }
+    const AdapterInfo& getInfo() const { return m_info; }
 
     WGPULimits getLimits() const
     {
@@ -275,7 +276,7 @@ public:
 private:
     AdapterInfo createAdapterInfo() const
     {
-        gfx::webgpu::AdapterInfo adapterInfo{};
+        AdapterInfo adapterInfo{};
 
 #ifdef GFX_HAS_EMSCRIPTEN
         // Emscripten's wgpuAdapterGetInfo has issues - provide reasonable defaults
@@ -302,7 +303,7 @@ private:
 private:
     WGPUAdapter m_adapter = nullptr;
     Instance* m_instance = nullptr; // Non-owning
-    gfx::webgpu::AdapterInfo m_info;
+    AdapterInfo m_info;
 };
 
 class Queue {
@@ -531,7 +532,7 @@ public:
 
     WGPUBuffer handle() const { return m_buffer; }
     uint64_t getSize() const { return m_info.size; }
-    BufferUsage getUsage() const { return m_info.usage; }
+    WGPUBufferUsage getUsage() const { return m_info.usage; }
     const BufferInfo& getInfo() const { return m_info; }
     Device* getDevice() const { return m_device; }
 
@@ -1435,37 +1436,37 @@ public:
     {
         switch (createInfo.windowHandle.platform) {
 #ifdef GFX_HAS_WIN32
-        case gfx::webgpu::PlatformWindowHandle::Platform::Win32:
+        case PlatformWindowHandle::Platform::Win32:
             m_surface = createSurfaceWin32(instance, createInfo.windowHandle);
             break;
 #endif
 #ifdef GFX_HAS_ANDROID
-        case gfx::webgpu::PlatformWindowHandle::Platform::Android:
+        case PlatformWindowHandle::Platform::Android:
             m_surface = createSurfaceAndroid(instance, createInfo.windowHandle);
             break;
 #endif
 #ifdef GFX_HAS_X11
-        case gfx::webgpu::PlatformWindowHandle::Platform::Xlib:
+        case PlatformWindowHandle::Platform::Xlib:
             m_surface = createSurfaceXlib(instance, createInfo.windowHandle);
             break;
 #endif
 #ifdef GFX_HAS_XCB
-        case gfx::webgpu::PlatformWindowHandle::Platform::Xcb:
+        case PlatformWindowHandle::Platform::Xcb:
             m_surface = createSurfaceXCB(instance, createInfo.windowHandle);
             break;
 #endif
 #ifdef GFX_HAS_WAYLAND
-        case gfx::webgpu::PlatformWindowHandle::Platform::Wayland:
+        case PlatformWindowHandle::Platform::Wayland:
             m_surface = createSurfaceWayland(instance, createInfo.windowHandle);
             break;
 #endif
 #if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
-        case gfx::webgpu::PlatformWindowHandle::Platform::Cocoa:
+        case PlatformWindowHandle::Platform::Cocoa:
             m_surface = createSurfaceMetal(instance, createInfo.windowHandle);
             break;
 #endif
 #ifdef GFX_HAS_EMSCRIPTEN
-        case gfx::webgpu::PlatformWindowHandle::Platform::Emscripten:
+        case PlatformWindowHandle::Platform::Emscripten:
             m_surface = createSurfaceEmscripten(instance, createInfo.windowHandle);
             break;
 #endif
@@ -1495,7 +1496,7 @@ public:
 
 private:
 #ifdef GFX_HAS_WIN32
-    static WGPUSurface createSurfaceWin32(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    static WGPUSurface createSurfaceWin32(WGPUInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.win32.hwnd || !windowHandle.handle.win32.hinstance) {
             throw std::runtime_error("Invalid Win32 window or instance handle");
@@ -1513,7 +1514,7 @@ private:
     }
 #endif
 #ifdef GFX_HAS_ANDROID
-    static WGPUSurface createSurfaceAndroid(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    static WGPUSurface createSurfaceAndroid(WGPUInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.android.window) {
             throw std::runtime_error("Invalid Android window handle");
@@ -1530,7 +1531,7 @@ private:
     }
 #endif
 #ifdef GFX_HAS_X11
-    static WGPUSurface createSurfaceXlib(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    static WGPUSurface createSurfaceXlib(WGPUInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.xlib.window || !windowHandle.handle.xlib.display) {
             throw std::runtime_error("Invalid Xlib window or display handle");
@@ -1548,7 +1549,7 @@ private:
     }
 #endif
 #ifdef GFX_HAS_XCB
-    static WGPUSurface createSurfaceXCB(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    static WGPUSurface createSurfaceXCB(WGPUInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.xcb.window || !windowHandle.handle.xcb.connection) {
             throw std::runtime_error("Invalid XCB window or connection handle");
@@ -1566,7 +1567,7 @@ private:
     }
 #endif
 #ifdef GFX_HAS_WAYLAND
-    static WGPUSurface createSurfaceWayland(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    static WGPUSurface createSurfaceWayland(WGPUInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.wayland.surface || !windowHandle.handle.wayland.display) {
             throw std::runtime_error("Invalid Wayland surface or display handle");
@@ -1584,7 +1585,7 @@ private:
     }
 #endif
 #if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
-    static WGPUSurface createSurfaceMetal(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    static WGPUSurface createSurfaceMetal(WGPUInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.metalLayer) {
             throw std::runtime_error("Invalid Metal layer handle");
@@ -1601,7 +1602,7 @@ private:
     }
 #endif
 #ifdef GFX_HAS_EMSCRIPTEN
-    static WGPUSurface createSurfaceEmscripten(WGPUInstance instance, const gfx::webgpu::PlatformWindowHandle& windowHandle)
+    static WGPUSurface createSurfaceEmscripten(WGPUInstance instance, const PlatformWindowHandle& windowHandle)
     {
         if (!windowHandle.handle.emscripten.canvasSelector) {
             throw std::runtime_error("Invalid Emscripten canvas selector");
@@ -1628,7 +1629,7 @@ public:
     Swapchain(const Swapchain&) = delete;
     Swapchain& operator=(const Swapchain&) = delete;
 
-    Swapchain(gfx::webgpu::Device* device, gfx::webgpu::Surface* surface, const SwapchainCreateInfo& createInfo)
+    Swapchain(Device* device, Surface* surface, const SwapchainCreateInfo& createInfo)
         : m_device(device)
         , m_surface(surface->handle())
         , m_info(createSwapchainInfo(createInfo))
@@ -1680,7 +1681,7 @@ public:
 
         // Create stable TextureView wrapper ONCE (never deleted until swapchain destroyed)
         // This allows multiple framebuffers to reference the same TextureView*
-        m_currentView = new gfx::webgpu::TextureView(this);
+        m_currentView = new TextureView(this);
 
         // Configure surface for direct rendering
         WGPUSurfaceConfiguration config = WGPU_SURFACE_CONFIGURATION_INIT;
@@ -1752,7 +1753,7 @@ public:
         return surfaceTexture.status;
     }
 
-    gfx::webgpu::TextureView* getCurrentTextureView()
+    TextureView* getCurrentTextureView()
     {
         // Just return the stable wrapper (created in constructor)
         // It will dynamically resolve to the current texture when handle() is called
@@ -1794,7 +1795,7 @@ private:
     SwapchainInfo m_info{};
     WGPUTexture m_currentTexture = nullptr; // Current frame texture from surface
     WGPUTextureView m_currentRawView = nullptr; // Current frame raw view handle
-    gfx::webgpu::TextureView* m_currentView = nullptr; // Current frame view wrapper (owned)
+    TextureView* m_currentView = nullptr; // Current frame view wrapper (owned)
 };
 
 class Fence {
@@ -2123,4 +2124,6 @@ private:
     std::unordered_map<WGPUFilterMode, WGPUSampler> m_samplers;
 };
 
-} // namespace gfx::webgpu
+} // namespace gfx::backend::webgpu
+
+#endif // GFX_BACKEND_WEBGPU_CORE_ENTITIES_H

@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace gfx::vulkan {
+namespace gfx::backend::vulkan {
 
 // Instance functions
 GfxResult VulkanBackend::createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const
@@ -26,7 +26,7 @@ GfxResult VulkanBackend::createInstance(const GfxInstanceDescriptor* descriptor,
 
     try {
         auto createInfo = converter::gfxDescriptorToInstanceCreateInfo(descriptor);
-        auto* instance = new gfx::vulkan::Instance(createInfo);
+        auto* instance = new Instance(createInfo);
         *outInstance = converter::toGfx<GfxInstance>(instance);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -59,22 +59,22 @@ GfxResult VulkanBackend::instanceSetDebugCallback(GfxInstance instance, GfxDebug
         auto* callbackData = new CallbackData{ callback, userData };
 
         // Create a static callback that uses the adapter
-        auto staticCallback = +[](gfx::vulkan::DebugMessageSeverity severity, gfx::vulkan::DebugMessageType type, const char* message, void* dataPtr) {
+        auto staticCallback = +[](DebugMessageSeverity severity, DebugMessageType type, const char* message, void* dataPtr) {
             auto* data = static_cast<CallbackData*>(dataPtr);
 
             // Convert internal enum to GfxDebugMessageSeverity
             GfxDebugMessageSeverity gfxSeverity;
             switch (severity) {
-            case gfx::vulkan::DebugMessageSeverity::Verbose:
+            case DebugMessageSeverity::Verbose:
                 gfxSeverity = GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE;
                 break;
-            case gfx::vulkan::DebugMessageSeverity::Info:
+            case DebugMessageSeverity::Info:
                 gfxSeverity = GFX_DEBUG_MESSAGE_SEVERITY_INFO;
                 break;
-            case gfx::vulkan::DebugMessageSeverity::Warning:
+            case DebugMessageSeverity::Warning:
                 gfxSeverity = GFX_DEBUG_MESSAGE_SEVERITY_WARNING;
                 break;
-            case gfx::vulkan::DebugMessageSeverity::Error:
+            case DebugMessageSeverity::Error:
                 gfxSeverity = GFX_DEBUG_MESSAGE_SEVERITY_ERROR;
                 break;
             }
@@ -82,13 +82,13 @@ GfxResult VulkanBackend::instanceSetDebugCallback(GfxInstance instance, GfxDebug
             // Convert internal enum to GfxDebugMessageType
             GfxDebugMessageType gfxType;
             switch (type) {
-            case gfx::vulkan::DebugMessageType::General:
+            case DebugMessageType::General:
                 gfxType = GFX_DEBUG_MESSAGE_TYPE_GENERAL;
                 break;
-            case gfx::vulkan::DebugMessageType::Validation:
+            case DebugMessageType::Validation:
                 gfxType = GFX_DEBUG_MESSAGE_TYPE_VALIDATION;
                 break;
-            case gfx::vulkan::DebugMessageType::Performance:
+            case DebugMessageType::Performance:
                 gfxType = GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE;
                 break;
             }
@@ -113,7 +113,7 @@ GfxResult VulkanBackend::instanceRequestAdapter(GfxInstance instance, const GfxA
 
     try {
         auto createInfo = converter::gfxDescriptorToAdapterCreateInfo(descriptor);
-        auto* adapter = new gfx::vulkan::Adapter(inst, createInfo);
+        auto* adapter = new Adapter(inst, createInfo);
         *outAdapter = converter::toGfx<GfxAdapter>(adapter);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -129,7 +129,7 @@ GfxResult VulkanBackend::instanceEnumerateAdapters(GfxInstance instance, uint32_
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* inst = converter::toNative<Instance>(instance);
-    uint32_t count = gfx::vulkan::Adapter::enumerate(inst, reinterpret_cast<gfx::vulkan::Adapter**>(adapters), adapters ? *adapterCount : 0);
+    uint32_t count = Adapter::enumerate(inst, reinterpret_cast<Adapter**>(adapters), adapters ? *adapterCount : 0);
     *adapterCount = count;
     return GFX_RESULT_SUCCESS;
 }
@@ -151,7 +151,7 @@ GfxResult VulkanBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDevice
         // Device doesn't own the adapter - just keeps a pointer
         auto* adapterPtr = converter::toNative<Adapter>(adapter);
         auto createInfo = converter::gfxDescriptorToDeviceCreateInfo(descriptor);
-        auto* device = new gfx::vulkan::Device(adapterPtr, createInfo);
+        auto* device = new Device(adapterPtr, createInfo);
         *outDevice = converter::toGfx<GfxDevice>(device);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -214,7 +214,7 @@ GfxResult VulkanBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceD
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxDescriptorToSurfaceCreateInfo(descriptor);
-        auto* surface = new gfx::vulkan::Surface(dev->getAdapter(), createInfo);
+        auto* surface = new Surface(dev->getAdapter(), createInfo);
         *outSurface = converter::toGfx<GfxSurface>(surface);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -234,7 +234,7 @@ GfxResult VulkanBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
         auto* dev = converter::toNative<Device>(device);
         auto* surf = converter::toNative<Surface>(surface);
         auto createInfo = converter::gfxDescriptorToSwapchainCreateInfo(descriptor);
-        auto* swapchain = new gfx::vulkan::Swapchain(dev, surf, createInfo);
+        auto* swapchain = new Swapchain(dev, surf, createInfo);
         *outSwapchain = converter::toGfx<GfxSwapchain>(swapchain);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -252,7 +252,7 @@ GfxResult VulkanBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxDescriptorToBufferCreateInfo(descriptor);
-        auto* buffer = new gfx::vulkan::Buffer(dev, createInfo);
+        auto* buffer = new Buffer(dev, createInfo);
         *outBuffer = converter::toGfx<GfxBuffer>(buffer);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -271,7 +271,7 @@ GfxResult VulkanBackend::deviceImportBuffer(GfxDevice device, const GfxExternalB
         auto* dev = converter::toNative<Device>(device);
         VkBuffer vkBuffer = reinterpret_cast<VkBuffer>(const_cast<void*>(descriptor->nativeHandle));
         auto importInfo = converter::gfxExternalDescriptorToBufferImportInfo(descriptor);
-        auto* buffer = new gfx::vulkan::Buffer(dev, vkBuffer, importInfo);
+        auto* buffer = new Buffer(dev, vkBuffer, importInfo);
         *outBuffer = converter::toGfx<GfxBuffer>(buffer);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -289,7 +289,7 @@ GfxResult VulkanBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxDescriptorToTextureCreateInfo(descriptor);
-        auto* texture = new gfx::vulkan::Texture(dev, createInfo);
+        auto* texture = new Texture(dev, createInfo);
         *outTexture = converter::toGfx<GfxTexture>(texture);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -308,7 +308,7 @@ GfxResult VulkanBackend::deviceImportTexture(GfxDevice device, const GfxExternal
         auto* dev = converter::toNative<Device>(device);
         VkImage vkImage = reinterpret_cast<VkImage>(const_cast<void*>(descriptor->nativeHandle));
         auto importInfo = converter::gfxExternalDescriptorToTextureImportInfo(descriptor);
-        auto* texture = new gfx::vulkan::Texture(dev, vkImage, importInfo);
+        auto* texture = new Texture(dev, vkImage, importInfo);
         texture->setLayout(converter::gfxLayoutToVkImageLayout(descriptor->currentLayout));
         *outTexture = converter::toGfx<GfxTexture>(texture);
         return GFX_RESULT_SUCCESS;
@@ -327,7 +327,7 @@ GfxResult VulkanBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerD
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxDescriptorToSamplerCreateInfo(descriptor);
-        auto* sampler = new gfx::vulkan::Sampler(dev, createInfo);
+        auto* sampler = new Sampler(dev, createInfo);
         *outSampler = converter::toGfx<GfxSampler>(sampler);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -345,7 +345,7 @@ GfxResult VulkanBackend::deviceCreateShader(GfxDevice device, const GfxShaderDes
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxDescriptorToShaderCreateInfo(descriptor);
-        auto* shader = new gfx::vulkan::Shader(dev, createInfo);
+        auto* shader = new Shader(dev, createInfo);
         *outShader = converter::toGfx<GfxShader>(shader);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -359,7 +359,7 @@ GfxResult VulkanBackend::deviceCreateBindGroupLayout(GfxDevice device, const Gfx
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxDescriptorToBindGroupLayoutCreateInfo(descriptor);
-        auto* layout = new gfx::vulkan::BindGroupLayout(dev, createInfo);
+        auto* layout = new BindGroupLayout(dev, createInfo);
         *outLayout = converter::toGfx<GfxBindGroupLayout>(layout);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
@@ -372,7 +372,7 @@ GfxResult VulkanBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGr
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxDescriptorToBindGroupCreateInfo(descriptor);
-        auto* bindGroup = new gfx::vulkan::BindGroup(dev, createInfo);
+        auto* bindGroup = new BindGroup(dev, createInfo);
         *outBindGroup = converter::toGfx<GfxBindGroup>(bindGroup);
         return GFX_RESULT_SUCCESS;
     } catch (...) {
@@ -389,7 +389,7 @@ GfxResult VulkanBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxDescriptorToRenderPipelineCreateInfo(descriptor);
-        auto* pipeline = new gfx::vulkan::RenderPipeline(dev, createInfo);
+        auto* pipeline = new RenderPipeline(dev, createInfo);
         *outPipeline = converter::toGfx<GfxRenderPipeline>(pipeline);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -407,7 +407,7 @@ GfxResult VulkanBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxDescriptorToComputePipelineCreateInfo(descriptor);
-        auto* pipeline = new gfx::vulkan::ComputePipeline(dev, createInfo);
+        auto* pipeline = new ComputePipeline(dev, createInfo);
         *outPipeline = converter::toGfx<GfxComputePipeline>(pipeline);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -424,7 +424,7 @@ GfxResult VulkanBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxC
 
     try {
         auto* dev = converter::toNative<Device>(device);
-        auto* encoder = new gfx::vulkan::CommandEncoder(dev);
+        auto* encoder = new CommandEncoder(dev);
         *outEncoder = converter::toGfx<GfxCommandEncoder>(encoder);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -444,7 +444,7 @@ GfxResult VulkanBackend::deviceCreateRenderPass(GfxDevice device, const GfxRende
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxRenderPassDescriptorToRenderPassCreateInfo(descriptor);
-        auto* renderPass = new gfx::vulkan::RenderPass(dev, createInfo);
+        auto* renderPass = new RenderPass(dev, createInfo);
         *outRenderPass = converter::toGfx<GfxRenderPass>(renderPass);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -463,7 +463,7 @@ GfxResult VulkanBackend::deviceCreateFramebuffer(GfxDevice device, const GfxFram
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxFramebufferDescriptorToFramebufferCreateInfo(descriptor);
-        auto* framebuffer = new gfx::vulkan::Framebuffer(dev, createInfo);
+        auto* framebuffer = new Framebuffer(dev, createInfo);
         *outFramebuffer = converter::toGfx<GfxFramebuffer>(framebuffer);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -481,7 +481,7 @@ GfxResult VulkanBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescr
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxDescriptorToFenceCreateInfo(descriptor);
-        auto* fence = new gfx::vulkan::Fence(dev, createInfo);
+        auto* fence = new Fence(dev, createInfo);
         *outFence = converter::toGfx<GfxFence>(fence);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -499,7 +499,7 @@ GfxResult VulkanBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaph
     try {
         auto* dev = converter::toNative<Device>(device);
         auto createInfo = converter::gfxDescriptorToSemaphoreCreateInfo(descriptor);
-        auto* semaphore = new gfx::vulkan::Semaphore(dev, createInfo);
+        auto* semaphore = new Semaphore(dev, createInfo);
         *outSemaphore = converter::toGfx<GfxSemaphore>(semaphore);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -783,7 +783,7 @@ GfxResult VulkanBackend::textureCreateView(GfxTexture texture, const GfxTextureV
     try {
         auto* tex = converter::toNative<Texture>(texture);
         auto createInfo = converter::gfxDescriptorToTextureViewCreateInfo(descriptor);
-        auto* view = new gfx::vulkan::TextureView(tex, createInfo);
+        auto* view = new TextureView(tex, createInfo);
         *outView = converter::toGfx<GfxTextureView>(view);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -1374,7 +1374,7 @@ GfxResult VulkanBackend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreTy
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto* s = converter::toNative<Semaphore>(semaphore);
-    *outType = s->getType() == gfx::vulkan::SemaphoreType::Timeline ? GFX_SEMAPHORE_TYPE_TIMELINE : GFX_SEMAPHORE_TYPE_BINARY;
+    *outType = s->getType() == SemaphoreType::Timeline ? GFX_SEMAPHORE_TYPE_TIMELINE : GFX_SEMAPHORE_TYPE_BINARY;
     return GFX_RESULT_SUCCESS;
 }
 
@@ -1420,4 +1420,4 @@ const IBackend* VulkanBackend::create()
     return &vulkanBackend;
 }
 
-} // namespace gfx::vulkan
+} // namespace gfx::backend::vulkan

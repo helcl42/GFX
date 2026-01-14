@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_VULKAN_ENTITIES_H
+#define GFX_VULKAN_ENTITIES_H
 
 #include "CreateInfo.h" // Internal CreateInfo structs
 
@@ -14,7 +15,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace gfx::vulkan {
+namespace gfx::backend::vulkan {
 
 // Forward declarations
 class Instance;
@@ -2451,4 +2452,6 @@ private:
     CommandEncoder* m_commandEncoder = nullptr;
 };
 
-} // namespace gfx::vulkan
+} // namespace gfx::backend::vulkan
+
+#endif // GFX_SRC_BACKEND_VULKAN_CORE_ENTITIES_H

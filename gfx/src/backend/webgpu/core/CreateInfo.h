@@ -1,7 +1,7 @@
-#pragma once
+#ifndef GFX_WEBGPU_CREATEINFO_H
+#define GFX_WEBGPU_CREATEINFO_H
 
 #include "../common/WebGPUCommon.h"
-#include "gfx/gfx.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -10,7 +10,7 @@
 #include <vector>
 #include <webgpu/webgpu.h>
 
-namespace gfx::webgpu {
+namespace gfx::backend::webgpu {
 
 // Forward declarations for SubmitInfo
 class CommandEncoder;
@@ -21,9 +21,6 @@ class TextureView;
 // ============================================================================
 // Internal Type Definitions
 // ============================================================================
-
-// Internal buffer usage flags (WebGPU native)
-using BufferUsage = WGPUBufferUsage;
 
 // Internal semaphore type
 enum class SemaphoreType {
@@ -388,4 +385,6 @@ struct ComputePassEncoderCreateInfo {
     const char* label;
 };
 
-} // namespace gfx::webgpu
+} // namespace gfx::backend::webgpu
+
+#endif // GFX_WEBGPU_CREATEINFO_H
