@@ -106,6 +106,26 @@ gfx::backend::vulkan::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(GfxSem
     }
 }
 
+gfx::backend::vulkan::InstanceFeatureType gfxInstanceFeatureTypeToVulkan(GfxInstanceFeatureType feature)
+{
+    switch (feature) {
+    case GFX_INSTANCE_FEATURE_TYPE_SURFACE:
+        return gfx::backend::vulkan::InstanceFeatureType::Surface;
+    default:
+        return gfx::backend::vulkan::InstanceFeatureType::Invalid;
+    }
+}
+
+gfx::backend::vulkan::DeviceFeatureType gfxDeviceFeatureTypeToVulkan(GfxDeviceFeatureType feature)
+{
+    switch (feature) {
+    case GFX_DEVICE_FEATURE_TYPE_SWAPCHAIN:
+        return gfx::backend::vulkan::DeviceFeatureType::Swapchain;
+    default:
+        return gfx::backend::vulkan::DeviceFeatureType::Invalid;
+    }
+}
+
 // ============================================================================
 // Format Conversion Functions
 // ============================================================================
@@ -1127,6 +1147,15 @@ gfx::backend::vulkan::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const
     createInfo.enableValidation = descriptor && descriptor->enableValidation;
     createInfo.applicationName = descriptor && descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
     createInfo.applicationVersion = descriptor ? descriptor->applicationVersion : 1;
+
+    // Convert enabled features from GfxInstanceFeatureType to internal InstanceFeatureType
+    if (descriptor && descriptor->enabledFeatures && descriptor->enabledFeatureCount > 0) {
+        createInfo.enabledFeatures.reserve(descriptor->enabledFeatureCount);
+        for (uint32_t i = 0; i < descriptor->enabledFeatureCount; ++i) {
+            createInfo.enabledFeatures.push_back(gfxInstanceFeatureTypeToVulkan(descriptor->enabledFeatures[i]));
+        }
+    }
+
     return createInfo;
 }
 gfx::backend::vulkan::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)
@@ -1157,6 +1186,15 @@ gfx::backend::vulkan::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const Gfx
 {
     gfx::backend::vulkan::DeviceCreateInfo createInfo{};
     createInfo.queuePriority = descriptor ? descriptor->queuePriority : 1.0f;
+
+    // Convert enabled features from GfxDeviceFeatureType to internal DeviceFeatureType
+    if (descriptor && descriptor->enabledFeatures && descriptor->enabledFeatureCount > 0) {
+        createInfo.enabledFeatures.reserve(descriptor->enabledFeatureCount);
+        for (uint32_t i = 0; i < descriptor->enabledFeatureCount; ++i) {
+            createInfo.enabledFeatures.push_back(gfxDeviceFeatureTypeToVulkan(descriptor->enabledFeatures[i]));
+        }
+    }
+
     return createInfo;
 }
 

@@ -418,6 +418,16 @@ typedef enum {
     GFX_SEMAPHORE_TYPE_MAX_ENUM = 0x7FFFFFFF
 } GfxSemaphoreType;
 
+typedef enum {
+    GFX_INSTANCE_FEATURE_TYPE_SURFACE = 0,
+    GFX_INSTANCE_FEATURE_TYPE_MAX_ENUM = 0x7FFFFFFF
+} GfxInstanceFeatureType;
+
+typedef enum {
+    GFX_DEVICE_FEATURE_TYPE_SWAPCHAIN = 0,
+    GFX_DEVICE_FEATURE_TYPE_MAX_ENUM = 0x7FFFFFFF
+} GfxDeviceFeatureType;
+
 // ============================================================================
 // Forward Declarations (Opaque Handles)
 // ============================================================================
@@ -616,6 +626,8 @@ typedef struct {
     bool enableValidation;
     const char* applicationName;
     uint32_t applicationVersion;
+    const GfxInstanceFeatureType* enabledFeatures;
+    uint32_t enabledFeatureCount;
 } GfxInstanceDescriptor;
 
 // Adapter selection: specify either an index OR a preference
@@ -677,6 +689,8 @@ typedef struct {
 typedef struct {
     const char* label;
     float queuePriority; // Queue priority (0.0 to 1.0, higher = more priority). Default: 1.0
+    const GfxDeviceFeatureType* enabledFeatures;
+    uint32_t enabledFeatureCount;
 } GfxDeviceDescriptor;
 
 typedef struct {

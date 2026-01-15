@@ -219,6 +219,7 @@ bool CubeApp::initializeGraphics()
         instanceDesc.applicationVersion = 1;
         instanceDesc.enableValidation = true;
         instanceDesc.backend = BACKEND_API;
+        instanceDesc.enabledFeatures = { InstanceFeatureType::Surface };
 
         instance = createInstance(instanceDesc);
         if (!instance) {
@@ -280,6 +281,7 @@ bool CubeApp::initializeGraphics()
         // Create device
         DeviceDescriptor deviceDesc{};
         deviceDesc.label = "Main Device";
+        deviceDesc.enabledFeatures = { DeviceFeatureType::Swapchain };
 
         device = adapter->createDevice(deviceDesc);
         if (!device) {

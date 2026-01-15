@@ -195,6 +195,7 @@ bool ComputeApp::initializeGraphics()
         instanceDesc.applicationVersion = 1;
         instanceDesc.enableValidation = true;
         instanceDesc.backend = Backend::WebGPU;
+        instanceDesc.enabledFeatures = { InstanceFeatureType::Surface };
 
         instance = createInstance(instanceDesc);
         if (!instance) {
@@ -259,6 +260,7 @@ bool ComputeApp::initializeGraphics()
         // Create device
         DeviceDescriptor deviceDesc{};
         deviceDesc.label = "Main Device";
+        deviceDesc.enabledFeatures = { DeviceFeatureType::Swapchain };
 
         device = adapter->createDevice(deviceDesc);
         if (!device) {

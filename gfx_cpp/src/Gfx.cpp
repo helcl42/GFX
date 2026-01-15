@@ -1968,9 +1968,18 @@ public:
 
     std::shared_ptr<Device> createDevice(const DeviceDescriptor& descriptor = {}) override
     {
+        // Convert enabled features
+        std::vector<GfxDeviceFeatureType> cFeatures;
+        cFeatures.reserve(descriptor.enabledFeatures.size());
+        for (const auto& feature : descriptor.enabledFeatures) {
+            cFeatures.push_back(static_cast<GfxDeviceFeatureType>(feature));
+        }
+
         GfxDeviceDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
         cDesc.queuePriority = descriptor.queuePriority;
+        cDesc.enabledFeatures = cFeatures.empty() ? nullptr : cFeatures.data();
+        cDesc.enabledFeatureCount = static_cast<uint32_t>(cFeatures.size());
 
         GfxDevice device = nullptr;
         GfxResult result = gfxAdapterCreateDevice(m_handle, &cDesc, &device);
@@ -2122,11 +2131,20 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
         throw std::runtime_error("Failed to load graphics backend");
     }
 
+    // Convert enabled features
+    std::vector<GfxInstanceFeatureType> cFeatures;
+    cFeatures.reserve(descriptor.enabledFeatures.size());
+    for (const auto& feature : descriptor.enabledFeatures) {
+        cFeatures.push_back(static_cast<GfxInstanceFeatureType>(feature));
+    }
+
     GfxInstanceDescriptor cDesc = {};
     cDesc.backend = cBackend;
     cDesc.enableValidation = descriptor.enableValidation;
     cDesc.applicationName = descriptor.applicationName.c_str();
     cDesc.applicationVersion = descriptor.applicationVersion;
+    cDesc.enabledFeatures = cFeatures.empty() ? nullptr : cFeatures.data();
+    cDesc.enabledFeatureCount = static_cast<uint32_t>(cFeatures.size());
 
     GfxInstance instance = nullptr;
     GfxResult result = gfxCreateInstance(&cDesc, &instance);

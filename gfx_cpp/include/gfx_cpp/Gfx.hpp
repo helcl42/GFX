@@ -227,6 +227,14 @@ enum class SemaphoreType {
     Timeline
 };
 
+enum class InstanceFeatureType {
+    Surface
+};
+
+enum class DeviceFeatureType {
+    Swapchain
+};
+
 enum class Result {
     Success = 0,
     Error = 1,
@@ -535,6 +543,7 @@ struct InstanceDescriptor {
     bool enableValidation = false;
     std::string applicationName = "GfxWrapper Application";
     uint32_t applicationVersion = 1;
+    std::vector<InstanceFeatureType> enabledFeatures;
 };
 
 struct AdapterDescriptor {
@@ -545,6 +554,7 @@ struct AdapterDescriptor {
 struct DeviceDescriptor {
     std::string label;
     float queuePriority = 1.0f; // Queue priority (0.0 to 1.0, higher = more priority)
+    std::vector<DeviceFeatureType> enabledFeatures;
 };
 
 struct BufferDescriptor {

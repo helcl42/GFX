@@ -310,11 +310,14 @@ static bool initGraphics(ComputeApp* app)
     }
 
     // Create graphics instance
+    GfxInstanceFeatureType instanceFeatures[] = { GFX_INSTANCE_FEATURE_TYPE_SURFACE };
     GfxInstanceDescriptor instanceDesc = {
         .backend = GFX_BACKEND_API,
         .enableValidation = true,
         .applicationName = "Compute Example (C)",
-        .applicationVersion = 1
+        .applicationVersion = 1,
+        .enabledFeatures = instanceFeatures,
+        .enabledFeatureCount = 1
     };
 
     if (gfxCreateInstance(&instanceDesc, &app->instance) != GFX_RESULT_SUCCESS) {
@@ -342,7 +345,13 @@ static bool initGraphics(ComputeApp* app)
     printf("  Backend: %s\n", app->adapterInfo.backend == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU");
 
     // Create device
-    GfxDeviceDescriptor deviceDesc = { 0 };
+    GfxDeviceFeatureType deviceFeatures[] = { GFX_DEVICE_FEATURE_TYPE_SWAPCHAIN };
+    GfxDeviceDescriptor deviceDesc = {
+        .label = NULL,
+        .queuePriority = 1.0f,
+        .enabledFeatures = deviceFeatures,
+        .enabledFeatureCount = 1
+    };
     if (gfxAdapterCreateDevice(app->adapter, &deviceDesc, &app->device) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create device\n");
         return false;

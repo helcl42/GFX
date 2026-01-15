@@ -48,6 +48,8 @@ struct ScissorRect;
 enum class DebugMessageSeverity;
 enum class DebugMessageType;
 enum class SemaphoreType;
+enum class InstanceFeatureType;
+enum class DeviceFeatureType;
 } // namespace gfx::backend::vulkan
 
 namespace gfx::backend::vulkan::converter {

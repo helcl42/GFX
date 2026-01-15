@@ -28,6 +28,16 @@ enum class SemaphoreType {
     Timeline
 };
 
+enum class InstanceFeatureType {
+    Invalid = 0,
+    Surface = 1
+};
+
+enum class DeviceFeatureType {
+    Invalid = 0,
+    Swapchain = 1
+};
+
 // ============================================================================
 // Internal CreateInfo structs - pure WebGPU types, no GFX dependencies
 // ============================================================================
@@ -158,10 +168,12 @@ struct InstanceCreateInfo {
     bool enableValidation;
     const char* applicationName = "GfxWrapper Application";
     uint32_t applicationVersion = 1;
+    std::vector<InstanceFeatureType> enabledFeatures;
 };
 
 struct DeviceCreateInfo {
     float queuePriority = 1.0f; // Unused in WebGPU but kept for API consistency
+    std::vector<DeviceFeatureType> enabledFeatures;
 };
 
 // Platform-specific window handles (WebGPU native)

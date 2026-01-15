@@ -254,13 +254,24 @@ public:
         queueCreateInfo.queueCount = 1;
         queueCreateInfo.pQueuePriorities = &queuePriority;
 
+        auto isFeatureEnabled = [&](DeviceFeatureType feature) {
+            for (const auto& enabledFeature : createInfo.enabledFeatures) {
+                if (enabledFeature == feature) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         // Device features
         VkPhysicalDeviceFeatures deviceFeatures{};
 
         // Device extensions
         std::vector<const char*> extensions;
 #ifndef GFX_HEADLESS_BUILD
-        extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        if (isFeatureEnabled(DeviceFeatureType::Swapchain)) {
+            extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        }
 #endif // GFX_HEADLESS_BUILD
 
         VkDeviceCreateInfo vkCreateInfo{};

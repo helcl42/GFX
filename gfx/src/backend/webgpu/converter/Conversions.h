@@ -44,6 +44,8 @@ struct SubmitInfo;
 struct PlatformWindowHandle;
 
 enum class SemaphoreType;
+enum class InstanceFeatureType;
+enum class DeviceFeatureType;
 } // namespace gfx::backend::webgpu
 
 // ============================================================================
