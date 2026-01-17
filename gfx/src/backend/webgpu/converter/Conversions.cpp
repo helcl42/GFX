@@ -5,6 +5,8 @@
 
 namespace gfx::backend::webgpu::converter {
 
+using namespace core;
+
 // ============================================================================
 // Device Limits Conversion
 // ============================================================================
@@ -28,35 +30,35 @@ GfxDeviceLimits wgpuLimitsToGfxDeviceLimits(const WGPULimits& limits)
 // Type Conversion Functions
 // ============================================================================
 
-SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreType gfxType)
+core::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreType gfxType)
 {
     switch (gfxType) {
     case GFX_SEMAPHORE_TYPE_BINARY:
-        return SemaphoreType::Binary;
+        return core::SemaphoreType::Binary;
     case GFX_SEMAPHORE_TYPE_TIMELINE:
-        return SemaphoreType::Timeline;
+        return core::SemaphoreType::Timeline;
     default:
-        return SemaphoreType::Binary;
+        return core::SemaphoreType::Binary;
     }
 }
 
-InstanceFeatureType gfxInstanceFeatureTypeToWebGPU(GfxInstanceFeatureType feature)
+core::InstanceFeatureType gfxInstanceFeatureTypeToWebGPU(GfxInstanceFeatureType feature)
 {
     switch (feature) {
     case GFX_INSTANCE_FEATURE_TYPE_SURFACE:
-        return InstanceFeatureType::Surface;
+        return core::InstanceFeatureType::Surface;
     default:
-        return InstanceFeatureType::Invalid;
+        return core::InstanceFeatureType::Invalid;
     }
 }
 
-DeviceFeatureType gfxDeviceFeatureTypeToWebGPU(GfxDeviceFeatureType feature)
+core::DeviceFeatureType gfxDeviceFeatureTypeToWebGPU(GfxDeviceFeatureType feature)
 {
     switch (feature) {
     case GFX_DEVICE_FEATURE_TYPE_SWAPCHAIN:
-        return DeviceFeatureType::Swapchain;
+        return core::DeviceFeatureType::Swapchain;
     default:
-        return DeviceFeatureType::Invalid;
+        return core::DeviceFeatureType::Invalid;
     }
 }
 
@@ -83,7 +85,7 @@ GfxAdapterType wgpuAdapterTypeToGfxAdapterType(WGPUAdapterType adapterType)
 // Adapter Info Conversion
 // ============================================================================
 
-GfxAdapterInfo wgpuAdapterToGfxAdapterInfo(const AdapterInfo& info)
+GfxAdapterInfo wgpuAdapterToGfxAdapterInfo(const core::AdapterInfo& info)
 {
     GfxAdapterInfo adapterInfo{};
     adapterInfo.name = info.name.c_str();
@@ -99,9 +101,9 @@ GfxAdapterInfo wgpuAdapterToGfxAdapterInfo(const AdapterInfo& info)
 // CreateInfo Conversion Functions - GfxDescriptor to Internal CreateInfo
 // ============================================================================
 
-AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)
+core::AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)
 {
-    AdapterCreateInfo createInfo{};
+    core::AdapterCreateInfo createInfo{};
 
     if (descriptor) {
         // Handle adapter index if specified
@@ -139,9 +141,9 @@ AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxAdapterDescrip
     return createInfo;
 }
 
-InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstanceDescriptor* descriptor)
+core::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstanceDescriptor* descriptor)
 {
-    InstanceCreateInfo createInfo{};
+    core::InstanceCreateInfo createInfo{};
     createInfo.enableValidation = descriptor ? descriptor->enableValidation : false;
     createInfo.applicationName = descriptor && descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
     createInfo.applicationVersion = descriptor ? descriptor->applicationVersion : 1;
@@ -157,9 +159,9 @@ InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstanceDesc
     return createInfo;
 }
 
-DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
+core::DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
 {
-    DeviceCreateInfo createInfo{};
+    core::DeviceCreateInfo createInfo{};
     createInfo.queuePriority = descriptor ? descriptor->queuePriority : 1.0f;
     
     // Convert enabled features from GfxDeviceFeatureType to internal DeviceFeatureType
@@ -173,25 +175,25 @@ DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDescriptor
     return createInfo;
 }
 
-BufferCreateInfo gfxDescriptorToWebGPUBufferCreateInfo(const GfxBufferDescriptor* descriptor)
+core::BufferCreateInfo gfxDescriptorToWebGPUBufferCreateInfo(const GfxBufferDescriptor* descriptor)
 {
-    BufferCreateInfo createInfo{};
+    core::BufferCreateInfo createInfo{};
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToWGPU(descriptor->usage);
     return createInfo;
 }
 
-BufferImportInfo gfxExternalDescriptorToWebGPUBufferImportInfo(const GfxExternalBufferDescriptor* descriptor)
+core::BufferImportInfo gfxExternalDescriptorToWebGPUBufferImportInfo(const GfxExternalBufferDescriptor* descriptor)
 {
-    BufferImportInfo importInfo{};
+    core::BufferImportInfo importInfo{};
     importInfo.size = descriptor->size;
     importInfo.usage = gfxBufferUsageToWGPU(descriptor->usage);
     return importInfo;
 }
 
-TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxTextureDescriptor* descriptor)
+core::TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxTextureDescriptor* descriptor)
 {
-    TextureCreateInfo createInfo{};
+    core::TextureCreateInfo createInfo{};
     createInfo.format = gfxFormatToWGPUFormat(descriptor->format);
     createInfo.size.width = descriptor->size.width;
     createInfo.size.height = descriptor->size.height;
@@ -207,9 +209,9 @@ TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxTextureDescrip
     return createInfo;
 }
 
-TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(const GfxExternalTextureDescriptor* descriptor)
+core::TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(const GfxExternalTextureDescriptor* descriptor)
 {
-    TextureImportInfo importInfo{};
+    core::TextureImportInfo importInfo{};
     importInfo.format = gfxFormatToWGPUFormat(descriptor->format);
     importInfo.size.width = descriptor->size.width;
     importInfo.size.height = descriptor->size.height;
@@ -225,9 +227,9 @@ TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(const GfxExtern
     return importInfo;
 }
 
-TextureViewCreateInfo gfxDescriptorToWebGPUTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor)
+core::TextureViewCreateInfo gfxDescriptorToWebGPUTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor)
 {
-    TextureViewCreateInfo createInfo{};
+    core::TextureViewCreateInfo createInfo{};
     createInfo.viewDimension = gfxTextureViewTypeToWGPU(descriptor->viewType);
     createInfo.format = gfxFormatToWGPUFormat(descriptor->format);
     createInfo.baseMipLevel = descriptor ? descriptor->baseMipLevel : 0;
@@ -237,18 +239,18 @@ TextureViewCreateInfo gfxDescriptorToWebGPUTextureViewCreateInfo(const GfxTextur
     return createInfo;
 }
 
-ShaderCreateInfo gfxDescriptorToWebGPUShaderCreateInfo(const GfxShaderDescriptor* descriptor)
+core::ShaderCreateInfo gfxDescriptorToWebGPUShaderCreateInfo(const GfxShaderDescriptor* descriptor)
 {
-    ShaderCreateInfo createInfo{};
+    core::ShaderCreateInfo createInfo{};
     createInfo.code = descriptor->code;
     createInfo.codeSize = descriptor->codeSize;
     createInfo.entryPoint = descriptor->entryPoint;
     return createInfo;
 }
 
-SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxSamplerDescriptor* descriptor)
+core::SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxSamplerDescriptor* descriptor)
 {
-    SamplerCreateInfo createInfo{};
+    core::SamplerCreateInfo createInfo{};
     createInfo.addressModeU = gfxAddressModeToWGPU(descriptor->addressModeU);
     createInfo.addressModeV = gfxAddressModeToWGPU(descriptor->addressModeV);
     createInfo.addressModeW = gfxAddressModeToWGPU(descriptor->addressModeW);
@@ -262,79 +264,79 @@ SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxSamplerDescrip
     return createInfo;
 }
 
-SemaphoreCreateInfo gfxDescriptorToWebGPUSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor)
+core::SemaphoreCreateInfo gfxDescriptorToWebGPUSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor)
 {
-    SemaphoreCreateInfo createInfo{};
+    core::SemaphoreCreateInfo createInfo{};
     createInfo.type = descriptor ? gfxSemaphoreTypeToWebGPUSemaphoreType(descriptor->type)
-                                 : SemaphoreType::Binary;
+                                 : core::SemaphoreType::Binary;
     createInfo.initialValue = descriptor ? descriptor->initialValue : 0;
     return createInfo;
 }
 
-FenceCreateInfo gfxDescriptorToWebGPUFenceCreateInfo(const GfxFenceDescriptor* descriptor)
+core::FenceCreateInfo gfxDescriptorToWebGPUFenceCreateInfo(const GfxFenceDescriptor* descriptor)
 {
-    FenceCreateInfo createInfo{};
+    core::FenceCreateInfo createInfo{};
     createInfo.signaled = descriptor && descriptor->signaled;
     return createInfo;
 }
 
-PlatformWindowHandle gfxWindowHandleToWebGPUPlatformWindowHandle(const GfxPlatformWindowHandle& gfxHandle)
+core::PlatformWindowHandle gfxWindowHandleToWebGPUPlatformWindowHandle(const GfxPlatformWindowHandle& gfxHandle)
 {
-    PlatformWindowHandle handle{};
+    core::PlatformWindowHandle handle{};
 
     switch (gfxHandle.windowingSystem) {
     case GFX_WINDOWING_SYSTEM_XCB:
-        handle.platform = PlatformWindowHandle::Platform::Xcb;
+        handle.platform = core::PlatformWindowHandle::Platform::Xcb;
         handle.handle.xcb.connection = gfxHandle.xcb.connection;
         handle.handle.xcb.window = gfxHandle.xcb.window;
         break;
     case GFX_WINDOWING_SYSTEM_XLIB:
-        handle.platform = PlatformWindowHandle::Platform::Xlib;
+        handle.platform = core::PlatformWindowHandle::Platform::Xlib;
         handle.handle.xlib.display = gfxHandle.xlib.display;
         handle.handle.xlib.window = gfxHandle.xlib.window;
         break;
     case GFX_WINDOWING_SYSTEM_WAYLAND:
-        handle.platform = PlatformWindowHandle::Platform::Wayland;
+        handle.platform = core::PlatformWindowHandle::Platform::Wayland;
         handle.handle.wayland.display = gfxHandle.wayland.display;
         handle.handle.wayland.surface = gfxHandle.wayland.surface;
         break;
     case GFX_WINDOWING_SYSTEM_WIN32:
-        handle.platform = PlatformWindowHandle::Platform::Win32;
+        handle.platform = core::PlatformWindowHandle::Platform::Win32;
         handle.handle.win32.hinstance = gfxHandle.win32.hinstance;
         handle.handle.win32.hwnd = gfxHandle.win32.hwnd;
         break;
     case GFX_WINDOWING_SYSTEM_METAL:
-        handle.platform = PlatformWindowHandle::Platform::Metal;
+        handle.platform = core::PlatformWindowHandle::Platform::Metal;
         handle.handle.metal.layer = gfxHandle.metal.layer;
         break;
     case GFX_WINDOWING_SYSTEM_EMSCRIPTEN:
-        handle.platform = PlatformWindowHandle::Platform::Emscripten;
+        handle.platform = core::PlatformWindowHandle::Platform::Emscripten;
         handle.handle.emscripten.canvasSelector = gfxHandle.emscripten.canvasSelector;
         break;
     case GFX_WINDOWING_SYSTEM_ANDROID:
-        handle.platform = PlatformWindowHandle::Platform::Android;
+        handle.platform = core::PlatformWindowHandle::Platform::Android;
         handle.handle.android.window = gfxHandle.android.window;
         break;
     default:
-        handle.platform = PlatformWindowHandle::Platform::Unknown;
+        handle.platform = core::PlatformWindowHandle::Platform::Unknown;
         break;
     }
 
     return handle;
 }
 
-SurfaceCreateInfo gfxDescriptorToWebGPUSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor)
+core::SurfaceCreateInfo gfxDescriptorToWebGPUSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor)
 {
-    SurfaceCreateInfo createInfo{};
+    core::SurfaceCreateInfo createInfo{};
     if (descriptor) {
         createInfo.windowHandle = gfxWindowHandleToWebGPUPlatformWindowHandle(descriptor->windowHandle);
     }
     return createInfo;
 }
 
-SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor)
+core::SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor)
 {
-    SwapchainCreateInfo createInfo{};
+    core::SwapchainCreateInfo createInfo{};
     createInfo.width = descriptor->width;
     createInfo.height = descriptor->height;
     createInfo.format = gfxFormatToWGPUFormat(descriptor->format);
@@ -344,14 +346,14 @@ SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainD
     return createInfo;
 }
 
-BindGroupLayoutCreateInfo gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor)
+core::BindGroupLayoutCreateInfo gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor)
 {
-    BindGroupLayoutCreateInfo createInfo{};
+    core::BindGroupLayoutCreateInfo createInfo{};
 
     for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
         const auto& entry = descriptor->entries[i];
 
-        BindGroupLayoutEntry layoutEntry{};
+        core::BindGroupLayoutEntry layoutEntry{};
         layoutEntry.binding = entry.binding;
 
         // Convert visibility flags (bitwise)
@@ -416,9 +418,9 @@ BindGroupLayoutCreateInfo gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(const G
     return createInfo;
 }
 
-BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor, WGPUBindGroupLayout layout)
+core::BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor, WGPUBindGroupLayout layout)
 {
-    BindGroupCreateInfo createInfo{};
+    core::BindGroupCreateInfo createInfo{};
     createInfo.layout = layout;
 
     if (descriptor->entryCount > 0 && descriptor->entries) {
@@ -426,25 +428,25 @@ BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const GfxBindGroupD
 
         for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
             const auto& entry = descriptor->entries[i];
-            BindGroupEntry bindEntry{};
+            core::BindGroupEntry bindEntry{};
 
             bindEntry.binding = entry.binding;
 
             switch (entry.type) {
             case GFX_BIND_GROUP_ENTRY_TYPE_BUFFER: {
-                auto* buffer = toNative<Buffer>(entry.resource.buffer.buffer);
+                auto* buffer = toNative<core::Buffer>(entry.resource.buffer.buffer);
                 bindEntry.buffer = buffer->handle();
                 bindEntry.bufferOffset = entry.resource.buffer.offset;
                 bindEntry.bufferSize = entry.resource.buffer.size;
                 break;
             }
             case GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER: {
-                auto* sampler = toNative<Sampler>(entry.resource.sampler);
+                auto* sampler = toNative<core::Sampler>(entry.resource.sampler);
                 bindEntry.sampler = sampler->handle();
                 break;
             }
             case GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW: {
-                auto* textureView = toNative<TextureView>(entry.resource.textureView);
+                auto* textureView = toNative<core::TextureView>(entry.resource.textureView);
                 bindEntry.textureView = textureView->handle();
                 break;
             }
@@ -460,9 +462,9 @@ BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const GfxBindGroupD
     return createInfo;
 }
 
-RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor)
+core::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor)
 {
-    RenderPipelineCreateInfo createInfo{};
+    core::RenderPipelineCreateInfo createInfo{};
 
     // Extract bind group layouts
     if (descriptor->bindGroupLayoutCount > 0 && descriptor->bindGroupLayouts) {
@@ -588,9 +590,9 @@ RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateInfo(const Gfx
     return createInfo;
 }
 
-ComputePipelineCreateInfo gfxDescriptorToWebGPUComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor)
+core::ComputePipelineCreateInfo gfxDescriptorToWebGPUComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor)
 {
-    ComputePipelineCreateInfo createInfo{};
+    core::ComputePipelineCreateInfo createInfo{};
 
     // Extract bind group layouts
     if (descriptor->bindGroupLayoutCount > 0 && descriptor->bindGroupLayouts) {
@@ -609,16 +611,16 @@ ComputePipelineCreateInfo gfxDescriptorToWebGPUComputePipelineCreateInfo(const G
     return createInfo;
 }
 
-CommandEncoderCreateInfo gfxDescriptorToWebGPUCommandEncoderCreateInfo(const GfxCommandEncoderDescriptor* descriptor)
+core::CommandEncoderCreateInfo gfxDescriptorToWebGPUCommandEncoderCreateInfo(const GfxCommandEncoderDescriptor* descriptor)
 {
-    CommandEncoderCreateInfo createInfo;
+    core::CommandEncoderCreateInfo createInfo;
     createInfo.label = descriptor->label;
     return createInfo;
 }
 
-SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitDescriptor* descriptor)
+core::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitDescriptor* descriptor)
 {
-    SubmitInfo submitInfo{};
+    core::SubmitInfo submitInfo{};
     // Note: Array pointer conversions use reinterpret_cast as toNative<> is for individual objects
     submitInfo.commandEncoders = reinterpret_cast<CommandEncoder**>(descriptor->commandEncoders);
     submitInfo.commandEncoderCount = descriptor->commandEncoderCount;
@@ -669,19 +671,19 @@ GfxBufferUsage webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage)
     return static_cast<GfxBufferUsage>(gfxUsage);
 }
 
-GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(SemaphoreType type)
+GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(core::SemaphoreType type)
 {
     switch (type) {
-    case SemaphoreType::Binary:
+    case core::SemaphoreType::Binary:
         return GFX_SEMAPHORE_TYPE_BINARY;
-    case SemaphoreType::Timeline:
+    case core::SemaphoreType::Timeline:
         return GFX_SEMAPHORE_TYPE_TIMELINE;
     default:
         return GFX_SEMAPHORE_TYPE_BINARY;
     }
 }
 
-GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const TextureInfo& info)
+GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const core::TextureInfo& info)
 {
     GfxTextureInfo gfxInfo{};
     gfxInfo.type = wgpuTextureDimensionToGfxTextureType(info.dimension);
@@ -694,7 +696,7 @@ GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const TextureInfo& info)
     return gfxInfo;
 }
 
-GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const SwapchainInfo& info)
+GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const core::SwapchainInfo& info)
 {
     GfxSwapchainInfo gfxInfo{};
     gfxInfo.width = info.width;
@@ -705,7 +707,7 @@ GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const SwapchainInfo& info)
     return gfxInfo;
 }
 
-GfxBufferInfo wgpuBufferToGfxBufferInfo(const BufferInfo& info)
+GfxBufferInfo wgpuBufferToGfxBufferInfo(const core::BufferInfo& info)
 {
     GfxBufferInfo gfxInfo{};
     gfxInfo.size = info.size;
@@ -1263,10 +1265,10 @@ GfxExtent3D wgpuExtent3DToGfxExtent3D(const WGPUExtent3D& extent)
     return { extent.width, extent.height, extent.depthOrArrayLayers };
 }
 
-RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(
+core::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(
     const GfxRenderPassDescriptor* descriptor)
 {
-    RenderPassCreateInfo createInfo{};
+    core::RenderPassCreateInfo createInfo{};
 
     // For WebGPU, RenderPass stores ops info (views come from framebuffer at begin time)
     // Convert color attachment ops
@@ -1300,10 +1302,10 @@ RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(
     return createInfo;
 }
 
-FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(
+core::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(
     const GfxFramebufferDescriptor* descriptor)
 {
-    FramebufferCreateInfo createInfo{};
+    core::FramebufferCreateInfo createInfo{};
 
     // Convert color attachment views and resolve targets - store pointers
     for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
@@ -1339,10 +1341,10 @@ FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(
     return createInfo;
 }
 
-RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(
+core::RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(
     const GfxRenderPassBeginDescriptor* descriptor)
 {
-    RenderPassEncoderBeginInfo beginInfo{};
+    core::RenderPassEncoderBeginInfo beginInfo{};
 
     // Convert color clear values
     for (uint32_t i = 0; i < descriptor->colorClearValueCount; ++i) {
@@ -1356,10 +1358,10 @@ RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(
     return beginInfo;
 }
 
-ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(
+core::ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(
     const GfxComputePassBeginDescriptor* descriptor)
 {
-    ComputePassEncoderCreateInfo createInfo{};
+    core::ComputePassEncoderCreateInfo createInfo{};
     createInfo.label = descriptor->label;
     return createInfo;
 }

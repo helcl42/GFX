@@ -1,6 +1,6 @@
 #include "Entities.h"
 
-namespace gfx::backend::webgpu {
+namespace gfx::backend::webgpu::core {
 
 namespace {
     bool hasStencil(WGPUTextureFormat format)

@@ -14,7 +14,7 @@
 // Internal C++ Classes with RAII
 // ============================================================================
 
-namespace gfx::backend::webgpu {
+namespace gfx::backend::webgpu::core {
 
 namespace {
     WGPUStringView toStringView(const char* str)
@@ -2088,6 +2088,6 @@ private:
     std::unordered_map<WGPUFilterMode, WGPUSampler> m_samplers;
 };
 
-} // namespace gfx::backend::webgpu
+} // namespace gfx::backend::webgpu::core
 
 #endif // GFX_BACKEND_WEBGPU_CORE_ENTITIES_H

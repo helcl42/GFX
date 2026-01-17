@@ -10,7 +10,7 @@
 #include <vector>
 #include <webgpu/webgpu.h>
 
-namespace gfx::backend::webgpu {
+namespace gfx::backend::webgpu::core {
 
 // Forward declarations for SubmitInfo
 class CommandEncoder;
