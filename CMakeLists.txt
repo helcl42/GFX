@@ -227,28 +227,35 @@ if(BUILD_VULKAN_BACKEND)
     list(APPEND GFX_C_SOURCES 
         gfx/src/backend/vulkan/Backend.cpp
         gfx/src/backend/vulkan/converter/Conversions.cpp
-        gfx/src/backend/vulkan/core/Instance.cpp
-        gfx/src/backend/vulkan/core/Adapter.cpp
-        gfx/src/backend/vulkan/core/Device.cpp
-        gfx/src/backend/vulkan/core/Queue.cpp
-        gfx/src/backend/vulkan/core/Buffer.cpp
-        gfx/src/backend/vulkan/core/Texture.cpp
-        gfx/src/backend/vulkan/core/TextureView.cpp
-        gfx/src/backend/vulkan/core/Framebuffer.cpp
-        gfx/src/backend/vulkan/core/Sampler.cpp
-        gfx/src/backend/vulkan/core/Shader.cpp
-        gfx/src/backend/vulkan/core/BindGroup.cpp
-        gfx/src/backend/vulkan/core/BindGroupLayout.cpp
-        gfx/src/backend/vulkan/core/CommandEncoder.cpp
-        gfx/src/backend/vulkan/core/RenderPass.cpp
-        gfx/src/backend/vulkan/core/RenderPassEncoder.cpp
-        gfx/src/backend/vulkan/core/ComputePassEncoder.cpp
-        gfx/src/backend/vulkan/core/RenderPipeline.cpp
-        gfx/src/backend/vulkan/core/ComputePipeline.cpp
-        gfx/src/backend/vulkan/core/Swapchain.cpp
-        gfx/src/backend/vulkan/core/Surface.cpp
-        gfx/src/backend/vulkan/core/Semaphore.cpp
-        gfx/src/backend/vulkan/core/Fence.cpp
+        # System
+        gfx/src/backend/vulkan/core/system/Instance.cpp
+        gfx/src/backend/vulkan/core/system/Adapter.cpp
+        gfx/src/backend/vulkan/core/system/Device.cpp
+        gfx/src/backend/vulkan/core/system/Queue.cpp
+        # Resource
+        gfx/src/backend/vulkan/core/resource/Buffer.cpp
+        gfx/src/backend/vulkan/core/resource/Texture.cpp
+        gfx/src/backend/vulkan/core/resource/TextureView.cpp
+        gfx/src/backend/vulkan/core/resource/Sampler.cpp
+        gfx/src/backend/vulkan/core/resource/Shader.cpp
+        # Render
+        gfx/src/backend/vulkan/core/render/RenderPipeline.cpp
+        gfx/src/backend/vulkan/core/render/RenderPass.cpp
+        gfx/src/backend/vulkan/core/render/Framebuffer.cpp
+        gfx/src/backend/vulkan/core/render/BindGroup.cpp
+        gfx/src/backend/vulkan/core/render/BindGroupLayout.cpp
+        # Compute
+        gfx/src/backend/vulkan/core/compute/ComputePipeline.cpp
+        # Command
+        gfx/src/backend/vulkan/core/command/CommandEncoder.cpp
+        gfx/src/backend/vulkan/core/command/RenderPassEncoder.cpp
+        gfx/src/backend/vulkan/core/command/ComputePassEncoder.cpp
+        # Sync
+        gfx/src/backend/vulkan/core/sync/Semaphore.cpp
+        gfx/src/backend/vulkan/core/sync/Fence.cpp
+        # Presentation
+        gfx/src/backend/vulkan/core/presentation/Swapchain.cpp
+        gfx/src/backend/vulkan/core/presentation/Surface.cpp
     )
 endif()
 

@@ -1,14 +1,14 @@
 #include "Conversions.h"
 
 #include "../common/Common.h"
-#include "../core/BindGroup.h"
-#include "../core/BindGroupLayout.h"
-#include "../core/Buffer.h"
-#include "../core/RenderPass.h"
-#include "../core/Sampler.h"
-#include "../core/Shader.h"
-#include "../core/Texture.h"
-#include "../core/TextureView.h"
+#include "../core/render/BindGroup.h"
+#include "../core/render/BindGroupLayout.h"
+#include "../core/resource/Buffer.h"
+#include "../core/render/RenderPass.h"
+#include "../core/resource/Sampler.h"
+#include "../core/resource/Shader.h"
+#include "../core/resource/Texture.h"
+#include "../core/resource/TextureView.h"
 
 #include <vector>
 
