@@ -1174,15 +1174,15 @@ public:
         = 0;
 
     virtual void copyTextureToTexture(
-        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, uint32_t sourceMipLevel,
-        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, uint32_t destinationMipLevel,
-        const Extent3D& extent, TextureLayout sourceFinalLayout, TextureLayout destinationFinalLayout)
+        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, uint32_t sourceMipLevel, TextureLayout sourceFinalLayout,
+        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, uint32_t destinationMipLevel, TextureLayout destinationFinalLayout,
+        const Extent3D& extent)
         = 0;
 
     virtual void blitTextureToTexture(
-        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, const Extent3D& sourceExtent, uint32_t sourceMipLevel,
-        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, const Extent3D& destinationExtent, uint32_t destinationMipLevel,
-        FilterMode filter, TextureLayout sourceFinalLayout, TextureLayout destinationFinalLayout)
+        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, const Extent3D& sourceExtent, uint32_t sourceMipLevel, TextureLayout sourceFinalLayout,
+        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, const Extent3D& destinationExtent, uint32_t destinationMipLevel, TextureLayout destinationFinalLayout,
+        FilterMode filter)
         = 0;
 
     virtual void pipelineBarrier(

@@ -131,14 +131,14 @@ public:
         const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
         = 0;
     virtual GfxResult commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
-        GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
-        GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
-        const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
+        GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
+        GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout,
+        const GfxExtent3D* extent) const
         = 0;
     virtual GfxResult commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
-        GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
-        GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
-        GfxFilterMode filter, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
+        GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
+        GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout,
+        GfxFilterMode filter) const
         = 0;
     virtual GfxResult commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
         const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,

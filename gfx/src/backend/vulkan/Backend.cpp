@@ -1042,9 +1042,9 @@ GfxResult VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder com
 }
 
 GfxResult VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
-    const GfxExtent3D* extent, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout,
+    const GfxExtent3D* extent) const
 {
     if (!commandEncoder || !source || !destination || !sourceOrigin || !destinationOrigin || !extent) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1060,16 +1060,16 @@ GfxResult VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder co
     VkImageLayout vkSrcLayout = converter::gfxLayoutToVkImageLayout(srcFinalLayout);
     VkImageLayout vkDstLayout = converter::gfxLayoutToVkImageLayout(dstFinalLayout);
 
-    enc->copyTextureToTexture(srcTex, vkSrcOrigin, sourceMipLevel,
-        dstTex, vkDstOrigin, destinationMipLevel,
-        vkExtent, vkSrcLayout, vkDstLayout);
+    enc->copyTextureToTexture(srcTex, vkSrcOrigin, sourceMipLevel, vkSrcLayout,
+        dstTex, vkDstOrigin, destinationMipLevel, vkDstLayout,
+        vkExtent);
     return GFX_RESULT_SUCCESS;
 }
 
 GfxResult VulkanBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
-    GfxFilterMode filter, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout,
+    GfxFilterMode filter) const
 {
     if (!commandEncoder || !source || !destination || !sourceOrigin || !sourceExtent || !destinationOrigin || !destinationExtent) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1087,9 +1087,9 @@ GfxResult VulkanBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder co
     VkImageLayout vkSrcLayout = converter::gfxLayoutToVkImageLayout(srcFinalLayout);
     VkImageLayout vkDstLayout = converter::gfxLayoutToVkImageLayout(dstFinalLayout);
 
-    enc->blitTextureToTexture(srcTex, vkSrcOrigin, vkSrcExtent, sourceMipLevel,
-        dstTex, vkDstOrigin, vkDstExtent, destinationMipLevel,
-        vkFilter, vkSrcLayout, vkDstLayout);
+    enc->blitTextureToTexture(srcTex, vkSrcOrigin, vkSrcExtent, sourceMipLevel, vkSrcLayout,
+        dstTex, vkDstOrigin, vkDstExtent, destinationMipLevel, vkDstLayout,
+        vkFilter);
     return GFX_RESULT_SUCCESS;
 }
 

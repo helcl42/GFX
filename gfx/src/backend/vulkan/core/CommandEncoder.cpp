@@ -250,8 +250,7 @@ void CommandEncoder::copyTextureToBuffer(Texture* source, VkOffset3D origin, uin
     source->transitionLayout(this, finalLayout, mipLevel, 1, 0, 1);
 }
 
-// TODO grpup src and dst params
-void CommandEncoder::copyTextureToTexture(Texture* source, VkOffset3D sourceOrigin, uint32_t sourceMipLevel, Texture* destination, VkOffset3D destinationOrigin, uint32_t destinationMipLevel, VkExtent3D extent, VkImageLayout srcFinalLayout, VkImageLayout dstFinalLayout)
+void CommandEncoder::copyTextureToTexture(Texture* source, VkOffset3D sourceOrigin, uint32_t sourceMipLevel, VkImageLayout srcFinalLayout, Texture* destination, VkOffset3D destinationOrigin, uint32_t destinationMipLevel, VkImageLayout dstFinalLayout, VkExtent3D extent)
 {
     // For 2D textures and arrays, extent.depth represents layer count
     // For 3D textures, it represents actual depth
@@ -292,8 +291,7 @@ void CommandEncoder::copyTextureToTexture(Texture* source, VkOffset3D sourceOrig
     destination->transitionLayout(this, dstFinalLayout, destinationMipLevel, 1, destinationOrigin.z, layerCount);
 }
 
-// TODO grpup src and dst params
-void CommandEncoder::blitTextureToTexture(Texture* source, VkOffset3D sourceOrigin, VkExtent3D sourceExtent, uint32_t sourceMipLevel, Texture* destination, VkOffset3D destinationOrigin, VkExtent3D destinationExtent, uint32_t destinationMipLevel, VkFilter filter, VkImageLayout srcFinalLayout, VkImageLayout dstFinalLayout)
+void CommandEncoder::blitTextureToTexture(Texture* source, VkOffset3D sourceOrigin, VkExtent3D sourceExtent, uint32_t sourceMipLevel, VkImageLayout srcFinalLayout, Texture* destination, VkOffset3D destinationOrigin, VkExtent3D destinationExtent, uint32_t destinationMipLevel, VkImageLayout dstFinalLayout, VkFilter filter)
 {
     // For 2D textures and arrays, extent.depth represents layer count
     // For 3D textures, it represents actual depth

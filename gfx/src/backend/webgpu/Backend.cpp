@@ -1011,9 +1011,8 @@ GfxResult WebGPUBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder com
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, const GfxExtent3D* extent,
-    GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
+GfxResult WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout, const GfxExtent3D* extent) const
 {
     if (!commandEncoder || !source || !destination || !sourceOrigin || !destinationOrigin || !extent) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1037,9 +1036,9 @@ GfxResult WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder co
 }
 
 GfxResult WebGPUBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
-    GfxFilterMode filter, GfxTextureLayout srcFinalLayout, GfxTextureLayout dstFinalLayout) const
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout,
+    GfxFilterMode filter) const
 {
     auto* encoder = toNative<CommandEncoder>(commandEncoder);
     auto* srcTexture = toNative<Texture>(source);

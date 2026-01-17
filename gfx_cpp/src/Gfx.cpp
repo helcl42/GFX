@@ -806,9 +806,9 @@ public:
     }
 
     void copyTextureToTexture(
-        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, uint32_t sourceMipLevel,
-        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, uint32_t destinationMipLevel,
-        const Extent3D& extent, TextureLayout sourceFinalLayout, TextureLayout destinationFinalLayout) override
+        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, uint32_t sourceMipLevel, TextureLayout sourceFinalLayout,
+        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, uint32_t destinationMipLevel, TextureLayout destinationFinalLayout,
+        const Extent3D& extent) override
     {
         auto src = std::dynamic_pointer_cast<CTextureImpl>(source);
         auto dst = std::dynamic_pointer_cast<CTextureImpl>(destination);
@@ -817,9 +817,9 @@ public:
             GfxOrigin3D cDestOrigin = { destinationOrigin.x, destinationOrigin.y, destinationOrigin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
             GfxResult result = gfxCommandEncoderCopyTextureToTexture(m_handle,
-                src->getHandle(), &cSourceOrigin, sourceMipLevel,
-                dst->getHandle(), &cDestOrigin, destinationMipLevel,
-                &cExtent, static_cast<GfxTextureLayout>(sourceFinalLayout), static_cast<GfxTextureLayout>(destinationFinalLayout));
+                src->getHandle(), &cSourceOrigin, sourceMipLevel, static_cast<GfxTextureLayout>(sourceFinalLayout),
+                dst->getHandle(), &cDestOrigin, destinationMipLevel, static_cast<GfxTextureLayout>(destinationFinalLayout),
+                &cExtent);
             if (result != GFX_RESULT_SUCCESS) {
                 throw std::runtime_error("Failed to copy texture to texture");
             }
@@ -827,9 +827,9 @@ public:
     }
 
     void blitTextureToTexture(
-        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, const Extent3D& sourceExtent, uint32_t sourceMipLevel,
-        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, const Extent3D& destinationExtent, uint32_t destinationMipLevel,
-        FilterMode filter, TextureLayout sourceFinalLayout, TextureLayout destinationFinalLayout) override
+        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, const Extent3D& sourceExtent, uint32_t sourceMipLevel, TextureLayout sourceFinalLayout,
+        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, const Extent3D& destinationExtent, uint32_t destinationMipLevel, TextureLayout destinationFinalLayout,
+        FilterMode filter) override
     {
         auto src = std::dynamic_pointer_cast<CTextureImpl>(source);
         auto dst = std::dynamic_pointer_cast<CTextureImpl>(destination);
@@ -839,9 +839,9 @@ public:
             GfxOrigin3D cDestOrigin = { destinationOrigin.x, destinationOrigin.y, destinationOrigin.z };
             GfxExtent3D cDestExtent = { destinationExtent.width, destinationExtent.height, destinationExtent.depth };
             GfxResult result = gfxCommandEncoderBlitTextureToTexture(m_handle,
-                src->getHandle(), &cSourceOrigin, &cSourceExtent, sourceMipLevel,
-                dst->getHandle(), &cDestOrigin, &cDestExtent, destinationMipLevel,
-                static_cast<GfxFilterMode>(filter), static_cast<GfxTextureLayout>(sourceFinalLayout), static_cast<GfxTextureLayout>(destinationFinalLayout));
+                src->getHandle(), &cSourceOrigin, &cSourceExtent, sourceMipLevel, static_cast<GfxTextureLayout>(sourceFinalLayout),
+                dst->getHandle(), &cDestOrigin, &cDestExtent, destinationMipLevel, static_cast<GfxTextureLayout>(destinationFinalLayout),
+                static_cast<GfxFilterMode>(filter));
             if (result != GFX_RESULT_SUCCESS) {
                 throw std::runtime_error("Failed to blit texture to texture");
             }

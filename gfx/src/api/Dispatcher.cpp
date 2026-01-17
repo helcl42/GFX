@@ -946,9 +946,9 @@ GfxResult gfxCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
 }
 
 GfxResult gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel,
-    const GfxExtent3D* extent, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout)
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel, GfxTextureLayout sourceFinalLayout,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, GfxTextureLayout destinationFinalLayout,
+    const GfxExtent3D* extent)
 {
     if (!commandEncoder || !source || !destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -958,15 +958,15 @@ GfxResult gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->commandEncoderCopyTextureToTexture(commandEncoder,
-        source, sourceOrigin, sourceMipLevel,
-        destination, destinationOrigin, destinationMipLevel,
-        extent, sourceFinalLayout, destinationFinalLayout);
+        source, sourceOrigin, sourceMipLevel, sourceFinalLayout,
+        destination, destinationOrigin, destinationMipLevel, destinationFinalLayout,
+        extent);
 }
 
 GfxResult gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel,
-    GfxFilterMode filter, GfxTextureLayout sourceFinalLayout, GfxTextureLayout destinationFinalLayout)
+    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel, GfxTextureLayout sourceFinalLayout,
+    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel, GfxTextureLayout destinationFinalLayout,
+    GfxFilterMode filter)
 {
     if (!commandEncoder || !source || !destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -976,9 +976,9 @@ GfxResult gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return api->commandEncoderBlitTextureToTexture(commandEncoder,
-        source, sourceOrigin, sourceExtent, sourceMipLevel,
-        destination, destinationOrigin, destinationExtent, destinationMipLevel,
-        filter, sourceFinalLayout, destinationFinalLayout);
+        source, sourceOrigin, sourceExtent, sourceMipLevel, sourceFinalLayout,
+        destination, destinationOrigin, destinationExtent, destinationMipLevel, destinationFinalLayout,
+        filter);
 }
 
 // Render Pass Encoder Functions

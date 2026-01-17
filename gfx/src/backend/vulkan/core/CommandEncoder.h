@@ -30,8 +30,8 @@ public:
     void copyBufferToBuffer(Buffer* source, uint64_t sourceOffset, Buffer* destination, uint64_t destinationOffset, uint64_t size);
     void copyBufferToTexture(Buffer* source, uint64_t sourceOffset, Texture* destination, VkOffset3D origin, VkExtent3D extent, uint32_t mipLevel, VkImageLayout finalLayout);
     void copyTextureToBuffer(Texture* source, VkOffset3D origin, uint32_t mipLevel, Buffer* destination, uint64_t destinationOffset, VkExtent3D extent, VkImageLayout finalLayout);
-    void copyTextureToTexture(Texture* source, VkOffset3D sourceOrigin, uint32_t sourceMipLevel, Texture* destination, VkOffset3D destinationOrigin, uint32_t destinationMipLevel, VkExtent3D extent, VkImageLayout srcFinalLayout, VkImageLayout dstFinalLayout);
-    void blitTextureToTexture(Texture* source, VkOffset3D sourceOrigin, VkExtent3D sourceExtent, uint32_t sourceMipLevel, Texture* destination, VkOffset3D destinationOrigin, VkExtent3D destinationExtent, uint32_t destinationMipLevel, VkFilter filter, VkImageLayout srcFinalLayout, VkImageLayout dstFinalLayout);
+    void copyTextureToTexture(Texture* source, VkOffset3D sourceOrigin, uint32_t sourceMipLevel, VkImageLayout srcFinalLayout, Texture* destination, VkOffset3D destinationOrigin, uint32_t destinationMipLevel, VkImageLayout dstFinalLayout, VkExtent3D extent);
+    void blitTextureToTexture(Texture* source, VkOffset3D sourceOrigin, VkExtent3D sourceExtent, uint32_t sourceMipLevel, VkImageLayout srcFinalLayout, Texture* destination, VkOffset3D destinationOrigin, VkExtent3D destinationExtent, uint32_t destinationMipLevel, VkImageLayout dstFinalLayout, VkFilter filter);
 
 private:
     VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
