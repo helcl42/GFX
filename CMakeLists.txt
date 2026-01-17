@@ -227,8 +227,28 @@ if(BUILD_VULKAN_BACKEND)
     list(APPEND GFX_C_SOURCES 
         gfx/src/backend/vulkan/Backend.cpp
         gfx/src/backend/vulkan/converter/Conversions.cpp
-        gfx/src/backend/vulkan/core/Entities.cpp
         gfx/src/backend/vulkan/core/Instance.cpp
+        gfx/src/backend/vulkan/core/Adapter.cpp
+        gfx/src/backend/vulkan/core/Device.cpp
+        gfx/src/backend/vulkan/core/Queue.cpp
+        gfx/src/backend/vulkan/core/Buffer.cpp
+        gfx/src/backend/vulkan/core/Texture.cpp
+        gfx/src/backend/vulkan/core/TextureView.cpp
+        gfx/src/backend/vulkan/core/Framebuffer.cpp
+        gfx/src/backend/vulkan/core/Sampler.cpp
+        gfx/src/backend/vulkan/core/Shader.cpp
+        gfx/src/backend/vulkan/core/BindGroup.cpp
+        gfx/src/backend/vulkan/core/BindGroupLayout.cpp
+        gfx/src/backend/vulkan/core/CommandEncoder.cpp
+        gfx/src/backend/vulkan/core/RenderPass.cpp
+        gfx/src/backend/vulkan/core/RenderPassEncoder.cpp
+        gfx/src/backend/vulkan/core/ComputePassEncoder.cpp
+        gfx/src/backend/vulkan/core/RenderPipeline.cpp
+        gfx/src/backend/vulkan/core/ComputePipeline.cpp
+        gfx/src/backend/vulkan/core/Swapchain.cpp
+        gfx/src/backend/vulkan/core/Surface.cpp
+        gfx/src/backend/vulkan/core/Semaphore.cpp
+        gfx/src/backend/vulkan/core/Fence.cpp
     )
 endif()
 

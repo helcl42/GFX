@@ -8,7 +8,7 @@
 #include <optional>
 #include <vector>
 
-namespace gfx::backend::vulkan {
+namespace gfx::backend::vulkan::core {
 
 // Forward declarations for SubmitInfo
 class CommandEncoder;
@@ -424,6 +424,6 @@ struct SubmitInfo {
     uint32_t signalSemaphoreCount;
 };
 
-} // namespace gfx::backend::vulkan
+} // namespace gfx::backend::vulkan::core
 
 #endif // GFX_VULKAN_CREATEINFO_H

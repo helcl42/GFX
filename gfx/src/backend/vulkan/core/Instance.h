@@ -5,7 +5,7 @@
 
 #include "../common/Common.h"
 
-namespace gfx::backend::vulkan {
+namespace gfx::backend::vulkan::core {
 
 using DebugCallbackFunc = void (*)(DebugMessageSeverity severity, DebugMessageType type, const char* message, void* userData);
 
@@ -41,6 +41,6 @@ private:
     void* m_userCallbackData = nullptr; // Owned pointer, will be deleted in destructor
 };
 
-} // namespace gfx::backend::vulkan
+} // namespace gfx::backend::vulkan::core
 
 #endif // GFX_VULKAN_INSTANCE_H

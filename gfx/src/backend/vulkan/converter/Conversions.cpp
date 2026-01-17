@@ -1,7 +1,14 @@
 #include "Conversions.h"
 
 #include "../common/Common.h"
-#include "../core/Entities.h"
+#include "../core/BindGroup.h"
+#include "../core/BindGroupLayout.h"
+#include "../core/Buffer.h"
+#include "../core/RenderPass.h"
+#include "../core/Sampler.h"
+#include "../core/Shader.h"
+#include "../core/Texture.h"
+#include "../core/TextureView.h"
 
 #include <vector>
 
@@ -66,27 +73,27 @@ GfxAdapterInfo vkPropertiesToGfxAdapterInfo(const VkPhysicalDeviceProperties& pr
 // Debug Message Conversion Functions
 // ============================================================================
 
-gfx::backend::vulkan::DebugMessageSeverity convertVkDebugSeverity(VkDebugUtilsMessageSeverityFlagBitsEXT vkSeverity)
+gfx::backend::vulkan::core::DebugMessageSeverity convertVkDebugSeverity(VkDebugUtilsMessageSeverityFlagBitsEXT vkSeverity)
 {
     if (vkSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
-        return gfx::backend::vulkan::DebugMessageSeverity::Verbose;
+        return gfx::backend::vulkan::core::DebugMessageSeverity::Verbose;
     } else if (vkSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-        return gfx::backend::vulkan::DebugMessageSeverity::Warning;
+        return gfx::backend::vulkan::core::DebugMessageSeverity::Warning;
     } else if (vkSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-        return gfx::backend::vulkan::DebugMessageSeverity::Error;
+        return gfx::backend::vulkan::core::DebugMessageSeverity::Error;
     } else {
-        return gfx::backend::vulkan::DebugMessageSeverity::Info;
+        return gfx::backend::vulkan::core::DebugMessageSeverity::Info;
     }
 }
 
-gfx::backend::vulkan::DebugMessageType convertVkDebugType(VkDebugUtilsMessageTypeFlagsEXT vkType)
+gfx::backend::vulkan::core::DebugMessageType convertVkDebugType(VkDebugUtilsMessageTypeFlagsEXT vkType)
 {
     if (vkType & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) {
-        return gfx::backend::vulkan::DebugMessageType::Validation;
+        return gfx::backend::vulkan::core::DebugMessageType::Validation;
     } else if (vkType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
-        return gfx::backend::vulkan::DebugMessageType::Performance;
+        return gfx::backend::vulkan::core::DebugMessageType::Performance;
     } else {
-        return gfx::backend::vulkan::DebugMessageType::General;
+        return gfx::backend::vulkan::core::DebugMessageType::General;
     }
 }
 
@@ -94,35 +101,35 @@ gfx::backend::vulkan::DebugMessageType convertVkDebugType(VkDebugUtilsMessageTyp
 // Type Conversion Functions
 // ============================================================================
 
-gfx::backend::vulkan::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(GfxSemaphoreType type)
+gfx::backend::vulkan::core::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(GfxSemaphoreType type)
 {
     switch (type) {
     case GFX_SEMAPHORE_TYPE_BINARY:
-        return gfx::backend::vulkan::SemaphoreType::Binary;
+        return gfx::backend::vulkan::core::SemaphoreType::Binary;
     case GFX_SEMAPHORE_TYPE_TIMELINE:
-        return gfx::backend::vulkan::SemaphoreType::Timeline;
+        return gfx::backend::vulkan::core::SemaphoreType::Timeline;
     default:
-        return gfx::backend::vulkan::SemaphoreType::Binary;
+        return gfx::backend::vulkan::core::SemaphoreType::Binary;
     }
 }
 
-gfx::backend::vulkan::InstanceFeatureType gfxInstanceFeatureTypeToVulkan(GfxInstanceFeatureType feature)
+gfx::backend::vulkan::core::InstanceFeatureType gfxInstanceFeatureTypeToVulkan(GfxInstanceFeatureType feature)
 {
     switch (feature) {
     case GFX_INSTANCE_FEATURE_TYPE_SURFACE:
-        return gfx::backend::vulkan::InstanceFeatureType::Surface;
+        return gfx::backend::vulkan::core::InstanceFeatureType::Surface;
     default:
-        return gfx::backend::vulkan::InstanceFeatureType::Invalid;
+        return gfx::backend::vulkan::core::InstanceFeatureType::Invalid;
     }
 }
 
-gfx::backend::vulkan::DeviceFeatureType gfxDeviceFeatureTypeToVulkan(GfxDeviceFeatureType feature)
+gfx::backend::vulkan::core::DeviceFeatureType gfxDeviceFeatureTypeToVulkan(GfxDeviceFeatureType feature)
 {
     switch (feature) {
     case GFX_DEVICE_FEATURE_TYPE_SWAPCHAIN:
-        return gfx::backend::vulkan::DeviceFeatureType::Swapchain;
+        return gfx::backend::vulkan::core::DeviceFeatureType::Swapchain;
     default:
-        return gfx::backend::vulkan::DeviceFeatureType::Invalid;
+        return gfx::backend::vulkan::core::DeviceFeatureType::Invalid;
     }
 }
 
@@ -387,6 +394,34 @@ GfxTextureLayout vkImageLayoutToGfxLayout(VkImageLayout layout)
     }
 }
 
+VkAccessFlags getVkAccessFlagsForLayout(VkImageLayout layout)
+{
+    switch (layout) {
+    case VK_IMAGE_LAYOUT_UNDEFINED:
+        return 0;
+    case VK_IMAGE_LAYOUT_GENERAL:
+        return VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
+        return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        return VK_ACCESS_SHADER_READ_BIT;
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        return VK_ACCESS_TRANSFER_READ_BIT;
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+        return VK_ACCESS_TRANSFER_WRITE_BIT;
+    case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+        return VK_ACCESS_MEMORY_READ_BIT;
+    default:
+        return 0;
+    }
+}
+
 VkImageType gfxTextureTypeToVkImageType(GfxTextureType type)
 {
     switch (type) {
@@ -482,7 +517,7 @@ GfxSampleCount vkSampleCountToGfxSampleCount(VkSampleCountFlagBits vkSampleCount
     }
 }
 
-GfxTextureInfo vkTextureInfoToGfxTextureInfo(const TextureInfo& info)
+GfxTextureInfo vkTextureInfoToGfxTextureInfo(const core::TextureInfo& info)
 {
     GfxTextureInfo gfxInfo{};
     gfxInfo.type = vkImageTypeToGfxTextureType(info.imageType);
@@ -495,7 +530,7 @@ GfxTextureInfo vkTextureInfoToGfxTextureInfo(const TextureInfo& info)
     return gfxInfo;
 }
 
-GfxSwapchainInfo vkSwapchainInfoToGfxSwapchainInfo(const SwapchainInfo& info)
+GfxSwapchainInfo vkSwapchainInfoToGfxSwapchainInfo(const core::SwapchainInfo& info)
 {
     GfxSwapchainInfo gfxInfo{};
     gfxInfo.width = info.width;
@@ -506,7 +541,7 @@ GfxSwapchainInfo vkSwapchainInfoToGfxSwapchainInfo(const SwapchainInfo& info)
     return gfxInfo;
 }
 
-GfxBufferInfo vkBufferToGfxBufferInfo(const BufferInfo& info)
+GfxBufferInfo vkBufferToGfxBufferInfo(const core::BufferInfo& info)
 {
     GfxBufferInfo gfxInfo{};
     gfxInfo.size = info.size;
@@ -974,17 +1009,17 @@ VkIndexType gfxIndexFormatToVkIndexType(GfxIndexFormat format)
     }
 }
 
-Viewport gfxViewportToViewport(const GfxViewport* viewport)
+core::Viewport gfxViewportToViewport(const GfxViewport* viewport)
 {
     return { viewport->x, viewport->y, viewport->width, viewport->height, viewport->minDepth, viewport->maxDepth };
 }
 
-ScissorRect gfxScissorRectToScissorRect(const GfxScissorRect* scissor)
+core::ScissorRect gfxScissorRectToScissorRect(const GfxScissorRect* scissor)
 {
     return { scissor->x, scissor->y, scissor->width, scissor->height };
 }
 
-MemoryBarrier gfxMemoryBarrierToMemoryBarrier(const GfxMemoryBarrier& barrier)
+core::MemoryBarrier gfxMemoryBarrierToMemoryBarrier(const GfxMemoryBarrier& barrier)
 {
     return {
         gfxPipelineStageFlagsToVkPipelineStageFlags(barrier.srcStageMask),
@@ -994,10 +1029,10 @@ MemoryBarrier gfxMemoryBarrierToMemoryBarrier(const GfxMemoryBarrier& barrier)
     };
 }
 
-BufferBarrier gfxBufferBarrierToBufferBarrier(const GfxBufferBarrier& barrier)
+core::BufferBarrier gfxBufferBarrierToBufferBarrier(const GfxBufferBarrier& barrier)
 {
     return {
-        toNative<Buffer>(barrier.buffer),
+        toNative<core::Buffer>(barrier.buffer),
         gfxPipelineStageFlagsToVkPipelineStageFlags(barrier.srcStageMask),
         gfxPipelineStageFlagsToVkPipelineStageFlags(barrier.dstStageMask),
         gfxAccessFlagsToVkAccessFlags(barrier.srcAccessMask),
@@ -1007,10 +1042,10 @@ BufferBarrier gfxBufferBarrierToBufferBarrier(const GfxBufferBarrier& barrier)
     };
 }
 
-TextureBarrier gfxTextureBarrierToTextureBarrier(const GfxTextureBarrier& barrier)
+core::TextureBarrier gfxTextureBarrierToTextureBarrier(const GfxTextureBarrier& barrier)
 {
     return {
-        toNative<Texture>(barrier.texture),
+        toNative<core::Texture>(barrier.texture),
         gfxPipelineStageFlagsToVkPipelineStageFlags(barrier.srcStageMask),
         gfxPipelineStageFlagsToVkPipelineStageFlags(barrier.dstStageMask),
         gfxAccessFlagsToVkAccessFlags(barrier.srcAccessMask),
@@ -1024,52 +1059,52 @@ TextureBarrier gfxTextureBarrierToTextureBarrier(const GfxTextureBarrier& barrie
     };
 }
 
-gfx::backend::vulkan::BufferCreateInfo gfxDescriptorToBufferCreateInfo(const GfxBufferDescriptor* descriptor)
+core::BufferCreateInfo gfxDescriptorToBufferCreateInfo(const GfxBufferDescriptor* descriptor)
 {
-    gfx::backend::vulkan::BufferCreateInfo createInfo{};
+    core::BufferCreateInfo createInfo{};
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
     createInfo.mapped = gfxBufferUsageToMappedFlag(descriptor->usage);
     return createInfo;
 }
 
-gfx::backend::vulkan::BufferImportInfo gfxExternalDescriptorToBufferImportInfo(const GfxExternalBufferDescriptor* descriptor)
+core::BufferImportInfo gfxExternalDescriptorToBufferImportInfo(const GfxExternalBufferDescriptor* descriptor)
 {
-    gfx::backend::vulkan::BufferImportInfo createInfo{};
+    core::BufferImportInfo createInfo{};
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
     createInfo.mapped = gfxBufferUsageToMappedFlag(descriptor->usage);
     return createInfo;
 }
 
-gfx::backend::vulkan::ShaderCreateInfo gfxDescriptorToShaderCreateInfo(const GfxShaderDescriptor* descriptor)
+core::ShaderCreateInfo gfxDescriptorToShaderCreateInfo(const GfxShaderDescriptor* descriptor)
 {
-    gfx::backend::vulkan::ShaderCreateInfo createInfo{};
+    core::ShaderCreateInfo createInfo{};
     createInfo.code = descriptor->code;
     createInfo.codeSize = descriptor->codeSize;
     createInfo.entryPoint = descriptor->entryPoint;
     return createInfo;
 }
 
-gfx::backend::vulkan::SemaphoreCreateInfo gfxDescriptorToSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor)
+core::SemaphoreCreateInfo gfxDescriptorToSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor)
 {
-    gfx::backend::vulkan::SemaphoreCreateInfo createInfo{};
+    core::SemaphoreCreateInfo createInfo{};
     createInfo.type = descriptor ? gfxSemaphoreTypeToVulkanSemaphoreType(descriptor->type)
-                                 : gfx::backend::vulkan::SemaphoreType::Binary;
+                                 : core::SemaphoreType::Binary;
     createInfo.initialValue = descriptor ? descriptor->initialValue : 0;
     return createInfo;
 }
 
-gfx::backend::vulkan::FenceCreateInfo gfxDescriptorToFenceCreateInfo(const GfxFenceDescriptor* descriptor)
+core::FenceCreateInfo gfxDescriptorToFenceCreateInfo(const GfxFenceDescriptor* descriptor)
 {
-    gfx::backend::vulkan::FenceCreateInfo createInfo{};
+    core::FenceCreateInfo createInfo{};
     createInfo.signaled = descriptor && descriptor->signaled;
     return createInfo;
 }
 
-gfx::backend::vulkan::TextureCreateInfo gfxDescriptorToTextureCreateInfo(const GfxTextureDescriptor* descriptor)
+core::TextureCreateInfo gfxDescriptorToTextureCreateInfo(const GfxTextureDescriptor* descriptor)
 {
-    gfx::backend::vulkan::TextureCreateInfo createInfo{};
+    core::TextureCreateInfo createInfo{};
     createInfo.format = gfxFormatToVkFormat(descriptor->format);
     createInfo.size.width = descriptor->size.width;
     createInfo.size.height = descriptor->size.height;
@@ -1090,9 +1125,9 @@ gfx::backend::vulkan::TextureCreateInfo gfxDescriptorToTextureCreateInfo(const G
     return createInfo;
 }
 
-gfx::backend::vulkan::TextureImportInfo gfxExternalDescriptorToTextureImportInfo(const GfxExternalTextureDescriptor* descriptor)
+core::TextureImportInfo gfxExternalDescriptorToTextureImportInfo(const GfxExternalTextureDescriptor* descriptor)
 {
-    gfx::backend::vulkan::TextureImportInfo importInfo{};
+    core::TextureImportInfo importInfo{};
     importInfo.format = gfxFormatToVkFormat(descriptor->format);
     importInfo.size.width = descriptor->size.width;
     importInfo.size.height = descriptor->size.height;
@@ -1113,9 +1148,9 @@ gfx::backend::vulkan::TextureImportInfo gfxExternalDescriptorToTextureImportInfo
     return importInfo;
 }
 
-gfx::backend::vulkan::TextureViewCreateInfo gfxDescriptorToTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor)
+core::TextureViewCreateInfo gfxDescriptorToTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor)
 {
-    gfx::backend::vulkan::TextureViewCreateInfo createInfo{};
+    core::TextureViewCreateInfo createInfo{};
     createInfo.viewType = gfxTextureViewTypeToVkImageViewType(descriptor->viewType);
     createInfo.format = gfxFormatToVkFormat(descriptor->format);
     createInfo.baseMipLevel = descriptor ? descriptor->baseMipLevel : 0;
@@ -1125,9 +1160,9 @@ gfx::backend::vulkan::TextureViewCreateInfo gfxDescriptorToTextureViewCreateInfo
     return createInfo;
 }
 
-gfx::backend::vulkan::SamplerCreateInfo gfxDescriptorToSamplerCreateInfo(const GfxSamplerDescriptor* descriptor)
+core::SamplerCreateInfo gfxDescriptorToSamplerCreateInfo(const GfxSamplerDescriptor* descriptor)
 {
-    gfx::backend::vulkan::SamplerCreateInfo createInfo{};
+    core::SamplerCreateInfo createInfo{};
     createInfo.addressModeU = gfxAddressModeToVkAddressMode(descriptor->addressModeU);
     createInfo.addressModeV = gfxAddressModeToVkAddressMode(descriptor->addressModeV);
     createInfo.addressModeW = gfxAddressModeToVkAddressMode(descriptor->addressModeW);
@@ -1141,9 +1176,9 @@ gfx::backend::vulkan::SamplerCreateInfo gfxDescriptorToSamplerCreateInfo(const G
     return createInfo;
 }
 
-gfx::backend::vulkan::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInstanceDescriptor* descriptor)
+core::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInstanceDescriptor* descriptor)
 {
-    gfx::backend::vulkan::InstanceCreateInfo createInfo{};
+    core::InstanceCreateInfo createInfo{};
     createInfo.enableValidation = descriptor && descriptor->enableValidation;
     createInfo.applicationName = descriptor && descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
     createInfo.applicationVersion = descriptor ? descriptor->applicationVersion : 1;
@@ -1158,9 +1193,9 @@ gfx::backend::vulkan::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const
 
     return createInfo;
 }
-gfx::backend::vulkan::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)
+core::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescriptor* descriptor)
 {
-    gfx::backend::vulkan::AdapterCreateInfo createInfo{};
+    core::AdapterCreateInfo createInfo{};
 
     // Handle adapter index if specified
     if (descriptor && descriptor->adapterIndex != UINT32_MAX) {
@@ -1171,20 +1206,20 @@ gfx::backend::vulkan::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const G
 
     // Fall back to preference-based selection
     if (!descriptor || descriptor->preference == GFX_ADAPTER_PREFERENCE_UNDEFINED) {
-        createInfo.devicePreference = gfx::backend::vulkan::DeviceTypePreference::HighPerformance;
+        createInfo.devicePreference = core::DeviceTypePreference::HighPerformance;
     } else if (descriptor->preference == GFX_ADAPTER_PREFERENCE_SOFTWARE) {
-        createInfo.devicePreference = gfx::backend::vulkan::DeviceTypePreference::SoftwareRenderer;
+        createInfo.devicePreference = core::DeviceTypePreference::SoftwareRenderer;
     } else if (descriptor->preference == GFX_ADAPTER_PREFERENCE_LOW_POWER) {
-        createInfo.devicePreference = gfx::backend::vulkan::DeviceTypePreference::LowPower;
+        createInfo.devicePreference = core::DeviceTypePreference::LowPower;
     } else {
-        createInfo.devicePreference = gfx::backend::vulkan::DeviceTypePreference::HighPerformance;
+        createInfo.devicePreference = core::DeviceTypePreference::HighPerformance;
     }
 
     return createInfo;
 }
-gfx::backend::vulkan::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
+core::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
 {
-    gfx::backend::vulkan::DeviceCreateInfo createInfo{};
+    core::DeviceCreateInfo createInfo{};
     createInfo.queuePriority = descriptor ? descriptor->queuePriority : 1.0f;
 
     // Convert enabled features from GfxDeviceFeatureType to internal DeviceFeatureType
@@ -1198,64 +1233,64 @@ gfx::backend::vulkan::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const Gfx
     return createInfo;
 }
 
-gfx::backend::vulkan::PlatformWindowHandle gfxWindowHandleToPlatformWindowHandle(const GfxPlatformWindowHandle& gfxHandle)
+core::PlatformWindowHandle gfxWindowHandleToPlatformWindowHandle(const GfxPlatformWindowHandle& gfxHandle)
 {
-    gfx::backend::vulkan::PlatformWindowHandle handle{};
+    core::PlatformWindowHandle handle{};
 
     // Convert GfxPlatformWindowHandle to Vulkan-native platform handles
     switch (gfxHandle.windowingSystem) {
     case GFX_WINDOWING_SYSTEM_XCB:
-        handle.platform = gfx::backend::vulkan::PlatformWindowHandle::Platform::Xcb;
+        handle.platform = core::PlatformWindowHandle::Platform::Xcb;
         handle.handle.xcb.connection = gfxHandle.xcb.connection;
         handle.handle.xcb.window = gfxHandle.xcb.window;
         break;
     case GFX_WINDOWING_SYSTEM_XLIB:
-        handle.platform = gfx::backend::vulkan::PlatformWindowHandle::Platform::Xlib;
+        handle.platform = core::PlatformWindowHandle::Platform::Xlib;
         handle.handle.xlib.display = gfxHandle.xlib.display;
         handle.handle.xlib.window = gfxHandle.xlib.window;
         break;
     case GFX_WINDOWING_SYSTEM_WAYLAND:
-        handle.platform = gfx::backend::vulkan::PlatformWindowHandle::Platform::Wayland;
+        handle.platform = core::PlatformWindowHandle::Platform::Wayland;
         handle.handle.wayland.display = gfxHandle.wayland.display;
         handle.handle.wayland.surface = gfxHandle.wayland.surface;
         break;
     case GFX_WINDOWING_SYSTEM_WIN32:
-        handle.platform = gfx::backend::vulkan::PlatformWindowHandle::Platform::Win32;
+        handle.platform = core::PlatformWindowHandle::Platform::Win32;
         handle.handle.win32.hinstance = gfxHandle.win32.hinstance;
         handle.handle.win32.hwnd = gfxHandle.win32.hwnd;
         break;
     case GFX_WINDOWING_SYSTEM_METAL:
-        handle.platform = gfx::backend::vulkan::PlatformWindowHandle::Platform::Metal;
+        handle.platform = core::PlatformWindowHandle::Platform::Metal;
         handle.handle.metal.layer = gfxHandle.metal.layer;
         break;
     case GFX_WINDOWING_SYSTEM_EMSCRIPTEN:
-        handle.platform = gfx::backend::vulkan::PlatformWindowHandle::Platform::Emscripten;
+        handle.platform = core::PlatformWindowHandle::Platform::Emscripten;
         handle.handle.emscripten.canvasSelector = gfxHandle.emscripten.canvasSelector;
         break;
     case GFX_WINDOWING_SYSTEM_ANDROID:
-        handle.platform = gfx::backend::vulkan::PlatformWindowHandle::Platform::Android;
+        handle.platform = core::PlatformWindowHandle::Platform::Android;
         handle.handle.android.window = gfxHandle.android.window;
         break;
     default:
-        handle.platform = gfx::backend::vulkan::PlatformWindowHandle::Platform::Unknown;
+        handle.platform = core::PlatformWindowHandle::Platform::Unknown;
         break;
     }
 
     return handle;
 }
 
-gfx::backend::vulkan::SurfaceCreateInfo gfxDescriptorToSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor)
+core::SurfaceCreateInfo gfxDescriptorToSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor)
 {
-    gfx::backend::vulkan::SurfaceCreateInfo createInfo{};
+    core::SurfaceCreateInfo createInfo{};
     if (descriptor) {
         createInfo.windowHandle = gfxWindowHandleToPlatformWindowHandle(descriptor->windowHandle);
     }
     return createInfo;
 }
 
-gfx::backend::vulkan::SwapchainCreateInfo gfxDescriptorToSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor)
+core::SwapchainCreateInfo gfxDescriptorToSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor)
 {
-    gfx::backend::vulkan::SwapchainCreateInfo createInfo{};
+    core::SwapchainCreateInfo createInfo{};
     createInfo.width = descriptor->width;
     createInfo.height = descriptor->height;
     createInfo.format = gfxFormatToVkFormat(descriptor->format);
@@ -1264,14 +1299,14 @@ gfx::backend::vulkan::SwapchainCreateInfo gfxDescriptorToSwapchainCreateInfo(con
     return createInfo;
 }
 
-gfx::backend::vulkan::BindGroupLayoutCreateInfo gfxDescriptorToBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor)
+core::BindGroupLayoutCreateInfo gfxDescriptorToBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor)
 {
-    gfx::backend::vulkan::BindGroupLayoutCreateInfo createInfo{};
+    core::BindGroupLayoutCreateInfo createInfo{};
 
     for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
         const auto& entry = descriptor->entries[i];
 
-        gfx::backend::vulkan::BindGroupLayoutEntry layoutEntry{};
+        core::BindGroupLayoutEntry layoutEntry{};
         layoutEntry.binding = entry.binding;
 
         // Convert GfxBindingType to VkDescriptorType
@@ -1315,30 +1350,30 @@ gfx::backend::vulkan::BindGroupLayoutCreateInfo gfxDescriptorToBindGroupLayoutCr
 // Entity-dependent CreateInfo Conversion Functions
 // ============================================================================
 
-gfx::backend::vulkan::BindGroupCreateInfo gfxDescriptorToBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor)
+core::BindGroupCreateInfo gfxDescriptorToBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor)
 {
-    gfx::backend::vulkan::BindGroupCreateInfo createInfo{};
-    auto* layout = converter::toNative<BindGroupLayout>(descriptor->layout);
+    core::BindGroupCreateInfo createInfo{};
+    auto* layout = converter::toNative<core::BindGroupLayout>(descriptor->layout);
     createInfo.layout = layout->handle();
 
     for (uint32_t i = 0; i < descriptor->entryCount; ++i) {
         const auto& entry = descriptor->entries[i];
 
-        gfx::backend::vulkan::BindGroupEntry bindEntry{};
+        core::BindGroupEntry bindEntry{};
         bindEntry.binding = entry.binding;
 
         if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_BUFFER) {
-            auto* buffer = converter::toNative<Buffer>(entry.resource.buffer.buffer);
+            auto* buffer = converter::toNative<core::Buffer>(entry.resource.buffer.buffer);
             bindEntry.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             bindEntry.buffer = buffer->handle();
             bindEntry.bufferOffset = entry.resource.buffer.offset;
             bindEntry.bufferSize = entry.resource.buffer.size;
         } else if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER) {
-            auto* sampler = converter::toNative<Sampler>(entry.resource.sampler);
+            auto* sampler = converter::toNative<core::Sampler>(entry.resource.sampler);
             bindEntry.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
             bindEntry.sampler = sampler->handle();
         } else if (entry.type == GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW) {
-            auto* textureView = converter::toNative<TextureView>(entry.resource.textureView);
+            auto* textureView = converter::toNative<core::TextureView>(entry.resource.textureView);
             bindEntry.descriptorType = layout->getBindingType(entry.binding);
             bindEntry.imageView = textureView->handle();
 
@@ -1356,31 +1391,31 @@ gfx::backend::vulkan::BindGroupCreateInfo gfxDescriptorToBindGroupCreateInfo(con
     return createInfo;
 }
 
-gfx::backend::vulkan::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor)
+core::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(const GfxRenderPipelineDescriptor* descriptor)
 {
-    gfx::backend::vulkan::RenderPipelineCreateInfo createInfo{};
+    core::RenderPipelineCreateInfo createInfo{};
 
     // Render pass (if provided)
     if (descriptor->renderPass) {
-        auto* renderPass = converter::toNative<RenderPass>(descriptor->renderPass);
+        auto* renderPass = converter::toNative<core::RenderPass>(descriptor->renderPass);
         createInfo.renderPass = renderPass->handle();
     }
 
     // Bind group layouts
     for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
-        auto* layout = converter::toNative<BindGroupLayout>(descriptor->bindGroupLayouts[i]);
+        auto* layout = converter::toNative<core::BindGroupLayout>(descriptor->bindGroupLayouts[i]);
         createInfo.bindGroupLayouts.push_back(layout->handle());
     }
 
     // Vertex state
-    auto* vertShader = converter::toNative<Shader>(descriptor->vertex->module);
+    auto* vertShader = converter::toNative<core::Shader>(descriptor->vertex->module);
     createInfo.vertex.module = vertShader->handle();
     createInfo.vertex.entryPoint = vertShader->entryPoint();
 
     for (uint32_t i = 0; i < descriptor->vertex->bufferCount; ++i) {
         const auto& bufferLayout = descriptor->vertex->buffers[i];
 
-        gfx::backend::vulkan::VertexBufferLayout vkBufferLayout{};
+        core::VertexBufferLayout vkBufferLayout{};
         vkBufferLayout.arrayStride = bufferLayout.arrayStride;
         vkBufferLayout.stepModeInstance = bufferLayout.stepModeInstance;
 
@@ -1401,14 +1436,14 @@ gfx::backend::vulkan::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCrea
 
     // Fragment state
     if (descriptor->fragment) {
-        auto* fragShader = converter::toNative<Shader>(descriptor->fragment->module);
+        auto* fragShader = converter::toNative<core::Shader>(descriptor->fragment->module);
         createInfo.fragment.module = fragShader->handle();
         createInfo.fragment.entryPoint = fragShader->entryPoint();
 
         for (uint32_t i = 0; i < descriptor->fragment->targetCount; ++i) {
             const auto& target = descriptor->fragment->targets[i];
 
-            gfx::backend::vulkan::ColorTargetState vkTarget{};
+            core::ColorTargetState vkTarget{};
             vkTarget.format = gfxFormatToVkFormat(target.format);
 
             // Convert GfxColorWriteMask to VkColorComponentFlags
@@ -1450,7 +1485,7 @@ gfx::backend::vulkan::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCrea
 
     // Depth stencil state
     if (descriptor->depthStencil) {
-        gfx::backend::vulkan::DepthStencilState depthStencil{};
+        core::DepthStencilState depthStencil{};
         depthStencil.format = gfxFormatToVkFormat(descriptor->depthStencil->format);
         depthStencil.depthWriteEnabled = descriptor->depthStencil->depthWriteEnabled;
         depthStencil.depthCompareOp = gfxCompareOpToVkCompareOp(descriptor->depthStencil->depthCompare);
@@ -1463,35 +1498,35 @@ gfx::backend::vulkan::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCrea
     return createInfo;
 }
 
-gfx::backend::vulkan::ComputePipelineCreateInfo gfxDescriptorToComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor)
+core::ComputePipelineCreateInfo gfxDescriptorToComputePipelineCreateInfo(const GfxComputePipelineDescriptor* descriptor)
 {
-    gfx::backend::vulkan::ComputePipelineCreateInfo createInfo{};
+    core::ComputePipelineCreateInfo createInfo{};
 
     // Bind group layouts
     for (uint32_t i = 0; i < descriptor->bindGroupLayoutCount; ++i) {
-        auto* layout = converter::toNative<BindGroupLayout>(descriptor->bindGroupLayouts[i]);
+        auto* layout = converter::toNative<core::BindGroupLayout>(descriptor->bindGroupLayouts[i]);
         createInfo.bindGroupLayouts.push_back(layout->handle());
     }
 
     // Compute shader
-    auto* computeShader = converter::toNative<Shader>(descriptor->compute);
+    auto* computeShader = converter::toNative<core::Shader>(descriptor->compute);
     createInfo.module = computeShader->handle();
     createInfo.entryPoint = computeShader->entryPoint();
 
     return createInfo;
 }
 
-gfx::backend::vulkan::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitInfo* descriptor)
+core::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitInfo* descriptor)
 {
-    gfx::backend::vulkan::SubmitInfo submitInfo{};
+    core::SubmitInfo submitInfo{};
     // Note: Array pointer conversions use reinterpret_cast as toNative<> is for individual objects
-    submitInfo.commandEncoders = reinterpret_cast<CommandEncoder**>(descriptor->commandEncoders);
+    submitInfo.commandEncoders = reinterpret_cast<core::CommandEncoder**>(descriptor->commandEncoders);
     submitInfo.commandEncoderCount = descriptor->commandEncoderCount;
-    submitInfo.signalFence = converter::toNative<Fence>(descriptor->signalFence);
-    submitInfo.waitSemaphores = reinterpret_cast<Semaphore**>(descriptor->waitSemaphores);
+    submitInfo.signalFence = converter::toNative<core::Fence>(descriptor->signalFence);
+    submitInfo.waitSemaphores = reinterpret_cast<core::Semaphore**>(descriptor->waitSemaphores);
     submitInfo.waitValues = descriptor->waitValues;
     submitInfo.waitSemaphoreCount = descriptor->waitSemaphoreCount;
-    submitInfo.signalSemaphores = reinterpret_cast<Semaphore**>(descriptor->signalSemaphores);
+    submitInfo.signalSemaphores = reinterpret_cast<core::Semaphore**>(descriptor->signalSemaphores);
     submitInfo.signalValues = descriptor->signalValues;
     submitInfo.signalSemaphoreCount = descriptor->signalSemaphoreCount;
     return submitInfo;
@@ -1500,7 +1535,7 @@ gfx::backend::vulkan::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitInfo* 
 // DEPRECATED: This function uses the old pre-refactor API
 // TODO: Remove once C++ wrapper is updated to use new two-phase API
 /*
-gfx::backend::vulkan::RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(const GfxRenderPassDescriptor* descriptor)
+RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(const GfxRenderPassDescriptor* descriptor)
 {
     // Old implementation removed - incompatible with new API
     (void)descriptor;
@@ -1508,16 +1543,16 @@ gfx::backend::vulkan::RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreat
 }
 */
 
-gfx::backend::vulkan::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(const GfxRenderPassDescriptor* descriptor)
+core::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(const GfxRenderPassDescriptor* descriptor)
 {
-    gfx::backend::vulkan::RenderPassCreateInfo createInfo{};
+    core::RenderPassCreateInfo createInfo{};
 
     // Convert color attachments
     for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
         const GfxRenderPassColorAttachment& colorAtt = descriptor->colorAttachments[i];
         const GfxRenderPassColorAttachmentTarget& target = colorAtt.target;
 
-        gfx::backend::vulkan::RenderPassColorAttachment attachment{};
+        core::RenderPassColorAttachment attachment{};
         attachment.target.format = gfxFormatToVkFormat(target.format);
         attachment.target.sampleCount = sampleCountToVkSampleCount(target.sampleCount);
         attachment.target.loadOp = gfxLoadOpToVkLoadOp(target.ops.loadOp);
@@ -1528,7 +1563,7 @@ gfx::backend::vulkan::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCr
         if (colorAtt.resolveTarget) {
             const GfxRenderPassColorAttachmentTarget& resolveTarget = *colorAtt.resolveTarget;
 
-            gfx::backend::vulkan::RenderPassColorAttachmentTarget resolveTargetInfo{};
+            core::RenderPassColorAttachmentTarget resolveTargetInfo{};
             resolveTargetInfo.format = gfxFormatToVkFormat(resolveTarget.format);
             resolveTargetInfo.sampleCount = sampleCountToVkSampleCount(resolveTarget.sampleCount);
             resolveTargetInfo.loadOp = gfxLoadOpToVkLoadOp(resolveTarget.ops.loadOp);
@@ -1546,7 +1581,7 @@ gfx::backend::vulkan::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCr
         const GfxRenderPassDepthStencilAttachment& depthAtt = *descriptor->depthStencilAttachment;
         const GfxRenderPassDepthStencilAttachmentTarget& target = depthAtt.target;
 
-        gfx::backend::vulkan::RenderPassDepthStencilAttachment depthStencilAttachment{};
+        core::RenderPassDepthStencilAttachment depthStencilAttachment{};
         depthStencilAttachment.target.format = gfxFormatToVkFormat(target.format);
         depthStencilAttachment.target.sampleCount = sampleCountToVkSampleCount(target.sampleCount);
         depthStencilAttachment.target.depthLoadOp = gfxLoadOpToVkLoadOp(target.depthOps.loadOp);
@@ -1559,7 +1594,7 @@ gfx::backend::vulkan::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCr
         if (depthAtt.resolveTarget) {
             const GfxRenderPassDepthStencilAttachmentTarget& resolveTarget = *depthAtt.resolveTarget;
 
-            gfx::backend::vulkan::RenderPassDepthStencilAttachmentTarget resolveTargetInfo{};
+            core::RenderPassDepthStencilAttachmentTarget resolveTargetInfo{};
             resolveTargetInfo.format = gfxFormatToVkFormat(resolveTarget.format);
             resolveTargetInfo.sampleCount = sampleCountToVkSampleCount(resolveTarget.sampleCount);
             resolveTargetInfo.depthLoadOp = gfxLoadOpToVkLoadOp(resolveTarget.depthOps.loadOp);
@@ -1577,13 +1612,13 @@ gfx::backend::vulkan::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCr
     return createInfo;
 }
 
-gfx::backend::vulkan::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(const GfxFramebufferDescriptor* descriptor)
+core::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(const GfxFramebufferDescriptor* descriptor)
 {
-    gfx::backend::vulkan::FramebufferCreateInfo createInfo{};
+    core::FramebufferCreateInfo createInfo{};
 
     // Extract render pass handle
     if (descriptor->renderPass) {
-        auto* renderPass = toNative<RenderPass>(descriptor->renderPass);
+        auto* renderPass = toNative<core::RenderPass>(descriptor->renderPass);
         createInfo.renderPass = renderPass->handle();
     }
 
@@ -1594,24 +1629,24 @@ gfx::backend::vulkan::FramebufferCreateInfo gfxFramebufferDescriptorToFramebuffe
     for (uint32_t i = 0; i < descriptor->colorAttachmentCount; ++i) {
         const GfxFramebufferAttachment& colorAtt = descriptor->colorAttachments[i];
 
-        auto* view = toNative<TextureView>(colorAtt.view);
+        auto* view = toNative<core::TextureView>(colorAtt.view);
         createInfo.attachments.push_back(view->handle());
 
         // Add resolve target if provided
         if (colorAtt.resolveTarget) {
-            auto* resolveView = toNative<TextureView>(colorAtt.resolveTarget);
+            auto* resolveView = toNative<core::TextureView>(colorAtt.resolveTarget);
             createInfo.attachments.push_back(resolveView->handle());
         }
     }
 
     // Convert depth/stencil attachment view
     if (descriptor->depthStencilAttachment.view) {
-        auto* view = toNative<TextureView>(descriptor->depthStencilAttachment.view);
+        auto* view = toNative<core::TextureView>(descriptor->depthStencilAttachment.view);
         createInfo.attachments.push_back(view->handle());
 
         // Add depth resolve target if provided
         if (descriptor->depthStencilAttachment.resolveTarget) {
-            auto* resolveView = toNative<TextureView>(descriptor->depthStencilAttachment.resolveTarget);
+            auto* resolveView = toNative<core::TextureView>(descriptor->depthStencilAttachment.resolveTarget);
             createInfo.attachments.push_back(resolveView->handle());
             createInfo.hasDepthResolve = true;
         }
@@ -1623,9 +1658,9 @@ gfx::backend::vulkan::FramebufferCreateInfo gfxFramebufferDescriptorToFramebuffe
     return createInfo;
 }
 
-gfx::backend::vulkan::RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(const GfxRenderPassBeginDescriptor* descriptor)
+core::RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(const GfxRenderPassBeginDescriptor* descriptor)
 {
-    gfx::backend::vulkan::RenderPassEncoderBeginInfo beginInfo{};
+    core::RenderPassEncoderBeginInfo beginInfo{};
 
     // Convert color clear values
     for (uint32_t i = 0; i < descriptor->colorClearValueCount; ++i) {
@@ -1644,9 +1679,9 @@ gfx::backend::vulkan::RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToB
     return beginInfo;
 }
 
-gfx::backend::vulkan::ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(const GfxComputePassBeginDescriptor* descriptor)
+core::ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(const GfxComputePassBeginDescriptor* descriptor)
 {
-    gfx::backend::vulkan::ComputePassEncoderCreateInfo createInfo{};
+    core::ComputePassEncoderCreateInfo createInfo{};
     createInfo.label = descriptor->label;
     return createInfo;
 }

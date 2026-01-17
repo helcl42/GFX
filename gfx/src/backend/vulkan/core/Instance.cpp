@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace gfx::backend::vulkan {
+namespace gfx::backend::vulkan::core {
 
 Instance::Instance(const InstanceCreateInfo& createInfo)
 {
@@ -137,7 +137,10 @@ void Instance::setDebugCallback(DebugCallbackFunc callback, void* userData)
     m_userCallbackData = userData; // Take ownership, will delete in destructor
 }
 
-VkInstance Instance::handle() const { return m_instance; }
+VkInstance Instance::handle() const
+{
+    return m_instance;
+}
 
 void Instance::setupDebugMessenger()
 {
@@ -168,4 +171,4 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Instance::debugCallback(VkDebugUtilsMessageSeveri
     return VK_FALSE;
 }
 
-} // namespace gfx::backend::vulkan
+} // namespace gfx::backend::vulkan::core
