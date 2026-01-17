@@ -1,7 +1,6 @@
+#include "Backend.h"
 
 #include "common/Common.h"
-
-#include "Backend.h"
 #include "converter/Conversions.h"
 
 #include "core/Adapter.h"
