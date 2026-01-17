@@ -1846,16 +1846,16 @@ public:
             }
         )";
 
-        WGPUShaderSourceWGSL wgslSource = {};
+        WGPUShaderSourceWGSL wgslSource = WGPU_SHADER_SOURCE_WGSL_INIT;
         wgslSource.chain.sType = WGPUSType_ShaderSourceWGSL;
         wgslSource.code = toStringView(shader2DCode);
 
-        WGPUShaderModuleDescriptor shaderDesc = {};
+        WGPUShaderModuleDescriptor shaderDesc = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
         shaderDesc.nextInChain = &wgslSource.chain;
         m_shaderModule = wgpuDeviceCreateShaderModule(m_device, &shaderDesc);
 
         // Create bind group layout with uniform buffer for source region
-        WGPUBindGroupLayoutEntry bgLayoutEntries[3] = {};
+        WGPUBindGroupLayoutEntry bgLayoutEntries[3] = { WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT, WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT, WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT };
         bgLayoutEntries[0].binding = 0;
         bgLayoutEntries[0].visibility = WGPUShaderStage_Fragment;
         bgLayoutEntries[0].texture.sampleType = WGPUTextureSampleType_Float;
@@ -1870,13 +1870,13 @@ public:
         bgLayoutEntries[2].buffer.type = WGPUBufferBindingType_Uniform;
         bgLayoutEntries[2].buffer.minBindingSize = 16; // vec2f + vec2f = 16 bytes
 
-        WGPUBindGroupLayoutDescriptor bgLayoutDesc = {};
+        WGPUBindGroupLayoutDescriptor bgLayoutDesc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
         bgLayoutDesc.entryCount = 3;
         bgLayoutDesc.entries = bgLayoutEntries;
         m_bindGroupLayout = wgpuDeviceCreateBindGroupLayout(m_device, &bgLayoutDesc);
 
         // Create pipeline layout
-        WGPUPipelineLayoutDescriptor pipelineLayoutDesc = {};
+        WGPUPipelineLayoutDescriptor pipelineLayoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
         pipelineLayoutDesc.bindGroupLayoutCount = 1;
         pipelineLayoutDesc.bindGroupLayouts = &m_bindGroupLayout;
         m_pipelineLayout = wgpuDeviceCreatePipelineLayout(m_device, &pipelineLayoutDesc);
@@ -1925,7 +1925,7 @@ public:
         }
 
         // Create texture view for source
-        WGPUTextureViewDescriptor srcViewDesc = {};
+        WGPUTextureViewDescriptor srcViewDesc = WGPU_TEXTURE_VIEW_DESCRIPTOR_INIT;
         srcViewDesc.format = wgpuTextureGetFormat(srcTexture);
         srcViewDesc.dimension = viewDimension;
         srcViewDesc.baseMipLevel = srcMipLevel;
@@ -1949,14 +1949,14 @@ public:
         regionData.uvMaxY = static_cast<float>(srcOrigin.y + srcExtent.height) / static_cast<float>(srcTexHeight);
 
         // Create uniform buffer for source region
-        WGPUBufferDescriptor uniformBufferDesc = {};
+        WGPUBufferDescriptor uniformBufferDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
         uniformBufferDesc.size = sizeof(SourceRegionData);
         uniformBufferDesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
         WGPUBuffer uniformBuffer = wgpuDeviceCreateBuffer(m_device, &uniformBufferDesc);
         wgpuQueueWriteBuffer(wgpuDeviceGetQueue(m_device), uniformBuffer, 0, &regionData, sizeof(SourceRegionData));
 
         // Create bind group
-        WGPUBindGroupEntry bgEntries[3] = {};
+        WGPUBindGroupEntry bgEntries[3] = { WGPU_BIND_GROUP_ENTRY_INIT, WGPU_BIND_GROUP_ENTRY_INIT, WGPU_BIND_GROUP_ENTRY_INIT };
         bgEntries[0].binding = 0;
         bgEntries[0].textureView = srcView;
 
@@ -1967,7 +1967,7 @@ public:
         bgEntries[2].buffer = uniformBuffer;
         bgEntries[2].size = sizeof(SourceRegionData);
 
-        WGPUBindGroupDescriptor bgDesc = {};
+        WGPUBindGroupDescriptor bgDesc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
         bgDesc.layout = m_bindGroupLayout;
         bgDesc.entryCount = 3;
         bgDesc.entries = bgEntries;
@@ -1978,7 +1978,7 @@ public:
         WGPURenderPipeline pipeline = getOrCreatePipeline(dstFormat);
 
         // Create texture view for destination
-        WGPUTextureViewDescriptor dstViewDesc = {};
+        WGPUTextureViewDescriptor dstViewDesc = WGPU_TEXTURE_VIEW_DESCRIPTOR_INIT;
         dstViewDesc.format = dstFormat;
         dstViewDesc.dimension = WGPUTextureViewDimension_2D;
         dstViewDesc.baseMipLevel = dstMipLevel;
@@ -1988,7 +1988,7 @@ public:
         WGPUTextureView dstView = wgpuTextureCreateView(dstTexture, &dstViewDesc);
 
         // Create render pass
-        WGPURenderPassColorAttachment colorAttachment = {};
+        WGPURenderPassColorAttachment colorAttachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
         colorAttachment.view = dstView;
         colorAttachment.loadOp = WGPULoadOp_Load;
         colorAttachment.storeOp = WGPUStoreOp_Store;
@@ -2034,22 +2034,23 @@ private:
         }
 
         // Create new pipeline for this format
-        WGPUColorTargetState colorTarget = {};
+        WGPUColorTargetState colorTarget = WGPU_COLOR_TARGET_STATE_INIT;
         colorTarget.format = format;
         colorTarget.writeMask = WGPUColorWriteMask_All;
 
-        WGPUFragmentState fragmentState = {};
+        WGPUFragmentState fragmentState = WGPU_FRAGMENT_STATE_INIT;
         fragmentState.module = m_shaderModule;
         fragmentState.entryPoint = toStringView("fs_main");
         fragmentState.targetCount = 1;
         fragmentState.targets = &colorTarget;
 
-        WGPURenderPipelineDescriptor pipelineDesc = {};
+        WGPURenderPipelineDescriptor pipelineDesc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
         pipelineDesc.layout = m_pipelineLayout;
         pipelineDesc.vertex.module = m_shaderModule;
         pipelineDesc.vertex.entryPoint = toStringView("vs_main");
         pipelineDesc.primitive.topology = WGPUPrimitiveTopology_TriangleStrip;
         pipelineDesc.fragment = &fragmentState;
+        pipelineDesc.multisample.count = 1;
 
         WGPURenderPipeline pipeline = wgpuDeviceCreateRenderPipeline(m_device, &pipelineDesc);
         m_pipelines[format] = pipeline;
@@ -2065,13 +2066,14 @@ private:
         }
 
         // Create new sampler for this filter mode
-        WGPUSamplerDescriptor samplerDesc = {};
+        WGPUSamplerDescriptor samplerDesc = WGPU_SAMPLER_DESCRIPTOR_INIT;
         samplerDesc.addressModeU = WGPUAddressMode_ClampToEdge;
         samplerDesc.addressModeV = WGPUAddressMode_ClampToEdge;
         samplerDesc.addressModeW = WGPUAddressMode_ClampToEdge;
         samplerDesc.magFilter = filterMode;
         samplerDesc.minFilter = filterMode;
         samplerDesc.mipmapFilter = WGPUMipmapFilterMode_Nearest;
+        samplerDesc.maxAnisotropy = 1;
 
         WGPUSampler sampler = wgpuDeviceCreateSampler(m_device, &samplerDesc);
         m_samplers[filterMode] = sampler;
