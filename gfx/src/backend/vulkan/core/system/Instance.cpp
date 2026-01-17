@@ -1,6 +1,6 @@
 #include "Instance.h"
 
-#include "../../converter/Conversions.h"
+#include "../util/Utils.h"
 
 #include <cstring>
 #include <stdexcept>
@@ -97,7 +97,7 @@ Instance::Instance(const InstanceCreateInfo& createInfo)
 
     VkResult result = vkCreateInstance(&vkCreateInfo, nullptr, &m_instance);
     if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create Vulkan instance: " + std::string(converter::vkResultToString(result)));
+        throw std::runtime_error("Failed to create Vulkan instance: " + std::string(vkResultToString(result)));
     }
 
     // Setup debug messenger if validation enabled
@@ -163,8 +163,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Instance::debugCallback(VkDebugUtilsMessageSeveri
     auto* instance = static_cast<Instance*>(pUserData);
     if (instance && instance->m_userCallback) {
         // Convert Vulkan types to internal enums
-        DebugMessageSeverity severity = converter::convertVkDebugSeverity(messageSeverity);
-        DebugMessageType type = converter::convertVkDebugType(messageType);
+        DebugMessageSeverity severity = convertVkDebugSeverity(messageSeverity);
+        DebugMessageType type = convertVkDebugType(messageType);
 
         instance->m_userCallback(severity, type, pCallbackData->pMessage, instance->m_userCallbackData);
     }

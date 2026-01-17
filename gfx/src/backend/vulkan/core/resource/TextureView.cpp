@@ -2,7 +2,7 @@
 
 #include "Texture.h"
 
-#include "../../converter/Conversions.h"
+#include "../util/Utils.h"
 
 #include <stdexcept>
 
@@ -25,7 +25,7 @@ TextureView::TextureView(Texture* texture, const TextureViewCreateInfo& createIn
     viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
     viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
     viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    viewInfo.subresourceRange.aspectMask = converter::getImageAspectMask(viewInfo.format);
+    viewInfo.subresourceRange.aspectMask = getImageAspectMask(viewInfo.format);
     viewInfo.subresourceRange.baseMipLevel = createInfo.baseMipLevel;
     viewInfo.subresourceRange.levelCount = createInfo.mipLevelCount;
     viewInfo.subresourceRange.baseArrayLayer = createInfo.baseArrayLayer;

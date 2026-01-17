@@ -4,7 +4,7 @@
 #include "../command/CommandEncoder.h"
 #include "../system/Device.h"
 
-#include "../../converter/Conversions.h"
+#include "../util/Utils.h"
 
 #include <stdexcept>
 
@@ -170,7 +170,7 @@ void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newL
     barrier.image = m_image;
 
     // Determine aspect mask based on format
-    barrier.subresourceRange.aspectMask = converter::getImageAspectMask(m_info.format);
+    barrier.subresourceRange.aspectMask = getImageAspectMask(m_info.format);
 
     barrier.subresourceRange.baseMipLevel = baseMipLevel;
     barrier.subresourceRange.levelCount = levelCount;
@@ -181,8 +181,8 @@ void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newL
     VkPipelineStageFlags srcStage;
     VkPipelineStageFlags dstStage;
 
-    barrier.srcAccessMask = converter::getVkAccessFlagsForLayout(m_currentLayout);
-    barrier.dstAccessMask = converter::getVkAccessFlagsForLayout(newLayout);
+    barrier.srcAccessMask = getVkAccessFlagsForLayout(m_currentLayout);
+    barrier.dstAccessMask = getVkAccessFlagsForLayout(newLayout);
 
     // Determine source stage
     switch (m_currentLayout) {
@@ -302,14 +302,14 @@ void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLeve
 
         // Blit from src to dst
         VkImageBlit blit = {};
-        blit.srcSubresource.aspectMask = converter::getImageAspectMask(m_info.format);
+        blit.srcSubresource.aspectMask = getImageAspectMask(m_info.format);
         blit.srcSubresource.mipLevel = srcMip;
         blit.srcSubresource.baseArrayLayer = 0;
         blit.srcSubresource.layerCount = m_info.arrayLayers;
         blit.srcOffsets[0] = { 0, 0, 0 };
         blit.srcOffsets[1] = { srcWidth, srcHeight, srcDepth };
 
-        blit.dstSubresource.aspectMask = converter::getImageAspectMask(m_info.format);
+        blit.dstSubresource.aspectMask = getImageAspectMask(m_info.format);
         blit.dstSubresource.mipLevel = dstMip;
         blit.dstSubresource.baseArrayLayer = 0;
         blit.dstSubresource.layerCount = m_info.arrayLayers;

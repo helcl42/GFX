@@ -227,6 +227,8 @@ if(BUILD_VULKAN_BACKEND)
     list(APPEND GFX_C_SOURCES 
         gfx/src/backend/vulkan/Backend.cpp
         gfx/src/backend/vulkan/converter/Conversions.cpp
+        # Util
+        gfx/src/backend/vulkan/core/util/Utils.cpp
         # System
         gfx/src/backend/vulkan/core/system/Instance.cpp
         gfx/src/backend/vulkan/core/system/Adapter.cpp

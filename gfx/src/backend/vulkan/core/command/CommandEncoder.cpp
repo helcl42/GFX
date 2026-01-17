@@ -5,7 +5,7 @@
 #include "../system/Queue.h"
 #include "../resource/Texture.h"
 
-#include "../../converter/Conversions.h"
+#include "../util/Utils.h"
 
 #include <stdexcept>
 
@@ -165,7 +165,7 @@ void CommandEncoder::pipelineBarrier(const MemoryBarrier* memoryBarriers, uint32
         VkImageMemoryBarrier vkBarrier{};
         vkBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         vkBarrier.image = barrier.texture->handle();
-        vkBarrier.subresourceRange.aspectMask = converter::getImageAspectMask(barrier.texture->getFormat());
+        vkBarrier.subresourceRange.aspectMask = getImageAspectMask(barrier.texture->getFormat());
         vkBarrier.subresourceRange.baseMipLevel = barrier.baseMipLevel;
         vkBarrier.subresourceRange.levelCount = barrier.mipLevelCount;
         vkBarrier.subresourceRange.baseArrayLayer = barrier.baseArrayLayer;
@@ -213,7 +213,7 @@ void CommandEncoder::copyBufferToTexture(Buffer* source, uint64_t sourceOffset, 
     region.bufferOffset = sourceOffset;
     region.bufferRowLength = 0;
     region.bufferImageHeight = 0;
-    region.imageSubresource.aspectMask = converter::getImageAspectMask(destination->getFormat());
+    region.imageSubresource.aspectMask = getImageAspectMask(destination->getFormat());
     region.imageSubresource.mipLevel = mipLevel;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
@@ -236,7 +236,7 @@ void CommandEncoder::copyTextureToBuffer(Texture* source, VkOffset3D origin, uin
     region.bufferOffset = destinationOffset;
     region.bufferRowLength = 0;
     region.bufferImageHeight = 0;
-    region.imageSubresource.aspectMask = converter::getImageAspectMask(source->getFormat());
+    region.imageSubresource.aspectMask = getImageAspectMask(source->getFormat());
     region.imageSubresource.mipLevel = mipLevel;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
@@ -272,12 +272,12 @@ void CommandEncoder::copyTextureToTexture(Texture* source, VkOffset3D sourceOrig
 
     // Copy image to image
     VkImageCopy region{};
-    region.srcSubresource.aspectMask = converter::getImageAspectMask(source->getFormat());
+    region.srcSubresource.aspectMask = getImageAspectMask(source->getFormat());
     region.srcSubresource.mipLevel = sourceMipLevel;
     region.srcSubresource.baseArrayLayer = is3DTexture ? 0 : sourceOrigin.z;
     region.srcSubresource.layerCount = layerCount;
     region.srcOffset = { sourceOrigin.x, sourceOrigin.y, is3DTexture ? sourceOrigin.z : 0 };
-    region.dstSubresource.aspectMask = converter::getImageAspectMask(destination->getFormat());
+    region.dstSubresource.aspectMask = getImageAspectMask(destination->getFormat());
     region.dstSubresource.mipLevel = destinationMipLevel;
     region.dstSubresource.baseArrayLayer = is3DTexture ? 0 : destinationOrigin.z;
     region.dstSubresource.layerCount = layerCount;
@@ -315,7 +315,7 @@ void CommandEncoder::blitTextureToTexture(Texture* source, VkOffset3D sourceOrig
 
     // Blit image to image with scaling and filtering
     VkImageBlit region{};
-    region.srcSubresource.aspectMask = converter::getImageAspectMask(source->getFormat());
+    region.srcSubresource.aspectMask = getImageAspectMask(source->getFormat());
     region.srcSubresource.mipLevel = sourceMipLevel;
     region.srcSubresource.baseArrayLayer = is3DTexture ? 0 : sourceOrigin.z;
     region.srcSubresource.layerCount = layerCount;
@@ -323,7 +323,7 @@ void CommandEncoder::blitTextureToTexture(Texture* source, VkOffset3D sourceOrig
     region.srcOffsets[1] = { static_cast<int32_t>(sourceOrigin.x + sourceExtent.width),
         static_cast<int32_t>(sourceOrigin.y + sourceExtent.height),
         is3DTexture ? static_cast<int32_t>(sourceOrigin.z + srcDepth) : 1 };
-    region.dstSubresource.aspectMask = converter::getImageAspectMask(destination->getFormat());
+    region.dstSubresource.aspectMask = getImageAspectMask(destination->getFormat());
     region.dstSubresource.mipLevel = destinationMipLevel;
     region.dstSubresource.baseArrayLayer = is3DTexture ? 0 : destinationOrigin.z;
     region.dstSubresource.layerCount = layerCount;

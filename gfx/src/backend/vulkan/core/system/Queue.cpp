@@ -8,7 +8,7 @@
 #include "../sync/Semaphore.h"
 #include "../resource/Texture.h"
 
-#include "../../converter/Conversions.h"
+#include "../util/Utils.h"
 
 #include <cstring>
 #include <stdexcept>
@@ -344,7 +344,7 @@ void Queue::writeTexture(Texture* texture, const VkOffset3D& origin, uint32_t mi
     region.bufferOffset = 0;
     region.bufferRowLength = 0; // Tightly packed
     region.bufferImageHeight = 0;
-    region.imageSubresource.aspectMask = converter::getImageAspectMask(texture->getFormat());
+    region.imageSubresource.aspectMask = getImageAspectMask(texture->getFormat());
     region.imageSubresource.mipLevel = mipLevel;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
