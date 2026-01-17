@@ -1564,17 +1564,6 @@ core::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitDescriptor* descriptor
     return submitInfo;
 }
 
-// DEPRECATED: This function uses the old pre-refactor API
-// TODO: Remove once C++ wrapper is updated to use new two-phase API
-/*
-RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(const GfxRenderPassDescriptor* descriptor)
-{
-    // Old implementation removed - incompatible with new API
-    (void)descriptor;
-    return {};
-}
-*/
-
 core::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(const GfxRenderPassDescriptor* descriptor)
 {
     core::RenderPassCreateInfo createInfo{};
