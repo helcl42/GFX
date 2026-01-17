@@ -626,21 +626,7 @@ GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* pres
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-
-    // Convert semaphores to native handles
-    GfxPresentInfo nativePresentInfo = {};
-    std::vector<GfxSemaphore> nativeSemaphores;
-
-    if (presentInfo && presentInfo->waitSemaphoreCount > 0) {
-        nativeSemaphores.reserve(presentInfo->waitSemaphoreCount);
-        for (uint32_t i = 0; i < presentInfo->waitSemaphoreCount; ++i) {
-            nativeSemaphores.push_back(presentInfo->waitSemaphores[i]);
-        }
-        nativePresentInfo.waitSemaphores = nativeSemaphores.data();
-        nativePresentInfo.waitSemaphoreCount = presentInfo->waitSemaphoreCount;
-    }
-
-    return backend->swapchainPresent(swapchain, presentInfo ? &nativePresentInfo : nullptr);
+    return backend->swapchainPresent(swapchain, presentInfo);
 }
 
 // Buffer Functions
