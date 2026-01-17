@@ -1461,7 +1461,7 @@ void CubeApp::render()
         }
 
         // Submit clear encoder
-        GfxSubmitInfo clearSubmit = {
+        GfxSubmitDescriptor clearSubmit = {
             .commandEncoders = &clearEncoders[currentFrame],
             .commandEncoderCount = 1,
             .waitSemaphores = &imageAvailableSemaphores[currentFrame],
@@ -1478,7 +1478,7 @@ void CubeApp::render()
             cubeEncoderArray[i] = cubeEncoders[currentFrame][i];
         }
 
-        GfxSubmitInfo cubesSubmit = {
+        GfxSubmitDescriptor cubesSubmit = {
             .commandEncoders = cubeEncoderArray.data(),
             .commandEncoderCount = static_cast<uint32_t>(cubeEncoderArray.size()),
             .waitSemaphores = &clearFinishedSemaphores[currentFrame],
@@ -1492,7 +1492,7 @@ void CubeApp::render()
         // Submit resolve encoder
         recordResolveCommands(imageIndex);
 
-        GfxSubmitInfo resolveSubmit = {
+        GfxSubmitDescriptor resolveSubmit = {
             .commandEncoders = &resolveEncoders[currentFrame],
             .commandEncoderCount = 1,
             .waitSemaphores = nullptr,
@@ -1547,7 +1547,7 @@ void CubeApp::render()
 
         gfxCommandEncoderEnd(encoder);
 
-        GfxSubmitInfo submitInfo = {
+        GfxSubmitDescriptor submitInfo = {
             .commandEncoders = &encoder,
             .commandEncoderCount = 1,
             .waitSemaphores = &imageAvailableSemaphores[currentFrame],

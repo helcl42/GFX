@@ -1081,7 +1081,7 @@ public:
     // Queue is owned by device, do not destroy
     ~CQueueImpl() override = default;
 
-    void submit(const SubmitInfo& submitInfo) override
+    void submit(const SubmitDescriptor& submitInfo) override
     {
         // Convert C++ structures to C
         std::vector<GfxCommandEncoder> cEncoders;
@@ -1108,7 +1108,7 @@ public:
             }
         }
 
-        GfxSubmitInfo cInfo = {};
+        GfxSubmitDescriptor cInfo = {};
         cInfo.commandEncoders = cEncoders.data();
         cInfo.commandEncoderCount = static_cast<uint32_t>(cEncoders.size());
         cInfo.waitSemaphores = cWaitSems.data();

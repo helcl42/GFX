@@ -468,7 +468,7 @@ bool ComputeApp::createComputeResources()
             initFenceDesc.signaled = false;
             auto initFence = device->createFence(initFenceDesc);
 
-            SubmitInfo submitInfo{};
+            SubmitDescriptor submitInfo{};
             submitInfo.commandEncoders = { initEncoder };
             submitInfo.signalFence = initFence;
 
@@ -893,7 +893,7 @@ void ComputeApp::render()
         encoder->end();
 
         // Submit
-        SubmitInfo submitInfo{};
+        SubmitDescriptor submitInfo{};
         submitInfo.commandEncoders = { encoder };
         submitInfo.waitSemaphores = { imageAvailableSemaphores[frameIndex] };
         submitInfo.signalSemaphores = { renderFinishedSemaphores[frameIndex] };

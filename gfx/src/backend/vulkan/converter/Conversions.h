@@ -146,7 +146,7 @@ core::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(cons
 core::RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(const GfxRenderPassDescriptor* descriptor);
 core::RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(const GfxRenderPassBeginDescriptor* descriptor);
 core::ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(const GfxComputePassBeginDescriptor* descriptor);
-core::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitInfo* descriptor);
+core::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitDescriptor* descriptor);
 
 } // namespace gfx::backend::vulkan::converter
 

@@ -942,7 +942,7 @@ typedef struct {
 
     // Optional fence to signal when all commands complete
     GfxFence signalFence;
-} GfxSubmitInfo;
+} GfxSubmitDescriptor;
 
 typedef struct {
     // Wait semaphores (rendering must complete before present)
@@ -1137,7 +1137,7 @@ GFX_API GfxResult gfxRenderPassDestroy(GfxRenderPass renderPass);
 GFX_API GfxResult gfxFramebufferDestroy(GfxFramebuffer framebuffer);
 
 // Queue functions
-GFX_API GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo);
+GFX_API GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo);
 GFX_API GfxResult gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size);
 GFX_API GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout);
 GFX_API GfxResult gfxQueueWaitIdle(GfxQueue queue);

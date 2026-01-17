@@ -1197,7 +1197,7 @@ void render(CubeApp* app)
     gfxCommandEncoderEnd(encoder);
 
     // Submit commands with synchronization
-    GfxSubmitInfo submitInfo = { 0 };
+    GfxSubmitDescriptor submitInfo = { 0 };
     submitInfo.commandEncoders = &encoder;
     submitInfo.commandEncoderCount = 1;
     submitInfo.waitSemaphores = &app->imageAvailableSemaphores[app->currentFrame];

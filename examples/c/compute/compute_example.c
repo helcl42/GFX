@@ -589,7 +589,7 @@ static bool transitionComputeTexture(ComputeApp* app)
 
     gfxCommandEncoderEnd(initEncoder);
 
-    GfxSubmitInfo submitInfo = {
+    GfxSubmitDescriptor submitInfo = {
         .commandEncoderCount = 1,
         .commandEncoders = &initEncoder,
     };
@@ -1159,7 +1159,7 @@ static void render(ComputeApp* app)
     gfxCommandEncoderEnd(encoder);
 
     // Submit
-    GfxSubmitInfo submitInfo = {
+    GfxSubmitDescriptor submitInfo = {
         .commandEncoderCount = 1,
         .commandEncoders = &encoder,
         .waitSemaphoreCount = 1,

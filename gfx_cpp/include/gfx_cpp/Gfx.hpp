@@ -833,7 +833,7 @@ struct AdapterInfo {
     Backend backend = Backend::Auto; // Vulkan or WebGPU
 };
 
-struct SubmitInfo {
+struct SubmitDescriptor {
     std::vector<std::shared_ptr<CommandEncoder>> commandEncoders;
 
     // Wait semaphores (must be signaled before execution)
@@ -1230,7 +1230,7 @@ class Queue {
 public:
     virtual ~Queue() = default;
 
-    virtual void submit(const SubmitInfo& submitInfo) = 0;
+    virtual void submit(const SubmitDescriptor& submitInfo) = 0;
     virtual void writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size) = 0;
     virtual void writeTexture(
         std::shared_ptr<Texture> texture, const Origin3D& origin, uint32_t mipLevel,

@@ -616,7 +616,7 @@ CommandEncoderCreateInfo gfxDescriptorToWebGPUCommandEncoderCreateInfo(const Gfx
     return createInfo;
 }
 
-SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitInfo* descriptor)
+SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitDescriptor* descriptor)
 {
     SubmitInfo submitInfo{};
     // Note: Array pointer conversions use reinterpret_cast as toNative<> is for individual objects

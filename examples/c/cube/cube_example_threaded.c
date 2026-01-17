@@ -1508,7 +1508,7 @@ void render(CubeApp* app)
     pthread_barrier_wait(&app->recordBarrier);
 
     // Submit clear encoder first (waits on imageAvailable, signals clearFinished)
-    GfxSubmitInfo clearSubmit = { 0 };
+    GfxSubmitDescriptor clearSubmit = { 0 };
     clearSubmit.commandEncoders = &app->clearEncoders[app->currentFrame];
     clearSubmit.commandEncoderCount = 1;
     clearSubmit.waitSemaphores = &app->imageAvailableSemaphores[app->currentFrame];
@@ -1525,7 +1525,7 @@ void render(CubeApp* app)
         cubeEncoderArray[i] = app->cubeEncoders[app->currentFrame][i];
     }
 
-    GfxSubmitInfo cubesSubmit = { 0 };
+    GfxSubmitDescriptor cubesSubmit = { 0 };
     cubesSubmit.commandEncoders = cubeEncoderArray;
     cubesSubmit.commandEncoderCount = CUBE_COUNT;
     cubesSubmit.waitSemaphores = &app->clearFinishedSemaphores[app->currentFrame];
@@ -1539,7 +1539,7 @@ void render(CubeApp* app)
     // Record and submit final resolve pass
     recordResolveCommands(app, imageIndex);
 
-    GfxSubmitInfo resolveSubmit = { 0 };
+    GfxSubmitDescriptor resolveSubmit = { 0 };
     resolveSubmit.commandEncoders = &app->resolveEncoders[app->currentFrame];
     resolveSubmit.commandEncoderCount = 1;
     resolveSubmit.waitSemaphores = NULL; // No wait needed, depends on cube submits via queue ordering
@@ -1601,7 +1601,7 @@ void render(CubeApp* app)
     gfxCommandEncoderEnd(encoder);
 
     // Submit single command buffer for WebGPU
-    GfxSubmitInfo submitInfo = { 0 };
+    GfxSubmitDescriptor submitInfo = { 0 };
     submitInfo.commandEncoders = &encoder;
     submitInfo.commandEncoderCount = 1;
     submitInfo.waitSemaphores = &app->imageAvailableSemaphores[app->currentFrame];

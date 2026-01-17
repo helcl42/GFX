@@ -935,7 +935,7 @@ void CubeApp::render()
         commandEncoder->end();
 
         // Submit with explicit synchronization
-        SubmitInfo submitInfo{};
+        SubmitDescriptor submitInfo{};
         submitInfo.commandEncoders = { commandEncoder };
         submitInfo.waitSemaphores = { imageAvailableSemaphores[currentFrame] };
         submitInfo.signalSemaphores = { renderFinishedSemaphores[currentFrame] };

@@ -98,7 +98,7 @@ public:
     virtual GfxResult framebufferDestroy(GfxFramebuffer framebuffer) const = 0;
 
     // Queue functions
-    virtual GfxResult queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo) const = 0;
+    virtual GfxResult queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const = 0;
     virtual GfxResult queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const = 0;
     virtual GfxResult queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
         const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const

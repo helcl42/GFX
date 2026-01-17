@@ -851,7 +851,7 @@ GfxResult WebGPUBackend::framebufferDestroy(GfxFramebuffer framebuffer) const
 }
 
 // Queue functions
-GfxResult WebGPUBackend::queueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo) const
+GfxResult WebGPUBackend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const
 {
     if (!queue || !submitInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;

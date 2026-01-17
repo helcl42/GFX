@@ -728,7 +728,7 @@ GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescripto
 }
 
 // Queue Functions
-GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitInfo* submitInfo)
+GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo)
 {
     if (!queue || !submitInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;

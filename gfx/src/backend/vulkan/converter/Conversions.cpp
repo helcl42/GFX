@@ -1516,7 +1516,7 @@ core::ComputePipelineCreateInfo gfxDescriptorToComputePipelineCreateInfo(const G
     return createInfo;
 }
 
-core::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitInfo* descriptor)
+core::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitDescriptor* descriptor)
 {
     core::SubmitInfo submitInfo{};
     // Note: Array pointer conversions use reinterpret_cast as toNative<> is for individual objects
