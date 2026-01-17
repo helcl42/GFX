@@ -15,6 +15,38 @@
 namespace gfx::backend::vulkan::converter {
 
 // ============================================================================
+// Debug Message Conversion
+// ============================================================================
+
+GfxDebugMessageSeverity coreDebugSeverityToGfx(core::DebugMessageSeverity severity)
+{
+    switch (severity) {
+    case core::DebugMessageSeverity::Verbose:
+        return GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE;
+    case core::DebugMessageSeverity::Info:
+        return GFX_DEBUG_MESSAGE_SEVERITY_INFO;
+    case core::DebugMessageSeverity::Warning:
+        return GFX_DEBUG_MESSAGE_SEVERITY_WARNING;
+    case core::DebugMessageSeverity::Error:
+        return GFX_DEBUG_MESSAGE_SEVERITY_ERROR;
+    }
+    return GFX_DEBUG_MESSAGE_SEVERITY_INFO; // Default
+}
+
+GfxDebugMessageType coreDebugTypeToGfx(core::DebugMessageType type)
+{
+    switch (type) {
+    case core::DebugMessageType::General:
+        return GFX_DEBUG_MESSAGE_TYPE_GENERAL;
+    case core::DebugMessageType::Validation:
+        return GFX_DEBUG_MESSAGE_TYPE_VALIDATION;
+    case core::DebugMessageType::Performance:
+        return GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE;
+    }
+    return GFX_DEBUG_MESSAGE_TYPE_GENERAL; // Default
+}
+
+// ============================================================================
 // Device Limits Conversion
 // ============================================================================
 

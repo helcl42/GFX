@@ -84,36 +84,9 @@ GfxResult VulkanBackend::instanceSetDebugCallback(GfxInstance instance, GfxDebug
         auto staticCallback = +[](core::DebugMessageSeverity severity, core::DebugMessageType type, const char* message, void* dataPtr) {
             auto* data = static_cast<CallbackData*>(dataPtr);
 
-            // Convert internal enum to GfxDebugMessageSeverity
-            GfxDebugMessageSeverity gfxSeverity;
-            switch (severity) {
-            case core::DebugMessageSeverity::Verbose:
-                gfxSeverity = GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE;
-                break;
-            case core::DebugMessageSeverity::Info:
-                gfxSeverity = GFX_DEBUG_MESSAGE_SEVERITY_INFO;
-                break;
-            case core::DebugMessageSeverity::Warning:
-                gfxSeverity = GFX_DEBUG_MESSAGE_SEVERITY_WARNING;
-                break;
-            case core::DebugMessageSeverity::Error:
-                gfxSeverity = GFX_DEBUG_MESSAGE_SEVERITY_ERROR;
-                break;
-            }
-
-            // Convert internal enum to GfxDebugMessageType
-            GfxDebugMessageType gfxType;
-            switch (type) {
-            case core::DebugMessageType::General:
-                gfxType = GFX_DEBUG_MESSAGE_TYPE_GENERAL;
-                break;
-            case core::DebugMessageType::Validation:
-                gfxType = GFX_DEBUG_MESSAGE_TYPE_VALIDATION;
-                break;
-            case core::DebugMessageType::Performance:
-                gfxType = GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE;
-                break;
-            }
+            // Convert internal enums to GFX API enums
+            GfxDebugMessageSeverity gfxSeverity = converter::coreDebugSeverityToGfx(severity);
+            GfxDebugMessageType gfxType = converter::coreDebugTypeToGfx(type);
 
             data->callback(gfxSeverity, gfxType, message, data->userData);
         };

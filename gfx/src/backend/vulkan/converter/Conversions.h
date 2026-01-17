@@ -30,6 +30,8 @@ inline InternalType* toNative(GfxHandle handle)
 
 core::DebugMessageSeverity convertVkDebugSeverity(VkDebugUtilsMessageSeverityFlagBitsEXT vkSeverity);
 core::DebugMessageType convertVkDebugType(VkDebugUtilsMessageTypeFlagsEXT vkType);
+GfxDebugMessageSeverity coreDebugSeverityToGfx(core::DebugMessageSeverity severity);
+GfxDebugMessageType coreDebugTypeToGfx(core::DebugMessageType type);
 
 // ============================================================================
 // Type Conversion Functions
