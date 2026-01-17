@@ -1100,7 +1100,7 @@ core::BufferCreateInfo gfxDescriptorToBufferCreateInfo(const GfxBufferDescriptor
     return createInfo;
 }
 
-core::BufferImportInfo gfxExternalDescriptorToBufferImportInfo(const GfxExternalBufferDescriptor* descriptor)
+core::BufferImportInfo gfxExternalDescriptorToBufferImportInfo(const GfxBufferImportDescriptor* descriptor)
 {
     core::BufferImportInfo createInfo{};
     createInfo.size = descriptor->size;
@@ -1157,7 +1157,7 @@ core::TextureCreateInfo gfxDescriptorToTextureCreateInfo(const GfxTextureDescrip
     return createInfo;
 }
 
-core::TextureImportInfo gfxExternalDescriptorToTextureImportInfo(const GfxExternalTextureDescriptor* descriptor)
+core::TextureImportInfo gfxExternalDescriptorToTextureImportInfo(const GfxTextureImportDescriptor* descriptor)
 {
     core::TextureImportInfo importInfo{};
     importInfo.format = gfxFormatToVkFormat(descriptor->format);

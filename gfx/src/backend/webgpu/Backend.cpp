@@ -218,7 +218,7 @@ GfxResult WebGPUBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
     }
 }
 
-GfxResult WebGPUBackend::deviceImportBuffer(GfxDevice device, const GfxExternalBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
+GfxResult WebGPUBackend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const
 {
     if (!device || !descriptor || !outBuffer || !descriptor->nativeHandle) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -253,7 +253,7 @@ GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
     }
 }
 
-GfxResult WebGPUBackend::deviceImportTexture(GfxDevice device, const GfxExternalTextureDescriptor* descriptor, GfxTexture* outTexture) const
+GfxResult WebGPUBackend::deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const
 {
     if (!device || !descriptor || !outTexture || !descriptor->nativeHandle) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;

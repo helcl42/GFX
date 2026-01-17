@@ -65,10 +65,10 @@ public:
             WGPUInstanceFeatureName_TimedWaitAny
         };
 
-        WGPUInstanceDescriptor wgpu_desc = WGPU_INSTANCE_DESCRIPTOR_INIT;
-        wgpu_desc.requiredFeatureCount = 1;
-        wgpu_desc.requiredFeatures = requiredFeatures;
-        m_instance = wgpuCreateInstance(&wgpu_desc);
+        WGPUInstanceDescriptor wgpuDesc = WGPU_INSTANCE_DESCRIPTOR_INIT;
+        wgpuDesc.requiredFeatureCount = 1;
+        wgpuDesc.requiredFeatures = requiredFeatures;
+        m_instance = wgpuCreateInstance(&wgpuDesc);
     }
 
     ~Instance()

@@ -701,10 +701,10 @@ typedef struct {
 
 typedef struct {
     const char* label;
-    const void* nativeHandle; // VkBuffer or WGPUBuffer (cast to void*)
+    void* nativeHandle; // VkBuffer or WGPUBuffer (cast to void*)
     uint64_t size;
     GfxBufferUsage usage;
-} GfxExternalBufferDescriptor;
+} GfxBufferImportDescriptor;
 
 typedef struct {
     const char* label;
@@ -719,7 +719,7 @@ typedef struct {
 
 typedef struct {
     const char* label;
-    const void* nativeHandle; // VkImage or WGPUTexture (cast to void*)
+    void* nativeHandle; // VkImage or WGPUTexture (cast to void*)
     GfxTextureType type;
     GfxExtent3D size;
     uint32_t arrayLayerCount;
@@ -728,7 +728,7 @@ typedef struct {
     GfxTextureFormat format;
     GfxTextureUsage usage;
     GfxTextureLayout currentLayout; // Current layout of the imported texture
-} GfxExternalTextureDescriptor;
+} GfxTextureImportDescriptor;
 
 typedef struct {
     const char* label;
@@ -1065,9 +1065,9 @@ GFX_API GfxResult gfxDeviceGetQueue(GfxDevice device, GfxQueue* outQueue);
 GFX_API GfxResult gfxDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface);
 GFX_API GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain);
 GFX_API GfxResult gfxDeviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer);
-GFX_API GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxExternalBufferDescriptor* descriptor, GfxBuffer* outBuffer);
+GFX_API GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer);
 GFX_API GfxResult gfxDeviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture);
-GFX_API GfxResult gfxDeviceImportTexture(GfxDevice device, const GfxExternalTextureDescriptor* descriptor, GfxTexture* outTexture);
+GFX_API GfxResult gfxDeviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture);
 GFX_API GfxResult gfxDeviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler);
 GFX_API GfxResult gfxDeviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader);
 GFX_API GfxResult gfxDeviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout);

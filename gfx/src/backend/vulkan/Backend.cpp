@@ -255,7 +255,7 @@ GfxResult VulkanBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
     }
 }
 
-GfxResult VulkanBackend::deviceImportBuffer(GfxDevice device, const GfxExternalBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
+GfxResult VulkanBackend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const
 {
     if (!device || !descriptor || !outBuffer || !descriptor->nativeHandle) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -263,7 +263,7 @@ GfxResult VulkanBackend::deviceImportBuffer(GfxDevice device, const GfxExternalB
 
     try {
         auto* dev = converter::toNative<core::Device>(device);
-        VkBuffer vkBuffer = reinterpret_cast<VkBuffer>(const_cast<void*>(descriptor->nativeHandle));
+        VkBuffer vkBuffer = reinterpret_cast<VkBuffer>(descriptor->nativeHandle);
         auto importInfo = converter::gfxExternalDescriptorToBufferImportInfo(descriptor);
         auto* buffer = new core::Buffer(dev, vkBuffer, importInfo);
         *outBuffer = converter::toGfx<GfxBuffer>(buffer);
@@ -292,7 +292,7 @@ GfxResult VulkanBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
     }
 }
 
-GfxResult VulkanBackend::deviceImportTexture(GfxDevice device, const GfxExternalTextureDescriptor* descriptor, GfxTexture* outTexture) const
+GfxResult VulkanBackend::deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const
 {
     if (!device || !descriptor || !outTexture || !descriptor->nativeHandle) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -300,7 +300,7 @@ GfxResult VulkanBackend::deviceImportTexture(GfxDevice device, const GfxExternal
 
     try {
         auto* dev = converter::toNative<core::Device>(device);
-        VkImage vkImage = reinterpret_cast<VkImage>(const_cast<void*>(descriptor->nativeHandle));
+        VkImage vkImage = reinterpret_cast<VkImage>(descriptor->nativeHandle);
         auto importInfo = converter::gfxExternalDescriptorToTextureImportInfo(descriptor);
         auto* texture = new core::Texture(dev, vkImage, importInfo);
         texture->setLayout(converter::gfxLayoutToVkImageLayout(descriptor->currentLayout));

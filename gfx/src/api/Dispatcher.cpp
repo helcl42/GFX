@@ -339,7 +339,7 @@ DEVICE_CREATE_FUNC(Fence, Fence)
 DEVICE_CREATE_FUNC(Semaphore, Semaphore)
 
 // Import functions for external resources
-GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxExternalBufferDescriptor* descriptor, GfxBuffer* outBuffer)
+GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer)
 {
     if (!device || !descriptor || !outBuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -359,7 +359,7 @@ GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxExternalBufferDescrip
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult gfxDeviceImportTexture(GfxDevice device, const GfxExternalTextureDescriptor* descriptor, GfxTexture* outTexture)
+GfxResult gfxDeviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture)
 {
     if (!device || !descriptor || !outTexture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;

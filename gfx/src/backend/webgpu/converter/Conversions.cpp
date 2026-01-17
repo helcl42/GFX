@@ -183,7 +183,7 @@ core::BufferCreateInfo gfxDescriptorToWebGPUBufferCreateInfo(const GfxBufferDesc
     return createInfo;
 }
 
-core::BufferImportInfo gfxExternalDescriptorToWebGPUBufferImportInfo(const GfxExternalBufferDescriptor* descriptor)
+core::BufferImportInfo gfxExternalDescriptorToWebGPUBufferImportInfo(const GfxBufferImportDescriptor* descriptor)
 {
     core::BufferImportInfo importInfo{};
     importInfo.size = descriptor->size;
@@ -209,7 +209,7 @@ core::TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxTextureD
     return createInfo;
 }
 
-core::TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(const GfxExternalTextureDescriptor* descriptor)
+core::TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(const GfxTextureImportDescriptor* descriptor)
 {
     core::TextureImportInfo importInfo{};
     importInfo.format = gfxFormatToWGPUFormat(descriptor->format);
