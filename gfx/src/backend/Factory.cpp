@@ -10,16 +10,16 @@
 
 namespace gfx::backend {
 
-const IBackend* BackendFactory::create(GfxBackend backend)
+std::unique_ptr<const IBackend> BackendFactory::create(GfxBackend backend)
 {
     switch (backend) {
 #ifdef GFX_ENABLE_VULKAN
     case GFX_BACKEND_VULKAN:
-        return vulkan::VulkanBackend::create();
+        return std::unique_ptr<const IBackend>(new vulkan::VulkanBackend());
 #endif
 #ifdef GFX_ENABLE_WEBGPU
     case GFX_BACKEND_WEBGPU:
-        return webgpu::WebGPUBackend::create();
+        return std::unique_ptr<const IBackend>(new webgpu::WebGPUBackend());
 #endif
     default:
         return nullptr;

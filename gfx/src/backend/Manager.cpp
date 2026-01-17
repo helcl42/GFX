@@ -2,13 +2,13 @@
 
 namespace gfx::backend {
 
-BackendManager& BackendManager::getInstance()
+BackendManager& BackendManager::instance()
 {
     static BackendManager instance;
     return instance;
 }
 
-const IBackend* BackendManager::getBackendAPI(GfxBackend backend)
+std::shared_ptr<const IBackend> BackendManager::getBackend(GfxBackend backend)
 {
     if (backend >= 0 && backend < GFX_BACKEND_AUTO) {
         return m_backends[backend];
@@ -16,7 +16,7 @@ const IBackend* BackendManager::getBackendAPI(GfxBackend backend)
     return nullptr;
 }
 
-const IBackend* BackendManager::getAPI(void* handle)
+std::shared_ptr<const IBackend> BackendManager::getBackend(void* handle)
 {
     if (!handle) {
         return nullptr;
@@ -26,10 +26,10 @@ const IBackend* BackendManager::getAPI(void* handle)
     if (it == m_handles.end()) {
         return nullptr;
     }
-    return getBackendAPI(it->second.backend);
+    return getBackend(it->second.backend);
 }
 
-GfxBackend BackendManager::getBackend(void* handle)
+GfxBackend BackendManager::getBackendType(void* handle)
 {
     if (!handle) {
         return GFX_BACKEND_AUTO;
@@ -51,7 +51,7 @@ void BackendManager::unwrap(void* handle)
     m_handles.erase(handle);
 }
 
-bool BackendManager::loadBackend(GfxBackend backend, const IBackend* backendImpl)
+bool BackendManager::loadBackend(GfxBackend backend, std::unique_ptr<const IBackend> backendImpl)
 {
     if (backend < 0 || backend >= GFX_BACKEND_AUTO) {
         return false;
@@ -59,10 +59,9 @@ bool BackendManager::loadBackend(GfxBackend backend, const IBackend* backendImpl
 
     SCOPED_LOCK(m_mutex);
     if (!m_backends[backend]) {
-        m_backends[backend] = backendImpl;
-        m_refCounts[backend] = 0;
+        // Convert unique_ptr to shared_ptr for storage and reference counting
+        m_backends[backend] = std::move(backendImpl);
     }
-    ++m_refCounts[backend];
     return true;
 }
 
@@ -73,20 +72,13 @@ void BackendManager::unloadBackend(GfxBackend backend)
     }
 
     SCOPED_LOCK(m_mutex);
-    if (m_backends[backend] && m_refCounts[backend] > 0) {
-        --m_refCounts[backend];
-        if (m_refCounts[backend] == 0) {
-            m_backends[backend] = nullptr;
-        }
-    }
+    // Simply reset the shared_ptr - it will automatically delete when ref count reaches 0
+    m_backends[backend].reset();
 }
 
 BackendManager::BackendManager()
 {
-    for (int i = 0; i < GFX_BACKEND_AUTO; ++i) {
-        m_backends[i] = nullptr;
-        m_refCounts[i] = 0;
-    }
+    // shared_ptr default constructs to nullptr, no explicit initialization needed
 }
 
 } // namespace gfx::backend

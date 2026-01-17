@@ -166,9 +166,6 @@ public:
 
     // Helper functions
     GfxAccessFlags getAccessFlagsForLayout(GfxTextureLayout layout) const override;
-
-public:
-    static const IBackend* create();
 };
 
 } // namespace gfx::backend::webgpu

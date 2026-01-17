@@ -1408,10 +1408,4 @@ GfxAccessFlags VulkanBackend::getAccessFlagsForLayout(GfxTextureLayout layout) c
     return converter::vkAccessFlagsToGfxAccessFlags(vkAccessFlags);
 }
 
-const IBackend* VulkanBackend::create()
-{
-    static VulkanBackend vulkanBackend;
-    return &vulkanBackend;
-}
-
 } // namespace gfx::backend::vulkan

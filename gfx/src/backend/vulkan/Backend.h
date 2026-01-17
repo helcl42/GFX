@@ -175,10 +175,6 @@ public:
 
     // Helper functions
     GfxAccessFlags getAccessFlagsForLayout(GfxTextureLayout layout) const override;
-
-public:
-    // TODO - return reference instead of pointer!
-    static const IBackend* create();
 };
 
 } // namespace gfx::backend::vulkan

@@ -8,6 +8,7 @@
 #ifndef GFX_HAS_EMSCRIPTEN
 #include <mutex>
 #endif
+#include <memory>
 #include <unordered_map>
 
 namespace gfx::backend {
@@ -35,7 +36,7 @@ struct HandleMeta {
 // Singleton class to manage backend state
 class BackendManager {
 public:
-    static BackendManager& getInstance();
+    static BackendManager& instance();
 
     // Delete copy and move constructors/assignments
     BackendManager(const BackendManager&) = delete;
@@ -43,7 +44,8 @@ public:
     BackendManager(BackendManager&&) = delete;
     BackendManager& operator=(BackendManager&&) = delete;
 
-    const IBackend* getBackendAPI(GfxBackend backend);
+    std::shared_ptr<const IBackend> getBackend(GfxBackend backend);
+    std::shared_ptr<const IBackend> getBackend(void* handle);
 
     template <typename T>
     T wrap(GfxBackend backend, T nativeHandle)
@@ -57,19 +59,17 @@ public:
     }
 
     void unwrap(void* handle);
-    const IBackend* getAPI(void* handle);
-    GfxBackend getBackend(void* handle);
+    GfxBackend getBackendType(void* handle);
 
-    // Backend loading/unloading with internal reference counting
-    bool loadBackend(GfxBackend backend, const IBackend* backendImpl);
+    // Backend loading/unloading with automatic reference counting via shared_ptr
+    bool loadBackend(GfxBackend backend, std::unique_ptr<const IBackend> backendImpl);
     void unloadBackend(GfxBackend backend);
 
 private:
     BackendManager();
     ~BackendManager() = default;
 
-    const IBackend* m_backends[GFX_BACKEND_AUTO];
-    int m_refCounts[GFX_BACKEND_AUTO];
+    std::shared_ptr<const IBackend> m_backends[GFX_BACKEND_AUTO];
     Mutex m_mutex;
     std::unordered_map<void*, HandleMeta> m_handles;
 };

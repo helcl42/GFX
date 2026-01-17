@@ -1394,10 +1394,4 @@ GfxAccessFlags WebGPUBackend::getAccessFlagsForLayout(GfxTextureLayout layout) c
     return GFX_ACCESS_NONE;
 }
 
-const IBackend* WebGPUBackend::create()
-{
-    static WebGPUBackend webgpuBackend;
-    return &webgpuBackend;
-}
-
 } // namespace gfx::backend::webgpu
