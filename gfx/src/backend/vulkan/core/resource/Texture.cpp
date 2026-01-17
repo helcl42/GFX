@@ -1,7 +1,7 @@
 #include "Texture.h"
 
-#include "../system/Adapter.h"
 #include "../command/CommandEncoder.h"
+#include "../system/Adapter.h"
 #include "../system/Device.h"
 #include "../util/Utils.h"
 
@@ -160,9 +160,18 @@ void Texture::transitionLayout(CommandEncoder* encoder, VkImageLayout newLayout,
 
 void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout, uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount)
 {
+    // Delegate to the private overload with explicit old layout
+    transitionLayout(commandBuffer, m_currentLayout, newLayout, baseMipLevel, levelCount, baseArrayLayer, layerCount);
+
+    // Update the current layout
+    m_currentLayout = newLayout;
+}
+
+void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount)
+{
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = m_currentLayout;
+    barrier.oldLayout = oldLayout;
     barrier.newLayout = newLayout;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -176,15 +185,12 @@ void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newL
     barrier.subresourceRange.baseArrayLayer = baseArrayLayer;
     barrier.subresourceRange.layerCount = layerCount;
 
-    // Determine pipeline stages and access masks based on layouts
-    VkPipelineStageFlags srcStage;
-    VkPipelineStageFlags dstStage;
-
-    barrier.srcAccessMask = getVkAccessFlagsForLayout(m_currentLayout);
+    barrier.srcAccessMask = getVkAccessFlagsForLayout(oldLayout);
     barrier.dstAccessMask = getVkAccessFlagsForLayout(newLayout);
 
     // Determine source stage
-    switch (m_currentLayout) {
+    VkPipelineStageFlags srcStage;
+    switch (oldLayout) {
     case VK_IMAGE_LAYOUT_UNDEFINED:
         srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         break;
@@ -211,6 +217,7 @@ void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newL
     }
 
     // Determine destination stage
+    VkPipelineStageFlags dstStage;
     switch (newLayout) {
     case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
     case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
@@ -242,8 +249,7 @@ void Texture::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newL
         0, nullptr,
         1, &barrier);
 
-    // Update the current layout
-    m_currentLayout = newLayout;
+    // Note: Do not update m_currentLayout here since we're transitioning specific mip levels
 }
 
 void Texture::generateMipmaps(CommandEncoder* encoder)
@@ -266,10 +272,10 @@ void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLeve
     }
 
     VkImageLayout initialLayout = m_currentLayout;
-
-    transitionLayout(encoder, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, baseMipLevel, 1, 0, m_info.arrayLayers);
-
     VkCommandBuffer cmdBuffer = encoder->handle();
+
+    // Transition base mip level to TRANSFER_SRC_OPTIMAL (it's already been written to)
+    transitionLayout(encoder, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, baseMipLevel, 1, 0, m_info.arrayLayers);
 
     // Blit each mip level from the previous one
     for (uint32_t i = 0; i < levelCount - 1; ++i) {
@@ -293,11 +299,8 @@ void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLeve
         dstHeight = std::max(1, dstHeight);
         dstDepth = std::max(1, dstDepth);
 
-        // Transition src mip to TRANSFER_SRC_OPTIMAL
-        transitionLayout(encoder, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, srcMip, 1, 0, m_info.arrayLayers);
-
-        // Transition dst mip to TRANSFER_DST_OPTIMAL
-        transitionLayout(encoder, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstMip, 1, 0, m_info.arrayLayers);
+        // Transition dst mip from UNDEFINED to TRANSFER_DST_OPTIMAL
+        transitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstMip, 1, 0, m_info.arrayLayers);
 
         // Blit from src to dst
         VkImageBlit blit = {};
@@ -315,14 +318,17 @@ void Texture::generateMipmapsRange(CommandEncoder* encoder, uint32_t baseMipLeve
         blit.dstOffsets[0] = { 0, 0, 0 };
         blit.dstOffsets[1] = { dstWidth, dstHeight, dstDepth };
 
-        vkCmdBlitImage(cmdBuffer,
-            m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1, &blit,
-            VK_FILTER_LINEAR);
+        vkCmdBlitImage(cmdBuffer, m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
+
+        // After blitting, transition dst mip from TRANSFER_DST_OPTIMAL to TRANSFER_SRC_OPTIMAL
+        transitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstMip, 1, 0, m_info.arrayLayers);
     }
 
-    transitionLayout(encoder, initialLayout, baseMipLevel, levelCount, 0, m_info.arrayLayers);
+    // Transition all mip levels from TRANSFER_SRC_OPTIMAL back to the initial layout
+    transitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, initialLayout, baseMipLevel, levelCount, 0, m_info.arrayLayers);
+
+    // Update tracked layout
+    m_currentLayout = initialLayout;
 }
 
 // Static helper to create TextureInfo from TextureCreateInfo

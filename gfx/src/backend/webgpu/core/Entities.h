@@ -759,7 +759,8 @@ public:
         desc.mipmapFilter = createInfo.mipmapFilter;
         desc.lodMinClamp = createInfo.lodMinClamp;
         desc.lodMaxClamp = createInfo.lodMaxClamp;
-        desc.maxAnisotropy = createInfo.maxAnisotropy;
+        // WebGPU requires maxAnisotropy >= 1, clamp to valid range
+        desc.maxAnisotropy = std::max<uint16_t>(1, createInfo.maxAnisotropy);
         desc.compare = createInfo.compareFunction;
 
         m_sampler = wgpuDeviceCreateSampler(m_device->handle(), &desc);
@@ -1072,7 +1073,8 @@ public:
 
         // Multisample state
         WGPUMultisampleState multisampleState = WGPU_MULTISAMPLE_STATE_INIT;
-        multisampleState.count = createInfo.sampleCount;
+        // WebGPU requires sampleCount >= 1, clamp to valid range
+        multisampleState.count = std::max<uint32_t>(1, createInfo.sampleCount);
         desc.multisample = multisampleState;
 
         m_pipeline = wgpuDeviceCreateRenderPipeline(device->handle(), &desc);
