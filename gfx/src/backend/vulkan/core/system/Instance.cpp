@@ -14,7 +14,7 @@ Instance::Instance(const InstanceCreateInfo& createInfo)
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = createInfo.applicationName;
     appInfo.applicationVersion = createInfo.applicationVersion;
-    appInfo.pEngineName = "GfxWrapper";
+    appInfo.pEngineName = "Gfx";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.apiVersion = VK_API_VERSION_1_1;
 

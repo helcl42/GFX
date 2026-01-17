@@ -1,10 +1,9 @@
 #include "CommandEncoder.h"
 
 #include "../resource/Buffer.h"
+#include "../resource/Texture.h"
 #include "../system/Device.h"
 #include "../system/Queue.h"
-#include "../resource/Texture.h"
-
 #include "../util/Utils.h"
 
 #include <stdexcept>

@@ -1,10 +1,11 @@
 #include "Swapchain.h"
 
-#include "../system/Adapter.h"
-#include "../system/Device.h"
 #include "Surface.h"
+
 #include "../resource/Texture.h"
 #include "../resource/TextureView.h"
+#include "../system/Adapter.h"
+#include "../system/Device.h"
 
 namespace gfx::backend::vulkan::core {
 

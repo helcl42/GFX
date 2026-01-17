@@ -1,8 +1,9 @@
 #include "ComputePassEncoder.h"
 
-#include "../render/BindGroup.h"
 #include "CommandEncoder.h"
+
 #include "../compute/ComputePipeline.h"
+#include "../resource/BindGroup.h"
 #include "../system/Device.h"
 
 namespace gfx::backend::vulkan::core {

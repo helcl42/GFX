@@ -240,12 +240,12 @@ if(BUILD_VULKAN_BACKEND)
         gfx/src/backend/vulkan/core/resource/TextureView.cpp
         gfx/src/backend/vulkan/core/resource/Sampler.cpp
         gfx/src/backend/vulkan/core/resource/Shader.cpp
+        gfx/src/backend/vulkan/core/resource/BindGroup.cpp
+        gfx/src/backend/vulkan/core/resource/BindGroupLayout.cpp
         # Render
         gfx/src/backend/vulkan/core/render/RenderPipeline.cpp
         gfx/src/backend/vulkan/core/render/RenderPass.cpp
         gfx/src/backend/vulkan/core/render/Framebuffer.cpp
-        gfx/src/backend/vulkan/core/render/BindGroup.cpp
-        gfx/src/backend/vulkan/core/render/BindGroupLayout.cpp
         # Compute
         gfx/src/backend/vulkan/core/compute/ComputePipeline.cpp
         # Command

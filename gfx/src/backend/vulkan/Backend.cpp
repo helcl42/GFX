@@ -4,8 +4,8 @@
 #include "converter/Conversions.h"
 
 #include "core/system/Adapter.h"
-#include "core/render/BindGroup.h"
-#include "core/render/BindGroupLayout.h"
+#include "core/resource/BindGroup.h"
+#include "core/resource/BindGroupLayout.h"
 #include "core/resource/Buffer.h"
 #include "core/command/CommandEncoder.h"
 #include "core/command/ComputePassEncoder.h"

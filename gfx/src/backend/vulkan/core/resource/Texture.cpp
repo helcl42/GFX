@@ -3,7 +3,6 @@
 #include "../system/Adapter.h"
 #include "../command/CommandEncoder.h"
 #include "../system/Device.h"
-
 #include "../util/Utils.h"
 
 #include <stdexcept>

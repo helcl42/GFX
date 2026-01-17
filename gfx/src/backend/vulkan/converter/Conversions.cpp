@@ -1,10 +1,10 @@
 #include "Conversions.h"
 
 #include "../common/Common.h"
-#include "../core/render/BindGroup.h"
-#include "../core/render/BindGroupLayout.h"
-#include "../core/resource/Buffer.h"
 #include "../core/render/RenderPass.h"
+#include "../core/resource/BindGroup.h"
+#include "../core/resource/BindGroupLayout.h"
+#include "../core/resource/Buffer.h"
 #include "../core/resource/Sampler.h"
 #include "../core/resource/Shader.h"
 #include "../core/resource/Texture.h"
