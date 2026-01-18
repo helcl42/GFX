@@ -60,7 +60,7 @@ Swapchain::Swapchain(Device* device, Surface* surface, const SwapchainCreateInfo
 
     // Create stable TextureView wrapper ONCE (never deleted until swapchain destroyed)
     // This allows multiple framebuffers to reference the same TextureView*
-    m_currentView = new TextureView(this);
+    m_currentView = std::make_unique<TextureView>(this);
 
     // Configure surface for direct rendering
     WGPUSurfaceConfiguration config = WGPU_SURFACE_CONFIGURATION_INIT;
@@ -80,9 +80,7 @@ Swapchain::Swapchain(Device* device, Surface* surface, const SwapchainCreateInfo
 
 Swapchain::~Swapchain()
 {
-    if (m_currentView) {
-        delete m_currentView;
-    }
+    // m_currentView automatically cleaned up by unique_ptr
     if (m_currentRawView) {
         wgpuTextureViewRelease(m_currentRawView);
     }
@@ -168,7 +166,7 @@ TextureView* Swapchain::getCurrentTextureView()
     // Just return the stable wrapper (created in constructor)
     // It will dynamically resolve to the current texture when handle() is called
     // No need to check m_currentTexture here - that's checked in handle()
-    return m_currentView;
+    return m_currentView.get();
 }
 
 WGPUTextureView Swapchain::getCurrentNativeTextureView() const

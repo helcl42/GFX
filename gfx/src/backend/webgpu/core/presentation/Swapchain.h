@@ -3,6 +3,8 @@
 
 #include "../CoreTypes.h"
 
+#include <memory>
+
 namespace gfx::backend::webgpu::core {
 
 class Device;
@@ -43,7 +45,7 @@ private:
     SwapchainInfo m_info{};
     WGPUTexture m_currentTexture = nullptr; // Current frame texture from surface
     WGPUTextureView m_currentRawView = nullptr; // Current frame raw view handle
-    TextureView* m_currentView = nullptr; // Current frame view wrapper (owned)
+    std::unique_ptr<TextureView> m_currentView; // Current frame view wrapper (owned)
 };
 
 } // namespace gfx::backend::webgpu::core
