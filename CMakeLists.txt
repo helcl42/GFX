@@ -818,9 +818,9 @@ endif()  # BUILD_EXAMPLES
 
 # Add tests
 if(BUILD_TESTS AND NOT BUILD_FOR_WEB)
-    add_subdirectory(gfx_test)
+    add_subdirectory(test/gfx)
     if(BUILD_CPP_WRAPPER)
-        add_subdirectory(gfx_cpp_test)
+        add_subdirectory(test/gfx_cpp)
     endif()
 endif()
 
