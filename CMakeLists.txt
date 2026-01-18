@@ -19,12 +19,19 @@ endif()
 
 # Options
 option(BUILD_EXAMPLES "Build example applications" ON)
+option(BUILD_TESTS "Build test suite" ON)
 option(BUILD_CPP_WRAPPER "Build C++ wrapper library" ON)
 option(BUILD_VULKAN_BACKEND "Build Vulkan backend" ON)
 option(BUILD_WEBGPU_BACKEND "Build WebGPU backend" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
-option(ENABLE_ASAN "Enable Address Sanitizer" ON)
+option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
 option(BUILD_HEADLESS "Build without windowing system support (no surface creation)" OFF)
+
+# Disable ASAN when building tests to avoid LD_PRELOAD requirement
+if(BUILD_TESTS)
+    message(STATUS "BUILD_TESTS enabled: Disabling ASAN to avoid library/test mismatch")
+    set(ENABLE_ASAN OFF CACHE BOOL "Disabled for test builds" FORCE)
+endif()
 
 # Find required packages
 find_package(PkgConfig REQUIRED)
@@ -146,6 +153,29 @@ if(BUILD_WEBGPU_BACKEND)
         message(WARNING "Dawn directory not found at ${DAWN_ROOT} - WebGPU backend will be disabled")
         set(BUILD_WEBGPU_BACKEND OFF)
     endif()
+endif()
+
+# Google Test
+if(BUILD_TESTS)
+    if(BUILD_WEBGPU_BACKEND AND WEBGPU_FOUND)
+        # Use GoogleTest from Dawn's third_party directory
+        set(GTEST_INCLUDE_DIR "${DAWN_ROOT}/third_party/googletest/googletest/include")
+        set(GMOCK_INCLUDE_DIR "${DAWN_ROOT}/third_party/googletest/googlemock/include")
+        message(STATUS "Using GoogleTest from Dawn: ${GTEST_INCLUDE_DIR}")
+    else()
+        # Fetch GoogleTest if Dawn is not available
+        include(FetchContent)
+        FetchContent_Declare(
+            googletest
+            GIT_REPOSITORY https://github.com/google/googletest.git
+            GIT_TAG v1.14.0
+        )
+        # For Windows: Prevent overriding the parent project's compiler/linker settings
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+        FetchContent_MakeAvailable(googletest)
+    endif()
+    enable_testing()
+    include(GoogleTest)
 endif()
 
 # Platform-specific libraries
@@ -785,6 +815,14 @@ if(BUILD_EXAMPLES)
     endif()  # NOT BUILD_FOR_WEB
 endif()  # BUILD_EXAMPLES
 
+# Add tests
+if(BUILD_TESTS AND NOT BUILD_FOR_WEB)
+    add_subdirectory(gfx_test)
+    if(BUILD_CPP_WRAPPER)
+        add_subdirectory(gfx_cpp_test)
+    endif()
+endif()
+
 # Install targets
 if(BUILD_CPP_WRAPPER)
     install(TARGETS gfx gfx_cpp
@@ -813,6 +851,7 @@ else()
     message(STATUS "  Building STATIC libraries")
 endif()
 message(STATUS "  Build examples: ${BUILD_EXAMPLES}")
+message(STATUS "  Build tests: ${BUILD_TESTS}")
 message(STATUS "  Build C++ wrapper: ${BUILD_CPP_WRAPPER}")
 message(STATUS "  Headless build: ${BUILD_HEADLESS}")
 message(STATUS "  Address Sanitizer: ${ENABLE_ASAN}")
