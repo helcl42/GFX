@@ -2,8 +2,8 @@
 
 # Public API tests - tests that verify the C API contract
 set(PUBLIC_TEST_SOURCES
-    api/basic_test.cpp
-    api/instance_test.cpp
+    api/BasicTest.cpp
+    api/InstanceTest.cpp
 )
 
 # Internal tests - tests for Dispatcher, converters, backend internals

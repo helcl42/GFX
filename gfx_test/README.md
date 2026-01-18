@@ -11,8 +11,8 @@ cd build
 
 ## Test Coverage
 
-- **basic_test.cpp**: Basic sanity tests (enum values, linking)
-- **instance_test.cpp**: Instance creation/destruction tests for both backends
+- **BasicTest.cpp**: Basic sanity tests (enum values, linking)
+- **InstanceTest.cpp**: Instance creation/destruction tests for both backends
 
 ## Adding Tests
 

@@ -11,9 +11,9 @@ cd build
 
 ## Test Coverage
 
-- **basic_test.cpp**: Basic sanity tests (enum values, linking)
-- **instance_test.cpp**: Instance creation/destruction tests using shared_ptr semantics
-- **result_test.cpp**: Result enum and error handling pattern tests
+- **BasicTest.cpp**: Basic sanity tests (enum values, linking)
+- **InstanceTest.cpp**: Instance creation/destruction tests using shared_ptr semantics
+- **ResultTest.cpp**: Result enum and error handling pattern tests
 
 ## Adding Tests
 
