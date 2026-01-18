@@ -13,30 +13,12 @@ namespace gfx {
 
 static GfxBackend cppBackendToCBackend(Backend backend)
 {
-    switch (backend) {
-    case Backend::Vulkan:
-        return GFX_BACKEND_VULKAN;
-    case Backend::WebGPU:
-        return GFX_BACKEND_WEBGPU;
-    case Backend::Auto:
-        return GFX_BACKEND_AUTO;
-    default:
-        return GFX_BACKEND_AUTO;
-    }
+    return static_cast<GfxBackend>(backend);
 }
 
 static Backend cBackendToCppBackend(GfxBackend backend)
 {
-    switch (backend) {
-    case GFX_BACKEND_VULKAN:
-        return Backend::Vulkan;
-    case GFX_BACKEND_WEBGPU:
-        return Backend::WebGPU;
-    case GFX_BACKEND_AUTO:
-        return Backend::Auto;
-    default:
-        return Backend::Auto;
-    }
+    return static_cast<Backend>(backend);
 }
 
 static GfxTextureFormat cppFormatToCFormat(TextureFormat format)
@@ -71,24 +53,7 @@ static PresentMode cPresentModeToCppPresentMode(GfxPresentMode mode)
 
 static GfxSampleCount cppSampleCountToCCount(SampleCount sampleCount)
 {
-    switch (sampleCount) {
-    case SampleCount::Count1:
-        return GFX_SAMPLE_COUNT_1;
-    case SampleCount::Count2:
-        return GFX_SAMPLE_COUNT_2;
-    case SampleCount::Count4:
-        return GFX_SAMPLE_COUNT_4;
-    case SampleCount::Count8:
-        return GFX_SAMPLE_COUNT_8;
-    case SampleCount::Count16:
-        return GFX_SAMPLE_COUNT_16;
-    case SampleCount::Count32:
-        return GFX_SAMPLE_COUNT_32;
-    case SampleCount::Count64:
-        return GFX_SAMPLE_COUNT_64;
-    default:
-        return GFX_SAMPLE_COUNT_1;
-    }
+    return static_cast<GfxSampleCount>(sampleCount);
 }
 
 static GfxBufferUsage cppBufferUsageToCUsage(BufferUsage usage)
@@ -228,100 +193,32 @@ static GfxShaderStage cppShaderStageToCShaderStage(ShaderStage stage)
 
 static GfxTextureType cppTextureTypeToCType(TextureType type)
 {
-    switch (type) {
-    case TextureType::Texture1D:
-        return GFX_TEXTURE_TYPE_1D;
-    case TextureType::Texture2D:
-        return GFX_TEXTURE_TYPE_2D;
-    case TextureType::Texture3D:
-        return GFX_TEXTURE_TYPE_3D;
-    case TextureType::TextureCube:
-        return GFX_TEXTURE_TYPE_CUBE;
-    default:
-        return GFX_TEXTURE_TYPE_2D;
-    }
+    return static_cast<GfxTextureType>(type);
 }
 
 static TextureType cTextureTypeToCppType(GfxTextureType type)
 {
-    switch (type) {
-    case GFX_TEXTURE_TYPE_1D:
-        return TextureType::Texture1D;
-    case GFX_TEXTURE_TYPE_2D:
-        return TextureType::Texture2D;
-    case GFX_TEXTURE_TYPE_3D:
-        return TextureType::Texture3D;
-    case GFX_TEXTURE_TYPE_CUBE:
-        return TextureType::TextureCube;
-    default:
-        return TextureType::Texture2D;
-    }
+    return static_cast<TextureType>(type);
 }
 
 static SampleCount cSampleCountToCppCount(GfxSampleCount sampleCount)
 {
-    switch (sampleCount) {
-    case GFX_SAMPLE_COUNT_1:
-        return SampleCount::Count1;
-    case GFX_SAMPLE_COUNT_2:
-        return SampleCount::Count2;
-    case GFX_SAMPLE_COUNT_4:
-        return SampleCount::Count4;
-    case GFX_SAMPLE_COUNT_8:
-        return SampleCount::Count8;
-    case GFX_SAMPLE_COUNT_16:
-        return SampleCount::Count16;
-    case GFX_SAMPLE_COUNT_32:
-        return SampleCount::Count32;
-    case GFX_SAMPLE_COUNT_64:
-        return SampleCount::Count64;
-    default:
-        return SampleCount::Count1;
-    }
+    return static_cast<SampleCount>(sampleCount);
 }
 
 static GfxTextureViewType cppTextureViewTypeToCType(TextureViewType type)
 {
-    switch (type) {
-    case TextureViewType::View1D:
-        return GFX_TEXTURE_VIEW_TYPE_1D;
-    case TextureViewType::View2D:
-        return GFX_TEXTURE_VIEW_TYPE_2D;
-    case TextureViewType::View3D:
-        return GFX_TEXTURE_VIEW_TYPE_3D;
-    case TextureViewType::ViewCube:
-        return GFX_TEXTURE_VIEW_TYPE_CUBE;
-    case TextureViewType::View1DArray:
-        return GFX_TEXTURE_VIEW_TYPE_1D_ARRAY;
-    case TextureViewType::View2DArray:
-        return GFX_TEXTURE_VIEW_TYPE_2D_ARRAY;
-    case TextureViewType::ViewCubeArray:
-        return GFX_TEXTURE_VIEW_TYPE_CUBE_ARRAY;
-    default:
-        return GFX_TEXTURE_VIEW_TYPE_2D;
-    }
+    return static_cast<GfxTextureViewType>(type);
 }
 
 static GfxWindowingSystem cppWindowingSystemToC(WindowingSystem sys)
 {
-    switch (sys) {
-    case WindowingSystem::Win32:
-        return GFX_WINDOWING_SYSTEM_WIN32;
-    case WindowingSystem::Xlib:
-        return GFX_WINDOWING_SYSTEM_XLIB;
-    case WindowingSystem::Wayland:
-        return GFX_WINDOWING_SYSTEM_WAYLAND;
-    case WindowingSystem::XCB:
-        return GFX_WINDOWING_SYSTEM_XCB;
-    case WindowingSystem::Metal:
-        return GFX_WINDOWING_SYSTEM_METAL;
-    case WindowingSystem::Emscripten:
-        return GFX_WINDOWING_SYSTEM_EMSCRIPTEN;
-    case WindowingSystem::Android:
-        return GFX_WINDOWING_SYSTEM_ANDROID;
-    default:
-        return GFX_WINDOWING_SYSTEM_XLIB;
-    }
+    return static_cast<GfxWindowingSystem>(sys);
+}
+
+static Result cResultToCppResult(GfxResult result)
+{
+    return static_cast<Result>(result);
 }
 
 static GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& windowHandle)
@@ -362,22 +259,6 @@ static GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& wi
     }
 
     return cHandle;
-}
-
-static Result cResultToCppResult(GfxResult result)
-{
-    switch (result) {
-    case GFX_RESULT_SUCCESS:
-        return Result::Success;
-    case GFX_RESULT_TIMEOUT:
-        return Result::Timeout;
-    case GFX_RESULT_NOT_READY:
-        return Result::NotReady;
-    case GFX_RESULT_ERROR_OUT_OF_DATE:
-        return Result::OutOfDateKHR;
-    default:
-        return Result::Error;
-    }
 }
 
 // Forward declare implementation classes and helper template

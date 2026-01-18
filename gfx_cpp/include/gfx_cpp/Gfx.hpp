@@ -237,11 +237,18 @@ enum class DeviceFeatureType {
 
 enum class Result {
     Success = 0,
-    Error = 1,
-    Timeout = 2,
-    NotReady = 3,
-    SuboptimalKHR = 4,
-    OutOfDateKHR = 5
+    Timeout = 1,
+    NotReady = 2,
+    // Error codes (negative values)
+    ErrorInvalidArgument = -1,
+    ErrorNotFound = -2,
+    ErrorOutOfMemory = -3,
+    ErrorDeviceLost = -4,
+    ErrorSurfaceLost = -5,
+    ErrorOutOfDate = -6,
+    ErrorBackendNotLoaded = -7,
+    ErrorFeatureNotSupported = -8,
+    ErrorUnknown = -9
 };
 
 enum class DebugMessageSeverity {
@@ -387,14 +394,14 @@ struct Origin3D {
 
 // Common windowing system enum for all platforms
 enum class WindowingSystem {
-    Unknown,
-    Win32,
-    Xlib,
-    Wayland,
-    XCB,
-    Metal,
-    Emscripten,
-    Android
+    Win32 = 0,
+    Xlib = 1,
+    Wayland = 2,
+    XCB = 3,
+    Metal = 4,
+    Emscripten = 5,
+    Android = 6,
+    Unknown = -1
 };
 
 // Common platform window handle struct with union for all windowing systems
