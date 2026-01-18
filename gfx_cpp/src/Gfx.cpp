@@ -1373,6 +1373,22 @@ public:
         return std::make_shared<CBufferImpl>(buffer);
     }
 
+    std::shared_ptr<Buffer> importBuffer(const BufferImportDescriptor& descriptor) override
+    {
+        GfxBufferImportDescriptor cDesc = {};
+        cDesc.label = descriptor.label.c_str();
+        cDesc.nativeHandle = descriptor.nativeHandle;
+        cDesc.size = descriptor.size;
+        cDesc.usage = cppBufferUsageToCUsage(descriptor.usage);
+
+        GfxBuffer buffer = nullptr;
+        GfxResult result = gfxDeviceImportBuffer(m_handle, &cDesc, &buffer);
+        if (result != GFX_RESULT_SUCCESS || !buffer) {
+            throw std::runtime_error("Failed to import buffer");
+        }
+        return std::make_shared<CBufferImpl>(buffer);
+    }
+
     std::shared_ptr<Texture> createTexture(const TextureDescriptor& descriptor) override
     {
         GfxTextureDescriptor cDesc = {};
@@ -1389,6 +1405,28 @@ public:
         GfxResult result = gfxDeviceCreateTexture(m_handle, &cDesc, &texture);
         if (result != GFX_RESULT_SUCCESS || !texture) {
             throw std::runtime_error("Failed to create texture");
+        }
+        return std::make_shared<CTextureImpl>(texture);
+    }
+
+    std::shared_ptr<Texture> importTexture(const TextureImportDescriptor& descriptor) override
+    {
+        GfxTextureImportDescriptor cDesc = {};
+        cDesc.label = descriptor.label.c_str();
+        cDesc.nativeHandle = descriptor.nativeHandle;
+        cDesc.type = cppTextureTypeToCType(descriptor.type);
+        cDesc.size = { descriptor.size.width, descriptor.size.height, descriptor.size.depth };
+        cDesc.arrayLayerCount = descriptor.arrayLayerCount;
+        cDesc.mipLevelCount = descriptor.mipLevelCount;
+        cDesc.sampleCount = cppSampleCountToCCount(descriptor.sampleCount);
+        cDesc.format = cppFormatToCFormat(descriptor.format);
+        cDesc.usage = cppTextureUsageToCUsage(descriptor.usage);
+        cDesc.currentLayout = static_cast<GfxTextureLayout>(descriptor.currentLayout);
+
+        GfxTexture texture = nullptr;
+        GfxResult result = gfxDeviceImportTexture(m_handle, &cDesc, &texture);
+        if (result != GFX_RESULT_SUCCESS || !texture) {
+            throw std::runtime_error("Failed to import texture");
         }
         return std::make_shared<CTextureImpl>(texture);
     }

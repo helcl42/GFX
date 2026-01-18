@@ -563,6 +563,13 @@ struct BufferDescriptor {
     BufferUsage usage = BufferUsage::None;
 };
 
+struct BufferImportDescriptor {
+    std::string label;
+    void* nativeHandle = nullptr; // VkBuffer or WGPUBuffer (cast to void*)
+    uint64_t size = 0;
+    BufferUsage usage = BufferUsage::None;
+};
+
 struct BufferInfo {
     uint64_t size = 0;
     BufferUsage usage = BufferUsage::None;
@@ -587,6 +594,19 @@ struct TextureDescriptor {
     SampleCount sampleCount = SampleCount::Count1;
     TextureFormat format = TextureFormat::Undefined;
     TextureUsage usage = TextureUsage::None;
+};
+
+struct TextureImportDescriptor {
+    std::string label;
+    void* nativeHandle = nullptr; // VkImage or WGPUTexture (cast to void*)
+    TextureType type = TextureType::Texture2D;
+    Extent3D size;
+    uint32_t arrayLayerCount = 1;
+    uint32_t mipLevelCount = 1;
+    SampleCount sampleCount = SampleCount::Count1;
+    TextureFormat format = TextureFormat::Undefined;
+    TextureUsage usage = TextureUsage::None;
+    TextureLayout currentLayout = TextureLayout::Undefined; // Current layout of the imported texture
 };
 
 struct TextureViewDescriptor {
@@ -1260,7 +1280,9 @@ public:
         = 0;
 
     virtual std::shared_ptr<Buffer> createBuffer(const BufferDescriptor& descriptor) = 0;
+    virtual std::shared_ptr<Buffer> importBuffer(const BufferImportDescriptor& descriptor) = 0;
     virtual std::shared_ptr<Texture> createTexture(const TextureDescriptor& descriptor) = 0;
+    virtual std::shared_ptr<Texture> importTexture(const TextureImportDescriptor& descriptor) = 0;
     virtual std::shared_ptr<Sampler> createSampler(const SamplerDescriptor& descriptor = {}) = 0;
     virtual std::shared_ptr<Shader> createShader(const ShaderDescriptor& descriptor) = 0;
 
