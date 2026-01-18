@@ -51,7 +51,8 @@ GfxResult Backend::createInstance(const GfxInstanceDescriptor* descriptor, GfxIn
         auto* instance = new core::Instance(createInfo);
         *outInstance = converter::toGfx<GfxInstance>(instance);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create instance: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -94,7 +95,8 @@ GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapter
         auto* adapter = new core::Adapter(inst, createInfo);
         *outAdapter = converter::toGfx<GfxAdapter>(adapter);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to request adapter: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -104,6 +106,7 @@ GfxResult Backend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* ada
     if (!instance || !adapterCount) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* inst = converter::toNative<core::Instance>(instance);
     uint32_t count = core::Adapter::enumerate(inst, reinterpret_cast<core::Adapter**>(adapters), adapters ? *adapterCount : 0);
     *adapterCount = count;
@@ -116,6 +119,7 @@ GfxResult Backend::adapterDestroy(GfxAdapter adapter) const
     if (!adapter) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::Adapter>(adapter);
     return GFX_RESULT_SUCCESS;
 }
@@ -132,7 +136,8 @@ GfxResult Backend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescri
         auto* device = new core::Device(adapterPtr, createInfo);
         *outDevice = converter::toGfx<GfxDevice>(device);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create device: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -166,6 +171,7 @@ GfxResult Backend::deviceDestroy(GfxDevice device) const
     if (!device) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::Device>(device);
     return GFX_RESULT_SUCCESS;
 }
@@ -175,6 +181,7 @@ GfxResult Backend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const
     if (!device || !outQueue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* dev = converter::toNative<core::Device>(device);
     *outQueue = converter::toGfx<GfxQueue>(dev->getQueue());
     return GFX_RESULT_SUCCESS;
@@ -199,7 +206,8 @@ GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescrip
         auto* surface = new core::Surface(devicePtr->getAdapter()->getInstance()->handle(), devicePtr->getAdapter()->handle(), createInfo);
         *outSurface = converter::toGfx<GfxSurface>(surface);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create surface: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 #endif
@@ -218,7 +226,8 @@ GfxResult Backend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, c
         auto* swapchain = new core::Swapchain(devicePtr, surfacePtr, createInfo);
         *outSwapchain = converter::toGfx<GfxSwapchain>(swapchain);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create swapchain: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -235,7 +244,8 @@ GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescripto
         auto* buffer = new core::Buffer(devicePtr, createInfo);
         *outBuffer = converter::toGfx<GfxBuffer>(buffer);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create buffer: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -253,7 +263,8 @@ GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDes
         auto* buffer = new core::Buffer(devicePtr, wgpuBuffer, importInfo);
         *outBuffer = converter::toGfx<GfxBuffer>(buffer);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to import buffer: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -270,7 +281,8 @@ GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescrip
         auto* texture = new core::Texture(devicePtr, createInfo);
         *outTexture = converter::toGfx<GfxTexture>(texture);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create texture: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -288,7 +300,8 @@ GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportD
         auto* texture = new core::Texture(devicePtr, wgpuTexture, importInfo);
         *outTexture = converter::toGfx<GfxTexture>(texture);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to import texture: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -305,7 +318,8 @@ GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescrip
         auto* sampler = new core::Sampler(devicePtr, createInfo);
         *outSampler = converter::toGfx<GfxSampler>(sampler);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create sampler: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -322,7 +336,8 @@ GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescripto
         auto* shader = new core::Shader(devicePtr, createInfo);
         *outShader = converter::toGfx<GfxShader>(shader);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create shader: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -339,7 +354,8 @@ GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGr
         auto* layout = new core::BindGroupLayout(devicePtr, createInfo);
         *outLayout = converter::toGfx<GfxBindGroupLayout>(layout);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create bind group layout: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -357,7 +373,8 @@ GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDes
         auto* bindGroup = new core::BindGroup(devicePtr, createInfo);
         *outBindGroup = converter::toGfx<GfxBindGroup>(bindGroup);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create bind group: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -374,7 +391,8 @@ GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderP
         auto* pipeline = new core::RenderPipeline(devicePtr, createInfo);
         *outPipeline = converter::toGfx<GfxRenderPipeline>(pipeline);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create render pipeline: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -391,7 +409,8 @@ GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComput
         auto* pipeline = new core::ComputePipeline(devicePtr, createInfo);
         *outPipeline = converter::toGfx<GfxComputePipeline>(pipeline);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create compute pipeline: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -444,7 +463,8 @@ GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommand
         auto* encoder = new core::CommandEncoder(devicePtr, createInfo);
         *outEncoder = converter::toGfx<GfxCommandEncoder>(encoder);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create command encoder: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -459,7 +479,8 @@ GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor*
         auto* fence = new core::Fence(descriptor->signaled);
         *outFence = converter::toGfx<GfxFence>(fence);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create fence: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -475,7 +496,8 @@ GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDes
         auto* semaphore = new core::Semaphore(semaphoreType, descriptor->initialValue);
         *outSemaphore = converter::toGfx<GfxSemaphore>(semaphore);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create semaphore: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -485,6 +507,7 @@ GfxResult Backend::deviceWaitIdle(GfxDevice device) const
     if (!device) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* devicePtr = converter::toNative<core::Device>(device);
     devicePtr->waitIdle();
     return GFX_RESULT_SUCCESS;
@@ -507,6 +530,7 @@ GfxResult Backend::surfaceDestroy(GfxSurface surface) const
     if (!surface) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::Surface>(surface);
     return GFX_RESULT_SUCCESS;
 }
@@ -581,6 +605,7 @@ GfxResult Backend::swapchainDestroy(GfxSwapchain swapchain) const
     if (!swapchain) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::Swapchain>(swapchain);
     return GFX_RESULT_SUCCESS;
 }
@@ -588,14 +613,9 @@ GfxResult Backend::swapchainDestroy(GfxSwapchain swapchain) const
 GfxResult Backend::swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const
 {
     if (!swapchain || !outInfo) {
-        if (outInfo) {
-            outInfo->width = 0;
-            outInfo->height = 0;
-            outInfo->format = GFX_TEXTURE_FORMAT_UNDEFINED;
-            outInfo->imageCount = 0;
-        }
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* swapchainPtr = converter::toNative<core::Swapchain>(swapchain);
     *outInfo = converter::wgpuSwapchainInfoToGfxSwapchainInfo(swapchainPtr->getInfo());
     return GFX_RESULT_SUCCESS;
@@ -695,6 +715,7 @@ GfxResult Backend::bufferDestroy(GfxBuffer buffer) const
     if (!buffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::Buffer>(buffer);
     return GFX_RESULT_SUCCESS;
 }
@@ -704,6 +725,7 @@ GfxResult Backend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
     if (!buffer || !outInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* buf = converter::toNative<core::Buffer>(buffer);
     *outInfo = converter::wgpuBufferToGfxBufferInfo(buf->getInfo());
     return GFX_RESULT_SUCCESS;
@@ -731,6 +753,7 @@ GfxResult Backend::bufferUnmap(GfxBuffer buffer) const
     if (!buffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* bufferPtr = converter::toNative<core::Buffer>(buffer);
     bufferPtr->unmap();
     return GFX_RESULT_SUCCESS;
@@ -742,6 +765,7 @@ GfxResult Backend::textureDestroy(GfxTexture texture) const
     if (!texture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::Texture>(texture);
     return GFX_RESULT_SUCCESS;
 }
@@ -751,6 +775,7 @@ GfxResult Backend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) c
     if (!texture || !outInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* texturePtr = converter::toNative<core::Texture>(texture);
     *outInfo = converter::wgpuTextureInfoToGfxTextureInfo(texturePtr->getInfo());
     return GFX_RESULT_SUCCESS;
@@ -762,6 +787,7 @@ GfxResult Backend::textureGetLayout(GfxTexture texture, GfxTextureLayout* outLay
     if (!texture || !outLayout) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     *outLayout = GFX_TEXTURE_LAYOUT_GENERAL;
     return GFX_RESULT_SUCCESS;
 }
@@ -789,6 +815,7 @@ GfxResult Backend::textureViewDestroy(GfxTextureView textureView) const
     if (!textureView) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::TextureView>(textureView);
     return GFX_RESULT_SUCCESS;
 }
@@ -799,6 +826,7 @@ GfxResult Backend::samplerDestroy(GfxSampler sampler) const
     if (!sampler) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::Sampler>(sampler);
     return GFX_RESULT_SUCCESS;
 }
@@ -809,6 +837,7 @@ GfxResult Backend::shaderDestroy(GfxShader shader) const
     if (!shader) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::Shader>(shader);
     return GFX_RESULT_SUCCESS;
 }
@@ -819,6 +848,7 @@ GfxResult Backend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) co
     if (!bindGroupLayout) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::BindGroupLayout>(bindGroupLayout);
     return GFX_RESULT_SUCCESS;
 }
@@ -829,6 +859,7 @@ GfxResult Backend::bindGroupDestroy(GfxBindGroup bindGroup) const
     if (!bindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::BindGroup>(bindGroup);
     return GFX_RESULT_SUCCESS;
 }
@@ -839,6 +870,7 @@ GfxResult Backend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) const
     if (!renderPipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::RenderPipeline>(renderPipeline);
     return GFX_RESULT_SUCCESS;
 }
@@ -849,6 +881,7 @@ GfxResult Backend::computePipelineDestroy(GfxComputePipeline computePipeline) co
     if (!computePipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::ComputePipeline>(computePipeline);
     return GFX_RESULT_SUCCESS;
 }
@@ -858,6 +891,7 @@ GfxResult Backend::renderPassDestroy(GfxRenderPass renderPass) const
     if (!renderPass) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::RenderPass>(renderPass);
     return GFX_RESULT_SUCCESS;
 }
@@ -867,6 +901,7 @@ GfxResult Backend::framebufferDestroy(GfxFramebuffer framebuffer) const
     if (!framebuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::Framebuffer>(framebuffer);
     return GFX_RESULT_SUCCESS;
 }
@@ -932,6 +967,7 @@ GfxResult Backend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
     if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::CommandEncoder>(commandEncoder);
     return GFX_RESULT_SUCCESS;
 }
@@ -970,7 +1006,8 @@ GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncod
         auto* computePassEncoder = new core::ComputePassEncoder(encoderPtr, createInfo);
         *outComputePass = converter::toGfx<GfxComputePassEncoder>(computePassEncoder);
         return GFX_RESULT_SUCCESS;
-    } catch (const std::exception&) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to begin compute pass: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -1004,8 +1041,7 @@ GfxResult Backend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEn
     WGPUOrigin3D wgpuOrigin = converter::gfxOrigin3DToWGPUOrigin3D(origin);
     WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(extent);
 
-    encoderPtr->copyBufferToTexture(srcPtr, sourceOffset, bytesPerRow, dstPtr,
-        wgpuOrigin, wgpuExtent, mipLevel);
+    encoderPtr->copyBufferToTexture(srcPtr, sourceOffset, bytesPerRow, dstPtr, wgpuOrigin, wgpuExtent, mipLevel);
 
     (void)finalLayout; // WebGPU handles layout transitions automatically
     return GFX_RESULT_SUCCESS;
@@ -1025,8 +1061,7 @@ GfxResult Backend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEn
     WGPUOrigin3D wgpuOrigin = converter::gfxOrigin3DToWGPUOrigin3D(origin);
     WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(extent);
 
-    encoderPtr->copyTextureToBuffer(srcPtr, wgpuOrigin,
-        mipLevel, dstPtr, destinationOffset, bytesPerRow, wgpuExtent);
+    encoderPtr->copyTextureToBuffer(srcPtr, wgpuOrigin, mipLevel, dstPtr, destinationOffset, bytesPerRow, wgpuExtent);
 
     (void)finalLayout; // WebGPU handles layout transitions automatically
     return GFX_RESULT_SUCCESS;
@@ -1047,9 +1082,7 @@ GfxResult Backend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandE
     WGPUOrigin3D wgpuDstOrigin = converter::gfxOrigin3DToWGPUOrigin3D(destinationOrigin);
     WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(extent);
 
-    encoderPtr->copyTextureToTexture(srcPtr, wgpuSrcOrigin,
-        sourceMipLevel, dstPtr, wgpuDstOrigin,
-        destinationMipLevel, wgpuExtent);
+    encoderPtr->copyTextureToTexture(srcPtr, wgpuSrcOrigin, sourceMipLevel, dstPtr, wgpuDstOrigin, destinationMipLevel, wgpuExtent);
 
     (void)srcFinalLayout; // WebGPU handles layout transitions automatically
     (void)dstFinalLayout;
@@ -1071,9 +1104,7 @@ GfxResult Backend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandE
     WGPUExtent3D wgpuDstExtent = converter::gfxExtent3DToWGPUExtent3D(destinationExtent);
     WGPUFilterMode wgpuFilter = converter::gfxFilterModeToWGPU(filter);
 
-    encoder->blitTextureToTexture(srcTexture, wgpuSrcOrigin, wgpuSrcExtent,
-        sourceMipLevel, dstTexture, wgpuDstOrigin, wgpuDstExtent,
-        destinationMipLevel, wgpuFilter);
+    encoder->blitTextureToTexture(srcTexture, wgpuSrcOrigin, wgpuSrcExtent, sourceMipLevel, dstTexture, wgpuDstOrigin, wgpuDstExtent, destinationMipLevel, wgpuFilter);
 
     // WebGPU handles layout transitions automatically
     (void)srcFinalLayout;
@@ -1311,6 +1342,7 @@ GfxResult Backend::fenceDestroy(GfxFence fence) const
     if (!fence) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::Fence>(fence);
     return GFX_RESULT_SUCCESS;
 }
@@ -1358,6 +1390,7 @@ GfxResult Backend::semaphoreDestroy(GfxSemaphore semaphore) const
     if (!semaphore) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     delete converter::toNative<core::Semaphore>(semaphore);
     return GFX_RESULT_SUCCESS;
 }
@@ -1367,6 +1400,7 @@ GfxResult Backend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* ou
     if (!semaphore || !outType) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto type = converter::toNative<core::Semaphore>(semaphore)->getType();
     *outType = converter::webgpuSemaphoreTypeToGfxSemaphoreType(type);
     return GFX_RESULT_SUCCESS;
@@ -1390,6 +1424,7 @@ GfxResult Backend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_
     if (!semaphore) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     (void)timeoutNs; // WebGPU doesn't support timeout for semaphore waits
 
     auto* semaphorePtr = converter::toNative<core::Semaphore>(semaphore);
@@ -1404,6 +1439,7 @@ GfxResult Backend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue)
     if (!semaphore || !outValue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     *outValue = converter::toNative<core::Semaphore>(semaphore)->getValue();
     return GFX_RESULT_SUCCESS;
 }

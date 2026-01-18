@@ -67,6 +67,7 @@ GfxResult Backend::instanceSetDebugCallback(GfxInstance instance, GfxDebugCallba
     if (!instance) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* inst = converter::toNative<core::Instance>(instance);
 
     // Create adapter callback that converts internal enums to Gfx API enums
@@ -103,9 +104,8 @@ GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapter
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
-    auto* inst = converter::toNative<core::Instance>(instance);
-
     try {
+        auto* inst = converter::toNative<core::Instance>(instance);
         auto createInfo = converter::gfxDescriptorToAdapterCreateInfo(descriptor);
         auto* adapter = new core::Adapter(inst, createInfo);
         *outAdapter = converter::toGfx<GfxAdapter>(adapter);
@@ -122,6 +122,7 @@ GfxResult Backend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* ada
     if (!instance || !adapterCount) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* inst = converter::toNative<core::Instance>(instance);
     uint32_t count = core::Adapter::enumerate(inst, reinterpret_cast<core::Adapter**>(adapters), adapters ? *adapterCount : 0);
     *adapterCount = count;
@@ -142,7 +143,6 @@ GfxResult Backend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescri
     }
 
     try {
-        // Device doesn't own the adapter - just keeps a pointer
         auto* adapterPtr = converter::toNative<core::Adapter>(adapter);
         auto createInfo = converter::gfxDescriptorToDeviceCreateInfo(descriptor);
         auto* device = new core::Device(adapterPtr, createInfo);
@@ -170,6 +170,7 @@ GfxResult Backend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimi
     if (!adapter || !outLimits) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* adap = converter::toNative<core::Adapter>(adapter);
     *outLimits = converter::vkPropertiesToGfxDeviceLimits(adap->getProperties());
     return GFX_RESULT_SUCCESS;
@@ -187,6 +188,7 @@ GfxResult Backend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const
     if (!device || !outQueue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* dev = converter::toNative<core::Device>(device);
     *outQueue = converter::toGfx<GfxQueue>(dev->getQueue());
     return GFX_RESULT_SUCCESS;
@@ -350,26 +352,36 @@ GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescripto
 
 GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
 {
+    if (!device || !descriptor || !outLayout) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     try {
         auto* dev = converter::toNative<core::Device>(device);
         auto createInfo = converter::gfxDescriptorToBindGroupLayoutCreateInfo(descriptor);
         auto* layout = new core::BindGroupLayout(dev, createInfo);
         *outLayout = converter::toGfx<GfxBindGroupLayout>(layout);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create bind group layout: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
 
 GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
 {
+    if (!device || !descriptor || !outBindGroup) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     try {
         auto* dev = converter::toNative<core::Device>(device);
         auto createInfo = converter::gfxDescriptorToBindGroupCreateInfo(descriptor);
         auto* bindGroup = new core::BindGroup(dev, createInfo);
         *outBindGroup = converter::toGfx<GfxBindGroup>(bindGroup);
         return GFX_RESULT_SUCCESS;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to create bind group: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -507,6 +519,7 @@ GfxResult Backend::deviceWaitIdle(GfxDevice device) const
     if (!device) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* dev = converter::toNative<core::Device>(device);
     dev->waitIdle();
     return GFX_RESULT_SUCCESS;
@@ -517,6 +530,7 @@ GfxResult Backend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
     if (!device || !outLimits) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* dev = converter::toNative<core::Device>(device);
     *outLimits = converter::vkPropertiesToGfxDeviceLimits(dev->getProperties());
     return GFX_RESULT_SUCCESS;
@@ -583,14 +597,9 @@ GfxResult Backend::swapchainDestroy(GfxSwapchain swapchain) const
 GfxResult Backend::swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const
 {
     if (!swapchain || !outInfo) {
-        if (outInfo) {
-            outInfo->width = 0;
-            outInfo->height = 0;
-            outInfo->format = GFX_TEXTURE_FORMAT_UNDEFINED;
-            outInfo->imageCount = 0;
-        }
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* sc = converter::toNative<core::Swapchain>(swapchain);
     *outInfo = converter::vkSwapchainInfoToGfxSwapchainInfo(sc->getInfo());
     return GFX_RESULT_SUCCESS;
@@ -712,6 +721,7 @@ GfxResult Backend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
     if (!buffer || !outInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* buf = converter::toNative<core::Buffer>(buffer);
     *outInfo = converter::vkBufferToGfxBufferInfo(buf->getInfo());
     return GFX_RESULT_SUCCESS;
@@ -736,6 +746,7 @@ GfxResult Backend::bufferUnmap(GfxBuffer buffer) const
     if (!buffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* buf = converter::toNative<core::Buffer>(buffer);
     buf->unmap();
     return GFX_RESULT_SUCCESS;
@@ -753,6 +764,7 @@ GfxResult Backend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) c
     if (!texture || !outInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* tex = converter::toNative<core::Texture>(texture);
     *outInfo = converter::vkTextureInfoToGfxTextureInfo(tex->getInfo());
     return GFX_RESULT_SUCCESS;
@@ -763,6 +775,7 @@ GfxResult Backend::textureGetLayout(GfxTexture texture, GfxTextureLayout* outLay
     if (!texture || !outLayout) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* tex = converter::toNative<core::Texture>(texture);
     *outLayout = converter::vkImageLayoutToGfxLayout(tex->getLayout());
     return GFX_RESULT_SUCCESS;
@@ -944,7 +957,8 @@ GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncod
         auto* computePassEncoder = new core::ComputePassEncoder(encoderPtr, createInfo);
         *outComputePass = converter::toGfx<GfxComputePassEncoder>(computePassEncoder);
         return GFX_RESULT_SUCCESS;
-    } catch (const std::exception&) {
+    } catch (const std::exception& e) {
+        fprintf(stderr, "Failed to begin compute pass: %s\n", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -1075,10 +1089,6 @@ GfxResult Backend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncode
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
-    if (memoryBarrierCount == 0 && bufferBarrierCount == 0 && textureBarrierCount == 0) {
-        return GFX_RESULT_SUCCESS;
-    }
-
     auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
 
     // Convert GFX barriers to internal Vulkan barriers
@@ -1115,7 +1125,6 @@ GfxResult Backend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncode
 
     auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
     auto* tex = converter::toNative<core::Texture>(texture);
-
     tex->generateMipmaps(encoder);
     return GFX_RESULT_SUCCESS;
 }
@@ -1129,7 +1138,6 @@ GfxResult Backend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandE
 
     auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
     auto* tex = converter::toNative<core::Texture>(texture);
-
     tex->generateMipmapsRange(encoder, baseMipLevel, levelCount);
     return GFX_RESULT_SUCCESS;
 }
@@ -1139,6 +1147,7 @@ GfxResult Backend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
     if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
     encoder->end();
     return GFX_RESULT_SUCCESS;
@@ -1149,6 +1158,7 @@ GfxResult Backend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
     if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
     encoder->reset();
     return GFX_RESULT_SUCCESS;
@@ -1160,6 +1170,7 @@ GfxResult Backend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassE
     if (!renderPassEncoder || !pipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     auto* pipe = converter::toNative<core::RenderPipeline>(pipeline);
     rpe->setPipeline(pipe);
@@ -1171,6 +1182,7 @@ GfxResult Backend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPass
     if (!renderPassEncoder || !bindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     auto* bg = converter::toNative<core::BindGroup>(bindGroup);
     rpe->setBindGroup(index, bg, dynamicOffsets, dynamicOffsetCount);
@@ -1182,6 +1194,7 @@ GfxResult Backend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderP
     if (!renderPassEncoder || !buffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     auto* buf = converter::toNative<core::Buffer>(buffer);
     rpe->setVertexBuffer(slot, buf, offset);
@@ -1195,6 +1208,7 @@ GfxResult Backend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPa
     if (!renderPassEncoder || !buffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     auto* buf = converter::toNative<core::Buffer>(buffer);
     VkIndexType indexType = converter::gfxIndexFormatToVkIndexType(format);
@@ -1209,6 +1223,7 @@ GfxResult Backend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassE
     if (!renderPassEncoder || !viewport) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     core::Viewport vkViewport = converter::gfxViewportToViewport(viewport);
     rpe->setViewport(vkViewport);
@@ -1220,6 +1235,7 @@ GfxResult Backend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPa
     if (!renderPassEncoder || !scissor) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     core::ScissorRect vkScissor = converter::gfxScissorRectToScissorRect(scissor);
     rpe->setScissorRect(vkScissor);
@@ -1231,6 +1247,7 @@ GfxResult Backend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder,
     if (!renderPassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     rpe->draw(vertexCount, instanceCount, firstVertex, firstInstance);
     return GFX_RESULT_SUCCESS;
@@ -1241,6 +1258,7 @@ GfxResult Backend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassE
     if (!renderPassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     rpe->drawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
     return GFX_RESULT_SUCCESS;
@@ -1251,6 +1269,7 @@ GfxResult Backend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) 
     if (!renderPassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     delete rpe;
     return GFX_RESULT_SUCCESS;
@@ -1262,6 +1281,7 @@ GfxResult Backend::computePassEncoderSetPipeline(GfxComputePassEncoder computePa
     if (!computePassEncoder || !pipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* cpe = converter::toNative<core::ComputePassEncoder>(computePassEncoder);
     auto* pipe = converter::toNative<core::ComputePipeline>(pipeline);
     cpe->setPipeline(pipe);
@@ -1273,6 +1293,7 @@ GfxResult Backend::computePassEncoderSetBindGroup(GfxComputePassEncoder computeP
     if (!computePassEncoder || !bindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* cpe = converter::toNative<core::ComputePassEncoder>(computePassEncoder);
     auto* bg = converter::toNative<core::BindGroup>(bindGroup);
     cpe->setBindGroup(index, bg, dynamicOffsets, dynamicOffsetCount);
@@ -1295,6 +1316,7 @@ GfxResult Backend::computePassEncoderEnd(GfxComputePassEncoder computePassEncode
     if (!computePassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* cpe = converter::toNative<core::ComputePassEncoder>(computePassEncoder);
     delete cpe;
     return GFX_RESULT_SUCCESS;
@@ -1312,6 +1334,7 @@ GfxResult Backend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
     if (!fence) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* f = converter::toNative<core::Fence>(fence);
     VkResult result = f->getStatus(isSignaled);
 
@@ -1330,6 +1353,7 @@ GfxResult Backend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
     if (!fence) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* f = converter::toNative<core::Fence>(fence);
     VkResult result = f->wait(timeoutNs);
 
@@ -1350,6 +1374,7 @@ GfxResult Backend::fenceReset(GfxFence fence) const
     if (!fence) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* f = converter::toNative<core::Fence>(fence);
     f->reset();
     return GFX_RESULT_SUCCESS;
@@ -1367,6 +1392,7 @@ GfxResult Backend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* ou
     if (!semaphore || !outType) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* s = converter::toNative<core::Semaphore>(semaphore);
     *outType = s->getType() == core::SemaphoreType::Timeline ? GFX_SEMAPHORE_TYPE_TIMELINE : GFX_SEMAPHORE_TYPE_BINARY;
     return GFX_RESULT_SUCCESS;
@@ -1377,6 +1403,7 @@ GfxResult Backend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
     if (!semaphore) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* s = converter::toNative<core::Semaphore>(semaphore);
     VkResult result = s->signal(value);
     return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
@@ -1386,6 +1413,7 @@ GfxResult Backend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_
     if (!semaphore) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* s = converter::toNative<core::Semaphore>(semaphore);
     VkResult result = s->wait(value, timeoutNs);
     return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
@@ -1396,6 +1424,7 @@ GfxResult Backend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue)
     if (!semaphore || !outValue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+
     auto* s = converter::toNative<core::Semaphore>(semaphore);
     *outValue = s->getValue();
     return GFX_RESULT_SUCCESS;
