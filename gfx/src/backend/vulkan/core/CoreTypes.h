@@ -232,7 +232,7 @@ struct BindGroupCreateInfo {
 
 struct InstanceCreateInfo {
     bool enableValidation;
-    const char* applicationName = "GfxWrapper Application";
+    const char* applicationName = "Gfx Application";
     uint32_t applicationVersion = 1;
     std::vector<InstanceFeatureType> enabledFeatures;
 };
