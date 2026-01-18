@@ -429,7 +429,7 @@ target_link_libraries(gfx PUBLIC ${PLATFORM_LIBS})
 # C++ API Library (optional)
 if(BUILD_CPP_WRAPPER)
     set(GFX_CPP_SOURCES
-        gfx_cpp/include/gfx_cpp/Gfx.hpp
+        gfx_cpp/include/gfx_cpp/gfx.hpp
         gfx_cpp/src/Gfx.cpp  # Single unified C++ wrapper for all backends
     )
 
@@ -832,7 +832,7 @@ if(BUILD_CPP_WRAPPER)
         RUNTIME DESTINATION bin
     )
     install(FILES gfx/include/gfx/gfx.h DESTINATION include/gfx)
-    install(FILES gfx_cpp/include/gfx_cpp/Gfx.hpp DESTINATION include/gfx_cpp)
+    install(FILES gfx_cpp/include/gfx_cpp/gfx.hpp DESTINATION include/gfx_cpp)
 else()
     install(TARGETS gfx
         LIBRARY DESTINATION lib

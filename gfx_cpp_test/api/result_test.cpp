@@ -1,4 +1,4 @@
-#include <gfx_cpp/Gfx.hpp>
+#include <gfx_cpp/gfx.hpp>
 #include <gtest/gtest.h>
 
 using namespace gfx;

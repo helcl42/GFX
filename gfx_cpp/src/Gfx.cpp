@@ -1,5 +1,5 @@
 #include <gfx/gfx.h> // Include C API
-#include <gfx_cpp/Gfx.hpp>
+#include <gfx_cpp/gfx.hpp>
 
 #include <cstring>
 #include <memory>
