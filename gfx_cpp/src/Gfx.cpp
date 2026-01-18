@@ -49,6 +49,26 @@ static TextureFormat cFormatToCppFormat(GfxTextureFormat format)
     return static_cast<TextureFormat>(format);
 }
 
+static GfxTextureLayout cppLayoutToCLayout(TextureLayout layout)
+{
+    return static_cast<GfxTextureLayout>(layout);
+}
+
+static TextureLayout cLayoutToCppLayout(GfxTextureLayout layout)
+{
+    return static_cast<TextureLayout>(layout);
+}
+
+static GfxPresentMode cppPresentModeToCPresentMode(PresentMode mode)
+{
+    return static_cast<GfxPresentMode>(mode);
+}
+
+static PresentMode cPresentModeToCppPresentMode(GfxPresentMode mode)
+{
+    return static_cast<PresentMode>(mode);
+}
+
 static GfxSampleCount cppSampleCountToCCount(SampleCount sampleCount)
 {
     switch (sampleCount) {
@@ -76,9 +96,134 @@ static GfxBufferUsage cppBufferUsageToCUsage(BufferUsage usage)
     return static_cast<GfxBufferUsage>(static_cast<uint32_t>(usage));
 }
 
+static BufferUsage cBufferUsageToCppUsage(GfxBufferUsage usage)
+{
+    return static_cast<BufferUsage>(usage);
+}
+
 static GfxTextureUsage cppTextureUsageToCUsage(TextureUsage usage)
 {
     return static_cast<GfxTextureUsage>(static_cast<uint32_t>(usage));
+}
+
+static TextureUsage cTextureUsageToCppUsage(GfxTextureUsage usage)
+{
+    return static_cast<TextureUsage>(usage);
+}
+
+static GfxFilterMode cppFilterModeToCFilterMode(FilterMode mode)
+{
+    return static_cast<GfxFilterMode>(mode);
+}
+
+static GfxPipelineStage cppPipelineStageToCPipelineStage(PipelineStage stage)
+{
+    return static_cast<GfxPipelineStage>(stage);
+}
+
+static GfxAccessFlags cppAccessFlagsToCAccessFlags(AccessFlags flags)
+{
+    return static_cast<GfxAccessFlags>(flags);
+}
+
+static GfxAddressMode cppAddressModeToCAddressMode(AddressMode mode)
+{
+    return static_cast<GfxAddressMode>(mode);
+}
+
+static GfxShaderSourceType cppShaderSourceTypeToCShaderSourceType(ShaderSourceType type)
+{
+    return static_cast<GfxShaderSourceType>(type);
+}
+
+static SemaphoreType cSemaphoreTypeToCppSemaphoreType(GfxSemaphoreType type)
+{
+    return static_cast<SemaphoreType>(type);
+}
+
+static GfxSemaphoreType cppSemaphoreTypeToCSemaphoreType(SemaphoreType type)
+{
+    return static_cast<GfxSemaphoreType>(type);
+}
+
+static GfxBlendOperation cppBlendOperationToCBlendOperation(BlendOperation op)
+{
+    return static_cast<GfxBlendOperation>(op);
+}
+
+static GfxBlendFactor cppBlendFactorToCBlendFactor(BlendFactor factor)
+{
+    return static_cast<GfxBlendFactor>(factor);
+}
+
+static GfxPrimitiveTopology cppPrimitiveTopologyToCPrimitiveTopology(PrimitiveTopology topology)
+{
+    return static_cast<GfxPrimitiveTopology>(topology);
+}
+
+static GfxFrontFace cppFrontFaceToCFrontFace(FrontFace frontFace)
+{
+    return static_cast<GfxFrontFace>(frontFace);
+}
+
+static GfxCullMode cppCullModeToCCullMode(CullMode cullMode)
+{
+    return static_cast<GfxCullMode>(cullMode);
+}
+
+static GfxPolygonMode cppPolygonModeToCPolygonMode(PolygonMode polygonMode)
+{
+    return static_cast<GfxPolygonMode>(polygonMode);
+}
+
+static GfxCompareFunction cppCompareFunctionToCCompareFunction(CompareFunction func)
+{
+    return static_cast<GfxCompareFunction>(func);
+}
+
+static GfxStencilOperation cppStencilOperationToCStencilOperation(StencilOperation op)
+{
+    return static_cast<GfxStencilOperation>(op);
+}
+
+static GfxLoadOp cppLoadOpToCLoadOp(LoadOp op)
+{
+    return static_cast<GfxLoadOp>(op);
+}
+
+static GfxStoreOp cppStoreOpToCStoreOp(StoreOp op)
+{
+    return static_cast<GfxStoreOp>(op);
+}
+
+static GfxDeviceFeatureType cppDeviceFeatureTypeToCDeviceFeatureType(DeviceFeatureType feature)
+{
+    return static_cast<GfxDeviceFeatureType>(feature);
+}
+
+static GfxInstanceFeatureType cppInstanceFeatureTypeToCInstanceFeatureType(InstanceFeatureType feature)
+{
+    return static_cast<GfxInstanceFeatureType>(feature);
+}
+
+static GfxAdapterPreference cppAdapterPreferenceToCAdapterPreference(AdapterPreference preference)
+{
+    return static_cast<GfxAdapterPreference>(preference);
+}
+
+static DebugMessageSeverity cDebugMessageSeverityToCppDebugMessageSeverity(GfxDebugMessageSeverity severity)
+{
+    return static_cast<DebugMessageSeverity>(severity);
+}
+
+static DebugMessageType cDebugMessageTypeToCppDebugMessageType(GfxDebugMessageType type)
+{
+    return static_cast<DebugMessageType>(type);
+}
+
+static GfxShaderStage cppShaderStageToCShaderStage(ShaderStage stage)
+{
+    return static_cast<GfxShaderStage>(static_cast<uint32_t>(stage));
 }
 
 static GfxTextureType cppTextureTypeToCType(TextureType type)
@@ -275,7 +420,7 @@ public:
     {
         BufferInfo info;
         info.size = m_info.size;
-        info.usage = static_cast<BufferUsage>(m_info.usage);
+        info.usage = cBufferUsageToCppUsage(m_info.usage);
         return info;
     }
 
@@ -356,7 +501,7 @@ public:
         info.mipLevelCount = m_info.mipLevelCount;
         info.sampleCount = cSampleCountToCppCount(m_info.sampleCount);
         info.format = cFormatToCppFormat(m_info.format);
-        info.usage = static_cast<TextureUsage>(m_info.usage);
+        info.usage = cTextureUsageToCppUsage(m_info.usage);
         return info;
     }
 
@@ -364,7 +509,7 @@ public:
     {
         GfxTextureLayout layout = GFX_TEXTURE_LAYOUT_UNDEFINED;
         gfxTextureGetLayout(m_handle, &layout);
-        return static_cast<TextureLayout>(layout);
+        return cLayoutToCppLayout(layout);
     }
 
     std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) override
@@ -780,7 +925,7 @@ public:
             GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
             GfxResult result = gfxCommandEncoderCopyBufferToTexture(m_handle, src->getHandle(), sourceOffset, bytesPerRow,
-                dst->getHandle(), &cOrigin, &cExtent, mipLevel, static_cast<GfxTextureLayout>(finalLayout));
+                dst->getHandle(), &cOrigin, &cExtent, mipLevel, cppLayoutToCLayout(finalLayout));
             if (result != GFX_RESULT_SUCCESS) {
                 throw std::runtime_error("Failed to copy buffer to texture");
             }
@@ -798,7 +943,7 @@ public:
             GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
             GfxResult result = gfxCommandEncoderCopyTextureToBuffer(m_handle, src->getHandle(), &cOrigin, mipLevel,
-                dst->getHandle(), destinationOffset, bytesPerRow, &cExtent, static_cast<GfxTextureLayout>(finalLayout));
+                dst->getHandle(), destinationOffset, bytesPerRow, &cExtent, cppLayoutToCLayout(finalLayout));
             if (result != GFX_RESULT_SUCCESS) {
                 throw std::runtime_error("Failed to copy texture to buffer");
             }
@@ -817,8 +962,8 @@ public:
             GfxOrigin3D cDestOrigin = { destinationOrigin.x, destinationOrigin.y, destinationOrigin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
             GfxResult result = gfxCommandEncoderCopyTextureToTexture(m_handle,
-                src->getHandle(), &cSourceOrigin, sourceMipLevel, static_cast<GfxTextureLayout>(sourceFinalLayout),
-                dst->getHandle(), &cDestOrigin, destinationMipLevel, static_cast<GfxTextureLayout>(destinationFinalLayout),
+                src->getHandle(), &cSourceOrigin, sourceMipLevel, cppLayoutToCLayout(sourceFinalLayout),
+                dst->getHandle(), &cDestOrigin, destinationMipLevel, cppLayoutToCLayout(destinationFinalLayout),
                 &cExtent);
             if (result != GFX_RESULT_SUCCESS) {
                 throw std::runtime_error("Failed to copy texture to texture");
@@ -839,9 +984,9 @@ public:
             GfxOrigin3D cDestOrigin = { destinationOrigin.x, destinationOrigin.y, destinationOrigin.z };
             GfxExtent3D cDestExtent = { destinationExtent.width, destinationExtent.height, destinationExtent.depth };
             GfxResult result = gfxCommandEncoderBlitTextureToTexture(m_handle,
-                src->getHandle(), &cSourceOrigin, &cSourceExtent, sourceMipLevel, static_cast<GfxTextureLayout>(sourceFinalLayout),
-                dst->getHandle(), &cDestOrigin, &cDestExtent, destinationMipLevel, static_cast<GfxTextureLayout>(destinationFinalLayout),
-                static_cast<GfxFilterMode>(filter));
+                src->getHandle(), &cSourceOrigin, &cSourceExtent, sourceMipLevel, cppLayoutToCLayout(sourceFinalLayout),
+                dst->getHandle(), &cDestOrigin, &cDestExtent, destinationMipLevel, cppLayoutToCLayout(destinationFinalLayout),
+                cppFilterModeToCFilterMode(filter));
             if (result != GFX_RESULT_SUCCESS) {
                 throw std::runtime_error("Failed to blit texture to texture");
             }
@@ -862,10 +1007,10 @@ public:
 
         for (const auto& barrier : memoryBarriers) {
             GfxMemoryBarrier cBarrier{};
-            cBarrier.srcStageMask = static_cast<GfxPipelineStage>(barrier.srcStageMask);
-            cBarrier.dstStageMask = static_cast<GfxPipelineStage>(barrier.dstStageMask);
-            cBarrier.srcAccessMask = static_cast<GfxAccessFlags>(barrier.srcAccessMask);
-            cBarrier.dstAccessMask = static_cast<GfxAccessFlags>(barrier.dstAccessMask);
+            cBarrier.srcStageMask = cppPipelineStageToCPipelineStage(barrier.srcStageMask);
+            cBarrier.dstStageMask = cppPipelineStageToCPipelineStage(barrier.dstStageMask);
+            cBarrier.srcAccessMask = cppAccessFlagsToCAccessFlags(barrier.srcAccessMask);
+            cBarrier.dstAccessMask = cppAccessFlagsToCAccessFlags(barrier.dstAccessMask);
             cMemoryBarriers.push_back(cBarrier);
         }
 
@@ -877,10 +1022,10 @@ public:
             if (buf) {
                 GfxBufferBarrier cBarrier{};
                 cBarrier.buffer = buf->getHandle();
-                cBarrier.srcStageMask = static_cast<GfxPipelineStage>(barrier.srcStageMask);
-                cBarrier.dstStageMask = static_cast<GfxPipelineStage>(barrier.dstStageMask);
-                cBarrier.srcAccessMask = static_cast<GfxAccessFlags>(barrier.srcAccessMask);
-                cBarrier.dstAccessMask = static_cast<GfxAccessFlags>(barrier.dstAccessMask);
+                cBarrier.srcStageMask = cppPipelineStageToCPipelineStage(barrier.srcStageMask);
+                cBarrier.dstStageMask = cppPipelineStageToCPipelineStage(barrier.dstStageMask);
+                cBarrier.srcAccessMask = cppAccessFlagsToCAccessFlags(barrier.srcAccessMask);
+                cBarrier.dstAccessMask = cppAccessFlagsToCAccessFlags(barrier.dstAccessMask);
                 cBarrier.offset = barrier.offset;
                 cBarrier.size = barrier.size;
                 cBufferBarriers.push_back(cBarrier);
@@ -895,18 +1040,18 @@ public:
             if (tex) {
                 GfxTextureBarrier cBarrier{};
                 cBarrier.texture = tex->getHandle();
-                cBarrier.oldLayout = static_cast<GfxTextureLayout>(barrier.oldLayout);
-                cBarrier.newLayout = static_cast<GfxTextureLayout>(barrier.newLayout);
-                cBarrier.srcStageMask = static_cast<GfxPipelineStage>(barrier.srcStageMask);
-                cBarrier.dstStageMask = static_cast<GfxPipelineStage>(barrier.dstStageMask);
+                cBarrier.oldLayout = cppLayoutToCLayout(barrier.oldLayout);
+                cBarrier.newLayout = cppLayoutToCLayout(barrier.newLayout);
+                cBarrier.srcStageMask = cppPipelineStageToCPipelineStage(barrier.srcStageMask);
+                cBarrier.dstStageMask = cppPipelineStageToCPipelineStage(barrier.dstStageMask);
 
                 // Auto-deduce access masks if not explicitly set
                 cBarrier.srcAccessMask = (barrier.srcAccessMask == AccessFlags::None)
                     ? gfxGetAccessFlagsForLayout(cBarrier.oldLayout)
-                    : static_cast<GfxAccessFlags>(barrier.srcAccessMask);
+                    : cppAccessFlagsToCAccessFlags(barrier.srcAccessMask);
                 cBarrier.dstAccessMask = (barrier.dstAccessMask == AccessFlags::None)
                     ? gfxGetAccessFlagsForLayout(cBarrier.newLayout)
-                    : static_cast<GfxAccessFlags>(barrier.dstAccessMask);
+                    : cppAccessFlagsToCAccessFlags(barrier.dstAccessMask);
 
                 cBarrier.baseMipLevel = barrier.baseMipLevel;
                 cBarrier.mipLevelCount = barrier.mipLevelCount;
@@ -1027,7 +1172,7 @@ public:
     {
         GfxSemaphoreType type;
         gfxSemaphoreGetType(m_handle, &type);
-        return static_cast<SemaphoreType>(type);
+        return cSemaphoreTypeToCppSemaphoreType(type);
     }
 
     uint64_t getValue() const override
@@ -1146,7 +1291,7 @@ public:
             GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
             GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
             gfxQueueWriteTexture(m_handle, impl->getHandle(), &cOrigin, mipLevel,
-                data, dataSize, bytesPerRow, &cExtent, static_cast<GfxTextureLayout>(finalLayout));
+                data, dataSize, bytesPerRow, &cExtent, cppLayoutToCLayout(finalLayout));
         }
     }
 
@@ -1205,7 +1350,7 @@ public:
         std::vector<PresentMode> result;
         result.reserve(count);
         for (uint32_t i = 0; i < count; ++i) {
-            result.push_back(static_cast<PresentMode>(modes[i]));
+            result.push_back(cPresentModeToCppPresentMode(modes[i]));
         }
         return result;
     }
@@ -1236,7 +1381,7 @@ public:
         info.width = cInfo.width;
         info.height = cInfo.height;
         info.format = cFormatToCppFormat(cInfo.format);
-        info.presentMode = static_cast<PresentMode>(cInfo.presentMode);
+        info.presentMode = cPresentModeToCppPresentMode(cInfo.presentMode);
         info.imageCount = cInfo.imageCount;
         return info;
     }
@@ -1347,7 +1492,7 @@ public:
         cDesc.height = descriptor.height;
         cDesc.format = cppFormatToCFormat(descriptor.format);
         cDesc.usage = cppTextureUsageToCUsage(descriptor.usage);
-        cDesc.presentMode = static_cast<GfxPresentMode>(descriptor.presentMode);
+        cDesc.presentMode = cppPresentModeToCPresentMode(descriptor.presentMode);
         cDesc.imageCount = descriptor.imageCount;
 
         GfxSwapchain swapchain = nullptr;
@@ -1421,7 +1566,7 @@ public:
         cDesc.sampleCount = cppSampleCountToCCount(descriptor.sampleCount);
         cDesc.format = cppFormatToCFormat(descriptor.format);
         cDesc.usage = cppTextureUsageToCUsage(descriptor.usage);
-        cDesc.currentLayout = static_cast<GfxTextureLayout>(descriptor.currentLayout);
+        cDesc.currentLayout = cppLayoutToCLayout(descriptor.currentLayout);
 
         GfxTexture texture = nullptr;
         GfxResult result = gfxDeviceImportTexture(m_handle, &cDesc, &texture);
@@ -1435,16 +1580,16 @@ public:
     {
         GfxSamplerDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
-        cDesc.addressModeU = static_cast<GfxAddressMode>(descriptor.addressModeU);
-        cDesc.addressModeV = static_cast<GfxAddressMode>(descriptor.addressModeV);
-        cDesc.addressModeW = static_cast<GfxAddressMode>(descriptor.addressModeW);
-        cDesc.magFilter = static_cast<GfxFilterMode>(descriptor.magFilter);
-        cDesc.minFilter = static_cast<GfxFilterMode>(descriptor.minFilter);
-        cDesc.mipmapFilter = static_cast<GfxFilterMode>(descriptor.mipmapFilter);
+        cDesc.addressModeU = cppAddressModeToCAddressMode(descriptor.addressModeU);
+        cDesc.addressModeV = cppAddressModeToCAddressMode(descriptor.addressModeV);
+        cDesc.addressModeW = cppAddressModeToCAddressMode(descriptor.addressModeW);
+        cDesc.magFilter = cppFilterModeToCFilterMode(descriptor.magFilter);
+        cDesc.minFilter = cppFilterModeToCFilterMode(descriptor.minFilter);
+        cDesc.mipmapFilter = cppFilterModeToCFilterMode(descriptor.mipmapFilter);
         cDesc.lodMinClamp = descriptor.lodMinClamp;
         cDesc.lodMaxClamp = descriptor.lodMaxClamp;
         cDesc.maxAnisotropy = descriptor.maxAnisotropy;
-        cDesc.compare = static_cast<GfxCompareFunction>(descriptor.compare);
+        cDesc.compare = cppCompareFunctionToCCompareFunction(descriptor.compare);
 
         GfxSampler sampler = nullptr;
         GfxResult result = gfxDeviceCreateSampler(m_handle, &cDesc, &sampler);
@@ -1458,7 +1603,7 @@ public:
     {
         GfxShaderDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
-        cDesc.sourceType = static_cast<GfxShaderSourceType>(descriptor.sourceType);
+        cDesc.sourceType = cppShaderSourceTypeToCShaderSourceType(descriptor.sourceType);
         cDesc.code = descriptor.code.c_str();
         cDesc.codeSize = descriptor.code.size(); // Set the actual binary size
         cDesc.entryPoint = descriptor.entryPoint.c_str();
@@ -1478,7 +1623,7 @@ public:
         for (size_t i = 0; i < descriptor.entries.size(); ++i) {
             const auto& entry = descriptor.entries[i];
             cEntries[i].binding = entry.binding;
-            cEntries[i].visibility = static_cast<GfxShaderStage>(static_cast<uint32_t>(entry.visibility));
+            cEntries[i].visibility = cppShaderStageToCShaderStage(entry.visibility);
 
             // Determine binding type based on variant index
             if (entry.resource.index() == 0) {
@@ -1638,12 +1783,12 @@ public:
                 // Convert blend state if present
                 if (target.blend.has_value()) {
                     GfxBlendState cBlend = {};
-                    cBlend.color.operation = static_cast<GfxBlendOperation>(target.blend->color.operation);
-                    cBlend.color.srcFactor = static_cast<GfxBlendFactor>(target.blend->color.srcFactor);
-                    cBlend.color.dstFactor = static_cast<GfxBlendFactor>(target.blend->color.dstFactor);
-                    cBlend.alpha.operation = static_cast<GfxBlendOperation>(target.blend->alpha.operation);
-                    cBlend.alpha.srcFactor = static_cast<GfxBlendFactor>(target.blend->alpha.srcFactor);
-                    cBlend.alpha.dstFactor = static_cast<GfxBlendFactor>(target.blend->alpha.dstFactor);
+                    cBlend.color.operation = cppBlendOperationToCBlendOperation(target.blend->color.operation);
+                    cBlend.color.srcFactor = cppBlendFactorToCBlendFactor(target.blend->color.srcFactor);
+                    cBlend.color.dstFactor = cppBlendFactorToCBlendFactor(target.blend->color.dstFactor);
+                    cBlend.alpha.operation = cppBlendOperationToCBlendOperation(target.blend->alpha.operation);
+                    cBlend.alpha.srcFactor = cppBlendFactorToCBlendFactor(target.blend->alpha.srcFactor);
+                    cBlend.alpha.dstFactor = cppBlendFactorToCBlendFactor(target.blend->alpha.dstFactor);
                     cBlendStates.push_back(cBlend);
                     cTarget.blend = &cBlendStates.back();
                 } else {
@@ -1662,10 +1807,10 @@ public:
 
         // Primitive state
         GfxPrimitiveState cPrimitiveState = {};
-        cPrimitiveState.topology = static_cast<GfxPrimitiveTopology>(descriptor.primitive.topology);
-        cPrimitiveState.frontFace = static_cast<GfxFrontFace>(descriptor.primitive.frontFace);
-        cPrimitiveState.cullMode = static_cast<GfxCullMode>(descriptor.primitive.cullMode);
-        cPrimitiveState.polygonMode = static_cast<GfxPolygonMode>(descriptor.primitive.polygonMode);
+        cPrimitiveState.topology = cppPrimitiveTopologyToCPrimitiveTopology(descriptor.primitive.topology);
+        cPrimitiveState.frontFace = cppFrontFaceToCFrontFace(descriptor.primitive.frontFace);
+        cPrimitiveState.cullMode = cppCullModeToCCullMode(descriptor.primitive.cullMode);
+        cPrimitiveState.polygonMode = cppPolygonModeToCPolygonMode(descriptor.primitive.polygonMode);
 
         GfxIndexFormat cStripIndexFormat;
         if (descriptor.primitive.stripIndexFormat.has_value()) {
@@ -1685,17 +1830,17 @@ public:
             const auto& depthStencil = *descriptor.depthStencil;
             cDepthStencilState.format = cppFormatToCFormat(depthStencil.format);
             cDepthStencilState.depthWriteEnabled = depthStencil.depthWriteEnabled;
-            cDepthStencilState.depthCompare = static_cast<GfxCompareFunction>(depthStencil.depthCompare);
+            cDepthStencilState.depthCompare = cppCompareFunctionToCCompareFunction(depthStencil.depthCompare);
 
-            cDepthStencilState.stencilFront.compare = static_cast<GfxCompareFunction>(depthStencil.stencilFront.compare);
-            cDepthStencilState.stencilFront.failOp = static_cast<GfxStencilOperation>(depthStencil.stencilFront.failOp);
-            cDepthStencilState.stencilFront.depthFailOp = static_cast<GfxStencilOperation>(depthStencil.stencilFront.depthFailOp);
-            cDepthStencilState.stencilFront.passOp = static_cast<GfxStencilOperation>(depthStencil.stencilFront.passOp);
+            cDepthStencilState.stencilFront.compare = cppCompareFunctionToCCompareFunction(depthStencil.stencilFront.compare);
+            cDepthStencilState.stencilFront.failOp = cppStencilOperationToCStencilOperation(depthStencil.stencilFront.failOp);
+            cDepthStencilState.stencilFront.depthFailOp = cppStencilOperationToCStencilOperation(depthStencil.stencilFront.depthFailOp);
+            cDepthStencilState.stencilFront.passOp = cppStencilOperationToCStencilOperation(depthStencil.stencilFront.passOp);
 
-            cDepthStencilState.stencilBack.compare = static_cast<GfxCompareFunction>(depthStencil.stencilBack.compare);
-            cDepthStencilState.stencilBack.failOp = static_cast<GfxStencilOperation>(depthStencil.stencilBack.failOp);
-            cDepthStencilState.stencilBack.depthFailOp = static_cast<GfxStencilOperation>(depthStencil.stencilBack.depthFailOp);
-            cDepthStencilState.stencilBack.passOp = static_cast<GfxStencilOperation>(depthStencil.stencilBack.passOp);
+            cDepthStencilState.stencilBack.compare = cppCompareFunctionToCCompareFunction(depthStencil.stencilBack.compare);
+            cDepthStencilState.stencilBack.failOp = cppStencilOperationToCStencilOperation(depthStencil.stencilBack.failOp);
+            cDepthStencilState.stencilBack.depthFailOp = cppStencilOperationToCStencilOperation(depthStencil.stencilBack.depthFailOp);
+            cDepthStencilState.stencilBack.passOp = cppStencilOperationToCStencilOperation(depthStencil.stencilBack.passOp);
 
             cDepthStencilState.stencilReadMask = depthStencil.stencilReadMask;
             cDepthStencilState.stencilWriteMask = depthStencil.stencilWriteMask;
@@ -1786,9 +1931,9 @@ public:
             GfxRenderPassColorAttachmentTarget cTarget = {};
             cTarget.format = cppFormatToCFormat(attachment.target.format);
             cTarget.sampleCount = cppSampleCountToCCount(attachment.target.sampleCount);
-            cTarget.ops.loadOp = static_cast<GfxLoadOp>(attachment.target.loadOp);
-            cTarget.ops.storeOp = static_cast<GfxStoreOp>(attachment.target.storeOp);
-            cTarget.finalLayout = static_cast<GfxTextureLayout>(attachment.target.finalLayout);
+            cTarget.ops.loadOp = cppLoadOpToCLoadOp(attachment.target.loadOp);
+            cTarget.ops.storeOp = cppStoreOpToCStoreOp(attachment.target.storeOp);
+            cTarget.finalLayout = cppLayoutToCLayout(attachment.target.finalLayout);
             cColorTargets.push_back(cTarget);
             cAttachment.target = cColorTargets.back();
 
@@ -1796,9 +1941,9 @@ public:
                 GfxRenderPassColorAttachmentTarget cResolveTarget = {};
                 cResolveTarget.format = cppFormatToCFormat(attachment.resolveTarget->format);
                 cResolveTarget.sampleCount = cppSampleCountToCCount(attachment.resolveTarget->sampleCount);
-                cResolveTarget.ops.loadOp = static_cast<GfxLoadOp>(attachment.resolveTarget->loadOp);
-                cResolveTarget.ops.storeOp = static_cast<GfxStoreOp>(attachment.resolveTarget->storeOp);
-                cResolveTarget.finalLayout = static_cast<GfxTextureLayout>(attachment.resolveTarget->finalLayout);
+                cResolveTarget.ops.loadOp = cppLoadOpToCLoadOp(attachment.resolveTarget->loadOp);
+                cResolveTarget.ops.storeOp = cppStoreOpToCStoreOp(attachment.resolveTarget->storeOp);
+                cResolveTarget.finalLayout = cppLayoutToCLayout(attachment.resolveTarget->finalLayout);
                 cColorResolveTargets.push_back(cResolveTarget);
                 cAttachment.resolveTarget = &cColorResolveTargets.back();
             } else {
@@ -1817,21 +1962,21 @@ public:
         if (descriptor.depthStencilAttachment) {
             cDepthTarget.format = cppFormatToCFormat(descriptor.depthStencilAttachment->target.format);
             cDepthTarget.sampleCount = cppSampleCountToCCount(descriptor.depthStencilAttachment->target.sampleCount);
-            cDepthTarget.depthOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->target.depthLoadOp);
-            cDepthTarget.depthOps.storeOp = static_cast<GfxStoreOp>(descriptor.depthStencilAttachment->target.depthStoreOp);
-            cDepthTarget.stencilOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->target.stencilLoadOp);
-            cDepthTarget.stencilOps.storeOp = static_cast<GfxStoreOp>(descriptor.depthStencilAttachment->target.stencilStoreOp);
-            cDepthTarget.finalLayout = static_cast<GfxTextureLayout>(descriptor.depthStencilAttachment->target.finalLayout);
+            cDepthTarget.depthOps.loadOp = cppLoadOpToCLoadOp(descriptor.depthStencilAttachment->target.depthLoadOp);
+            cDepthTarget.depthOps.storeOp = cppStoreOpToCStoreOp(descriptor.depthStencilAttachment->target.depthStoreOp);
+            cDepthTarget.stencilOps.loadOp = cppLoadOpToCLoadOp(descriptor.depthStencilAttachment->target.stencilLoadOp);
+            cDepthTarget.stencilOps.storeOp = cppStoreOpToCStoreOp(descriptor.depthStencilAttachment->target.stencilStoreOp);
+            cDepthTarget.finalLayout = cppLayoutToCLayout(descriptor.depthStencilAttachment->target.finalLayout);
             cDepthStencilAttachment.target = cDepthTarget;
 
             if (descriptor.depthStencilAttachment->resolveTarget) {
                 cDepthResolveTarget.format = cppFormatToCFormat(descriptor.depthStencilAttachment->resolveTarget->format);
                 cDepthResolveTarget.sampleCount = cppSampleCountToCCount(descriptor.depthStencilAttachment->resolveTarget->sampleCount);
-                cDepthResolveTarget.depthOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->resolveTarget->depthLoadOp);
-                cDepthResolveTarget.depthOps.storeOp = static_cast<GfxStoreOp>(descriptor.depthStencilAttachment->resolveTarget->depthStoreOp);
-                cDepthResolveTarget.stencilOps.loadOp = static_cast<GfxLoadOp>(descriptor.depthStencilAttachment->resolveTarget->stencilLoadOp);
-                cDepthResolveTarget.stencilOps.storeOp = static_cast<GfxStoreOp>(descriptor.depthStencilAttachment->resolveTarget->stencilStoreOp);
-                cDepthResolveTarget.finalLayout = static_cast<GfxTextureLayout>(descriptor.depthStencilAttachment->resolveTarget->finalLayout);
+                cDepthResolveTarget.depthOps.loadOp = cppLoadOpToCLoadOp(descriptor.depthStencilAttachment->resolveTarget->depthLoadOp);
+                cDepthResolveTarget.depthOps.storeOp = cppStoreOpToCStoreOp(descriptor.depthStencilAttachment->resolveTarget->depthStoreOp);
+                cDepthResolveTarget.stencilOps.loadOp = cppLoadOpToCLoadOp(descriptor.depthStencilAttachment->resolveTarget->stencilLoadOp);
+                cDepthResolveTarget.stencilOps.storeOp = cppStoreOpToCStoreOp(descriptor.depthStencilAttachment->resolveTarget->stencilStoreOp);
+                cDepthResolveTarget.finalLayout = cppLayoutToCLayout(descriptor.depthStencilAttachment->resolveTarget->finalLayout);
                 cDepthStencilAttachment.resolveTarget = &cDepthResolveTarget;
             } else {
                 cDepthStencilAttachment.resolveTarget = nullptr;
@@ -1952,7 +2097,7 @@ public:
     {
         GfxSemaphoreDescriptor cDesc = {};
         cDesc.label = descriptor.label.c_str();
-        cDesc.type = static_cast<GfxSemaphoreType>(descriptor.type);
+        cDesc.type = cppSemaphoreTypeToCSemaphoreType(descriptor.type);
         cDesc.initialValue = descriptor.initialValue;
 
         GfxSemaphore semaphore = nullptr;
@@ -2010,7 +2155,7 @@ public:
         std::vector<GfxDeviceFeatureType> cFeatures;
         cFeatures.reserve(descriptor.enabledFeatures.size());
         for (const auto& feature : descriptor.enabledFeatures) {
-            cFeatures.push_back(static_cast<GfxDeviceFeatureType>(feature));
+            cFeatures.push_back(cppDeviceFeatureTypeToCDeviceFeatureType(feature));
         }
 
         GfxDeviceDescriptor cDesc = {};
@@ -2099,7 +2244,7 @@ public:
     {
         GfxAdapterDescriptor cDesc = {};
         cDesc.adapterIndex = UINT32_MAX; // Use preference-based selection
-        cDesc.preference = static_cast<GfxAdapterPreference>(descriptor.preference);
+        cDesc.preference = cppAdapterPreferenceToCAdapterPreference(descriptor.preference);
 
         GfxAdapter adapter = nullptr;
         GfxResult result = gfxInstanceRequestAdapter(m_handle, &cDesc, &adapter);
@@ -2142,8 +2287,8 @@ public:
                     auto* self = static_cast<CInstanceImpl*>(userData);
                     if (self && self->m_debugCallback) {
                         self->m_debugCallback(
-                            static_cast<DebugMessageSeverity>(severity),
-                            static_cast<DebugMessageType>(type),
+                            cDebugMessageSeverityToCppDebugMessageSeverity(severity),
+                            cDebugMessageTypeToCppDebugMessageType(type),
                             message
                         );
                     } }, this);
@@ -2173,7 +2318,7 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
     std::vector<GfxInstanceFeatureType> cFeatures;
     cFeatures.reserve(descriptor.enabledFeatures.size());
     for (const auto& feature : descriptor.enabledFeatures) {
-        cFeatures.push_back(static_cast<GfxInstanceFeatureType>(feature));
+        cFeatures.push_back(cppInstanceFeatureTypeToCInstanceFeatureType(feature));
     }
 
     GfxInstanceDescriptor cDesc = {};
