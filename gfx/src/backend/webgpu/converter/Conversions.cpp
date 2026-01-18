@@ -1,7 +1,27 @@
 #include "Conversions.h"
 
-#include "../core/CoreTypes.h"
-#include "../core/Entities.h"
+#include "../core/command/CommandEncoder.h"
+#include "../core/command/ComputePassEncoder.h"
+#include "../core/command/RenderPassEncoder.h"
+#include "../core/compute/ComputePipeline.h"
+#include "../core/presentation/Surface.h"
+#include "../core/presentation/Swapchain.h"
+#include "../core/render/Framebuffer.h"
+#include "../core/render/RenderPass.h"
+#include "../core/render/RenderPipeline.h"
+#include "../core/resource/BindGroup.h"
+#include "../core/resource/BindGroupLayout.h"
+#include "../core/resource/Buffer.h"
+#include "../core/resource/Sampler.h"
+#include "../core/resource/Shader.h"
+#include "../core/resource/Texture.h"
+#include "../core/resource/TextureView.h"
+#include "../core/sync/Fence.h"
+#include "../core/sync/Semaphore.h"
+#include "../core/system/Adapter.h"
+#include "../core/system/Device.h"
+#include "../core/system/Instance.h"
+#include "../core/system/Queue.h"
 
 namespace gfx::backend::webgpu::converter {
 
@@ -147,7 +167,7 @@ core::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstan
     createInfo.enableValidation = descriptor ? descriptor->enableValidation : false;
     createInfo.applicationName = descriptor && descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
     createInfo.applicationVersion = descriptor ? descriptor->applicationVersion : 1;
-    
+
     // Convert enabled features from GfxInstanceFeatureType to internal InstanceFeatureType
     if (descriptor && descriptor->enabledFeatures && descriptor->enabledFeatureCount > 0) {
         createInfo.enabledFeatures.reserve(descriptor->enabledFeatureCount);
@@ -155,7 +175,7 @@ core::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstan
             createInfo.enabledFeatures.push_back(gfxInstanceFeatureTypeToWebGPU(descriptor->enabledFeatures[i]));
         }
     }
-    
+
     return createInfo;
 }
 
@@ -163,7 +183,7 @@ core::DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDesc
 {
     core::DeviceCreateInfo createInfo{};
     createInfo.queuePriority = descriptor ? descriptor->queuePriority : 1.0f;
-    
+
     // Convert enabled features from GfxDeviceFeatureType to internal DeviceFeatureType
     if (descriptor && descriptor->enabledFeatures && descriptor->enabledFeatureCount > 0) {
         createInfo.enabledFeatures.reserve(descriptor->enabledFeatureCount);
@@ -171,7 +191,7 @@ core::DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDesc
             createInfo.enabledFeatures.push_back(gfxDeviceFeatureTypeToWebGPU(descriptor->enabledFeatures[i]));
         }
     }
-    
+
     return createInfo;
 }
 

@@ -227,8 +227,6 @@ if(BUILD_VULKAN_BACKEND)
     list(APPEND GFX_C_SOURCES 
         gfx/src/backend/vulkan/Backend.cpp
         gfx/src/backend/vulkan/converter/Conversions.cpp
-        # Util
-        gfx/src/backend/vulkan/core/util/Utils.cpp
         # System
         gfx/src/backend/vulkan/core/system/Instance.cpp
         gfx/src/backend/vulkan/core/system/Adapter.cpp
@@ -258,6 +256,8 @@ if(BUILD_VULKAN_BACKEND)
         # Presentation
         gfx/src/backend/vulkan/core/presentation/Swapchain.cpp
         gfx/src/backend/vulkan/core/presentation/Surface.cpp
+        # Util
+        gfx/src/backend/vulkan/core/util/Utils.cpp
     )
 endif()
 
@@ -265,7 +265,38 @@ if(BUILD_WEBGPU_BACKEND)
     list(APPEND GFX_C_SOURCES 
         gfx/src/backend/webgpu/Backend.cpp
         gfx/src/backend/webgpu/converter/Conversions.cpp
-        gfx/src/backend/webgpu/core/Entities.cpp
+        # System
+        gfx/src/backend/webgpu/core/system/Instance.cpp
+        gfx/src/backend/webgpu/core/system/Adapter.cpp
+        gfx/src/backend/webgpu/core/system/Device.cpp
+        gfx/src/backend/webgpu/core/system/Queue.cpp
+        # Resources
+        gfx/src/backend/webgpu/core/resource/Buffer.cpp
+        gfx/src/backend/webgpu/core/resource/Texture.cpp
+        gfx/src/backend/webgpu/core/resource/TextureView.cpp
+        gfx/src/backend/webgpu/core/resource/Sampler.cpp
+        gfx/src/backend/webgpu/core/resource/Shader.cpp
+        gfx/src/backend/webgpu/core/resource/BindGroup.cpp
+        gfx/src/backend/webgpu/core/resource/BindGroupLayout.cpp
+        # Render
+        gfx/src/backend/webgpu/core/render/RenderPipeline.cpp
+        gfx/src/backend/webgpu/core/render/RenderPass.cpp
+        gfx/src/backend/webgpu/core/render/Framebuffer.cpp
+        # Compute
+        gfx/src/backend/webgpu/core/compute/ComputePipeline.cpp
+        # Command
+        gfx/src/backend/webgpu/core/command/CommandEncoder.cpp
+        gfx/src/backend/webgpu/core/command/RenderPassEncoder.cpp
+        gfx/src/backend/webgpu/core/command/ComputePassEncoder.cpp
+        # Sync
+        gfx/src/backend/webgpu/core/sync/Fence.cpp
+        gfx/src/backend/webgpu/core/sync/Semaphore.cpp
+        # Presentation
+        gfx/src/backend/webgpu/core/presentation/Surface.cpp
+        gfx/src/backend/webgpu/core/presentation/Swapchain.cpp
+        # Util
+        gfx/src/backend/webgpu/core/util/Blit.cpp
+        gfx/src/backend/webgpu/core/util/Utils.cpp
     )
 endif()
 

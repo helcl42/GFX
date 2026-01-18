@@ -3,12 +3,10 @@
 
 #include "../common/Common.h"
 
-#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
-#include <webgpu/webgpu.h>
 
 namespace gfx::backend::webgpu::core {
 
@@ -166,7 +164,7 @@ struct SamplerCreateInfo {
 
 struct InstanceCreateInfo {
     bool enableValidation;
-    const char* applicationName = "GfxWrapper Application";
+    const char* applicationName = "Gfx Application";
     uint32_t applicationVersion = 1;
     std::vector<InstanceFeatureType> enabledFeatures;
 };
@@ -397,6 +395,6 @@ struct ComputePassEncoderCreateInfo {
     const char* label;
 };
 
-} // namespace gfx::backend::webgpu
+} // namespace gfx::backend::webgpu::core
 
 #endif // GFX_WEBGPU_CREATEINFO_H
