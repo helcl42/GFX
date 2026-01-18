@@ -12,7 +12,6 @@ public:
     // Instance functions
     virtual GfxResult createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const = 0;
     virtual GfxResult instanceDestroy(GfxInstance instance) const = 0;
-    virtual GfxResult instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const = 0;
     virtual GfxResult instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const = 0;
     virtual GfxResult instanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters) const = 0;
 

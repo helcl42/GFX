@@ -24,20 +24,6 @@ class Texture;
 // Internal Type Definitions
 // ============================================================================
 
-// Internal debug message types - pure Vulkan internal enums
-enum class DebugMessageSeverity {
-    Verbose = 0,
-    Info = 1,
-    Warning = 2,
-    Error = 3
-};
-
-enum class DebugMessageType {
-    General = 0,
-    Validation = 1,
-    Performance = 2
-};
-
 enum class SemaphoreType {
     Binary,
     Timeline

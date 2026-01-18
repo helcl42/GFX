@@ -251,19 +251,6 @@ enum class Result {
     ErrorUnknown = -9
 };
 
-enum class DebugMessageSeverity {
-    Verbose,
-    Info,
-    Warning,
-    Error
-};
-
-enum class DebugMessageType {
-    General,
-    Validation,
-    Performance
-};
-
 enum class LoadOp {
     Load, // Load existing contents
     Clear, // Clear to specified clear value
@@ -533,13 +520,17 @@ class Fence;
 class Semaphore;
 
 // ============================================================================
-// Debug Callback
+// Logging
 // ============================================================================
 
-using DebugCallback = std::function<void(
-    DebugMessageSeverity severity,
-    DebugMessageType type,
-    const std::string& message)>;
+enum class LogLevel {
+    Error,
+    Warning,
+    Info,
+    Debug
+};
+
+using LogCallback = std::function<void(LogLevel level, const std::string& message)>;
 
 // ============================================================================
 // Descriptor Structures
@@ -1327,26 +1318,29 @@ public:
 
     virtual std::shared_ptr<Adapter> requestAdapter(const AdapterDescriptor& descriptor = {}) = 0;
     virtual std::vector<std::shared_ptr<Adapter>> enumerateAdapters() = 0;
-
-    // Set debug callback for validation/error messages (can be set after creation too)
-    virtual void setDebugCallback(DebugCallback callback) = 0;
 };
-
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
-namespace utils {
-    // Alignment helpers - align buffer offsets/sizes to device requirements
-    uint64_t alignUp(uint64_t value, uint64_t alignment);
-    uint64_t alignDown(uint64_t value, uint64_t alignment);
-} // namespace utils
 
 // ============================================================================
 // Factory Functions
 // ============================================================================
 
 std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor = {});
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+// Set global log callback for all logging output
+void setLogCallback(LogCallback callback);
+
+namespace utils {
+    // Alignment helpers - align buffer offsets/sizes to device requirements
+    uint64_t alignUp(uint64_t value, uint64_t alignment);
+    uint64_t alignDown(uint64_t value, uint64_t alignment);
+
+    // Helper to deduce access flags from texture layout
+    AccessFlags getAccessFlagsForLayout(TextureLayout layout);
+} // namespace utils
 
 } // namespace gfx
 

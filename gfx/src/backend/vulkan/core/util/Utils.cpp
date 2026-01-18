@@ -128,32 +128,4 @@ const char* vkResultToString(VkResult result)
     }
 }
 
-// ============================================================================
-// Debug Message Utilities
-// ============================================================================
-
-DebugMessageSeverity convertVkDebugSeverity(VkDebugUtilsMessageSeverityFlagBitsEXT vkSeverity)
-{
-    if (vkSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
-        return DebugMessageSeverity::Verbose;
-    } else if (vkSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-        return DebugMessageSeverity::Warning;
-    } else if (vkSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-        return DebugMessageSeverity::Error;
-    } else {
-        return DebugMessageSeverity::Info;
-    }
-}
-
-DebugMessageType convertVkDebugType(VkDebugUtilsMessageTypeFlagsEXT vkType)
-{
-    if (vkType & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) {
-        return DebugMessageType::Validation;
-    } else if (vkType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
-        return DebugMessageType::Performance;
-    } else {
-        return DebugMessageType::General;
-    }
-}
-
 } // namespace gfx::backend::vulkan::core

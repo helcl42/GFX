@@ -27,8 +27,6 @@
 #include <memory>
 #include <vector>
 
-using namespace gfx;
-
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -37,16 +35,37 @@ static constexpr uint32_t WINDOW_WIDTH = 800;
 static constexpr uint32_t WINDOW_HEIGHT = 600;
 static constexpr size_t MAX_FRAMES_IN_FLIGHT = 3;
 static constexpr size_t CUBE_COUNT = 3;
-static constexpr SampleCount MSAA_SAMPLE_COUNT = SampleCount::Count4;
-static constexpr TextureFormat COLOR_FORMAT = TextureFormat::B8G8R8A8UnormSrgb;
-static constexpr TextureFormat DEPTH_FORMAT = TextureFormat::Depth32Float;
+static constexpr gfx::SampleCount MSAA_SAMPLE_COUNT = gfx::SampleCount::Count4;
+static constexpr gfx::TextureFormat COLOR_FORMAT = gfx::TextureFormat::B8G8R8A8UnormSrgb;
+static constexpr gfx::TextureFormat DEPTH_FORMAT = gfx::TextureFormat::Depth32Float;
 
 #if defined(__EMSCRIPTEN__)
-static constexpr Backend BACKEND_API = Backend::WebGPU;
+static constexpr gfx::Backend BACKEND_API = gfx::Backend::WebGPU;
 #else
 // here we can choose between VULKAN, WEBGPU
-static constexpr Backend BACKEND_API = Backend::Vulkan;
+static constexpr gfx::Backend BACKEND_API = gfx::Backend::Vulkan;
 #endif
+
+// Log callback function
+static void logCallback(gfx::LogLevel level, const std::string& message)
+{
+    const char* levelStr = "UNKNOWN";
+    switch (level) {
+    case gfx::LogLevel::Error:
+        levelStr = "ERROR";
+        break;
+    case gfx::LogLevel::Warning:
+        levelStr = "WARNING";
+        break;
+    case gfx::LogLevel::Info:
+        levelStr = "INFO";
+        break;
+    case gfx::LogLevel::Debug:
+        levelStr = "DEBUG";
+        break;
+    }
+    std::cout << "[" << levelStr << "] " << message << std::endl;
+}
 
 // Vertex structure for cube
 struct Vertex {
@@ -84,13 +103,13 @@ private:
 #if defined(__EMSCRIPTEN__)
     static void emscriptenMainLoop(void* userData);
 #endif
-    PlatformWindowHandle extractNativeHandle();
+    gfx::PlatformWindowHandle extractNativeHandle();
     std::vector<uint8_t> loadBinaryFile(const char* filepath);
     std::string loadTextFile(const char* filepath);
 
     // Matrix math utilities
     void matrixIdentity(std::array<std::array<float, 4>, 4>& matrix);
-    void matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fovy, float aspect, float nearPlane, float farPlane, Backend backend);
+    void matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fovy, float aspect, float nearPlane, float farPlane, gfx::Backend backend);
     void matrixLookAt(std::array<std::array<float, 4>, 4>& matrix,
         float eyeX, float eyeY, float eyeZ,
         float centerX, float centerY, float centerZ,
@@ -106,32 +125,32 @@ private:
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
     GLFWwindow* window = nullptr;
-    std::shared_ptr<Instance> instance;
-    std::shared_ptr<Adapter> adapter;
-    AdapterInfo adapterInfo; // Cached adapter info
-    std::shared_ptr<Device> device;
-    std::shared_ptr<Queue> queue;
-    std::shared_ptr<Surface> surface;
-    std::shared_ptr<Swapchain> swapchain;
+    std::shared_ptr<gfx::Instance> instance;
+    std::shared_ptr<gfx::Adapter> adapter;
+    gfx::AdapterInfo adapterInfo; // Cached adapter info
+    std::shared_ptr<gfx::Device> device;
+    std::shared_ptr<gfx::Queue> queue;
+    std::shared_ptr<gfx::Surface> surface;
+    std::shared_ptr<gfx::Swapchain> swapchain;
 
-    std::shared_ptr<Buffer> vertexBuffer;
-    std::shared_ptr<Buffer> indexBuffer;
-    std::shared_ptr<Shader> vertexShader;
-    std::shared_ptr<Shader> fragmentShader;
-    std::shared_ptr<RenderPipeline> renderPipeline;
-    std::shared_ptr<BindGroupLayout> uniformBindGroupLayout;
+    std::shared_ptr<gfx::Buffer> vertexBuffer;
+    std::shared_ptr<gfx::Buffer> indexBuffer;
+    std::shared_ptr<gfx::Shader> vertexShader;
+    std::shared_ptr<gfx::Shader> fragmentShader;
+    std::shared_ptr<gfx::RenderPipeline> renderPipeline;
+    std::shared_ptr<gfx::BindGroupLayout> uniformBindGroupLayout;
 
     // Depth buffer
-    std::shared_ptr<Texture> depthTexture;
-    std::shared_ptr<TextureView> depthTextureView;
+    std::shared_ptr<gfx::Texture> depthTexture;
+    std::shared_ptr<gfx::TextureView> depthTextureView;
 
     // MSAA color buffer
-    std::shared_ptr<Texture> msaaColorTexture;
-    std::shared_ptr<TextureView> msaaColorTextureView;
+    std::shared_ptr<gfx::Texture> msaaColorTexture;
+    std::shared_ptr<gfx::TextureView> msaaColorTextureView;
 
     // Render pass and framebuffers
-    std::shared_ptr<RenderPass> renderPass;
-    std::vector<std::shared_ptr<Framebuffer>> framebuffers;
+    std::shared_ptr<gfx::RenderPass> renderPass;
+    std::vector<std::shared_ptr<gfx::Framebuffer>> framebuffers;
 
     uint32_t windowWidth = WINDOW_WIDTH;
     uint32_t windowHeight = WINDOW_HEIGHT;
@@ -139,15 +158,15 @@ private:
     uint32_t previousHeight = WINDOW_HEIGHT;
 
     // Per-frame resources (for frames in flight)
-    std::shared_ptr<Buffer> sharedUniformBuffer; // Single buffer for all frames and cubes
+    std::shared_ptr<gfx::Buffer> sharedUniformBuffer; // Single buffer for all frames and cubes
     size_t uniformAlignedSize = 0; // Aligned size per uniform buffer
-    std::array<std::array<std::shared_ptr<BindGroup>, CUBE_COUNT>, MAX_FRAMES_IN_FLIGHT> uniformBindGroups;
-    std::array<std::shared_ptr<CommandEncoder>, MAX_FRAMES_IN_FLIGHT> commandEncoders;
+    std::array<std::array<std::shared_ptr<gfx::BindGroup>, CUBE_COUNT>, MAX_FRAMES_IN_FLIGHT> uniformBindGroups;
+    std::array<std::shared_ptr<gfx::CommandEncoder>, MAX_FRAMES_IN_FLIGHT> commandEncoders;
 
     // Per-frame synchronization
-    std::array<std::shared_ptr<Semaphore>, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
-    std::array<std::shared_ptr<Semaphore>, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
-    std::array<std::shared_ptr<Fence>, MAX_FRAMES_IN_FLIGHT> inFlightFences;
+    std::array<std::shared_ptr<gfx::Semaphore>, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
+    std::array<std::shared_ptr<gfx::Semaphore>, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
+    std::array<std::shared_ptr<gfx::Fence>, MAX_FRAMES_IN_FLIGHT> inFlightFences;
     size_t currentFrame = 0;
 
     // Animation state
@@ -213,57 +232,26 @@ bool CubeApp::initializeGLFW()
 
 bool CubeApp::initializeGraphics()
 {
+    // Set up logging callback
+    gfx::setLogCallback(logCallback);
+
     try {
-        InstanceDescriptor instanceDesc{};
+        gfx::InstanceDescriptor instanceDesc{};
         instanceDesc.applicationName = "Rotating Cube Example (C++)";
         instanceDesc.applicationVersion = 1;
         instanceDesc.enableValidation = true;
         instanceDesc.backend = BACKEND_API;
-        instanceDesc.enabledFeatures = { InstanceFeatureType::Surface };
+        instanceDesc.enabledFeatures = { gfx::InstanceFeatureType::Surface };
 
-        instance = createInstance(instanceDesc);
+        instance = gfx::createInstance(instanceDesc);
         if (!instance) {
             std::cerr << "Failed to create graphics instance" << std::endl;
             return false;
         }
 
-        // Set debug callback after instance creation
-        instance->setDebugCallback([](DebugMessageSeverity severity, DebugMessageType type, const std::string& message) {
-            const char* severityStr = "";
-            switch (severity) {
-            case DebugMessageSeverity::Verbose:
-                severityStr = "VERBOSE";
-                break;
-            case DebugMessageSeverity::Info:
-                severityStr = "INFO";
-                break;
-            case DebugMessageSeverity::Warning:
-                severityStr = "WARNING";
-                break;
-            case DebugMessageSeverity::Error:
-                severityStr = "ERROR";
-                break;
-            }
-
-            const char* typeStr = "";
-            switch (type) {
-            case DebugMessageType::General:
-                typeStr = "GENERAL";
-                break;
-            case DebugMessageType::Validation:
-                typeStr = "VALIDATION";
-                break;
-            case DebugMessageType::Performance:
-                typeStr = "PERFORMANCE";
-                break;
-            }
-
-            std::cout << "[" << severityStr << "|" << typeStr << "] " << message << std::endl;
-        });
-
         // Get adapter
-        AdapterDescriptor adapterDesc{};
-        adapterDesc.preference = AdapterPreference::HighPerformance;
+        gfx::AdapterDescriptor adapterDesc{};
+        adapterDesc.preference = gfx::AdapterPreference::HighPerformance;
 
         adapter = instance->requestAdapter(adapterDesc);
         if (!adapter) {
@@ -274,14 +262,14 @@ bool CubeApp::initializeGraphics()
         // Query and store adapter info
         adapterInfo = adapter->getInfo();
         std::cout << "Using adapter: " << adapterInfo.name << std::endl;
-        std::cout << "Backend: " << (adapterInfo.backend == Backend::Vulkan ? "Vulkan" : "WebGPU") << std::endl;
+        std::cout << "Backend: " << (adapterInfo.backend == gfx::Backend::Vulkan ? "Vulkan" : "WebGPU") << std::endl;
         std::cout << "  Vendor ID: 0x" << std::hex << adapterInfo.vendorID << std::dec
                   << ", Device ID: 0x" << std::hex << adapterInfo.deviceID << std::dec << std::endl;
 
         // Create device
-        DeviceDescriptor deviceDesc{};
+        gfx::DeviceDescriptor deviceDesc{};
         deviceDesc.label = "Main Device";
-        deviceDesc.enabledFeatures = { DeviceFeatureType::Swapchain };
+        deviceDesc.enabledFeatures = { gfx::DeviceFeatureType::Swapchain };
 
         device = adapter->createDevice(deviceDesc);
         if (!device) {
@@ -295,7 +283,7 @@ bool CubeApp::initializeGraphics()
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
 
-        SurfaceDescriptor surfaceDesc{};
+        gfx::SurfaceDescriptor surfaceDesc{};
         surfaceDesc.label = "Main Surface";
         surfaceDesc.windowHandle = extractNativeHandle();
         surfaceDesc.width = static_cast<uint32_t>(width);
@@ -318,13 +306,13 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 {
     try {
         // Create swapchain
-        SwapchainDescriptor swapchainDesc{};
+        gfx::SwapchainDescriptor swapchainDesc{};
         swapchainDesc.label = "Main Swapchain";
         swapchainDesc.width = static_cast<uint32_t>(width);
         swapchainDesc.height = static_cast<uint32_t>(height);
         swapchainDesc.format = COLOR_FORMAT;
-        swapchainDesc.usage = TextureUsage::RenderAttachment;
-        swapchainDesc.presentMode = PresentMode::Fifo;
+        swapchainDesc.usage = gfx::TextureUsage::RenderAttachment;
+        swapchainDesc.presentMode = gfx::PresentMode::Fifo;
         swapchainDesc.imageCount = MAX_FRAMES_IN_FLIGHT;
 
         swapchain = device->createSwapchain(surface, swapchainDesc);
@@ -334,15 +322,15 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         }
 
         // Create depth texture with MSAA
-        TextureDescriptor depthTextureDesc{};
+        gfx::TextureDescriptor depthTextureDesc{};
         depthTextureDesc.label = "Depth Buffer";
-        depthTextureDesc.type = TextureType::Texture2D;
+        depthTextureDesc.type = gfx::TextureType::Texture2D;
         depthTextureDesc.size = { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1 };
         depthTextureDesc.arrayLayerCount = 1;
         depthTextureDesc.mipLevelCount = 1;
         depthTextureDesc.sampleCount = MSAA_SAMPLE_COUNT;
         depthTextureDesc.format = DEPTH_FORMAT;
-        depthTextureDesc.usage = TextureUsage::RenderAttachment;
+        depthTextureDesc.usage = gfx::TextureUsage::RenderAttachment;
 
         depthTexture = device->createTexture(depthTextureDesc);
         if (!depthTexture) {
@@ -351,9 +339,9 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         }
 
         // Create depth texture view
-        TextureViewDescriptor depthViewDesc{};
+        gfx::TextureViewDescriptor depthViewDesc{};
         depthViewDesc.label = "Depth Buffer View";
-        depthViewDesc.viewType = TextureViewType::View2D;
+        depthViewDesc.viewType = gfx::TextureViewType::View2D;
         depthViewDesc.format = DEPTH_FORMAT;
         depthViewDesc.baseMipLevel = 0;
         depthViewDesc.mipLevelCount = 1;
@@ -368,15 +356,15 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 
         // Create MSAA color texture
         auto swapchainInfo = swapchain->getInfo();
-        TextureDescriptor msaaColorTextureDesc{};
+        gfx::TextureDescriptor msaaColorTextureDesc{};
         msaaColorTextureDesc.label = "MSAA Color Buffer";
-        msaaColorTextureDesc.type = TextureType::Texture2D;
+        msaaColorTextureDesc.type = gfx::TextureType::Texture2D;
         msaaColorTextureDesc.size = { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1 };
         msaaColorTextureDesc.arrayLayerCount = 1;
         msaaColorTextureDesc.mipLevelCount = 1;
         msaaColorTextureDesc.sampleCount = MSAA_SAMPLE_COUNT;
         msaaColorTextureDesc.format = swapchainInfo.format;
-        msaaColorTextureDesc.usage = TextureUsage::RenderAttachment;
+        msaaColorTextureDesc.usage = gfx::TextureUsage::RenderAttachment;
 
         msaaColorTexture = device->createTexture(msaaColorTextureDesc);
         if (!msaaColorTexture) {
@@ -385,9 +373,9 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         }
 
         // Create MSAA color texture view
-        TextureViewDescriptor msaaColorViewDesc{};
+        gfx::TextureViewDescriptor msaaColorViewDesc{};
         msaaColorViewDesc.label = "MSAA Color Buffer View";
-        msaaColorViewDesc.viewType = TextureViewType::View2D;
+        msaaColorViewDesc.viewType = gfx::TextureViewType::View2D;
         msaaColorViewDesc.format = swapchainInfo.format;
         msaaColorViewDesc.baseMipLevel = 0;
         msaaColorViewDesc.mipLevelCount = 1;
@@ -401,44 +389,44 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         }
 
         // Create render pass
-        RenderPassCreateDescriptor renderPassDesc{};
+        gfx::RenderPassCreateDescriptor renderPassDesc{};
         renderPassDesc.label = "Main Render Pass";
 
         // Color attachment
-        RenderPassColorAttachment colorAttachment{};
-        RenderPassColorAttachmentTarget resolveTarget{}; // Declare outside to prevent dangling pointer
+        gfx::RenderPassColorAttachment colorAttachment{};
+        gfx::RenderPassColorAttachmentTarget resolveTarget{}; // Declare outside to prevent dangling pointer
 
         colorAttachment.target.format = swapchainInfo.format;
         colorAttachment.target.sampleCount = MSAA_SAMPLE_COUNT;
-        colorAttachment.target.loadOp = LoadOp::Clear;
-        colorAttachment.target.storeOp = StoreOp::DontCare; // MSAA buffer doesn't need to be stored
-        colorAttachment.target.finalLayout = TextureLayout::ColorAttachment;
+        colorAttachment.target.loadOp = gfx::LoadOp::Clear;
+        colorAttachment.target.storeOp = gfx::StoreOp::DontCare; // MSAA buffer doesn't need to be stored
+        colorAttachment.target.finalLayout = gfx::TextureLayout::ColorAttachment;
 
-        if (MSAA_SAMPLE_COUNT != SampleCount::Count1) {
+        if (MSAA_SAMPLE_COUNT != gfx::SampleCount::Count1) {
             // MSAA: Add resolve target
             resolveTarget.format = swapchainInfo.format;
-            resolveTarget.sampleCount = SampleCount::Count1;
-            resolveTarget.loadOp = LoadOp::DontCare;
-            resolveTarget.storeOp = StoreOp::Store;
-            resolveTarget.finalLayout = TextureLayout::PresentSrc;
+            resolveTarget.sampleCount = gfx::SampleCount::Count1;
+            resolveTarget.loadOp = gfx::LoadOp::DontCare;
+            resolveTarget.storeOp = gfx::StoreOp::Store;
+            resolveTarget.finalLayout = gfx::TextureLayout::PresentSrc;
             colorAttachment.resolveTarget = &resolveTarget;
         } else {
             // No MSAA: Store directly
-            colorAttachment.target.storeOp = StoreOp::Store;
-            colorAttachment.target.finalLayout = TextureLayout::PresentSrc;
+            colorAttachment.target.storeOp = gfx::StoreOp::Store;
+            colorAttachment.target.finalLayout = gfx::TextureLayout::PresentSrc;
         }
 
         renderPassDesc.colorAttachments.push_back(colorAttachment);
 
         // Depth/stencil attachment
-        RenderPassDepthStencilAttachment depthAttachment{};
+        gfx::RenderPassDepthStencilAttachment depthAttachment{};
         depthAttachment.target.format = DEPTH_FORMAT;
         depthAttachment.target.sampleCount = MSAA_SAMPLE_COUNT;
-        depthAttachment.target.depthLoadOp = LoadOp::Clear;
-        depthAttachment.target.depthStoreOp = StoreOp::DontCare;
-        depthAttachment.target.stencilLoadOp = LoadOp::DontCare;
-        depthAttachment.target.stencilStoreOp = StoreOp::DontCare;
-        depthAttachment.target.finalLayout = TextureLayout::DepthStencilAttachment;
+        depthAttachment.target.depthLoadOp = gfx::LoadOp::Clear;
+        depthAttachment.target.depthStoreOp = gfx::StoreOp::DontCare;
+        depthAttachment.target.stencilLoadOp = gfx::LoadOp::DontCare;
+        depthAttachment.target.stencilStoreOp = gfx::StoreOp::DontCare;
+        depthAttachment.target.finalLayout = gfx::TextureLayout::DepthStencilAttachment;
 
         renderPassDesc.depthStencilAttachment = &depthAttachment;
 
@@ -452,14 +440,14 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         framebuffers.resize(swapchainInfo.imageCount);
 
         for (uint32_t i = 0; i < swapchainInfo.imageCount; ++i) {
-            FramebufferDescriptor framebufferDesc{};
+            gfx::FramebufferDescriptor framebufferDesc{};
             framebufferDesc.label = "Framebuffer " + std::to_string(i);
             framebufferDesc.renderPass = renderPass;
             framebufferDesc.width = width;
             framebufferDesc.height = height;
 
             // Color attachment
-            if (MSAA_SAMPLE_COUNT != SampleCount::Count1) {
+            if (MSAA_SAMPLE_COUNT != gfx::SampleCount::Count1) {
                 // MSAA: Single attachment with MSAA buffer and resolve target
                 framebufferDesc.colorAttachments.push_back({ msaaColorTextureView, swapchain->getTextureView(i) });
             } else {
@@ -468,7 +456,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
             }
 
             // Depth attachment (must be a pointer)
-            FramebufferDepthStencilAttachment depthAttachment{ depthTextureView };
+            gfx::FramebufferDepthStencilAttachment depthAttachment{ depthTextureView };
             framebufferDesc.depthStencilAttachment = &depthAttachment;
 
             framebuffers[i] = device->createFramebuffer(framebufferDesc);
@@ -491,9 +479,9 @@ bool CubeApp::createSyncObjects()
         // Create synchronization objects for each frame in flight
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
             // Create binary semaphores for image availability and render completion
-            SemaphoreDescriptor semDesc{};
+            gfx::SemaphoreDescriptor semDesc{};
             semDesc.label = "Image Available Semaphore Frame " + std::to_string(i);
-            semDesc.type = SemaphoreType::Binary;
+            semDesc.type = gfx::SemaphoreType::Binary;
 
             imageAvailableSemaphores[i] = device->createSemaphore(semDesc);
             if (!imageAvailableSemaphores[i]) {
@@ -509,7 +497,7 @@ bool CubeApp::createSyncObjects()
             }
 
             // Create fence (start signaled so first frame doesn't wait)
-            FenceDescriptor fenceDesc{};
+            gfx::FenceDescriptor fenceDesc{};
             fenceDesc.label = "In Flight Fence Frame " + std::to_string(i);
             fenceDesc.signaled = true;
 
@@ -601,10 +589,10 @@ bool CubeApp::createRenderingResources()
             4, 5, 1, 1, 0, 4 } };
 
         // Create vertex buffer
-        BufferDescriptor vertexBufferDesc{};
+        gfx::BufferDescriptor vertexBufferDesc{};
         vertexBufferDesc.label = "Cube Vertices";
         vertexBufferDesc.size = sizeof(vertices);
-        vertexBufferDesc.usage = BufferUsage::Vertex | BufferUsage::CopyDst;
+        vertexBufferDesc.usage = gfx::BufferUsage::Vertex | gfx::BufferUsage::CopyDst;
 
         vertexBuffer = device->createBuffer(vertexBufferDesc);
         if (!vertexBuffer) {
@@ -613,10 +601,10 @@ bool CubeApp::createRenderingResources()
         }
 
         // Create index buffer
-        BufferDescriptor indexBufferDesc{};
+        gfx::BufferDescriptor indexBufferDesc{};
         indexBufferDesc.label = "Cube Indices";
         indexBufferDesc.size = sizeof(indices);
-        indexBufferDesc.usage = BufferUsage::Index | BufferUsage::CopyDst;
+        indexBufferDesc.usage = gfx::BufferUsage::Index | gfx::BufferUsage::CopyDst;
 
         indexBuffer = device->createBuffer(indexBufferDesc);
         if (!indexBuffer) {
@@ -632,13 +620,13 @@ bool CubeApp::createRenderingResources()
         auto limits = device->getLimits();
 
         size_t uniformSize = sizeof(UniformData);
-        uniformAlignedSize = utils::alignUp(uniformSize, limits.minUniformBufferOffsetAlignment);
+        uniformAlignedSize = gfx::utils::alignUp(uniformSize, limits.minUniformBufferOffsetAlignment);
         size_t totalBufferSize = uniformAlignedSize * MAX_FRAMES_IN_FLIGHT * CUBE_COUNT;
 
-        BufferDescriptor uniformBufferDesc{};
+        gfx::BufferDescriptor uniformBufferDesc{};
         uniformBufferDesc.label = "Shared Transform Uniforms";
         uniformBufferDesc.size = totalBufferSize;
-        uniformBufferDesc.usage = BufferUsage::Uniform | BufferUsage::CopyDst;
+        uniformBufferDesc.usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst;
 
         sharedUniformBuffer = device->createBuffer(uniformBufferDesc);
         if (!sharedUniformBuffer) {
@@ -647,15 +635,15 @@ bool CubeApp::createRenderingResources()
         }
 
         // Create bind group layout for uniforms
-        BindGroupLayoutEntry uniformLayoutEntry{
+        gfx::BindGroupLayoutEntry uniformLayoutEntry{
             .binding = 0,
-            .visibility = ShaderStage::Vertex,
-            .resource = BindGroupLayoutEntry::BufferBinding{
+            .visibility = gfx::ShaderStage::Vertex,
+            .resource = gfx::BindGroupLayoutEntry::BufferBinding{
                 .hasDynamicOffset = false,
                 .minBindingSize = sizeof(UniformData) }
         };
 
-        BindGroupLayoutDescriptor uniformLayoutDesc{};
+        gfx::BindGroupLayoutDescriptor uniformLayoutDesc{};
         uniformLayoutDesc.label = "Uniform Bind Group Layout";
         uniformLayoutDesc.entries = { uniformLayoutEntry };
 
@@ -668,13 +656,13 @@ bool CubeApp::createRenderingResources()
         // Create bind groups (one per frame per cube) using offsets into shared buffer
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
             for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
-                BindGroupEntry uniformEntry{};
+                gfx::BindGroupEntry uniformEntry{};
                 uniformEntry.binding = 0;
                 uniformEntry.resource = sharedUniformBuffer;
                 uniformEntry.offset = (i * CUBE_COUNT + cubeIdx) * uniformAlignedSize;
                 uniformEntry.size = sizeof(UniformData);
 
-                BindGroupDescriptor uniformBindGroupDesc{};
+                gfx::BindGroupDescriptor uniformBindGroupDesc{};
                 uniformBindGroupDesc.label = "Uniform Bind Group Frame " + std::to_string(i) + " Cube " + std::to_string(cubeIdx);
                 uniformBindGroupDesc.layout = uniformBindGroupLayout;
                 uniformBindGroupDesc.entries = { uniformEntry };
@@ -688,12 +676,12 @@ bool CubeApp::createRenderingResources()
         }
 
         // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
-        ShaderSourceType shaderSourceType;
+        gfx::ShaderSourceType shaderSourceType;
         std::string vertexShaderCode;
         std::string fragmentShaderCode;
 
-        if (adapterInfo.backend == Backend::WebGPU) {
-            shaderSourceType = ShaderSourceType::WGSL;
+        if (adapterInfo.backend == gfx::Backend::WebGPU) {
+            shaderSourceType = gfx::ShaderSourceType::WGSL;
             // Load WGSL shaders for WebGPU
             vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl");
             fragmentShaderCode = loadTextFile("shaders/cube.frag.wgsl");
@@ -702,7 +690,7 @@ bool CubeApp::createRenderingResources()
                 return false;
             }
         } else {
-            shaderSourceType = ShaderSourceType::SPIRV;
+            shaderSourceType = gfx::ShaderSourceType::SPIRV;
             // Load SPIR-V shaders for Vulkan
             auto vertexSpirv = loadBinaryFile("cube.vert.spv");
             auto fragmentSpirv = loadBinaryFile("cube.frag.spv");
@@ -715,7 +703,7 @@ bool CubeApp::createRenderingResources()
         }
 
         // Create vertex shader
-        ShaderDescriptor vertexShaderDesc{};
+        gfx::ShaderDescriptor vertexShaderDesc{};
         vertexShaderDesc.label = "Cube Vertex Shader";
         vertexShaderDesc.sourceType = shaderSourceType;
         vertexShaderDesc.code = vertexShaderCode;
@@ -728,7 +716,7 @@ bool CubeApp::createRenderingResources()
         }
 
         // Create fragment shader
-        ShaderDescriptor fragmentShaderDesc{};
+        gfx::ShaderDescriptor fragmentShaderDesc{};
         fragmentShaderDesc.label = "Cube Fragment Shader";
         fragmentShaderDesc.sourceType = shaderSourceType;
         fragmentShaderDesc.code = fragmentShaderCode;
@@ -756,49 +744,49 @@ bool CubeApp::createRenderPipeline()
 {
     try {
         // Define vertex buffer layout
-        std::vector<VertexAttribute> attributes = {
-            { .format = TextureFormat::R32G32B32Float,
+        std::vector<gfx::VertexAttribute> attributes = {
+            { .format = gfx::TextureFormat::R32G32B32Float,
                 .offset = offsetof(Vertex, position),
                 .shaderLocation = 0 },
-            { .format = TextureFormat::R32G32B32Float,
+            { .format = gfx::TextureFormat::R32G32B32Float,
                 .offset = offsetof(Vertex, color),
                 .shaderLocation = 1 }
         };
 
-        VertexBufferLayout vertexLayout{};
+        gfx::VertexBufferLayout vertexLayout{};
         vertexLayout.arrayStride = sizeof(Vertex);
         vertexLayout.attributes = attributes;
         vertexLayout.stepModeInstance = false; // Vertex mode
 
         // Create render pipeline descriptor
-        VertexState vertexState{};
+        gfx::VertexState vertexState{};
         vertexState.module = vertexShader;
         vertexState.entryPoint = "main";
         vertexState.buffers = { vertexLayout };
 
         auto swapchainInfo = swapchain->getInfo();
-        ColorTargetState colorTarget{};
+        gfx::ColorTargetState colorTarget{};
         colorTarget.format = swapchainInfo.format;
-        colorTarget.writeMask = ColorWriteMask::All;
+        colorTarget.writeMask = gfx::ColorWriteMask::All;
 
-        FragmentState fragmentState{};
+        gfx::FragmentState fragmentState{};
         fragmentState.module = fragmentShader;
         fragmentState.entryPoint = "main";
         fragmentState.targets = { colorTarget };
 
-        PrimitiveState primitiveState{};
-        primitiveState.topology = PrimitiveTopology::TriangleList;
-        primitiveState.frontFace = FrontFace::CounterClockwise;
-        primitiveState.cullMode = CullMode::Back; // Enable back-face culling for 3D
-        primitiveState.polygonMode = PolygonMode::Fill;
+        gfx::PrimitiveState primitiveState{};
+        primitiveState.topology = gfx::PrimitiveTopology::TriangleList;
+        primitiveState.frontFace = gfx::FrontFace::CounterClockwise;
+        primitiveState.cullMode = gfx::CullMode::Back; // Enable back-face culling for 3D
+        primitiveState.polygonMode = gfx::PolygonMode::Fill;
 
         // Depth/stencil state - enable depth testing
-        DepthStencilState depthStencilState{};
-        depthStencilState.format = TextureFormat::Depth32Float;
+        gfx::DepthStencilState depthStencilState{};
+        depthStencilState.format = gfx::TextureFormat::Depth32Float;
         depthStencilState.depthWriteEnabled = true;
-        depthStencilState.depthCompare = CompareFunction::Less;
+        depthStencilState.depthCompare = gfx::CompareFunction::Less;
 
-        RenderPipelineDescriptor pipelineDesc{};
+        gfx::RenderPipelineDescriptor pipelineDesc{};
         pipelineDesc.label = "Cube Pipeline";
         pipelineDesc.vertex = vertexState;
         pipelineDesc.fragment = fragmentState;
@@ -899,9 +887,9 @@ void CubeApp::render()
         commandEncoder->begin();
 
         // Begin render pass with the new API
-        Color clearColor{ 0.1f, 0.2f, 0.3f, 1.0f }; // Dark blue background
+        gfx::Color clearColor{ 0.1f, 0.2f, 0.3f, 1.0f }; // Dark blue background
 
-        RenderPassBeginDescriptor renderPassBeginDesc{};
+        gfx::RenderPassBeginDescriptor renderPassBeginDesc{};
         renderPassBeginDesc.framebuffer = framebuffers[imageIndex];
         renderPassBeginDesc.colorClearValues = { clearColor };
         renderPassBeginDesc.depthClearValue = 1.0f;
@@ -919,7 +907,7 @@ void CubeApp::render()
             renderPassEncoder->setScissorRect(0, 0, swapchainInfo.width, swapchainInfo.height);
 
             renderPassEncoder->setVertexBuffer(0, vertexBuffer);
-            renderPassEncoder->setIndexBuffer(indexBuffer, IndexFormat::Uint16);
+            renderPassEncoder->setIndexBuffer(indexBuffer, gfx::IndexFormat::Uint16);
 
             // Draw CUBE_COUNT cubes at different positions
             for (int i = 0; i < CUBE_COUNT; ++i) {
@@ -935,7 +923,7 @@ void CubeApp::render()
         commandEncoder->end();
 
         // Submit with explicit synchronization
-        SubmitDescriptor submitInfo{};
+        gfx::SubmitDescriptor submitInfo{};
         submitInfo.commandEncoders = { commandEncoder };
         submitInfo.waitSemaphores = { imageAvailableSemaphores[currentFrame] };
         submitInfo.signalSemaphores = { renderFinishedSemaphores[currentFrame] };
@@ -944,7 +932,7 @@ void CubeApp::render()
         queue->submit(submitInfo);
 
         // Present with explicit synchronization
-        PresentInfo presentInfo{};
+        gfx::PresentInfo presentInfo{};
         presentInfo.waitSemaphores = { renderFinishedSemaphores[currentFrame] };
 
         result = swapchain->present(presentInfo);
@@ -959,26 +947,26 @@ void CubeApp::render()
     }
 }
 
-PlatformWindowHandle CubeApp::extractNativeHandle()
+gfx::PlatformWindowHandle CubeApp::extractNativeHandle()
 {
-    PlatformWindowHandle handle{};
+    gfx::PlatformWindowHandle handle{};
 
 #if defined(__EMSCRIPTEN__)
-    handle = PlatformWindowHandle::fromEmscripten("#canvas");
+    handle = gfx::PlatformWindowHandle::fromEmscripten("#canvas");
 
 #elif defined(_WIN32)
     // Windows: Get HWND and HINSTANCE
-    handle = PlatformWindowHandle::fromWin32(glfwGetWin32Window(window), GetModuleHandle(nullptr));
+    handle = gfx::PlatformWindowHandle::fromWin32(glfwGetWin32Window(window), GetModuleHandle(nullptr));
     std::cout << "Extracted Win32 handle: HWND=" << handle.handle.win32.hwnd << ", HINSTANCE=" << handle.handle.win32.hinstance << std::endl;
 
 #elif defined(__linux__)
     // Linux: Get X11 Window and Display (assuming X11, not Wayland)
-    handle = PlatformWindowHandle::fromXlib(glfwGetX11Display(), glfwGetX11Window(window));
+    handle = gfx::PlatformWindowHandle::fromXlib(glfwGetX11Display(), glfwGetX11Window(window));
     std::cout << "Extracted X11 handle: Window=" << handle.handle.xlib.window << ", Display=" << handle.handle.xlib.display << std::endl;
 
 #elif defined(__APPLE__)
     // macOS: Get NSWindow
-    handle = PlatformWindowHandle::fromMetal(glfwGetMetalLayer(window));
+    handle = gfx::PlatformWindowHandle::fromMetal(glfwGetMetalLayer(window));
     std::cout << "Extracted Metal handle: Layer=" << handle.handle.metal.layer << std::endl;
 #endif
 
@@ -1142,7 +1130,7 @@ void CubeApp::matrixIdentity(std::array<std::array<float, 4>, 4>& matrix)
         { { 0.0f, 0.0f, 0.0f, 1.0f } } } };
 }
 
-void CubeApp::matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fovy, float aspect, float nearPlane, float farPlane, Backend backend)
+void CubeApp::matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fovy, float aspect, float nearPlane, float farPlane, gfx::Backend backend)
 {
     matrix = { { { { 0.0f, 0.0f, 0.0f, 0.0f } },
         { { 0.0f, 0.0f, 0.0f, 0.0f } },
@@ -1151,7 +1139,7 @@ void CubeApp::matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, flo
 
     float f = 1.0f / std::tan(fovy / 2.0f);
     matrix[0][0] = f / aspect;
-    if (backend == Backend::Vulkan) {
+    if (backend == gfx::Backend::Vulkan) {
         matrix[1][1] = -f;
     } else {
         matrix[1][1] = f;

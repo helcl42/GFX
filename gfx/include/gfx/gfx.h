@@ -360,21 +360,6 @@ typedef enum GfxResult {
 } GfxResult;
 
 typedef enum {
-    GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE = 0,
-    GFX_DEBUG_MESSAGE_SEVERITY_INFO = 1,
-    GFX_DEBUG_MESSAGE_SEVERITY_WARNING = 2,
-    GFX_DEBUG_MESSAGE_SEVERITY_ERROR = 3,
-    GFX_DEBUG_MESSAGE_SEVERITY_MAX_ENUM = 0x7FFFFFFF
-} GfxDebugMessageSeverity;
-
-typedef enum {
-    GFX_DEBUG_MESSAGE_TYPE_GENERAL = 0,
-    GFX_DEBUG_MESSAGE_TYPE_VALIDATION = 1,
-    GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE = 2,
-    GFX_DEBUG_MESSAGE_TYPE_MAX_ENUM = 0x7FFFFFFF
-} GfxDebugMessageType;
-
-typedef enum {
     GFX_LOAD_OP_LOAD = 0, // Load existing contents
     GFX_LOAD_OP_CLEAR = 1, // Clear to specified clear value
     GFX_LOAD_OP_DONT_CARE = 2, // Don't care about initial contents (better performance on tiled GPUs)
@@ -467,16 +452,7 @@ typedef struct GfxFramebuffer_T* GfxFramebuffer;
 // Callback Function Types
 // ============================================================================
 
-typedef void (*GfxDebugCallback)(
-    GfxDebugMessageSeverity severity,
-    GfxDebugMessageType type,
-    const char* message,
-    void* userData);
-
-typedef void (*GfxLogCallback)(
-    GfxLogLevel level,
-    const char* message,
-    void* userData);
+typedef void (*GfxLogCallback)(GfxLogLevel level, const char* message, void* userData);
 
 // ============================================================================
 // Core Structures
@@ -1061,7 +1037,6 @@ GFX_API GfxResult gfxUnloadAllBackends(void);
 // Instance functions
 GFX_API GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance);
 GFX_API GfxResult gfxInstanceDestroy(GfxInstance instance);
-GFX_API GfxResult gfxInstanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData);
 GFX_API GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter);
 // Vulkan-style enumeration: call with adapters=NULL to get count, then call again with allocated array
 GFX_API GfxResult gfxInstanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters);

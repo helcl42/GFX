@@ -119,40 +119,26 @@ private:
     bool stop;
 };
 
-// Debug callback function
-static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type,
-    const char* message, void* userData)
+// Log callback function
+static void logCallback(GfxLogLevel level, const char* message, void* userData)
 {
-    const char* severityStr = "";
-    switch (severity) {
-    case GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE:
-        severityStr = "VERBOSE";
+    (void)userData;
+    const char* levelStr = "UNKNOWN";
+    switch (level) {
+    case GFX_LOG_LEVEL_ERROR:
+        levelStr = "ERROR";
         break;
-    case GFX_DEBUG_MESSAGE_SEVERITY_INFO:
-        severityStr = "INFO";
+    case GFX_LOG_LEVEL_WARNING:
+        levelStr = "WARNING";
         break;
-    case GFX_DEBUG_MESSAGE_SEVERITY_WARNING:
-        severityStr = "WARNING";
+    case GFX_LOG_LEVEL_INFO:
+        levelStr = "INFO";
         break;
-    case GFX_DEBUG_MESSAGE_SEVERITY_ERROR:
-        severityStr = "ERROR";
-        break;
-    }
-
-    const char* typeStr = "";
-    switch (type) {
-    case GFX_DEBUG_MESSAGE_TYPE_GENERAL:
-        typeStr = "GENERAL";
-        break;
-    case GFX_DEBUG_MESSAGE_TYPE_VALIDATION:
-        typeStr = "VALIDATION";
-        break;
-    case GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE:
-        typeStr = "PERFORMANCE";
+    case GFX_LOG_LEVEL_DEBUG:
+        levelStr = "DEBUG";
         break;
     }
-
-    std::cout << "[" << severityStr << "|" << typeStr << "] " << message << std::endl;
+    std::cout << "[" << levelStr << "] " << message << std::endl;
 }
 
 // Vertex structure for cube
@@ -456,6 +442,9 @@ GfxPlatformWindowHandle CubeApp::getPlatformWindowHandle() {
 }
 
 bool CubeApp::initializeGraphics() {
+    // Set up logging callback
+    gfxSetLogCallback(logCallback, nullptr);
+
     std::cout << "Loading graphics backend...\n";
     if (gfxLoadBackend(GFX_BACKEND_API) != GFX_RESULT_SUCCESS) {
         std::cerr << "Failed to load graphics backend\n";
@@ -478,8 +467,6 @@ bool CubeApp::initializeGraphics() {
         std::cerr << "Failed to create graphics instance\n";
         return false;
     }
-
-    gfxInstanceSetDebugCallback(instance, debugCallback, nullptr);
 
     // Get adapter
     GfxAdapterDescriptor adapterDesc = {

@@ -63,42 +63,6 @@ GfxResult Backend::instanceDestroy(GfxInstance instance) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const
-{
-    if (!instance) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    auto* inst = converter::toNative<core::Instance>(instance);
-
-    // Create adapter callback that converts internal enums to Gfx API enums
-    if (callback) {
-        // Create a struct to hold both the callback and userData
-        struct CallbackData {
-            GfxDebugCallback callback;
-            void* userData;
-        };
-
-        auto* callbackData = new CallbackData{ callback, userData };
-
-        // Create a static callback that uses the adapter
-        auto staticCallback = +[](core::DebugMessageSeverity severity, core::DebugMessageType type, const char* message, void* dataPtr) {
-            auto* data = static_cast<CallbackData*>(dataPtr);
-
-            // Convert internal enums to GFX API enums
-            GfxDebugMessageSeverity gfxSeverity = converter::coreDebugSeverityToGfx(severity);
-            GfxDebugMessageType gfxType = converter::coreDebugTypeToGfx(type);
-
-            data->callback(gfxSeverity, gfxType, message, data->userData);
-        };
-
-        inst->setDebugCallback(staticCallback, callbackData);
-    } else {
-        inst->setDebugCallback(nullptr, nullptr);
-    }
-    return GFX_RESULT_SUCCESS;
-}
-
 GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const
 {
     if (!instance || !outAdapter) {

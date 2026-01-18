@@ -28,19 +28,6 @@ bool hasStencilComponent(VkFormat format);
 // Convert VkResult to human-readable string
 const char* vkResultToString(VkResult result);
 
-// ============================================================================
-// Debug Message Utilities
-// ============================================================================
-
-enum class DebugMessageSeverity;
-enum class DebugMessageType;
-
-// Convert Vulkan debug severity to internal enum
-DebugMessageSeverity convertVkDebugSeverity(VkDebugUtilsMessageSeverityFlagBitsEXT vkSeverity);
-
-// Convert Vulkan debug message type to internal enum
-DebugMessageType convertVkDebugType(VkDebugUtilsMessageTypeFlagsEXT vkType);
-
 } // namespace gfx::backend::vulkan::core
 
 #endif // GFX_VULKAN_CORE_UTILS_H

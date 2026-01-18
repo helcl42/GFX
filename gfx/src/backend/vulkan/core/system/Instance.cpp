@@ -2,11 +2,50 @@
 
 #include "../util/Utils.h"
 
+#include "../../../../common/Logger.h"
+
 #include <cstring>
 #include <stdexcept>
 #include <vector>
 
 namespace gfx::backend::vulkan::core {
+
+namespace {
+
+    const char* vkMessageSeverityToString(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity)
+    {
+        if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+            return "Error";
+        } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+            return "Warning";
+        } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+            return "Info";
+        } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
+            return "Verbose";
+        } else {
+            return "Unknown";
+        }
+    }
+
+    const char* vkMessageTypeToString(VkDebugUtilsMessageTypeFlagsEXT messageType)
+    {
+        const char* typeStr = "";
+        switch (messageType) {
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
+            typeStr = "Validation";
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
+            typeStr = "Performance";
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
+        default:
+            typeStr = "General";
+            break;
+        }
+        return typeStr;
+    }
+
+} // namespace
 
 Instance::Instance(const InstanceCreateInfo& createInfo)
 {
@@ -108,12 +147,6 @@ Instance::Instance(const InstanceCreateInfo& createInfo)
 
 Instance::~Instance()
 {
-    // Clean up callback data if allocated
-    if (m_userCallbackData) {
-        delete static_cast<CallbackData*>(m_userCallbackData);
-        m_userCallbackData = nullptr;
-    }
-
     if (m_debugMessenger != VK_NULL_HANDLE) {
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
             m_instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -124,17 +157,6 @@ Instance::~Instance()
     if (m_instance != VK_NULL_HANDLE) {
         vkDestroyInstance(m_instance, nullptr);
     }
-}
-
-void Instance::setDebugCallback(DebugCallbackFunc callback, void* userData)
-{
-    // Clean up previously allocated data if any
-    if (m_userCallbackData) {
-        delete static_cast<CallbackData*>(m_userCallbackData);
-    }
-
-    m_userCallback = callback;
-    m_userCallbackData = userData; // Take ownership, will delete in destructor
 }
 
 VkInstance Instance::handle() const
@@ -160,13 +182,20 @@ void Instance::setupDebugMessenger()
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Instance::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
-    auto* instance = static_cast<Instance*>(pUserData);
-    if (instance && instance->m_userCallback) {
-        // Convert Vulkan types to internal enums
-        DebugMessageSeverity severity = convertVkDebugSeverity(messageSeverity);
-        DebugMessageType type = convertVkDebugType(messageType);
+    (void)pUserData;
 
-        instance->m_userCallback(severity, type, pCallbackData->pMessage, instance->m_userCallbackData);
+    const char* severityStr = vkMessageSeverityToString(messageSeverity);
+    const char* typeStr = vkMessageTypeToString(messageType);
+
+    // Map Vulkan severity to Logger calls
+    if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+        gfx::common::Logger::instance().logError("Vulkan [{}|{}]: {}", severityStr, typeStr, pCallbackData->pMessage);
+    } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+        gfx::common::Logger::instance().logWarning("Vulkan [{}|{}]: {}", severityStr, typeStr, pCallbackData->pMessage);
+    } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+        gfx::common::Logger::instance().logInfo("Vulkan [{}|{}]: {}", severityStr, typeStr, pCallbackData->pMessage);
+    } else {
+        gfx::common::Logger::instance().logDebug("Vulkan [{}|{}]: {}", severityStr, typeStr, pCallbackData->pMessage);
     }
     return VK_FALSE;
 }

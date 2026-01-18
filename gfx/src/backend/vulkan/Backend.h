@@ -13,7 +13,6 @@ public:
     // Instance functions
     GfxResult createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const override;
     GfxResult instanceDestroy(GfxInstance instance) const override;
-    GfxResult instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const override;
     GfxResult instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const override;
     GfxResult instanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters) const override;
 

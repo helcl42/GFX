@@ -31,8 +31,6 @@
 #include <memory>
 #include <vector>
 
-using namespace gfx;
-
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -42,14 +40,35 @@ static constexpr uint32_t WINDOW_HEIGHT = 600;
 static constexpr uint32_t COMPUTE_TEXTURE_WIDTH = 800;
 static constexpr uint32_t COMPUTE_TEXTURE_HEIGHT = 600;
 static constexpr size_t MAX_FRAMES_IN_FLIGHT = 3;
-static constexpr TextureFormat COLOR_FORMAT = TextureFormat::B8G8R8A8UnormSrgb;
+static constexpr gfx::TextureFormat COLOR_FORMAT = gfx::TextureFormat::B8G8R8A8UnormSrgb;
 
 #if defined(__EMSCRIPTEN__)
-static constexpr Backend BACKEND_API = Backend::WebGPU;
+static constexpr gfx::Backend BACKEND_API = gfx::Backend::WebGPU;
 #else
 // here we can choose between VULKAN, WEBGPU
-static constexpr Backend BACKEND_API = Backend::Vulkan;
+static constexpr gfx::Backend BACKEND_API = gfx::Backend::Vulkan;
 #endif
+
+// Log callback function
+static void logCallback(gfx::LogLevel level, const std::string& message)
+{
+    const char* levelStr = "UNKNOWN";
+    switch (level) {
+    case gfx::LogLevel::Error:
+        levelStr = "ERROR";
+        break;
+    case gfx::LogLevel::Warning:
+        levelStr = "WARNING";
+        break;
+    case gfx::LogLevel::Info:
+        levelStr = "INFO";
+        break;
+    case gfx::LogLevel::Debug:
+        levelStr = "DEBUG";
+        break;
+    }
+    std::cout << "[" << levelStr << "] " << message << std::endl;
+}
 
 // Uniform structures
 struct ComputeUniformData {
@@ -81,7 +100,7 @@ private:
 #if defined(__EMSCRIPTEN__)
     static void emscriptenMainLoop(void* userData);
 #endif
-    PlatformWindowHandle extractNativeHandle();
+    gfx::PlatformWindowHandle extractNativeHandle();
     std::vector<uint8_t> loadBinaryFile(const char* filepath);
     std::string loadTextFile(const char* filepath);
 
@@ -92,33 +111,33 @@ private:
 private:
     GLFWwindow* window = nullptr;
 
-    std::shared_ptr<Instance> instance;
-    std::shared_ptr<Adapter> adapter;
-    AdapterInfo adapterInfo; // Cached adapter info
-    std::shared_ptr<Device> device;
-    std::shared_ptr<Queue> queue;
-    std::shared_ptr<Surface> surface;
-    std::shared_ptr<Swapchain> swapchain;
+    std::shared_ptr<gfx::Instance> instance;
+    std::shared_ptr<gfx::Adapter> adapter;
+    gfx::AdapterInfo adapterInfo; // Cached adapter info
+    std::shared_ptr<gfx::Device> device;
+    std::shared_ptr<gfx::Queue> queue;
+    std::shared_ptr<gfx::Surface> surface;
+    std::shared_ptr<gfx::Swapchain> swapchain;
 
     // Compute resources
-    std::shared_ptr<Texture> computeTexture;
-    std::shared_ptr<TextureView> computeTextureView;
-    std::shared_ptr<Shader> computeShader;
-    std::shared_ptr<ComputePipeline> computePipeline;
-    std::shared_ptr<BindGroupLayout> computeBindGroupLayout;
-    std::array<std::shared_ptr<BindGroup>, MAX_FRAMES_IN_FLIGHT> computeBindGroups;
-    std::array<std::shared_ptr<Buffer>, MAX_FRAMES_IN_FLIGHT> computeUniformBuffers;
+    std::shared_ptr<gfx::Texture> computeTexture;
+    std::shared_ptr<gfx::TextureView> computeTextureView;
+    std::shared_ptr<gfx::Shader> computeShader;
+    std::shared_ptr<gfx::ComputePipeline> computePipeline;
+    std::shared_ptr<gfx::BindGroupLayout> computeBindGroupLayout;
+    std::array<std::shared_ptr<gfx::BindGroup>, MAX_FRAMES_IN_FLIGHT> computeBindGroups;
+    std::array<std::shared_ptr<gfx::Buffer>, MAX_FRAMES_IN_FLIGHT> computeUniformBuffers;
 
     // Render resources (fullscreen quad)
-    std::shared_ptr<Shader> vertexShader;
-    std::shared_ptr<Shader> fragmentShader;
-    std::shared_ptr<RenderPipeline> renderPipeline;
-    std::shared_ptr<BindGroupLayout> renderBindGroupLayout;
-    std::shared_ptr<Sampler> sampler;
-    std::array<std::shared_ptr<BindGroup>, MAX_FRAMES_IN_FLIGHT> renderBindGroups;
-    std::array<std::shared_ptr<Buffer>, MAX_FRAMES_IN_FLIGHT> renderUniformBuffers;
-    std::shared_ptr<RenderPass> renderPass;
-    std::vector<std::shared_ptr<Framebuffer>> framebuffers;
+    std::shared_ptr<gfx::Shader> vertexShader;
+    std::shared_ptr<gfx::Shader> fragmentShader;
+    std::shared_ptr<gfx::RenderPipeline> renderPipeline;
+    std::shared_ptr<gfx::BindGroupLayout> renderBindGroupLayout;
+    std::shared_ptr<gfx::Sampler> sampler;
+    std::array<std::shared_ptr<gfx::BindGroup>, MAX_FRAMES_IN_FLIGHT> renderBindGroups;
+    std::array<std::shared_ptr<gfx::Buffer>, MAX_FRAMES_IN_FLIGHT> renderUniformBuffers;
+    std::shared_ptr<gfx::RenderPass> renderPass;
+    std::vector<std::shared_ptr<gfx::Framebuffer>> framebuffers;
 
     uint32_t windowWidth = WINDOW_WIDTH;
     uint32_t windowHeight = WINDOW_HEIGHT;
@@ -126,10 +145,10 @@ private:
     uint32_t previousHeight = WINDOW_HEIGHT;
 
     // Per-frame synchronization
-    std::array<std::shared_ptr<Semaphore>, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
-    std::array<std::shared_ptr<Semaphore>, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
-    std::array<std::shared_ptr<Fence>, MAX_FRAMES_IN_FLIGHT> inFlightFences;
-    std::array<std::shared_ptr<CommandEncoder>, MAX_FRAMES_IN_FLIGHT> commandEncoders;
+    std::array<std::shared_ptr<gfx::Semaphore>, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
+    std::array<std::shared_ptr<gfx::Semaphore>, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
+    std::array<std::shared_ptr<gfx::Fence>, MAX_FRAMES_IN_FLIGHT> inFlightFences;
+    std::array<std::shared_ptr<gfx::CommandEncoder>, MAX_FRAMES_IN_FLIGHT> commandEncoders;
 
     size_t currentFrame = 0;
     float elapsedTime = 0.0f;
@@ -189,60 +208,26 @@ bool ComputeApp::initializeGLFW()
 
 bool ComputeApp::initializeGraphics()
 {
+    // Set up logging callback
+    gfx::setLogCallback(logCallback);
+
     try {
-        InstanceDescriptor instanceDesc{};
+        gfx::InstanceDescriptor instanceDesc{};
         instanceDesc.applicationName = "Compute & Postprocess Example (C++)";
         instanceDesc.applicationVersion = 1;
         instanceDesc.enableValidation = true;
-        instanceDesc.backend = Backend::WebGPU;
-        instanceDesc.enabledFeatures = { InstanceFeatureType::Surface };
+        instanceDesc.backend = gfx::Backend::WebGPU;
+        instanceDesc.enabledFeatures = { gfx::InstanceFeatureType::Surface };
 
-        instance = createInstance(instanceDesc);
+        instance = gfx::createInstance(instanceDesc);
         if (!instance) {
             std::cerr << "Failed to create graphics instance" << std::endl;
             return false;
         }
 
-        // Set debug callback
-        instance->setDebugCallback([](DebugMessageSeverity severity, DebugMessageType type, const std::string& message) {
-            if (severity == DebugMessageSeverity::Verbose) {
-                return; // Skip verbose
-            }
-
-            const char* severityStr = "";
-            switch (severity) {
-            case DebugMessageSeverity::Info:
-                severityStr = "INFO";
-                break;
-            case DebugMessageSeverity::Warning:
-                severityStr = "WARNING";
-                break;
-            case DebugMessageSeverity::Error:
-                severityStr = "ERROR";
-                break;
-            default:
-                break;
-            }
-
-            const char* typeStr = "";
-            switch (type) {
-            case DebugMessageType::General:
-                typeStr = "GENERAL";
-                break;
-            case DebugMessageType::Validation:
-                typeStr = "VALIDATION";
-                break;
-            case DebugMessageType::Performance:
-                typeStr = "PERFORMANCE";
-                break;
-            }
-
-            std::cout << "[" << severityStr << "|" << typeStr << "] " << message << std::endl;
-        });
-
         // Get adapter
-        AdapterDescriptor adapterDesc{};
-        adapterDesc.preference = AdapterPreference::HighPerformance;
+        gfx::AdapterDescriptor adapterDesc{};
+        adapterDesc.preference = gfx::AdapterPreference::HighPerformance;
 
         adapter = instance->requestAdapter(adapterDesc);
         if (!adapter) {
@@ -253,14 +238,14 @@ bool ComputeApp::initializeGraphics()
         // Query and store adapter info
         adapterInfo = adapter->getInfo();
         std::cout << "Using adapter: " << adapterInfo.name << std::endl;
-        std::cout << "Backend: " << (adapterInfo.backend == Backend::Vulkan ? "Vulkan" : "WebGPU") << std::endl;
+        std::cout << "Backend: " << (adapterInfo.backend == gfx::Backend::Vulkan ? "Vulkan" : "WebGPU") << std::endl;
         std::cout << "  Vendor ID: 0x" << std::hex << adapterInfo.vendorID << std::dec
                   << ", Device ID: 0x" << std::hex << adapterInfo.deviceID << std::dec << std::endl;
 
         // Create device
-        DeviceDescriptor deviceDesc{};
+        gfx::DeviceDescriptor deviceDesc{};
         deviceDesc.label = "Main Device";
-        deviceDesc.enabledFeatures = { DeviceFeatureType::Swapchain };
+        deviceDesc.enabledFeatures = { gfx::DeviceFeatureType::Swapchain };
 
         device = adapter->createDevice(deviceDesc);
         if (!device) {
@@ -274,7 +259,7 @@ bool ComputeApp::initializeGraphics()
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
 
-        SurfaceDescriptor surfaceDesc{};
+        gfx::SurfaceDescriptor surfaceDesc{};
         surfaceDesc.label = "Main Surface";
         surfaceDesc.windowHandle = extractNativeHandle();
         surfaceDesc.width = static_cast<uint32_t>(width);
@@ -303,13 +288,13 @@ bool ComputeApp::createComputeResources()
 {
     try {
         // Create compute output texture (storage image)
-        TextureDescriptor textureDesc{};
-        textureDesc.type = TextureType::Texture2D;
+        gfx::TextureDescriptor textureDesc{};
+        textureDesc.type = gfx::TextureType::Texture2D;
         textureDesc.size = { COMPUTE_TEXTURE_WIDTH, COMPUTE_TEXTURE_HEIGHT, 1 };
-        textureDesc.format = TextureFormat::R8G8B8A8Unorm;
-        textureDesc.usage = TextureUsage::StorageBinding | TextureUsage::TextureBinding;
+        textureDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+        textureDesc.usage = gfx::TextureUsage::StorageBinding | gfx::TextureUsage::TextureBinding;
         textureDesc.mipLevelCount = 1;
-        textureDesc.sampleCount = SampleCount::Count1;
+        textureDesc.sampleCount = gfx::SampleCount::Count1;
 
         computeTexture = device->createTexture(textureDesc);
         if (!computeTexture) {
@@ -317,9 +302,9 @@ bool ComputeApp::createComputeResources()
             return false;
         }
 
-        TextureViewDescriptor viewDesc{};
-        viewDesc.format = TextureFormat::R8G8B8A8Unorm;
-        viewDesc.viewType = TextureViewType::View2D;
+        gfx::TextureViewDescriptor viewDesc{};
+        viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+        viewDesc.viewType = gfx::TextureViewType::View2D;
         viewDesc.baseMipLevel = 0;
         viewDesc.mipLevelCount = 1;
         viewDesc.baseArrayLayer = 0;
@@ -332,14 +317,14 @@ bool ComputeApp::createComputeResources()
         }
 
         // Load compute shader (WGSL for WebGPU, SPIR-V for Vulkan)
-        ShaderSourceType shaderSourceType;
+        gfx::ShaderSourceType shaderSourceType;
         std::string computeShaderCode;
 
-        if (adapterInfo.backend == Backend::WebGPU) {
-            shaderSourceType = ShaderSourceType::WGSL;
+        if (adapterInfo.backend == gfx::Backend::WebGPU) {
+            shaderSourceType = gfx::ShaderSourceType::WGSL;
             computeShaderCode = loadTextFile("shaders/generate.comp.wgsl");
         } else {
-            shaderSourceType = ShaderSourceType::SPIRV;
+            shaderSourceType = gfx::ShaderSourceType::SPIRV;
             auto spirv = loadBinaryFile("generate.comp.spv");
             computeShaderCode = std::string(reinterpret_cast<const char*>(spirv.data()), spirv.size());
         }
@@ -349,7 +334,7 @@ bool ComputeApp::createComputeResources()
             return false;
         }
 
-        ShaderDescriptor computeShaderDesc{};
+        gfx::ShaderDescriptor computeShaderDesc{};
         computeShaderDesc.label = "Compute Shader";
         computeShaderDesc.sourceType = shaderSourceType;
         computeShaderDesc.code = computeShaderCode;
@@ -362,10 +347,10 @@ bool ComputeApp::createComputeResources()
         }
 
         // Create compute uniform buffers (one per frame in flight)
-        BufferDescriptor computeUniformBufferDesc{};
+        gfx::BufferDescriptor computeUniformBufferDesc{};
         computeUniformBufferDesc.label = "Compute Uniform Buffer";
         computeUniformBufferDesc.size = sizeof(ComputeUniformData);
-        computeUniformBufferDesc.usage = BufferUsage::Uniform | BufferUsage::CopyDst;
+        computeUniformBufferDesc.usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
             computeUniformBuffers[i] = device->createBuffer(computeUniformBufferDesc);
@@ -376,26 +361,26 @@ bool ComputeApp::createComputeResources()
         }
 
         // Create compute bind group layout
-        BindGroupLayoutEntry storageTextureEntry{
+        gfx::BindGroupLayoutEntry storageTextureEntry{
             .binding = 0,
-            .visibility = ShaderStage::Compute,
-            .resource = BindGroupLayoutEntry::StorageTextureBinding{
-                .format = TextureFormat::R8G8B8A8Unorm,
+            .visibility = gfx::ShaderStage::Compute,
+            .resource = gfx::BindGroupLayoutEntry::StorageTextureBinding{
+                .format = gfx::TextureFormat::R8G8B8A8Unorm,
                 .writeOnly = true,
-                .viewDimension = TextureViewType::View2D,
+                .viewDimension = gfx::TextureViewType::View2D,
             }
         };
 
-        BindGroupLayoutEntry uniformBufferEntry{
+        gfx::BindGroupLayoutEntry uniformBufferEntry{
             .binding = 1,
-            .visibility = ShaderStage::Compute,
-            .resource = BindGroupLayoutEntry::BufferBinding{
+            .visibility = gfx::ShaderStage::Compute,
+            .resource = gfx::BindGroupLayoutEntry::BufferBinding{
                 .hasDynamicOffset = false,
                 .minBindingSize = sizeof(ComputeUniformData),
             }
         };
 
-        BindGroupLayoutDescriptor computeLayoutDesc{};
+        gfx::BindGroupLayoutDescriptor computeLayoutDesc{};
         computeLayoutDesc.label = "Compute Bind Group Layout";
         computeLayoutDesc.entries = { storageTextureEntry, uniformBufferEntry };
 
@@ -407,17 +392,17 @@ bool ComputeApp::createComputeResources()
 
         // Create compute bind groups (one per frame in flight)
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-            BindGroupEntry textureEntry{};
+            gfx::BindGroupEntry textureEntry{};
             textureEntry.binding = 0;
             textureEntry.resource = computeTextureView;
 
-            BindGroupEntry bufferEntry{};
+            gfx::BindGroupEntry bufferEntry{};
             bufferEntry.binding = 1;
             bufferEntry.resource = computeUniformBuffers[i];
             bufferEntry.offset = 0;
             bufferEntry.size = sizeof(ComputeUniformData);
 
-            BindGroupDescriptor computeBindGroupDesc{};
+            gfx::BindGroupDescriptor computeBindGroupDesc{};
             computeBindGroupDesc.label = "Compute Bind Group " + std::to_string(i);
             computeBindGroupDesc.layout = computeBindGroupLayout;
             computeBindGroupDesc.entries = { textureEntry, bufferEntry };
@@ -430,7 +415,7 @@ bool ComputeApp::createComputeResources()
         }
 
         // Create compute pipeline
-        ComputePipelineDescriptor computePipelineDesc{};
+        gfx::ComputePipelineDescriptor computePipelineDesc{};
         computePipelineDesc.label = "Compute Pipeline";
         computePipelineDesc.compute = computeShader;
         computePipelineDesc.entryPoint = "main";
@@ -447,14 +432,14 @@ bool ComputeApp::createComputeResources()
         if (initEncoder) {
             initEncoder->begin();
 
-            TextureBarrier initBarrier{
+            gfx::TextureBarrier initBarrier{
                 .texture = computeTexture,
-                .oldLayout = TextureLayout::Undefined,
-                .newLayout = TextureLayout::ShaderReadOnly,
-                .srcStageMask = PipelineStage::TopOfPipe,
-                .dstStageMask = PipelineStage::FragmentShader,
-                .srcAccessMask = AccessFlags::None,
-                .dstAccessMask = AccessFlags::ShaderRead,
+                .oldLayout = gfx::TextureLayout::Undefined,
+                .newLayout = gfx::TextureLayout::ShaderReadOnly,
+                .srcStageMask = gfx::PipelineStage::TopOfPipe,
+                .dstStageMask = gfx::PipelineStage::FragmentShader,
+                .srcAccessMask = gfx::AccessFlags::None,
+                .dstAccessMask = gfx::AccessFlags::ShaderRead,
                 .baseMipLevel = 0,
                 .mipLevelCount = 1,
                 .baseArrayLayer = 0,
@@ -464,11 +449,11 @@ bool ComputeApp::createComputeResources()
             initEncoder->pipelineBarrier({}, {}, { initBarrier });
             initEncoder->end();
 
-            FenceDescriptor initFenceDesc{};
+            gfx::FenceDescriptor initFenceDesc{};
             initFenceDesc.signaled = false;
             auto initFence = device->createFence(initFenceDesc);
 
-            SubmitDescriptor submitInfo{};
+            gfx::SubmitDescriptor submitInfo{};
             submitInfo.commandEncoders = { initEncoder };
             submitInfo.signalFence = initFence;
 
@@ -488,15 +473,15 @@ bool ComputeApp::createRenderResources()
 {
     try {
         // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
-        ShaderSourceType shaderSourceType;
+        gfx::ShaderSourceType shaderSourceType;
         std::string vertexShaderCode, fragmentShaderCode;
 
-        if (adapterInfo.backend == Backend::WebGPU) {
-            shaderSourceType = ShaderSourceType::WGSL;
+        if (adapterInfo.backend == gfx::Backend::WebGPU) {
+            shaderSourceType = gfx::ShaderSourceType::WGSL;
             vertexShaderCode = loadTextFile("shaders/fullscreen.vert.wgsl");
             fragmentShaderCode = loadTextFile("shaders/postprocess.frag.wgsl");
         } else {
-            shaderSourceType = ShaderSourceType::SPIRV;
+            shaderSourceType = gfx::ShaderSourceType::SPIRV;
             auto vertexSpirv = loadBinaryFile("fullscreen.vert.spv");
             auto fragmentSpirv = loadBinaryFile("postprocess.frag.spv");
             vertexShaderCode = std::string(reinterpret_cast<const char*>(vertexSpirv.data()), vertexSpirv.size());
@@ -508,7 +493,7 @@ bool ComputeApp::createRenderResources()
             return false;
         }
 
-        ShaderDescriptor vertexShaderDesc{};
+        gfx::ShaderDescriptor vertexShaderDesc{};
         vertexShaderDesc.label = "Vertex Shader";
         vertexShaderDesc.sourceType = shaderSourceType;
         vertexShaderDesc.code = vertexShaderCode;
@@ -520,7 +505,7 @@ bool ComputeApp::createRenderResources()
             return false;
         }
 
-        ShaderDescriptor fragmentShaderDesc{};
+        gfx::ShaderDescriptor fragmentShaderDesc{};
         fragmentShaderDesc.label = "Fragment Shader";
         fragmentShaderDesc.sourceType = shaderSourceType;
         fragmentShaderDesc.code = fragmentShaderCode;
@@ -533,11 +518,11 @@ bool ComputeApp::createRenderResources()
         }
 
         // Create sampler
-        SamplerDescriptor samplerDesc{};
-        samplerDesc.magFilter = FilterMode::Linear;
-        samplerDesc.minFilter = FilterMode::Linear;
-        samplerDesc.addressModeU = AddressMode::ClampToEdge;
-        samplerDesc.addressModeV = AddressMode::ClampToEdge;
+        gfx::SamplerDescriptor samplerDesc{};
+        samplerDesc.magFilter = gfx::FilterMode::Linear;
+        samplerDesc.minFilter = gfx::FilterMode::Linear;
+        samplerDesc.addressModeU = gfx::AddressMode::ClampToEdge;
+        samplerDesc.addressModeV = gfx::AddressMode::ClampToEdge;
 
         sampler = device->createSampler(samplerDesc);
         if (!sampler) {
@@ -546,10 +531,10 @@ bool ComputeApp::createRenderResources()
         }
 
         // Create render uniform buffers (one per frame in flight)
-        BufferDescriptor renderUniformBufferDesc{};
+        gfx::BufferDescriptor renderUniformBufferDesc{};
         renderUniformBufferDesc.label = "Render Uniform Buffer";
         renderUniformBufferDesc.size = sizeof(RenderUniformData);
-        renderUniformBufferDesc.usage = BufferUsage::Uniform | BufferUsage::CopyDst;
+        renderUniformBufferDesc.usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
             renderUniformBuffers[i] = device->createBuffer(renderUniformBufferDesc);
@@ -560,33 +545,33 @@ bool ComputeApp::createRenderResources()
         }
 
         // Create render bind group layout
-        BindGroupLayoutEntry samplerEntry{
+        gfx::BindGroupLayoutEntry samplerEntry{
             .binding = 0,
-            .visibility = ShaderStage::Fragment,
-            .resource = BindGroupLayoutEntry::SamplerBinding{
+            .visibility = gfx::ShaderStage::Fragment,
+            .resource = gfx::BindGroupLayoutEntry::SamplerBinding{
                 .comparison = false,
             }
         };
 
-        BindGroupLayoutEntry textureEntry{
+        gfx::BindGroupLayoutEntry textureEntry{
             .binding = 1,
-            .visibility = ShaderStage::Fragment,
-            .resource = BindGroupLayoutEntry::TextureBinding{
+            .visibility = gfx::ShaderStage::Fragment,
+            .resource = gfx::BindGroupLayoutEntry::TextureBinding{
                 .multisampled = false,
-                .viewDimension = TextureViewType::View2D,
+                .viewDimension = gfx::TextureViewType::View2D,
             }
         };
 
-        BindGroupLayoutEntry uniformBufferEntry{
+        gfx::BindGroupLayoutEntry uniformBufferEntry{
             .binding = 2,
-            .visibility = ShaderStage::Fragment,
-            .resource = BindGroupLayoutEntry::BufferBinding{
+            .visibility = gfx::ShaderStage::Fragment,
+            .resource = gfx::BindGroupLayoutEntry::BufferBinding{
                 .hasDynamicOffset = false,
                 .minBindingSize = sizeof(RenderUniformData),
             }
         };
 
-        BindGroupLayoutDescriptor renderLayoutDesc{};
+        gfx::BindGroupLayoutDescriptor renderLayoutDesc{};
         renderLayoutDesc.label = "Render Bind Group Layout";
         renderLayoutDesc.entries = { samplerEntry, textureEntry, uniformBufferEntry };
 
@@ -598,21 +583,21 @@ bool ComputeApp::createRenderResources()
 
         // Create render bind groups (one per frame in flight)
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-            BindGroupEntry samplerBindEntry{};
+            gfx::BindGroupEntry samplerBindEntry{};
             samplerBindEntry.binding = 0;
             samplerBindEntry.resource = sampler;
 
-            BindGroupEntry textureBindEntry{};
+            gfx::BindGroupEntry textureBindEntry{};
             textureBindEntry.binding = 1;
             textureBindEntry.resource = computeTextureView;
 
-            BindGroupEntry bufferBindEntry{};
+            gfx::BindGroupEntry bufferBindEntry{};
             bufferBindEntry.binding = 2;
             bufferBindEntry.resource = renderUniformBuffers[i];
             bufferBindEntry.offset = 0;
             bufferBindEntry.size = sizeof(RenderUniformData);
 
-            BindGroupDescriptor renderBindGroupDesc{};
+            gfx::BindGroupDescriptor renderBindGroupDesc{};
             renderBindGroupDesc.label = "Render Bind Group " + std::to_string(i);
             renderBindGroupDesc.layout = renderBindGroupLayout;
             renderBindGroupDesc.entries = { samplerBindEntry, textureBindEntry, bufferBindEntry };
@@ -625,32 +610,32 @@ bool ComputeApp::createRenderResources()
         }
 
         // Create render pipeline
-        VertexState vertexState{};
+        gfx::VertexState vertexState{};
         vertexState.module = vertexShader;
         vertexState.entryPoint = "main";
         vertexState.buffers = {};
 
-        ColorTargetState colorTarget{};
+        gfx::ColorTargetState colorTarget{};
         colorTarget.format = swapchain->getInfo().format;
-        colorTarget.writeMask = ColorWriteMask::All;
+        colorTarget.writeMask = gfx::ColorWriteMask::All;
 
-        FragmentState fragmentState{};
+        gfx::FragmentState fragmentState{};
         fragmentState.module = fragmentShader;
         fragmentState.entryPoint = "main";
         fragmentState.targets = { colorTarget };
 
-        PrimitiveState primitiveState{};
-        primitiveState.topology = PrimitiveTopology::TriangleList;
-        primitiveState.frontFace = FrontFace::CounterClockwise;
-        primitiveState.cullMode = CullMode::None;
-        primitiveState.polygonMode = PolygonMode::Fill;
+        gfx::PrimitiveState primitiveState{};
+        primitiveState.topology = gfx::PrimitiveTopology::TriangleList;
+        primitiveState.frontFace = gfx::FrontFace::CounterClockwise;
+        primitiveState.cullMode = gfx::CullMode::None;
+        primitiveState.polygonMode = gfx::PolygonMode::Fill;
 
-        RenderPipelineDescriptor pipelineDesc{};
+        gfx::RenderPipelineDescriptor pipelineDesc{};
         pipelineDesc.label = "Render Pipeline";
         pipelineDesc.vertex = vertexState;
         pipelineDesc.fragment = fragmentState;
         pipelineDesc.primitive = primitiveState;
-        pipelineDesc.sampleCount = SampleCount::Count1;
+        pipelineDesc.sampleCount = gfx::SampleCount::Count1;
         pipelineDesc.bindGroupLayouts = { renderBindGroupLayout };
         pipelineDesc.renderPass = renderPass;
 
@@ -671,10 +656,10 @@ bool ComputeApp::createRenderResources()
 bool ComputeApp::createSyncObjects()
 {
     try {
-        SemaphoreDescriptor semaphoreDesc{};
-        semaphoreDesc.type = SemaphoreType::Binary;
+        gfx::SemaphoreDescriptor semaphoreDesc{};
+        semaphoreDesc.type = gfx::SemaphoreType::Binary;
 
-        FenceDescriptor fenceDesc{};
+        gfx::FenceDescriptor fenceDesc{};
         fenceDesc.signaled = true;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
@@ -718,12 +703,12 @@ void ComputeApp::cleanupSizeDependentResources()
 bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 {
     try {
-        SwapchainDescriptor swapchainDesc{};
+        gfx::SwapchainDescriptor swapchainDesc{};
         swapchainDesc.width = width;
         swapchainDesc.height = height;
         swapchainDesc.format = COLOR_FORMAT;
-        swapchainDesc.usage = TextureUsage::RenderAttachment;
-        swapchainDesc.presentMode = PresentMode::Fifo;
+        swapchainDesc.usage = gfx::TextureUsage::RenderAttachment;
+        swapchainDesc.presentMode = gfx::PresentMode::Fifo;
         swapchainDesc.imageCount = MAX_FRAMES_IN_FLIGHT;
 
         swapchain = device->createSwapchain(surface, swapchainDesc);
@@ -735,16 +720,16 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         auto swapchainInfo = swapchain->getInfo();
 
         // Create render pass
-        RenderPassCreateDescriptor renderPassDesc{};
+        gfx::RenderPassCreateDescriptor renderPassDesc{};
         renderPassDesc.label = "Main Render Pass";
 
         // Color attachment
-        RenderPassColorAttachment colorAttachment{};
+        gfx::RenderPassColorAttachment colorAttachment{};
         colorAttachment.target.format = swapchainInfo.format;
-        colorAttachment.target.sampleCount = SampleCount::Count1;
-        colorAttachment.target.loadOp = LoadOp::Clear;
-        colorAttachment.target.storeOp = StoreOp::Store;
-        colorAttachment.target.finalLayout = TextureLayout::PresentSrc;
+        colorAttachment.target.sampleCount = gfx::SampleCount::Count1;
+        colorAttachment.target.loadOp = gfx::LoadOp::Clear;
+        colorAttachment.target.storeOp = gfx::StoreOp::Store;
+        colorAttachment.target.finalLayout = gfx::TextureLayout::PresentSrc;
 
         renderPassDesc.colorAttachments.push_back(colorAttachment);
 
@@ -758,7 +743,7 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         framebuffers.resize(swapchainInfo.imageCount);
 
         for (uint32_t i = 0; i < swapchainInfo.imageCount; ++i) {
-            FramebufferDescriptor framebufferDesc{};
+            gfx::FramebufferDescriptor framebufferDesc{};
             framebufferDesc.label = "Framebuffer " + std::to_string(i);
             framebufferDesc.renderPass = renderPass;
             framebufferDesc.width = width;
@@ -803,7 +788,7 @@ void ComputeApp::render()
             nullptr,
             &imageIndex);
 
-        if (result != Result::Success) {
+        if (result != gfx::Result::Success) {
             std::cerr << "Failed to acquire swapchain image" << std::endl;
             return;
         }
@@ -823,14 +808,14 @@ void ComputeApp::render()
         encoder->begin();
 
         // Transition compute texture to GENERAL layout for compute shader write
-        TextureBarrier readToWriteBarrier{
+        gfx::TextureBarrier readToWriteBarrier{
             .texture = computeTexture,
-            .oldLayout = TextureLayout::ShaderReadOnly,
-            .newLayout = TextureLayout::General,
-            .srcStageMask = PipelineStage::FragmentShader,
-            .dstStageMask = PipelineStage::ComputeShader,
-            .srcAccessMask = AccessFlags::ShaderRead,
-            .dstAccessMask = AccessFlags::ShaderWrite,
+            .oldLayout = gfx::TextureLayout::ShaderReadOnly,
+            .newLayout = gfx::TextureLayout::General,
+            .srcStageMask = gfx::PipelineStage::FragmentShader,
+            .dstStageMask = gfx::PipelineStage::ComputeShader,
+            .srcAccessMask = gfx::AccessFlags::ShaderRead,
+            .dstAccessMask = gfx::AccessFlags::ShaderWrite,
             .baseMipLevel = 0,
             .mipLevelCount = 1,
             .baseArrayLayer = 0,
@@ -840,7 +825,7 @@ void ComputeApp::render()
 
         // Compute pass: Generate pattern
         {
-            ComputePassBeginDescriptor computePassDesc;
+            gfx::ComputePassBeginDescriptor computePassDesc;
             computePassDesc.label = "Generate Pattern";
             auto computePass = encoder->beginComputePass(computePassDesc);
             computePass->setPipeline(computePipeline);
@@ -852,14 +837,14 @@ void ComputeApp::render()
         } // computePass destroyed here
 
         // Transition compute texture for shader read
-        TextureBarrier computeToReadBarrier{
+        gfx::TextureBarrier computeToReadBarrier{
             .texture = computeTexture,
-            .oldLayout = TextureLayout::General,
-            .newLayout = TextureLayout::ShaderReadOnly,
-            .srcStageMask = PipelineStage::ComputeShader,
-            .dstStageMask = PipelineStage::FragmentShader,
-            .srcAccessMask = AccessFlags::ShaderWrite,
-            .dstAccessMask = AccessFlags::ShaderRead,
+            .oldLayout = gfx::TextureLayout::General,
+            .newLayout = gfx::TextureLayout::ShaderReadOnly,
+            .srcStageMask = gfx::PipelineStage::ComputeShader,
+            .dstStageMask = gfx::PipelineStage::FragmentShader,
+            .srcAccessMask = gfx::AccessFlags::ShaderWrite,
+            .dstAccessMask = gfx::AccessFlags::ShaderRead,
             .baseMipLevel = 0,
             .mipLevelCount = 1,
             .baseArrayLayer = 0,
@@ -868,9 +853,9 @@ void ComputeApp::render()
         encoder->pipelineBarrier({}, {}, { computeToReadBarrier });
 
         // Render pass: Post-process and display
-        Color clearColor{ 0.0f, 0.0f, 0.0f, 1.0f };
+        gfx::Color clearColor{ 0.0f, 0.0f, 0.0f, 1.0f };
 
-        RenderPassBeginDescriptor renderPassBeginDesc{};
+        gfx::RenderPassBeginDescriptor renderPassBeginDesc{};
         renderPassBeginDesc.framebuffer = framebuffers[imageIndex];
         renderPassBeginDesc.colorClearValues = { clearColor };
 
@@ -893,7 +878,7 @@ void ComputeApp::render()
         encoder->end();
 
         // Submit
-        SubmitDescriptor submitInfo{};
+        gfx::SubmitDescriptor submitInfo{};
         submitInfo.commandEncoders = { encoder };
         submitInfo.waitSemaphores = { imageAvailableSemaphores[frameIndex] };
         submitInfo.signalSemaphores = { renderFinishedSemaphores[frameIndex] };
@@ -902,7 +887,7 @@ void ComputeApp::render()
         queue->submit(submitInfo);
 
         // Present
-        PresentInfo presentInfo{};
+        gfx::PresentInfo presentInfo{};
         presentInfo.waitSemaphores = { renderFinishedSemaphores[frameIndex] };
 
         result = swapchain->present(presentInfo);
@@ -1036,26 +1021,26 @@ void ComputeApp::cleanup()
     glfwTerminate();
 }
 
-PlatformWindowHandle ComputeApp::extractNativeHandle()
+gfx::PlatformWindowHandle ComputeApp::extractNativeHandle()
 {
-    PlatformWindowHandle handle{};
+    gfx::PlatformWindowHandle handle{};
 
 #if defined(__EMSCRIPTEN__)
-    handle = PlatformWindowHandle::fromEmscripten("#canvas");
+    handle = gfx::PlatformWindowHandle::fromEmscripten("#canvas");
 
 #elif defined(_WIN32)
     // Windows: Get HWND and HINSTANCE
-    handle = PlatformWindowHandle::fromWin32(glfwGetWin32Window(window), GetModuleHandle(nullptr));
+    handle = gfx::PlatformWindowHandle::fromWin32(glfwGetWin32Window(window), GetModuleHandle(nullptr));
     std::cout << "Extracted Win32 handle: HWND=" << handle.handle.win32.hwnd << ", HINSTANCE=" << handle.handle.win32.hinstance << std::endl;
 
 #elif defined(__linux__)
     // Linux: Get X11 Window and Display (assuming X11, not Wayland)
-    handle = PlatformWindowHandle::fromXlib(glfwGetX11Display(), glfwGetX11Window(window));
+    handle = gfx::PlatformWindowHandle::fromXlib(glfwGetX11Display(), glfwGetX11Window(window));
     std::cout << "Extracted X11 handle: Window=" << handle.handle.xlib.window << ", Display=" << handle.handle.xlib.display << std::endl;
 
 #elif defined(__APPLE__)
     // macOS: Get NSWindow
-    handle = PlatformWindowHandle::fromMetal(glfwGetMetalLayer(window));
+    handle = gfx::PlatformWindowHandle::fromMetal(glfwGetMetalLayer(window));
     std::cout << "Extracted Metal handle: Layer=" << handle.handle.metal.layer << std::endl;
 #endif
 

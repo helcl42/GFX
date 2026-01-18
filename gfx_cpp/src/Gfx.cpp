@@ -91,6 +91,11 @@ static GfxAccessFlags cppAccessFlagsToCAccessFlags(AccessFlags flags)
     return static_cast<GfxAccessFlags>(flags);
 }
 
+static AccessFlags cAccessFlagsToCppAccessFlags(GfxAccessFlags flags)
+{
+    return static_cast<AccessFlags>(flags);
+}
+
 static GfxAddressMode cppAddressModeToCAddressMode(AddressMode mode)
 {
     return static_cast<GfxAddressMode>(mode);
@@ -176,16 +181,6 @@ static GfxAdapterPreference cppAdapterPreferenceToCAdapterPreference(AdapterPref
     return static_cast<GfxAdapterPreference>(preference);
 }
 
-static DebugMessageSeverity cDebugMessageSeverityToCppDebugMessageSeverity(GfxDebugMessageSeverity severity)
-{
-    return static_cast<DebugMessageSeverity>(severity);
-}
-
-static DebugMessageType cDebugMessageTypeToCppDebugMessageType(GfxDebugMessageType type)
-{
-    return static_cast<DebugMessageType>(type);
-}
-
 static GfxShaderStage cppShaderStageToCShaderStage(ShaderStage stage)
 {
     return static_cast<GfxShaderStage>(static_cast<uint32_t>(stage));
@@ -219,6 +214,11 @@ static GfxWindowingSystem cppWindowingSystemToC(WindowingSystem sys)
 static Result cResultToCppResult(GfxResult result)
 {
     return static_cast<Result>(result);
+}
+
+static LogLevel cLogLevelToCppLogLevel(GfxLogLevel level)
+{
+    return static_cast<LogLevel>(level);
 }
 
 static GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& windowHandle)
@@ -2153,29 +2153,8 @@ public:
         return resultVec;
     }
 
-    void setDebugCallback(DebugCallback callback) override
-    {
-        m_debugCallback = callback;
-
-        if (callback) {
-            // Set C callback that forwards to C++ callback
-            gfxInstanceSetDebugCallback(m_handle, [](GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData) {
-                    auto* self = static_cast<CInstanceImpl*>(userData);
-                    if (self && self->m_debugCallback) {
-                        self->m_debugCallback(
-                            cDebugMessageSeverityToCppDebugMessageSeverity(severity),
-                            cDebugMessageTypeToCppDebugMessageType(type),
-                            message
-                        );
-                    } }, this);
-        } else {
-            gfxInstanceSetDebugCallback(m_handle, nullptr, nullptr);
-        }
-    }
-
 private:
     GfxInstance m_handle;
-    DebugCallback m_debugCallback;
 };
 
 // ============================================================================
@@ -2214,6 +2193,27 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
     return std::make_shared<CInstanceImpl>(instance);
 }
 
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+// Global log callback storage (needed because gfxSetLogCallback requires a C function pointer)
+void setLogCallback(LogCallback callback)
+{
+    static LogCallback logCallback = callback;
+    if (callback) {
+        gfxSetLogCallback([](GfxLogLevel level, const char* message, void* userData) {
+            (void)userData;
+            if (logCallback) {
+                logCallback(cLogLevelToCppLogLevel(level), std::string(message));
+            }
+        },
+            nullptr);
+    } else {
+        gfxSetLogCallback(nullptr, nullptr);
+    }
+}
+
 namespace utils {
 
     uint64_t alignUp(uint64_t value, uint64_t alignment)
@@ -2224,6 +2224,12 @@ namespace utils {
     uint64_t alignDown(uint64_t value, uint64_t alignment)
     {
         return gfxAlignDown(value, alignment);
+    }
+
+    AccessFlags getAccessFlagsForLayout(TextureLayout layout)
+    {
+        GfxAccessFlags cFlags = gfxGetAccessFlagsForLayout(cppLayoutToCLayout(layout));
+        return cAccessFlagsToCppAccessFlags(cFlags);
     }
 
 } // namespace utils

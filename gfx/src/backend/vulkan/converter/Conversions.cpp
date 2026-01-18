@@ -15,38 +15,6 @@
 namespace gfx::backend::vulkan::converter {
 
 // ============================================================================
-// Debug Message Conversion
-// ============================================================================
-
-GfxDebugMessageSeverity coreDebugSeverityToGfx(core::DebugMessageSeverity severity)
-{
-    switch (severity) {
-    case core::DebugMessageSeverity::Verbose:
-        return GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE;
-    case core::DebugMessageSeverity::Info:
-        return GFX_DEBUG_MESSAGE_SEVERITY_INFO;
-    case core::DebugMessageSeverity::Warning:
-        return GFX_DEBUG_MESSAGE_SEVERITY_WARNING;
-    case core::DebugMessageSeverity::Error:
-        return GFX_DEBUG_MESSAGE_SEVERITY_ERROR;
-    }
-    return GFX_DEBUG_MESSAGE_SEVERITY_INFO; // Default
-}
-
-GfxDebugMessageType coreDebugTypeToGfx(core::DebugMessageType type)
-{
-    switch (type) {
-    case core::DebugMessageType::General:
-        return GFX_DEBUG_MESSAGE_TYPE_GENERAL;
-    case core::DebugMessageType::Validation:
-        return GFX_DEBUG_MESSAGE_TYPE_VALIDATION;
-    case core::DebugMessageType::Performance:
-        return GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE;
-    }
-    return GFX_DEBUG_MESSAGE_TYPE_GENERAL; // Default
-}
-
-// ============================================================================
 // Device Limits Conversion
 // ============================================================================
 
@@ -99,34 +67,6 @@ GfxAdapterInfo vkPropertiesToGfxAdapterInfo(const VkPhysicalDeviceProperties& pr
     info.backend = GFX_BACKEND_VULKAN;
     info.adapterType = vkDeviceTypeToGfxAdapterType(properties.deviceType);
     return info;
-}
-
-// ============================================================================
-// Debug Message Conversion Functions
-// ============================================================================
-
-gfx::backend::vulkan::core::DebugMessageSeverity convertVkDebugSeverity(VkDebugUtilsMessageSeverityFlagBitsEXT vkSeverity)
-{
-    if (vkSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
-        return gfx::backend::vulkan::core::DebugMessageSeverity::Verbose;
-    } else if (vkSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-        return gfx::backend::vulkan::core::DebugMessageSeverity::Warning;
-    } else if (vkSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-        return gfx::backend::vulkan::core::DebugMessageSeverity::Error;
-    } else {
-        return gfx::backend::vulkan::core::DebugMessageSeverity::Info;
-    }
-}
-
-gfx::backend::vulkan::core::DebugMessageType convertVkDebugType(VkDebugUtilsMessageTypeFlagsEXT vkType)
-{
-    if (vkType & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) {
-        return gfx::backend::vulkan::core::DebugMessageType::Validation;
-    } else if (vkType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
-        return gfx::backend::vulkan::core::DebugMessageType::Performance;
-    } else {
-        return gfx::backend::vulkan::core::DebugMessageType::General;
-    }
 }
 
 // ============================================================================

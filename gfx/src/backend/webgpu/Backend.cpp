@@ -75,15 +75,6 @@ GfxResult Backend::instanceDestroy(GfxInstance instance) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const
-{
-    // TODO: Implement debug callback using WebGPU error handling
-    (void)instance;
-    (void)callback;
-    (void)userData;
-    return GFX_RESULT_SUCCESS;
-}
-
 GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const
 {
     if (!instance || !outAdapter) {

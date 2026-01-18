@@ -43,39 +43,26 @@
 #define USE_THREADING 1
 #endif
 
-// Debug callback function
-static void debugCallback(GfxDebugMessageSeverity severity, GfxDebugMessageType type, const char* message, void* userData)
+// Log callback function
+static void logCallback(GfxLogLevel level, const char* message, void* userData)
 {
-    const char* severityStr = "";
-    switch (severity) {
-    case GFX_DEBUG_MESSAGE_SEVERITY_VERBOSE:
-        severityStr = "VERBOSE";
+    (void)userData;
+    const char* levelStr = "UNKNOWN";
+    switch (level) {
+    case GFX_LOG_LEVEL_ERROR:
+        levelStr = "ERROR";
         break;
-    case GFX_DEBUG_MESSAGE_SEVERITY_INFO:
-        severityStr = "INFO";
+    case GFX_LOG_LEVEL_WARNING:
+        levelStr = "WARNING";
         break;
-    case GFX_DEBUG_MESSAGE_SEVERITY_WARNING:
-        severityStr = "WARNING";
+    case GFX_LOG_LEVEL_INFO:
+        levelStr = "INFO";
         break;
-    case GFX_DEBUG_MESSAGE_SEVERITY_ERROR:
-        severityStr = "ERROR";
-        break;
-    }
-
-    const char* typeStr = "";
-    switch (type) {
-    case GFX_DEBUG_MESSAGE_TYPE_GENERAL:
-        typeStr = "GENERAL";
-        break;
-    case GFX_DEBUG_MESSAGE_TYPE_VALIDATION:
-        typeStr = "VALIDATION";
-        break;
-    case GFX_DEBUG_MESSAGE_TYPE_PERFORMANCE:
-        typeStr = "PERFORMANCE";
+    case GFX_LOG_LEVEL_DEBUG:
+        levelStr = "DEBUG";
         break;
     }
-
-    printf("[%s|%s] %s\n", severityStr, typeStr, message);
+    printf("[%s] %s\n", levelStr, message);
 }
 
 // Vertex structure for cube
@@ -302,6 +289,9 @@ GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
 
 bool initializeGraphics(CubeApp* app)
 {
+    // Set up logging callback
+    gfxSetLogCallback(logCallback, NULL);
+
     // Load the graphics backend BEFORE creating an instance
     // This is now decoupled - you load the backend API once at startup
     printf("Loading graphics backend...\n");
@@ -326,9 +316,6 @@ bool initializeGraphics(CubeApp* app)
         fprintf(stderr, "Failed to create graphics instance\n");
         return false;
     }
-
-    // Set debug callback after instance creation
-    gfxInstanceSetDebugCallback(app->instance, debugCallback, NULL);
 
     // Get adapter
     GfxAdapterDescriptor adapterDesc = {

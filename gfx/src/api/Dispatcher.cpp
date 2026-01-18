@@ -162,18 +162,6 @@ GfxResult gfxInstanceDestroy(GfxInstance instance)
     return result;
 }
 
-GfxResult gfxInstanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData)
-{
-    if (!instance) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    auto backend = gfx::backend::BackendManager::instance().getBackend(instance);
-    if (!backend) {
-        return GFX_RESULT_ERROR_NOT_FOUND;
-    }
-    return backend->instanceSetDebugCallback(instance, callback, userData);
-}
-
 GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter)
 {
     if (!instance || !outAdapter) {
