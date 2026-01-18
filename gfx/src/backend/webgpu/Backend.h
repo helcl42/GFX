@@ -7,7 +7,7 @@
 
 namespace gfx::backend::webgpu {
 // WebGPU backend implementation
-class WebGPUBackend : public IBackend {
+class Backend : public IBackend {
 public:
     // Instance functions
     GfxResult createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const override;

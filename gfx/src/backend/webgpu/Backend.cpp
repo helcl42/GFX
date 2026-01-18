@@ -40,7 +40,7 @@ namespace gfx::backend::webgpu {
 // ============================================================================
 
 // Instance functions
-GfxResult WebGPUBackend::createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const
+GfxResult Backend::createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const
 {
     if (!outInstance) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -56,7 +56,7 @@ GfxResult WebGPUBackend::createInstance(const GfxInstanceDescriptor* descriptor,
     }
 }
 
-GfxResult WebGPUBackend::instanceDestroy(GfxInstance instance) const
+GfxResult Backend::instanceDestroy(GfxInstance instance) const
 {
     if (!instance) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -73,7 +73,7 @@ GfxResult WebGPUBackend::instanceDestroy(GfxInstance instance) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const
+GfxResult Backend::instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const
 {
     // TODO: Implement debug callback using WebGPU error handling
     (void)instance;
@@ -82,7 +82,7 @@ GfxResult WebGPUBackend::instanceSetDebugCallback(GfxInstance instance, GfxDebug
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const
+GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const
 {
     if (!instance || !outAdapter) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -99,7 +99,7 @@ GfxResult WebGPUBackend::instanceRequestAdapter(GfxInstance instance, const GfxA
     }
 }
 
-GfxResult WebGPUBackend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters) const
+GfxResult Backend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters) const
 {
     if (!instance || !adapterCount) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -111,7 +111,7 @@ GfxResult WebGPUBackend::instanceEnumerateAdapters(GfxInstance instance, uint32_
 }
 
 // Adapter functions
-GfxResult WebGPUBackend::adapterDestroy(GfxAdapter adapter) const
+GfxResult Backend::adapterDestroy(GfxAdapter adapter) const
 {
     if (!adapter) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -120,7 +120,7 @@ GfxResult WebGPUBackend::adapterDestroy(GfxAdapter adapter) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const
+GfxResult Backend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const
 {
     if (!adapter || !outDevice) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -137,7 +137,7 @@ GfxResult WebGPUBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDevice
     }
 }
 
-GfxResult WebGPUBackend::adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const
+GfxResult Backend::adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const
 {
     if (!adapter || !outInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -148,7 +148,7 @@ GfxResult WebGPUBackend::adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outI
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const
+GfxResult Backend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const
 {
     if (!adapter || !outLimits) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -161,7 +161,7 @@ GfxResult WebGPUBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* o
 }
 
 // Device functions
-GfxResult WebGPUBackend::deviceDestroy(GfxDevice device) const
+GfxResult Backend::deviceDestroy(GfxDevice device) const
 {
     if (!device) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -170,7 +170,7 @@ GfxResult WebGPUBackend::deviceDestroy(GfxDevice device) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const
+GfxResult Backend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const
 {
     if (!device || !outQueue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -180,7 +180,7 @@ GfxResult WebGPUBackend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) co
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
+GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
 {
 #ifdef GFX_HEADLESS_BUILD
     (void)device;
@@ -205,7 +205,7 @@ GfxResult WebGPUBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceD
 #endif
 }
 
-GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
+GfxResult Backend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
 {
     if (!device || !surface || !descriptor || !outSwapchain) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -223,7 +223,7 @@ GfxResult WebGPUBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
+GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
 {
     if (!device || !descriptor || !outBuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -240,7 +240,7 @@ GfxResult WebGPUBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
     }
 }
 
-GfxResult WebGPUBackend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const
+GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const
 {
     if (!device || !descriptor || !outBuffer || !descriptor->nativeHandle) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -258,7 +258,7 @@ GfxResult WebGPUBackend::deviceImportBuffer(GfxDevice device, const GfxBufferImp
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
+GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
 {
     if (!device || !descriptor || !outTexture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -275,7 +275,7 @@ GfxResult WebGPUBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
     }
 }
 
-GfxResult WebGPUBackend::deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const
+GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const
 {
     if (!device || !descriptor || !outTexture || !descriptor->nativeHandle) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -293,7 +293,7 @@ GfxResult WebGPUBackend::deviceImportTexture(GfxDevice device, const GfxTextureI
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
+GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
 {
     if (!device || !descriptor || !outSampler) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -310,7 +310,7 @@ GfxResult WebGPUBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerD
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
+GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
 {
     if (!device || !descriptor || !descriptor->code || !outShader) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -327,7 +327,7 @@ GfxResult WebGPUBackend::deviceCreateShader(GfxDevice device, const GfxShaderDes
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
+GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
 {
     if (!device || !descriptor || !outLayout) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -344,7 +344,7 @@ GfxResult WebGPUBackend::deviceCreateBindGroupLayout(GfxDevice device, const Gfx
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
+GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
 {
     if (!device || !descriptor || !descriptor->layout || !outBindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -362,7 +362,7 @@ GfxResult WebGPUBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGr
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
+GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
 {
     if (!device || !descriptor || !outPipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -379,7 +379,7 @@ GfxResult WebGPUBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
+GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
 {
     if (!device || !descriptor || !descriptor->compute || !outPipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -396,7 +396,7 @@ GfxResult WebGPUBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
+GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
 {
     if (!device || !descriptor || !outRenderPass) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -414,7 +414,7 @@ GfxResult WebGPUBackend::deviceCreateRenderPass(GfxDevice device, const GfxRende
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const
+GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const
 {
     if (!device || !descriptor || !outFramebuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -432,7 +432,7 @@ GfxResult WebGPUBackend::deviceCreateFramebuffer(GfxDevice device, const GfxFram
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
+GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
 {
     if (!device || !descriptor || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -449,7 +449,7 @@ GfxResult WebGPUBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxC
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
+GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
 {
     if (!device || !descriptor || !outFence) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -464,7 +464,7 @@ GfxResult WebGPUBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescr
     }
 }
 
-GfxResult WebGPUBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const
+GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const
 {
     if (!device || !descriptor || !outSemaphore) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -480,7 +480,7 @@ GfxResult WebGPUBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaph
     }
 }
 
-GfxResult WebGPUBackend::deviceWaitIdle(GfxDevice device) const
+GfxResult Backend::deviceWaitIdle(GfxDevice device) const
 {
     if (!device) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -490,7 +490,7 @@ GfxResult WebGPUBackend::deviceWaitIdle(GfxDevice device) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const
+GfxResult Backend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const
 {
     if (!device || !outLimits) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -502,7 +502,7 @@ GfxResult WebGPUBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outL
 }
 
 // Surface functions
-GfxResult WebGPUBackend::surfaceDestroy(GfxSurface surface) const
+GfxResult Backend::surfaceDestroy(GfxSurface surface) const
 {
     if (!surface) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -511,7 +511,7 @@ GfxResult WebGPUBackend::surfaceDestroy(GfxSurface surface) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const
+GfxResult Backend::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const
 {
     if (!surface || !formatCount) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -543,7 +543,7 @@ GfxResult WebGPUBackend::surfaceEnumerateSupportedFormats(GfxSurface surface, ui
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::surfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes) const
+GfxResult Backend::surfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes) const
 {
     if (!surface || !presentModeCount) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -576,7 +576,7 @@ GfxResult WebGPUBackend::surfaceEnumerateSupportedPresentModes(GfxSurface surfac
 }
 
 // Swapchain functions
-GfxResult WebGPUBackend::swapchainDestroy(GfxSwapchain swapchain) const
+GfxResult Backend::swapchainDestroy(GfxSwapchain swapchain) const
 {
     if (!swapchain) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -585,7 +585,7 @@ GfxResult WebGPUBackend::swapchainDestroy(GfxSwapchain swapchain) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const
+GfxResult Backend::swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const
 {
     if (!swapchain || !outInfo) {
         if (outInfo) {
@@ -601,7 +601,7 @@ GfxResult WebGPUBackend::swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainIn
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const
+GfxResult Backend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const
 {
     if (!swapchain || !outImageIndex) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -649,7 +649,7 @@ GfxResult WebGPUBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint6
     return result;
 }
 
-GfxResult WebGPUBackend::swapchainGetTextureView(GfxSwapchain swapchain, uint32_t imageIndex, GfxTextureView* outView) const
+GfxResult Backend::swapchainGetTextureView(GfxSwapchain swapchain, uint32_t imageIndex, GfxTextureView* outView) const
 {
     if (!swapchain || !outView) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -662,7 +662,7 @@ GfxResult WebGPUBackend::swapchainGetTextureView(GfxSwapchain swapchain, uint32_
     return swapchainGetCurrentTextureView(swapchain, outView);
 }
 
-GfxResult WebGPUBackend::swapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView) const
+GfxResult Backend::swapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView) const
 {
     if (!swapchain || !outView) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -673,7 +673,7 @@ GfxResult WebGPUBackend::swapchainGetCurrentTextureView(GfxSwapchain swapchain, 
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const
+GfxResult Backend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const
 {
     if (!swapchain) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -690,7 +690,7 @@ GfxResult WebGPUBackend::swapchainPresent(GfxSwapchain swapchain, const GfxPrese
 }
 
 // Buffer functions
-GfxResult WebGPUBackend::bufferDestroy(GfxBuffer buffer) const
+GfxResult Backend::bufferDestroy(GfxBuffer buffer) const
 {
     if (!buffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -699,7 +699,7 @@ GfxResult WebGPUBackend::bufferDestroy(GfxBuffer buffer) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
+GfxResult Backend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
 {
     if (!buffer || !outInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -709,7 +709,7 @@ GfxResult WebGPUBackend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo)
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
+GfxResult Backend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
 {
     if (!buffer || !outMappedPointer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -726,7 +726,7 @@ GfxResult WebGPUBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t s
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::bufferUnmap(GfxBuffer buffer) const
+GfxResult Backend::bufferUnmap(GfxBuffer buffer) const
 {
     if (!buffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -737,7 +737,7 @@ GfxResult WebGPUBackend::bufferUnmap(GfxBuffer buffer) const
 }
 
 // Texture functions
-GfxResult WebGPUBackend::textureDestroy(GfxTexture texture) const
+GfxResult Backend::textureDestroy(GfxTexture texture) const
 {
     if (!texture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -746,7 +746,7 @@ GfxResult WebGPUBackend::textureDestroy(GfxTexture texture) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const
+GfxResult Backend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const
 {
     if (!texture || !outInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -756,7 +756,7 @@ GfxResult WebGPUBackend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outI
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::textureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout) const
+GfxResult Backend::textureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout) const
 {
     // WebGPU doesn't have explicit layouts, return GENERAL as a reasonable default
     if (!texture || !outLayout) {
@@ -766,7 +766,7 @@ GfxResult WebGPUBackend::textureGetLayout(GfxTexture texture, GfxTextureLayout* 
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const
+GfxResult Backend::textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const
 {
     if (!texture || !outView) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -784,7 +784,7 @@ GfxResult WebGPUBackend::textureCreateView(GfxTexture texture, const GfxTextureV
 }
 
 // TextureView functions
-GfxResult WebGPUBackend::textureViewDestroy(GfxTextureView textureView) const
+GfxResult Backend::textureViewDestroy(GfxTextureView textureView) const
 {
     if (!textureView) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -794,7 +794,7 @@ GfxResult WebGPUBackend::textureViewDestroy(GfxTextureView textureView) const
 }
 
 // Sampler functions
-GfxResult WebGPUBackend::samplerDestroy(GfxSampler sampler) const
+GfxResult Backend::samplerDestroy(GfxSampler sampler) const
 {
     if (!sampler) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -804,7 +804,7 @@ GfxResult WebGPUBackend::samplerDestroy(GfxSampler sampler) const
 }
 
 // Shader functions
-GfxResult WebGPUBackend::shaderDestroy(GfxShader shader) const
+GfxResult Backend::shaderDestroy(GfxShader shader) const
 {
     if (!shader) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -814,7 +814,7 @@ GfxResult WebGPUBackend::shaderDestroy(GfxShader shader) const
 }
 
 // BindGroupLayout functions
-GfxResult WebGPUBackend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const
+GfxResult Backend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const
 {
     if (!bindGroupLayout) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -824,7 +824,7 @@ GfxResult WebGPUBackend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayo
 }
 
 // BindGroup functions
-GfxResult WebGPUBackend::bindGroupDestroy(GfxBindGroup bindGroup) const
+GfxResult Backend::bindGroupDestroy(GfxBindGroup bindGroup) const
 {
     if (!bindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -834,7 +834,7 @@ GfxResult WebGPUBackend::bindGroupDestroy(GfxBindGroup bindGroup) const
 }
 
 // RenderPipeline functions
-GfxResult WebGPUBackend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) const
+GfxResult Backend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) const
 {
     if (!renderPipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -844,7 +844,7 @@ GfxResult WebGPUBackend::renderPipelineDestroy(GfxRenderPipeline renderPipeline)
 }
 
 // ComputePipeline functions
-GfxResult WebGPUBackend::computePipelineDestroy(GfxComputePipeline computePipeline) const
+GfxResult Backend::computePipelineDestroy(GfxComputePipeline computePipeline) const
 {
     if (!computePipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -853,7 +853,7 @@ GfxResult WebGPUBackend::computePipelineDestroy(GfxComputePipeline computePipeli
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::renderPassDestroy(GfxRenderPass renderPass) const
+GfxResult Backend::renderPassDestroy(GfxRenderPass renderPass) const
 {
     if (!renderPass) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -862,7 +862,7 @@ GfxResult WebGPUBackend::renderPassDestroy(GfxRenderPass renderPass) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::framebufferDestroy(GfxFramebuffer framebuffer) const
+GfxResult Backend::framebufferDestroy(GfxFramebuffer framebuffer) const
 {
     if (!framebuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -872,7 +872,7 @@ GfxResult WebGPUBackend::framebufferDestroy(GfxFramebuffer framebuffer) const
 }
 
 // Queue functions
-GfxResult WebGPUBackend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const
+GfxResult Backend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const
 {
     if (!queue || !submitInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -884,7 +884,7 @@ GfxResult WebGPUBackend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* 
     return queuePtr->submit(submit) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
-GfxResult WebGPUBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
+GfxResult Backend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
 {
     if (!queue || !buffer || !data) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -897,7 +897,7 @@ GfxResult WebGPUBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
     const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
 {
     if (!queue || !texture || !origin || !extent || !data) {
@@ -916,7 +916,7 @@ GfxResult WebGPUBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, c
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::queueWaitIdle(GfxQueue queue) const
+GfxResult Backend::queueWaitIdle(GfxQueue queue) const
 {
     if (!queue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -927,7 +927,7 @@ GfxResult WebGPUBackend::queueWaitIdle(GfxQueue queue) const
 }
 
 // CommandEncoder functions
-GfxResult WebGPUBackend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
+GfxResult Backend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
 {
     if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -936,7 +936,7 @@ GfxResult WebGPUBackend::commandEncoderDestroy(GfxCommandEncoder commandEncoder)
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
+GfxResult Backend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
     const GfxRenderPassBeginDescriptor* beginDescriptor,
     GfxRenderPassEncoder* outRenderPass) const
 {
@@ -958,7 +958,7 @@ GfxResult WebGPUBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     }
 }
 
-GfxResult WebGPUBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outComputePass) const
+GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outComputePass) const
 {
     if (!commandEncoder || !beginDescriptor || !outComputePass) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -975,7 +975,7 @@ GfxResult WebGPUBackend::commandEncoderBeginComputePass(GfxCommandEncoder comman
     }
 }
 
-GfxResult WebGPUBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset,
+GfxResult Backend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset,
     GfxBuffer destination, uint64_t destinationOffset, uint64_t size) const
 {
     if (!commandEncoder || !source || !destination) {
@@ -990,7 +990,7 @@ GfxResult WebGPUBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder comm
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
+GfxResult Backend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
     GfxTexture destination, const GfxOrigin3D* origin, const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const
 {
     if (!commandEncoder || !source || !destination || !origin || !extent) {
@@ -1011,7 +1011,7 @@ GfxResult WebGPUBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder com
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
+GfxResult Backend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
     GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
 {
     if (!commandEncoder || !source || !destination || !origin || !extent) {
@@ -1032,7 +1032,7 @@ GfxResult WebGPUBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder com
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
+GfxResult Backend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout, const GfxExtent3D* extent) const
 {
     if (!commandEncoder || !source || !destination || !sourceOrigin || !destinationOrigin || !extent) {
@@ -1056,7 +1056,7 @@ GfxResult WebGPUBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder co
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+GfxResult Backend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout,
     GfxFilterMode filter) const
@@ -1081,7 +1081,7 @@ GfxResult WebGPUBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder co
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+GfxResult Backend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
     const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
@@ -1098,7 +1098,7 @@ GfxResult WebGPUBackend::commandEncoderPipelineBarrier(GfxCommandEncoder command
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const
+GfxResult Backend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const
 {
     if (!commandEncoder || !texture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1111,7 +1111,7 @@ GfxResult WebGPUBackend::commandEncoderGenerateMipmaps(GfxCommandEncoder command
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+GfxResult Backend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
     uint32_t baseMipLevel, uint32_t levelCount) const
 {
     if (!commandEncoder || !texture) {
@@ -1125,13 +1125,13 @@ GfxResult WebGPUBackend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder co
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
+GfxResult Backend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
 {
     (void)commandEncoder; // Parameter unused - handled in queueSubmit
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
+GfxResult Backend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
 {
     if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1148,7 +1148,7 @@ GfxResult WebGPUBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) c
 }
 
 // RenderPassEncoder functions
-GfxResult WebGPUBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
+GfxResult Backend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
 {
     if (!renderPassEncoder || !pipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1161,7 +1161,7 @@ GfxResult WebGPUBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder rende
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
+GfxResult Backend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
 {
     if (!renderPassEncoder || !bindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1174,7 +1174,7 @@ GfxResult WebGPUBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder rend
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
+GfxResult Backend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
 {
     if (!renderPassEncoder || !buffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1187,7 +1187,7 @@ GfxResult WebGPUBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder r
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const
+GfxResult Backend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const
 {
     if (!renderPassEncoder || !buffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1200,7 +1200,7 @@ GfxResult WebGPUBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder re
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
+GfxResult Backend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
 {
     if (!renderPassEncoder || !viewport) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1212,7 +1212,7 @@ GfxResult WebGPUBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder rende
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
+GfxResult Backend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
 {
     if (!renderPassEncoder || !scissor) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1223,7 +1223,7 @@ GfxResult WebGPUBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder re
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
+GfxResult Backend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
 {
     if (!renderPassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1234,7 +1234,7 @@ GfxResult WebGPUBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEn
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
+GfxResult Backend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
 {
     if (!renderPassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1245,7 +1245,7 @@ GfxResult WebGPUBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder rende
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
+GfxResult Backend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
 {
     if (!renderPassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1257,7 +1257,7 @@ GfxResult WebGPUBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEnc
 }
 
 // ComputePassEncoder functions
-GfxResult WebGPUBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
+GfxResult Backend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
 {
     if (!computePassEncoder || !pipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1270,7 +1270,7 @@ GfxResult WebGPUBackend::computePassEncoderSetPipeline(GfxComputePassEncoder com
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
+GfxResult Backend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
 {
     if (!computePassEncoder || !bindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1283,7 +1283,7 @@ GfxResult WebGPUBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder co
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
+GfxResult Backend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
 {
     if (!computePassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1294,7 +1294,7 @@ GfxResult WebGPUBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEnco
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
+GfxResult Backend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
 {
     if (!computePassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1306,7 +1306,7 @@ GfxResult WebGPUBackend::computePassEncoderEnd(GfxComputePassEncoder computePass
 }
 
 // Fence functions
-GfxResult WebGPUBackend::fenceDestroy(GfxFence fence) const
+GfxResult Backend::fenceDestroy(GfxFence fence) const
 {
     if (!fence) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1315,7 +1315,7 @@ GfxResult WebGPUBackend::fenceDestroy(GfxFence fence) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
+GfxResult Backend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
 {
     if (!fence || !isSignaled) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1326,7 +1326,7 @@ GfxResult WebGPUBackend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
+GfxResult Backend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
 {
     if (!fence) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1341,7 +1341,7 @@ GfxResult WebGPUBackend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
     return fencePtr->isSignaled() ? GFX_RESULT_SUCCESS : GFX_RESULT_TIMEOUT;
 }
 
-GfxResult WebGPUBackend::fenceReset(GfxFence fence) const
+GfxResult Backend::fenceReset(GfxFence fence) const
 {
     if (!fence) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1353,7 +1353,7 @@ GfxResult WebGPUBackend::fenceReset(GfxFence fence) const
 }
 
 // Semaphore functions
-GfxResult WebGPUBackend::semaphoreDestroy(GfxSemaphore semaphore) const
+GfxResult Backend::semaphoreDestroy(GfxSemaphore semaphore) const
 {
     if (!semaphore) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1362,7 +1362,7 @@ GfxResult WebGPUBackend::semaphoreDestroy(GfxSemaphore semaphore) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType) const
+GfxResult Backend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType) const
 {
     if (!semaphore || !outType) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1372,7 +1372,7 @@ GfxResult WebGPUBackend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreTy
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
+GfxResult Backend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
 {
     if (!semaphore) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1385,7 +1385,7 @@ GfxResult WebGPUBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value)
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const
+GfxResult Backend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const
 {
     if (!semaphore) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1399,7 +1399,7 @@ GfxResult WebGPUBackend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, u
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult WebGPUBackend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const
+GfxResult Backend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const
 {
     if (!semaphore || !outValue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1408,7 +1408,7 @@ GfxResult WebGPUBackend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* out
     return GFX_RESULT_SUCCESS;
 }
 
-GfxAccessFlags WebGPUBackend::getAccessFlagsForLayout(GfxTextureLayout layout) const
+GfxAccessFlags Backend::getAccessFlagsForLayout(GfxTextureLayout layout) const
 {
     // WebGPU doesn't use explicit access flags - synchronization is implicit
     (void)layout;

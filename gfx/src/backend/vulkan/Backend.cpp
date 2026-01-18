@@ -39,7 +39,7 @@
 namespace gfx::backend::vulkan {
 
 // Instance functions
-GfxResult VulkanBackend::createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const
+GfxResult Backend::createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const
 {
     if (!descriptor || !outInstance) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -56,13 +56,13 @@ GfxResult VulkanBackend::createInstance(const GfxInstanceDescriptor* descriptor,
     }
 }
 
-GfxResult VulkanBackend::instanceDestroy(GfxInstance instance) const
+GfxResult Backend::instanceDestroy(GfxInstance instance) const
 {
     delete converter::toNative<core::Instance>(instance);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const
+GfxResult Backend::instanceSetDebugCallback(GfxInstance instance, GfxDebugCallback callback, void* userData) const
 {
     if (!instance) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -97,7 +97,7 @@ GfxResult VulkanBackend::instanceSetDebugCallback(GfxInstance instance, GfxDebug
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const
+GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const
 {
     if (!instance || !outAdapter) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -117,7 +117,7 @@ GfxResult VulkanBackend::instanceRequestAdapter(GfxInstance instance, const GfxA
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters) const
+GfxResult Backend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters) const
 {
     if (!instance || !adapterCount) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -129,13 +129,13 @@ GfxResult VulkanBackend::instanceEnumerateAdapters(GfxInstance instance, uint32_
 }
 
 // Adapter functions
-GfxResult VulkanBackend::adapterDestroy(GfxAdapter adapter) const
+GfxResult Backend::adapterDestroy(GfxAdapter adapter) const
 {
     delete converter::toNative<core::Adapter>(adapter);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const
+GfxResult Backend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const
 {
     if (!adapter || !outDevice) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -154,7 +154,7 @@ GfxResult VulkanBackend::adapterCreateDevice(GfxAdapter adapter, const GfxDevice
     }
 }
 
-GfxResult VulkanBackend::adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const
+GfxResult Backend::adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const
 {
     if (!adapter || !outInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -165,7 +165,7 @@ GfxResult VulkanBackend::adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outI
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const
+GfxResult Backend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const
 {
     if (!adapter || !outLimits) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -176,13 +176,13 @@ GfxResult VulkanBackend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* o
 }
 
 // Device functions
-GfxResult VulkanBackend::deviceDestroy(GfxDevice device) const
+GfxResult Backend::deviceDestroy(GfxDevice device) const
 {
     delete converter::toNative<core::Device>(device);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const
+GfxResult Backend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const
 {
     if (!device || !outQueue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -192,7 +192,7 @@ GfxResult VulkanBackend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) co
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
+GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
 {
 #ifdef GFX_HEADLESS_BUILD
     (void)device;
@@ -218,7 +218,7 @@ GfxResult VulkanBackend::deviceCreateSurface(GfxDevice device, const GfxSurfaceD
 #endif
 }
 
-GfxResult VulkanBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
+GfxResult Backend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
 {
     if (!device || !surface || !descriptor || !outSwapchain) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -237,7 +237,7 @@ GfxResult VulkanBackend::deviceCreateSwapchain(GfxDevice device, GfxSurface surf
     }
 }
 
-GfxResult VulkanBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
+GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
 {
     if (!device || !descriptor || !outBuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -255,7 +255,7 @@ GfxResult VulkanBackend::deviceCreateBuffer(GfxDevice device, const GfxBufferDes
     }
 }
 
-GfxResult VulkanBackend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const
+GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const
 {
     if (!device || !descriptor || !outBuffer || !descriptor->nativeHandle) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -274,7 +274,7 @@ GfxResult VulkanBackend::deviceImportBuffer(GfxDevice device, const GfxBufferImp
     }
 }
 
-GfxResult VulkanBackend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
+GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
 {
     if (!device || !descriptor || !outTexture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -292,7 +292,7 @@ GfxResult VulkanBackend::deviceCreateTexture(GfxDevice device, const GfxTextureD
     }
 }
 
-GfxResult VulkanBackend::deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const
+GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const
 {
     if (!device || !descriptor || !outTexture || !descriptor->nativeHandle) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -312,7 +312,7 @@ GfxResult VulkanBackend::deviceImportTexture(GfxDevice device, const GfxTextureI
     }
 }
 
-GfxResult VulkanBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
+GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
 {
     if (!device || !descriptor || !outSampler) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -330,7 +330,7 @@ GfxResult VulkanBackend::deviceCreateSampler(GfxDevice device, const GfxSamplerD
     }
 }
 
-GfxResult VulkanBackend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
+GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
 {
     if (!device || !descriptor || !outShader) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -348,7 +348,7 @@ GfxResult VulkanBackend::deviceCreateShader(GfxDevice device, const GfxShaderDes
     }
 }
 
-GfxResult VulkanBackend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
+GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
 {
     try {
         auto* dev = converter::toNative<core::Device>(device);
@@ -361,7 +361,7 @@ GfxResult VulkanBackend::deviceCreateBindGroupLayout(GfxDevice device, const Gfx
     }
 }
 
-GfxResult VulkanBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
+GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
 {
     try {
         auto* dev = converter::toNative<core::Device>(device);
@@ -374,7 +374,7 @@ GfxResult VulkanBackend::deviceCreateBindGroup(GfxDevice device, const GfxBindGr
     }
 }
 
-GfxResult VulkanBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
+GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
 {
     if (!device || !descriptor || !outPipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -392,7 +392,7 @@ GfxResult VulkanBackend::deviceCreateRenderPipeline(GfxDevice device, const GfxR
     }
 }
 
-GfxResult VulkanBackend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
+GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
 {
     if (!device || !descriptor || !outPipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -410,7 +410,7 @@ GfxResult VulkanBackend::deviceCreateComputePipeline(GfxDevice device, const Gfx
     }
 }
 
-GfxResult VulkanBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
+GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
 {
     if (!device || !descriptor || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -429,7 +429,7 @@ GfxResult VulkanBackend::deviceCreateCommandEncoder(GfxDevice device, const GfxC
     (void)descriptor->label; // Unused for now
 }
 
-GfxResult VulkanBackend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
+GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
 {
     if (!device || !descriptor || !outRenderPass) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -448,7 +448,7 @@ GfxResult VulkanBackend::deviceCreateRenderPass(GfxDevice device, const GfxRende
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const
+GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const
 {
     if (!device || !descriptor || !outFramebuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -466,7 +466,7 @@ GfxResult VulkanBackend::deviceCreateFramebuffer(GfxDevice device, const GfxFram
     }
 }
 
-GfxResult VulkanBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
+GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
 {
     if (!device || !outFence) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -484,7 +484,7 @@ GfxResult VulkanBackend::deviceCreateFence(GfxDevice device, const GfxFenceDescr
     }
 }
 
-GfxResult VulkanBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const
+GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const
 {
     if (!device || !outSemaphore) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -502,7 +502,7 @@ GfxResult VulkanBackend::deviceCreateSemaphore(GfxDevice device, const GfxSemaph
     }
 }
 
-GfxResult VulkanBackend::deviceWaitIdle(GfxDevice device) const
+GfxResult Backend::deviceWaitIdle(GfxDevice device) const
 {
     if (!device) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -512,7 +512,7 @@ GfxResult VulkanBackend::deviceWaitIdle(GfxDevice device) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const
+GfxResult Backend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const
 {
     if (!device || !outLimits) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -523,13 +523,13 @@ GfxResult VulkanBackend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outL
 }
 
 // Surface functions
-GfxResult VulkanBackend::surfaceDestroy(GfxSurface surface) const
+GfxResult Backend::surfaceDestroy(GfxSurface surface) const
 {
     delete converter::toNative<core::Surface>(surface);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const
+GfxResult Backend::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const
 {
     if (!surface || !formatCount) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -551,7 +551,7 @@ GfxResult VulkanBackend::surfaceEnumerateSupportedFormats(GfxSurface surface, ui
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::surfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes) const
+GfxResult Backend::surfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes) const
 {
     if (!surface || !presentModeCount) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -574,13 +574,13 @@ GfxResult VulkanBackend::surfaceEnumerateSupportedPresentModes(GfxSurface surfac
 }
 
 // Swapchain functions
-GfxResult VulkanBackend::swapchainDestroy(GfxSwapchain swapchain) const
+GfxResult Backend::swapchainDestroy(GfxSwapchain swapchain) const
 {
     delete converter::toNative<core::Swapchain>(swapchain);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const
+GfxResult Backend::swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const
 {
     if (!swapchain || !outInfo) {
         if (outInfo) {
@@ -596,7 +596,7 @@ GfxResult VulkanBackend::swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainIn
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const
+GfxResult Backend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const
 {
     if (!swapchain || !outImageIndex) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -637,7 +637,7 @@ GfxResult VulkanBackend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint6
     }
 }
 
-GfxResult VulkanBackend::swapchainGetTextureView(GfxSwapchain swapchain, uint32_t imageIndex, GfxTextureView* outView) const
+GfxResult Backend::swapchainGetTextureView(GfxSwapchain swapchain, uint32_t imageIndex, GfxTextureView* outView) const
 {
     if (!swapchain || !outView) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -652,7 +652,7 @@ GfxResult VulkanBackend::swapchainGetTextureView(GfxSwapchain swapchain, uint32_
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::swapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView) const
+GfxResult Backend::swapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView) const
 {
     if (!swapchain || !outView) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -663,7 +663,7 @@ GfxResult VulkanBackend::swapchainGetCurrentTextureView(GfxSwapchain swapchain, 
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const
+GfxResult Backend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const
 {
     if (!swapchain) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -701,13 +701,13 @@ GfxResult VulkanBackend::swapchainPresent(GfxSwapchain swapchain, const GfxPrese
 }
 
 // Buffer functions
-GfxResult VulkanBackend::bufferDestroy(GfxBuffer buffer) const
+GfxResult Backend::bufferDestroy(GfxBuffer buffer) const
 {
     delete converter::toNative<core::Buffer>(buffer);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
+GfxResult Backend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
 {
     if (!buffer || !outInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -717,7 +717,7 @@ GfxResult VulkanBackend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo)
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
+GfxResult Backend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
 {
     if (!buffer || !outMappedPointer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -731,7 +731,7 @@ GfxResult VulkanBackend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t s
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::bufferUnmap(GfxBuffer buffer) const
+GfxResult Backend::bufferUnmap(GfxBuffer buffer) const
 {
     if (!buffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -742,13 +742,13 @@ GfxResult VulkanBackend::bufferUnmap(GfxBuffer buffer) const
 }
 
 // Texture functions
-GfxResult VulkanBackend::textureDestroy(GfxTexture texture) const
+GfxResult Backend::textureDestroy(GfxTexture texture) const
 {
     delete converter::toNative<core::Texture>(texture);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const
+GfxResult Backend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const
 {
     if (!texture || !outInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -758,7 +758,7 @@ GfxResult VulkanBackend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outI
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::textureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout) const
+GfxResult Backend::textureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout) const
 {
     if (!texture || !outLayout) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -768,7 +768,7 @@ GfxResult VulkanBackend::textureGetLayout(GfxTexture texture, GfxTextureLayout* 
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const
+GfxResult Backend::textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const
 {
     if (!texture || !outView) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -787,68 +787,68 @@ GfxResult VulkanBackend::textureCreateView(GfxTexture texture, const GfxTextureV
 }
 
 // TextureView functions
-GfxResult VulkanBackend::textureViewDestroy(GfxTextureView textureView) const
+GfxResult Backend::textureViewDestroy(GfxTextureView textureView) const
 {
     delete converter::toNative<core::TextureView>(textureView);
     return GFX_RESULT_SUCCESS;
 }
 
 // Sampler functions
-GfxResult VulkanBackend::samplerDestroy(GfxSampler sampler) const
+GfxResult Backend::samplerDestroy(GfxSampler sampler) const
 {
     delete converter::toNative<core::Sampler>(sampler);
     return GFX_RESULT_SUCCESS;
 }
 
 // Shader functions
-GfxResult VulkanBackend::shaderDestroy(GfxShader shader) const
+GfxResult Backend::shaderDestroy(GfxShader shader) const
 {
     delete converter::toNative<core::Shader>(shader);
     return GFX_RESULT_SUCCESS;
 }
 
 // BindGroupLayout functions
-GfxResult VulkanBackend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const
+GfxResult Backend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const
 {
     delete converter::toNative<core::BindGroupLayout>(bindGroupLayout);
     return GFX_RESULT_SUCCESS;
 }
 
 // BindGroup functions
-GfxResult VulkanBackend::bindGroupDestroy(GfxBindGroup bindGroup) const
+GfxResult Backend::bindGroupDestroy(GfxBindGroup bindGroup) const
 {
     delete converter::toNative<core::BindGroup>(bindGroup);
     return GFX_RESULT_SUCCESS;
 }
 
 // RenderPipeline functions
-GfxResult VulkanBackend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) const
+GfxResult Backend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) const
 {
     delete converter::toNative<core::RenderPipeline>(renderPipeline);
     return GFX_RESULT_SUCCESS;
 }
 
 // ComputePipeline functions
-GfxResult VulkanBackend::computePipelineDestroy(GfxComputePipeline computePipeline) const
+GfxResult Backend::computePipelineDestroy(GfxComputePipeline computePipeline) const
 {
     delete converter::toNative<core::ComputePipeline>(computePipeline);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::renderPassDestroy(GfxRenderPass renderPass) const
+GfxResult Backend::renderPassDestroy(GfxRenderPass renderPass) const
 {
     delete converter::toNative<core::RenderPass>(renderPass);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::framebufferDestroy(GfxFramebuffer framebuffer) const
+GfxResult Backend::framebufferDestroy(GfxFramebuffer framebuffer) const
 {
     delete converter::toNative<core::Framebuffer>(framebuffer);
     return GFX_RESULT_SUCCESS;
 }
 
 // Queue functions
-GfxResult VulkanBackend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const
+GfxResult Backend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const
 {
     if (!queue || !submitInfo) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -860,7 +860,7 @@ GfxResult VulkanBackend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* 
     return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
-GfxResult VulkanBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
+GfxResult Backend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
 {
     if (!queue || !buffer || !data) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -872,7 +872,7 @@ GfxResult VulkanBackend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
+GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
     const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
 {
     if (!queue || !texture || !data || !extent || dataSize == 0) {
@@ -892,7 +892,7 @@ GfxResult VulkanBackend::queueWriteTexture(GfxQueue queue, GfxTexture texture, c
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::queueWaitIdle(GfxQueue queue) const
+GfxResult Backend::queueWaitIdle(GfxQueue queue) const
 {
     if (!queue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -904,13 +904,13 @@ GfxResult VulkanBackend::queueWaitIdle(GfxQueue queue) const
 }
 
 // CommandEncoder functions
-GfxResult VulkanBackend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
+GfxResult Backend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
 {
     delete converter::toNative<core::CommandEncoder>(commandEncoder);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
+GfxResult Backend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
     const GfxRenderPassBeginDescriptor* beginDescriptor,
     GfxRenderPassEncoder* outRenderPass) const
 {
@@ -932,7 +932,7 @@ GfxResult VulkanBackend::commandEncoderBeginRenderPass(GfxCommandEncoder command
     }
 }
 
-GfxResult VulkanBackend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outComputePass) const
+GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outComputePass) const
 {
     if (!commandEncoder || !beginDescriptor || !outComputePass) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -949,7 +949,7 @@ GfxResult VulkanBackend::commandEncoderBeginComputePass(GfxCommandEncoder comman
     }
 }
 
-GfxResult VulkanBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
+GfxResult Backend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
     GfxBuffer source, uint64_t sourceOffset,
     GfxBuffer destination, uint64_t destinationOffset,
     uint64_t size) const
@@ -966,7 +966,7 @@ GfxResult VulkanBackend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder comm
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
+GfxResult Backend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
     GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
     GfxTexture destination, const GfxOrigin3D* origin,
     const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const
@@ -990,7 +990,7 @@ GfxResult VulkanBackend::commandEncoderCopyBufferToTexture(GfxCommandEncoder com
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
+GfxResult Backend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
     GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
     const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
@@ -1013,7 +1013,7 @@ GfxResult VulkanBackend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder com
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
+GfxResult Backend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout,
     const GfxExtent3D* extent) const
@@ -1038,7 +1038,7 @@ GfxResult VulkanBackend::commandEncoderCopyTextureToTexture(GfxCommandEncoder co
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
+GfxResult Backend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
     GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
     GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout,
     GfxFilterMode filter) const
@@ -1066,7 +1066,7 @@ GfxResult VulkanBackend::commandEncoderBlitTextureToTexture(GfxCommandEncoder co
 }
 
 // TODO - add member function to CommandEncoder for pipeline barrier
-GfxResult VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
+GfxResult Backend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
     const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
     const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
     const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
@@ -1107,7 +1107,7 @@ GfxResult VulkanBackend::commandEncoderPipelineBarrier(GfxCommandEncoder command
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const
+GfxResult Backend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const
 {
     if (!commandEncoder || !texture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1120,7 +1120,7 @@ GfxResult VulkanBackend::commandEncoderGenerateMipmaps(GfxCommandEncoder command
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
+GfxResult Backend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
     uint32_t baseMipLevel, uint32_t levelCount) const
 {
     if (!commandEncoder || !texture) {
@@ -1134,7 +1134,7 @@ GfxResult VulkanBackend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder co
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
+GfxResult Backend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
 {
     if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1144,7 +1144,7 @@ GfxResult VulkanBackend::commandEncoderEnd(GfxCommandEncoder commandEncoder) con
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
+GfxResult Backend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
 {
     if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1155,7 +1155,7 @@ GfxResult VulkanBackend::commandEncoderBegin(GfxCommandEncoder commandEncoder) c
 }
 
 // RenderPassEncoder functions
-GfxResult VulkanBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
+GfxResult Backend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
 {
     if (!renderPassEncoder || !pipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1166,7 +1166,7 @@ GfxResult VulkanBackend::renderPassEncoderSetPipeline(GfxRenderPassEncoder rende
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
+GfxResult Backend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
 {
     if (!renderPassEncoder || !bindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1177,7 +1177,7 @@ GfxResult VulkanBackend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder rend
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
+GfxResult Backend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
 {
     if (!renderPassEncoder || !buffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1190,7 +1190,7 @@ GfxResult VulkanBackend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder r
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const
+GfxResult Backend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const
 {
     if (!renderPassEncoder || !buffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1204,7 +1204,7 @@ GfxResult VulkanBackend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder re
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
+GfxResult Backend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
 {
     if (!renderPassEncoder || !viewport) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1215,7 +1215,7 @@ GfxResult VulkanBackend::renderPassEncoderSetViewport(GfxRenderPassEncoder rende
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
+GfxResult Backend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
 {
     if (!renderPassEncoder || !scissor) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1226,7 +1226,7 @@ GfxResult VulkanBackend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder re
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
+GfxResult Backend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
 {
     if (!renderPassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1236,7 +1236,7 @@ GfxResult VulkanBackend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEn
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
+GfxResult Backend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
 {
     if (!renderPassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1246,7 +1246,7 @@ GfxResult VulkanBackend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder rende
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
+GfxResult Backend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
 {
     if (!renderPassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1257,7 +1257,7 @@ GfxResult VulkanBackend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEnc
 }
 
 // ComputePassEncoder functions
-GfxResult VulkanBackend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
+GfxResult Backend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
 {
     if (!computePassEncoder || !pipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1268,7 +1268,7 @@ GfxResult VulkanBackend::computePassEncoderSetPipeline(GfxComputePassEncoder com
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
+GfxResult Backend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
 {
     if (!computePassEncoder || !bindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1279,7 +1279,7 @@ GfxResult VulkanBackend::computePassEncoderSetBindGroup(GfxComputePassEncoder co
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
+GfxResult Backend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
 {
     if (!computePassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1290,7 +1290,7 @@ GfxResult VulkanBackend::computePassEncoderDispatchWorkgroups(GfxComputePassEnco
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
+GfxResult Backend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
 {
     if (!computePassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1301,13 +1301,13 @@ GfxResult VulkanBackend::computePassEncoderEnd(GfxComputePassEncoder computePass
 }
 
 // Fence functions
-GfxResult VulkanBackend::fenceDestroy(GfxFence fence) const
+GfxResult Backend::fenceDestroy(GfxFence fence) const
 {
     delete converter::toNative<core::Fence>(fence);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
+GfxResult Backend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
 {
     if (!fence) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1325,7 +1325,7 @@ GfxResult VulkanBackend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
     }
 }
 
-GfxResult VulkanBackend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
+GfxResult Backend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
 {
     if (!fence) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1345,7 +1345,7 @@ GfxResult VulkanBackend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
     }
 }
 
-GfxResult VulkanBackend::fenceReset(GfxFence fence) const
+GfxResult Backend::fenceReset(GfxFence fence) const
 {
     if (!fence) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1356,13 +1356,13 @@ GfxResult VulkanBackend::fenceReset(GfxFence fence) const
 }
 
 // Semaphore functions
-GfxResult VulkanBackend::semaphoreDestroy(GfxSemaphore semaphore) const
+GfxResult Backend::semaphoreDestroy(GfxSemaphore semaphore) const
 {
     delete converter::toNative<core::Semaphore>(semaphore);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType) const
+GfxResult Backend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType) const
 {
     if (!semaphore || !outType) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1372,7 +1372,7 @@ GfxResult VulkanBackend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreTy
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult VulkanBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
+GfxResult Backend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
 {
     if (!semaphore) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1381,7 +1381,7 @@ GfxResult VulkanBackend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value)
     VkResult result = s->signal(value);
     return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
-GfxResult VulkanBackend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const
+GfxResult Backend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const
 {
     if (!semaphore) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1391,7 +1391,7 @@ GfxResult VulkanBackend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, u
     return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
 
-GfxResult VulkanBackend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const
+GfxResult Backend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const
 {
     if (!semaphore || !outValue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1401,7 +1401,7 @@ GfxResult VulkanBackend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* out
     return GFX_RESULT_SUCCESS;
 }
 
-GfxAccessFlags VulkanBackend::getAccessFlagsForLayout(GfxTextureLayout layout) const
+GfxAccessFlags Backend::getAccessFlagsForLayout(GfxTextureLayout layout) const
 {
     VkImageLayout vkLayout = converter::gfxLayoutToVkImageLayout(layout);
     VkAccessFlags vkAccessFlags = converter::getVkAccessFlagsForLayout(vkLayout);

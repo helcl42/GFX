@@ -8,7 +8,7 @@
 namespace gfx::backend::vulkan {
 
 // Vulkan backend implementation
-class VulkanBackend : public IBackend {
+class Backend : public IBackend {
 public:
     // Instance functions
     GfxResult createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const override;
