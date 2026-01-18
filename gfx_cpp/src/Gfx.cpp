@@ -327,14 +327,13 @@ private:
 
 class CTextureViewImpl : public TextureView {
 public:
-    explicit CTextureViewImpl(GfxTextureView h, bool owns = true)
+    explicit CTextureViewImpl(GfxTextureView h)
         : m_handle(h)
-        , m_ownsHandle(owns)
     {
     }
     ~CTextureViewImpl() override
     {
-        if (m_handle && m_ownsHandle) {
+        if (m_handle) {
             gfxTextureViewDestroy(m_handle);
         }
     }
@@ -344,7 +343,6 @@ public:
 private:
     GfxTextureView m_handle;
     std::shared_ptr<Texture> m_texture;
-    bool m_ownsHandle; // False for swapchain texture views
 };
 
 class CTextureImpl : public Texture {
@@ -410,7 +408,7 @@ public:
             throw std::runtime_error("Failed to create texture view");
         }
 
-        return std::make_shared<CTextureViewImpl>(view, true);
+        return std::make_shared<CTextureViewImpl>(view);
     }
 
 private:
@@ -1274,8 +1272,7 @@ public:
         if (result != GFX_RESULT_SUCCESS || !view) {
             return nullptr;
         }
-        // Swapchain texture views are owned by the swapchain, not by the wrapper
-        return std::make_shared<CTextureViewImpl>(view, false);
+        return std::make_shared<CTextureViewImpl>(view);
     }
 
     Result acquireNextImage(uint64_t timeout,
@@ -1297,9 +1294,7 @@ public:
         if (result != GFX_RESULT_SUCCESS || !view) {
             return nullptr;
         }
-        // Swapchain texture views are now cached by the backend (both Vulkan and WebGPU)
-        // The view is owned by the swapchain, not by this wrapper
-        return std::make_shared<CTextureViewImpl>(view, false);
+        return std::make_shared<CTextureViewImpl>(view);
     }
 
     Result present(const PresentInfo& info) override
