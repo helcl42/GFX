@@ -15,11 +15,11 @@ std::unique_ptr<const IBackend> BackendFactory::create(GfxBackend backend)
     switch (backend) {
 #ifdef GFX_ENABLE_VULKAN
     case GFX_BACKEND_VULKAN:
-        return std::unique_ptr<const IBackend>(new vulkan::VulkanBackend());
+        return std::make_unique<vulkan::VulkanBackend>();
 #endif
 #ifdef GFX_ENABLE_WEBGPU
     case GFX_BACKEND_WEBGPU:
-        return std::unique_ptr<const IBackend>(new webgpu::WebGPUBackend());
+        return std::make_unique<webgpu::WebGPUBackend>();
 #endif
     default:
         return nullptr;
