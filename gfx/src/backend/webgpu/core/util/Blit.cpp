@@ -1,8 +1,7 @@
 #include "Blit.h"
 
 #include "Utils.h"
-
-#include <cstdio>
+#include "common/Logger.h"
 
 namespace gfx::backend::webgpu::core {
 
@@ -115,7 +114,7 @@ void Blit::execute(WGPUCommandEncoder commandEncoder, WGPUTexture srcTexture, co
         viewDimension = WGPUTextureViewDimension_2D;
     } else {
         // 1D and 3D textures not yet supported by the shader
-        fprintf(stderr, "[WebGPU Blit] Only 2D textures are currently supported\n");
+        gfx::common::Logger::instance().logWarning("[WebGPU Blit] Only 2D textures are currently supported");
     }
 
     // Create texture view for source

@@ -1,5 +1,6 @@
 #include "backend/Factory.h"
 #include "backend/Manager.h"
+#include "common/Logger.h"
 
 #include <gfx/gfx.h>
 
@@ -1256,6 +1257,11 @@ GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout)
     }
 
     return backend->getAccessFlagsForLayout(layout);
+}
+
+void gfxSetLogCallback(GfxLogCallback callback, void* userData)
+{
+    gfx::common::Logger::instance().setCallback(callback, userData);
 }
 
 uint64_t gfxAlignUp(uint64_t value, uint64_t alignment)

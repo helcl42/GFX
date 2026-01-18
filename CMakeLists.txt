@@ -251,6 +251,7 @@ set(GFX_C_SOURCES
     gfx/src/backend/Factory.cpp
     gfx/src/backend/Manager.cpp
     gfx/src/api/Dispatcher.cpp
+    gfx/src/common/Logger.cpp
 )
 
 if(BUILD_VULKAN_BACKEND)

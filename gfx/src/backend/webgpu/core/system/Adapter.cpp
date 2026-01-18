@@ -2,6 +2,8 @@
 
 #include "Instance.h"
 
+#include "common/Logger.h"
+
 #include <stdexcept>
 
 namespace gfx::backend::webgpu::core {
@@ -60,8 +62,8 @@ Adapter::Adapter(Instance* instance, const AdapterCreateInfo& createInfo)
             if (status == WGPURequestAdapterStatus_Success && adapter) {
                 *ctx->outAdapter = adapter;
             } else if (message.data) {
-                fprintf(stderr, "Error: Failed to request adapter: %.*s\n",
-                    (int)message.length, message.data);
+                gfx::common::Logger::instance().logError("Error: Failed to request adapter: {}",
+                    std::string_view(message.data, message.length));
             }
             (void)userdata2; // Unused
         };

@@ -1,8 +1,11 @@
-#include "../presentation/Swapchain.h"
+#include "Swapchain.h"
+
+#include "Surface.h"
 
 #include "../resource/TextureView.h"
 #include "../system/Device.h"
-#include "Surface.h"
+
+#include "common/Logger.h"
 
 #include <stdexcept>
 
@@ -28,7 +31,7 @@ Swapchain::Swapchain(Device* device, Surface* surface, const SwapchainCreateInfo
     // If requested format not found, fall back to first available format
     if (selectedFormat == WGPUTextureFormat_Undefined && capabilities.formatCount > 0) {
         selectedFormat = capabilities.formats[0];
-        fprintf(stderr, "[WebGPU Swapchain] Requested format %d not supported, using format %d\n", m_info.format, selectedFormat);
+        gfx::common::Logger::instance().logWarning("[WebGPU Swapchain] Requested format {} not supported, using format {}", static_cast<int>(m_info.format), static_cast<int>(selectedFormat));
     }
 
     if (selectedFormat == WGPUTextureFormat_Undefined) {
@@ -49,7 +52,7 @@ Swapchain::Swapchain(Device* device, Surface* surface, const SwapchainCreateInfo
     // If requested present mode not found, fall back to first available mode
     if (selectedPresentMode == WGPUPresentMode_Undefined && capabilities.presentModeCount > 0) {
         selectedPresentMode = capabilities.presentModes[0];
-        fprintf(stderr, "[WebGPU Swapchain] Requested present mode %d not supported, using mode %d\n", m_info.presentMode, selectedPresentMode);
+        gfx::common::Logger::instance().logWarning("[WebGPU Swapchain] Requested present mode {} not supported, using mode {}", static_cast<int>(m_info.presentMode), static_cast<int>(selectedPresentMode));
     }
 
     if (selectedPresentMode == WGPUPresentMode_Undefined) {
@@ -152,7 +155,7 @@ WGPUSurfaceGetCurrentTextureStatus Swapchain::acquireNextImage()
         // Create the view from the new texture
         m_currentRawView = wgpuTextureCreateView(m_currentTexture, nullptr);
         if (!m_currentRawView) {
-            fprintf(stderr, "[WebGPU] Failed to create texture view\n");
+            gfx::common::Logger::instance().logError("[WebGPU] Failed to create texture view");
         }
     } else if (surfaceTexture.texture) {
         wgpuTextureRelease(surfaceTexture.texture);

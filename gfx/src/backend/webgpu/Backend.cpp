@@ -1,6 +1,7 @@
 #include "Backend.h"
 
 #include "common/Common.h"
+#include "common/Logger.h"
 #include "converter/Conversions.h"
 
 #include "core/command/CommandEncoder.h"
@@ -52,7 +53,7 @@ GfxResult Backend::createInstance(const GfxInstanceDescriptor* descriptor, GfxIn
         *outInstance = converter::toGfx<GfxInstance>(instance);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create instance: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create instance: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -96,7 +97,7 @@ GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapter
         *outAdapter = converter::toGfx<GfxAdapter>(adapter);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to request adapter: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to request adapter: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -137,7 +138,7 @@ GfxResult Backend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescri
         *outDevice = converter::toGfx<GfxDevice>(device);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create device: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create device: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -193,7 +194,7 @@ GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescrip
     (void)device;
     (void)descriptor;
     (void)outSurface;
-    fprintf(stderr, "Surface creation is not available in headless builds\n");
+    gfx::common::Logger::instance().logError("Surface creation is not available in headless builds");
     return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
 #else
     if (!device || !descriptor || !outSurface) {
@@ -207,7 +208,7 @@ GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescrip
         *outSurface = converter::toGfx<GfxSurface>(surface);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create surface: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create surface: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 #endif
@@ -227,7 +228,7 @@ GfxResult Backend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, c
         *outSwapchain = converter::toGfx<GfxSwapchain>(swapchain);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create swapchain: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create swapchain: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -245,7 +246,7 @@ GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescripto
         *outBuffer = converter::toGfx<GfxBuffer>(buffer);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create buffer: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create buffer: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -264,7 +265,7 @@ GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDes
         *outBuffer = converter::toGfx<GfxBuffer>(buffer);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to import buffer: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to import buffer: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -282,7 +283,7 @@ GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescrip
         *outTexture = converter::toGfx<GfxTexture>(texture);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create texture: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create texture: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -301,7 +302,7 @@ GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportD
         *outTexture = converter::toGfx<GfxTexture>(texture);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to import texture: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to import texture: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -319,7 +320,7 @@ GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescrip
         *outSampler = converter::toGfx<GfxSampler>(sampler);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create sampler: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create sampler: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -337,7 +338,7 @@ GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescripto
         *outShader = converter::toGfx<GfxShader>(shader);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create shader: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create shader: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -355,7 +356,7 @@ GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGr
         *outLayout = converter::toGfx<GfxBindGroupLayout>(layout);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create bind group layout: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create bind group layout: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -374,7 +375,7 @@ GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDes
         *outBindGroup = converter::toGfx<GfxBindGroup>(bindGroup);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create bind group: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create bind group: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -392,7 +393,7 @@ GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderP
         *outPipeline = converter::toGfx<GfxRenderPipeline>(pipeline);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create render pipeline: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create render pipeline: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -410,7 +411,7 @@ GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComput
         *outPipeline = converter::toGfx<GfxComputePipeline>(pipeline);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create compute pipeline: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create compute pipeline: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -428,7 +429,7 @@ GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassD
         *outRenderPass = converter::toGfx<GfxRenderPass>(renderPass);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create render pass: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create render pass: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -446,7 +447,7 @@ GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebuffe
         *outFramebuffer = converter::toGfx<GfxFramebuffer>(framebuffer);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create framebuffer: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create framebuffer: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -464,7 +465,7 @@ GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommand
         *outEncoder = converter::toGfx<GfxCommandEncoder>(encoder);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create command encoder: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create command encoder: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -480,7 +481,7 @@ GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor*
         *outFence = converter::toGfx<GfxFence>(fence);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create fence: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create fence: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -497,7 +498,7 @@ GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDes
         *outSemaphore = converter::toGfx<GfxSemaphore>(semaphore);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to create semaphore: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to create semaphore: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -804,7 +805,8 @@ GfxResult Backend::textureCreateView(GfxTexture texture, const GfxTextureViewDes
         auto* view = new core::TextureView(texturePtr, createInfo);
         *outView = converter::toGfx<GfxTextureView>(view);
         return GFX_RESULT_SUCCESS;
-    } catch (const std::exception&) {
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create texture view: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -989,7 +991,7 @@ GfxResult Backend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncode
         *outRenderPass = converter::toGfx<GfxRenderPassEncoder>(renderPassEncoder);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to begin render pass: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to begin render pass: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -1007,7 +1009,7 @@ GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncod
         *outComputePass = converter::toGfx<GfxComputePassEncoder>(computePassEncoder);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
-        fprintf(stderr, "Failed to begin compute pass: %s\n", e.what());
+        gfx::common::Logger::instance().logError("Failed to begin compute pass: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -1172,7 +1174,7 @@ GfxResult Backend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
 
     // WebGPU encoders can't be reused after Finish() - recreate if needed
     if (!encoderPtr->recreateIfNeeded()) {
-        fprintf(stderr, "[WebGPU ERROR] Failed to recreate command encoder\n");
+        gfx::common::Logger::instance().logError("[WebGPU ERROR] Failed to recreate command encoder");
         return GFX_RESULT_ERROR_UNKNOWN;
     }
     return GFX_RESULT_SUCCESS;

@@ -6,6 +6,8 @@
 
 #include "../util/Blit.h"
 
+#include "common/Logger.h"
+
 #include <stdexcept>
 
 namespace gfx::backend::webgpu::core {
@@ -21,15 +23,15 @@ Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
 
     WGPUUncapturedErrorCallbackInfo errorCallbackInfo = WGPU_UNCAPTURED_ERROR_CALLBACK_INFO_INIT;
     errorCallbackInfo.callback = [](WGPUDevice const*, WGPUErrorType type, WGPUStringView message, void*, void*) {
-        fprintf(stderr, "[WebGPU Uncaptured Error] Type: %d, Message: %.*s\n",
-            static_cast<int>(type), static_cast<int>(message.length), message.data);
+        gfx::common::Logger::instance().logError("[WebGPU Uncaptured Error] Type: {}, Message: {}",
+            static_cast<int>(type), std::string_view(message.data, message.length));
     };
 
     WGPUDeviceLostCallbackInfo deviceLostCallbackInfo = WGPU_DEVICE_LOST_CALLBACK_INFO_INIT;
     deviceLostCallbackInfo.mode = WGPUCallbackMode_AllowSpontaneous;
     deviceLostCallbackInfo.callback = [](WGPUDevice const*, WGPUDeviceLostReason reason, WGPUStringView message, void*, void*) {
-        fprintf(stderr, "[WebGPU Device Lost] Reason: %d, Message: %.*s\n",
-            static_cast<int>(reason), static_cast<int>(message.length), message.data);
+        gfx::common::Logger::instance().logError("[WebGPU Device Lost] Reason: {}, Message: {}",
+            static_cast<int>(reason), std::string_view(message.data, message.length));
     };
 
     WGPUDeviceDescriptor wgpuDesc = WGPU_DEVICE_DESCRIPTOR_INIT;
@@ -54,8 +56,8 @@ Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
         if (status == WGPURequestDeviceStatus_Success && device) {
             *ctx->outDevice = device;
         } else if (message.data) {
-            fprintf(stderr, "Error: Failed to request device: %.*s\n",
-                (int)message.length, message.data);
+            gfx::common::Logger::instance().logError("Error: Failed to request device: {}",
+                std::string_view(message.data, message.length));
         }
         (void)userdata2; // Unused
     };

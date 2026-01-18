@@ -1,14 +1,16 @@
 #include "Queue.h"
 
 #include "Adapter.h"
-#include "../resource/Buffer.h"
-#include "../command/CommandEncoder.h"
 #include "Device.h"
+
+#include "../command/CommandEncoder.h"
+#include "../resource/Buffer.h"
+#include "../resource/Texture.h"
 #include "../sync/Fence.h"
 #include "../sync/Semaphore.h"
-#include "../resource/Texture.h"
-
 #include "../util/Utils.h"
+
+#include "common/Logger.h"
 
 #include <cstring>
 #include <stdexcept>
@@ -265,7 +267,7 @@ void Queue::writeTexture(Texture* texture, const VkOffset3D& origin, uint32_t mi
     VkBuffer stagingBuffer = VK_NULL_HANDLE;
     VkResult result = vkCreateBuffer(device, &bufferInfo, nullptr, &stagingBuffer);
     if (result != VK_SUCCESS) {
-        fprintf(stderr, "Failed to create staging buffer for texture upload\n");
+        gfx::common::Logger::instance().logError("Failed to create staging buffer for texture upload");
         return;
     }
 
@@ -286,7 +288,7 @@ void Queue::writeTexture(Texture* texture, const VkOffset3D& origin, uint32_t mi
     }
 
     if (memoryTypeIndex == UINT32_MAX) {
-        fprintf(stderr, "Failed to find suitable memory type for staging buffer\n");
+        gfx::common::Logger::instance().logError("Failed to find suitable memory type for staging buffer");
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         return;
     }
@@ -299,7 +301,7 @@ void Queue::writeTexture(Texture* texture, const VkOffset3D& origin, uint32_t mi
     VkDeviceMemory stagingMemory = VK_NULL_HANDLE;
     result = vkAllocateMemory(device, &allocInfo, nullptr, &stagingMemory);
     if (result != VK_SUCCESS) {
-        fprintf(stderr, "Failed to allocate staging buffer memory\n");
+        gfx::common::Logger::instance().logError("Failed to allocate staging buffer memory");
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         return;
     }

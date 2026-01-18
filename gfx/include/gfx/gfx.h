@@ -97,6 +97,14 @@ typedef enum {
 } GfxCullMode;
 
 typedef enum {
+    GFX_LOG_LEVEL_ERROR = 0,
+    GFX_LOG_LEVEL_WARNING = 1,
+    GFX_LOG_LEVEL_INFO = 2,
+    GFX_LOG_LEVEL_DEBUG = 3,
+    GFX_LOG_LEVEL_MAX_ENUM = 0x7FFFFFFF
+} GfxLogLevel;
+
+typedef enum {
     GFX_POLYGON_MODE_FILL = 0,
     GFX_POLYGON_MODE_LINE = 1,
     GFX_POLYGON_MODE_POINT = 2,
@@ -462,6 +470,11 @@ typedef struct GfxFramebuffer_T* GfxFramebuffer;
 typedef void (*GfxDebugCallback)(
     GfxDebugMessageSeverity severity,
     GfxDebugMessageType type,
+    const char* message,
+    void* userData);
+
+typedef void (*GfxLogCallback)(
+    GfxLogLevel level,
     const char* message,
     void* userData);
 
@@ -1196,6 +1209,11 @@ GFX_API GfxResult gfxSemaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValu
 // ============================================================================
 // Utility Functions
 // ============================================================================
+
+// Logging function
+// Set a callback to receive log messages from the library
+// Pass NULL to callback to disable logging
+GFX_API void gfxSetLogCallback(GfxLogCallback callback, void* userData);
 
 // Helper function to deduce access flags from texture layout
 // Returns appropriate access flags for the given layout (deterministic mapping)
