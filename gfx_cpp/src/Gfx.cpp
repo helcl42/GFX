@@ -709,9 +709,9 @@ public:
         }
     }
 
-    void dispatchWorkgroups(uint32_t workgroupCountX, uint32_t workgroupCountY = 1, uint32_t workgroupCountZ = 1) override
+    void dispatch(uint32_t workgroupCountX, uint32_t workgroupCountY = 1, uint32_t workgroupCountZ = 1) override
     {
-        GfxResult result = gfxComputePassEncoderDispatchWorkgroups(m_handle, workgroupCountX, workgroupCountY, workgroupCountZ);
+        GfxResult result = gfxComputePassEncoderDispatch(m_handle, workgroupCountX, workgroupCountY, workgroupCountZ);
         if (result != GFX_RESULT_SUCCESS) {
             throw std::runtime_error("Failed to dispatch workgroups");
         }

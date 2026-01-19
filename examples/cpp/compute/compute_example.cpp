@@ -833,7 +833,7 @@ void ComputeApp::render()
 
             uint32_t workGroupsX = (COMPUTE_TEXTURE_WIDTH + 15) / 16;
             uint32_t workGroupsY = (COMPUTE_TEXTURE_HEIGHT + 15) / 16;
-            computePass->dispatchWorkgroups(workGroupsX, workGroupsY, 1);
+            computePass->dispatch(workGroupsX, workGroupsY, 1);
         } // computePass destroyed here
 
         // Transition compute texture for shader read

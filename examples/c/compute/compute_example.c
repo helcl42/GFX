@@ -1079,7 +1079,7 @@ static void render(ComputeApp* app)
     // Uses fixed compute texture resolution, sampler will upscale/downscale to window
     uint32_t workGroupsX = (COMPUTE_TEXTURE_WIDTH + 15) / 16;
     uint32_t workGroupsY = (COMPUTE_TEXTURE_HEIGHT + 15) / 16;
-    gfxComputePassEncoderDispatchWorkgroups(computePass, workGroupsX, workGroupsY, 1);
+    gfxComputePassEncoderDispatch(computePass, workGroupsX, workGroupsY, 1);
 
     gfxComputePassEncoderEnd(computePass);
 

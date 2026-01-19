@@ -1122,7 +1122,7 @@ GfxResult gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint3
         dynamicOffsetCount);
 }
 
-GfxResult gfxComputePassEncoderDispatchWorkgroups(GfxComputePassEncoder encoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ)
+GfxResult gfxComputePassEncoderDispatch(GfxComputePassEncoder encoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ)
 {
     if (!encoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1131,7 +1131,7 @@ GfxResult gfxComputePassEncoderDispatchWorkgroups(GfxComputePassEncoder encoder,
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->computePassEncoderDispatchWorkgroups(
+    return backend->computePassEncoderDispatch(
         encoder,
         workgroupCountX, workgroupCountY, workgroupCountZ);
 }

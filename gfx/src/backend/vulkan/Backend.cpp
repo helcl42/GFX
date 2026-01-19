@@ -1265,7 +1265,7 @@ GfxResult Backend::computePassEncoderSetBindGroup(GfxComputePassEncoder computeP
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
+GfxResult Backend::computePassEncoderDispatch(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
 {
     if (!computePassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;

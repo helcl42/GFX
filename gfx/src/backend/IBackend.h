@@ -165,7 +165,7 @@ public:
     // ComputePassEncoder functions
     virtual GfxResult computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const = 0;
     virtual GfxResult computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const = 0;
-    virtual GfxResult computePassEncoderDispatchWorkgroups(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const = 0;
+    virtual GfxResult computePassEncoderDispatch(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const = 0;
     virtual GfxResult computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const = 0;
 
     // Fence functions
