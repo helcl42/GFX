@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_CPP_TEXTURE_VIEW_H
+#define GFX_CPP_TEXTURE_VIEW_H
 
 #include <gfx_cpp/gfx.hpp>
 
@@ -23,3 +24,5 @@ private:
 };
 
 } // namespace gfx
+
+#endif // GFX_CPP_TEXTURE_VIEW_H

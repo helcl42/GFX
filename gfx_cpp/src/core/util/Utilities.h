@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_CPP_UTILITIES_H
+#define GFX_CPP_UTILITIES_H
 
 #include <gfx_cpp/gfx.hpp>
 
@@ -13,3 +14,5 @@ uint64_t alignDown(uint64_t value, uint64_t alignment);
 AccessFlags getAccessFlagsForLayout(TextureLayout layout);
 
 } // namespace gfx::utils
+
+#endif // GFX_CPP_UTILITIES_H

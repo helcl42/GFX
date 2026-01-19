@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_CPP_HANDLE_EXTRACTOR_H
+#define GFX_CPP_HANDLE_EXTRACTOR_H
 
 #include <gfx_cpp/gfx.hpp>
 
@@ -27,3 +28,5 @@ template <>
 GfxFence extractNativeHandle<GfxFence>(std::shared_ptr<void> ptr);
 
 } // namespace gfx
+
+#endif // GFX_CPP_HANDLE_EXTRACTOR_H

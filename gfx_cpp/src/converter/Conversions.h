@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_CPP_CONVERSIONS_H
+#define GFX_CPP_CONVERSIONS_H
 
 #include <gfx_cpp/gfx.hpp>
 
@@ -112,3 +113,5 @@ LogLevel cLogLevelToCppLogLevel(GfxLogLevel level);
 GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& windowHandle);
 
 } // namespace gfx
+
+#endif // GFX_CPP_CONVERSIONS_H

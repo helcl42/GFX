@@ -1,6 +1,6 @@
 
-// TODO - add macro guards !!!
-#pragma once
+#ifndef GFX_CPP_COMPUTE_PASS_ENCODER_H
+#define GFX_CPP_COMPUTE_PASS_ENCODER_H
 
 #include <gfx_cpp/gfx.hpp>
 
@@ -26,3 +26,5 @@ private:
 };
 
 } // namespace gfx
+
+#endif // GFX_CPP_COMPUTE_PASS_ENCODER_H

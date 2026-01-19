@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_CPP_QUEUE_H
+#define GFX_CPP_QUEUE_H
 
 #include <gfx_cpp/gfx.hpp>
 
@@ -29,3 +30,5 @@ private:
 };
 
 } // namespace gfx
+
+#endif // GFX_CPP_QUEUE_H
