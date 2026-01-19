@@ -8,10 +8,10 @@
 
 namespace gfx {
 
-class CDeviceImpl : public Device {
+class DeviceImpl : public Device {
 public:
-    explicit CDeviceImpl(GfxDevice h);
-    ~CDeviceImpl() override;
+    explicit DeviceImpl(GfxDevice h);
+    ~DeviceImpl() override;
 
     std::shared_ptr<Queue> getQueue() override;
 
@@ -55,7 +55,7 @@ public:
 
 private:
     GfxDevice m_handle;
-    std::shared_ptr<class CQueueImpl> m_queue;
+    std::shared_ptr<class QueueImpl> m_queue;
 };
 
 } // namespace gfx

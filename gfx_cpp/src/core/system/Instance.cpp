@@ -8,19 +8,19 @@
 
 namespace gfx {
 
-CInstanceImpl::CInstanceImpl(GfxInstance h)
+InstanceImpl::InstanceImpl(GfxInstance h)
     : m_handle(h)
 {
 }
 
-CInstanceImpl::~CInstanceImpl()
+InstanceImpl::~InstanceImpl()
 {
     if (m_handle) {
         gfxInstanceDestroy(m_handle);
     }
 }
 
-std::shared_ptr<Adapter> CInstanceImpl::requestAdapter(const AdapterDescriptor& descriptor)
+std::shared_ptr<Adapter> InstanceImpl::requestAdapter(const AdapterDescriptor& descriptor)
 {
     GfxAdapterDescriptor cDesc = {};
     cDesc.adapterIndex = UINT32_MAX; // Use preference-based selection
@@ -31,10 +31,10 @@ std::shared_ptr<Adapter> CInstanceImpl::requestAdapter(const AdapterDescriptor& 
     if (result != GFX_RESULT_SUCCESS || !adapter) {
         throw std::runtime_error("Failed to request adapter");
     }
-    return std::make_shared<CAdapterImpl>(adapter);
+    return std::make_shared<AdapterImpl>(adapter);
 }
 
-std::vector<std::shared_ptr<Adapter>> CInstanceImpl::enumerateAdapters()
+std::vector<std::shared_ptr<Adapter>> InstanceImpl::enumerateAdapters()
 {
     // First call: get count
     uint32_t count = 0;
@@ -52,7 +52,7 @@ std::vector<std::shared_ptr<Adapter>> CInstanceImpl::enumerateAdapters()
 
     std::vector<std::shared_ptr<Adapter>> resultVec;
     for (uint32_t i = 0; i < count; ++i) {
-        resultVec.push_back(std::make_shared<CAdapterImpl>(adapters[i]));
+        resultVec.push_back(std::make_shared<AdapterImpl>(adapters[i]));
     }
     return resultVec;
 }

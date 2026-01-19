@@ -8,12 +8,12 @@
 
 namespace gfx {
 
-CRenderPassEncoderImpl::CRenderPassEncoderImpl(GfxRenderPassEncoder h)
+RenderPassEncoderImpl::RenderPassEncoderImpl(GfxRenderPassEncoder h)
     : m_handle(h)
 {
 }
 
-CRenderPassEncoderImpl::~CRenderPassEncoderImpl()
+RenderPassEncoderImpl::~RenderPassEncoderImpl()
 {
     if (m_handle) {
         GfxResult result = gfxRenderPassEncoderEnd(m_handle);
@@ -23,9 +23,9 @@ CRenderPassEncoderImpl::~CRenderPassEncoderImpl()
     }
 }
 
-void CRenderPassEncoderImpl::setPipeline(std::shared_ptr<RenderPipeline> pipeline)
+void RenderPassEncoderImpl::setPipeline(std::shared_ptr<RenderPipeline> pipeline)
 {
-    auto impl = std::dynamic_pointer_cast<CRenderPipelineImpl>(pipeline);
+    auto impl = std::dynamic_pointer_cast<RenderPipelineImpl>(pipeline);
     if (impl) {
         GfxResult result = gfxRenderPassEncoderSetPipeline(m_handle, impl->getHandle());
         if (result != GFX_RESULT_SUCCESS) {
@@ -34,9 +34,9 @@ void CRenderPassEncoderImpl::setPipeline(std::shared_ptr<RenderPipeline> pipelin
     }
 }
 
-void CRenderPassEncoderImpl::setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
+void RenderPassEncoderImpl::setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
-    auto impl = std::dynamic_pointer_cast<CBindGroupImpl>(bindGroup);
+    auto impl = std::dynamic_pointer_cast<BindGroupImpl>(bindGroup);
     if (impl) {
         GfxResult result = gfxRenderPassEncoderSetBindGroup(m_handle, index, impl->getHandle(), dynamicOffsets, dynamicOffsetCount);
         if (result != GFX_RESULT_SUCCESS) {
@@ -45,9 +45,9 @@ void CRenderPassEncoderImpl::setBindGroup(uint32_t index, std::shared_ptr<BindGr
     }
 }
 
-void CRenderPassEncoderImpl::setVertexBuffer(uint32_t slot, std::shared_ptr<Buffer> buffer, uint64_t offset, uint64_t size)
+void RenderPassEncoderImpl::setVertexBuffer(uint32_t slot, std::shared_ptr<Buffer> buffer, uint64_t offset, uint64_t size)
 {
-    auto impl = std::dynamic_pointer_cast<CBufferImpl>(buffer);
+    auto impl = std::dynamic_pointer_cast<BufferImpl>(buffer);
     if (impl) {
         GfxResult result = gfxRenderPassEncoderSetVertexBuffer(m_handle, slot, impl->getHandle(), offset, size);
         if (result != GFX_RESULT_SUCCESS) {
@@ -56,9 +56,9 @@ void CRenderPassEncoderImpl::setVertexBuffer(uint32_t slot, std::shared_ptr<Buff
     }
 }
 
-void CRenderPassEncoderImpl::setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset, uint64_t size)
+void RenderPassEncoderImpl::setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset, uint64_t size)
 {
-    auto impl = std::dynamic_pointer_cast<CBufferImpl>(buffer);
+    auto impl = std::dynamic_pointer_cast<BufferImpl>(buffer);
     if (impl) {
         GfxIndexFormat cFormat = (format == IndexFormat::Uint16) ? GFX_INDEX_FORMAT_UINT16 : GFX_INDEX_FORMAT_UINT32;
         GfxResult result = gfxRenderPassEncoderSetIndexBuffer(m_handle, impl->getHandle(), cFormat, offset, size);
@@ -68,7 +68,7 @@ void CRenderPassEncoderImpl::setIndexBuffer(std::shared_ptr<Buffer> buffer, Inde
     }
 }
 
-void CRenderPassEncoderImpl::setViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+void RenderPassEncoderImpl::setViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
 {
     GfxViewport viewport = { x, y, width, height, minDepth, maxDepth };
     GfxResult result = gfxRenderPassEncoderSetViewport(m_handle, &viewport);
@@ -77,7 +77,7 @@ void CRenderPassEncoderImpl::setViewport(float x, float y, float width, float he
     }
 }
 
-void CRenderPassEncoderImpl::setScissorRect(int32_t x, int32_t y, uint32_t width, uint32_t height)
+void RenderPassEncoderImpl::setScissorRect(int32_t x, int32_t y, uint32_t width, uint32_t height)
 {
     GfxScissorRect scissor = { x, y, width, height };
     GfxResult result = gfxRenderPassEncoderSetScissorRect(m_handle, &scissor);
@@ -86,7 +86,7 @@ void CRenderPassEncoderImpl::setScissorRect(int32_t x, int32_t y, uint32_t width
     }
 }
 
-void CRenderPassEncoderImpl::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+void RenderPassEncoderImpl::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
     GfxResult result = gfxRenderPassEncoderDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
     if (result != GFX_RESULT_SUCCESS) {
@@ -94,7 +94,7 @@ void CRenderPassEncoderImpl::draw(uint32_t vertexCount, uint32_t instanceCount, 
     }
 }
 
-void CRenderPassEncoderImpl::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance)
+void RenderPassEncoderImpl::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance)
 {
     GfxResult result = gfxRenderPassEncoderDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
     if (result != GFX_RESULT_SUCCESS) {
@@ -102,12 +102,12 @@ void CRenderPassEncoderImpl::drawIndexed(uint32_t indexCount, uint32_t instanceC
     }
 }
 
-void CRenderPassEncoderImpl::drawIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset)
+void RenderPassEncoderImpl::drawIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset)
 {
     if (!indirectBuffer) {
         throw std::invalid_argument("Indirect buffer cannot be null");
     }
-    auto* bufferImpl = dynamic_cast<CBufferImpl*>(indirectBuffer.get());
+    auto* bufferImpl = dynamic_cast<BufferImpl*>(indirectBuffer.get());
     if (!bufferImpl) {
         throw std::runtime_error("Invalid buffer implementation");
     }
@@ -117,12 +117,12 @@ void CRenderPassEncoderImpl::drawIndirect(std::shared_ptr<Buffer> indirectBuffer
     }
 }
 
-void CRenderPassEncoderImpl::drawIndexedIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset)
+void RenderPassEncoderImpl::drawIndexedIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset)
 {
     if (!indirectBuffer) {
         throw std::invalid_argument("Indirect buffer cannot be null");
     }
-    auto* bufferImpl = dynamic_cast<CBufferImpl*>(indirectBuffer.get());
+    auto* bufferImpl = dynamic_cast<BufferImpl*>(indirectBuffer.get());
     if (!bufferImpl) {
         throw std::runtime_error("Invalid buffer implementation");
     }

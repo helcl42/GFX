@@ -6,10 +6,10 @@
 
 namespace gfx {
 
-class CFramebufferImpl : public Framebuffer {
+class FramebufferImpl : public Framebuffer {
 public:
-    explicit CFramebufferImpl(GfxFramebuffer h, GfxRenderPass renderPass);
-    ~CFramebufferImpl() override;
+    explicit FramebufferImpl(GfxFramebuffer h, GfxRenderPass renderPass);
+    ~FramebufferImpl() override;
 
     GfxFramebuffer getHandle() const;
     GfxRenderPass getRenderPass() const;

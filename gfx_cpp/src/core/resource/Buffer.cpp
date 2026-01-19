@@ -4,7 +4,7 @@
 
 namespace gfx {
 
-CBufferImpl::CBufferImpl(GfxBuffer h)
+BufferImpl::BufferImpl(GfxBuffer h)
     : m_handle(h)
 {
     GfxResult result = gfxBufferGetInfo(m_handle, &m_info);
@@ -15,19 +15,19 @@ CBufferImpl::CBufferImpl(GfxBuffer h)
     }
 }
 
-CBufferImpl::~CBufferImpl()
+BufferImpl::~BufferImpl()
 {
     if (m_handle) {
         gfxBufferDestroy(m_handle);
     }
 }
 
-GfxBuffer CBufferImpl::getHandle() const
+GfxBuffer BufferImpl::getHandle() const
 {
     return m_handle;
 }
 
-BufferInfo CBufferImpl::getInfo() const
+BufferInfo BufferImpl::getInfo() const
 {
     BufferInfo info;
     info.size = m_info.size;
@@ -35,7 +35,7 @@ BufferInfo CBufferImpl::getInfo() const
     return info;
 }
 
-void* CBufferImpl::map(uint64_t offset, uint64_t size)
+void* BufferImpl::map(uint64_t offset, uint64_t size)
 {
     void* mappedPointer = nullptr;
     GfxResult result = gfxBufferMap(m_handle, offset, size, &mappedPointer);
@@ -45,7 +45,7 @@ void* CBufferImpl::map(uint64_t offset, uint64_t size)
     return mappedPointer;
 }
 
-void CBufferImpl::unmap()
+void BufferImpl::unmap()
 {
     gfxBufferUnmap(m_handle);
 }

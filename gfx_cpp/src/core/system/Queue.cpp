@@ -12,17 +12,17 @@
 
 namespace gfx {
 
-CQueueImpl::CQueueImpl(GfxQueue h)
+QueueImpl::QueueImpl(GfxQueue h)
     : m_handle(h)
 {
 }
 
-void CQueueImpl::submit(const SubmitDescriptor& submitInfo)
+void QueueImpl::submit(const SubmitDescriptor& submitInfo)
 {
     // Convert C++ structures to C
     std::vector<GfxCommandEncoder> cEncoders;
     for (auto& encoder : submitInfo.commandEncoders) {
-        auto impl = std::dynamic_pointer_cast<CCommandEncoderImpl>(encoder);
+        auto impl = std::dynamic_pointer_cast<CommandEncoderImpl>(encoder);
         if (impl) {
             cEncoders.push_back(impl->getHandle());
         }
@@ -30,7 +30,7 @@ void CQueueImpl::submit(const SubmitDescriptor& submitInfo)
 
     std::vector<GfxSemaphore> cWaitSems;
     for (auto& sem : submitInfo.waitSemaphores) {
-        auto impl = std::dynamic_pointer_cast<CSemaphoreImpl>(sem);
+        auto impl = std::dynamic_pointer_cast<SemaphoreImpl>(sem);
         if (impl) {
             cWaitSems.push_back(impl->getHandle());
         }
@@ -38,7 +38,7 @@ void CQueueImpl::submit(const SubmitDescriptor& submitInfo)
 
     std::vector<GfxSemaphore> cSignalSems;
     for (auto& sem : submitInfo.signalSemaphores) {
-        auto impl = std::dynamic_pointer_cast<CSemaphoreImpl>(sem);
+        auto impl = std::dynamic_pointer_cast<SemaphoreImpl>(sem);
         if (impl) {
             cSignalSems.push_back(impl->getHandle());
         }
@@ -53,7 +53,7 @@ void CQueueImpl::submit(const SubmitDescriptor& submitInfo)
     cInfo.signalSemaphoreCount = static_cast<uint32_t>(cSignalSems.size());
 
     if (submitInfo.signalFence) {
-        auto fenceImpl = std::dynamic_pointer_cast<CFenceImpl>(submitInfo.signalFence);
+        auto fenceImpl = std::dynamic_pointer_cast<FenceImpl>(submitInfo.signalFence);
         if (fenceImpl) {
             cInfo.signalFence = fenceImpl->getHandle();
         }
@@ -64,20 +64,20 @@ void CQueueImpl::submit(const SubmitDescriptor& submitInfo)
     gfxQueueSubmit(m_handle, &cInfo);
 }
 
-void CQueueImpl::writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size)
+void QueueImpl::writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size)
 {
-    auto impl = std::dynamic_pointer_cast<CBufferImpl>(buffer);
+    auto impl = std::dynamic_pointer_cast<BufferImpl>(buffer);
     if (impl) {
         gfxQueueWriteBuffer(m_handle, impl->getHandle(), offset, data, size);
     }
 }
 
-void CQueueImpl::writeTexture(
+void QueueImpl::writeTexture(
     std::shared_ptr<Texture> texture, const Origin3D& origin, uint32_t mipLevel,
     const void* data, uint64_t dataSize, uint32_t bytesPerRow,
     const Extent3D& extent, TextureLayout finalLayout)
 {
-    auto impl = std::dynamic_pointer_cast<CTextureImpl>(texture);
+    auto impl = std::dynamic_pointer_cast<TextureImpl>(texture);
     if (impl) {
         GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
         GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
@@ -86,7 +86,7 @@ void CQueueImpl::writeTexture(
     }
 }
 
-void CQueueImpl::waitIdle()
+void QueueImpl::waitIdle()
 {
     gfxQueueWaitIdle(m_handle);
 }

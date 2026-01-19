@@ -6,10 +6,10 @@
 
 namespace gfx {
 
-class CShaderImpl : public Shader {
+class ShaderImpl : public Shader {
 public:
-    explicit CShaderImpl(GfxShader h);
-    ~CShaderImpl() override;
+    explicit ShaderImpl(GfxShader h);
+    ~ShaderImpl() override;
 
     GfxShader getHandle() const;
 

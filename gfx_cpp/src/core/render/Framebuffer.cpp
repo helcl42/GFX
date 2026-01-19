@@ -2,25 +2,25 @@
 
 namespace gfx {
 
-CFramebufferImpl::CFramebufferImpl(GfxFramebuffer h, GfxRenderPass renderPass)
+FramebufferImpl::FramebufferImpl(GfxFramebuffer h, GfxRenderPass renderPass)
     : m_handle(h)
     , m_renderPass(renderPass)
 {
 }
 
-CFramebufferImpl::~CFramebufferImpl()
+FramebufferImpl::~FramebufferImpl()
 {
     if (m_handle) {
         gfxFramebufferDestroy(m_handle);
     }
 }
 
-GfxFramebuffer CFramebufferImpl::getHandle() const
+GfxFramebuffer FramebufferImpl::getHandle() const
 {
     return m_handle;
 }
 
-GfxRenderPass CFramebufferImpl::getRenderPass() const
+GfxRenderPass FramebufferImpl::getRenderPass() const
 {
     return m_renderPass;
 }

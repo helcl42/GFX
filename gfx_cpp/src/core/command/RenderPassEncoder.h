@@ -8,10 +8,10 @@
 
 namespace gfx {
 
-class CRenderPassEncoderImpl : public RenderPassEncoder {
+class RenderPassEncoderImpl : public RenderPassEncoder {
 public:
-    explicit CRenderPassEncoderImpl(GfxRenderPassEncoder h);
-    ~CRenderPassEncoderImpl() override;
+    explicit RenderPassEncoderImpl(GfxRenderPassEncoder h);
+    ~RenderPassEncoderImpl() override;
 
     void setPipeline(std::shared_ptr<RenderPipeline> pipeline) override;
     void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets = nullptr, uint32_t dynamicOffsetCount = 0) override;

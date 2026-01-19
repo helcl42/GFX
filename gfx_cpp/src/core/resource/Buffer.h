@@ -6,10 +6,10 @@
 
 namespace gfx {
 
-class CBufferImpl : public Buffer {
+class BufferImpl : public Buffer {
 public:
-    explicit CBufferImpl(GfxBuffer h);
-    ~CBufferImpl() override;
+    explicit BufferImpl(GfxBuffer h);
+    ~BufferImpl() override;
 
     GfxBuffer getHandle() const;
 

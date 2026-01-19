@@ -9,10 +9,10 @@
 
 namespace gfx {
 
-class CInstanceImpl : public Instance {
+class InstanceImpl : public Instance {
 public:
-    explicit CInstanceImpl(GfxInstance h);
-    ~CInstanceImpl() override;
+    explicit InstanceImpl(GfxInstance h);
+    ~InstanceImpl() override;
 
     std::shared_ptr<Adapter> requestAdapter(const AdapterDescriptor& descriptor = {}) override;
 

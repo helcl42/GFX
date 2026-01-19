@@ -8,10 +8,10 @@
 
 namespace gfx {
 
-class CAdapterImpl : public Adapter {
+class AdapterImpl : public Adapter {
 public:
-    explicit CAdapterImpl(GfxAdapter h);
-    ~CAdapterImpl() override;
+    explicit AdapterImpl(GfxAdapter h);
+    ~AdapterImpl() override;
 
     std::shared_ptr<Device> createDevice(const DeviceDescriptor& descriptor = {}) override;
 

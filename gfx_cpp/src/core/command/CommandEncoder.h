@@ -9,10 +9,10 @@
 
 namespace gfx {
 
-class CCommandEncoderImpl : public CommandEncoder {
+class CommandEncoderImpl : public CommandEncoder {
 public:
-    explicit CCommandEncoderImpl(GfxCommandEncoder h);
-    ~CCommandEncoderImpl() override;
+    explicit CommandEncoderImpl(GfxCommandEncoder h);
+    ~CommandEncoderImpl() override;
 
     GfxCommandEncoder getHandle() const;
 

@@ -13,26 +13,26 @@
 
 namespace gfx {
 
-CCommandEncoderImpl::CCommandEncoderImpl(GfxCommandEncoder h)
+CommandEncoderImpl::CommandEncoderImpl(GfxCommandEncoder h)
     : m_handle(h)
 {
 }
 
-CCommandEncoderImpl::~CCommandEncoderImpl()
+CommandEncoderImpl::~CommandEncoderImpl()
 {
     if (m_handle) {
         gfxCommandEncoderDestroy(m_handle);
     }
 }
 
-GfxCommandEncoder CCommandEncoderImpl::getHandle() const
+GfxCommandEncoder CommandEncoderImpl::getHandle() const
 {
     return m_handle;
 }
 
-std::shared_ptr<RenderPassEncoder> CCommandEncoderImpl::beginRenderPass(const RenderPassBeginDescriptor& descriptor)
+std::shared_ptr<RenderPassEncoder> CommandEncoderImpl::beginRenderPass(const RenderPassBeginDescriptor& descriptor)
 {
-    auto framebufferImpl = std::dynamic_pointer_cast<CFramebufferImpl>(descriptor.framebuffer);
+    auto framebufferImpl = std::dynamic_pointer_cast<FramebufferImpl>(descriptor.framebuffer);
     if (!framebufferImpl) {
         throw std::runtime_error("Invalid framebuffer type");
     }
@@ -56,10 +56,10 @@ std::shared_ptr<RenderPassEncoder> CCommandEncoderImpl::beginRenderPass(const Re
     if (result != GFX_RESULT_SUCCESS || !encoder) {
         throw std::runtime_error("Failed to begin render pass");
     }
-    return std::make_shared<CRenderPassEncoderImpl>(encoder);
+    return std::make_shared<RenderPassEncoderImpl>(encoder);
 }
 
-std::shared_ptr<ComputePassEncoder> CCommandEncoderImpl::beginComputePass(const ComputePassBeginDescriptor& descriptor)
+std::shared_ptr<ComputePassEncoder> CommandEncoderImpl::beginComputePass(const ComputePassBeginDescriptor& descriptor)
 {
     GfxComputePassBeginDescriptor cDesc = {};
     cDesc.label = descriptor.label.c_str();
@@ -69,16 +69,16 @@ std::shared_ptr<ComputePassEncoder> CCommandEncoderImpl::beginComputePass(const 
     if (result != GFX_RESULT_SUCCESS || !encoder) {
         throw std::runtime_error("Failed to begin compute pass");
     }
-    return std::make_shared<CComputePassEncoderImpl>(encoder);
+    return std::make_shared<ComputePassEncoderImpl>(encoder);
 }
 
-void CCommandEncoderImpl::copyBufferToBuffer(
+void CommandEncoderImpl::copyBufferToBuffer(
     std::shared_ptr<Buffer> source, uint64_t sourceOffset,
     std::shared_ptr<Buffer> destination, uint64_t destinationOffset,
     uint64_t size)
 {
-    auto src = std::dynamic_pointer_cast<CBufferImpl>(source);
-    auto dst = std::dynamic_pointer_cast<CBufferImpl>(destination);
+    auto src = std::dynamic_pointer_cast<BufferImpl>(source);
+    auto dst = std::dynamic_pointer_cast<BufferImpl>(destination);
     if (src && dst) {
         GfxResult result = gfxCommandEncoderCopyBufferToBuffer(m_handle, src->getHandle(), sourceOffset,
             dst->getHandle(), destinationOffset, size);
@@ -88,13 +88,13 @@ void CCommandEncoderImpl::copyBufferToBuffer(
     }
 }
 
-void CCommandEncoderImpl::copyBufferToTexture(
+void CommandEncoderImpl::copyBufferToTexture(
     std::shared_ptr<Buffer> source, uint64_t sourceOffset, uint32_t bytesPerRow,
     std::shared_ptr<Texture> destination, const Origin3D& origin,
     const Extent3D& extent, uint32_t mipLevel, TextureLayout finalLayout)
 {
-    auto src = std::dynamic_pointer_cast<CBufferImpl>(source);
-    auto dst = std::dynamic_pointer_cast<CTextureImpl>(destination);
+    auto src = std::dynamic_pointer_cast<BufferImpl>(source);
+    auto dst = std::dynamic_pointer_cast<TextureImpl>(destination);
     if (src && dst) {
         GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
         GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
@@ -106,13 +106,13 @@ void CCommandEncoderImpl::copyBufferToTexture(
     }
 }
 
-void CCommandEncoderImpl::copyTextureToBuffer(
+void CommandEncoderImpl::copyTextureToBuffer(
     std::shared_ptr<Texture> source, const Origin3D& origin, uint32_t mipLevel,
     std::shared_ptr<Buffer> destination, uint64_t destinationOffset, uint32_t bytesPerRow,
     const Extent3D& extent, TextureLayout finalLayout)
 {
-    auto src = std::dynamic_pointer_cast<CTextureImpl>(source);
-    auto dst = std::dynamic_pointer_cast<CBufferImpl>(destination);
+    auto src = std::dynamic_pointer_cast<TextureImpl>(source);
+    auto dst = std::dynamic_pointer_cast<BufferImpl>(destination);
     if (src && dst) {
         GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
         GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
@@ -124,13 +124,13 @@ void CCommandEncoderImpl::copyTextureToBuffer(
     }
 }
 
-void CCommandEncoderImpl::copyTextureToTexture(
+void CommandEncoderImpl::copyTextureToTexture(
     std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, uint32_t sourceMipLevel, TextureLayout sourceFinalLayout,
     std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, uint32_t destinationMipLevel, TextureLayout destinationFinalLayout,
     const Extent3D& extent)
 {
-    auto src = std::dynamic_pointer_cast<CTextureImpl>(source);
-    auto dst = std::dynamic_pointer_cast<CTextureImpl>(destination);
+    auto src = std::dynamic_pointer_cast<TextureImpl>(source);
+    auto dst = std::dynamic_pointer_cast<TextureImpl>(destination);
     if (src && dst) {
         GfxOrigin3D cSourceOrigin = { sourceOrigin.x, sourceOrigin.y, sourceOrigin.z };
         GfxOrigin3D cDestOrigin = { destinationOrigin.x, destinationOrigin.y, destinationOrigin.z };
@@ -145,13 +145,13 @@ void CCommandEncoderImpl::copyTextureToTexture(
     }
 }
 
-void CCommandEncoderImpl::blitTextureToTexture(
+void CommandEncoderImpl::blitTextureToTexture(
     std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, const Extent3D& sourceExtent, uint32_t sourceMipLevel, TextureLayout sourceFinalLayout,
     std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, const Extent3D& destinationExtent, uint32_t destinationMipLevel, TextureLayout destinationFinalLayout,
     FilterMode filter)
 {
-    auto src = std::dynamic_pointer_cast<CTextureImpl>(source);
-    auto dst = std::dynamic_pointer_cast<CTextureImpl>(destination);
+    auto src = std::dynamic_pointer_cast<TextureImpl>(source);
+    auto dst = std::dynamic_pointer_cast<TextureImpl>(destination);
     if (src && dst) {
         GfxOrigin3D cSourceOrigin = { sourceOrigin.x, sourceOrigin.y, sourceOrigin.z };
         GfxExtent3D cSourceExtent = { sourceExtent.width, sourceExtent.height, sourceExtent.depth };
@@ -167,7 +167,7 @@ void CCommandEncoderImpl::blitTextureToTexture(
     }
 }
 
-void CCommandEncoderImpl::pipelineBarrier(
+void CommandEncoderImpl::pipelineBarrier(
     const std::vector<MemoryBarrier>& memoryBarriers,
     const std::vector<BufferBarrier>& bufferBarriers,
     const std::vector<TextureBarrier>& textureBarriers)
@@ -192,7 +192,7 @@ void CCommandEncoderImpl::pipelineBarrier(
     cBufferBarriers.reserve(bufferBarriers.size());
 
     for (const auto& barrier : bufferBarriers) {
-        auto buf = std::dynamic_pointer_cast<CBufferImpl>(barrier.buffer);
+        auto buf = std::dynamic_pointer_cast<BufferImpl>(barrier.buffer);
         if (buf) {
             GfxBufferBarrier cBarrier{};
             cBarrier.buffer = buf->getHandle();
@@ -210,7 +210,7 @@ void CCommandEncoderImpl::pipelineBarrier(
     cTextureBarriers.reserve(textureBarriers.size());
 
     for (const auto& barrier : textureBarriers) {
-        auto tex = std::dynamic_pointer_cast<CTextureImpl>(barrier.texture);
+        auto tex = std::dynamic_pointer_cast<TextureImpl>(barrier.texture);
         if (tex) {
             GfxTextureBarrier cBarrier{};
             cBarrier.texture = tex->getHandle();
@@ -249,9 +249,9 @@ void CCommandEncoderImpl::pipelineBarrier(
     }
 }
 
-void CCommandEncoderImpl::generateMipmaps(std::shared_ptr<Texture> texture)
+void CommandEncoderImpl::generateMipmaps(std::shared_ptr<Texture> texture)
 {
-    auto tex = std::dynamic_pointer_cast<CTextureImpl>(texture);
+    auto tex = std::dynamic_pointer_cast<TextureImpl>(texture);
     if (tex) {
         GfxResult result = gfxCommandEncoderGenerateMipmaps(m_handle, tex->getHandle());
         if (result != GFX_RESULT_SUCCESS) {
@@ -260,9 +260,9 @@ void CCommandEncoderImpl::generateMipmaps(std::shared_ptr<Texture> texture)
     }
 }
 
-void CCommandEncoderImpl::generateMipmapsRange(std::shared_ptr<Texture> texture, uint32_t baseMipLevel, uint32_t levelCount)
+void CommandEncoderImpl::generateMipmapsRange(std::shared_ptr<Texture> texture, uint32_t baseMipLevel, uint32_t levelCount)
 {
-    auto tex = std::dynamic_pointer_cast<CTextureImpl>(texture);
+    auto tex = std::dynamic_pointer_cast<TextureImpl>(texture);
     if (tex) {
         GfxResult result = gfxCommandEncoderGenerateMipmapsRange(m_handle, tex->getHandle(), baseMipLevel, levelCount);
         if (result != GFX_RESULT_SUCCESS) {
@@ -271,7 +271,7 @@ void CCommandEncoderImpl::generateMipmapsRange(std::shared_ptr<Texture> texture,
     }
 }
 
-void CCommandEncoderImpl::end()
+void CommandEncoderImpl::end()
 {
     GfxResult result = gfxCommandEncoderEnd(m_handle);
     if (result != GFX_RESULT_SUCCESS) {
@@ -279,7 +279,7 @@ void CCommandEncoderImpl::end()
     }
 }
 
-void CCommandEncoderImpl::begin()
+void CommandEncoderImpl::begin()
 {
     GfxResult result = gfxCommandEncoderBegin(m_handle);
     if (result != GFX_RESULT_SUCCESS) {

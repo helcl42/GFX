@@ -2,36 +2,36 @@
 
 namespace gfx {
 
-CFenceImpl::CFenceImpl(GfxFence h)
+FenceImpl::FenceImpl(GfxFence h)
     : m_handle(h)
 {
 }
 
-CFenceImpl::~CFenceImpl()
+FenceImpl::~FenceImpl()
 {
     if (m_handle) {
         gfxFenceDestroy(m_handle);
     }
 }
 
-GfxFence CFenceImpl::getHandle() const
+GfxFence FenceImpl::getHandle() const
 {
     return m_handle;
 }
 
-FenceStatus CFenceImpl::getStatus() const
+FenceStatus FenceImpl::getStatus() const
 {
     bool signaled;
     gfxFenceGetStatus(m_handle, &signaled);
     return signaled ? FenceStatus::Signaled : FenceStatus::Unsignaled;
 }
 
-bool CFenceImpl::wait(uint64_t timeoutNanoseconds)
+bool FenceImpl::wait(uint64_t timeoutNanoseconds)
 {
     return gfxFenceWait(m_handle, timeoutNanoseconds) == GFX_RESULT_SUCCESS;
 }
 
-void CFenceImpl::reset()
+void FenceImpl::reset()
 {
     gfxFenceReset(m_handle);
 }

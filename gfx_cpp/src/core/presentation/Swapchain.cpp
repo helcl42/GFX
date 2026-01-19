@@ -7,19 +7,19 @@
 
 namespace gfx {
 
-CSwapchainImpl::CSwapchainImpl(GfxSwapchain h)
+SwapchainImpl::SwapchainImpl(GfxSwapchain h)
     : m_handle(h)
 {
 }
 
-CSwapchainImpl::~CSwapchainImpl()
+SwapchainImpl::~SwapchainImpl()
 {
     if (m_handle) {
         gfxSwapchainDestroy(m_handle);
     }
 }
 
-SwapchainInfo CSwapchainImpl::getInfo() const
+SwapchainInfo SwapchainImpl::getInfo() const
 {
     GfxSwapchainInfo cInfo;
     gfxSwapchainGetInfo(m_handle, &cInfo);
@@ -33,17 +33,17 @@ SwapchainInfo CSwapchainImpl::getInfo() const
     return info;
 }
 
-std::shared_ptr<TextureView> CSwapchainImpl::getCurrentTextureView()
+std::shared_ptr<TextureView> SwapchainImpl::getCurrentTextureView()
 {
     GfxTextureView view = nullptr;
     GfxResult result = gfxSwapchainGetCurrentTextureView(m_handle, &view);
     if (result != GFX_RESULT_SUCCESS || !view) {
         return nullptr;
     }
-    return std::make_shared<CTextureViewImpl>(view);
+    return std::make_shared<TextureViewImpl>(view);
 }
 
-Result CSwapchainImpl::acquireNextImage(uint64_t timeout,
+Result SwapchainImpl::acquireNextImage(uint64_t timeout,
     std::shared_ptr<Semaphore> signalSemaphore,
     std::shared_ptr<Fence> signalFence,
     uint32_t* imageIndex)
@@ -55,17 +55,17 @@ Result CSwapchainImpl::acquireNextImage(uint64_t timeout,
     return cResultToCppResult(result);
 }
 
-std::shared_ptr<TextureView> CSwapchainImpl::getTextureView(uint32_t index)
+std::shared_ptr<TextureView> SwapchainImpl::getTextureView(uint32_t index)
 {
     GfxTextureView view = nullptr;
     GfxResult result = gfxSwapchainGetTextureView(m_handle, index, &view);
     if (result != GFX_RESULT_SUCCESS || !view) {
         return nullptr;
     }
-    return std::make_shared<CTextureViewImpl>(view);
+    return std::make_shared<TextureViewImpl>(view);
 }
 
-Result CSwapchainImpl::present(const PresentInfo& info)
+Result SwapchainImpl::present(const PresentInfo& info)
 {
     GfxPresentInfo cInfo = {};
 

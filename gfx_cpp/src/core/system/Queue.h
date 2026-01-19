@@ -8,11 +8,11 @@
 
 namespace gfx {
 
-class CQueueImpl : public Queue {
+class QueueImpl : public Queue {
 public:
-    explicit CQueueImpl(GfxQueue h);
+    explicit QueueImpl(GfxQueue h);
     // Queue is owned by device, do not destroy
-    ~CQueueImpl() override = default;
+    ~QueueImpl() override = default;
 
     void submit(const SubmitDescriptor& submitInfo) override;
     void writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size) override;

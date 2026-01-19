@@ -8,10 +8,10 @@
 
 namespace gfx {
 
-class CSemaphoreImpl : public Semaphore {
+class SemaphoreImpl : public Semaphore {
 public:
-    explicit CSemaphoreImpl(GfxSemaphore h);
-    ~CSemaphoreImpl() override;
+    explicit SemaphoreImpl(GfxSemaphore h);
+    ~SemaphoreImpl() override;
 
     GfxSemaphore getHandle() const;
 

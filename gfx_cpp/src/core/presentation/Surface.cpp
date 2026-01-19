@@ -4,24 +4,24 @@
 
 namespace gfx {
 
-CSurfaceImpl::CSurfaceImpl(GfxSurface h)
+SurfaceImpl::SurfaceImpl(GfxSurface h)
     : m_handle(h)
 {
 }
 
-CSurfaceImpl::~CSurfaceImpl()
+SurfaceImpl::~SurfaceImpl()
 {
     if (m_handle) {
         gfxSurfaceDestroy(m_handle);
     }
 }
 
-GfxSurface CSurfaceImpl::getHandle() const
+GfxSurface SurfaceImpl::getHandle() const
 {
     return m_handle;
 }
 
-std::vector<TextureFormat> CSurfaceImpl::getSupportedFormats() const
+std::vector<TextureFormat> SurfaceImpl::getSupportedFormats() const
 {
     // First call: query count
     uint32_t count = 0;
@@ -39,7 +39,7 @@ std::vector<TextureFormat> CSurfaceImpl::getSupportedFormats() const
     return result;
 }
 
-std::vector<PresentMode> CSurfaceImpl::getSupportedPresentModes() const
+std::vector<PresentMode> SurfaceImpl::getSupportedPresentModes() const
 {
     // First call: query count
     uint32_t count = 0;

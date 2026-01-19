@@ -6,10 +6,10 @@
 
 namespace gfx {
 
-class CRenderPassImpl : public RenderPass {
+class RenderPassImpl : public RenderPass {
 public:
-    explicit CRenderPassImpl(GfxRenderPass h);
-    ~CRenderPassImpl() override;
+    explicit RenderPassImpl(GfxRenderPass h);
+    ~RenderPassImpl() override;
 
     GfxRenderPass getHandle() const;
 

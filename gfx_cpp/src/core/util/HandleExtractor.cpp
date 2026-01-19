@@ -12,7 +12,7 @@ GfxSemaphore extractNativeHandle<GfxSemaphore>(std::shared_ptr<void> ptr)
     if (!ptr) {
         return nullptr;
     }
-    auto impl = std::static_pointer_cast<CSemaphoreImpl>(ptr);
+    auto impl = std::static_pointer_cast<SemaphoreImpl>(ptr);
     return impl->getHandle();
 }
 
@@ -22,7 +22,7 @@ GfxFence extractNativeHandle<GfxFence>(std::shared_ptr<void> ptr)
     if (!ptr) {
         return nullptr;
     }
-    auto impl = std::static_pointer_cast<CFenceImpl>(ptr);
+    auto impl = std::static_pointer_cast<FenceImpl>(ptr);
     return impl->getHandle();
 }
 

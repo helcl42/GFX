@@ -6,10 +6,10 @@
 
 namespace gfx {
 
-class CBindGroupLayoutImpl : public BindGroupLayout {
+class BindGroupLayoutImpl : public BindGroupLayout {
 public:
-    explicit CBindGroupLayoutImpl(GfxBindGroupLayout h);
-    ~CBindGroupLayoutImpl() override;
+    explicit BindGroupLayoutImpl(GfxBindGroupLayout h);
+    ~BindGroupLayoutImpl() override;
 
     GfxBindGroupLayout getHandle() const;
 

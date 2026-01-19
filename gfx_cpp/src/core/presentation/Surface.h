@@ -9,10 +9,10 @@
 
 namespace gfx {
 
-class CSurfaceImpl : public Surface {
+class SurfaceImpl : public Surface {
 public:
-    explicit CSurfaceImpl(GfxSurface h);
-    ~CSurfaceImpl() override;
+    explicit SurfaceImpl(GfxSurface h);
+    ~SurfaceImpl() override;
 
     GfxSurface getHandle() const;
 

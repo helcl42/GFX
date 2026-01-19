@@ -6,10 +6,10 @@
 
 namespace gfx {
 
-class CSamplerImpl : public Sampler {
+class SamplerImpl : public Sampler {
 public:
-    explicit CSamplerImpl(GfxSampler h);
-    ~CSamplerImpl() override;
+    explicit SamplerImpl(GfxSampler h);
+    ~SamplerImpl() override;
 
     GfxSampler getHandle() const;
 

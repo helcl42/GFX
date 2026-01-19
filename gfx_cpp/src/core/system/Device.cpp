@@ -25,16 +25,16 @@
 
 namespace gfx {
 
-CDeviceImpl::CDeviceImpl(GfxDevice h)
+DeviceImpl::DeviceImpl(GfxDevice h)
     : m_handle(h)
 {
     GfxQueue queueHandle = nullptr;
     if (gfxDeviceGetQueue(m_handle, &queueHandle) == GFX_RESULT_SUCCESS && queueHandle) {
-        m_queue = std::make_shared<CQueueImpl>(queueHandle);
+        m_queue = std::make_shared<QueueImpl>(queueHandle);
     }
 }
 
-CDeviceImpl::~CDeviceImpl()
+DeviceImpl::~DeviceImpl()
 {
     if (m_handle) {
         gfxDeviceWaitIdle(m_handle);
@@ -42,12 +42,12 @@ CDeviceImpl::~CDeviceImpl()
     }
 }
 
-std::shared_ptr<Queue> CDeviceImpl::getQueue()
+std::shared_ptr<Queue> DeviceImpl::getQueue()
 {
     return m_queue;
 }
 
-std::shared_ptr<Surface> CDeviceImpl::createSurface(const SurfaceDescriptor& descriptor)
+std::shared_ptr<Surface> DeviceImpl::createSurface(const SurfaceDescriptor& descriptor)
 {
     GfxSurfaceDescriptor cDesc = {};
     cDesc.label = descriptor.label.c_str();
@@ -58,12 +58,12 @@ std::shared_ptr<Surface> CDeviceImpl::createSurface(const SurfaceDescriptor& des
     if (result != GFX_RESULT_SUCCESS || !surface) {
         throw std::runtime_error("Failed to create surface");
     }
-    return std::make_shared<CSurfaceImpl>(surface);
+    return std::make_shared<SurfaceImpl>(surface);
 }
 
-std::shared_ptr<Swapchain> CDeviceImpl::createSwapchain(std::shared_ptr<Surface> surface, const SwapchainDescriptor& descriptor)
+std::shared_ptr<Swapchain> DeviceImpl::createSwapchain(std::shared_ptr<Surface> surface, const SwapchainDescriptor& descriptor)
 {
-    auto surfaceImpl = std::dynamic_pointer_cast<CSurfaceImpl>(surface);
+    auto surfaceImpl = std::dynamic_pointer_cast<SurfaceImpl>(surface);
     if (!surfaceImpl) {
         throw std::runtime_error("Invalid surface type");
     }
@@ -82,10 +82,10 @@ std::shared_ptr<Swapchain> CDeviceImpl::createSwapchain(std::shared_ptr<Surface>
     if (result != GFX_RESULT_SUCCESS || !swapchain) {
         throw std::runtime_error("Failed to create swapchain");
     }
-    return std::make_shared<CSwapchainImpl>(swapchain);
+    return std::make_shared<SwapchainImpl>(swapchain);
 }
 
-std::shared_ptr<Buffer> CDeviceImpl::createBuffer(const BufferDescriptor& descriptor)
+std::shared_ptr<Buffer> DeviceImpl::createBuffer(const BufferDescriptor& descriptor)
 {
     GfxBufferDescriptor cDesc = {};
     cDesc.label = descriptor.label.c_str();
@@ -97,10 +97,10 @@ std::shared_ptr<Buffer> CDeviceImpl::createBuffer(const BufferDescriptor& descri
     if (result != GFX_RESULT_SUCCESS || !buffer) {
         throw std::runtime_error("Failed to create buffer");
     }
-    return std::make_shared<CBufferImpl>(buffer);
+    return std::make_shared<BufferImpl>(buffer);
 }
 
-std::shared_ptr<Buffer> CDeviceImpl::importBuffer(const BufferImportDescriptor& descriptor)
+std::shared_ptr<Buffer> DeviceImpl::importBuffer(const BufferImportDescriptor& descriptor)
 {
     GfxBufferImportDescriptor cDesc = {};
     cDesc.label = descriptor.label.c_str();
@@ -113,10 +113,10 @@ std::shared_ptr<Buffer> CDeviceImpl::importBuffer(const BufferImportDescriptor& 
     if (result != GFX_RESULT_SUCCESS || !buffer) {
         throw std::runtime_error("Failed to import buffer");
     }
-    return std::make_shared<CBufferImpl>(buffer);
+    return std::make_shared<BufferImpl>(buffer);
 }
 
-std::shared_ptr<Texture> CDeviceImpl::createTexture(const TextureDescriptor& descriptor)
+std::shared_ptr<Texture> DeviceImpl::createTexture(const TextureDescriptor& descriptor)
 {
     GfxTextureDescriptor cDesc = {};
     cDesc.label = descriptor.label.c_str();
@@ -133,10 +133,10 @@ std::shared_ptr<Texture> CDeviceImpl::createTexture(const TextureDescriptor& des
     if (result != GFX_RESULT_SUCCESS || !texture) {
         throw std::runtime_error("Failed to create texture");
     }
-    return std::make_shared<CTextureImpl>(texture);
+    return std::make_shared<TextureImpl>(texture);
 }
 
-std::shared_ptr<Texture> CDeviceImpl::importTexture(const TextureImportDescriptor& descriptor)
+std::shared_ptr<Texture> DeviceImpl::importTexture(const TextureImportDescriptor& descriptor)
 {
     GfxTextureImportDescriptor cDesc = {};
     cDesc.label = descriptor.label.c_str();
@@ -155,10 +155,10 @@ std::shared_ptr<Texture> CDeviceImpl::importTexture(const TextureImportDescripto
     if (result != GFX_RESULT_SUCCESS || !texture) {
         throw std::runtime_error("Failed to import texture");
     }
-    return std::make_shared<CTextureImpl>(texture);
+    return std::make_shared<TextureImpl>(texture);
 }
 
-std::shared_ptr<Sampler> CDeviceImpl::createSampler(const SamplerDescriptor& descriptor)
+std::shared_ptr<Sampler> DeviceImpl::createSampler(const SamplerDescriptor& descriptor)
 {
     GfxSamplerDescriptor cDesc = {};
     cDesc.label = descriptor.label.c_str();
@@ -178,10 +178,10 @@ std::shared_ptr<Sampler> CDeviceImpl::createSampler(const SamplerDescriptor& des
     if (result != GFX_RESULT_SUCCESS || !sampler) {
         throw std::runtime_error("Failed to create sampler");
     }
-    return std::make_shared<CSamplerImpl>(sampler);
+    return std::make_shared<SamplerImpl>(sampler);
 }
 
-std::shared_ptr<Shader> CDeviceImpl::createShader(const ShaderDescriptor& descriptor)
+std::shared_ptr<Shader> DeviceImpl::createShader(const ShaderDescriptor& descriptor)
 {
     GfxShaderDescriptor cDesc = {};
     cDesc.label = descriptor.label.c_str();
@@ -195,10 +195,10 @@ std::shared_ptr<Shader> CDeviceImpl::createShader(const ShaderDescriptor& descri
     if (result != GFX_RESULT_SUCCESS || !shader) {
         throw std::runtime_error("Failed to create shader");
     }
-    return std::make_shared<CShaderImpl>(shader);
+    return std::make_shared<ShaderImpl>(shader);
 }
 
-std::shared_ptr<BindGroupLayout> CDeviceImpl::createBindGroupLayout(const BindGroupLayoutDescriptor& descriptor)
+std::shared_ptr<BindGroupLayout> DeviceImpl::createBindGroupLayout(const BindGroupLayoutDescriptor& descriptor)
 {
     // Convert entries properly
     std::vector<GfxBindGroupLayoutEntry> cEntries(descriptor.entries.size());
@@ -245,12 +245,12 @@ std::shared_ptr<BindGroupLayout> CDeviceImpl::createBindGroupLayout(const BindGr
     if (result != GFX_RESULT_SUCCESS || !layout) {
         throw std::runtime_error("Failed to create bind group layout");
     }
-    return std::make_shared<CBindGroupLayoutImpl>(layout);
+    return std::make_shared<BindGroupLayoutImpl>(layout);
 }
 
-std::shared_ptr<BindGroup> CDeviceImpl::createBindGroup(const BindGroupDescriptor& descriptor)
+std::shared_ptr<BindGroup> DeviceImpl::createBindGroup(const BindGroupDescriptor& descriptor)
 {
-    auto layoutImpl = std::dynamic_pointer_cast<CBindGroupLayoutImpl>(descriptor.layout);
+    auto layoutImpl = std::dynamic_pointer_cast<BindGroupLayoutImpl>(descriptor.layout);
     if (!layoutImpl) {
         throw std::runtime_error("Invalid bind group layout type");
     }
@@ -266,7 +266,7 @@ std::shared_ptr<BindGroup> CDeviceImpl::createBindGroup(const BindGroupDescripto
             // Buffer resource
             cEntries[i].type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER;
             auto buffer = std::get<std::shared_ptr<Buffer>>(entry.resource);
-            auto bufferImpl = std::dynamic_pointer_cast<CBufferImpl>(buffer);
+            auto bufferImpl = std::dynamic_pointer_cast<BufferImpl>(buffer);
             if (bufferImpl) {
                 cEntries[i].resource.buffer.buffer = bufferImpl->getHandle();
                 cEntries[i].resource.buffer.offset = entry.offset;
@@ -276,7 +276,7 @@ std::shared_ptr<BindGroup> CDeviceImpl::createBindGroup(const BindGroupDescripto
             // Sampler resource
             cEntries[i].type = GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER;
             auto sampler = std::get<std::shared_ptr<Sampler>>(entry.resource);
-            auto samplerImpl = std::dynamic_pointer_cast<CSamplerImpl>(sampler);
+            auto samplerImpl = std::dynamic_pointer_cast<SamplerImpl>(sampler);
             if (samplerImpl) {
                 cEntries[i].resource.sampler = samplerImpl->getHandle();
             }
@@ -284,7 +284,7 @@ std::shared_ptr<BindGroup> CDeviceImpl::createBindGroup(const BindGroupDescripto
             // TextureView resource
             cEntries[i].type = GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW;
             auto textureView = std::get<std::shared_ptr<TextureView>>(entry.resource);
-            auto textureViewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(textureView);
+            auto textureViewImpl = std::dynamic_pointer_cast<TextureViewImpl>(textureView);
             if (textureViewImpl) {
                 cEntries[i].resource.textureView = textureViewImpl->getHandle();
             }
@@ -302,13 +302,13 @@ std::shared_ptr<BindGroup> CDeviceImpl::createBindGroup(const BindGroupDescripto
     if (result != GFX_RESULT_SUCCESS || !bindGroup) {
         throw std::runtime_error("Failed to create bind group");
     }
-    return std::make_shared<CBindGroupImpl>(bindGroup);
+    return std::make_shared<BindGroupImpl>(bindGroup);
 }
 
-std::shared_ptr<RenderPipeline> CDeviceImpl::createRenderPipeline(const RenderPipelineDescriptor& descriptor)
+std::shared_ptr<RenderPipeline> DeviceImpl::createRenderPipeline(const RenderPipelineDescriptor& descriptor)
 {
     // Extract shader handles
-    auto vertexShaderImpl = std::dynamic_pointer_cast<CShaderImpl>(descriptor.vertex.module);
+    auto vertexShaderImpl = std::dynamic_pointer_cast<ShaderImpl>(descriptor.vertex.module);
     if (!vertexShaderImpl) {
         throw std::runtime_error("Invalid vertex shader type");
     }
@@ -351,7 +351,7 @@ std::shared_ptr<RenderPipeline> CDeviceImpl::createRenderPipeline(const RenderPi
 
     if (descriptor.fragment.has_value()) {
         const auto& fragment = *descriptor.fragment;
-        auto fragmentShaderImpl = std::dynamic_pointer_cast<CShaderImpl>(fragment.module);
+        auto fragmentShaderImpl = std::dynamic_pointer_cast<ShaderImpl>(fragment.module);
         if (!fragmentShaderImpl) {
             throw std::runtime_error("Invalid fragment shader type");
         }
@@ -438,7 +438,7 @@ std::shared_ptr<RenderPipeline> CDeviceImpl::createRenderPipeline(const RenderPi
     cDesc.label = descriptor.label.c_str();
 
     // Extract render pass handle
-    auto renderPassImpl = std::dynamic_pointer_cast<CRenderPassImpl>(descriptor.renderPass);
+    auto renderPassImpl = std::dynamic_pointer_cast<RenderPassImpl>(descriptor.renderPass);
     if (!renderPassImpl) {
         throw std::runtime_error("Invalid render pass type");
     }
@@ -453,7 +453,7 @@ std::shared_ptr<RenderPipeline> CDeviceImpl::createRenderPipeline(const RenderPi
     // Convert bind group layouts
     std::vector<GfxBindGroupLayout> cBindGroupLayouts;
     for (const auto& layout : descriptor.bindGroupLayouts) {
-        auto layoutImpl = std::dynamic_pointer_cast<CBindGroupLayoutImpl>(layout);
+        auto layoutImpl = std::dynamic_pointer_cast<BindGroupLayoutImpl>(layout);
         if (layoutImpl) {
             cBindGroupLayouts.push_back(layoutImpl->getHandle());
         }
@@ -466,12 +466,12 @@ std::shared_ptr<RenderPipeline> CDeviceImpl::createRenderPipeline(const RenderPi
     if (result != GFX_RESULT_SUCCESS || !pipeline) {
         throw std::runtime_error("Failed to create render pipeline");
     }
-    return std::make_shared<CRenderPipelineImpl>(pipeline);
+    return std::make_shared<RenderPipelineImpl>(pipeline);
 }
 
-std::shared_ptr<ComputePipeline> CDeviceImpl::createComputePipeline(const ComputePipelineDescriptor& descriptor)
+std::shared_ptr<ComputePipeline> DeviceImpl::createComputePipeline(const ComputePipelineDescriptor& descriptor)
 {
-    auto shaderImpl = std::dynamic_pointer_cast<CShaderImpl>(descriptor.compute);
+    auto shaderImpl = std::dynamic_pointer_cast<ShaderImpl>(descriptor.compute);
     if (!shaderImpl) {
         throw std::runtime_error("Invalid shader type");
     }
@@ -479,7 +479,7 @@ std::shared_ptr<ComputePipeline> CDeviceImpl::createComputePipeline(const Comput
     // Convert bind group layouts to C handles
     std::vector<GfxBindGroupLayout> bindGroupLayoutHandles;
     for (const auto& layout : descriptor.bindGroupLayouts) {
-        auto layoutImpl = std::dynamic_pointer_cast<CBindGroupLayoutImpl>(layout);
+        auto layoutImpl = std::dynamic_pointer_cast<BindGroupLayoutImpl>(layout);
         if (layoutImpl) {
             bindGroupLayoutHandles.push_back(layoutImpl->getHandle());
         }
@@ -497,10 +497,10 @@ std::shared_ptr<ComputePipeline> CDeviceImpl::createComputePipeline(const Comput
     if (result != GFX_RESULT_SUCCESS || !pipeline) {
         throw std::runtime_error("Failed to create compute pipeline");
     }
-    return std::make_shared<CComputePipelineImpl>(pipeline);
+    return std::make_shared<ComputePipelineImpl>(pipeline);
 }
 
-std::shared_ptr<RenderPass> CDeviceImpl::createRenderPass(const RenderPassCreateDescriptor& descriptor)
+std::shared_ptr<RenderPass> DeviceImpl::createRenderPass(const RenderPassCreateDescriptor& descriptor)
 {
     // Convert color attachments
     std::vector<GfxRenderPassColorAttachment> cColorAttachments;
@@ -578,12 +578,12 @@ std::shared_ptr<RenderPass> CDeviceImpl::createRenderPass(const RenderPassCreate
     if (result != GFX_RESULT_SUCCESS || !renderPass) {
         throw std::runtime_error("Failed to create render pass");
     }
-    return std::make_shared<CRenderPassImpl>(renderPass);
+    return std::make_shared<RenderPassImpl>(renderPass);
 }
 
-std::shared_ptr<Framebuffer> CDeviceImpl::createFramebuffer(const FramebufferDescriptor& descriptor)
+std::shared_ptr<Framebuffer> DeviceImpl::createFramebuffer(const FramebufferDescriptor& descriptor)
 {
-    auto renderPassImpl = std::dynamic_pointer_cast<CRenderPassImpl>(descriptor.renderPass);
+    auto renderPassImpl = std::dynamic_pointer_cast<RenderPassImpl>(descriptor.renderPass);
     if (!renderPassImpl) {
         throw std::runtime_error("Invalid render pass type");
     }
@@ -593,14 +593,14 @@ std::shared_ptr<Framebuffer> CDeviceImpl::createFramebuffer(const FramebufferDes
     for (const auto& attachment : descriptor.colorAttachments) {
         GfxFramebufferAttachment cAttachment = {};
 
-        auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(attachment.view);
+        auto viewImpl = std::dynamic_pointer_cast<TextureViewImpl>(attachment.view);
         if (!viewImpl) {
             throw std::runtime_error("Invalid texture view type");
         }
         cAttachment.view = viewImpl->getHandle();
 
         if (attachment.resolveTarget) {
-            auto resolveImpl = std::dynamic_pointer_cast<CTextureViewImpl>(attachment.resolveTarget);
+            auto resolveImpl = std::dynamic_pointer_cast<TextureViewImpl>(attachment.resolveTarget);
             if (!resolveImpl) {
                 throw std::runtime_error("Invalid resolve target texture view type");
             }
@@ -616,14 +616,14 @@ std::shared_ptr<Framebuffer> CDeviceImpl::createFramebuffer(const FramebufferDes
     GfxFramebufferAttachment cDepthStencilAttachment = { nullptr, nullptr };
 
     if (descriptor.depthStencilAttachment) {
-        auto viewImpl = std::dynamic_pointer_cast<CTextureViewImpl>(descriptor.depthStencilAttachment->view);
+        auto viewImpl = std::dynamic_pointer_cast<TextureViewImpl>(descriptor.depthStencilAttachment->view);
         if (!viewImpl) {
             throw std::runtime_error("Invalid depth/stencil texture view type");
         }
         cDepthStencilAttachment.view = viewImpl->getHandle();
 
         if (descriptor.depthStencilAttachment->resolveTarget) {
-            auto resolveImpl = std::dynamic_pointer_cast<CTextureViewImpl>(descriptor.depthStencilAttachment->resolveTarget);
+            auto resolveImpl = std::dynamic_pointer_cast<TextureViewImpl>(descriptor.depthStencilAttachment->resolveTarget);
             if (!resolveImpl) {
                 throw std::runtime_error("Invalid depth/stencil resolve target texture view type");
             }
@@ -645,10 +645,10 @@ std::shared_ptr<Framebuffer> CDeviceImpl::createFramebuffer(const FramebufferDes
     if (result != GFX_RESULT_SUCCESS || !framebuffer) {
         throw std::runtime_error("Failed to create framebuffer");
     }
-    return std::make_shared<CFramebufferImpl>(framebuffer, renderPassImpl->getHandle());
+    return std::make_shared<FramebufferImpl>(framebuffer, renderPassImpl->getHandle());
 }
 
-std::shared_ptr<CommandEncoder> CDeviceImpl::createCommandEncoder(const CommandEncoderDescriptor& descriptor)
+std::shared_ptr<CommandEncoder> DeviceImpl::createCommandEncoder(const CommandEncoderDescriptor& descriptor)
 {
     GfxCommandEncoderDescriptor cDesc = {};
     cDesc.label = descriptor.label.c_str();
@@ -658,10 +658,10 @@ std::shared_ptr<CommandEncoder> CDeviceImpl::createCommandEncoder(const CommandE
     if (result != GFX_RESULT_SUCCESS || !encoder) {
         throw std::runtime_error("Failed to create command encoder");
     }
-    return std::make_shared<CCommandEncoderImpl>(encoder);
+    return std::make_shared<CommandEncoderImpl>(encoder);
 }
 
-std::shared_ptr<Fence> CDeviceImpl::createFence(const FenceDescriptor& descriptor)
+std::shared_ptr<Fence> DeviceImpl::createFence(const FenceDescriptor& descriptor)
 {
     GfxFenceDescriptor cDesc = {};
     cDesc.label = descriptor.label.c_str();
@@ -672,10 +672,10 @@ std::shared_ptr<Fence> CDeviceImpl::createFence(const FenceDescriptor& descripto
     if (result != GFX_RESULT_SUCCESS || !fence) {
         throw std::runtime_error("Failed to create fence");
     }
-    return std::make_shared<CFenceImpl>(fence);
+    return std::make_shared<FenceImpl>(fence);
 }
 
-std::shared_ptr<Semaphore> CDeviceImpl::createSemaphore(const SemaphoreDescriptor& descriptor)
+std::shared_ptr<Semaphore> DeviceImpl::createSemaphore(const SemaphoreDescriptor& descriptor)
 {
     GfxSemaphoreDescriptor cDesc = {};
     cDesc.label = descriptor.label.c_str();
@@ -687,15 +687,15 @@ std::shared_ptr<Semaphore> CDeviceImpl::createSemaphore(const SemaphoreDescripto
     if (result != GFX_RESULT_SUCCESS || !semaphore) {
         throw std::runtime_error("Failed to create semaphore");
     }
-    return std::make_shared<CSemaphoreImpl>(semaphore);
+    return std::make_shared<SemaphoreImpl>(semaphore);
 }
 
-void CDeviceImpl::waitIdle()
+void DeviceImpl::waitIdle()
 {
     gfxDeviceWaitIdle(m_handle);
 }
 
-DeviceLimits CDeviceImpl::getLimits() const
+DeviceLimits DeviceImpl::getLimits() const
 {
     GfxDeviceLimits cLimits;
     gfxDeviceGetLimits(m_handle, &cLimits);

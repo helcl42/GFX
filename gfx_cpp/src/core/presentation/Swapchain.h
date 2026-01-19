@@ -8,10 +8,10 @@
 
 namespace gfx {
 
-class CSwapchainImpl : public Swapchain {
+class SwapchainImpl : public Swapchain {
 public:
-    explicit CSwapchainImpl(GfxSwapchain h);
-    ~CSwapchainImpl() override;
+    explicit SwapchainImpl(GfxSwapchain h);
+    ~SwapchainImpl() override;
 
     SwapchainInfo getInfo() const override;
     std::shared_ptr<TextureView> getCurrentTextureView() override;

@@ -2,19 +2,19 @@
 
 namespace gfx {
 
-CRenderPipelineImpl::CRenderPipelineImpl(GfxRenderPipeline h)
+RenderPipelineImpl::RenderPipelineImpl(GfxRenderPipeline h)
     : m_handle(h)
 {
 }
 
-CRenderPipelineImpl::~CRenderPipelineImpl()
+RenderPipelineImpl::~RenderPipelineImpl()
 {
     if (m_handle) {
         gfxRenderPipelineDestroy(m_handle);
     }
 }
 
-GfxRenderPipeline CRenderPipelineImpl::getHandle() const
+GfxRenderPipeline RenderPipelineImpl::getHandle() const
 {
     return m_handle;
 }

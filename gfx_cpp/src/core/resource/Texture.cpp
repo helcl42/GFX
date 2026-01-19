@@ -8,7 +8,7 @@
 
 namespace gfx {
 
-CTextureImpl::CTextureImpl(GfxTexture h)
+TextureImpl::TextureImpl(GfxTexture h)
     : m_handle(h)
 {
     GfxResult result = gfxTextureGetInfo(m_handle, &m_info);
@@ -24,19 +24,19 @@ CTextureImpl::CTextureImpl(GfxTexture h)
     }
 }
 
-CTextureImpl::~CTextureImpl()
+TextureImpl::~TextureImpl()
 {
     if (m_handle) {
         gfxTextureDestroy(m_handle);
     }
 }
 
-GfxTexture CTextureImpl::getHandle() const
+GfxTexture TextureImpl::getHandle() const
 {
     return m_handle;
 }
 
-TextureInfo CTextureImpl::getInfo()
+TextureInfo TextureImpl::getInfo()
 {
     TextureInfo info;
     info.type = cTextureTypeToCppType(m_info.type);
@@ -49,14 +49,14 @@ TextureInfo CTextureImpl::getInfo()
     return info;
 }
 
-TextureLayout CTextureImpl::getLayout() const
+TextureLayout TextureImpl::getLayout() const
 {
     GfxTextureLayout layout = GFX_TEXTURE_LAYOUT_UNDEFINED;
     gfxTextureGetLayout(m_handle, &layout);
     return cLayoutToCppLayout(layout);
 }
 
-std::shared_ptr<TextureView> CTextureImpl::createView(const TextureViewDescriptor& descriptor)
+std::shared_ptr<TextureView> TextureImpl::createView(const TextureViewDescriptor& descriptor)
 {
     GfxTextureViewDescriptor cDesc = {};
     cDesc.label = descriptor.label.c_str();
@@ -73,7 +73,7 @@ std::shared_ptr<TextureView> CTextureImpl::createView(const TextureViewDescripto
         throw std::runtime_error("Failed to create texture view");
     }
 
-    return std::make_shared<CTextureViewImpl>(view);
+    return std::make_shared<TextureViewImpl>(view);
 }
 
 } // namespace gfx

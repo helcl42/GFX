@@ -8,12 +8,12 @@
 
 namespace gfx {
 
-CComputePassEncoderImpl::CComputePassEncoderImpl(GfxComputePassEncoder h)
+ComputePassEncoderImpl::ComputePassEncoderImpl(GfxComputePassEncoder h)
     : m_handle(h)
 {
 }
 
-CComputePassEncoderImpl::~CComputePassEncoderImpl()
+ComputePassEncoderImpl::~ComputePassEncoderImpl()
 {
     if (m_handle) {
         GfxResult result = gfxComputePassEncoderEnd(m_handle);
@@ -23,9 +23,9 @@ CComputePassEncoderImpl::~CComputePassEncoderImpl()
     }
 }
 
-void CComputePassEncoderImpl::setPipeline(std::shared_ptr<ComputePipeline> pipeline)
+void ComputePassEncoderImpl::setPipeline(std::shared_ptr<ComputePipeline> pipeline)
 {
-    auto impl = std::dynamic_pointer_cast<CComputePipelineImpl>(pipeline);
+    auto impl = std::dynamic_pointer_cast<ComputePipelineImpl>(pipeline);
     if (impl) {
         GfxResult result = gfxComputePassEncoderSetPipeline(m_handle, impl->getHandle());
         if (result != GFX_RESULT_SUCCESS) {
@@ -34,9 +34,9 @@ void CComputePassEncoderImpl::setPipeline(std::shared_ptr<ComputePipeline> pipel
     }
 }
 
-void CComputePassEncoderImpl::setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
+void ComputePassEncoderImpl::setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
-    auto impl = std::dynamic_pointer_cast<CBindGroupImpl>(bindGroup);
+    auto impl = std::dynamic_pointer_cast<BindGroupImpl>(bindGroup);
     if (impl) {
         GfxResult result = gfxComputePassEncoderSetBindGroup(m_handle, index, impl->getHandle(), dynamicOffsets, dynamicOffsetCount);
         if (result != GFX_RESULT_SUCCESS) {
@@ -45,7 +45,7 @@ void CComputePassEncoderImpl::setBindGroup(uint32_t index, std::shared_ptr<BindG
     }
 }
 
-void CComputePassEncoderImpl::dispatch(uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ)
+void ComputePassEncoderImpl::dispatch(uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ)
 {
     GfxResult result = gfxComputePassEncoderDispatch(m_handle, workgroupCountX, workgroupCountY, workgroupCountZ);
     if (result != GFX_RESULT_SUCCESS) {
@@ -53,12 +53,12 @@ void CComputePassEncoderImpl::dispatch(uint32_t workgroupCountX, uint32_t workgr
     }
 }
 
-void CComputePassEncoderImpl::dispatchIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset)
+void ComputePassEncoderImpl::dispatchIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset)
 {
     if (!indirectBuffer) {
         throw std::invalid_argument("Indirect buffer cannot be null");
     }
-    auto* bufferImpl = dynamic_cast<CBufferImpl*>(indirectBuffer.get());
+    auto* bufferImpl = dynamic_cast<BufferImpl*>(indirectBuffer.get());
     if (!bufferImpl) {
         throw std::runtime_error("Invalid buffer implementation");
     }

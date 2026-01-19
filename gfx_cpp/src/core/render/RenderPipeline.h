@@ -6,10 +6,10 @@
 
 namespace gfx {
 
-class CRenderPipelineImpl : public RenderPipeline {
+class RenderPipelineImpl : public RenderPipeline {
 public:
-    explicit CRenderPipelineImpl(GfxRenderPipeline h);
-    ~CRenderPipelineImpl() override;
+    explicit RenderPipelineImpl(GfxRenderPipeline h);
+    ~RenderPipelineImpl() override;
 
     GfxRenderPipeline getHandle() const;
 

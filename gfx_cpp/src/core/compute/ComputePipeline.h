@@ -6,10 +6,10 @@
 
 namespace gfx {
 
-class CComputePipelineImpl : public ComputePipeline {
+class ComputePipelineImpl : public ComputePipeline {
 public:
-    explicit CComputePipelineImpl(GfxComputePipeline h);
-    ~CComputePipelineImpl() override;
+    explicit ComputePipelineImpl(GfxComputePipeline h);
+    ~ComputePipelineImpl() override;
 
     GfxComputePipeline getHandle() const;
 

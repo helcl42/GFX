@@ -2,19 +2,19 @@
 
 namespace gfx {
 
-CSamplerImpl::CSamplerImpl(GfxSampler h)
+SamplerImpl::SamplerImpl(GfxSampler h)
     : m_handle(h)
 {
 }
 
-CSamplerImpl::~CSamplerImpl()
+SamplerImpl::~SamplerImpl()
 {
     if (m_handle) {
         gfxSamplerDestroy(m_handle);
     }
 }
 
-GfxSampler CSamplerImpl::getHandle() const
+GfxSampler SamplerImpl::getHandle() const
 {
     return m_handle;
 }

@@ -8,10 +8,10 @@
 
 namespace gfx {
 
-class CFenceImpl : public Fence {
+class FenceImpl : public Fence {
 public:
-    explicit CFenceImpl(GfxFence h);
-    ~CFenceImpl() override;
+    explicit FenceImpl(GfxFence h);
+    ~FenceImpl() override;
 
     GfxFence getHandle() const;
 

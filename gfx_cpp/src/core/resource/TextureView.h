@@ -8,12 +8,12 @@
 
 namespace gfx {
 
-class CTextureImpl;
+class TextureImpl;
 
-class CTextureViewImpl : public TextureView {
+class TextureViewImpl : public TextureView {
 public:
-    explicit CTextureViewImpl(GfxTextureView h);
-    ~CTextureViewImpl() override;
+    explicit TextureViewImpl(GfxTextureView h);
+    ~TextureViewImpl() override;
 
     GfxTextureView getHandle() const;
 

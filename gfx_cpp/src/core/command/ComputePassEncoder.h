@@ -1,3 +1,5 @@
+
+// TODO - add macro guards !!!
 #pragma once
 
 #include <gfx_cpp/gfx.hpp>
@@ -8,10 +10,10 @@
 
 namespace gfx {
 
-class CComputePassEncoderImpl : public ComputePassEncoder {
+class ComputePassEncoderImpl : public ComputePassEncoder {
 public:
-    explicit CComputePassEncoderImpl(GfxComputePassEncoder h);
-    ~CComputePassEncoderImpl() override;
+    explicit ComputePassEncoderImpl(GfxComputePassEncoder h);
+    ~ComputePassEncoderImpl() override;
 
     void setPipeline(std::shared_ptr<ComputePipeline> pipeline) override;
     void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets = nullptr, uint32_t dynamicOffsetCount = 0) override;

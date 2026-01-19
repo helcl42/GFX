@@ -9,8 +9,8 @@
 namespace gfx {
 
 // Forward declarations
-class CSemaphoreImpl;
-class CFenceImpl;
+class SemaphoreImpl;
+class FenceImpl;
 
 // Helper template to extract native C handles from C++ wrapper objects
 template <typename CHandle>

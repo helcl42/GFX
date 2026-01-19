@@ -2,19 +2,19 @@
 
 namespace gfx {
 
-CComputePipelineImpl::CComputePipelineImpl(GfxComputePipeline h)
+ComputePipelineImpl::ComputePipelineImpl(GfxComputePipeline h)
     : m_handle(h)
 {
 }
 
-CComputePipelineImpl::~CComputePipelineImpl()
+ComputePipelineImpl::~ComputePipelineImpl()
 {
     if (m_handle) {
         gfxComputePipelineDestroy(m_handle);
     }
 }
 
-GfxComputePipeline CComputePipelineImpl::getHandle() const
+GfxComputePipeline ComputePipelineImpl::getHandle() const
 {
     return m_handle;
 }

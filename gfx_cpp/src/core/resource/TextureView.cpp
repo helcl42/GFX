@@ -2,19 +2,19 @@
 
 namespace gfx {
 
-CTextureViewImpl::CTextureViewImpl(GfxTextureView h)
+TextureViewImpl::TextureViewImpl(GfxTextureView h)
     : m_handle(h)
 {
 }
 
-CTextureViewImpl::~CTextureViewImpl()
+TextureViewImpl::~TextureViewImpl()
 {
     if (m_handle) {
         gfxTextureViewDestroy(m_handle);
     }
 }
 
-GfxTextureView CTextureViewImpl::getHandle() const
+GfxTextureView TextureViewImpl::getHandle() const
 {
     return m_handle;
 }

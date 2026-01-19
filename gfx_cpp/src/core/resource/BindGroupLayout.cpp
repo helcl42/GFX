@@ -2,19 +2,19 @@
 
 namespace gfx {
 
-CBindGroupLayoutImpl::CBindGroupLayoutImpl(GfxBindGroupLayout h)
+BindGroupLayoutImpl::BindGroupLayoutImpl(GfxBindGroupLayout h)
     : m_handle(h)
 {
 }
 
-CBindGroupLayoutImpl::~CBindGroupLayoutImpl()
+BindGroupLayoutImpl::~BindGroupLayoutImpl()
 {
     if (m_handle) {
         gfxBindGroupLayoutDestroy(m_handle);
     }
 }
 
-GfxBindGroupLayout CBindGroupLayoutImpl::getHandle() const
+GfxBindGroupLayout BindGroupLayoutImpl::getHandle() const
 {
     return m_handle;
 }

@@ -8,10 +8,10 @@
 
 namespace gfx {
 
-class CTextureImpl : public Texture {
+class TextureImpl : public Texture {
 public:
-    explicit CTextureImpl(GfxTexture h);
-    ~CTextureImpl() override;
+    explicit TextureImpl(GfxTexture h);
+    ~TextureImpl() override;
 
     GfxTexture getHandle() const;
 

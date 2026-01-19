@@ -82,7 +82,7 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
         throw std::runtime_error("Failed to create instance");
     }
 
-    return std::make_shared<CInstanceImpl>(instance);
+    return std::make_shared<InstanceImpl>(instance);
 }
 
 // Global log callback storage (needed because gfxSetLogCallback requires a C function pointer)

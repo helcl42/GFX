@@ -8,19 +8,19 @@
 
 namespace gfx {
 
-CAdapterImpl::CAdapterImpl(GfxAdapter h)
+AdapterImpl::AdapterImpl(GfxAdapter h)
     : m_handle(h)
 {
 }
 
-CAdapterImpl::~CAdapterImpl()
+AdapterImpl::~AdapterImpl()
 {
     if (m_handle) {
         gfxAdapterDestroy(m_handle);
     }
 }
 
-std::shared_ptr<Device> CAdapterImpl::createDevice(const DeviceDescriptor& descriptor)
+std::shared_ptr<Device> AdapterImpl::createDevice(const DeviceDescriptor& descriptor)
 {
     // Convert enabled features
     std::vector<GfxDeviceFeatureType> cFeatures;
@@ -40,10 +40,10 @@ std::shared_ptr<Device> CAdapterImpl::createDevice(const DeviceDescriptor& descr
     if (result != GFX_RESULT_SUCCESS || !device) {
         throw std::runtime_error("Failed to create device");
     }
-    return std::make_shared<CDeviceImpl>(device);
+    return std::make_shared<DeviceImpl>(device);
 }
 
-AdapterInfo CAdapterImpl::getInfo() const
+AdapterInfo AdapterImpl::getInfo() const
 {
     GfxAdapterInfo cInfo = {};
     gfxAdapterGetInfo(m_handle, &cInfo);
@@ -76,7 +76,7 @@ AdapterInfo CAdapterImpl::getInfo() const
     return info;
 }
 
-DeviceLimits CAdapterImpl::getLimits() const
+DeviceLimits AdapterImpl::getLimits() const
 {
     GfxDeviceLimits cLimits = {};
     gfxAdapterGetLimits(m_handle, &cLimits);

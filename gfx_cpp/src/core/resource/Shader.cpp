@@ -2,19 +2,19 @@
 
 namespace gfx {
 
-CShaderImpl::CShaderImpl(GfxShader h)
+ShaderImpl::ShaderImpl(GfxShader h)
     : m_handle(h)
 {
 }
 
-CShaderImpl::~CShaderImpl()
+ShaderImpl::~ShaderImpl()
 {
     if (m_handle) {
         gfxShaderDestroy(m_handle);
     }
 }
 
-GfxShader CShaderImpl::getHandle() const
+GfxShader ShaderImpl::getHandle() const
 {
     return m_handle;
 }
