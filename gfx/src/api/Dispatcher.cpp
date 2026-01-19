@@ -1136,6 +1136,18 @@ GfxResult gfxComputePassEncoderDispatch(GfxComputePassEncoder encoder, uint32_t 
         workgroupCountX, workgroupCountY, workgroupCountZ);
 }
 
+GfxResult gfxComputePassEncoderDispatchIndirect(GfxComputePassEncoder encoder, GfxBuffer indirectBuffer, uint64_t indirectOffset)
+{
+    if (!encoder || !indirectBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->computePassEncoderDispatchIndirect(encoder, indirectBuffer, indirectOffset);
+}
+
 GfxResult gfxComputePassEncoderEnd(GfxComputePassEncoder encoder)
 {
     if (!encoder) {

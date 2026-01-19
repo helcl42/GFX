@@ -26,6 +26,7 @@ public:
     void setBindGroup(uint32_t index, BindGroup* bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount);
 
     void dispatchWorkgroups(uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ);
+    void dispatchIndirect(Buffer* buffer, uint64_t offset);
 
 private:
     VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;

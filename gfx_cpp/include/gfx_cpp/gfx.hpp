@@ -1163,6 +1163,7 @@ public:
     virtual void setPipeline(std::shared_ptr<ComputePipeline> pipeline) = 0;
     virtual void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets = nullptr, uint32_t dynamicOffsetCount = 0) = 0;
     virtual void dispatch(uint32_t workgroupCountX, uint32_t workgroupCountY = 1, uint32_t workgroupCountZ = 1) = 0;
+    virtual void dispatchIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset) = 0;
 };
 
 class CommandEncoder {

@@ -717,6 +717,21 @@ public:
         }
     }
 
+    void dispatchIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset) override
+    {
+        if (!indirectBuffer) {
+            throw std::invalid_argument("Indirect buffer cannot be null");
+        }
+        auto* bufferImpl = dynamic_cast<CBufferImpl*>(indirectBuffer.get());
+        if (!bufferImpl) {
+            throw std::runtime_error("Invalid buffer implementation");
+        }
+        GfxResult result = gfxComputePassEncoderDispatchIndirect(m_handle, bufferImpl->getHandle(), indirectOffset);
+        if (result != GFX_RESULT_SUCCESS) {
+            throw std::runtime_error("Failed to dispatch indirect");
+        }
+    }
+
 private:
     GfxComputePassEncoder m_handle;
 };

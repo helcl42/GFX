@@ -1318,6 +1318,18 @@ GfxResult Backend::computePassEncoderDispatch(GfxComputePassEncoder computePassE
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult Backend::computePassEncoderDispatchIndirect(GfxComputePassEncoder computePassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset) const
+{
+    if (!computePassEncoder || !indirectBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto* encoderPtr = converter::toNative<core::ComputePassEncoder>(computePassEncoder);
+    auto* bufferPtr = converter::toNative<core::Buffer>(indirectBuffer);
+    encoderPtr->dispatchIndirect(bufferPtr->handle(), indirectOffset);
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult Backend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
 {
     if (!computePassEncoder) {

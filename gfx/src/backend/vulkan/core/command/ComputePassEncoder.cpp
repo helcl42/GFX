@@ -4,6 +4,7 @@
 
 #include "../compute/ComputePipeline.h"
 #include "../resource/BindGroup.h"
+#include "../resource/Buffer.h"
 #include "../system/Device.h"
 
 namespace gfx::backend::vulkan::core {
@@ -49,6 +50,11 @@ void ComputePassEncoder::setBindGroup(uint32_t index, BindGroup* bindGroup, cons
 void ComputePassEncoder::dispatchWorkgroups(uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ)
 {
     vkCmdDispatch(m_commandBuffer, workgroupCountX, workgroupCountY, workgroupCountZ);
+}
+
+void ComputePassEncoder::dispatchIndirect(Buffer* buffer, uint64_t offset)
+{
+    vkCmdDispatchIndirect(m_commandBuffer, buffer->handle(), offset);
 }
 
 } // namespace gfx::backend::vulkan::core

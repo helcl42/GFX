@@ -1166,6 +1166,7 @@ GFX_API GfxResult gfxComputePassEncoderSetPipeline(GfxComputePassEncoder compute
 // Pass NULL and 0 if not using dynamic offsets
 GFX_API GfxResult gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount);
 GFX_API GfxResult gfxComputePassEncoderDispatch(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ);
+GFX_API GfxResult gfxComputePassEncoderDispatchIndirect(GfxComputePassEncoder computePassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset);
 GFX_API GfxResult gfxComputePassEncoderEnd(GfxComputePassEncoder computePassEncoder);
 
 // Fence functions

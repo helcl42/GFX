@@ -45,6 +45,11 @@ void ComputePassEncoder::dispatchWorkgroups(uint32_t workgroupCountX, uint32_t w
     wgpuComputePassEncoderDispatchWorkgroups(m_encoder, workgroupCountX, workgroupCountY, workgroupCountZ);
 }
 
+void ComputePassEncoder::dispatchIndirect(WGPUBuffer buffer, uint64_t offset)
+{
+    wgpuComputePassEncoderDispatchWorkgroupsIndirect(m_encoder, buffer, offset);
+}
+
 WGPUComputePassEncoder ComputePassEncoder::handle() const
 {
     return m_encoder;
