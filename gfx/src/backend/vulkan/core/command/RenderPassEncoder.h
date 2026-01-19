@@ -32,9 +32,10 @@ public:
     void setViewport(const Viewport& viewport);
     void setScissorRect(const ScissorRect& scissor);
 
-    // TODO - add instanced draw + indirect draw
     void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance);
+    void drawIndirect(Buffer* buffer, uint64_t offset);
+    void drawIndexedIndirect(Buffer* buffer, uint64_t offset);
 
 private:
     VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;

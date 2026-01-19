@@ -128,6 +128,16 @@ void RenderPassEncoder::drawIndexed(uint32_t indexCount, uint32_t instanceCount,
     wgpuRenderPassEncoderDrawIndexed(m_encoder, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 }
 
+void RenderPassEncoder::drawIndirect(WGPUBuffer buffer, uint64_t offset)
+{
+    wgpuRenderPassEncoderDrawIndirect(m_encoder, buffer, offset);
+}
+
+void RenderPassEncoder::drawIndexedIndirect(WGPUBuffer buffer, uint64_t offset)
+{
+    wgpuRenderPassEncoderDrawIndexedIndirect(m_encoder, buffer, offset);
+}
+
 WGPURenderPassEncoder RenderPassEncoder::handle() const
 {
     return m_encoder;

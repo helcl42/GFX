@@ -1229,6 +1229,30 @@ GfxResult Backend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassE
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult Backend::renderPassEncoderDrawIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset) const
+{
+    if (!renderPassEncoder || !indirectBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
+    auto* buffer = converter::toNative<core::Buffer>(indirectBuffer);
+    rpe->drawIndirect(buffer, indirectOffset);
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult Backend::renderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset) const
+{
+    if (!renderPassEncoder || !indirectBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
+    auto* buffer = converter::toNative<core::Buffer>(indirectBuffer);
+    rpe->drawIndexedIndirect(buffer, indirectOffset);
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult Backend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
 {
     if (!renderPassEncoder) {

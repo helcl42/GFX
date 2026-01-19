@@ -135,4 +135,14 @@ void RenderPassEncoder::drawIndexed(uint32_t indexCount, uint32_t instanceCount,
     vkCmdDrawIndexed(m_commandBuffer, indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 }
 
+void RenderPassEncoder::drawIndirect(Buffer* buffer, uint64_t offset)
+{
+    vkCmdDrawIndirect(m_commandBuffer, buffer->handle(), offset, 1, 0);
+}
+
+void RenderPassEncoder::drawIndexedIndirect(Buffer* buffer, uint64_t offset)
+{
+    vkCmdDrawIndexedIndirect(m_commandBuffer, buffer->handle(), offset, 1, 0);
+}
+
 } // namespace gfx::backend::vulkan::core

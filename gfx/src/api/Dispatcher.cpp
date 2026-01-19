@@ -1078,6 +1078,30 @@ GfxResult gfxRenderPassEncoderDrawIndexed(GfxRenderPassEncoder encoder, uint32_t
         indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 }
 
+GfxResult gfxRenderPassEncoderDrawIndirect(GfxRenderPassEncoder encoder, GfxBuffer indirectBuffer, uint64_t indirectOffset)
+{
+    if (!encoder || !indirectBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->renderPassEncoderDrawIndirect(encoder, indirectBuffer, indirectOffset);
+}
+
+GfxResult gfxRenderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder encoder, GfxBuffer indirectBuffer, uint64_t indirectOffset)
+{
+    if (!encoder || !indirectBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->renderPassEncoderDrawIndexedIndirect(encoder, indirectBuffer, indirectOffset);
+}
+
 GfxResult gfxRenderPassEncoderEnd(GfxRenderPassEncoder encoder)
 {
     if (!encoder) {

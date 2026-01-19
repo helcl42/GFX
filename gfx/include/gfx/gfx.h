@@ -1157,6 +1157,8 @@ GFX_API GfxResult gfxRenderPassEncoderSetViewport(GfxRenderPassEncoder renderPas
 GFX_API GfxResult gfxRenderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor);
 GFX_API GfxResult gfxRenderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
 GFX_API GfxResult gfxRenderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance);
+GFX_API GfxResult gfxRenderPassEncoderDrawIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset);
+GFX_API GfxResult gfxRenderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset);
 GFX_API GfxResult gfxRenderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder);
 
 // ComputePassEncoder functions
