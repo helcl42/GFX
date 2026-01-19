@@ -306,12 +306,12 @@ GfxResult gfxDeviceGetQueue(GfxDevice device, GfxQueue* outQueue)
         auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
         if (!backend)                                                                                                                \
             return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                     \
+        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
         Gfx##TypeName native##TypeName = nullptr;                                                                                    \
         GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
         if (result != GFX_RESULT_SUCCESS)                                                                                            \
             return result;                                                                                                           \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                              \
+        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
         return GFX_RESULT_SUCCESS;                                                                                                   \
     }
 
@@ -485,17 +485,17 @@ GfxResult gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
 }
 
 // Macro for simple destroy functions
-#define DESTROY_FUNC(TypeName, typeName)                                         \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                     \
-    {                                                                            \
-        if (!typeName)                                                           \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                            \
+#define DESTROY_FUNC(TypeName, typeName)                                              \
+    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
+    {                                                                                 \
+        if (!typeName)                                                                \
+            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
         auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend)                                                            \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                   \
-        GfxResult result = backend->typeName##Destroy(typeName);                 \
-        gfx::backend::BackendManager::instance().unwrap(typeName);            \
-        return result;                                                           \
+        if (!backend)                                                                 \
+            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
+        GfxResult result = backend->typeName##Destroy(typeName);                      \
+        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
+        return result;                                                                \
     }
 DESTROY_FUNC(Surface, surface)
 DESTROY_FUNC(Swapchain, swapchain)
