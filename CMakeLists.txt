@@ -430,7 +430,66 @@ target_link_libraries(gfx PUBLIC ${PLATFORM_LIBS})
 if(BUILD_CPP_WRAPPER)
     set(GFX_CPP_SOURCES
         gfx_cpp/include/gfx_cpp/gfx.hpp
-        gfx_cpp/src/Gfx.cpp  # Single unified C++ wrapper for all backends
+        gfx_cpp/src/GfxImpl.cpp
+        # Converter
+        gfx_cpp/src/converter/Conversions.h
+        gfx_cpp/src/converter/Conversions.cpp
+        # Utilities
+        gfx_cpp/src/core/util/HandleExtractor.h
+        gfx_cpp/src/core/util/HandleExtractor.cpp
+        gfx_cpp/src/core/util/Utilities.h
+        gfx_cpp/src/core/util/Utilities.cpp
+        # Sync
+        gfx_cpp/src/core/sync/Fence.h
+        gfx_cpp/src/core/sync/Fence.cpp
+        gfx_cpp/src/core/sync/Semaphore.h
+        gfx_cpp/src/core/sync/Semaphore.cpp
+        # Resources
+        gfx_cpp/src/core/resource/Buffer.h
+        gfx_cpp/src/core/resource/Buffer.cpp
+        gfx_cpp/src/core/resource/Texture.h
+        gfx_cpp/src/core/resource/Texture.cpp
+        gfx_cpp/src/core/resource/TextureView.h
+        gfx_cpp/src/core/resource/TextureView.cpp
+        gfx_cpp/src/core/resource/Sampler.h
+        gfx_cpp/src/core/resource/Sampler.cpp
+        gfx_cpp/src/core/resource/Shader.h
+        gfx_cpp/src/core/resource/Shader.cpp
+        gfx_cpp/src/core/resource/BindGroup.h
+        gfx_cpp/src/core/resource/BindGroup.cpp
+        gfx_cpp/src/core/resource/BindGroupLayout.h
+        gfx_cpp/src/core/resource/BindGroupLayout.cpp
+        # Command
+        gfx_cpp/src/core/command/CommandEncoder.h
+        gfx_cpp/src/core/command/CommandEncoder.cpp
+        gfx_cpp/src/core/command/RenderPassEncoder.h
+        gfx_cpp/src/core/command/RenderPassEncoder.cpp
+        gfx_cpp/src/core/command/ComputePassEncoder.h
+        gfx_cpp/src/core/command/ComputePassEncoder.cpp
+        # Render
+        gfx_cpp/src/core/render/RenderPipeline.h
+        gfx_cpp/src/core/render/RenderPipeline.cpp
+        gfx_cpp/src/core/render/RenderPass.h
+        gfx_cpp/src/core/render/RenderPass.cpp
+        gfx_cpp/src/core/render/Framebuffer.h
+        gfx_cpp/src/core/render/Framebuffer.cpp
+        # Compute
+        gfx_cpp/src/core/compute/ComputePipeline.h
+        gfx_cpp/src/core/compute/ComputePipeline.cpp
+        # Presentation
+        gfx_cpp/src/core/presentation/Surface.h
+        gfx_cpp/src/core/presentation/Surface.cpp
+        gfx_cpp/src/core/presentation/Swapchain.h
+        gfx_cpp/src/core/presentation/Swapchain.cpp
+        # System
+        gfx_cpp/src/core/system/Queue.h
+        gfx_cpp/src/core/system/Queue.cpp
+        gfx_cpp/src/core/system/Device.h
+        gfx_cpp/src/core/system/Device.cpp
+        gfx_cpp/src/core/system/Adapter.h
+        gfx_cpp/src/core/system/Adapter.cpp
+        gfx_cpp/src/core/system/Instance.h
+        gfx_cpp/src/core/system/Instance.cpp
     )
 
     # Create library based on BUILD_SHARED_LIBS option

@@ -1,0 +1,29 @@
+#pragma once
+
+#include <gfx_cpp/gfx.hpp>
+
+#include <gfx/gfx.h>
+
+#include <memory>
+
+namespace gfx {
+
+class CSwapchainImpl : public Swapchain {
+public:
+    explicit CSwapchainImpl(GfxSwapchain h);
+    ~CSwapchainImpl() override;
+
+    SwapchainInfo getInfo() const override;
+    std::shared_ptr<TextureView> getCurrentTextureView() override;
+    Result acquireNextImage(uint64_t timeout,
+        std::shared_ptr<Semaphore> signalSemaphore,
+        std::shared_ptr<Fence> signalFence,
+        uint32_t* imageIndex) override;
+    std::shared_ptr<TextureView> getTextureView(uint32_t index) override;
+    Result present(const PresentInfo& info) override;
+
+private:
+    GfxSwapchain m_handle;
+};
+
+} // namespace gfx
