@@ -437,8 +437,8 @@ if(BUILD_CPP_WRAPPER)
         # Utilities
         gfx_cpp/src/core/util/HandleExtractor.h
         gfx_cpp/src/core/util/HandleExtractor.cpp
-        gfx_cpp/src/core/util/Utilities.h
-        gfx_cpp/src/core/util/Utilities.cpp
+        gfx_cpp/src/core/util/Utils.h
+        gfx_cpp/src/core/util/Utils.cpp
         # Sync
         gfx_cpp/src/core/sync/Fence.h
         gfx_cpp/src/core/sync/Fence.cpp

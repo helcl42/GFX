@@ -5,7 +5,7 @@
 // Include all implementation headers
 #include "converter/Conversions.h"
 #include "core/util/HandleExtractor.h"
-#include "core/util/Utilities.h"
+#include "core/util/Utils.h"
 
 // Resource implementations
 #include "core/resource/BindGroup.h"
