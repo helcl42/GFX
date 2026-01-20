@@ -321,11 +321,16 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
             return false;
         }
 
-        // Create depth texture with MSAA
+        // Get actual swapchain dimensions (may differ from requested)
+        auto swapchainInfo = swapchain->getInfo();
+        uint32_t actualWidth = swapchainInfo.width;
+        uint32_t actualHeight = swapchainInfo.height;
+
+        // Create depth texture with MSAA using actual swapchain dimensions
         gfx::TextureDescriptor depthTextureDesc{};
         depthTextureDesc.label = "Depth Buffer";
         depthTextureDesc.type = gfx::TextureType::Texture2D;
-        depthTextureDesc.size = { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1 };
+        depthTextureDesc.size = { actualWidth, actualHeight, 1 };
         depthTextureDesc.arrayLayerCount = 1;
         depthTextureDesc.mipLevelCount = 1;
         depthTextureDesc.sampleCount = MSAA_SAMPLE_COUNT;
@@ -354,12 +359,11 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
             return false;
         }
 
-        // Create MSAA color texture
-        auto swapchainInfo = swapchain->getInfo();
+        // Create MSAA color texture using actual swapchain dimensions
         gfx::TextureDescriptor msaaColorTextureDesc{};
         msaaColorTextureDesc.label = "MSAA Color Buffer";
         msaaColorTextureDesc.type = gfx::TextureType::Texture2D;
-        msaaColorTextureDesc.size = { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1 };
+        msaaColorTextureDesc.size = { actualWidth, actualHeight, 1 };
         msaaColorTextureDesc.arrayLayerCount = 1;
         msaaColorTextureDesc.mipLevelCount = 1;
         msaaColorTextureDesc.sampleCount = MSAA_SAMPLE_COUNT;
@@ -443,8 +447,8 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
             gfx::FramebufferDescriptor framebufferDesc{};
             framebufferDesc.label = "Framebuffer " + std::to_string(i);
             framebufferDesc.renderPass = renderPass;
-            framebufferDesc.width = width;
-            framebufferDesc.height = height;
+            framebufferDesc.width = actualWidth;
+            framebufferDesc.height = actualHeight;
 
             // Color attachment
             if (MSAA_SAMPLE_COUNT != gfx::SampleCount::Count1) {

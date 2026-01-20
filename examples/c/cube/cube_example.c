@@ -267,9 +267,6 @@ bool initializeGraphics(CubeApp* app)
         return false;
     }
 
-    // Set debug callback after instance creation
-    gfxInstanceSetDebugCallback(app->instance, debugCallback, NULL);
-
     // Get adapter
     GfxAdapterDescriptor adapterDesc = {
         .adapterIndex = UINT32_MAX, // Use preference-based selection
@@ -376,8 +373,8 @@ static bool createTextures(CubeApp* app, uint32_t width, uint32_t height)
         .label = "Depth Buffer",
         .type = GFX_TEXTURE_TYPE_2D,
         .size = {
-            .width = (uint32_t)width,
-            .height = (uint32_t)height,
+            .width = width,
+            .height = height,
             .depth = 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
@@ -412,8 +409,8 @@ static bool createTextures(CubeApp* app, uint32_t width, uint32_t height)
         .label = "MSAA Color Buffer",
         .type = GFX_TEXTURE_TYPE_2D,
         .size = {
-            .width = (uint32_t)width,
-            .height = (uint32_t)height,
+            .width = width,
+            .height = height,
             .depth = 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
@@ -497,11 +494,19 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
         return false;
     }
 
-    if (!createTextures(app, width, height)) {
+    uint32_t actualWidth = app->swapchainInfo.width;
+    uint32_t actualHeight = app->swapchainInfo.height;
+
+    if (!createTextures(app, actualWidth, actualHeight)) {
         return false;
     }
 
-    if (!createFrameBuffers(app, width, height)) {
+    // Create render pass AFTER swapchain so we have the format
+    if (!createRenderPass(app)) {
+        return false;
+    }
+
+    if (!createFrameBuffers(app, actualWidth, actualHeight)) {
         return false;
     }
 
@@ -570,6 +575,12 @@ void cleanupSizeDependentResources(CubeApp* app)
         }
     }
 
+    // Clean up render pass (since it depends on swapchain format)
+    if (app->renderPass) {
+        gfxRenderPassDestroy(app->renderPass);
+        app->renderPass = NULL;
+    }
+
     // Clean up size-dependent resources
     if (app->msaaColorTextureView) {
         gfxTextureViewDestroy(app->msaaColorTextureView);
@@ -597,10 +608,6 @@ void cleanupSizeDependentResources(CubeApp* app)
 void cleanupRenderingResources(CubeApp* app)
 {
     // Clean up size-independent rendering resources
-    if (app->renderPass) {
-        gfxRenderPassDestroy(app->renderPass);
-        app->renderPass = NULL;
-    }
     if (app->renderPipeline) {
         gfxRenderPipelineDestroy(app->renderPipeline);
         app->renderPipeline = NULL;
