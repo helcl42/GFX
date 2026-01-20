@@ -976,6 +976,7 @@ VkIndexType gfxIndexFormatToVkIndexType(GfxIndexFormat format)
         return VK_INDEX_TYPE_UINT16;
     case GFX_INDEX_FORMAT_UINT32:
         return VK_INDEX_TYPE_UINT32;
+    case GFX_INDEX_FORMAT_UNDEFINED:
     default:
         return VK_INDEX_TYPE_UINT32;
     }

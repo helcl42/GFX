@@ -1006,7 +1006,7 @@ bool createRenderPipeline(CubeApp* app)
     // Primitive state
     GfxPrimitiveState primitiveState = {
         .topology = GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-        .stripIndexFormat = NULL,
+        .stripIndexFormat = GFX_INDEX_FORMAT_UNDEFINED,
         .frontFace = GFX_FRONT_FACE_COUNTER_CLOCKWISE,
         .cullMode = GFX_CULL_MODE_BACK, // Enable back-face culling
         .polygonMode = GFX_POLYGON_MODE_FILL

@@ -573,9 +573,7 @@ core::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateInfo(con
     createInfo.primitive.topology = gfxPrimitiveTopologyToWGPU(descriptor->primitive->topology);
     createInfo.primitive.frontFace = gfxFrontFaceToWGPU(descriptor->primitive->frontFace);
     createInfo.primitive.cullMode = gfxCullModeToWGPU(descriptor->primitive->cullMode);
-    createInfo.primitive.stripIndexFormat = descriptor->primitive->stripIndexFormat
-        ? gfxIndexFormatToWGPU(*descriptor->primitive->stripIndexFormat)
-        : WGPUIndexFormat_Undefined;
+    createInfo.primitive.stripIndexFormat = gfxIndexFormatToWGPU(descriptor->primitive->stripIndexFormat);
 
     // Depth/stencil state (optional)
     if (descriptor->depthStencil) {
@@ -1065,6 +1063,7 @@ WGPUIndexFormat gfxIndexFormatToWGPU(GfxIndexFormat format)
         return WGPUIndexFormat_Uint16;
     case GFX_INDEX_FORMAT_UINT32:
         return WGPUIndexFormat_Uint32;
+    case GFX_INDEX_FORMAT_UNDEFINED:
     default:
         return WGPUIndexFormat_Undefined;
     }

@@ -70,6 +70,7 @@ enum class PolygonMode {
 };
 
 enum class IndexFormat {
+    Undefined,
     Uint16,
     Uint32
 };
@@ -691,7 +692,7 @@ struct FragmentState {
 
 struct PrimitiveState {
     PrimitiveTopology topology = PrimitiveTopology::TriangleList;
-    std::optional<IndexFormat> stripIndexFormat;
+    IndexFormat stripIndexFormat = IndexFormat::Undefined;
     FrontFace frontFace = FrontFace::CounterClockwise;
     CullMode cullMode = CullMode::None;
     PolygonMode polygonMode = PolygonMode::Fill;

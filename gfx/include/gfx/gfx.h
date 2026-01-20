@@ -112,8 +112,9 @@ typedef enum {
 } GfxPolygonMode;
 
 typedef enum {
-    GFX_INDEX_FORMAT_UINT16 = 0,
-    GFX_INDEX_FORMAT_UINT32 = 1,
+    GFX_INDEX_FORMAT_UNDEFINED = 0,
+    GFX_INDEX_FORMAT_UINT16 = 1,
+    GFX_INDEX_FORMAT_UINT32 = 2,
     GFX_INDEX_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } GfxIndexFormat;
 
@@ -797,7 +798,7 @@ typedef struct {
 
 typedef struct {
     GfxPrimitiveTopology topology;
-    GfxIndexFormat* stripIndexFormat; // NULL if not used
+    GfxIndexFormat stripIndexFormat; // GFX_INDEX_FORMAT_UNDEFINED if not used
     GfxFrontFace frontFace;
     GfxCullMode cullMode;
     GfxPolygonMode polygonMode;
