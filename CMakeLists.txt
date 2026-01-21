@@ -258,6 +258,7 @@ if(BUILD_VULKAN_BACKEND)
     list(APPEND GFX_C_SOURCES 
         gfx/src/backend/vulkan/Backend.cpp
         gfx/src/backend/vulkan/converter/Conversions.cpp
+        gfx/src/backend/vulkan/validator/Validations.cpp
         # System
         gfx/src/backend/vulkan/core/system/Instance.cpp
         gfx/src/backend/vulkan/core/system/Adapter.cpp
@@ -296,6 +297,7 @@ if(BUILD_WEBGPU_BACKEND)
     list(APPEND GFX_C_SOURCES 
         gfx/src/backend/webgpu/Backend.cpp
         gfx/src/backend/webgpu/converter/Conversions.cpp
+        gfx/src/backend/webgpu/validator/Validations.cpp
         # System
         gfx/src/backend/webgpu/core/system/Instance.cpp
         gfx/src/backend/webgpu/core/system/Adapter.cpp

@@ -3,6 +3,7 @@
 #include "common/Common.h"
 #include "common/Logger.h"
 #include "converter/Conversions.h"
+#include "validator/Validations.h"
 
 #include "core/command/CommandEncoder.h"
 #include "core/command/ComputePassEncoder.h"
@@ -42,8 +43,14 @@ namespace gfx::backend::vulkan {
 // Instance functions
 GfxResult Backend::createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const
 {
-    if (!descriptor || !outInstance) {
+    if (!outInstance) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents (NULL is valid for optional descriptor)
+    GfxResult validationResult = validator::validateInstanceDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -67,6 +74,12 @@ GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapter
 {
     if (!instance || !outAdapter) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents (NULL is valid for optional descriptor)
+    GfxResult validationResult = validator::validateAdapterDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -105,6 +118,12 @@ GfxResult Backend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescri
 {
     if (!adapter || !outDevice) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents (NULL is valid for optional descriptor)
+    GfxResult validationResult = validator::validateDeviceDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -247,6 +266,12 @@ GfxResult Backend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, c
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateSwapchainDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
     try {
         auto* dev = converter::toNative<core::Device>(device);
         auto* surf = converter::toNative<core::Surface>(surface);
@@ -264,6 +289,12 @@ GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescripto
 {
     if (!device || !descriptor || !outBuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateBufferDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -301,6 +332,12 @@ GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescrip
 {
     if (!device || !descriptor || !outTexture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateTextureDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -341,6 +378,12 @@ GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescrip
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateSamplerDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
     try {
         auto* dev = converter::toNative<core::Device>(device);
         auto createInfo = converter::gfxDescriptorToSamplerCreateInfo(descriptor);
@@ -357,6 +400,12 @@ GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescripto
 {
     if (!device || !descriptor || !outShader) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateShaderDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -377,6 +426,12 @@ GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGr
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateBindGroupLayoutDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
     try {
         auto* dev = converter::toNative<core::Device>(device);
         auto createInfo = converter::gfxDescriptorToBindGroupLayoutCreateInfo(descriptor);
@@ -393,6 +448,12 @@ GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDes
 {
     if (!device || !descriptor || !outBindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateBindGroupDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -413,6 +474,12 @@ GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderP
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateRenderPipelineDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
     try {
         auto* dev = converter::toNative<core::Device>(device);
         auto createInfo = converter::gfxDescriptorToRenderPipelineCreateInfo(descriptor);
@@ -429,6 +496,12 @@ GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComput
 {
     if (!device || !descriptor || !outPipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateComputePipelineDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -468,6 +541,12 @@ GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassD
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateRenderPassDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
     try {
         auto* dev = converter::toNative<core::Device>(device);
         auto createInfo = converter::gfxRenderPassDescriptorToRenderPassCreateInfo(descriptor);
@@ -485,6 +564,12 @@ GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebuffe
 {
     if (!device || !descriptor || !outFramebuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateFramebufferDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -505,6 +590,12 @@ GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor*
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
+    // Validate descriptor contents (NULL is valid for optional descriptor)
+    GfxResult validationResult = validator::validateFenceDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
     try {
         auto* dev = converter::toNative<core::Device>(device);
         auto createInfo = converter::gfxDescriptorToFenceCreateInfo(descriptor);
@@ -521,6 +612,12 @@ GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDes
 {
     if (!device || !outSemaphore) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents (NULL is valid for optional descriptor)
+    GfxResult validationResult = validator::validateSemaphoreDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -808,6 +905,12 @@ GfxResult Backend::textureCreateView(GfxTexture texture, const GfxTextureViewDes
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
+    // Validate descriptor contents (NULL is valid for optional descriptor)
+    GfxResult validationResult = validator::validateTextureViewDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
     try {
         auto* tex = converter::toNative<core::Texture>(texture);
         auto createInfo = converter::gfxDescriptorToTextureViewCreateInfo(descriptor);
@@ -944,8 +1047,14 @@ GfxResult Backend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
 
 GfxResult Backend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder, const GfxRenderPassBeginDescriptor* beginDescriptor, GfxRenderPassEncoder* outRenderPass) const
 {
-    if (!commandEncoder || !outRenderPass || !beginDescriptor || !beginDescriptor->renderPass || !beginDescriptor->framebuffer) {
+    if (!commandEncoder || !outRenderPass) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateRenderPassBeginDescriptor(beginDescriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -964,8 +1073,14 @@ GfxResult Backend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncode
 
 GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outComputePass) const
 {
-    if (!commandEncoder || !beginDescriptor || !outComputePass) {
+    if (!commandEncoder || !outComputePass) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateComputePassBeginDescriptor(beginDescriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -982,8 +1097,14 @@ GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncod
 
 GfxResult Backend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyBufferToBufferDescriptor* descriptor) const
 {
-    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateCopyBufferToBufferDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* enc = converter::toNative<core::CommandEncoder>(commandEncoder);
@@ -997,8 +1118,14 @@ GfxResult Backend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEnc
 GfxResult Backend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, const GfxCopyBufferToTextureDescriptor* descriptor) const
 {
 
-    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateCopyBufferToTextureDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* enc = converter::toNative<core::CommandEncoder>(commandEncoder);
@@ -1016,8 +1143,14 @@ GfxResult Backend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEn
 
 GfxResult Backend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyTextureToBufferDescriptor* descriptor) const
 {
-    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateCopyTextureToBufferDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* enc = converter::toNative<core::CommandEncoder>(commandEncoder);
@@ -1035,8 +1168,14 @@ GfxResult Backend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEn
 
 GfxResult Backend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, const GfxCopyTextureToTextureDescriptor* descriptor) const
 {
-    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateCopyTextureToTextureDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* enc = converter::toNative<core::CommandEncoder>(commandEncoder);
@@ -1057,8 +1196,14 @@ GfxResult Backend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandE
 
 GfxResult Backend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder, const GfxBlitTextureToTextureDescriptor* descriptor) const
 {
-    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateBlitTextureToTextureDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* enc = converter::toNative<core::CommandEncoder>(commandEncoder);
@@ -1082,8 +1227,14 @@ GfxResult Backend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandE
 // TODO - add member function to CommandEncoder for pipeline barrier
 GfxResult Backend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxPipelineBarrierDescriptor* descriptor) const
 {
-    if (!commandEncoder || !descriptor) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validatePipelineBarrierDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
@@ -1441,6 +1592,7 @@ GfxResult Backend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
     VkResult result = s->signal(value);
     return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
+
 GfxResult Backend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const
 {
     if (!semaphore) {
