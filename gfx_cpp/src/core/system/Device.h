@@ -15,6 +15,7 @@ public:
     ~DeviceImpl() override;
 
     std::shared_ptr<Queue> getQueue() override;
+    std::shared_ptr<Queue> getQueueByIndex(uint32_t queueFamilyIndex, uint32_t queueIndex) override;
 
     std::shared_ptr<Surface> createSurface(const SurfaceDescriptor& descriptor) override;
 

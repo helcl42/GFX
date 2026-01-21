@@ -49,6 +49,16 @@ std::shared_ptr<Queue> DeviceImpl::getQueue()
     return m_queue;
 }
 
+std::shared_ptr<Queue> DeviceImpl::getQueueByIndex(uint32_t queueFamilyIndex, uint32_t queueIndex)
+{
+    GfxQueue queueHandle = nullptr;
+    GfxResult result = gfxDeviceGetQueueByIndex(m_handle, queueFamilyIndex, queueIndex, &queueHandle);
+    if (result != GFX_RESULT_SUCCESS || !queueHandle) {
+        throw std::runtime_error("Failed to get queue by index");
+    }
+    return std::make_shared<QueueImpl>(queueHandle);
+}
+
 std::shared_ptr<Surface> DeviceImpl::createSurface(const SurfaceDescriptor& descriptor)
 {
     GfxSurfaceDescriptor cDesc;

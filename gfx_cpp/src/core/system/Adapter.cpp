@@ -2,6 +2,8 @@
 
 #include "Device.h"
 
+#include "../presentation/Surface.h"
+
 #include "../../converter/Conversions.h"
 
 #include <stdexcept>
@@ -22,18 +24,10 @@ AdapterImpl::~AdapterImpl()
 
 std::shared_ptr<Device> AdapterImpl::createDevice(const DeviceDescriptor& descriptor)
 {
-    // Convert enabled features
     std::vector<GfxDeviceFeatureType> cFeatures;
-    cFeatures.reserve(descriptor.enabledFeatures.size());
-    for (const auto& feature : descriptor.enabledFeatures) {
-        cFeatures.push_back(cppDeviceFeatureTypeToCDeviceFeatureType(feature));
-    }
-
+    std::vector<GfxQueueRequest> cQueueRequests;
     GfxDeviceDescriptor cDesc = {};
-    cDesc.label = descriptor.label.c_str();
-    cDesc.queuePriority = descriptor.queuePriority;
-    cDesc.enabledFeatures = cFeatures.empty() ? nullptr : cFeatures.data();
-    cDesc.enabledFeatureCount = static_cast<uint32_t>(cFeatures.size());
+    convertDeviceDescriptor(descriptor, cFeatures, cQueueRequests, cDesc);
 
     GfxDevice device = nullptr;
     GfxResult result = gfxAdapterCreateDevice(m_handle, &cDesc, &device);
@@ -47,51 +41,47 @@ AdapterInfo AdapterImpl::getInfo() const
 {
     GfxAdapterInfo cInfo = {};
     gfxAdapterGetInfo(m_handle, &cInfo);
-
-    AdapterInfo info;
-    info.name = cInfo.name ? cInfo.name : "Unknown";
-    info.driverDescription = cInfo.driverDescription ? cInfo.driverDescription : "";
-    info.vendorID = cInfo.vendorID;
-    info.deviceID = cInfo.deviceID;
-
-    // Convert adapter type
-    switch (cInfo.adapterType) {
-    case GFX_ADAPTER_TYPE_DISCRETE_GPU:
-        info.adapterType = AdapterType::DiscreteGPU;
-        break;
-    case GFX_ADAPTER_TYPE_INTEGRATED_GPU:
-        info.adapterType = AdapterType::IntegratedGPU;
-        break;
-    case GFX_ADAPTER_TYPE_CPU:
-        info.adapterType = AdapterType::CPU;
-        break;
-    default:
-        info.adapterType = AdapterType::Unknown;
-        break;
-    }
-
-    // Convert backend
-    info.backend = cBackendToCppBackend(cInfo.backend);
-
-    return info;
+    return cAdapterInfoToCppAdapterInfo(cInfo);
 }
 
 DeviceLimits AdapterImpl::getLimits() const
 {
     GfxDeviceLimits cLimits = {};
     gfxAdapterGetLimits(m_handle, &cLimits);
+    return cDeviceLimitsToCppDeviceLimits(cLimits);
+}
 
-    DeviceLimits limits;
-    limits.minUniformBufferOffsetAlignment = cLimits.minUniformBufferOffsetAlignment;
-    limits.minStorageBufferOffsetAlignment = cLimits.minStorageBufferOffsetAlignment;
-    limits.maxUniformBufferBindingSize = cLimits.maxUniformBufferBindingSize;
-    limits.maxStorageBufferBindingSize = cLimits.maxStorageBufferBindingSize;
-    limits.maxBufferSize = cLimits.maxBufferSize;
-    limits.maxTextureDimension1D = cLimits.maxTextureDimension1D;
-    limits.maxTextureDimension2D = cLimits.maxTextureDimension2D;
-    limits.maxTextureDimension3D = cLimits.maxTextureDimension3D;
-    limits.maxTextureArrayLayers = cLimits.maxTextureArrayLayers;
-    return limits;
+std::vector<QueueFamilyProperties> AdapterImpl::enumerateQueueFamilies() const
+{
+    uint32_t count = 0;
+    gfxAdapterEnumerateQueueFamilies(m_handle, &count, nullptr);
+    
+    std::vector<GfxQueueFamilyProperties> cProps(count);
+    gfxAdapterEnumerateQueueFamilies(m_handle, &count, cProps.data());
+    
+    std::vector<QueueFamilyProperties> props;
+    props.reserve(count);
+    for (const auto& cProp : cProps) {
+        props.push_back(cQueueFamilyPropertiesToCppQueueFamilyProperties(cProp));
+    }
+    
+    return props;
+}
+
+bool AdapterImpl::getQueueFamilySurfaceSupport(uint32_t queueFamilyIndex, Surface* surface) const
+{
+    if (!surface) {
+        return false;
+    }
+    
+    auto* surfaceImpl = dynamic_cast<SurfaceImpl*>(surface);
+    if (!surfaceImpl) {
+        return false;
+    }
+    
+    bool supported = false;
+    gfxAdapterGetQueueFamilySurfaceSupport(m_handle, queueFamilyIndex, surfaceImpl->getHandle(), &supported);
+    return supported;
 }
 
 } // namespace gfx

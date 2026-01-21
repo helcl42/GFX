@@ -11,6 +11,12 @@ namespace gfx {
 GfxBackend cppBackendToCBackend(Backend backend);
 Backend cBackendToCppBackend(GfxBackend backend);
 
+// Adapter type conversions
+AdapterType cAdapterTypeToCppAdapterType(GfxAdapterType adapterType);
+
+// Adapter info conversions
+AdapterInfo cAdapterInfoToCppAdapterInfo(const GfxAdapterInfo& cInfo);
+
 // Texture format conversions
 GfxTextureFormat cppFormatToCFormat(TextureFormat format);
 TextureFormat cFormatToCppFormat(GfxTextureFormat format);
@@ -47,6 +53,13 @@ AccessFlags cAccessFlagsToCppAccessFlags(GfxAccessFlags flags);
 
 // Device limits conversions
 DeviceLimits cDeviceLimitsToCppDeviceLimits(const GfxDeviceLimits& limits);
+
+// Queue family conversions
+QueueFamilyProperties cQueueFamilyPropertiesToCppQueueFamilyProperties(const GfxQueueFamilyProperties& props);
+GfxQueueRequest cppQueueRequestToCQueueRequest(const QueueRequest& req);
+
+// Device descriptor conversion
+void convertDeviceDescriptor(const DeviceDescriptor& descriptor, std::vector<GfxDeviceFeatureType>& outFeatures, std::vector<GfxQueueRequest>& outQueueRequests, GfxDeviceDescriptor& outDesc);
 
 // Buffer info conversions
 BufferInfo cBufferInfoToCppBufferInfo(const GfxBufferInfo& info);

@@ -24,6 +24,32 @@ Backend cBackendToCppBackend(GfxBackend backend)
     return static_cast<Backend>(backend);
 }
 
+AdapterType cAdapterTypeToCppAdapterType(GfxAdapterType adapterType)
+{
+    switch (adapterType) {
+    case GFX_ADAPTER_TYPE_DISCRETE_GPU:
+        return AdapterType::DiscreteGPU;
+    case GFX_ADAPTER_TYPE_INTEGRATED_GPU:
+        return AdapterType::IntegratedGPU;
+    case GFX_ADAPTER_TYPE_CPU:
+        return AdapterType::CPU;
+    default:
+        return AdapterType::Unknown;
+    }
+}
+
+AdapterInfo cAdapterInfoToCppAdapterInfo(const GfxAdapterInfo& cInfo)
+{
+    AdapterInfo info;
+    info.name = cInfo.name ? cInfo.name : "Unknown";
+    info.driverDescription = cInfo.driverDescription ? cInfo.driverDescription : "";
+    info.vendorID = cInfo.vendorID;
+    info.deviceID = cInfo.deviceID;
+    info.adapterType = cAdapterTypeToCppAdapterType(cInfo.adapterType);
+    info.backend = cBackendToCppBackend(cInfo.backend);
+    return info;
+}
+
 GfxTextureFormat cppFormatToCFormat(TextureFormat format)
 {
     return static_cast<GfxTextureFormat>(format);
@@ -117,6 +143,49 @@ DeviceLimits cDeviceLimitsToCppDeviceLimits(const GfxDeviceLimits& cLimits)
     limits.maxTextureDimension3D = cLimits.maxTextureDimension3D;
     limits.maxTextureArrayLayers = cLimits.maxTextureArrayLayers;
     return limits;
+}
+
+QueueFamilyProperties cQueueFamilyPropertiesToCppQueueFamilyProperties(const GfxQueueFamilyProperties& props)
+{
+    QueueFamilyProperties result{};
+    result.flags = static_cast<QueueFlags>(props.flags);
+    result.queueCount = props.queueCount;
+    return result;
+}
+
+GfxQueueRequest cppQueueRequestToCQueueRequest(const QueueRequest& req)
+{
+    GfxQueueRequest cReq{};
+    cReq.queueFamilyIndex = req.queueFamilyIndex;
+    cReq.queueIndex = req.queueIndex;
+    cReq.priority = req.priority;
+    return cReq;
+}
+
+void convertDeviceDescriptor(const DeviceDescriptor& descriptor, std::vector<GfxDeviceFeatureType>& outFeatures, std::vector<GfxQueueRequest>& outQueueRequests, GfxDeviceDescriptor& outDesc)
+{
+    // Convert enabled features
+    outFeatures.clear();
+    outFeatures.reserve(descriptor.enabledFeatures.size());
+    for (const auto& feature : descriptor.enabledFeatures) {
+        outFeatures.push_back(cppDeviceFeatureTypeToCDeviceFeatureType(feature));
+    }
+
+    // Convert queue requests
+    outQueueRequests.clear();
+    outQueueRequests.reserve(descriptor.queueRequests.size());
+    for (const auto& req : descriptor.queueRequests) {
+        outQueueRequests.push_back(cppQueueRequestToCQueueRequest(req));
+    }
+
+    // Build C descriptor
+    outDesc = {};
+    outDesc.label = descriptor.label.c_str();
+    outDesc.queuePriority = descriptor.queuePriority;
+    outDesc.enabledFeatures = outFeatures.empty() ? nullptr : outFeatures.data();
+    outDesc.enabledFeatureCount = static_cast<uint32_t>(outFeatures.size());
+    outDesc.queueRequests = outQueueRequests.empty() ? nullptr : outQueueRequests.data();
+    outDesc.queueRequestCount = static_cast<uint32_t>(outQueueRequests.size());
 }
 
 BufferInfo cBufferInfoToCppBufferInfo(const GfxBufferInfo& cInfo)

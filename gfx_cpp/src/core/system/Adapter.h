@@ -20,6 +20,9 @@ public:
 
     DeviceLimits getLimits() const override;
 
+    std::vector<QueueFamilyProperties> enumerateQueueFamilies() const override;
+    bool getQueueFamilySurfaceSupport(uint32_t queueFamilyIndex, Surface* surface) const override;
+
 private:
     GfxAdapter m_handle;
 };

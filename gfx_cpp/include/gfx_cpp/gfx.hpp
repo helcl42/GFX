@@ -236,6 +236,14 @@ enum class DeviceFeatureType {
     Swapchain
 };
 
+enum class QueueFlags : uint32_t {
+    None = 0,
+    Graphics = 0x00000001,
+    Compute = 0x00000002,
+    Transfer = 0x00000004,
+    SparseBinding = 0x00000008
+};
+
 enum class Result {
     Success = 0,
     Timeout = 1,
@@ -550,10 +558,22 @@ struct AdapterDescriptor {
     AdapterPreference preference = AdapterPreference::Undefined; // Used only when adapterIndex is UINT32_MAX
 };
 
+struct QueueFamilyProperties {
+    QueueFlags flags = QueueFlags::None;
+    uint32_t queueCount = 0;
+};
+
+struct QueueRequest {
+    uint32_t queueFamilyIndex = 0;
+    uint32_t queueIndex = 0;
+    float priority = 1.0f;
+};
+
 struct DeviceDescriptor {
     std::string label;
     float queuePriority = 1.0f; // Queue priority (0.0 to 1.0, higher = more priority)
     std::vector<DeviceFeatureType> enabledFeatures;
+    std::vector<QueueRequest> queueRequests; // Optional: specify which queues to create
 };
 
 struct BufferDescriptor {
@@ -1298,6 +1318,7 @@ public:
     virtual ~Device() = default;
 
     virtual std::shared_ptr<Queue> getQueue() = 0;
+    virtual std::shared_ptr<Queue> getQueueByIndex(uint32_t queueFamilyIndex, uint32_t queueIndex) = 0;
 
     // Generic surface creation - works with any windowing system
     virtual std::shared_ptr<Surface> createSurface(const SurfaceDescriptor& descriptor) = 0;
@@ -1336,6 +1357,10 @@ public:
     virtual std::shared_ptr<Device> createDevice(const DeviceDescriptor& descriptor = {}) = 0;
     virtual AdapterInfo getInfo() const = 0;
     virtual DeviceLimits getLimits() const = 0;
+    
+    // Queue family enumeration
+    virtual std::vector<QueueFamilyProperties> enumerateQueueFamilies() const = 0;
+    virtual bool getQueueFamilySurfaceSupport(uint32_t queueFamilyIndex, Surface* surface) const = 0;
 };
 
 class Instance {
