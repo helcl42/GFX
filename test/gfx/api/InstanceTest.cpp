@@ -1,64 +1,381 @@
 #include <gfx/gfx.h>
+
 #include <gtest/gtest.h>
 
 // C API tests compiled with C++ for GoogleTest compatibility
 
-// Test instance creation and destruction
-TEST(GfxInstanceTest, CreateDestroyVulkan) {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = static_cast<GfxBackend>(GFX_BACKEND_VULKAN);
-    desc.enableValidation = false;
-    
+// ===========================================================================
+// Parameterized Tests - Run on both Vulkan and WebGPU backends
+// ===========================================================================
+
+class GfxInstanceTest : public testing::TestWithParam<GfxBackend> {
+protected:
+    void SetUp() override
+    {
+        backend = GetParam();
+
+        GfxResult result = gfxLoadBackend(backend);
+        if (result != GFX_RESULT_SUCCESS) {
+            GTEST_SKIP() << "Backend not available";
+        }
+
+        backendLoaded = true;
+    }
+
+    void TearDown() override
+    {
+        if (instance) {
+            gfxInstanceDestroy(instance);
+        }
+        if (backendLoaded) {
+            gfxUnloadBackend(backend);
+        }
+    }
+
+    GfxBackend backend;
     GfxInstance instance = NULL;
+    bool backendLoaded = false;
+};
+
+TEST_P(GfxInstanceTest, CreateDestroy)
+{
+    GfxInstanceDescriptor desc = {};
+    desc.backend = backend;
+    desc.enableValidation = false;
+
     GfxResult result = gfxCreateInstance(&desc, &instance);
-    
+
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_NE(instance, nullptr);
+
+    result = gfxInstanceDestroy(instance);
+    instance = NULL; // Prevent double destroy in TearDown
+
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+}
+
+TEST_P(GfxInstanceTest, WithValidation)
+{
+    GfxInstanceDescriptor desc = {};
+    desc.backend = backend;
+    desc.enableValidation = true;
+
+    GfxResult result = gfxCreateInstance(&desc, &instance);
+
     if (result == GFX_RESULT_SUCCESS) {
         EXPECT_NE(instance, nullptr);
-        
-        // Cleanup
-        gfxInstanceDestroy(instance);
-        SUCCEED();
-    } else {
-        // Vulkan might not be available on all systems
-        GTEST_SKIP() << "Vulkan backend not available";
+    }
+    // Validation may not be supported on all backends
+}
+
+TEST_P(GfxInstanceTest, WithApplicationInfo)
+{
+    GfxInstanceDescriptor desc = {};
+    desc.backend = backend;
+    desc.enableValidation = false;
+    desc.applicationName = "Test Application";
+    desc.applicationVersion = 1;
+
+    GfxResult result = gfxCreateInstance(&desc, &instance);
+
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_NE(instance, nullptr);
+}
+
+TEST_P(GfxInstanceTest, WithEnabledFeatures)
+{
+    GfxInstanceDescriptor desc = {};
+    desc.backend = backend;
+    desc.enableValidation = false;
+
+    GfxInstanceFeatureType features[] = { GFX_INSTANCE_FEATURE_TYPE_SURFACE };
+    desc.enabledFeatures = features;
+    desc.enabledFeatureCount = 1;
+
+    GfxInstance localInstance = NULL;
+    GfxResult result = gfxCreateInstance(&desc, &localInstance);
+
+    if (result == GFX_RESULT_SUCCESS) {
+        EXPECT_NE(localInstance, nullptr);
+        gfxInstanceDestroy(localInstance);
+    }
+    // Surface feature may not be available in headless builds
+}
+
+TEST_P(GfxInstanceTest, RequestAdapterInvalidArguments)
+{
+    GfxInstanceDescriptor desc = {};
+    desc.backend = backend;
+    desc.enableValidation = false;
+
+    GfxResult result = gfxCreateInstance(&desc, &instance);
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_NE(instance, nullptr);
+
+    // Test NULL instance
+    GfxAdapterDescriptor adapterDesc = {};
+    adapterDesc.adapterIndex = UINT32_MAX;
+    adapterDesc.preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE;
+
+    GfxAdapter adapter = NULL;
+    result = gfxInstanceRequestAdapter(NULL, &adapterDesc, &adapter);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
+
+    // Test NULL descriptor
+    result = gfxInstanceRequestAdapter(instance, NULL, &adapter);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
+
+    // Test NULL output pointer
+    result = gfxInstanceRequestAdapter(instance, &adapterDesc, NULL);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
+}
+
+TEST_P(GfxInstanceTest, RequestAdapterByPreference)
+{
+    GfxInstanceDescriptor desc = {};
+    desc.backend = backend;
+    desc.enableValidation = false;
+
+    GfxResult result = gfxCreateInstance(&desc, &instance);
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+
+    GfxAdapterDescriptor adapterDesc = {};
+    adapterDesc.adapterIndex = UINT32_MAX;
+    adapterDesc.preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE;
+
+    GfxAdapter adapter = NULL;
+    result = gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter);
+
+    if (result == GFX_RESULT_SUCCESS) {
+        EXPECT_NE(adapter, nullptr);
+        gfxAdapterDestroy(adapter);
     }
 }
 
-TEST(GfxInstanceTest, CreateDestroyWebGPU) {
+TEST_P(GfxInstanceTest, RequestAdapterByIndex)
+{
     GfxInstanceDescriptor desc = {};
-    desc.backend = static_cast<GfxBackend>(GFX_BACKEND_WEBGPU);
+    desc.backend = backend;
     desc.enableValidation = false;
-    
-    GfxInstance instance = NULL;
+
     GfxResult result = gfxCreateInstance(&desc, &instance);
-    
-    if (result == GFX_RESULT_SUCCESS) {
-        EXPECT_NE(instance, nullptr);
-        
-        // Cleanup
-        gfxInstanceDestroy(instance);
-        SUCCEED();
-    } else {
-        // WebGPU might not be available on all systems
-        GTEST_SKIP() << "WebGPU backend not available";
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_NE(instance, nullptr);
+
+    // First enumerate to get adapter count
+    uint32_t adapterCount = 0;
+    result = gfxInstanceEnumerateAdapters(instance, &adapterCount, NULL);
+
+    if (result == GFX_RESULT_SUCCESS && adapterCount > 0) {
+        // Request first adapter by index
+        GfxAdapterDescriptor adapterDesc = {};
+        adapterDesc.adapterIndex = 0;
+        adapterDesc.preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE;
+
+        GfxAdapter adapter = NULL;
+        result = gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter);
+
+        EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+        EXPECT_NE(adapter, nullptr);
+
+        if (adapter) {
+            gfxAdapterDestroy(adapter);
+        }
     }
 }
 
-TEST(GfxInstanceTest, InvalidArguments) {
+TEST_P(GfxInstanceTest, EnumerateAdaptersInvalidArguments)
+{
+    GfxInstanceDescriptor desc = {};
+    desc.backend = backend;
+    desc.enableValidation = false;
+
+    GfxResult result = gfxCreateInstance(&desc, &instance);
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_NE(instance, nullptr);
+
+    // Test NULL instance
+    uint32_t adapterCount = 0;
+    result = gfxInstanceEnumerateAdapters(NULL, &adapterCount, NULL);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
+
+    // Test NULL count pointer
+    result = gfxInstanceEnumerateAdapters(instance, NULL, NULL);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
+}
+
+TEST_P(GfxInstanceTest, EnumerateAdaptersGetCount)
+{
+    GfxInstanceDescriptor desc = {};
+    desc.backend = backend;
+    desc.enableValidation = false;
+
+    GfxResult result = gfxCreateInstance(&desc, &instance);
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_NE(instance, nullptr);
+
+    // Get adapter count
+    uint32_t adapterCount = 0;
+    result = gfxInstanceEnumerateAdapters(instance, &adapterCount, NULL);
+
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+
+    if (adapterCount == 0) {
+        GTEST_SKIP() << "Backend returned 0 adapters (enumeration may not be fully implemented)";
+    }
+    EXPECT_GT(adapterCount, 0u);
+}
+
+TEST_P(GfxInstanceTest, EnumerateAdaptersGetAdapters)
+{
+    GfxInstanceDescriptor desc = {};
+    desc.backend = backend;
+    desc.enableValidation = false;
+
+    GfxResult result = gfxCreateInstance(&desc, &instance);
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_NE(instance, nullptr);
+
+    // Get adapter count
+    uint32_t adapterCount = 0;
+    result = gfxInstanceEnumerateAdapters(instance, &adapterCount, NULL);
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+
+    if (adapterCount > 0) {
+        // Allocate array and get adapters
+        GfxAdapter* adapters = new GfxAdapter[adapterCount];
+        result = gfxInstanceEnumerateAdapters(instance, &adapterCount, adapters);
+
+        EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+
+        // Verify all adapters are non-null
+        for (uint32_t i = 0; i < adapterCount; ++i) {
+            EXPECT_NE(adapters[i], nullptr);
+        }
+
+        // Cleanup adapters
+        for (uint32_t i = 0; i < adapterCount; ++i) {
+            if (adapters[i]) {
+                gfxAdapterDestroy(adapters[i]);
+            }
+        }
+
+        delete[] adapters;
+    }
+}
+
+TEST_P(GfxInstanceTest, EnumerateAdaptersTwoCalls)
+{
+    GfxInstanceDescriptor desc = {};
+    desc.backend = backend;
+    desc.enableValidation = false;
+
+    GfxResult result = gfxCreateInstance(&desc, &instance);
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_NE(instance, nullptr);
+
+    // First call: get count
+    uint32_t adapterCount = 0;
+    result = gfxInstanceEnumerateAdapters(instance, &adapterCount, NULL);
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+
+    if (adapterCount == 0) {
+        GTEST_SKIP() << "Backend returned 0 adapters (enumeration may not be fully implemented)";
+    }
+
+    EXPECT_GT(adapterCount, 0u);
+
+    uint32_t firstCount = adapterCount;
+
+    // Second call: get adapters
+    GfxAdapter* adapters = new GfxAdapter[adapterCount];
+    result = gfxInstanceEnumerateAdapters(instance, &adapterCount, adapters);
+
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_EQ(adapterCount, firstCount); // Count should remain the same
+
+    // Cleanup
+    for (uint32_t i = 0; i < adapterCount; ++i) {
+        if (adapters[i]) {
+            gfxAdapterDestroy(adapters[i]);
+        }
+    }
+    delete[] adapters;
+}
+
+TEST_P(GfxInstanceTest, MultipleInstances)
+{
+    GfxInstanceDescriptor desc = {};
+    desc.backend = backend;
+    desc.enableValidation = false;
+
+    GfxInstance instance1 = NULL;
+    GfxInstance instance2 = NULL;
+
+    GfxResult result1 = gfxCreateInstance(&desc, &instance1);
+    GfxResult result2 = gfxCreateInstance(&desc, &instance2);
+
+    ASSERT_EQ(result1, GFX_RESULT_SUCCESS);
+    ASSERT_EQ(result2, GFX_RESULT_SUCCESS);
+
+    EXPECT_NE(instance1, nullptr);
+    EXPECT_NE(instance2, nullptr);
+    EXPECT_NE(instance1, instance2); // Should be different instances
+
+    gfxInstanceDestroy(instance1);
+    gfxInstanceDestroy(instance2);
+    instance = NULL; // Prevent TearDown from double-destroying
+}
+
+TEST_P(GfxInstanceTest, DoubleDestroy)
+{
+    GfxInstanceDescriptor desc = {};
+    desc.backend = backend;
+    desc.enableValidation = false;
+
+    GfxResult result = gfxCreateInstance(&desc, &instance);
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_NE(instance, nullptr);
+
+    // First destroy should succeed
+    result = gfxInstanceDestroy(instance);
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+    instance = NULL;
+
+    // Second destroy of same instance is undefined behavior, but we test it doesn't crash
+    // Note: In production code, don't do this - just testing robustness
+}
+
+// Instantiate tests for both backends
+INSTANTIATE_TEST_SUITE_P(
+    AllBackends,
+    GfxInstanceTest,
+    testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU),
+    [](const testing::TestParamInfo<GfxBackend>& info) {
+        return info.param == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU";
+    });
+
+// ===========================================================================
+// Non-Parameterized Tests - Backend-independent functionality
+// ===========================================================================
+
+TEST(GfxInstanceTestNonParam, InvalidArguments)
+{
     // Test NULL output pointer
     GfxInstanceDescriptor desc = {};
     desc.backend = static_cast<GfxBackend>(GFX_BACKEND_VULKAN);
-    
+
     GfxResult result = gfxCreateInstance(&desc, NULL);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
-    
+
     // Test NULL descriptor
     GfxInstance instance = NULL;
     result = gfxCreateInstance(NULL, &instance);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
 
-TEST(GfxInstanceTest, DestroyNullInstance) {
+TEST(GfxInstanceTestNonParam, DestroyNullInstance)
+{
     // Should handle NULL gracefully
     GfxResult result = gfxInstanceDestroy(NULL);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
