@@ -20,10 +20,13 @@ public:
     virtual GfxResult adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const = 0;
     virtual GfxResult adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const = 0;
     virtual GfxResult adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const = 0;
+    virtual GfxResult adapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFamilyCount, GfxQueueFamilyProperties* queueFamilies) const = 0;
+    virtual GfxResult adapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t queueFamilyIndex, GfxSurface surface, bool* outSupported) const = 0;
 
     // Device functions
     virtual GfxResult deviceDestroy(GfxDevice device) const = 0;
     virtual GfxResult deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const = 0;
+    virtual GfxResult deviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, GfxQueue* outQueue) const = 0;
     virtual GfxResult deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const = 0;
     virtual GfxResult deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const = 0;
     virtual GfxResult deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const = 0;

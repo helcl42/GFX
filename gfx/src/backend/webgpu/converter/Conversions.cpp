@@ -118,6 +118,30 @@ GfxAdapterInfo wgpuAdapterToGfxAdapterInfo(const core::AdapterInfo& info)
 }
 
 // ============================================================================
+// Queue Family Conversion
+// ============================================================================
+
+GfxQueueFamilyProperties wgpuQueueFamilyPropertiesToGfx(const core::QueueFamilyProperties& props)
+{
+    // Build flags based on capabilities
+    uint32_t flags = 0;
+    if (props.supportsGraphics) {
+        flags |= GFX_QUEUE_FLAG_GRAPHICS;
+    }
+    if (props.supportsCompute) {
+        flags |= GFX_QUEUE_FLAG_COMPUTE;
+    }
+    if (props.supportsTransfer) {
+        flags |= GFX_QUEUE_FLAG_TRANSFER;
+    }
+
+    GfxQueueFamilyProperties gfxProps = {};
+    gfxProps.flags = static_cast<GfxQueueFlags>(flags);
+    gfxProps.queueCount = props.queueCount;
+    return gfxProps;
+}
+
+// ============================================================================
 // CreateInfo Conversion Functions - GfxDescriptor to Internal CreateInfo
 // ============================================================================
 

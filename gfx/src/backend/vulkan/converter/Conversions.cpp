@@ -34,6 +34,30 @@ GfxDeviceLimits vkPropertiesToGfxDeviceLimits(const VkPhysicalDeviceProperties& 
 }
 
 // ============================================================================
+// Queue Family Conversion
+// ============================================================================
+
+GfxQueueFlags vkQueueFlagsToGfx(VkQueueFlags vkFlags)
+{
+    GfxQueueFlags flags = GFX_QUEUE_FLAG_NONE;
+    
+    if (vkFlags & VK_QUEUE_GRAPHICS_BIT) {
+        flags = static_cast<GfxQueueFlags>(flags | GFX_QUEUE_FLAG_GRAPHICS);
+    }
+    if (vkFlags & VK_QUEUE_COMPUTE_BIT) {
+        flags = static_cast<GfxQueueFlags>(flags | GFX_QUEUE_FLAG_COMPUTE);
+    }
+    if (vkFlags & VK_QUEUE_TRANSFER_BIT) {
+        flags = static_cast<GfxQueueFlags>(flags | GFX_QUEUE_FLAG_TRANSFER);
+    }
+    if (vkFlags & VK_QUEUE_SPARSE_BINDING_BIT) {
+        flags = static_cast<GfxQueueFlags>(flags | GFX_QUEUE_FLAG_SPARSE_BINDING);
+    }
+    
+    return flags;
+}
+
+// ============================================================================
 // Adapter Type Conversion
 // ============================================================================
 

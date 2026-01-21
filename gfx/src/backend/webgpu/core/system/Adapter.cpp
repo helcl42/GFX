@@ -155,6 +155,23 @@ WGPULimits Adapter::getLimits() const
     return limits;
 }
 
+std::vector<QueueFamilyProperties> Adapter::getQueueFamilyProperties() const
+{
+    // WebGPU has a single unified queue family with all capabilities
+    QueueFamilyProperties props{};
+    props.queueCount = 1;
+    props.supportsGraphics = true;
+    props.supportsCompute = true;
+    props.supportsTransfer = true;
+    return { props };
+}
+
+bool Adapter::supportsPresentation(uint32_t queueFamilyIndex) const
+{
+    // WebGPU's single queue family (index 0) always supports presentation
+    return queueFamilyIndex == 0;
+}
+
 AdapterInfo Adapter::createAdapterInfo() const
 {
     AdapterInfo adapterInfo{};

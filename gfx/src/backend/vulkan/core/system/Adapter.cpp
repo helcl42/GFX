@@ -127,6 +127,25 @@ const VkPhysicalDeviceMemoryProperties& Adapter::getMemoryProperties() const
     return m_memoryProperties;
 }
 
+std::vector<VkQueueFamilyProperties> Adapter::getQueueFamilyProperties() const
+{
+    uint32_t count = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &count, nullptr);
+
+    std::vector<VkQueueFamilyProperties> properties(count);
+    vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &count, properties.data());
+
+    return properties;
+}
+
+bool Adapter::supportsPresentation(uint32_t queueFamilyIndex, VkSurfaceKHR surface) const
+{
+    VkBool32 supported = VK_FALSE;
+    VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, queueFamilyIndex, surface, &supported);
+
+    return (result == VK_SUCCESS && supported == VK_TRUE);
+}
+
 void Adapter::initializeAdapterInfo()
 {
     vkGetPhysicalDeviceProperties(m_physicalDevice, &m_properties);

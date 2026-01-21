@@ -229,8 +229,15 @@ struct AdapterCreateInfo {
 };
 
 struct DeviceCreateInfo {
+    struct QueueRequest {
+        uint32_t queueFamilyIndex;
+        uint32_t queueIndex;
+        float priority;
+    };
+    
     float queuePriority = 1.0f;
     std::vector<DeviceFeatureType> enabledFeatures;
+    std::vector<QueueRequest> queueRequests;
 };
 
 struct PlatformWindowHandle {

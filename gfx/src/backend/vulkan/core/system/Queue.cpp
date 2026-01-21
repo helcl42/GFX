@@ -17,11 +17,11 @@
 
 namespace gfx::backend::vulkan::core {
 
-Queue::Queue(Device* device, uint32_t queueFamily)
-    : m_device(device)
+Queue::Queue(Device* device, VkQueue queue, uint32_t queueFamily)
+    : m_queue(queue)
+    , m_device(device)
     , m_queueFamily(queueFamily)
 {
-    vkGetDeviceQueue(device->handle(), queueFamily, 0, &m_queue);
 }
 
 VkQueue Queue::handle() const

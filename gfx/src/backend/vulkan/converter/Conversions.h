@@ -63,6 +63,12 @@ core::TextureBarrier gfxTextureBarrierToTextureBarrier(const GfxTextureBarrier& 
 GfxDeviceLimits vkPropertiesToGfxDeviceLimits(const VkPhysicalDeviceProperties& properties);
 
 // ============================================================================
+// Queue Family Conversion
+// ============================================================================
+
+GfxQueueFlags vkQueueFlagsToGfx(VkQueueFlags vkFlags);
+
+// ============================================================================
 // Adapter Type Conversion
 // ============================================================================
 

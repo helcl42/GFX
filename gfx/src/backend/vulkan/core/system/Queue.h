@@ -14,7 +14,7 @@ public:
     Queue(const Queue&) = delete;
     Queue& operator=(const Queue&) = delete;
 
-    Queue(Device* device, uint32_t queueFamily);
+    Queue(Device* device, VkQueue queue, uint32_t queueFamily);
     ~Queue() = default;
 
     VkQueue handle() const;

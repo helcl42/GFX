@@ -154,6 +154,40 @@ GfxResult Backend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimi
     auto* adapterPtr = converter::toNative<core::Adapter>(adapter);
     *outLimits = converter::wgpuLimitsToGfxDeviceLimits(adapterPtr->getLimits());
     return GFX_RESULT_SUCCESS;
+}
+
+GfxResult Backend::adapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFamilyCount, GfxQueueFamilyProperties* queueFamilies) const
+{
+    if (!adapter || !queueFamilyCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto* adap = converter::toNative<core::Adapter>(adapter);
+    auto families = adap->getQueueFamilyProperties();
+    uint32_t count = static_cast<uint32_t>(families.size());
+
+    if (!queueFamilies) {
+        *queueFamilyCount = count;
+        return GFX_RESULT_SUCCESS;
+    }
+
+    uint32_t outputCount = std::min(*queueFamilyCount, count);
+    for (uint32_t i = 0; i < outputCount; ++i) {
+        queueFamilies[i] = converter::wgpuQueueFamilyPropertiesToGfx(families[i]);
+    }
+
+    *queueFamilyCount = count;
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult Backend::adapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t queueFamilyIndex, GfxSurface surface, bool* outSupported) const
+{
+    if (!adapter || !surface || !outSupported) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto* adap = converter::toNative<core::Adapter>(adapter);
+    *outSupported = adap->supportsPresentation(queueFamilyIndex);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -172,6 +206,22 @@ GfxResult Backend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const
 {
     if (!device || !outQueue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto* dev = converter::toNative<core::Device>(device);
+    *outQueue = converter::toGfx<GfxQueue>(dev->getQueue());
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult Backend::deviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, GfxQueue* outQueue) const
+{
+    if (!device || !outQueue) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // WebGPU only has one queue family (index 0) with one queue (index 0)
+    if (queueFamilyIndex != 0 || queueIndex != 0) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     auto* dev = converter::toNative<core::Device>(device);

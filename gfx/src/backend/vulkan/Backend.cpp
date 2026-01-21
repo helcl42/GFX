@@ -141,6 +141,46 @@ GfxResult Backend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimi
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult Backend::adapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFamilyCount, GfxQueueFamilyProperties* queueFamilies) const
+{
+    if (!adapter || !queueFamilyCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto* adap = converter::toNative<core::Adapter>(adapter);
+    auto vkProps = adap->getQueueFamilyProperties();
+    uint32_t count = static_cast<uint32_t>(vkProps.size());
+
+    if (!queueFamilies) {
+        // Just return the count
+        *queueFamilyCount = count;
+        return GFX_RESULT_SUCCESS;
+    }
+
+    // Copy properties to output array
+    uint32_t outputCount = std::min(*queueFamilyCount, count);
+    for (uint32_t i = 0; i < outputCount; ++i) {
+        queueFamilies[i].flags = converter::vkQueueFlagsToGfx(vkProps[i].queueFlags);
+        queueFamilies[i].queueCount = vkProps[i].queueCount;
+    }
+
+    *queueFamilyCount = count;
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult Backend::adapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t queueFamilyIndex, GfxSurface surface, bool* outSupported) const
+{
+    if (!adapter || !surface || !outSupported) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto* adap = converter::toNative<core::Adapter>(adapter);
+    auto* surf = converter::toNative<core::Surface>(surface);
+
+    *outSupported = adap->supportsPresentation(queueFamilyIndex, surf->handle());
+    return GFX_RESULT_SUCCESS;
+}
+
 // Device functions
 GfxResult Backend::deviceDestroy(GfxDevice device) const
 {
@@ -156,6 +196,23 @@ GfxResult Backend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const
 
     auto* dev = converter::toNative<core::Device>(device);
     *outQueue = converter::toGfx<GfxQueue>(dev->getQueue());
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult Backend::deviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, GfxQueue* outQueue) const
+{
+    if (!device || !outQueue) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto* dev = converter::toNative<core::Device>(device);
+    auto* queue = dev->getQueueByIndex(queueFamilyIndex, queueIndex);
+
+    if (!queue) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+
+    *outQueue = converter::toGfx<GfxQueue>(queue);
     return GFX_RESULT_SUCCESS;
 }
 

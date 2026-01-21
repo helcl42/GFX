@@ -23,6 +23,8 @@ public:
     Instance* getInstance() const;
     const VkPhysicalDeviceProperties& getProperties() const;
     const VkPhysicalDeviceMemoryProperties& getMemoryProperties() const;
+    std::vector<VkQueueFamilyProperties> getQueueFamilyProperties() const;
+    bool supportsPresentation(uint32_t queueFamilyIndex, VkSurfaceKHR surface) const;
 
 private:
     void initializeAdapterInfo();

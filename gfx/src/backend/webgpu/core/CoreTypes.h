@@ -36,6 +36,14 @@ enum class DeviceFeatureType {
     Swapchain = 1
 };
 
+// Queue family properties (WebGPU has single unified queue)
+struct QueueFamilyProperties {
+    uint32_t queueCount;          // Always 1 for WebGPU
+    bool supportsGraphics;        // Always true
+    bool supportsCompute;         // Always true
+    bool supportsTransfer;        // Always true
+};
+
 // ============================================================================
 // Internal CreateInfo structs - pure WebGPU types, no GFX dependencies
 // ============================================================================

@@ -31,6 +31,10 @@ public:
     const AdapterInfo& getInfo() const;
     WGPULimits getLimits() const;
 
+    // Queue family properties (WebGPU has single unified queue)
+    std::vector<QueueFamilyProperties> getQueueFamilyProperties() const;
+    bool supportsPresentation(uint32_t queueFamilyIndex) const;
+
 private:
     AdapterInfo createAdapterInfo() const;
 

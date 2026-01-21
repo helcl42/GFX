@@ -259,6 +259,30 @@ GfxResult gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits)
     return backend->adapterGetLimits(adapter, outLimits);
 }
 
+GfxResult gfxAdapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFamilyCount, GfxQueueFamilyProperties* queueFamilies)
+{
+    if (!adapter || !queueFamilyCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(adapter);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->adapterEnumerateQueueFamilies(adapter, queueFamilyCount, queueFamilies);
+}
+
+GfxResult gfxAdapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t queueFamilyIndex, GfxSurface surface, bool* outSupported)
+{
+    if (!adapter || !surface || !outSupported) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(adapter);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->adapterGetQueueFamilySurfaceSupport(adapter, queueFamilyIndex, surface, outSupported);
+}
+
 // Device Functions
 GfxResult gfxDeviceDestroy(GfxDevice device)
 {
@@ -288,6 +312,28 @@ GfxResult gfxDeviceGetQueue(GfxDevice device, GfxQueue* outQueue)
     GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);
     GfxQueue nativeQueue = nullptr;
     GfxResult result = backend->deviceGetQueue(device, &nativeQueue);
+    if (result != GFX_RESULT_SUCCESS) {
+        return result;
+    }
+
+    *outQueue = gfx::backend::BackendManager::instance().wrap(backendType, nativeQueue);
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult gfxDeviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, GfxQueue* outQueue)
+{
+    if (!device || !outQueue) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    *outQueue = nullptr;
+    auto backend = gfx::backend::BackendManager::instance().getBackend(device);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+
+    GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);
+    GfxQueue nativeQueue = nullptr;
+    GfxResult result = backend->deviceGetQueueByIndex(device, queueFamilyIndex, queueIndex, &nativeQueue);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }

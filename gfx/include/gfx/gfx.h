@@ -256,6 +256,15 @@ typedef enum {
 } GfxShaderStage;
 
 typedef enum {
+    GFX_QUEUE_FLAG_NONE = 0,
+    GFX_QUEUE_FLAG_GRAPHICS = 1 << 0,
+    GFX_QUEUE_FLAG_COMPUTE = 1 << 1,
+    GFX_QUEUE_FLAG_TRANSFER = 1 << 2,
+    GFX_QUEUE_FLAG_SPARSE_BINDING = 1 << 3,
+    GFX_QUEUE_FLAG_MAX_ENUM = 0x7FFFFFFF
+} GfxQueueFlags;
+
+typedef enum {
     GFX_FILTER_MODE_NEAREST = 0,
     GFX_FILTER_MODE_LINEAR = 1,
     GFX_FILTER_MODE_MAX_ENUM = 0x7FFFFFFF
@@ -740,9 +749,24 @@ typedef struct {
     uint32_t maxTextureArrayLayers;
 } GfxDeviceLimits;
 
+// Queue family properties
+typedef struct {
+    GfxQueueFlags flags;
+    uint32_t queueCount;
+} GfxQueueFamilyProperties;
+
+// Queue request for device creation
+typedef struct {
+    uint32_t queueFamilyIndex;
+    uint32_t queueIndex;
+    float priority;
+} GfxQueueRequest;
+
 typedef struct {
     const char* label;
-    float queuePriority; // Queue priority (0.0 to 1.0, higher = more priority). Default: 1.0
+    float queuePriority; // Queue priority (0.0 to 1.0, higher = more priority). Default: 1.0. Used only if queueRequests is NULL
+    const GfxQueueRequest* queueRequests; // Optional: explicit queue requests (NULL for automatic default queue)
+    uint32_t queueRequestCount; // Number of queue requests (0 if queueRequests is NULL)
     const GfxDeviceFeatureType* enabledFeatures;
     uint32_t enabledFeatureCount;
 } GfxDeviceDescriptor;
@@ -1111,10 +1135,14 @@ GFX_API GfxResult gfxAdapterDestroy(GfxAdapter adapter);
 GFX_API GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice);
 GFX_API GfxResult gfxAdapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo);
 GFX_API GfxResult gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits);
+// Vulkan-style enumeration: call with queueFamilies=NULL to get count, then call again with allocated array
+GFX_API GfxResult gfxAdapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFamilyCount, GfxQueueFamilyProperties* queueFamilies);
+GFX_API GfxResult gfxAdapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t queueFamilyIndex, GfxSurface surface, bool* outSupported);
 
 // Device functions
 GFX_API GfxResult gfxDeviceDestroy(GfxDevice device);
 GFX_API GfxResult gfxDeviceGetQueue(GfxDevice device, GfxQueue* outQueue);
+GFX_API GfxResult gfxDeviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, GfxQueue* outQueue);
 GFX_API GfxResult gfxDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface);
 GFX_API GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain);
 GFX_API GfxResult gfxDeviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer);

@@ -12,6 +12,7 @@ struct AdapterInfo;
 struct BufferInfo;
 struct TextureInfo;
 struct SwapchainInfo;
+struct QueueFamilyProperties;
 
 struct AdapterCreateInfo;
 struct InstanceCreateInfo;
@@ -89,6 +90,12 @@ GfxAdapterType wgpuAdapterTypeToGfxAdapterType(WGPUAdapterType adapterType);
 // ============================================================================
 
 GfxAdapterInfo wgpuAdapterToGfxAdapterInfo(const core::AdapterInfo& info);
+
+// ============================================================================
+// Queue Family Conversion
+// ============================================================================
+
+GfxQueueFamilyProperties wgpuQueueFamilyPropertiesToGfx(const core::QueueFamilyProperties& props);
 
 // ============================================================================
 // CreateInfo Conversion Functions - GfxDescriptor to Internal CreateInfo
