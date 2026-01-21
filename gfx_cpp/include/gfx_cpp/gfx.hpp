@@ -1019,6 +1019,67 @@ struct ComputePassBeginDescriptor {
     std::string label;
 };
 
+// Copy/Blit descriptors
+struct CopyBufferToBufferDescriptor {
+    std::shared_ptr<Buffer> source;
+    uint64_t sourceOffset = 0;
+    std::shared_ptr<Buffer> destination;
+    uint64_t destinationOffset = 0;
+    uint64_t size = 0;
+};
+
+struct CopyBufferToTextureDescriptor {
+    std::shared_ptr<Buffer> source;
+    uint64_t sourceOffset = 0;
+    std::shared_ptr<Texture> destination;
+    Origin3D origin = {};
+    Extent3D extent = {};
+    uint32_t mipLevel = 0;
+    TextureLayout finalLayout = TextureLayout::Undefined;
+};
+
+struct CopyTextureToBufferDescriptor {
+    std::shared_ptr<Texture> source;
+    Origin3D origin = {};
+    uint32_t mipLevel = 0;
+    std::shared_ptr<Buffer> destination;
+    uint64_t destinationOffset = 0;
+    Extent3D extent = {};
+    TextureLayout finalLayout = TextureLayout::Undefined;
+};
+
+struct CopyTextureToTextureDescriptor {
+    std::shared_ptr<Texture> source;
+    Origin3D sourceOrigin = {};
+    uint32_t sourceMipLevel = 0;
+    TextureLayout sourceFinalLayout = TextureLayout::Undefined;
+    std::shared_ptr<Texture> destination;
+    Origin3D destinationOrigin = {};
+    uint32_t destinationMipLevel = 0;
+    TextureLayout destinationFinalLayout = TextureLayout::Undefined;
+    Extent3D extent = {};
+};
+
+struct BlitTextureToTextureDescriptor {
+    std::shared_ptr<Texture> source;
+    Origin3D sourceOrigin = {};
+    Extent3D sourceExtent = {};
+    uint32_t sourceMipLevel = 0;
+    TextureLayout sourceFinalLayout = TextureLayout::Undefined;
+    std::shared_ptr<Texture> destination;
+    Origin3D destinationOrigin = {};
+    Extent3D destinationExtent = {};
+    uint32_t destinationMipLevel = 0;
+    TextureLayout destinationFinalLayout = TextureLayout::Undefined;
+    FilterMode filter = FilterMode::Nearest;
+};
+
+struct PipelineBarrierDescriptor {
+    std::vector<MemoryBarrier> memoryBarriers = {};
+    std::vector<BufferBarrier> bufferBarriers = {};
+    std::vector<TextureBarrier> textureBarriers = {};
+};
+
 // ============================================================================
 // Surface and Swapchain Classes
 // ============================================================================
@@ -1042,11 +1103,7 @@ public:
     virtual std::shared_ptr<TextureView> getCurrentTextureView() = 0;
 
     // Present the current frame
-    virtual Result acquireNextImage(uint64_t timeout,
-        std::shared_ptr<Semaphore> signalSemaphore,
-        std::shared_ptr<Fence> signalFence,
-        uint32_t* imageIndex)
-        = 0;
+    virtual Result acquireNextImage(uint64_t timeout, std::shared_ptr<Semaphore> signalSemaphore, std::shared_ptr<Fence> signalFence, uint32_t* imageIndex) = 0;
 
     // Get texture view for a specific swapchain image index
     virtual std::shared_ptr<TextureView> getTextureView(uint32_t index) = 0;
@@ -1177,41 +1234,13 @@ public:
 
     virtual std::shared_ptr<ComputePassEncoder> beginComputePass(const ComputePassBeginDescriptor& descriptor) = 0;
 
-    virtual void copyBufferToBuffer(
-        std::shared_ptr<Buffer> source, uint64_t sourceOffset,
-        std::shared_ptr<Buffer> destination, uint64_t destinationOffset,
-        uint64_t size)
-        = 0;
+    virtual void copyBufferToBuffer(const CopyBufferToBufferDescriptor& descriptor) = 0;
+    virtual void copyBufferToTexture(const CopyBufferToTextureDescriptor& descriptor) = 0;
+    virtual void copyTextureToBuffer(const CopyTextureToBufferDescriptor& descriptor) = 0;
+    virtual void copyTextureToTexture(const CopyTextureToTextureDescriptor& descriptor) = 0;
+    virtual void blitTextureToTexture(const BlitTextureToTextureDescriptor& descriptor) = 0;
 
-    virtual void copyBufferToTexture(
-        std::shared_ptr<Buffer> source, uint64_t sourceOffset, uint32_t bytesPerRow,
-        std::shared_ptr<Texture> destination, const Origin3D& origin,
-        const Extent3D& extent, uint32_t mipLevel, TextureLayout finalLayout)
-        = 0;
-
-    virtual void copyTextureToBuffer(
-        std::shared_ptr<Texture> source, const Origin3D& origin, uint32_t mipLevel,
-        std::shared_ptr<Buffer> destination, uint64_t destinationOffset, uint32_t bytesPerRow,
-        const Extent3D& extent, TextureLayout finalLayout)
-        = 0;
-
-    virtual void copyTextureToTexture(
-        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, uint32_t sourceMipLevel, TextureLayout sourceFinalLayout,
-        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, uint32_t destinationMipLevel, TextureLayout destinationFinalLayout,
-        const Extent3D& extent)
-        = 0;
-
-    virtual void blitTextureToTexture(
-        std::shared_ptr<Texture> source, const Origin3D& sourceOrigin, const Extent3D& sourceExtent, uint32_t sourceMipLevel, TextureLayout sourceFinalLayout,
-        std::shared_ptr<Texture> destination, const Origin3D& destinationOrigin, const Extent3D& destinationExtent, uint32_t destinationMipLevel, TextureLayout destinationFinalLayout,
-        FilterMode filter)
-        = 0;
-
-    virtual void pipelineBarrier(
-        const std::vector<MemoryBarrier>& memoryBarriers = {},
-        const std::vector<BufferBarrier>& bufferBarriers = {},
-        const std::vector<TextureBarrier>& textureBarriers = {})
-        = 0;
+    virtual void pipelineBarrier(const PipelineBarrierDescriptor& descriptor) = 0;
 
     virtual void generateMipmaps(std::shared_ptr<Texture> texture) = 0;
     virtual void generateMipmapsRange(std::shared_ptr<Texture> texture, uint32_t baseMipLevel, uint32_t levelCount) = 0;
@@ -1254,11 +1283,7 @@ public:
 
     virtual void submit(const SubmitDescriptor& submitInfo) = 0;
     virtual void writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size) = 0;
-    virtual void writeTexture(
-        std::shared_ptr<Texture> texture, const Origin3D& origin, uint32_t mipLevel,
-        const void* data, uint64_t dataSize, uint32_t bytesPerRow,
-        const Extent3D& extent, TextureLayout finalLayout)
-        = 0;
+    virtual void writeTexture(std::shared_ptr<Texture> texture, const Origin3D& origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const Extent3D& extent, TextureLayout finalLayout) = 0;
     virtual void waitIdle() = 0;
 
     template <typename T>
@@ -1276,10 +1301,7 @@ public:
 
     // Generic surface creation - works with any windowing system
     virtual std::shared_ptr<Surface> createSurface(const SurfaceDescriptor& descriptor) = 0;
-    virtual std::shared_ptr<Swapchain> createSwapchain(
-        std::shared_ptr<Surface> surface,
-        const SwapchainDescriptor& descriptor)
-        = 0;
+    virtual std::shared_ptr<Swapchain> createSwapchain(std::shared_ptr<Surface> surface, const SwapchainDescriptor& descriptor) = 0;
 
     virtual std::shared_ptr<Buffer> createBuffer(const BufferDescriptor& descriptor) = 0;
     virtual std::shared_ptr<Buffer> importBuffer(const BufferImportDescriptor& descriptor) = 0;
@@ -1344,6 +1366,9 @@ namespace utils {
 
     // Helper to deduce access flags from texture layout
     AccessFlags getAccessFlagsForLayout(TextureLayout layout);
+
+    // Get bytes per pixel for a texture format
+    uint32_t getFormatBytesPerPixel(TextureFormat format);
 } // namespace utils
 
 } // namespace gfx

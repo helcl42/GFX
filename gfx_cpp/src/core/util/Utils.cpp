@@ -18,4 +18,9 @@ AccessFlags getAccessFlagsForLayout(TextureLayout layout)
     return cAccessFlagsToCppAccessFlags(cFlags);
 }
 
+uint32_t getFormatBytesPerPixel(TextureFormat format)
+{
+    return gfxGetFormatBytesPerPixel(cppFormatToCFormat(format));
+}
+
 } // namespace gfx::utils

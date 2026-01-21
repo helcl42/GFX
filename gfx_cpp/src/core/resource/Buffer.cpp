@@ -2,6 +2,8 @@
 
 #include "../../converter/Conversions.h"
 
+#include <stdexcept>
+
 namespace gfx {
 
 BufferImpl::BufferImpl(GfxBuffer h)
@@ -9,9 +11,7 @@ BufferImpl::BufferImpl(GfxBuffer h)
 {
     GfxResult result = gfxBufferGetInfo(m_handle, &m_info);
     if (result != GFX_RESULT_SUCCESS) {
-        // Handle error - set default values
-        m_info.size = 0;
-        m_info.usage = GFX_BUFFER_USAGE_NONE;
+        throw std::runtime_error("Failed to get buffer info");
     }
 }
 
@@ -29,10 +29,7 @@ GfxBuffer BufferImpl::getHandle() const
 
 BufferInfo BufferImpl::getInfo() const
 {
-    BufferInfo info;
-    info.size = m_info.size;
-    info.usage = cBufferUsageToCppUsage(m_info.usage);
-    return info;
+    return cBufferInfoToCppBufferInfo(m_info);
 }
 
 void* BufferImpl::map(uint64_t offset, uint64_t size)

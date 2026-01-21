@@ -16,32 +16,31 @@ ComputePassEncoderImpl::ComputePassEncoderImpl(GfxComputePassEncoder h)
 ComputePassEncoderImpl::~ComputePassEncoderImpl()
 {
     if (m_handle) {
-        GfxResult result = gfxComputePassEncoderEnd(m_handle);
-        if (result != GFX_RESULT_SUCCESS) {
-            // Can't throw from destructor, just log or ignore
-        }
+        gfxComputePassEncoderEnd(m_handle);
     }
 }
 
 void ComputePassEncoderImpl::setPipeline(std::shared_ptr<ComputePipeline> pipeline)
 {
     auto impl = std::dynamic_pointer_cast<ComputePipelineImpl>(pipeline);
-    if (impl) {
-        GfxResult result = gfxComputePassEncoderSetPipeline(m_handle, impl->getHandle());
-        if (result != GFX_RESULT_SUCCESS) {
-            throw std::runtime_error("Failed to set compute pipeline");
-        }
+    if (!impl) {
+        throw std::runtime_error("Invalid compute pipeline type");
+    }
+    GfxResult result = gfxComputePassEncoderSetPipeline(m_handle, impl->getHandle());
+    if (result != GFX_RESULT_SUCCESS) {
+        throw std::runtime_error("Failed to set compute pipeline");
     }
 }
 
 void ComputePassEncoderImpl::setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
     auto impl = std::dynamic_pointer_cast<BindGroupImpl>(bindGroup);
-    if (impl) {
-        GfxResult result = gfxComputePassEncoderSetBindGroup(m_handle, index, impl->getHandle(), dynamicOffsets, dynamicOffsetCount);
-        if (result != GFX_RESULT_SUCCESS) {
-            throw std::runtime_error("Failed to set compute bind group");
-        }
+    if (!impl) {
+        throw std::runtime_error("Invalid bind group type");
+    }
+    GfxResult result = gfxComputePassEncoderSetBindGroup(m_handle, index, impl->getHandle(), dynamicOffsets, dynamicOffsetCount);
+    if (result != GFX_RESULT_SUCCESS) {
+        throw std::runtime_error("Failed to set compute bind group");
     }
 }
 

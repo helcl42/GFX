@@ -23,14 +23,7 @@ SwapchainInfo SwapchainImpl::getInfo() const
 {
     GfxSwapchainInfo cInfo;
     gfxSwapchainGetInfo(m_handle, &cInfo);
-
-    SwapchainInfo info;
-    info.width = cInfo.width;
-    info.height = cInfo.height;
-    info.format = cFormatToCppFormat(cInfo.format);
-    info.presentMode = cPresentModeToCppPresentMode(cInfo.presentMode);
-    info.imageCount = cInfo.imageCount;
-    return info;
+    return cSwapchainInfoToCppSwapchainInfo(cInfo);
 }
 
 std::shared_ptr<TextureView> SwapchainImpl::getCurrentTextureView()
@@ -43,10 +36,7 @@ std::shared_ptr<TextureView> SwapchainImpl::getCurrentTextureView()
     return std::make_shared<TextureViewImpl>(view);
 }
 
-Result SwapchainImpl::acquireNextImage(uint64_t timeout,
-    std::shared_ptr<Semaphore> signalSemaphore,
-    std::shared_ptr<Fence> signalFence,
-    uint32_t* imageIndex)
+Result SwapchainImpl::acquireNextImage(uint64_t timeout, std::shared_ptr<Semaphore> signalSemaphore, std::shared_ptr<Fence> signalFence, uint32_t* imageIndex)
 {
     GfxSemaphore cSemaphore = signalSemaphore ? extractNativeHandle<GfxSemaphore>(signalSemaphore) : nullptr;
     GfxFence cFence = signalFence ? extractNativeHandle<GfxFence>(signalFence) : nullptr;
@@ -67,17 +57,9 @@ std::shared_ptr<TextureView> SwapchainImpl::getTextureView(uint32_t index)
 
 Result SwapchainImpl::present(const PresentInfo& info)
 {
-    GfxPresentInfo cInfo = {};
-
-    // Convert semaphores
     std::vector<GfxSemaphore> cWaitSemaphores;
-
-    for (const auto& sem : info.waitSemaphores) {
-        cWaitSemaphores.push_back(extractNativeHandle<GfxSemaphore>(sem));
-    }
-
-    cInfo.waitSemaphores = cWaitSemaphores.empty() ? nullptr : cWaitSemaphores.data();
-    cInfo.waitSemaphoreCount = cWaitSemaphores.size();
+    GfxPresentInfo cInfo;
+    convertPresentInfo(info, cWaitSemaphores, cInfo);
 
     GfxResult result = gfxSwapchainPresent(m_handle, &cInfo);
     return cResultToCppResult(result);

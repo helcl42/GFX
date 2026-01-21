@@ -446,7 +446,7 @@ bool ComputeApp::createComputeResources()
                 .arrayLayerCount = 1
             };
 
-            initEncoder->pipelineBarrier({}, {}, { initBarrier });
+            initEncoder->pipelineBarrier({ .textureBarriers = { initBarrier } });
             initEncoder->end();
 
             gfx::FenceDescriptor initFenceDesc{};
@@ -821,7 +821,7 @@ void ComputeApp::render()
             .baseArrayLayer = 0,
             .arrayLayerCount = 1
         };
-        encoder->pipelineBarrier({}, {}, { readToWriteBarrier });
+        encoder->pipelineBarrier({ .textureBarriers = { readToWriteBarrier } });
 
         // Compute pass: Generate pattern
         {
@@ -850,7 +850,7 @@ void ComputeApp::render()
             .baseArrayLayer = 0,
             .arrayLayerCount = 1
         };
-        encoder->pipelineBarrier({}, {}, { computeToReadBarrier });
+        encoder->pipelineBarrier({ .textureBarriers = { computeToReadBarrier } });
 
         // Render pass: Post-process and display
         gfx::Color clearColor{ 0.0f, 0.0f, 0.0f, 1.0f };

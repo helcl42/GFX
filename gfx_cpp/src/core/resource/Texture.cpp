@@ -13,14 +13,7 @@ TextureImpl::TextureImpl(GfxTexture h)
 {
     GfxResult result = gfxTextureGetInfo(m_handle, &m_info);
     if (result != GFX_RESULT_SUCCESS) {
-        // Handle error - set default values
-        m_info.type = GFX_TEXTURE_TYPE_2D;
-        m_info.size = { 0, 0, 0 };
-        m_info.arrayLayerCount = 1;
-        m_info.mipLevelCount = 1;
-        m_info.sampleCount = GFX_SAMPLE_COUNT_1;
-        m_info.format = GFX_TEXTURE_FORMAT_UNDEFINED;
-        m_info.usage = GFX_TEXTURE_USAGE_NONE;
+        throw std::runtime_error("Failed to get texture info");
     }
 }
 
@@ -38,15 +31,7 @@ GfxTexture TextureImpl::getHandle() const
 
 TextureInfo TextureImpl::getInfo()
 {
-    TextureInfo info;
-    info.type = cTextureTypeToCppType(m_info.type);
-    info.size = Extent3D(m_info.size.width, m_info.size.height, m_info.size.depth);
-    info.arrayLayerCount = m_info.arrayLayerCount;
-    info.mipLevelCount = m_info.mipLevelCount;
-    info.sampleCount = cSampleCountToCppCount(m_info.sampleCount);
-    info.format = cFormatToCppFormat(m_info.format);
-    info.usage = cTextureUsageToCppUsage(m_info.usage);
-    return info;
+    return cTextureInfoToCppTextureInfo(m_info);
 }
 
 TextureLayout TextureImpl::getLayout() const
@@ -58,14 +43,8 @@ TextureLayout TextureImpl::getLayout() const
 
 std::shared_ptr<TextureView> TextureImpl::createView(const TextureViewDescriptor& descriptor)
 {
-    GfxTextureViewDescriptor cDesc = {};
-    cDesc.label = descriptor.label.c_str();
-    cDesc.viewType = cppTextureViewTypeToCType(descriptor.viewType);
-    cDesc.format = cppFormatToCFormat(descriptor.format);
-    cDesc.baseMipLevel = descriptor.baseMipLevel;
-    cDesc.mipLevelCount = descriptor.mipLevelCount;
-    cDesc.baseArrayLayer = descriptor.baseArrayLayer;
-    cDesc.arrayLayerCount = descriptor.arrayLayerCount;
+    GfxTextureViewDescriptor cDesc;
+    convertTextureViewDescriptor(descriptor, cDesc);
 
     GfxTextureView view = nullptr;
     GfxResult result = gfxTextureCreateView(m_handle, &cDesc, &view);

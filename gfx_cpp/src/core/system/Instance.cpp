@@ -23,8 +23,7 @@ InstanceImpl::~InstanceImpl()
 std::shared_ptr<Adapter> InstanceImpl::requestAdapter(const AdapterDescriptor& descriptor)
 {
     GfxAdapterDescriptor cDesc = {};
-    cDesc.adapterIndex = UINT32_MAX; // Use preference-based selection
-    cDesc.preference = cppAdapterPreferenceToCAdapterPreference(descriptor.preference);
+    convertAdapterDescriptor(descriptor, cDesc);
 
     GfxAdapter adapter = nullptr;
     GfxResult result = gfxInstanceRequestAdapter(m_handle, &cDesc, &adapter);
