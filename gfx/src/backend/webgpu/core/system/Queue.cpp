@@ -7,6 +7,7 @@
 #include "../system/Adapter.h"
 #include "../system/Device.h"
 #include "../system/Instance.h"
+#include "../util/Utils.h"
 
 namespace gfx::backend::webgpu::core {
 
@@ -87,8 +88,10 @@ void Queue::writeBuffer(Buffer* buffer, uint64_t offset, const void* data, uint6
     wgpuQueueWriteBuffer(m_queue, buffer->handle(), offset, data, size);
 }
 
-void Queue::writeTexture(Texture* texture, uint32_t mipLevel, const WGPUOrigin3D& origin, const void* data, uint64_t dataSize, uint32_t bytesPerRow, const WGPUExtent3D& extent)
+void Queue::writeTexture(Texture* texture, uint32_t mipLevel, const WGPUOrigin3D& origin, const void* data, uint64_t dataSize, const WGPUExtent3D& extent)
 {
+    uint32_t bytesPerRow = calculateBytesPerRow(texture->getFormat(), extent.width);
+
     WGPUTexelCopyTextureInfo dest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     dest.texture = texture->handle();
     dest.mipLevel = mipLevel;

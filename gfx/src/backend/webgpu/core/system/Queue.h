@@ -27,7 +27,7 @@ public:
     // Write data directly to a buffer
     void writeBuffer(Buffer* buffer, uint64_t offset, const void* data, uint64_t size);
     // Write data directly to a texture
-    void writeTexture(Texture* texture, uint32_t mipLevel, const WGPUOrigin3D& origin, const void* data, uint64_t dataSize, uint32_t bytesPerRow, const WGPUExtent3D& extent);
+    void writeTexture(Texture* texture, uint32_t mipLevel, const WGPUOrigin3D& origin, const void* data, uint64_t dataSize, const WGPUExtent3D& extent);
 
     // Wait for all submitted work to complete
     bool waitIdle();

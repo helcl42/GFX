@@ -1,8 +1,8 @@
 #include "Backend.h"
 
 #include "common/Common.h"
-#include "converter/Conversions.h"
 #include "common/Logger.h"
+#include "converter/Conversions.h"
 
 #include "core/command/CommandEncoder.h"
 #include "core/command/ComputePassEncoder.h"
@@ -850,8 +850,7 @@ GfxResult Backend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t o
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
-    const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
 {
     if (!queue || !texture || !data || !extent || dataSize == 0) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -866,7 +865,6 @@ GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const G
 
     q->writeTexture(tex, vkOrigin, mipLevel, data, dataSize, vkExtent, vkLayout);
 
-    (void)bytesPerRow; // Unused - assuming tightly packed data
     return GFX_RESULT_SUCCESS;
 }
 
@@ -888,9 +886,7 @@ GfxResult Backend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-    const GfxRenderPassBeginDescriptor* beginDescriptor,
-    GfxRenderPassEncoder* outRenderPass) const
+GfxResult Backend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder, const GfxRenderPassBeginDescriptor* beginDescriptor, GfxRenderPassEncoder* outRenderPass) const
 {
     if (!commandEncoder || !outRenderPass || !beginDescriptor || !beginDescriptor->renderPass || !beginDescriptor->framebuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -928,129 +924,109 @@ GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncod
     }
 }
 
-GfxResult Backend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
-    GfxBuffer source, uint64_t sourceOffset,
-    GfxBuffer destination, uint64_t destinationOffset,
-    uint64_t size) const
+GfxResult Backend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyBufferToBufferDescriptor* descriptor) const
 {
-    if (!commandEncoder || !source || !destination) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* enc = converter::toNative<core::CommandEncoder>(commandEncoder);
-    auto* srcBuf = converter::toNative<core::Buffer>(source);
-    auto* dstBuf = converter::toNative<core::Buffer>(destination);
+    auto* srcBuf = converter::toNative<core::Buffer>(descriptor->source);
+    auto* dstBuf = converter::toNative<core::Buffer>(descriptor->destination);
 
-    enc->copyBufferToBuffer(srcBuf, sourceOffset, dstBuf, destinationOffset, size);
+    enc->copyBufferToBuffer(srcBuf, descriptor->sourceOffset, dstBuf, descriptor->destinationOffset, descriptor->size);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
-    GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
-    GfxTexture destination, const GfxOrigin3D* origin,
-    const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const
+GfxResult Backend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, const GfxCopyBufferToTextureDescriptor* descriptor) const
 {
 
-    if (!commandEncoder || !source || !destination || !origin || !extent) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* enc = converter::toNative<core::CommandEncoder>(commandEncoder);
-    auto* srcBuf = converter::toNative<core::Buffer>(source);
-    auto* dstTex = converter::toNative<core::Texture>(destination);
+    auto* srcBuf = converter::toNative<core::Buffer>(descriptor->source);
+    auto* dstTex = converter::toNative<core::Texture>(descriptor->destination);
 
-    VkOffset3D vkOrigin = converter::gfxOrigin3DToVkOffset3D(origin);
-    VkExtent3D vkExtent = converter::gfxExtent3DToVkExtent3D(extent);
-    VkImageLayout vkLayout = converter::gfxLayoutToVkImageLayout(finalLayout);
+    VkOffset3D vkOrigin = converter::gfxOrigin3DToVkOffset3D(&descriptor->origin);
+    VkExtent3D vkExtent = converter::gfxExtent3DToVkExtent3D(&descriptor->extent);
+    VkImageLayout vkLayout = converter::gfxLayoutToVkImageLayout(descriptor->finalLayout);
 
-    enc->copyBufferToTexture(srcBuf, sourceOffset, dstTex, vkOrigin, vkExtent, mipLevel, vkLayout);
+    enc->copyBufferToTexture(srcBuf, descriptor->sourceOffset, dstTex, vkOrigin, vkExtent, descriptor->mipLevel, vkLayout);
 
-    (void)bytesPerRow; // Unused - assuming tightly packed data
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
-    GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
-    const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+GfxResult Backend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyTextureToBufferDescriptor* descriptor) const
 {
-    if (!commandEncoder || !source || !destination || !origin || !extent) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* enc = converter::toNative<core::CommandEncoder>(commandEncoder);
-    auto* srcTex = converter::toNative<core::Texture>(source);
-    auto* dstBuf = converter::toNative<core::Buffer>(destination);
+    auto* srcTex = converter::toNative<core::Texture>(descriptor->source);
+    auto* dstBuf = converter::toNative<core::Buffer>(descriptor->destination);
 
-    VkOffset3D vkOrigin = converter::gfxOrigin3DToVkOffset3D(origin);
-    VkExtent3D vkExtent = converter::gfxExtent3DToVkExtent3D(extent);
-    VkImageLayout vkLayout = converter::gfxLayoutToVkImageLayout(finalLayout);
+    VkOffset3D vkOrigin = converter::gfxOrigin3DToVkOffset3D(&descriptor->origin);
+    VkExtent3D vkExtent = converter::gfxExtent3DToVkExtent3D(&descriptor->extent);
+    VkImageLayout vkLayout = converter::gfxLayoutToVkImageLayout(descriptor->finalLayout);
 
-    enc->copyTextureToBuffer(srcTex, vkOrigin, mipLevel, dstBuf, destinationOffset, vkExtent, vkLayout);
+    enc->copyTextureToBuffer(srcTex, vkOrigin, descriptor->mipLevel, dstBuf, descriptor->destinationOffset, vkExtent, vkLayout);
 
-    (void)bytesPerRow; // Unused - assuming tightly packed data
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout,
-    const GfxExtent3D* extent) const
+GfxResult Backend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, const GfxCopyTextureToTextureDescriptor* descriptor) const
 {
-    if (!commandEncoder || !source || !destination || !sourceOrigin || !destinationOrigin || !extent) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* enc = converter::toNative<core::CommandEncoder>(commandEncoder);
-    auto* srcTex = converter::toNative<core::Texture>(source);
-    auto* dstTex = converter::toNative<core::Texture>(destination);
+    auto* srcTex = converter::toNative<core::Texture>(descriptor->source);
+    auto* dstTex = converter::toNative<core::Texture>(descriptor->destination);
 
-    VkOffset3D vkSrcOrigin = converter::gfxOrigin3DToVkOffset3D(sourceOrigin);
-    VkOffset3D vkDstOrigin = converter::gfxOrigin3DToVkOffset3D(destinationOrigin);
-    VkExtent3D vkExtent = converter::gfxExtent3DToVkExtent3D(extent);
-    VkImageLayout vkSrcLayout = converter::gfxLayoutToVkImageLayout(srcFinalLayout);
-    VkImageLayout vkDstLayout = converter::gfxLayoutToVkImageLayout(dstFinalLayout);
+    VkOffset3D vkSrcOrigin = converter::gfxOrigin3DToVkOffset3D(&descriptor->sourceOrigin);
+    VkOffset3D vkDstOrigin = converter::gfxOrigin3DToVkOffset3D(&descriptor->destinationOrigin);
+    VkExtent3D vkExtent = converter::gfxExtent3DToVkExtent3D(&descriptor->extent);
+    VkImageLayout vkSrcLayout = converter::gfxLayoutToVkImageLayout(descriptor->sourceFinalLayout);
+    VkImageLayout vkDstLayout = converter::gfxLayoutToVkImageLayout(descriptor->destinationFinalLayout);
 
-    enc->copyTextureToTexture(srcTex, vkSrcOrigin, sourceMipLevel, vkSrcLayout,
-        dstTex, vkDstOrigin, destinationMipLevel, vkDstLayout,
+    enc->copyTextureToTexture(srcTex, vkSrcOrigin, descriptor->sourceMipLevel, vkSrcLayout,
+        dstTex, vkDstOrigin, descriptor->destinationMipLevel, vkDstLayout,
         vkExtent);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout,
-    GfxFilterMode filter) const
+GfxResult Backend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder, const GfxBlitTextureToTextureDescriptor* descriptor) const
 {
-    if (!commandEncoder || !source || !destination || !sourceOrigin || !sourceExtent || !destinationOrigin || !destinationExtent) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* enc = converter::toNative<core::CommandEncoder>(commandEncoder);
-    auto* srcTex = converter::toNative<core::Texture>(source);
-    auto* dstTex = converter::toNative<core::Texture>(destination);
+    auto* srcTex = converter::toNative<core::Texture>(descriptor->source);
+    auto* dstTex = converter::toNative<core::Texture>(descriptor->destination);
 
-    VkOffset3D vkSrcOrigin = converter::gfxOrigin3DToVkOffset3D(sourceOrigin);
-    VkExtent3D vkSrcExtent = converter::gfxExtent3DToVkExtent3D(sourceExtent);
-    VkOffset3D vkDstOrigin = converter::gfxOrigin3DToVkOffset3D(destinationOrigin);
-    VkExtent3D vkDstExtent = converter::gfxExtent3DToVkExtent3D(destinationExtent);
-    VkFilter vkFilter = converter::gfxFilterToVkFilter(filter);
-    VkImageLayout vkSrcLayout = converter::gfxLayoutToVkImageLayout(srcFinalLayout);
-    VkImageLayout vkDstLayout = converter::gfxLayoutToVkImageLayout(dstFinalLayout);
+    VkOffset3D vkSrcOrigin = converter::gfxOrigin3DToVkOffset3D(&descriptor->sourceOrigin);
+    VkExtent3D vkSrcExtent = converter::gfxExtent3DToVkExtent3D(&descriptor->sourceExtent);
+    VkOffset3D vkDstOrigin = converter::gfxOrigin3DToVkOffset3D(&descriptor->destinationOrigin);
+    VkExtent3D vkDstExtent = converter::gfxExtent3DToVkExtent3D(&descriptor->destinationExtent);
+    VkFilter vkFilter = converter::gfxFilterToVkFilter(descriptor->filter);
+    VkImageLayout vkSrcLayout = converter::gfxLayoutToVkImageLayout(descriptor->sourceFinalLayout);
+    VkImageLayout vkDstLayout = converter::gfxLayoutToVkImageLayout(descriptor->destinationFinalLayout);
 
-    enc->blitTextureToTexture(srcTex, vkSrcOrigin, vkSrcExtent, sourceMipLevel, vkSrcLayout,
-        dstTex, vkDstOrigin, vkDstExtent, destinationMipLevel, vkDstLayout,
+    enc->blitTextureToTexture(srcTex, vkSrcOrigin, vkSrcExtent, descriptor->sourceMipLevel, vkSrcLayout,
+        dstTex, vkDstOrigin, vkDstExtent, descriptor->destinationMipLevel, vkDstLayout,
         vkFilter);
     return GFX_RESULT_SUCCESS;
 }
 
 // TODO - add member function to CommandEncoder for pipeline barrier
-GfxResult Backend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
-    const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
-    const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
-    const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
+GfxResult Backend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxPipelineBarrierDescriptor* descriptor) const
 {
-    if (!commandEncoder) {
+    if (!commandEncoder || !descriptor) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -1058,21 +1034,21 @@ GfxResult Backend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncode
 
     // Convert GFX barriers to internal Vulkan barriers
     std::vector<core::MemoryBarrier> internalMemBarriers;
-    internalMemBarriers.reserve(memoryBarrierCount);
-    for (uint32_t i = 0; i < memoryBarrierCount; ++i) {
-        internalMemBarriers.push_back(converter::gfxMemoryBarrierToMemoryBarrier(memoryBarriers[i]));
+    internalMemBarriers.reserve(descriptor->memoryBarrierCount);
+    for (uint32_t i = 0; i < descriptor->memoryBarrierCount; ++i) {
+        internalMemBarriers.push_back(converter::gfxMemoryBarrierToMemoryBarrier(descriptor->memoryBarriers[i]));
     }
 
     std::vector<core::BufferBarrier> internalBufBarriers;
-    internalBufBarriers.reserve(bufferBarrierCount);
-    for (uint32_t i = 0; i < bufferBarrierCount; ++i) {
-        internalBufBarriers.push_back(converter::gfxBufferBarrierToBufferBarrier(bufferBarriers[i]));
+    internalBufBarriers.reserve(descriptor->bufferBarrierCount);
+    for (uint32_t i = 0; i < descriptor->bufferBarrierCount; ++i) {
+        internalBufBarriers.push_back(converter::gfxBufferBarrierToBufferBarrier(descriptor->bufferBarriers[i]));
     }
 
     std::vector<core::TextureBarrier> internalTexBarriers;
-    internalTexBarriers.reserve(textureBarrierCount);
-    for (uint32_t i = 0; i < textureBarrierCount; ++i) {
-        internalTexBarriers.push_back(converter::gfxTextureBarrierToTextureBarrier(textureBarriers[i]));
+    internalTexBarriers.reserve(descriptor->textureBarrierCount);
+    for (uint32_t i = 0; i < descriptor->textureBarrierCount; ++i) {
+        internalTexBarriers.push_back(converter::gfxTextureBarrierToTextureBarrier(descriptor->textureBarriers[i]));
     }
 
     encoder->pipelineBarrier(

@@ -925,8 +925,7 @@ GfxResult Backend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t o
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
-    const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
 {
     if (!queue || !texture || !origin || !extent || !data) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -938,7 +937,7 @@ GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const G
     WGPUOrigin3D wgpuOrigin = converter::gfxOrigin3DToWGPUOrigin3D(origin);
     WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(extent);
 
-    queuePtr->writeTexture(texturePtr, mipLevel, wgpuOrigin, data, dataSize, bytesPerRow, wgpuExtent);
+    queuePtr->writeTexture(texturePtr, mipLevel, wgpuOrigin, data, dataSize, wgpuExtent);
 
     (void)finalLayout; // WebGPU handles layout transitions automatically
     return GFX_RESULT_SUCCESS;
@@ -965,9 +964,7 @@ GfxResult Backend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder,
-    const GfxRenderPassBeginDescriptor* beginDescriptor,
-    GfxRenderPassEncoder* outRenderPass) const
+GfxResult Backend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder, const GfxRenderPassBeginDescriptor* beginDescriptor, GfxRenderPassEncoder* outRenderPass) const
 {
     if (!commandEncoder || !beginDescriptor || !outRenderPass || !beginDescriptor->framebuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1005,120 +1002,105 @@ GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncod
     }
 }
 
-GfxResult Backend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset,
-    GfxBuffer destination, uint64_t destinationOffset, uint64_t size) const
+GfxResult Backend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyBufferToBufferDescriptor* descriptor) const
 {
-    if (!commandEncoder || !source || !destination) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<core::CommandEncoder>(commandEncoder);
-    auto* srcPtr = converter::toNative<core::Buffer>(source);
-    auto* dstPtr = converter::toNative<core::Buffer>(destination);
+    auto* srcPtr = converter::toNative<core::Buffer>(descriptor->source);
+    auto* dstPtr = converter::toNative<core::Buffer>(descriptor->destination);
 
-    encoderPtr->copyBufferToBuffer(srcPtr, sourceOffset, dstPtr, destinationOffset, size);
+    encoderPtr->copyBufferToBuffer(srcPtr, descriptor->sourceOffset, dstPtr, descriptor->destinationOffset, descriptor->size);
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
-    GfxTexture destination, const GfxOrigin3D* origin, const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout) const
+GfxResult Backend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, const GfxCopyBufferToTextureDescriptor* descriptor) const
 {
-    if (!commandEncoder || !source || !destination || !origin || !extent) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<core::CommandEncoder>(commandEncoder);
-    auto* srcPtr = converter::toNative<core::Buffer>(source);
-    auto* dstPtr = converter::toNative<core::Texture>(destination);
+    auto* srcPtr = converter::toNative<core::Buffer>(descriptor->source);
+    auto* dstPtr = converter::toNative<core::Texture>(descriptor->destination);
 
-    WGPUOrigin3D wgpuOrigin = converter::gfxOrigin3DToWGPUOrigin3D(origin);
-    WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(extent);
+    WGPUOrigin3D wgpuOrigin = converter::gfxOrigin3DToWGPUOrigin3D(&descriptor->origin);
+    WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(&descriptor->extent);
 
-    encoderPtr->copyBufferToTexture(srcPtr, sourceOffset, bytesPerRow, dstPtr, wgpuOrigin, wgpuExtent, mipLevel);
+    encoderPtr->copyBufferToTexture(srcPtr, descriptor->sourceOffset, dstPtr, wgpuOrigin, wgpuExtent, descriptor->mipLevel);
 
-    (void)finalLayout; // WebGPU handles layout transitions automatically
+    (void)descriptor->finalLayout; // WebGPU handles layout transitions automatically
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
-    GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+GfxResult Backend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyTextureToBufferDescriptor* descriptor) const
 {
-    if (!commandEncoder || !source || !destination || !origin || !extent) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<core::CommandEncoder>(commandEncoder);
-    auto* srcPtr = converter::toNative<core::Texture>(source);
-    auto* dstPtr = converter::toNative<core::Buffer>(destination);
+    auto* srcPtr = converter::toNative<core::Texture>(descriptor->source);
+    auto* dstPtr = converter::toNative<core::Buffer>(descriptor->destination);
 
-    WGPUOrigin3D wgpuOrigin = converter::gfxOrigin3DToWGPUOrigin3D(origin);
-    WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(extent);
+    WGPUOrigin3D wgpuOrigin = converter::gfxOrigin3DToWGPUOrigin3D(&descriptor->origin);
+    WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(&descriptor->extent);
 
-    encoderPtr->copyTextureToBuffer(srcPtr, wgpuOrigin, mipLevel, dstPtr, destinationOffset, bytesPerRow, wgpuExtent);
+    encoderPtr->copyTextureToBuffer(srcPtr, wgpuOrigin, descriptor->mipLevel, dstPtr, descriptor->destinationOffset, wgpuExtent);
 
-    (void)finalLayout; // WebGPU handles layout transitions automatically
+    (void)descriptor->finalLayout; // WebGPU handles layout transitions automatically
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout, const GfxExtent3D* extent) const
+GfxResult Backend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, const GfxCopyTextureToTextureDescriptor* descriptor) const
 {
-    if (!commandEncoder || !source || !destination || !sourceOrigin || !destinationOrigin || !extent) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     auto* encoderPtr = converter::toNative<core::CommandEncoder>(commandEncoder);
-    auto* srcPtr = converter::toNative<core::Texture>(source);
-    auto* dstPtr = converter::toNative<core::Texture>(destination);
+    auto* srcPtr = converter::toNative<core::Texture>(descriptor->source);
+    auto* dstPtr = converter::toNative<core::Texture>(descriptor->destination);
 
-    WGPUOrigin3D wgpuSrcOrigin = converter::gfxOrigin3DToWGPUOrigin3D(sourceOrigin);
-    WGPUOrigin3D wgpuDstOrigin = converter::gfxOrigin3DToWGPUOrigin3D(destinationOrigin);
-    WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(extent);
+    WGPUOrigin3D wgpuSrcOrigin = converter::gfxOrigin3DToWGPUOrigin3D(&descriptor->sourceOrigin);
+    WGPUOrigin3D wgpuDstOrigin = converter::gfxOrigin3DToWGPUOrigin3D(&descriptor->destinationOrigin);
+    WGPUExtent3D wgpuExtent = converter::gfxExtent3DToWGPUExtent3D(&descriptor->extent);
 
-    encoderPtr->copyTextureToTexture(srcPtr, wgpuSrcOrigin, sourceMipLevel, dstPtr, wgpuDstOrigin, destinationMipLevel, wgpuExtent);
+    encoderPtr->copyTextureToTexture(srcPtr, wgpuSrcOrigin, descriptor->sourceMipLevel, dstPtr, wgpuDstOrigin, descriptor->destinationMipLevel, wgpuExtent);
 
-    (void)srcFinalLayout; // WebGPU handles layout transitions automatically
-    (void)dstFinalLayout;
+    (void)descriptor->sourceFinalLayout; // WebGPU handles layout transitions automatically
+    (void)descriptor->destinationFinalLayout;
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel, GfxTextureLayout srcFinalLayout,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel, GfxTextureLayout dstFinalLayout,
-    GfxFilterMode filter) const
+GfxResult Backend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder, const GfxBlitTextureToTextureDescriptor* descriptor) const
 {
     auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
-    auto* srcTexture = converter::toNative<core::Texture>(source);
-    auto* dstTexture = converter::toNative<core::Texture>(destination);
+    auto* srcTexture = converter::toNative<core::Texture>(descriptor->source);
+    auto* dstTexture = converter::toNative<core::Texture>(descriptor->destination);
 
-    WGPUOrigin3D wgpuSrcOrigin = converter::gfxOrigin3DToWGPUOrigin3D(sourceOrigin);
-    WGPUOrigin3D wgpuDstOrigin = converter::gfxOrigin3DToWGPUOrigin3D(destinationOrigin);
-    WGPUExtent3D wgpuSrcExtent = converter::gfxExtent3DToWGPUExtent3D(sourceExtent);
-    WGPUExtent3D wgpuDstExtent = converter::gfxExtent3DToWGPUExtent3D(destinationExtent);
-    WGPUFilterMode wgpuFilter = converter::gfxFilterModeToWGPU(filter);
+    WGPUOrigin3D wgpuSrcOrigin = converter::gfxOrigin3DToWGPUOrigin3D(&descriptor->sourceOrigin);
+    WGPUOrigin3D wgpuDstOrigin = converter::gfxOrigin3DToWGPUOrigin3D(&descriptor->destinationOrigin);
+    WGPUExtent3D wgpuSrcExtent = converter::gfxExtent3DToWGPUExtent3D(&descriptor->sourceExtent);
+    WGPUExtent3D wgpuDstExtent = converter::gfxExtent3DToWGPUExtent3D(&descriptor->destinationExtent);
+    WGPUFilterMode wgpuFilter = converter::gfxFilterModeToWGPU(descriptor->filter);
 
-    encoder->blitTextureToTexture(srcTexture, wgpuSrcOrigin, wgpuSrcExtent, sourceMipLevel, dstTexture, wgpuDstOrigin, wgpuDstExtent, destinationMipLevel, wgpuFilter);
+    encoder->blitTextureToTexture(srcTexture, wgpuSrcOrigin, wgpuSrcExtent, descriptor->sourceMipLevel, dstTexture, wgpuDstOrigin, wgpuDstExtent, descriptor->destinationMipLevel, wgpuFilter);
 
     // WebGPU handles layout transitions automatically
-    (void)srcFinalLayout;
-    (void)dstFinalLayout;
+    (void)descriptor->sourceFinalLayout;
+    (void)descriptor->destinationFinalLayout;
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
-    const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
-    const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
-    const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount) const
+GfxResult Backend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxPipelineBarrierDescriptor* descriptor) const
 {
     // WebGPU handles synchronization and layout transitions automatically
     // This is a no-op for WebGPU backend
     (void)commandEncoder;
-    (void)memoryBarriers;
-    (void)memoryBarrierCount;
-    (void)bufferBarriers;
-    (void)bufferBarrierCount;
-    (void)textureBarriers;
-    (void)textureBarrierCount;
+    (void)descriptor;
     return GFX_RESULT_SUCCESS;
 }
 
@@ -1135,8 +1117,7 @@ GfxResult Backend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncode
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
-    uint32_t baseMipLevel, uint32_t levelCount) const
+GfxResult Backend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture, uint32_t baseMipLevel, uint32_t levelCount) const
 {
     if (!commandEncoder || !texture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;

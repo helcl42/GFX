@@ -727,8 +727,7 @@ GfxResult gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset,
     return backend->queueWriteBuffer(queue, buffer, offset, data, size);
 }
 
-GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel,
-    const void* data, uint64_t dataSize, uint32_t bytesPerRow, const GfxExtent3D* extent, GfxTextureLayout finalLayout)
+GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout)
 {
     if (!queue || !texture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -738,7 +737,7 @@ GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrig
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
-    return backend->queueWriteTexture(queue, texture, origin, mipLevel, data, dataSize, bytesPerRow, extent, finalLayout);
+    return backend->queueWriteTexture(queue, texture, origin, mipLevel, data, dataSize, extent, finalLayout);
 }
 
 GfxResult gfxQueueWaitIdle(GfxQueue queue)
@@ -753,19 +752,16 @@ GfxResult gfxQueueWaitIdle(GfxQueue queue)
     return backend->queueWaitIdle(queue);
 }
 
-GfxResult gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder,
-    const GfxMemoryBarrier* memoryBarriers, uint32_t memoryBarrierCount,
-    const GfxBufferBarrier* bufferBarriers, uint32_t bufferBarrierCount,
-    const GfxTextureBarrier* textureBarriers, uint32_t textureBarrierCount)
+GfxResult gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxPipelineBarrierDescriptor* descriptor)
 {
-    if (!commandEncoder) {
+    if (!commandEncoder || !descriptor) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->commandEncoderPipelineBarrier(commandEncoder, memoryBarriers, memoryBarrierCount, bufferBarriers, bufferBarrierCount, textureBarriers, textureBarrierCount);
+    return backend->commandEncoderPipelineBarrier(commandEncoder, descriptor);
 }
 
 GfxResult gfxCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture)
@@ -866,94 +862,64 @@ GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const Gfx
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder,
-    GfxBuffer source, uint64_t sourceOffset,
-    GfxBuffer destination, uint64_t destinationOffset,
-    uint64_t size)
+GfxResult gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyBufferToBufferDescriptor* descriptor)
 {
-    if (!commandEncoder || !source || !destination) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->commandEncoderCopyBufferToBuffer(commandEncoder,
-        source, sourceOffset,
-        destination, destinationOffset,
-        size);
+    return backend->commandEncoderCopyBufferToBuffer(commandEncoder, descriptor);
 }
 
-GfxResult gfxCommandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
-    GfxBuffer source, uint64_t sourceOffset, uint32_t bytesPerRow,
-    GfxTexture destination, const GfxOrigin3D* origin,
-    const GfxExtent3D* extent, uint32_t mipLevel, GfxTextureLayout finalLayout)
+GfxResult gfxCommandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, const GfxCopyBufferToTextureDescriptor* descriptor)
 {
-    if (!commandEncoder || !source || !destination) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->commandEncoderCopyBufferToTexture(commandEncoder,
-        source, sourceOffset, bytesPerRow,
-        destination, origin,
-        extent, mipLevel, finalLayout);
+    return backend->commandEncoderCopyBufferToTexture(commandEncoder, descriptor);
 }
 
-GfxResult gfxCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* origin, uint32_t mipLevel,
-    GfxBuffer destination, uint64_t destinationOffset, uint32_t bytesPerRow,
-    const GfxExtent3D* extent, GfxTextureLayout finalLayout)
+GfxResult gfxCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyTextureToBufferDescriptor* descriptor)
 {
-    if (!commandEncoder || !source || !destination) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->commandEncoderCopyTextureToBuffer(commandEncoder,
-        source, origin, mipLevel,
-        destination, destinationOffset, bytesPerRow,
-        extent, finalLayout);
+    return backend->commandEncoderCopyTextureToBuffer(commandEncoder, descriptor);
 }
 
-GfxResult gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* sourceOrigin, uint32_t sourceMipLevel, GfxTextureLayout sourceFinalLayout,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, uint32_t destinationMipLevel, GfxTextureLayout destinationFinalLayout,
-    const GfxExtent3D* extent)
+GfxResult gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, const GfxCopyTextureToTextureDescriptor* descriptor)
 {
-    if (!commandEncoder || !source || !destination) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->commandEncoderCopyTextureToTexture(commandEncoder,
-        source, sourceOrigin, sourceMipLevel, sourceFinalLayout,
-        destination, destinationOrigin, destinationMipLevel, destinationFinalLayout,
-        extent);
+    return backend->commandEncoderCopyTextureToTexture(commandEncoder, descriptor);
 }
 
-GfxResult gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder,
-    GfxTexture source, const GfxOrigin3D* sourceOrigin, const GfxExtent3D* sourceExtent, uint32_t sourceMipLevel, GfxTextureLayout sourceFinalLayout,
-    GfxTexture destination, const GfxOrigin3D* destinationOrigin, const GfxExtent3D* destinationExtent, uint32_t destinationMipLevel, GfxTextureLayout destinationFinalLayout,
-    GfxFilterMode filter)
+GfxResult gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder, const GfxBlitTextureToTextureDescriptor* descriptor)
 {
-    if (!commandEncoder || !source || !destination) {
+    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->commandEncoderBlitTextureToTexture(commandEncoder,
-        source, sourceOrigin, sourceExtent, sourceMipLevel, sourceFinalLayout,
-        destination, destinationOrigin, destinationExtent, destinationMipLevel, destinationFinalLayout,
-        filter);
+    return backend->commandEncoderBlitTextureToTexture(commandEncoder, descriptor);
 }
 
 // Render Pass Encoder Functions
@@ -1302,6 +1268,48 @@ uint64_t gfxAlignDown(uint64_t value, uint64_t alignment)
         return value;
     }
     return value & ~(alignment - 1);
+}
+
+uint32_t gfxGetFormatBytesPerPixel(GfxTextureFormat format)
+{
+    switch (format) {
+    case GFX_TEXTURE_FORMAT_R8_UNORM:
+        return 1;
+    case GFX_TEXTURE_FORMAT_R8G8_UNORM:
+        return 2;
+    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM:
+    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB:
+    case GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM:
+    case GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB:
+        return 4;
+    case GFX_TEXTURE_FORMAT_R16_FLOAT:
+        return 2;
+    case GFX_TEXTURE_FORMAT_R16G16_FLOAT:
+        return 4;
+    case GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT:
+        return 8;
+    case GFX_TEXTURE_FORMAT_R32_FLOAT:
+        return 4;
+    case GFX_TEXTURE_FORMAT_R32G32_FLOAT:
+        return 8;
+    case GFX_TEXTURE_FORMAT_R32G32B32_FLOAT:
+        return 12;
+    case GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT:
+        return 16;
+    case GFX_TEXTURE_FORMAT_DEPTH16_UNORM:
+        return 2;
+    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS:
+        return 4;
+    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT:
+        return 4;
+    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8:
+        return 4;
+    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8:
+        return 8;
+    case GFX_TEXTURE_FORMAT_UNDEFINED:
+    default:
+        return 0;
+    }
 }
 
 GfxPlatformWindowHandle gfxPlatformWindowHandleFromXlib(void* display, unsigned long window)

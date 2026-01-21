@@ -573,7 +573,15 @@ static bool transitionComputeTexture(ComputeApp* app)
         .baseArrayLayer = 0,
         .arrayLayerCount = 1
     };
-    gfxCommandEncoderPipelineBarrier(initEncoder, NULL, 0, NULL, 0, &initBarrier, 1);
+    GfxPipelineBarrierDescriptor barrierDesc = {
+        .memoryBarriers = NULL,
+        .memoryBarrierCount = 0,
+        .bufferBarriers = NULL,
+        .bufferBarrierCount = 0,
+        .textureBarriers = &initBarrier,
+        .textureBarrierCount = 1
+    };
+    gfxCommandEncoderPipelineBarrier(initEncoder, &barrierDesc);
 
     gfxCommandEncoderEnd(initEncoder);
 
@@ -1060,7 +1068,15 @@ static void render(ComputeApp* app)
         .baseArrayLayer = 0,
         .arrayLayerCount = 1
     };
-    gfxCommandEncoderPipelineBarrier(encoder, NULL, 0, NULL, 0, &readToWriteBarrier, 1);
+    GfxPipelineBarrierDescriptor readToWriteBarrierDesc = {
+        .memoryBarriers = NULL,
+        .memoryBarrierCount = 0,
+        .bufferBarriers = NULL,
+        .bufferBarrierCount = 0,
+        .textureBarriers = &readToWriteBarrier,
+        .textureBarrierCount = 1
+    };
+    gfxCommandEncoderPipelineBarrier(encoder, &readToWriteBarrierDesc);
 
     // --- COMPUTE PASS: Generate pattern ---
     GfxComputePassBeginDescriptor computePassDesc = {
@@ -1097,7 +1113,15 @@ static void render(ComputeApp* app)
         .baseArrayLayer = 0,
         .arrayLayerCount = 1
     };
-    gfxCommandEncoderPipelineBarrier(encoder, NULL, 0, NULL, 0, &computeToReadBarrier, 1);
+    GfxPipelineBarrierDescriptor computeToReadBarrierDesc = {
+        .memoryBarriers = NULL,
+        .memoryBarrierCount = 0,
+        .bufferBarriers = NULL,
+        .bufferBarrierCount = 0,
+        .textureBarriers = &computeToReadBarrier,
+        .textureBarrierCount = 1
+    };
+    gfxCommandEncoderPipelineBarrier(encoder, &computeToReadBarrierDesc);
 
     // --- RENDER PASS: Post-process and display ---
     GfxColor clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
