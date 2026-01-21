@@ -67,6 +67,7 @@ GfxDeviceLimits vkPropertiesToGfxDeviceLimits(const VkPhysicalDeviceProperties& 
 // ============================================================================
 
 GfxQueueFlags vkQueueFlagsToGfx(VkQueueFlags vkFlags);
+GfxQueueFamilyProperties vkQueueFamilyPropertiesToGfx(const VkQueueFamilyProperties& vkProps);
 
 // ============================================================================
 // Adapter Type Conversion

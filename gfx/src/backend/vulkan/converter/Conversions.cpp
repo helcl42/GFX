@@ -57,6 +57,14 @@ GfxQueueFlags vkQueueFlagsToGfx(VkQueueFlags vkFlags)
     return flags;
 }
 
+GfxQueueFamilyProperties vkQueueFamilyPropertiesToGfx(const VkQueueFamilyProperties& vkProps)
+{
+    GfxQueueFamilyProperties gfxProps = {};
+    gfxProps.flags = vkQueueFlagsToGfx(vkProps.queueFlags);
+    gfxProps.queueCount = vkProps.queueCount;
+    return gfxProps;
+}
+
 // ============================================================================
 // Adapter Type Conversion
 // ============================================================================

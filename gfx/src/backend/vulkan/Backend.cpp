@@ -160,8 +160,7 @@ GfxResult Backend::adapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* q
     // Copy properties to output array
     uint32_t outputCount = std::min(*queueFamilyCount, count);
     for (uint32_t i = 0; i < outputCount; ++i) {
-        queueFamilies[i].flags = converter::vkQueueFlagsToGfx(vkProps[i].queueFlags);
-        queueFamilies[i].queueCount = vkProps[i].queueCount;
+        queueFamilies[i] = converter::vkQueueFamilyPropertiesToGfx(vkProps[i]);
     }
 
     *queueFamilyCount = count;
