@@ -11,15 +11,13 @@ Adapter::Adapter(Instance* instance, const AdapterCreateInfo& createInfo)
     : m_instance(instance)
 {
     // Enumerate physical devices
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance->handle(), &deviceCount, nullptr);
-
-    if (deviceCount == 0) {
+    std::vector<VkPhysicalDevice> devices = instance->enumeratePhysicalDevices();
+    
+    if (devices.empty()) {
         throw std::runtime_error("No Vulkan physical devices found");
     }
 
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(instance->handle(), &deviceCount, devices.data());
+    uint32_t deviceCount = static_cast<uint32_t>(devices.size());
 
     // If adapter index is specified, use that directly
     if (createInfo.adapterIndex != UINT32_MAX) {
@@ -81,22 +79,22 @@ uint32_t Adapter::enumerate(Instance* instance, Adapter** outAdapters, uint32_t 
         return 0;
     }
 
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance->handle(), &deviceCount, nullptr);
+    std::vector<VkPhysicalDevice> devices = instance->enumeratePhysicalDevices();
+    uint32_t deviceCount = static_cast<uint32_t>(devices.size());
 
     if (deviceCount == 0) {
         return 0;
     }
 
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(instance->handle(), &deviceCount, devices.data());
+    // If outAdapters is NULL, just return the count
+    if (!outAdapters) {
+        return deviceCount;
+    }
 
     // Create an adapter for each physical device
     uint32_t count = std::min(deviceCount, maxAdapters);
-    if (outAdapters) {
-        for (uint32_t i = 0; i < count; ++i) {
-            outAdapters[i] = new Adapter(instance, devices[i]);
-        }
+    for (uint32_t i = 0; i < count; ++i) {
+        outAdapters[i] = new Adapter(instance, devices[i]);
     }
 
     return count;

@@ -164,6 +164,20 @@ VkInstance Instance::handle() const
     return m_instance;
 }
 
+std::vector<VkPhysicalDevice> Instance::enumeratePhysicalDevices() const
+{
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
+
+    if (deviceCount == 0) {
+        return {};
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
+    return devices;
+}
+
 void Instance::setupDebugMessenger()
 {
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};

@@ -164,7 +164,7 @@ GfxResult gfxInstanceDestroy(GfxInstance instance)
 
 GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter)
 {
-    if (!instance || !outAdapter) {
+    if (!instance || !descriptor || !outAdapter) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -214,7 +214,7 @@ GfxResult gfxAdapterDestroy(GfxAdapter adapter)
 
 GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice)
 {
-    if (!adapter || !outDevice) {
+    if (!adapter || !descriptor || !outDevice) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 

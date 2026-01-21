@@ -15,6 +15,7 @@ public:
     ~Instance();
 
     VkInstance handle() const;
+    std::vector<VkPhysicalDevice> enumeratePhysicalDevices() const;
 
 private:
     void setupDebugMessenger();
