@@ -311,8 +311,14 @@ GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescripto
 
 GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const
 {
-    if (!device || !descriptor || !outBuffer || !descriptor->nativeHandle) {
+    if (!device || !outBuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateBufferImportDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -354,8 +360,14 @@ GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescrip
 
 GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const
 {
-    if (!device || !descriptor || !outTexture || !descriptor->nativeHandle) {
+    if (!device || !outTexture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate descriptor contents
+    GfxResult validationResult = validator::validateTextureImportDescriptor(descriptor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -845,6 +857,17 @@ GfxResult Backend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult Backend::bufferGetNativeHandle(GfxBuffer buffer, void** outHandle) const
+{
+    if (!buffer || !outHandle) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto* buf = converter::toNative<core::Buffer>(buffer);
+    *outHandle = reinterpret_cast<void*>(buf->handle());
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult Backend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
 {
     if (!buffer || !outMappedPointer) {
@@ -885,6 +908,17 @@ GfxResult Backend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) c
 
     auto* tex = converter::toNative<core::Texture>(texture);
     *outInfo = converter::vkTextureInfoToGfxTextureInfo(tex->getInfo());
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult Backend::textureGetNativeHandle(GfxTexture texture, void** outHandle) const
+{
+    if (!texture || !outHandle) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto* tex = converter::toNative<core::Texture>(texture);
+    *outHandle = reinterpret_cast<void*>(tex->handle());
     return GFX_RESULT_SUCCESS;
 }
 

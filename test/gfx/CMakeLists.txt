@@ -7,6 +7,9 @@ set(PUBLIC_TEST_SOURCES
     api/InstanceTest.cpp
     api/AdapterTest.cpp
     api/DeviceTest.cpp
+    api/BufferTest.cpp
+    api/TextureTest.cpp
+    api/TextureViewTest.cpp
     api/SurfaceTest.cpp
     api/SwapchainTest.cpp
 )

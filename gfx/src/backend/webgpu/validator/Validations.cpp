@@ -169,6 +169,81 @@ GfxResult validateTextureDescriptor(const GfxTextureDescriptor* descriptor)
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult validateBufferImportDescriptor(const GfxBufferImportDescriptor* descriptor)
+{
+    if (!descriptor) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate native handle
+    if (!descriptor->nativeHandle) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate size
+    if (descriptor->size == 0) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate usage flags
+    if (descriptor->usage == 0) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateTextureImportDescriptor(const GfxTextureImportDescriptor* descriptor)
+{
+    if (!descriptor) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate native handle
+    if (!descriptor->nativeHandle) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate dimensions based on texture type
+    switch (descriptor->type) {
+    case GFX_TEXTURE_TYPE_1D:
+        if (descriptor->size.width == 0) {
+            return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+        break;
+    case GFX_TEXTURE_TYPE_2D:
+    case GFX_TEXTURE_TYPE_CUBE:
+        if (descriptor->size.width == 0 || descriptor->size.height == 0) {
+            return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+        break;
+    case GFX_TEXTURE_TYPE_3D:
+        if (descriptor->size.width == 0 || descriptor->size.height == 0 || descriptor->size.depth == 0) {
+            return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+        break;
+    default:
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate usage flags
+    if (descriptor->usage == 0) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate mip levels
+    if (descriptor->mipLevelCount == 0) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate array layers
+    if (descriptor->arrayLayerCount == 0) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult validateSamplerDescriptor(const GfxSamplerDescriptor* descriptor)
 {
     if (!descriptor) {

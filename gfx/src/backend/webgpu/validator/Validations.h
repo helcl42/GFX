@@ -40,11 +40,25 @@ GfxResult validateDeviceDescriptor(const GfxDeviceDescriptor* descriptor);
 GfxResult validateBufferDescriptor(const GfxBufferDescriptor* descriptor);
 
 /**
+ * @brief Validate buffer import descriptor
+ * @param descriptor The buffer import descriptor to validate
+ * @return GFX_RESULT_SUCCESS if valid, error code otherwise
+ */
+GfxResult validateBufferImportDescriptor(const GfxBufferImportDescriptor* descriptor);
+
+/**
  * @brief Validate texture descriptor
  * @param descriptor The texture descriptor to validate
  * @return GFX_RESULT_SUCCESS if valid, error code otherwise
  */
 GfxResult validateTextureDescriptor(const GfxTextureDescriptor* descriptor);
+
+/**
+ * @brief Validate texture import descriptor
+ * @param descriptor The texture import descriptor to validate
+ * @return GFX_RESULT_SUCCESS if valid, error code otherwise
+ */
+GfxResult validateTextureImportDescriptor(const GfxTextureImportDescriptor* descriptor);
 
 /**
  * @brief Validate sampler descriptor

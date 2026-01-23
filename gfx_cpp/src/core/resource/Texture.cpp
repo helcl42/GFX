@@ -34,6 +34,16 @@ TextureInfo TextureImpl::getInfo()
     return cTextureInfoToCppTextureInfo(m_info);
 }
 
+void* TextureImpl::getNativeHandle() const
+{
+    void* handle = nullptr;
+    GfxResult result = gfxTextureGetNativeHandle(m_handle, &handle);
+    if (result != GFX_RESULT_SUCCESS) {
+        return nullptr;
+    }
+    return handle;
+}
+
 TextureLayout TextureImpl::getLayout() const
 {
     GfxTextureLayout layout = GFX_TEXTURE_LAYOUT_UNDEFINED;

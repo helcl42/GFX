@@ -15,6 +15,7 @@ public:
     GfxBuffer getHandle() const;
 
     BufferInfo getInfo() const override;
+    void* getNativeHandle() const override;
     void* map(uint64_t offset = 0, uint64_t size = 0) override;
     void unmap() override;
 

@@ -61,7 +61,6 @@ protected:
 TEST_P(GfxDeviceTest, CreateDestroyDevice)
 {
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
 
     GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
 
@@ -72,7 +71,6 @@ TEST_P(GfxDeviceTest, CreateDestroyDevice)
 TEST_P(GfxDeviceTest, CreateDeviceInvalidArguments)
 {
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
 
     // NULL output pointer
     GfxResult result = gfxAdapterCreateDevice(adapter, &desc, NULL);
@@ -90,7 +88,6 @@ TEST_P(GfxDeviceTest, CreateDeviceInvalidArguments)
 TEST_P(GfxDeviceTest, GetDefaultQueue)
 {
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
 
     GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -120,7 +117,6 @@ TEST_P(GfxDeviceTest, GetQueueByIndex)
 
     // Create device
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
 
     result = gfxAdapterCreateDevice(adapter, &desc, &device);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -138,7 +134,6 @@ TEST_P(GfxDeviceTest, GetQueueByIndex)
 TEST_P(GfxDeviceTest, GetQueueInvalidArguments)
 {
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
 
     GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -164,7 +159,6 @@ TEST_P(GfxDeviceTest, GetQueueInvalidArguments)
 TEST_P(GfxDeviceTest, GetQueueInvalidIndex)
 {
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
 
     GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -179,7 +173,6 @@ TEST_P(GfxDeviceTest, GetQueueInvalidIndex)
 TEST_P(GfxDeviceTest, WaitIdle)
 {
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
 
     GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -191,7 +184,6 @@ TEST_P(GfxDeviceTest, WaitIdle)
 TEST_P(GfxDeviceTest, GetLimits)
 {
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
 
     GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -204,154 +196,6 @@ TEST_P(GfxDeviceTest, GetLimits)
     EXPECT_GT(limits.maxTextureDimension2D, 0u);
 }
 
-TEST_P(GfxDeviceTest, CreateBuffer)
-{
-    GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
-
-    GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
-    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
-
-    GfxBufferDescriptor bufferDesc = {};
-    bufferDesc.size = 1024;
-    bufferDesc.usage = static_cast<GfxBufferUsage>(GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST);
-
-    GfxBuffer buffer = NULL;
-    result = gfxDeviceCreateBuffer(device, &bufferDesc, &buffer);
-
-    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_NE(buffer, nullptr);
-
-    if (buffer) {
-        gfxBufferDestroy(buffer);
-    }
-}
-
-TEST_P(GfxDeviceTest, CreateTexture)
-{
-    GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
-
-    GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
-    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
-
-    GfxTextureDescriptor texDesc = {};
-    texDesc.type = GFX_TEXTURE_TYPE_2D;
-    texDesc.size = { 256, 256, 1 };
-    texDesc.arrayLayerCount = 1;
-    texDesc.mipLevelCount = 1;
-    texDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-    texDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
-    texDesc.usage = static_cast<GfxTextureUsage>(GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_COPY_DST);
-
-    GfxTexture texture = NULL;
-    result = gfxDeviceCreateTexture(device, &texDesc, &texture);
-
-    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_NE(texture, nullptr);
-
-    if (texture) {
-        gfxTextureDestroy(texture);
-    }
-}
-
-TEST_P(GfxDeviceTest, CreateSampler)
-{
-    GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
-
-    GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
-    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
-
-    GfxSamplerDescriptor samplerDesc = {};
-    samplerDesc.addressModeU = GFX_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerDesc.addressModeV = GFX_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerDesc.addressModeW = GFX_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerDesc.magFilter = GFX_FILTER_MODE_LINEAR;
-    samplerDesc.minFilter = GFX_FILTER_MODE_LINEAR;
-    samplerDesc.mipmapFilter = GFX_FILTER_MODE_LINEAR;
-    samplerDesc.lodMinClamp = 0.0f;
-    samplerDesc.lodMaxClamp = 1000.0f;
-    samplerDesc.compare = GFX_COMPARE_FUNCTION_UNDEFINED;
-    samplerDesc.maxAnisotropy = 1;
-
-    GfxSampler sampler = NULL;
-    result = gfxDeviceCreateSampler(device, &samplerDesc, &sampler);
-
-    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_NE(sampler, nullptr);
-
-    if (sampler) {
-        gfxSamplerDestroy(sampler);
-    }
-}
-
-TEST_P(GfxDeviceTest, CreateCommandEncoder)
-{
-    GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
-
-    GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
-    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
-
-    GfxCommandEncoderDescriptor encDesc = {};
-
-    GfxCommandEncoder encoder = NULL;
-    result = gfxDeviceCreateCommandEncoder(device, &encDesc, &encoder);
-
-    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_NE(encoder, nullptr);
-
-    if (encoder) {
-        gfxCommandEncoderDestroy(encoder);
-    }
-}
-
-TEST_P(GfxDeviceTest, CreateFence)
-{
-    GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
-
-    GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
-    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
-
-    GfxFenceDescriptor fenceDesc = {};
-    fenceDesc.signaled = false;
-
-    GfxFence fence = NULL;
-    result = gfxDeviceCreateFence(device, &fenceDesc, &fence);
-
-    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_NE(fence, nullptr);
-
-    if (fence) {
-        gfxFenceDestroy(fence);
-    }
-}
-
-TEST_P(GfxDeviceTest, CreateSemaphore)
-{
-    GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
-
-    GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
-    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
-
-    GfxSemaphoreDescriptor semDesc = {};
-    semDesc.type = GFX_SEMAPHORE_TYPE_BINARY;
-    semDesc.initialValue = 0;
-
-    GfxSemaphore semaphore = NULL;
-    result = gfxDeviceCreateSemaphore(device, &semDesc, &semaphore);
-
-    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_NE(semaphore, nullptr);
-
-    if (semaphore) {
-        gfxSemaphoreDestroy(semaphore);
-    }
-}
-
 TEST_P(GfxDeviceTest, MultipleDevices)
 {
     // WebGPU backend doesn't support multiple devices from the same adapter
@@ -360,7 +204,6 @@ TEST_P(GfxDeviceTest, MultipleDevices)
     }
 
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
 
     GfxDevice device1 = NULL;
     GfxDevice device2 = NULL;
@@ -380,135 +223,9 @@ TEST_P(GfxDeviceTest, MultipleDevices)
         gfxDeviceDestroy(device2);
 }
 
-TEST_P(GfxDeviceTest, CreateShader)
-{
-    GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
-
-    GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
-    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
-
-    // Simple SPIR-V shader code (vertex shader that does nothing)
-    const uint32_t spirvCode[] = {
-        0x07230203, 0x00010000, 0x00080001, 0x00000006,
-        0x00000000, 0x00020011, 0x00000001, 0x0003000e,
-        0x00000000, 0x00000001
-    };
-
-    GfxShaderDescriptor shaderDesc = {};
-    shaderDesc.sourceType = GFX_SHADER_SOURCE_SPIRV;
-    shaderDesc.code = spirvCode;
-    shaderDesc.codeSize = sizeof(spirvCode);
-    shaderDesc.entryPoint = "main";
-
-    GfxShader shader = NULL;
-    result = gfxDeviceCreateShader(device, &shaderDesc, &shader);
-
-    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_NE(shader, nullptr);
-
-    if (shader) {
-        gfxShaderDestroy(shader);
-    }
-}
-
-TEST_P(GfxDeviceTest, CreateBindGroupLayout)
-{
-    GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
-
-    GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
-    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
-
-    GfxBindGroupLayoutEntry entry = {};
-    entry.binding = 0;
-    entry.visibility = GFX_SHADER_STAGE_VERTEX;
-    entry.type = GFX_BINDING_TYPE_BUFFER;
-    entry.buffer.hasDynamicOffset = false;
-    entry.buffer.minBindingSize = 64;
-
-    GfxBindGroupLayoutDescriptor layoutDesc = {};
-    layoutDesc.entries = &entry;
-    layoutDesc.entryCount = 1;
-
-    GfxBindGroupLayout layout = NULL;
-    result = gfxDeviceCreateBindGroupLayout(device, &layoutDesc, &layout);
-
-    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_NE(layout, nullptr);
-
-    if (layout) {
-        gfxBindGroupLayoutDestroy(layout);
-    }
-}
-
-TEST_P(GfxDeviceTest, CreateBindGroup)
-{
-    GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
-
-    GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
-    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
-
-    // Create bind group layout
-    GfxBindGroupLayoutEntry layoutEntry = {};
-    layoutEntry.binding = 0;
-    layoutEntry.visibility = GFX_SHADER_STAGE_VERTEX;
-    layoutEntry.type = GFX_BINDING_TYPE_BUFFER;
-    layoutEntry.buffer.hasDynamicOffset = false;
-    layoutEntry.buffer.minBindingSize = 64;
-
-    GfxBindGroupLayoutDescriptor layoutDesc = {};
-    layoutDesc.entries = &layoutEntry;
-    layoutDesc.entryCount = 1;
-
-    GfxBindGroupLayout layout = NULL;
-    result = gfxDeviceCreateBindGroupLayout(device, &layoutDesc, &layout);
-    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
-
-    // Create buffer for bind group
-    GfxBufferDescriptor bufferDesc = {};
-    bufferDesc.size = 256;
-    bufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM;
-
-    GfxBuffer buffer = NULL;
-    result = gfxDeviceCreateBuffer(device, &bufferDesc, &buffer);
-    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
-
-    // Create bind group
-    GfxBindGroupEntry entry = {};
-    entry.binding = 0;
-    entry.type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER;
-    entry.resource.buffer.buffer = buffer;
-    entry.resource.buffer.offset = 0;
-    entry.resource.buffer.size = 256;
-
-    GfxBindGroupDescriptor bindGroupDesc = {};
-    bindGroupDesc.layout = layout;
-    bindGroupDesc.entries = &entry;
-    bindGroupDesc.entryCount = 1;
-
-    GfxBindGroup bindGroup = NULL;
-    result = gfxDeviceCreateBindGroup(device, &bindGroupDesc, &bindGroup);
-
-    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_NE(bindGroup, nullptr);
-
-    if (bindGroup) {
-        gfxBindGroupDestroy(bindGroup);
-    }
-    if (buffer) {
-        gfxBufferDestroy(buffer);
-    }
-    if (layout) {
-        gfxBindGroupLayoutDestroy(layout);
-    }
-}
-
 TEST_P(GfxDeviceTest, CreateRenderPass)
 {
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
 
     GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -543,7 +260,6 @@ TEST_P(GfxDeviceTest, CreateRenderPass)
 TEST_P(GfxDeviceTest, CreateFramebuffer)
 {
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
 
     GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);

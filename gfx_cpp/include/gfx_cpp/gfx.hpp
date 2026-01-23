@@ -1140,6 +1140,7 @@ public:
     virtual ~Buffer() = default;
 
     virtual BufferInfo getInfo() const = 0;
+    virtual void* getNativeHandle() const = 0;
 
     // Mapping functions
     virtual void* map(uint64_t offset = 0, uint64_t size = 0) = 0;
@@ -1168,6 +1169,7 @@ public:
     virtual ~Texture() = default;
 
     virtual TextureInfo getInfo() = 0;
+    virtual void* getNativeHandle() const = 0;
     virtual TextureLayout getLayout() const = 0;
 
     virtual std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) = 0;

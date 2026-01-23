@@ -677,6 +677,18 @@ GfxResult gfxBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo)
     return backend->bufferGetInfo(buffer, outInfo);
 }
 
+GfxResult gfxBufferGetNativeHandle(GfxBuffer buffer, void** outHandle)
+{
+    if (!buffer || !outHandle) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(buffer);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->bufferGetNativeHandle(buffer, outHandle);
+}
+
 GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer)
 {
     if (!buffer || !outMappedPointer) {
@@ -712,6 +724,18 @@ GfxResult gfxTextureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo)
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return backend->textureGetInfo(texture, outInfo);
+}
+
+GfxResult gfxTextureGetNativeHandle(GfxTexture texture, void** outHandle)
+{
+    if (!texture || !outHandle) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(texture);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->textureGetNativeHandle(texture, outHandle);
 }
 
 GfxResult gfxTextureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout)

@@ -32,6 +32,16 @@ BufferInfo BufferImpl::getInfo() const
     return cBufferInfoToCppBufferInfo(m_info);
 }
 
+void* BufferImpl::getNativeHandle() const
+{
+    void* handle = nullptr;
+    GfxResult result = gfxBufferGetNativeHandle(m_handle, &handle);
+    if (result != GFX_RESULT_SUCCESS) {
+        return nullptr;
+    }
+    return handle;
+}
+
 void* BufferImpl::map(uint64_t offset, uint64_t size)
 {
     void* mappedPointer = nullptr;
