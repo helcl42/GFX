@@ -764,7 +764,6 @@ typedef struct {
 
 typedef struct {
     const char* label;
-    float queuePriority; // Queue priority (0.0 to 1.0, higher = more priority). Default: 1.0. Used only if queueRequests is NULL
     const GfxQueueRequest* queueRequests; // Optional: explicit queue requests (NULL for automatic default queue)
     uint32_t queueRequestCount; // Number of queue requests (0 if queueRequests is NULL)
     const GfxDeviceFeatureType* enabledFeatures;

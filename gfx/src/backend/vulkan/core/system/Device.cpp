@@ -3,6 +3,8 @@
 #include "Adapter.h"
 #include "Queue.h"
 
+#include <stdexcept>
+
 namespace gfx::backend::vulkan::core {
 
 namespace {
@@ -40,7 +42,7 @@ Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
     std::vector<DeviceCreateInfo::QueueRequest> queueRequests;
     if (createInfo.queueRequests.empty()) {
         // Default: create one graphics queue
-        queueRequests.push_back({ m_adapter->getGraphicsQueueFamily(), 0, createInfo.queuePriority });
+        queueRequests.push_back({ m_adapter->getGraphicsQueueFamily(), 0, 1.0f });
     } else {
         queueRequests = createInfo.queueRequests;
     }

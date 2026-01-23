@@ -40,7 +40,7 @@ GfxDeviceLimits vkPropertiesToGfxDeviceLimits(const VkPhysicalDeviceProperties& 
 GfxQueueFlags vkQueueFlagsToGfx(VkQueueFlags vkFlags)
 {
     GfxQueueFlags flags = GFX_QUEUE_FLAG_NONE;
-    
+
     if (vkFlags & VK_QUEUE_GRAPHICS_BIT) {
         flags = static_cast<GfxQueueFlags>(flags | GFX_QUEUE_FLAG_GRAPHICS);
     }
@@ -53,7 +53,7 @@ GfxQueueFlags vkQueueFlagsToGfx(VkQueueFlags vkFlags)
     if (vkFlags & VK_QUEUE_SPARSE_BINDING_BIT) {
         flags = static_cast<GfxQueueFlags>(flags | GFX_QUEUE_FLAG_SPARSE_BINDING);
     }
-    
+
     return flags;
 }
 
@@ -1225,8 +1225,6 @@ core::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescrip
 core::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
 {
     core::DeviceCreateInfo createInfo{};
-    createInfo.queuePriority = descriptor ? descriptor->queuePriority : 1.0f;
-
     // Convert enabled features from GfxDeviceFeatureType to internal DeviceFeatureType
     if (descriptor && descriptor->enabledFeatures && descriptor->enabledFeatureCount > 0) {
         createInfo.enabledFeatures.reserve(descriptor->enabledFeatureCount);

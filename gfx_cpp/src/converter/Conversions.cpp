@@ -181,7 +181,6 @@ void convertDeviceDescriptor(const DeviceDescriptor& descriptor, std::vector<Gfx
     // Build C descriptor
     outDesc = {};
     outDesc.label = descriptor.label.c_str();
-    outDesc.queuePriority = descriptor.queuePriority;
     outDesc.enabledFeatures = outFeatures.empty() ? nullptr : outFeatures.data();
     outDesc.enabledFeatureCount = static_cast<uint32_t>(outFeatures.size());
     outDesc.queueRequests = outQueueRequests.empty() ? nullptr : outQueueRequests.data();

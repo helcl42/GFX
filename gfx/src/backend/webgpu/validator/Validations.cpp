@@ -68,8 +68,33 @@ GfxResult validateDeviceDescriptor(const GfxDeviceDescriptor* descriptor)
         return GFX_RESULT_SUCCESS;
     }
 
-    // Device descriptor validation can be extended based on needs
-    // Currently just checking for NULL
+    // Validate queueRequests and queueRequestCount consistency
+    if (descriptor->queueRequests != nullptr && descriptor->queueRequestCount == 0) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    if (descriptor->queueRequests == nullptr && descriptor->queueRequestCount != 0) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Validate individual queue requests
+    if (descriptor->queueRequests != nullptr) {
+        for (uint32_t i = 0; i < descriptor->queueRequestCount; ++i) {
+            const GfxQueueRequest& request = descriptor->queueRequests[i];
+            
+            // Validate priority (0.0 to 1.0)
+            if (request.priority < 0.0f || request.priority > 1.0f) {
+                return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+            }
+        }
+    }
+
+    // Validate enabledFeatures and enabledFeatureCount consistency
+    if (descriptor->enabledFeatures != nullptr && descriptor->enabledFeatureCount == 0) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    if (descriptor->enabledFeatures == nullptr && descriptor->enabledFeatureCount != 0) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
 
     return GFX_RESULT_SUCCESS;
 }

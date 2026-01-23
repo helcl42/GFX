@@ -181,7 +181,6 @@ TEST_P(GfxAdapterTest, EnumerateQueueFamiliesBufferTooSmall)
 TEST_P(GfxAdapterTest, CreateDevice)
 {
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
 
     GfxDevice device = NULL;
     GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
@@ -197,7 +196,6 @@ TEST_P(GfxAdapterTest, CreateDevice)
 TEST_P(GfxAdapterTest, CreateDeviceInvalidArguments)
 {
     GfxDeviceDescriptor desc = {};
-    desc.queuePriority = 1.0f;
     GfxDevice device = NULL;
 
     // NULL adapter

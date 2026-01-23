@@ -206,8 +206,6 @@ core::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstan
 core::DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
 {
     core::DeviceCreateInfo createInfo{};
-    createInfo.queuePriority = descriptor ? descriptor->queuePriority : 1.0f;
-
     // Convert enabled features from GfxDeviceFeatureType to internal DeviceFeatureType
     if (descriptor && descriptor->enabledFeatures && descriptor->enabledFeatureCount > 0) {
         createInfo.enabledFeatures.reserve(descriptor->enabledFeatureCount);

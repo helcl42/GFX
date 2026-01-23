@@ -571,7 +571,6 @@ struct QueueRequest {
 
 struct DeviceDescriptor {
     std::string label;
-    float queuePriority = 1.0f; // Queue priority (0.0 to 1.0, higher = more priority)
     std::vector<DeviceFeatureType> enabledFeatures;
     std::vector<QueueRequest> queueRequests; // Optional: specify which queues to create
 };

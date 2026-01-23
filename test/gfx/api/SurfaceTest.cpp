@@ -38,7 +38,6 @@ protected:
         }
 
         GfxDeviceDescriptor deviceDesc = {};
-        deviceDesc.queuePriority = 1.0f;
 
         if (gfxAdapterCreateDevice(adapter, &deviceDesc, &device) != GFX_RESULT_SUCCESS) {
             gfxAdapterDestroy(adapter);

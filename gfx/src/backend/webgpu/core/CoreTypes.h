@@ -178,7 +178,6 @@ struct InstanceCreateInfo {
 };
 
 struct DeviceCreateInfo {
-    float queuePriority = 1.0f; // Unused in WebGPU but kept for API consistency
     std::vector<DeviceFeatureType> enabledFeatures;
 };
 

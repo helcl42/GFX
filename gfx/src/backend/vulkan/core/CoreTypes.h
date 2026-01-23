@@ -235,7 +235,6 @@ struct DeviceCreateInfo {
         float priority;
     };
     
-    float queuePriority = 1.0f;
     std::vector<DeviceFeatureType> enabledFeatures;
     std::vector<QueueRequest> queueRequests;
 };

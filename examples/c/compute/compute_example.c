@@ -336,7 +336,8 @@ static bool initGraphics(ComputeApp* app)
     GfxDeviceFeatureType deviceFeatures[] = { GFX_DEVICE_FEATURE_TYPE_SWAPCHAIN };
     GfxDeviceDescriptor deviceDesc = {
         .label = NULL,
-        .queuePriority = 1.0f,
+        .queueRequests = NULL,
+        .queueRequestCount = 0,
         .enabledFeatures = deviceFeatures,
         .enabledFeatureCount = 1
     };
