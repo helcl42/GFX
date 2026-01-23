@@ -12,6 +12,7 @@ set(PUBLIC_TEST_SOURCES
     api/TextureViewTest.cpp
     api/SamplerTest.cpp
     api/ShaderTest.cpp
+    api/BindGroupLayoutTest.cpp
     api/SurfaceTest.cpp
     api/SwapchainTest.cpp
 )
