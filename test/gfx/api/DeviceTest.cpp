@@ -217,10 +217,12 @@ TEST_P(GfxDeviceTest, MultipleDevices)
     EXPECT_NE(device2, nullptr);
     EXPECT_NE(device1, device2);
 
-    if (device1)
+    if (device1) {
         gfxDeviceDestroy(device1);
-    if (device2)
+    }
+    if (device2) {
         gfxDeviceDestroy(device2);
+    }
 }
 
 TEST_P(GfxDeviceTest, CreateRenderPass)
