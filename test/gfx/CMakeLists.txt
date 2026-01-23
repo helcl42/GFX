@@ -14,6 +14,9 @@ set(PUBLIC_TEST_SOURCES
     api/ShaderTest.cpp
     api/BindGroupLayoutTest.cpp
     api/BindGroupTest.cpp
+    api/RenderPassTest.cpp
+    api/FramebufferTest.cpp
+    api/RenderPipelineTest.cpp
     api/SurfaceTest.cpp
     api/SwapchainTest.cpp
 )
