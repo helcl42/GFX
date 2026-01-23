@@ -557,7 +557,10 @@ TEST_P(GfxTextureTest, ImportTextureFromNativeHandle)
     gfxTextureDestroy(sourceTexture);
 }
 
-// Test parameterization: run all tests for both Vulkan and WebGPU
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
 INSTANTIATE_TEST_SUITE_P(
     GfxTextureTests,
     GfxTextureTest,

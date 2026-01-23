@@ -347,7 +347,10 @@ TEST_P(GfxDeviceTest, CreateFramebuffer)
     }
 }
 
-// Instantiate tests for both backends
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
 INSTANTIATE_TEST_SUITE_P(
     AllBackends,
     GfxDeviceTest,

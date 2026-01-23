@@ -346,7 +346,10 @@ TEST_P(GfxInstanceTest, DoubleDestroy)
     // Note: In production code, don't do this - just testing robustness
 }
 
-// Instantiate tests for both backends
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
 INSTANTIATE_TEST_SUITE_P(
     AllBackends,
     GfxInstanceTest,

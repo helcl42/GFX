@@ -534,7 +534,10 @@ TEST_P(GfxTextureViewTest, CreateView2DFromSingleCubeFace) {
     gfxTextureDestroy(texture);
 }
 
-// Test parameterization: run all tests for both Vulkan and WebGPU
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
 INSTANTIATE_TEST_SUITE_P(
     GfxTextureViewTests,
     GfxTextureViewTest,

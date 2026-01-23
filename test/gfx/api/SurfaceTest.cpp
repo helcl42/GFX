@@ -150,7 +150,10 @@ TEST_P(GfxSurfaceTest, GetQueueFamilySurfaceSupportInvalidArguments)
 // Note: Creating actual surfaces requires real window handles from X11/Wayland/etc.
 // These tests verify API contracts and argument validation without requiring a display server
 
-// Instantiate tests for both backends
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
 INSTANTIATE_TEST_SUITE_P(
     AllBackends,
     GfxSurfaceTest,

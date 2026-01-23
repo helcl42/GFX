@@ -67,8 +67,6 @@ protected:
     GfxDevice device = nullptr;
 };
 
-INSTANTIATE_TEST_SUITE_P(AllBackends, GfxBindGroupLayoutTest, testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU));
-
 // ===========================================================================
 // BindGroupLayout Tests
 // ===========================================================================
@@ -342,3 +340,15 @@ TEST_P(GfxBindGroupLayoutTest, DestroyBindGroupLayoutWithNull)
     // The API may return an error or succeed - just ensure it doesn't crash
     EXPECT_TRUE(result == GFX_RESULT_SUCCESS || result == GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
+
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
+INSTANTIATE_TEST_SUITE_P(
+    AllBackends,
+    GfxBindGroupLayoutTest,
+    testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU),
+    [](const testing::TestParamInfo<GfxBackend>& info) {
+        return info.param == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU";
+    });

@@ -255,7 +255,10 @@ TEST_P(GfxAdapterTest, LimitsConsistency)
     EXPECT_EQ(limits1.maxUniformBufferBindingSize, limits2.maxUniformBufferBindingSize);
 }
 
-// Instantiate tests for both backends
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
 INSTANTIATE_TEST_SUITE_P(
     AllBackends,
     GfxAdapterTest,
