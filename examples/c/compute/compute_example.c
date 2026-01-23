@@ -372,6 +372,7 @@ static bool createComputeTexture(ComputeApp* app)
         .size = { COMPUTE_TEXTURE_WIDTH, COMPUTE_TEXTURE_HEIGHT, 1 },
         .format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM,
         .usage = GFX_TEXTURE_USAGE_STORAGE_BINDING | GFX_TEXTURE_USAGE_TEXTURE_BINDING,
+        .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = GFX_SAMPLE_COUNT_1
     };
