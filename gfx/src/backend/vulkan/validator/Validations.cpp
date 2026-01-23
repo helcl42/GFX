@@ -225,9 +225,9 @@ GfxResult validateShaderDescriptor(const GfxShaderDescriptor* descriptor)
 
 GfxResult validateTextureViewDescriptor(const GfxTextureViewDescriptor* descriptor)
 {
-    // Descriptor is optional - NULL means use default view
+    // Descriptor is required
     if (!descriptor) {
-        return GFX_RESULT_SUCCESS;
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
     // Validate format

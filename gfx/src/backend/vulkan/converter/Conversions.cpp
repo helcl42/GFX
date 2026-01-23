@@ -1158,10 +1158,10 @@ core::TextureViewCreateInfo gfxDescriptorToTextureViewCreateInfo(const GfxTextur
     core::TextureViewCreateInfo createInfo{};
     createInfo.viewType = gfxTextureViewTypeToVkImageViewType(descriptor->viewType);
     createInfo.format = gfxFormatToVkFormat(descriptor->format);
-    createInfo.baseMipLevel = descriptor ? descriptor->baseMipLevel : 0;
-    createInfo.mipLevelCount = descriptor ? descriptor->mipLevelCount : 1;
-    createInfo.baseArrayLayer = descriptor ? descriptor->baseArrayLayer : 0;
-    createInfo.arrayLayerCount = descriptor ? descriptor->arrayLayerCount : 1;
+    createInfo.baseMipLevel = descriptor->baseMipLevel;
+    createInfo.mipLevelCount = descriptor->mipLevelCount;
+    createInfo.baseArrayLayer = descriptor->baseArrayLayer;
+    createInfo.arrayLayerCount = descriptor->arrayLayerCount;
     return createInfo;
 }
 
