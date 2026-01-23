@@ -285,13 +285,13 @@ GfxResult validateShaderDescriptor(const GfxShaderDescriptor* descriptor)
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
-    // Validate code pointer and size
-    if (!descriptor->code || descriptor->codeSize == 0) {
+    // WebGPU only supports WGSL source code
+    if (descriptor->sourceType != GFX_SHADER_SOURCE_WGSL) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
-    // For SPIR-V, code size should be multiple of 4 bytes (for binary formats)
-    if (descriptor->sourceType == GFX_SHADER_SOURCE_SPIRV && descriptor->codeSize % 4 != 0) {
+    // Validate code pointer and size
+    if (!descriptor->code || descriptor->codeSize == 0) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
