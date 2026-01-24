@@ -111,9 +111,7 @@ GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance
     if (!descriptor || !outInstance) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-
-    *outInstance = nullptr;
-
+    
     GfxBackend backend = descriptor->backend;
     auto& manager = gfx::backend::BackendManager::instance();
 
@@ -167,8 +165,6 @@ GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescri
     if (!instance || !descriptor || !outAdapter) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-
-    *outAdapter = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(instance);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
@@ -217,8 +213,6 @@ GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* 
     if (!adapter || !descriptor || !outDevice) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-
-    *outDevice = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(adapter);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
@@ -273,7 +267,7 @@ GfxResult gfxAdapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFa
 
 GfxResult gfxAdapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t queueFamilyIndex, GfxSurface surface, bool* outSupported)
 {
-    if (!adapter || !surface || !outSupported) {
+    if (!adapter || !outSupported) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(adapter);
@@ -303,7 +297,6 @@ GfxResult gfxDeviceGetQueue(GfxDevice device, GfxQueue* outQueue)
     if (!device || !outQueue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    *outQueue = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(device);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
@@ -325,7 +318,6 @@ GfxResult gfxDeviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyIndex, 
     if (!device || !outQueue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    *outQueue = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(device);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
@@ -346,17 +338,19 @@ GfxResult gfxDeviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyIndex, 
 #define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
     GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
     {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName)                                                                                \
+        if (!device || !descriptor || !out##TypeName) {                                                                              \
             return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        *out##TypeName = nullptr;                                                                                                    \
+        }                                                                                                                            \
         auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend)                                                                                                                \
+        if (!backend) {                                                                                                              \
             return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
+        }                                                                                                                            \
         GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
         Gfx##TypeName native##TypeName = nullptr;                                                                                    \
         GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS)                                                                                            \
+        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
             return result;                                                                                                           \
+        }                                                                                                                            \
         *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
         return GFX_RESULT_SUCCESS;                                                                                                   \
     }
@@ -376,10 +370,9 @@ DEVICE_CREATE_FUNC(Semaphore, Semaphore)
 // Import functions for external resources
 GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer)
 {
-    if (!device || !descriptor || !outBuffer) {
+    if (!device || !outBuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    *outBuffer = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(device);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
@@ -396,10 +389,9 @@ GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxBufferImportDescripto
 
 GfxResult gfxDeviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture)
 {
-    if (!device || !descriptor || !outTexture) {
+    if (!device || !outTexture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    *outTexture = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(device);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
@@ -416,10 +408,9 @@ GfxResult gfxDeviceImportTexture(GfxDevice device, const GfxTextureImportDescrip
 
 GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain)
 {
-    if (!device || !surface || !descriptor || !outSwapchain) {
+    if (!device || !surface || !outSwapchain) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    *outSwapchain = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(device);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
@@ -442,10 +433,9 @@ GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const G
 
 GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder)
 {
-    if (!device || !descriptor || !outEncoder) {
+    if (!device || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    *outEncoder = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(device);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
@@ -464,10 +454,9 @@ GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncode
 
 GfxResult gfxDeviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass)
 {
-    if (!device || !descriptor || !outRenderPass) {
+    if (!device || !outRenderPass) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    *outRenderPass = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(device);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
@@ -486,10 +475,9 @@ GfxResult gfxDeviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescrip
 
 GfxResult gfxDeviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer)
 {
-    if (!device || !descriptor || !outFramebuffer) {
+    if (!device || !outFramebuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    *outFramebuffer = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(device);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
@@ -534,11 +522,13 @@ GfxResult gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
 #define DESTROY_FUNC(TypeName, typeName)                                              \
     GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
     {                                                                                 \
-        if (!typeName)                                                                \
+        if (!typeName) {                                                              \
             return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
+        }                                                                             \
         auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend)                                                                 \
+        if (!backend) {                                                               \
             return GFX_RESULT_ERROR_NOT_FOUND;                                        \
+        }                                                                             \
         GfxResult result = backend->typeName##Destroy(typeName);                      \
         gfx::backend::BackendManager::instance().unwrap(typeName);                    \
         return result;                                                                \
@@ -589,12 +579,6 @@ GfxResult gfxSurfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t*
 GfxResult gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo)
 {
     if (!swapchain || !outInfo) {
-        if (outInfo) {
-            outInfo->width = 0;
-            outInfo->height = 0;
-            outInfo->format = GFX_TEXTURE_FORMAT_UNDEFINED;
-            outInfo->imageCount = 0;
-        }
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(swapchain);
@@ -755,7 +739,6 @@ GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescripto
     if (!texture || !outView) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    *outView = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(texture);
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
@@ -775,7 +758,7 @@ GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescripto
 // Queue Functions
 GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo)
 {
-    if (!queue || !submitInfo) {
+    if (!queue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(queue);
@@ -787,7 +770,7 @@ GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo)
 
 GfxResult gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size)
 {
-    if (!queue || !buffer) {
+    if (!queue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(queue);
@@ -799,7 +782,7 @@ GfxResult gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset,
 
 GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout)
 {
-    if (!queue || !texture) {
+    if (!queue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(queue);
@@ -824,7 +807,7 @@ GfxResult gfxQueueWaitIdle(GfxQueue queue)
 
 GfxResult gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxPipelineBarrierDescriptor* descriptor)
 {
-    if (!commandEncoder || !descriptor) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
@@ -836,7 +819,7 @@ GfxResult gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, con
 
 GfxResult gfxCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture)
 {
-    if (!commandEncoder || !texture) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
@@ -849,7 +832,7 @@ GfxResult gfxCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, Gfx
 GfxResult gfxCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
     uint32_t baseMipLevel, uint32_t levelCount)
 {
-    if (!commandEncoder || !texture) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
@@ -887,10 +870,9 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     const GfxRenderPassBeginDescriptor* beginDescriptor,
     GfxRenderPassEncoder* outEncoder)
 {
-    if (!encoder || !outEncoder || !beginDescriptor) {
+    if (!encoder || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    *outEncoder = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
     if (!backend) {
         return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
@@ -912,10 +894,9 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
 
 GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outEncoder)
 {
-    if (!encoder || !beginDescriptor || !outEncoder) {
+    if (!encoder || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    *outEncoder = nullptr;
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
     if (!backend) {
         return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
@@ -934,7 +915,7 @@ GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const Gfx
 
 GfxResult gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyBufferToBufferDescriptor* descriptor)
 {
-    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
@@ -946,7 +927,7 @@ GfxResult gfxCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, 
 
 GfxResult gfxCommandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, const GfxCopyBufferToTextureDescriptor* descriptor)
 {
-    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
@@ -958,7 +939,7 @@ GfxResult gfxCommandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder,
 
 GfxResult gfxCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyTextureToBufferDescriptor* descriptor)
 {
-    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
@@ -970,7 +951,7 @@ GfxResult gfxCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder,
 
 GfxResult gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, const GfxCopyTextureToTextureDescriptor* descriptor)
 {
-    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
@@ -982,7 +963,7 @@ GfxResult gfxCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder
 
 GfxResult gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder, const GfxBlitTextureToTextureDescriptor* descriptor)
 {
-    if (!commandEncoder || !descriptor || !descriptor->source || !descriptor->destination) {
+    if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
@@ -995,7 +976,7 @@ GfxResult gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder
 // Render Pass Encoder Functions
 GfxResult gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder encoder, GfxRenderPipeline pipeline)
 {
-    if (!encoder || !pipeline) {
+    if (!encoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
@@ -1009,7 +990,7 @@ GfxResult gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder encoder, GfxRende
 
 GfxResult gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
-    if (!encoder || !bindGroup) {
+    if (!encoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
@@ -1026,7 +1007,7 @@ GfxResult gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_
 
 GfxResult gfxRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder encoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size)
 {
-    if (!encoder || !buffer) {
+    if (!encoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
@@ -1043,7 +1024,7 @@ GfxResult gfxRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder encoder, uint
 
 GfxResult gfxRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder encoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size)
 {
-    if (!encoder || !buffer) {
+    if (!encoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
@@ -1060,7 +1041,7 @@ GfxResult gfxRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder encoder, GfxBu
 
 GfxResult gfxRenderPassEncoderSetViewport(GfxRenderPassEncoder encoder, const GfxViewport* viewport)
 {
-    if (!encoder || !viewport) {
+    if (!encoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
@@ -1074,7 +1055,7 @@ GfxResult gfxRenderPassEncoderSetViewport(GfxRenderPassEncoder encoder, const Gf
 
 GfxResult gfxRenderPassEncoderSetScissorRect(GfxRenderPassEncoder encoder, const GfxScissorRect* scissor)
 {
-    if (!encoder || !scissor) {
+    if (!encoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
@@ -1116,7 +1097,7 @@ GfxResult gfxRenderPassEncoderDrawIndexed(GfxRenderPassEncoder encoder, uint32_t
 
 GfxResult gfxRenderPassEncoderDrawIndirect(GfxRenderPassEncoder encoder, GfxBuffer indirectBuffer, uint64_t indirectOffset)
 {
-    if (!encoder || !indirectBuffer) {
+    if (!encoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
@@ -1128,7 +1109,7 @@ GfxResult gfxRenderPassEncoderDrawIndirect(GfxRenderPassEncoder encoder, GfxBuff
 
 GfxResult gfxRenderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder encoder, GfxBuffer indirectBuffer, uint64_t indirectOffset)
 {
-    if (!encoder || !indirectBuffer) {
+    if (!encoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
@@ -1153,7 +1134,7 @@ GfxResult gfxRenderPassEncoderEnd(GfxRenderPassEncoder encoder)
 // Compute Pass Encoder Functions
 GfxResult gfxComputePassEncoderSetPipeline(GfxComputePassEncoder encoder, GfxComputePipeline pipeline)
 {
-    if (!encoder || !pipeline) {
+    if (!encoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
@@ -1167,7 +1148,7 @@ GfxResult gfxComputePassEncoderSetPipeline(GfxComputePassEncoder encoder, GfxCom
 
 GfxResult gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
-    if (!encoder || !bindGroup) {
+    if (!encoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
@@ -1198,7 +1179,7 @@ GfxResult gfxComputePassEncoderDispatch(GfxComputePassEncoder encoder, uint32_t 
 
 GfxResult gfxComputePassEncoderDispatchIndirect(GfxComputePassEncoder encoder, GfxBuffer indirectBuffer, uint64_t indirectOffset)
 {
-    if (!encoder || !indirectBuffer) {
+    if (!encoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
@@ -1223,7 +1204,7 @@ GfxResult gfxComputePassEncoderEnd(GfxComputePassEncoder encoder)
 // Fence Functions
 GfxResult gfxFenceGetStatus(GfxFence fence, bool* isSignaled)
 {
-    if (!fence) {
+    if (!fence || !isSignaled) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(fence);

@@ -1365,6 +1365,10 @@ GfxResult Backend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandE
 
 GfxResult Backend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
 {
+    if (!commandEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     (void)commandEncoder; // Parameter unused - handled in queueSubmit
     return GFX_RESULT_SUCCESS;
 }

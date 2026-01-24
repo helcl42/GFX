@@ -66,6 +66,10 @@ GfxResult Backend::createInstance(const GfxInstanceDescriptor* descriptor, GfxIn
 
 GfxResult Backend::instanceDestroy(GfxInstance instance) const
 {
+    if (!instance) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::Instance>(instance);
     return GFX_RESULT_SUCCESS;
 }
@@ -110,6 +114,10 @@ GfxResult Backend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* ada
 // Adapter functions
 GfxResult Backend::adapterDestroy(GfxAdapter adapter) const
 {
+    if (!adapter) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::Adapter>(adapter);
     return GFX_RESULT_SUCCESS;
 }
@@ -202,6 +210,10 @@ GfxResult Backend::adapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint3
 // Device functions
 GfxResult Backend::deviceDestroy(GfxDevice device) const
 {
+    if (!device) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::Device>(device);
     return GFX_RESULT_SUCCESS;
 }
@@ -236,6 +248,10 @@ GfxResult Backend::deviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyI
 
 GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
 {
+    if (!device || !outSurface) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
 #ifdef GFX_HEADLESS_BUILD
     (void)device;
     (void)descriptor;
@@ -243,10 +259,6 @@ GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescrip
     gfx::common::Logger::instance().logError("Surface creation is not available in headless builds");
     return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
 #else
-    if (!device || !descriptor || !outSurface) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
     try {
         auto* dev = converter::toNative<core::Device>(device);
         auto createInfo = converter::gfxDescriptorToSurfaceCreateInfo(descriptor);
@@ -262,7 +274,7 @@ GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescrip
 
 GfxResult Backend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
 {
-    if (!device || !surface || !descriptor || !outSwapchain) {
+    if (!device || !surface || !outSwapchain) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -287,7 +299,7 @@ GfxResult Backend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, c
 
 GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
 {
-    if (!device || !descriptor || !outBuffer) {
+    if (!device || !outBuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -336,7 +348,7 @@ GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDes
 
 GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
 {
-    if (!device || !descriptor || !outTexture) {
+    if (!device || !outTexture) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -386,7 +398,7 @@ GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportD
 
 GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
 {
-    if (!device || !descriptor || !outSampler) {
+    if (!device || !outSampler) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -410,7 +422,7 @@ GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescrip
 
 GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
 {
-    if (!device || !descriptor || !outShader) {
+    if (!device || !outShader) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -434,7 +446,7 @@ GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescripto
 
 GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
 {
-    if (!device || !descriptor || !outLayout) {
+    if (!device || !outLayout) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -458,7 +470,7 @@ GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGr
 
 GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
 {
-    if (!device || !descriptor || !outBindGroup) {
+    if (!device || !outBindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -482,7 +494,7 @@ GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDes
 
 GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
 {
-    if (!device || !descriptor || !outPipeline) {
+    if (!device || !outPipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -506,7 +518,7 @@ GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderP
 
 GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
 {
-    if (!device || !descriptor || !outPipeline) {
+    if (!device || !outPipeline) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -530,7 +542,7 @@ GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComput
 
 GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
 {
-    if (!device || !descriptor || !outEncoder) {
+    if (!device || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -549,7 +561,7 @@ GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommand
 
 GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
 {
-    if (!device || !descriptor || !outRenderPass) {
+    if (!device || !outRenderPass) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -574,7 +586,7 @@ GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassD
 
 GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const
 {
-    if (!device || !descriptor || !outFramebuffer) {
+    if (!device || !outFramebuffer) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -669,6 +681,10 @@ GfxResult Backend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
 // Surface functions
 GfxResult Backend::surfaceDestroy(GfxSurface surface) const
 {
+    if (!surface) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::Surface>(surface);
     return GFX_RESULT_SUCCESS;
 }
@@ -720,6 +736,10 @@ GfxResult Backend::surfaceEnumerateSupportedPresentModes(GfxSurface surface, uin
 // Swapchain functions
 GfxResult Backend::swapchainDestroy(GfxSwapchain swapchain) const
 {
+    if (!swapchain) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::Swapchain>(swapchain);
     return GFX_RESULT_SUCCESS;
 }
@@ -842,6 +862,10 @@ GfxResult Backend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo
 // Buffer functions
 GfxResult Backend::bufferDestroy(GfxBuffer buffer) const
 {
+    if (!buffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::Buffer>(buffer);
     return GFX_RESULT_SUCCESS;
 }
@@ -896,6 +920,10 @@ GfxResult Backend::bufferUnmap(GfxBuffer buffer) const
 // Texture functions
 GfxResult Backend::textureDestroy(GfxTexture texture) const
 {
+    if (!texture) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::Texture>(texture);
     return GFX_RESULT_SUCCESS;
 }
@@ -960,6 +988,10 @@ GfxResult Backend::textureCreateView(GfxTexture texture, const GfxTextureViewDes
 // TextureView functions
 GfxResult Backend::textureViewDestroy(GfxTextureView textureView) const
 {
+    if (!textureView) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::TextureView>(textureView);
     return GFX_RESULT_SUCCESS;
 }
@@ -967,6 +999,10 @@ GfxResult Backend::textureViewDestroy(GfxTextureView textureView) const
 // Sampler functions
 GfxResult Backend::samplerDestroy(GfxSampler sampler) const
 {
+    if (!sampler) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::Sampler>(sampler);
     return GFX_RESULT_SUCCESS;
 }
@@ -974,6 +1010,10 @@ GfxResult Backend::samplerDestroy(GfxSampler sampler) const
 // Shader functions
 GfxResult Backend::shaderDestroy(GfxShader shader) const
 {
+    if (!shader) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::Shader>(shader);
     return GFX_RESULT_SUCCESS;
 }
@@ -981,6 +1021,10 @@ GfxResult Backend::shaderDestroy(GfxShader shader) const
 // BindGroupLayout functions
 GfxResult Backend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const
 {
+    if (!bindGroupLayout) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::BindGroupLayout>(bindGroupLayout);
     return GFX_RESULT_SUCCESS;
 }
@@ -988,6 +1032,10 @@ GfxResult Backend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) co
 // BindGroup functions
 GfxResult Backend::bindGroupDestroy(GfxBindGroup bindGroup) const
 {
+    if (!bindGroup) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::BindGroup>(bindGroup);
     return GFX_RESULT_SUCCESS;
 }
@@ -995,6 +1043,10 @@ GfxResult Backend::bindGroupDestroy(GfxBindGroup bindGroup) const
 // RenderPipeline functions
 GfxResult Backend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) const
 {
+    if (!renderPipeline) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::RenderPipeline>(renderPipeline);
     return GFX_RESULT_SUCCESS;
 }
@@ -1002,18 +1054,30 @@ GfxResult Backend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) const
 // ComputePipeline functions
 GfxResult Backend::computePipelineDestroy(GfxComputePipeline computePipeline) const
 {
+    if (!computePipeline) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::ComputePipeline>(computePipeline);
     return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::renderPassDestroy(GfxRenderPass renderPass) const
 {
+    if (!renderPass) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::RenderPass>(renderPass);
     return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::framebufferDestroy(GfxFramebuffer framebuffer) const
 {
+    if (!framebuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::Framebuffer>(framebuffer);
     return GFX_RESULT_SUCCESS;
 }
@@ -1021,7 +1085,7 @@ GfxResult Backend::framebufferDestroy(GfxFramebuffer framebuffer) const
 // Queue functions
 GfxResult Backend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const
 {
-    if (!queue || !submitInfo) {
+    if (!queue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -1033,7 +1097,10 @@ GfxResult Backend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submit
 
 GfxResult Backend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
 {
-    if (!queue || !buffer || !data) {
+    if (!queue || !buffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    if (!data && size > 0) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -1045,7 +1112,13 @@ GfxResult Backend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t o
 
 GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
 {
-    if (!queue || !texture || !data || !extent || dataSize == 0) {
+    if (!queue || !texture) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    if (!data && dataSize > 0) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    if (!extent) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -1075,6 +1148,10 @@ GfxResult Backend::queueWaitIdle(GfxQueue queue) const
 // CommandEncoder functions
 GfxResult Backend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
 {
+    if (!commandEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::CommandEncoder>(commandEncoder);
     return GFX_RESULT_SUCCESS;
 }
@@ -1151,7 +1228,6 @@ GfxResult Backend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEnc
 
 GfxResult Backend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, const GfxCopyBufferToTextureDescriptor* descriptor) const
 {
-
     if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
@@ -1364,6 +1440,9 @@ GfxResult Backend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPass
     if (!renderPassEncoder || !bindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+    if (dynamicOffsetCount > 0 && !dynamicOffsets) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
 
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     auto* bg = converter::toNative<core::BindGroup>(bindGroup);
@@ -1499,6 +1578,9 @@ GfxResult Backend::computePassEncoderSetBindGroup(GfxComputePassEncoder computeP
     if (!computePassEncoder || !bindGroup) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
+    if (dynamicOffsetCount > 0 && !dynamicOffsets) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
 
     auto* cpe = converter::toNative<core::ComputePassEncoder>(computePassEncoder);
     auto* bg = converter::toNative<core::BindGroup>(bindGroup);
@@ -1543,6 +1625,10 @@ GfxResult Backend::computePassEncoderEnd(GfxComputePassEncoder computePassEncode
 // Fence functions
 GfxResult Backend::fenceDestroy(GfxFence fence) const
 {
+    if (!fence) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::Fence>(fence);
     return GFX_RESULT_SUCCESS;
 }
@@ -1550,6 +1636,9 @@ GfxResult Backend::fenceDestroy(GfxFence fence) const
 GfxResult Backend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
 {
     if (!fence) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    if (!isSignaled) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -1601,13 +1690,20 @@ GfxResult Backend::fenceReset(GfxFence fence) const
 // Semaphore functions
 GfxResult Backend::semaphoreDestroy(GfxSemaphore semaphore) const
 {
+    if (!semaphore) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
     delete converter::toNative<core::Semaphore>(semaphore);
     return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType) const
 {
-    if (!semaphore || !outType) {
+    if (!semaphore) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    if (!outType) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
@@ -1640,7 +1736,10 @@ GfxResult Backend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_
 
 GfxResult Backend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const
 {
-    if (!semaphore || !outValue) {
+    if (!semaphore) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    if (!outValue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
