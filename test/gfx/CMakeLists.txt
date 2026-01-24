@@ -17,6 +17,7 @@ set(PUBLIC_TEST_SOURCES
     api/RenderPassTest.cpp
     api/FramebufferTest.cpp
     api/RenderPipelineTest.cpp
+    api/ComputePipelineTest.cpp
     api/SurfaceTest.cpp
     api/SwapchainTest.cpp
 )
