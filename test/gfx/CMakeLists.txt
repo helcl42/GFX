@@ -19,6 +19,7 @@ set(PUBLIC_TEST_SOURCES
     api/RenderPipelineTest.cpp
     api/ComputePipelineTest.cpp
     api/QueueTest.cpp
+    api/CommandEncoderTest.cpp
     api/SurfaceTest.cpp
     api/SwapchainTest.cpp
 )
