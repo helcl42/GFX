@@ -21,6 +21,7 @@ set(PUBLIC_TEST_SOURCES
     api/QueueTest.cpp
     api/CommandEncoderTest.cpp
     api/RenderPassEncoderTest.cpp
+    api/ComputePassEncoderTest.cpp
     api/SurfaceTest.cpp
     api/SwapchainTest.cpp
 )
