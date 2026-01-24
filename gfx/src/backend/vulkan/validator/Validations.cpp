@@ -1,7 +1,14 @@
 #include "Validations.h"
+
 #include <cstdint>
 
 namespace gfx::backend::vulkan::validator {
+
+namespace {
+
+// ============================================================================
+// Internal descriptor validation functions
+// ============================================================================
 
 GfxResult validateInstanceDescriptor(const GfxInstanceDescriptor* descriptor)
 {
@@ -598,6 +605,832 @@ GfxResult validatePipelineBarrierDescriptor(const GfxPipelineBarrierDescriptor* 
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
 
+    return GFX_RESULT_SUCCESS;
+}
+
+} // anonymous namespace
+
+// ============================================================================
+// Combined validation functions (parameters + descriptors)
+// ============================================================================
+
+GfxResult validateCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance)
+{
+    if (!outInstance) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateInstanceDescriptor(descriptor);
+}
+
+GfxResult validateInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter)
+{
+    if (!instance || !outAdapter) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateAdapterDescriptor(descriptor);
+}
+
+GfxResult validateInstanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount)
+{
+    if (!instance || !adapterCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice)
+{
+    if (!adapter || !outDevice) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateDeviceDescriptor(descriptor);
+}
+
+GfxResult validateAdapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo)
+{
+    if (!adapter || !outInfo) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits)
+{
+    if (!adapter || !outLimits) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateAdapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFamilyCount)
+{
+    if (!adapter || !queueFamilyCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateAdapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, GfxSurface surface, bool* outSupported)
+{
+    if (!adapter || !surface || !outSupported) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateDeviceGetQueue(GfxDevice device, GfxQueue* outQueue)
+{
+    if (!device || !outQueue) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateDeviceGetQueueByIndex(GfxDevice device, GfxQueue* outQueue)
+{
+    if (!device || !outQueue) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface)
+{
+    if (!device || !descriptor || !outSurface) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain)
+{
+    if (!device || !surface || !descriptor || !outSwapchain) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateSwapchainDescriptor(descriptor);
+}
+
+GfxResult validateDeviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer)
+{
+    if (!device || !descriptor || !outBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateBufferDescriptor(descriptor);
+}
+
+GfxResult validateDeviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer)
+{
+    if (!device || !outBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateBufferImportDescriptor(descriptor);
+}
+
+GfxResult validateDeviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture)
+{
+    if (!device || !descriptor || !outTexture) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateTextureDescriptor(descriptor);
+}
+
+GfxResult validateDeviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture)
+{
+    if (!device || !outTexture) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateTextureImportDescriptor(descriptor);
+}
+
+GfxResult validateDeviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler)
+{
+    if (!device || !descriptor || !outSampler) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateSamplerDescriptor(descriptor);
+}
+
+GfxResult validateDeviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader)
+{
+    if (!device || !descriptor || !outShader) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateShaderDescriptor(descriptor);
+}
+
+GfxResult validateDeviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout)
+{
+    if (!device || !descriptor || !outLayout) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateBindGroupLayoutDescriptor(descriptor);
+}
+
+GfxResult validateDeviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup)
+{
+    if (!device || !descriptor || !outBindGroup) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateBindGroupDescriptor(descriptor);
+}
+
+GfxResult validateDeviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline)
+{
+    if (!device || !descriptor || !outPipeline) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateRenderPipelineDescriptor(descriptor);
+}
+
+GfxResult validateDeviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline)
+{
+    if (!device || !descriptor || !outPipeline) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateComputePipelineDescriptor(descriptor);
+}
+
+GfxResult validateDeviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass)
+{
+    if (!device || !descriptor || !outRenderPass) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateRenderPassDescriptor(descriptor);
+}
+
+GfxResult validateDeviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer)
+{
+    if (!device || !descriptor || !outFramebuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateFramebufferDescriptor(descriptor);
+}
+
+GfxResult validateDeviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder)
+{
+    if (!device || !descriptor || !outEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence)
+{
+    if (!device || !outFence) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateFenceDescriptor(descriptor);
+}
+
+GfxResult validateDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore)
+{
+    if (!device || !outSemaphore) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateSemaphoreDescriptor(descriptor);
+}
+
+GfxResult validateDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
+{
+    if (!device || !outLimits) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount)
+{
+    if (!surface || !formatCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSurfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount)
+{
+    if (!surface || !presentModeCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo)
+{
+    if (!swapchain || !outInfo) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSwapchainAcquireNextImage(GfxSwapchain swapchain, uint32_t* outImageIndex)
+{
+    if (!swapchain || !outImageIndex) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSwapchainGetTextureView(GfxSwapchain swapchain, GfxTextureView* outView)
+{
+    if (!swapchain || !outView) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSwapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView)
+{
+    if (!swapchain || !outView) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSwapchainPresent(GfxSwapchain swapchain)
+{
+    if (!swapchain) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo)
+{
+    if (!buffer || !outInfo) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateBufferGetNativeHandle(GfxBuffer buffer, void** outHandle)
+{
+    if (!buffer || !outHandle) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateBufferMap(GfxBuffer buffer, void** outMappedPointer)
+{
+    if (!buffer || !outMappedPointer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateTextureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo)
+{
+    if (!texture || !outInfo) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateTextureGetNativeHandle(GfxTexture texture, void** outHandle)
+{
+    if (!texture || !outHandle) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateTextureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout)
+{
+    if (!texture || !outLayout) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView)
+{
+    if (!texture || !outView) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateTextureViewDescriptor(descriptor);
+}
+
+GfxResult validateQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo)
+{
+    if (!queue || !submitInfo) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, const void* data)
+{
+    if (!queue || !buffer || !data) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, const GfxExtent3D* extent, const void* data)
+{
+    if (!queue || !texture || !origin || !extent || !data) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateCommandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder, const GfxRenderPassBeginDescriptor* beginDescriptor, GfxRenderPassEncoder* outRenderPass)
+{
+    if (!commandEncoder || !outRenderPass) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateRenderPassBeginDescriptor(beginDescriptor);
+}
+
+GfxResult validateCommandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outComputePass)
+{
+    if (!commandEncoder || !outComputePass) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateComputePassBeginDescriptor(beginDescriptor);
+}
+
+GfxResult validateCommandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyBufferToBufferDescriptor* descriptor)
+{
+    if (!commandEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateCopyBufferToBufferDescriptor(descriptor);
+}
+
+GfxResult validateCommandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, const GfxCopyBufferToTextureDescriptor* descriptor)
+{
+    if (!commandEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateCopyBufferToTextureDescriptor(descriptor);
+}
+
+GfxResult validateCommandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyTextureToBufferDescriptor* descriptor)
+{
+    if (!commandEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateCopyTextureToBufferDescriptor(descriptor);
+}
+
+GfxResult validateCommandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, const GfxCopyTextureToTextureDescriptor* descriptor)
+{
+    if (!commandEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateCopyTextureToTextureDescriptor(descriptor);
+}
+
+GfxResult validateCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder, const GfxBlitTextureToTextureDescriptor* descriptor)
+{
+    if (!commandEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validateBlitTextureToTextureDescriptor(descriptor);
+}
+
+GfxResult validateCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxPipelineBarrierDescriptor* descriptor)
+{
+    if (!commandEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return validatePipelineBarrierDescriptor(descriptor);
+}
+
+GfxResult validateCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture)
+{
+    if (!commandEncoder || !texture) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture)
+{
+    if (!commandEncoder || !texture) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline)
+{
+    if (!renderPassEncoder || !pipeline) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, GfxBindGroup bindGroup)
+{
+    if (!renderPassEncoder || !bindGroup) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer)
+{
+    if (!renderPassEncoder || !buffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer)
+{
+    if (!renderPassEncoder || !buffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport)
+{
+    if (!renderPassEncoder || !viewport) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor)
+{
+    if (!renderPassEncoder || !scissor) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderDrawIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer)
+{
+    if (!renderPassEncoder || !indirectBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer)
+{
+    if (!renderPassEncoder || !indirectBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateComputePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline)
+{
+    if (!computePassEncoder || !pipeline) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateComputePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, GfxBindGroup bindGroup)
+{
+    if (!computePassEncoder || !bindGroup) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateComputePassEncoderDispatchIndirect(GfxComputePassEncoder computePassEncoder, GfxBuffer indirectBuffer)
+{
+    if (!computePassEncoder || !indirectBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateFenceGetStatus(GfxFence fence, bool* isSignaled)
+{
+    if (!fence || !isSignaled) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSemaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType)
+{
+    if (!semaphore || !outType) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSemaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue)
+{
+    if (!semaphore || !outValue) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+// ============================================================================
+// Simple validation functions (destroy, wait, etc.)
+// ============================================================================
+
+GfxResult validateInstanceDestroy(GfxInstance instance)
+{
+    if (!instance) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateAdapterDestroy(GfxAdapter adapter)
+{
+    if (!adapter) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateDeviceDestroy(GfxDevice device)
+{
+    if (!device) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateDeviceWaitIdle(GfxDevice device)
+{
+    if (!device) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSurfaceDestroy(GfxSurface surface)
+{
+    if (!surface) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSwapchainDestroy(GfxSwapchain swapchain)
+{
+    if (!swapchain) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateBufferDestroy(GfxBuffer buffer)
+{
+    if (!buffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateBufferUnmap(GfxBuffer buffer)
+{
+    if (!buffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateTextureDestroy(GfxTexture texture)
+{
+    if (!texture) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateTextureViewDestroy(GfxTextureView textureView)
+{
+    if (!textureView) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSamplerDestroy(GfxSampler sampler)
+{
+    if (!sampler) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateShaderDestroy(GfxShader shader)
+{
+    if (!shader) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateBindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout)
+{
+    if (!bindGroupLayout) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateBindGroupDestroy(GfxBindGroup bindGroup)
+{
+    if (!bindGroup) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPipelineDestroy(GfxRenderPipeline renderPipeline)
+{
+    if (!renderPipeline) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateComputePipelineDestroy(GfxComputePipeline computePipeline)
+{
+    if (!computePipeline) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassDestroy(GfxRenderPass renderPass)
+{
+    if (!renderPass) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateFramebufferDestroy(GfxFramebuffer framebuffer)
+{
+    if (!framebuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateQueueWaitIdle(GfxQueue queue)
+{
+    if (!queue) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateCommandEncoderDestroy(GfxCommandEncoder commandEncoder)
+{
+    if (!commandEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateCommandEncoderEnd(GfxCommandEncoder commandEncoder)
+{
+    if (!commandEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateCommandEncoderBegin(GfxCommandEncoder commandEncoder)
+{
+    if (!commandEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder)
+{
+    if (!renderPassEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder)
+{
+    if (!renderPassEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder)
+{
+    if (!renderPassEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateComputePassEncoderDispatch(GfxComputePassEncoder computePassEncoder)
+{
+    if (!computePassEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateComputePassEncoderEnd(GfxComputePassEncoder computePassEncoder)
+{
+    if (!computePassEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateFenceDestroy(GfxFence fence)
+{
+    if (!fence) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateFenceWait(GfxFence fence)
+{
+    if (!fence) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateFenceReset(GfxFence fence)
+{
+    if (!fence) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSemaphoreDestroy(GfxSemaphore semaphore)
+{
+    if (!semaphore) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSemaphoreSignal(GfxSemaphore semaphore)
+{
+    if (!semaphore) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateSemaphoreWait(GfxSemaphore semaphore)
+{
+    if (!semaphore) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
     return GFX_RESULT_SUCCESS;
 }
 

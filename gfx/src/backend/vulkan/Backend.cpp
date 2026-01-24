@@ -43,12 +43,7 @@ namespace gfx::backend::vulkan {
 // Instance functions
 GfxResult Backend::createInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance) const
 {
-    if (!outInstance) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents (NULL is valid for optional descriptor)
-    GfxResult validationResult = validator::validateInstanceDescriptor(descriptor);
+    GfxResult validationResult = validator::validateCreateInstance(descriptor, outInstance);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -66,8 +61,9 @@ GfxResult Backend::createInstance(const GfxInstanceDescriptor* descriptor, GfxIn
 
 GfxResult Backend::instanceDestroy(GfxInstance instance) const
 {
-    if (!instance) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateInstanceDestroy(instance);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::Instance>(instance);
@@ -76,12 +72,7 @@ GfxResult Backend::instanceDestroy(GfxInstance instance) const
 
 GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const
 {
-    if (!instance || !outAdapter) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents (NULL is valid for optional descriptor)
-    GfxResult validationResult = validator::validateAdapterDescriptor(descriptor);
+    GfxResult validationResult = validator::validateInstanceRequestAdapter(instance, descriptor, outAdapter);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -101,8 +92,9 @@ GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapter
 
 GfxResult Backend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters) const
 {
-    if (!instance || !adapterCount) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateInstanceEnumerateAdapters(instance, adapterCount);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* inst = converter::toNative<core::Instance>(instance);
@@ -114,8 +106,9 @@ GfxResult Backend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* ada
 // Adapter functions
 GfxResult Backend::adapterDestroy(GfxAdapter adapter) const
 {
-    if (!adapter) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateAdapterDestroy(adapter);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::Adapter>(adapter);
@@ -124,12 +117,7 @@ GfxResult Backend::adapterDestroy(GfxAdapter adapter) const
 
 GfxResult Backend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const
 {
-    if (!adapter || !outDevice) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents (NULL is valid for optional descriptor)
-    GfxResult validationResult = validator::validateDeviceDescriptor(descriptor);
+    GfxResult validationResult = validator::validateAdapterCreateDevice(adapter, descriptor, outDevice);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -148,8 +136,9 @@ GfxResult Backend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescri
 
 GfxResult Backend::adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const
 {
-    if (!adapter || !outInfo) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateAdapterGetInfo(adapter, outInfo);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* adap = converter::toNative<core::Adapter>(adapter);
@@ -159,8 +148,9 @@ GfxResult Backend::adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) c
 
 GfxResult Backend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const
 {
-    if (!adapter || !outLimits) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateAdapterGetLimits(adapter, outLimits);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* adap = converter::toNative<core::Adapter>(adapter);
@@ -170,8 +160,9 @@ GfxResult Backend::adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimi
 
 GfxResult Backend::adapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFamilyCount, GfxQueueFamilyProperties* queueFamilies) const
 {
-    if (!adapter || !queueFamilyCount) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateAdapterEnumerateQueueFamilies(adapter, queueFamilyCount);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* adap = converter::toNative<core::Adapter>(adapter);
@@ -196,8 +187,9 @@ GfxResult Backend::adapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* q
 
 GfxResult Backend::adapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t queueFamilyIndex, GfxSurface surface, bool* outSupported) const
 {
-    if (!adapter || !surface || !outSupported) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateAdapterGetQueueFamilySurfaceSupport(adapter, surface, outSupported);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* adap = converter::toNative<core::Adapter>(adapter);
@@ -210,8 +202,9 @@ GfxResult Backend::adapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint3
 // Device functions
 GfxResult Backend::deviceDestroy(GfxDevice device) const
 {
-    if (!device) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateDeviceDestroy(device);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::Device>(device);
@@ -220,8 +213,9 @@ GfxResult Backend::deviceDestroy(GfxDevice device) const
 
 GfxResult Backend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const
 {
-    if (!device || !outQueue) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateDeviceGetQueue(device, outQueue);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* dev = converter::toNative<core::Device>(device);
@@ -231,8 +225,9 @@ GfxResult Backend::deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const
 
 GfxResult Backend::deviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, GfxQueue* outQueue) const
 {
-    if (!device || !outQueue) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateDeviceGetQueueByIndex(device, outQueue);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* dev = converter::toNative<core::Device>(device);
@@ -248,8 +243,9 @@ GfxResult Backend::deviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyI
 
 GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
 {
-    if (!device || !outSurface) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateDeviceCreateSurface(device, descriptor, outSurface);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
 #ifdef GFX_HEADLESS_BUILD
@@ -274,12 +270,7 @@ GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescrip
 
 GfxResult Backend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
 {
-    if (!device || !surface || !outSwapchain) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateSwapchainDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateSwapchain(device, surface, descriptor, outSwapchain);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -299,12 +290,7 @@ GfxResult Backend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, c
 
 GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
 {
-    if (!device || !outBuffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateBufferDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateBuffer(device, descriptor, outBuffer);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -323,12 +309,7 @@ GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescripto
 
 GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const
 {
-    if (!device || !outBuffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateBufferImportDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceImportBuffer(device, descriptor, outBuffer);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -348,12 +329,7 @@ GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDes
 
 GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
 {
-    if (!device || !outTexture) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateTextureDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateTexture(device, descriptor, outTexture);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -372,12 +348,7 @@ GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescrip
 
 GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const
 {
-    if (!device || !outTexture) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateTextureImportDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceImportTexture(device, descriptor, outTexture);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -398,12 +369,7 @@ GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportD
 
 GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
 {
-    if (!device || !outSampler) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateSamplerDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateSampler(device, descriptor, outSampler);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -422,12 +388,7 @@ GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescrip
 
 GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
 {
-    if (!device || !outShader) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateShaderDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateShader(device, descriptor, outShader);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -446,12 +407,7 @@ GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescripto
 
 GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
 {
-    if (!device || !outLayout) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateBindGroupLayoutDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateBindGroupLayout(device, descriptor, outLayout);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -470,12 +426,7 @@ GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGr
 
 GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
 {
-    if (!device || !outBindGroup) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateBindGroupDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateBindGroup(device, descriptor, outBindGroup);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -494,12 +445,7 @@ GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDes
 
 GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
 {
-    if (!device || !outPipeline) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateRenderPipelineDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateRenderPipeline(device, descriptor, outPipeline);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -518,12 +464,7 @@ GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderP
 
 GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
 {
-    if (!device || !outPipeline) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateComputePipelineDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateComputePipeline(device, descriptor, outPipeline);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -542,8 +483,9 @@ GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComput
 
 GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
 {
-    if (!device || !outEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateDeviceCreateCommandEncoder(device, descriptor, outEncoder);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     try {
@@ -561,12 +503,7 @@ GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommand
 
 GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
 {
-    if (!device || !outRenderPass) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateRenderPassDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateRenderPass(device, descriptor, outRenderPass);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -586,12 +523,7 @@ GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassD
 
 GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const
 {
-    if (!device || !outFramebuffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateFramebufferDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateFramebuffer(device, descriptor, outFramebuffer);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -610,12 +542,7 @@ GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebuffe
 
 GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
 {
-    if (!device || !outFence) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents (NULL is valid for optional descriptor)
-    GfxResult validationResult = validator::validateFenceDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateFence(device, descriptor, outFence);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -634,12 +561,7 @@ GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor*
 
 GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const
 {
-    if (!device || !outSemaphore) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents (NULL is valid for optional descriptor)
-    GfxResult validationResult = validator::validateSemaphoreDescriptor(descriptor);
+    GfxResult validationResult = validator::validateDeviceCreateSemaphore(device, descriptor, outSemaphore);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -658,8 +580,9 @@ GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDes
 
 GfxResult Backend::deviceWaitIdle(GfxDevice device) const
 {
-    if (!device) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateDeviceWaitIdle(device);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* dev = converter::toNative<core::Device>(device);
@@ -669,8 +592,9 @@ GfxResult Backend::deviceWaitIdle(GfxDevice device) const
 
 GfxResult Backend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const
 {
-    if (!device || !outLimits) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateDeviceGetLimits(device, outLimits);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* dev = converter::toNative<core::Device>(device);
@@ -681,8 +605,9 @@ GfxResult Backend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
 // Surface functions
 GfxResult Backend::surfaceDestroy(GfxSurface surface) const
 {
-    if (!surface) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSurfaceDestroy(surface);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::Surface>(surface);
@@ -691,8 +616,9 @@ GfxResult Backend::surfaceDestroy(GfxSurface surface) const
 
 GfxResult Backend::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const
 {
-    if (!surface || !formatCount) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSurfaceEnumerateSupportedFormats(surface, formatCount);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* surf = converter::toNative<core::Surface>(surface);
@@ -713,8 +639,9 @@ GfxResult Backend::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t
 
 GfxResult Backend::surfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes) const
 {
-    if (!surface || !presentModeCount) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSurfaceEnumerateSupportedPresentModes(surface, presentModeCount);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* surf = converter::toNative<core::Surface>(surface);
@@ -736,8 +663,9 @@ GfxResult Backend::surfaceEnumerateSupportedPresentModes(GfxSurface surface, uin
 // Swapchain functions
 GfxResult Backend::swapchainDestroy(GfxSwapchain swapchain) const
 {
-    if (!swapchain) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSwapchainDestroy(swapchain);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::Swapchain>(swapchain);
@@ -746,8 +674,9 @@ GfxResult Backend::swapchainDestroy(GfxSwapchain swapchain) const
 
 GfxResult Backend::swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const
 {
-    if (!swapchain || !outInfo) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSwapchainGetInfo(swapchain, outInfo);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* sc = converter::toNative<core::Swapchain>(swapchain);
@@ -757,8 +686,9 @@ GfxResult Backend::swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* ou
 
 GfxResult Backend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const
 {
-    if (!swapchain || !outImageIndex) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSwapchainAcquireNextImage(swapchain, outImageIndex);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* sc = converter::toNative<core::Swapchain>(swapchain);
@@ -798,8 +728,9 @@ GfxResult Backend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t ti
 
 GfxResult Backend::swapchainGetTextureView(GfxSwapchain swapchain, uint32_t imageIndex, GfxTextureView* outView) const
 {
-    if (!swapchain || !outView) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSwapchainGetTextureView(swapchain, outView);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* sc = converter::toNative<core::Swapchain>(swapchain);
@@ -813,8 +744,9 @@ GfxResult Backend::swapchainGetTextureView(GfxSwapchain swapchain, uint32_t imag
 
 GfxResult Backend::swapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView) const
 {
-    if (!swapchain || !outView) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSwapchainGetCurrentTextureView(swapchain, outView);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* sc = converter::toNative<core::Swapchain>(swapchain);
@@ -824,8 +756,9 @@ GfxResult Backend::swapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTex
 
 GfxResult Backend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const
 {
-    if (!swapchain) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSwapchainPresent(swapchain);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* sc = converter::toNative<core::Swapchain>(swapchain);
@@ -862,8 +795,9 @@ GfxResult Backend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo
 // Buffer functions
 GfxResult Backend::bufferDestroy(GfxBuffer buffer) const
 {
-    if (!buffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateBufferDestroy(buffer);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::Buffer>(buffer);
@@ -872,8 +806,9 @@ GfxResult Backend::bufferDestroy(GfxBuffer buffer) const
 
 GfxResult Backend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
 {
-    if (!buffer || !outInfo) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateBufferGetInfo(buffer, outInfo);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* buf = converter::toNative<core::Buffer>(buffer);
@@ -883,8 +818,9 @@ GfxResult Backend::bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const
 
 GfxResult Backend::bufferGetNativeHandle(GfxBuffer buffer, void** outHandle) const
 {
-    if (!buffer || !outHandle) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateBufferGetNativeHandle(buffer, outHandle);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* buf = converter::toNative<core::Buffer>(buffer);
@@ -894,8 +830,9 @@ GfxResult Backend::bufferGetNativeHandle(GfxBuffer buffer, void** outHandle) con
 
 GfxResult Backend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const
 {
-    if (!buffer || !outMappedPointer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateBufferMap(buffer, outMappedPointer);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     (void)offset;
@@ -908,8 +845,9 @@ GfxResult Backend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, v
 
 GfxResult Backend::bufferUnmap(GfxBuffer buffer) const
 {
-    if (!buffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateBufferUnmap(buffer);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* buf = converter::toNative<core::Buffer>(buffer);
@@ -920,8 +858,9 @@ GfxResult Backend::bufferUnmap(GfxBuffer buffer) const
 // Texture functions
 GfxResult Backend::textureDestroy(GfxTexture texture) const
 {
-    if (!texture) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateTextureDestroy(texture);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::Texture>(texture);
@@ -930,8 +869,9 @@ GfxResult Backend::textureDestroy(GfxTexture texture) const
 
 GfxResult Backend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const
 {
-    if (!texture || !outInfo) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateTextureGetInfo(texture, outInfo);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* tex = converter::toNative<core::Texture>(texture);
@@ -941,8 +881,9 @@ GfxResult Backend::textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) c
 
 GfxResult Backend::textureGetNativeHandle(GfxTexture texture, void** outHandle) const
 {
-    if (!texture || !outHandle) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateTextureGetNativeHandle(texture, outHandle);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* tex = converter::toNative<core::Texture>(texture);
@@ -952,8 +893,9 @@ GfxResult Backend::textureGetNativeHandle(GfxTexture texture, void** outHandle) 
 
 GfxResult Backend::textureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout) const
 {
-    if (!texture || !outLayout) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateTextureGetLayout(texture, outLayout);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* tex = converter::toNative<core::Texture>(texture);
@@ -963,12 +905,7 @@ GfxResult Backend::textureGetLayout(GfxTexture texture, GfxTextureLayout* outLay
 
 GfxResult Backend::textureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView) const
 {
-    if (!texture || !outView) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents (NULL is valid for optional descriptor)
-    GfxResult validationResult = validator::validateTextureViewDescriptor(descriptor);
+    GfxResult validationResult = validator::validateTextureCreateView(texture, descriptor, outView);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -988,8 +925,9 @@ GfxResult Backend::textureCreateView(GfxTexture texture, const GfxTextureViewDes
 // TextureView functions
 GfxResult Backend::textureViewDestroy(GfxTextureView textureView) const
 {
-    if (!textureView) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateTextureViewDestroy(textureView);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::TextureView>(textureView);
@@ -999,8 +937,9 @@ GfxResult Backend::textureViewDestroy(GfxTextureView textureView) const
 // Sampler functions
 GfxResult Backend::samplerDestroy(GfxSampler sampler) const
 {
-    if (!sampler) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSamplerDestroy(sampler);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::Sampler>(sampler);
@@ -1010,8 +949,9 @@ GfxResult Backend::samplerDestroy(GfxSampler sampler) const
 // Shader functions
 GfxResult Backend::shaderDestroy(GfxShader shader) const
 {
-    if (!shader) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateShaderDestroy(shader);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::Shader>(shader);
@@ -1021,8 +961,9 @@ GfxResult Backend::shaderDestroy(GfxShader shader) const
 // BindGroupLayout functions
 GfxResult Backend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const
 {
-    if (!bindGroupLayout) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateBindGroupLayoutDestroy(bindGroupLayout);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::BindGroupLayout>(bindGroupLayout);
@@ -1032,8 +973,9 @@ GfxResult Backend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) co
 // BindGroup functions
 GfxResult Backend::bindGroupDestroy(GfxBindGroup bindGroup) const
 {
-    if (!bindGroup) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateBindGroupDestroy(bindGroup);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::BindGroup>(bindGroup);
@@ -1043,8 +985,9 @@ GfxResult Backend::bindGroupDestroy(GfxBindGroup bindGroup) const
 // RenderPipeline functions
 GfxResult Backend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) const
 {
-    if (!renderPipeline) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPipelineDestroy(renderPipeline);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::RenderPipeline>(renderPipeline);
@@ -1054,8 +997,9 @@ GfxResult Backend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) const
 // ComputePipeline functions
 GfxResult Backend::computePipelineDestroy(GfxComputePipeline computePipeline) const
 {
-    if (!computePipeline) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateComputePipelineDestroy(computePipeline);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::ComputePipeline>(computePipeline);
@@ -1064,8 +1008,9 @@ GfxResult Backend::computePipelineDestroy(GfxComputePipeline computePipeline) co
 
 GfxResult Backend::renderPassDestroy(GfxRenderPass renderPass) const
 {
-    if (!renderPass) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPassDestroy(renderPass);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::RenderPass>(renderPass);
@@ -1074,8 +1019,9 @@ GfxResult Backend::renderPassDestroy(GfxRenderPass renderPass) const
 
 GfxResult Backend::framebufferDestroy(GfxFramebuffer framebuffer) const
 {
-    if (!framebuffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateFramebufferDestroy(framebuffer);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::Framebuffer>(framebuffer);
@@ -1085,8 +1031,9 @@ GfxResult Backend::framebufferDestroy(GfxFramebuffer framebuffer) const
 // Queue functions
 GfxResult Backend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const
 {
-    if (!queue) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateQueueSubmit(queue, submitInfo);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* q = converter::toNative<core::Queue>(queue);
@@ -1097,11 +1044,9 @@ GfxResult Backend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submit
 
 GfxResult Backend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
 {
-    if (!queue || !buffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    if (!data && size > 0) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateQueueWriteBuffer(queue, buffer, data);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* q = converter::toNative<core::Queue>(queue);
@@ -1112,14 +1057,9 @@ GfxResult Backend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t o
 
 GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
 {
-    if (!queue || !texture) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    if (!data && dataSize > 0) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    if (!extent) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateQueueWriteTexture(queue, texture, origin, extent, data);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* q = converter::toNative<core::Queue>(queue);
@@ -1136,8 +1076,9 @@ GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const G
 
 GfxResult Backend::queueWaitIdle(GfxQueue queue) const
 {
-    if (!queue) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateQueueWaitIdle(queue);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* q = converter::toNative<core::Queue>(queue);
@@ -1148,8 +1089,9 @@ GfxResult Backend::queueWaitIdle(GfxQueue queue) const
 // CommandEncoder functions
 GfxResult Backend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
 {
-    if (!commandEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateCommandEncoderDestroy(commandEncoder);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::CommandEncoder>(commandEncoder);
@@ -1158,12 +1100,7 @@ GfxResult Backend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
 
 GfxResult Backend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder, const GfxRenderPassBeginDescriptor* beginDescriptor, GfxRenderPassEncoder* outRenderPass) const
 {
-    if (!commandEncoder || !outRenderPass) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateRenderPassBeginDescriptor(beginDescriptor);
+    GfxResult validationResult = validator::validateCommandEncoderBeginRenderPass(commandEncoder, beginDescriptor, outRenderPass);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -1184,12 +1121,7 @@ GfxResult Backend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncode
 
 GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outComputePass) const
 {
-    if (!commandEncoder || !outComputePass) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateComputePassBeginDescriptor(beginDescriptor);
+    GfxResult validationResult = validator::validateCommandEncoderBeginComputePass(commandEncoder, beginDescriptor, outComputePass);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -1208,12 +1140,7 @@ GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncod
 
 GfxResult Backend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyBufferToBufferDescriptor* descriptor) const
 {
-    if (!commandEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateCopyBufferToBufferDescriptor(descriptor);
+    GfxResult validationResult = validator::validateCommandEncoderCopyBufferToBuffer(commandEncoder, descriptor);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -1228,12 +1155,7 @@ GfxResult Backend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEnc
 
 GfxResult Backend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEncoder, const GfxCopyBufferToTextureDescriptor* descriptor) const
 {
-    if (!commandEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateCopyBufferToTextureDescriptor(descriptor);
+    GfxResult validationResult = validator::validateCommandEncoderCopyBufferToTexture(commandEncoder, descriptor);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -1253,12 +1175,7 @@ GfxResult Backend::commandEncoderCopyBufferToTexture(GfxCommandEncoder commandEn
 
 GfxResult Backend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyTextureToBufferDescriptor* descriptor) const
 {
-    if (!commandEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateCopyTextureToBufferDescriptor(descriptor);
+    GfxResult validationResult = validator::validateCommandEncoderCopyTextureToBuffer(commandEncoder, descriptor);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -1278,12 +1195,7 @@ GfxResult Backend::commandEncoderCopyTextureToBuffer(GfxCommandEncoder commandEn
 
 GfxResult Backend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandEncoder, const GfxCopyTextureToTextureDescriptor* descriptor) const
 {
-    if (!commandEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateCopyTextureToTextureDescriptor(descriptor);
+    GfxResult validationResult = validator::validateCommandEncoderCopyTextureToTexture(commandEncoder, descriptor);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -1306,12 +1218,7 @@ GfxResult Backend::commandEncoderCopyTextureToTexture(GfxCommandEncoder commandE
 
 GfxResult Backend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandEncoder, const GfxBlitTextureToTextureDescriptor* descriptor) const
 {
-    if (!commandEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validateBlitTextureToTextureDescriptor(descriptor);
+    GfxResult validationResult = validator::validateCommandEncoderBlitTextureToTexture(commandEncoder, descriptor);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -1337,12 +1244,7 @@ GfxResult Backend::commandEncoderBlitTextureToTexture(GfxCommandEncoder commandE
 // TODO - add member function to CommandEncoder for pipeline barrier
 GfxResult Backend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxPipelineBarrierDescriptor* descriptor) const
 {
-    if (!commandEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-
-    // Validate descriptor contents
-    GfxResult validationResult = validator::validatePipelineBarrierDescriptor(descriptor);
+    GfxResult validationResult = validator::validateCommandEncoderPipelineBarrier(commandEncoder, descriptor);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -1377,8 +1279,9 @@ GfxResult Backend::commandEncoderPipelineBarrier(GfxCommandEncoder commandEncode
 
 GfxResult Backend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const
 {
-    if (!commandEncoder || !texture) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateCommandEncoderGenerateMipmaps(commandEncoder, texture);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
@@ -1390,8 +1293,9 @@ GfxResult Backend::commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncode
 GfxResult Backend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
     uint32_t baseMipLevel, uint32_t levelCount) const
 {
-    if (!commandEncoder || !texture) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateCommandEncoderGenerateMipmapsRange(commandEncoder, texture);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
@@ -1402,8 +1306,9 @@ GfxResult Backend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandE
 
 GfxResult Backend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
 {
-    if (!commandEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateCommandEncoderEnd(commandEncoder);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
@@ -1413,8 +1318,9 @@ GfxResult Backend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
 
 GfxResult Backend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
 {
-    if (!commandEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateCommandEncoderBegin(commandEncoder);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
@@ -1425,8 +1331,9 @@ GfxResult Backend::commandEncoderBegin(GfxCommandEncoder commandEncoder) const
 // RenderPassEncoder functions
 GfxResult Backend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline) const
 {
-    if (!renderPassEncoder || !pipeline) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPassEncoderSetPipeline(renderPassEncoder, pipeline);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
@@ -1437,11 +1344,9 @@ GfxResult Backend::renderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassE
 
 GfxResult Backend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
 {
-    if (!renderPassEncoder || !bindGroup) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    if (dynamicOffsetCount > 0 && !dynamicOffsets) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPassEncoderSetBindGroup(renderPassEncoder, bindGroup);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
@@ -1452,8 +1357,9 @@ GfxResult Backend::renderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPass
 
 GfxResult Backend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size) const
 {
-    if (!renderPassEncoder || !buffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPassEncoderSetVertexBuffer(renderPassEncoder, buffer);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
@@ -1466,8 +1372,9 @@ GfxResult Backend::renderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderP
 
 GfxResult Backend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size) const
 {
-    if (!renderPassEncoder || !buffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPassEncoderSetIndexBuffer(renderPassEncoder, buffer);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
@@ -1481,8 +1388,9 @@ GfxResult Backend::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPa
 
 GfxResult Backend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEncoder, const GfxViewport* viewport) const
 {
-    if (!renderPassEncoder || !viewport) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPassEncoderSetViewport(renderPassEncoder, viewport);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
@@ -1493,8 +1401,9 @@ GfxResult Backend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassE
 
 GfxResult Backend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor) const
 {
-    if (!renderPassEncoder || !scissor) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPassEncoderSetScissorRect(renderPassEncoder, scissor);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
@@ -1505,8 +1414,9 @@ GfxResult Backend::renderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPa
 
 GfxResult Backend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
 {
-    if (!renderPassEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPassEncoderDraw(renderPassEncoder);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
@@ -1516,8 +1426,9 @@ GfxResult Backend::renderPassEncoderDraw(GfxRenderPassEncoder renderPassEncoder,
 
 GfxResult Backend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const
 {
-    if (!renderPassEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPassEncoderDrawIndexed(renderPassEncoder);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
@@ -1527,8 +1438,9 @@ GfxResult Backend::renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassE
 
 GfxResult Backend::renderPassEncoderDrawIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset) const
 {
-    if (!renderPassEncoder || !indirectBuffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPassEncoderDrawIndirect(renderPassEncoder, indirectBuffer);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
@@ -1539,8 +1451,9 @@ GfxResult Backend::renderPassEncoderDrawIndirect(GfxRenderPassEncoder renderPass
 
 GfxResult Backend::renderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset) const
 {
-    if (!renderPassEncoder || !indirectBuffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPassEncoderDrawIndexedIndirect(renderPassEncoder, indirectBuffer);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
@@ -1551,8 +1464,9 @@ GfxResult Backend::renderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder ren
 
 GfxResult Backend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const
 {
-    if (!renderPassEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateRenderPassEncoderEnd(renderPassEncoder);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
@@ -1563,8 +1477,9 @@ GfxResult Backend::renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) 
 // ComputePassEncoder functions
 GfxResult Backend::computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const
 {
-    if (!computePassEncoder || !pipeline) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateComputePassEncoderSetPipeline(computePassEncoder, pipeline);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* cpe = converter::toNative<core::ComputePassEncoder>(computePassEncoder);
@@ -1575,11 +1490,9 @@ GfxResult Backend::computePassEncoderSetPipeline(GfxComputePassEncoder computePa
 
 GfxResult Backend::computePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount) const
 {
-    if (!computePassEncoder || !bindGroup) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    if (dynamicOffsetCount > 0 && !dynamicOffsets) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateComputePassEncoderSetBindGroup(computePassEncoder, bindGroup);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* cpe = converter::toNative<core::ComputePassEncoder>(computePassEncoder);
@@ -1590,8 +1503,9 @@ GfxResult Backend::computePassEncoderSetBindGroup(GfxComputePassEncoder computeP
 
 GfxResult Backend::computePassEncoderDispatch(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ) const
 {
-    if (!computePassEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateComputePassEncoderDispatch(computePassEncoder);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* cpe = converter::toNative<core::ComputePassEncoder>(computePassEncoder);
@@ -1601,8 +1515,9 @@ GfxResult Backend::computePassEncoderDispatch(GfxComputePassEncoder computePassE
 
 GfxResult Backend::computePassEncoderDispatchIndirect(GfxComputePassEncoder computePassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset) const
 {
-    if (!computePassEncoder || !indirectBuffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateComputePassEncoderDispatchIndirect(computePassEncoder, indirectBuffer);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* cpe = converter::toNative<core::ComputePassEncoder>(computePassEncoder);
@@ -1613,8 +1528,9 @@ GfxResult Backend::computePassEncoderDispatchIndirect(GfxComputePassEncoder comp
 
 GfxResult Backend::computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const
 {
-    if (!computePassEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateComputePassEncoderEnd(computePassEncoder);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* cpe = converter::toNative<core::ComputePassEncoder>(computePassEncoder);
@@ -1625,8 +1541,9 @@ GfxResult Backend::computePassEncoderEnd(GfxComputePassEncoder computePassEncode
 // Fence functions
 GfxResult Backend::fenceDestroy(GfxFence fence) const
 {
-    if (!fence) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateFenceDestroy(fence);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::Fence>(fence);
@@ -1635,11 +1552,9 @@ GfxResult Backend::fenceDestroy(GfxFence fence) const
 
 GfxResult Backend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
 {
-    if (!fence) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    if (!isSignaled) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateFenceGetStatus(fence, isSignaled);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* f = converter::toNative<core::Fence>(fence);
@@ -1657,8 +1572,9 @@ GfxResult Backend::fenceGetStatus(GfxFence fence, bool* isSignaled) const
 
 GfxResult Backend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
 {
-    if (!fence) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateFenceWait(fence);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* f = converter::toNative<core::Fence>(fence);
@@ -1678,8 +1594,9 @@ GfxResult Backend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
 
 GfxResult Backend::fenceReset(GfxFence fence) const
 {
-    if (!fence) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateFenceReset(fence);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* f = converter::toNative<core::Fence>(fence);
@@ -1690,8 +1607,9 @@ GfxResult Backend::fenceReset(GfxFence fence) const
 // Semaphore functions
 GfxResult Backend::semaphoreDestroy(GfxSemaphore semaphore) const
 {
-    if (!semaphore) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSemaphoreDestroy(semaphore);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     delete converter::toNative<core::Semaphore>(semaphore);
@@ -1700,11 +1618,9 @@ GfxResult Backend::semaphoreDestroy(GfxSemaphore semaphore) const
 
 GfxResult Backend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType) const
 {
-    if (!semaphore) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    if (!outType) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSemaphoreGetType(semaphore, outType);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* s = converter::toNative<core::Semaphore>(semaphore);
@@ -1714,8 +1630,9 @@ GfxResult Backend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* ou
 
 GfxResult Backend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
 {
-    if (!semaphore) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSemaphoreSignal(semaphore);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* s = converter::toNative<core::Semaphore>(semaphore);
@@ -1725,8 +1642,9 @@ GfxResult Backend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
 
 GfxResult Backend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const
 {
-    if (!semaphore) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSemaphoreWait(semaphore);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* s = converter::toNative<core::Semaphore>(semaphore);
@@ -1736,11 +1654,9 @@ GfxResult Backend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_
 
 GfxResult Backend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const
 {
-    if (!semaphore) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    if (!outValue) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    GfxResult validationResult = validator::validateSemaphoreGetValue(semaphore, outValue);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
     }
 
     auto* s = converter::toNative<core::Semaphore>(semaphore);
