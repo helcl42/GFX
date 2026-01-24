@@ -28,14 +28,7 @@
 #include "core/system/Instance.h"
 #include "core/system/Queue.h"
 
-#include <cassert>
-#include <cstdio>
-#include <cstring>
-#include <functional>
-#include <memory>
 #include <stdexcept>
-#include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace gfx::backend::vulkan {
