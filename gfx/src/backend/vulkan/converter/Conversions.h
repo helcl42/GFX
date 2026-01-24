@@ -36,13 +36,13 @@ core::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(GfxSemaphoreType type)
 
 VkFormat gfxFormatToVkFormat(GfxTextureFormat format);
 GfxTextureFormat vkFormatToGfxFormat(VkFormat format);
-VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsage gfxUsage);
-GfxBufferUsage vkBufferUsageToGfxBufferUsage(VkBufferUsageFlags vkUsage);
-bool gfxBufferUsageToMappedFlag(GfxBufferUsage gfxUsage);
-GfxBufferUsage mappedFlagToVkBufferUsage(bool mapped);
-VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsage gfxUsage, VkFormat format);
-GfxTextureUsage vkImageUsageToGfxTextureUsage(VkImageUsageFlags vkUsage);
-VkPipelineStageFlags gfxPipelineStageFlagsToVkPipelineStageFlags(GfxPipelineStage gfxStage);
+VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsageFlags gfxUsage);
+GfxBufferUsageFlags vkBufferUsageToGfxBufferUsage(VkBufferUsageFlags vkUsage);
+bool gfxBufferUsageToMappedFlag(GfxBufferUsageFlags gfxUsage);
+GfxBufferUsageFlags mappedFlagToVkBufferUsage(bool mapped);
+VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsageFlags gfxUsage, VkFormat format);
+GfxTextureUsageFlags vkImageUsageToGfxTextureUsage(VkImageUsageFlags vkUsage);
+VkPipelineStageFlags gfxPipelineStageFlagsToVkPipelineStageFlags(GfxPipelineStageFlags gfxStage);
 VkAccessFlags gfxAccessFlagsToVkAccessFlags(GfxAccessFlags gfxAccessFlags);
 VkIndexType gfxIndexFormatToVkIndexType(GfxIndexFormat format);
 core::Viewport gfxViewportToViewport(const GfxViewport* viewport);

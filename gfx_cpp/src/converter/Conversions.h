@@ -34,18 +34,18 @@ GfxSampleCount cppSampleCountToCCount(SampleCount sampleCount);
 SampleCount cSampleCountToCppCount(GfxSampleCount sampleCount);
 
 // Buffer usage conversions
-GfxBufferUsage cppBufferUsageToCUsage(BufferUsage usage);
-BufferUsage cBufferUsageToCppUsage(GfxBufferUsage usage);
+GfxBufferUsageFlags cppBufferUsageToCUsage(BufferUsage usage);
+BufferUsage cBufferUsageToCppUsage(GfxBufferUsageFlags usage);
 
 // Texture usage conversions
-GfxTextureUsage cppTextureUsageToCUsage(TextureUsage usage);
-TextureUsage cTextureUsageToCppUsage(GfxTextureUsage usage);
+GfxTextureUsageFlags cppTextureUsageToCUsage(TextureUsage usage);
+TextureUsage cTextureUsageToCppUsage(GfxTextureUsageFlags usage);
 
 // Filter mode conversions
 GfxFilterMode cppFilterModeToCFilterMode(FilterMode mode);
 
 // Pipeline stage conversions
-GfxPipelineStage cppPipelineStageToCPipelineStage(PipelineStage stage);
+GfxPipelineStageFlags cppPipelineStageToCPipelineStage(PipelineStage stage);
 
 // Access flags conversions
 GfxAccessFlags cppAccessFlagsToCAccessFlags(AccessFlags flags);
@@ -140,7 +140,7 @@ GfxInstanceFeatureType cppInstanceFeatureTypeToCInstanceFeatureType(InstanceFeat
 GfxAdapterPreference cppAdapterPreferenceToCAdapterPreference(AdapterPreference preference);
 
 // Shader stage conversions
-GfxShaderStage cppShaderStageToCShaderStage(ShaderStage stage);
+GfxShaderStageFlags cppShaderStageToCShaderStage(ShaderStage stage);
 
 // Texture type conversions
 GfxTextureType cppTextureTypeToCType(TextureType type);

@@ -260,39 +260,50 @@ GfxTextureFormat vkFormatToGfxFormat(VkFormat format)
     }
 }
 
-GfxBufferUsage vkBufferUsageToGfxBufferUsage(VkBufferUsageFlags vkUsage)
+GfxBufferUsageFlags vkBufferUsageToGfxBufferUsage(VkBufferUsageFlags vkUsage)
 {
-    GfxBufferUsage usage = GFX_BUFFER_USAGE_NONE;
-    if (vkUsage & VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_COPY_SRC);
-    if (vkUsage & VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_COPY_DST);
-    if (vkUsage & VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_INDEX);
-    if (vkUsage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_VERTEX);
-    if (vkUsage & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_UNIFORM);
-    if (vkUsage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_STORAGE);
-    if (vkUsage & VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT)
-        usage = static_cast<GfxBufferUsage>(usage | GFX_BUFFER_USAGE_INDIRECT);
+    GfxBufferUsageFlags usage = GFX_BUFFER_USAGE_NONE;
+    if (vkUsage & VK_BUFFER_USAGE_TRANSFER_SRC_BIT) {
+        usage |= GFX_BUFFER_USAGE_COPY_SRC;
+    }
+    if (vkUsage & VK_BUFFER_USAGE_TRANSFER_DST_BIT) {
+        usage |= GFX_BUFFER_USAGE_COPY_DST;
+    }
+    if (vkUsage & VK_BUFFER_USAGE_INDEX_BUFFER_BIT) {
+        usage |= GFX_BUFFER_USAGE_INDEX;
+    }
+    if (vkUsage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT) {
+        usage |= GFX_BUFFER_USAGE_VERTEX;
+    }
+    if (vkUsage & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) {
+        usage |= GFX_BUFFER_USAGE_UNIFORM;
+    }
+    if (vkUsage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) {
+        usage |= GFX_BUFFER_USAGE_STORAGE;
+    }
+    if (vkUsage & VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT) {
+        usage |= GFX_BUFFER_USAGE_INDIRECT;
+    }
     return usage;
 }
 
-GfxTextureUsage vkImageUsageToGfxTextureUsage(VkImageUsageFlags vkUsage)
+GfxTextureUsageFlags vkImageUsageToGfxTextureUsage(VkImageUsageFlags vkUsage)
 {
-    GfxTextureUsage usage = GFX_TEXTURE_USAGE_NONE;
-    if (vkUsage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
-        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_COPY_SRC);
-    if (vkUsage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_COPY_DST);
-    if (vkUsage & VK_IMAGE_USAGE_SAMPLED_BIT)
-        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_TEXTURE_BINDING);
-    if (vkUsage & VK_IMAGE_USAGE_STORAGE_BIT)
-        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_STORAGE_BINDING);
+    GfxTextureUsageFlags usage = GFX_TEXTURE_USAGE_NONE;
+    if (vkUsage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) {
+        usage |= GFX_TEXTURE_USAGE_COPY_SRC;
+    }
+    if (vkUsage & VK_IMAGE_USAGE_TRANSFER_DST_BIT) {
+        usage |= GFX_TEXTURE_USAGE_COPY_DST;
+    }
+    if (vkUsage & VK_IMAGE_USAGE_SAMPLED_BIT) {
+        usage |= GFX_TEXTURE_USAGE_TEXTURE_BINDING;
+    }
+    if (vkUsage & VK_IMAGE_USAGE_STORAGE_BIT) {
+        usage |= GFX_TEXTURE_USAGE_STORAGE_BINDING;
+    }
     if (vkUsage & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
-        usage = static_cast<GfxTextureUsage>(usage | GFX_TEXTURE_USAGE_RENDER_ATTACHMENT);
+        usage |= GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     }
     return usage;
 }
@@ -549,7 +560,7 @@ GfxBufferInfo vkBufferToGfxBufferInfo(const core::BufferInfo& info)
 {
     GfxBufferInfo gfxInfo{};
     gfxInfo.size = info.size;
-    gfxInfo.usage = static_cast<GfxBufferUsage>(vkBufferUsageToGfxBufferUsage(info.usage) | mappedFlagToVkBufferUsage(info.mapped));
+    gfxInfo.usage = vkBufferUsageToGfxBufferUsage(info.usage) | mappedFlagToVkBufferUsage(info.mapped);
     return gfxInfo;
 }
 
@@ -572,40 +583,57 @@ GfxAccessFlags vkAccessFlagsToGfxAccessFlags(VkAccessFlags vkAccessFlags)
 {
     GfxAccessFlags flags = GFX_ACCESS_NONE;
 
-    if (vkAccessFlags & VK_ACCESS_INDIRECT_COMMAND_READ_BIT)
+    if (vkAccessFlags & VK_ACCESS_INDIRECT_COMMAND_READ_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_INDIRECT_COMMAND_READ);
-    if (vkAccessFlags & VK_ACCESS_INDEX_READ_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_INDEX_READ_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_INDEX_READ);
-    if (vkAccessFlags & VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_VERTEX_ATTRIBUTE_READ);
-    if (vkAccessFlags & VK_ACCESS_UNIFORM_READ_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_UNIFORM_READ_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_UNIFORM_READ);
-    if (vkAccessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_INPUT_ATTACHMENT_READ);
-    if (vkAccessFlags & VK_ACCESS_SHADER_READ_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_SHADER_READ_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_SHADER_READ);
-    if (vkAccessFlags & VK_ACCESS_SHADER_WRITE_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_SHADER_WRITE_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_SHADER_WRITE);
-    if (vkAccessFlags & VK_ACCESS_COLOR_ATTACHMENT_READ_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_COLOR_ATTACHMENT_READ_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_COLOR_ATTACHMENT_READ);
-    if (vkAccessFlags & VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_COLOR_ATTACHMENT_WRITE);
-    if (vkAccessFlags & VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ);
-    if (vkAccessFlags & VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE);
-    if (vkAccessFlags & VK_ACCESS_TRANSFER_READ_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_TRANSFER_READ_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_TRANSFER_READ);
-    if (vkAccessFlags & VK_ACCESS_TRANSFER_WRITE_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_TRANSFER_WRITE_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_TRANSFER_WRITE);
-    if (vkAccessFlags & VK_ACCESS_HOST_READ_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_HOST_READ_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_READ);
-    if (vkAccessFlags & VK_ACCESS_HOST_WRITE_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_HOST_WRITE_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_WRITE);
-    if (vkAccessFlags & VK_ACCESS_MEMORY_READ_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_MEMORY_READ_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_READ);
-    if (vkAccessFlags & VK_ACCESS_MEMORY_WRITE_BIT)
+    }
+    if (vkAccessFlags & VK_ACCESS_MEMORY_WRITE_BIT) {
         flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_WRITE);
+    }
 
     return flags;
 }
@@ -854,7 +882,7 @@ const char* vkResultToString(VkResult result)
 // CreateInfo Conversion Functions - GfxDescriptor to Internal CreateInfo
 // ============================================================================
 
-VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsage gfxUsage)
+VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsageFlags gfxUsage)
 {
     VkBufferUsageFlags usage = 0;
     if (gfxUsage & GFX_BUFFER_USAGE_COPY_SRC) {
@@ -881,7 +909,7 @@ VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsage gfxUsage)
     return usage;
 }
 
-bool gfxBufferUsageToMappedFlag(GfxBufferUsage gfxUsage)
+bool gfxBufferUsageToMappedFlag(GfxBufferUsageFlags gfxUsage)
 {
     bool mapped = false;
     if (gfxUsage & GFX_BUFFER_USAGE_MAP_READ) {
@@ -893,15 +921,15 @@ bool gfxBufferUsageToMappedFlag(GfxBufferUsage gfxUsage)
     return mapped;
 }
 
-GfxBufferUsage mappedFlagToVkBufferUsage(bool mapped)
+GfxBufferUsageFlags mappedFlagToVkBufferUsage(bool mapped)
 {
     if (mapped) {
-        return static_cast<GfxBufferUsage>(GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_MAP_WRITE);
+        return GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_MAP_WRITE;
     }
     return GFX_BUFFER_USAGE_NONE;
 }
 
-VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsage gfxUsage, VkFormat format)
+VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsageFlags gfxUsage, VkFormat format)
 {
     VkImageUsageFlags usage = 0;
     if (gfxUsage & GFX_TEXTURE_USAGE_COPY_SRC) {
@@ -927,77 +955,108 @@ VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsage gfxUsage, VkForm
     return usage;
 }
 
-VkPipelineStageFlags gfxPipelineStageFlagsToVkPipelineStageFlags(GfxPipelineStage gfxStage)
+VkPipelineStageFlags gfxPipelineStageFlagsToVkPipelineStageFlags(GfxPipelineStageFlags gfxStage)
 {
     VkPipelineStageFlags vkStage = 0;
-    if (gfxStage & GFX_PIPELINE_STAGE_TOP_OF_PIPE)
+    if (gfxStage & GFX_PIPELINE_STAGE_TOP_OF_PIPE) {
         vkStage |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_DRAW_INDIRECT)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_DRAW_INDIRECT) {
         vkStage |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_VERTEX_INPUT)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_VERTEX_INPUT) {
         vkStage |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_VERTEX_SHADER)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_VERTEX_SHADER) {
         vkStage |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER) {
         vkStage |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER) {
         vkStage |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_GEOMETRY_SHADER)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_GEOMETRY_SHADER) {
         vkStage |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_FRAGMENT_SHADER)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_FRAGMENT_SHADER) {
         vkStage |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS) {
         vkStage |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_LATE_FRAGMENT_TESTS)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_LATE_FRAGMENT_TESTS) {
         vkStage |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT) {
         vkStage |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_COMPUTE_SHADER)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_COMPUTE_SHADER) {
         vkStage |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_TRANSFER)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_TRANSFER) {
         vkStage |= VK_PIPELINE_STAGE_TRANSFER_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_BOTTOM_OF_PIPE)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_BOTTOM_OF_PIPE) {
         vkStage |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_ALL_GRAPHICS)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_ALL_GRAPHICS) {
         vkStage |= VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
-    if (gfxStage & GFX_PIPELINE_STAGE_ALL_COMMANDS)
+    }
+    if (gfxStage & GFX_PIPELINE_STAGE_ALL_COMMANDS) {
         vkStage |= VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    }
     return vkStage;
 }
 
 VkAccessFlags gfxAccessFlagsToVkAccessFlags(GfxAccessFlags gfxAccessFlags)
 {
     VkAccessFlags vkAccessFlags = 0;
-    if (gfxAccessFlags & GFX_ACCESS_INDIRECT_COMMAND_READ)
+    if (gfxAccessFlags & GFX_ACCESS_INDIRECT_COMMAND_READ) {
         vkAccessFlags |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_INDEX_READ)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_INDEX_READ) {
         vkAccessFlags |= VK_ACCESS_INDEX_READ_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_VERTEX_ATTRIBUTE_READ)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_VERTEX_ATTRIBUTE_READ) {
         vkAccessFlags |= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_UNIFORM_READ)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_UNIFORM_READ) {
         vkAccessFlags |= VK_ACCESS_UNIFORM_READ_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_INPUT_ATTACHMENT_READ)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_INPUT_ATTACHMENT_READ) {
         vkAccessFlags |= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_SHADER_READ)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_SHADER_READ) {
         vkAccessFlags |= VK_ACCESS_SHADER_READ_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_SHADER_WRITE)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_SHADER_WRITE) {
         vkAccessFlags |= VK_ACCESS_SHADER_WRITE_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_COLOR_ATTACHMENT_READ)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_COLOR_ATTACHMENT_READ) {
         vkAccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_COLOR_ATTACHMENT_WRITE)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_COLOR_ATTACHMENT_WRITE) {
         vkAccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ) {
         vkAccessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE) {
         vkAccessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_TRANSFER_READ)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_TRANSFER_READ) {
         vkAccessFlags |= VK_ACCESS_TRANSFER_READ_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_TRANSFER_WRITE)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_TRANSFER_WRITE) {
         vkAccessFlags |= VK_ACCESS_TRANSFER_WRITE_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_MEMORY_READ)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_MEMORY_READ) {
         vkAccessFlags |= VK_ACCESS_MEMORY_READ_BIT;
-    if (gfxAccessFlags & GFX_ACCESS_MEMORY_WRITE)
+    }
+    if (gfxAccessFlags & GFX_ACCESS_MEMORY_WRITE) {
         vkAccessFlags |= VK_ACCESS_MEMORY_WRITE_BIT;
+    }
     return vkAccessFlags;
 }
 
@@ -1451,14 +1510,18 @@ core::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(const Gfx
 
             // Convert GfxColorWriteMask to VkColorComponentFlags
             vkTarget.writeMask = 0;
-            if (target.writeMask & 0x1)
+            if (target.writeMask & 0x1) {
                 vkTarget.writeMask |= VK_COLOR_COMPONENT_R_BIT;
-            if (target.writeMask & 0x2)
+            }
+            if (target.writeMask & 0x2) {
                 vkTarget.writeMask |= VK_COLOR_COMPONENT_G_BIT;
-            if (target.writeMask & 0x4)
+            }
+            if (target.writeMask & 0x4) {
                 vkTarget.writeMask |= VK_COLOR_COMPONENT_B_BIT;
-            if (target.writeMask & 0x8)
+            }
+            if (target.writeMask & 0x8) {
                 vkTarget.writeMask |= VK_COLOR_COMPONENT_A_BIT;
+            }
 
             VkPipelineColorBlendAttachmentState blendState{};
             blendState.colorWriteMask = vkTarget.writeMask;

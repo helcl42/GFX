@@ -678,7 +678,7 @@ core::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitDescriptor* desc
 // Reverse Conversions - Internal to Gfx API types
 // ============================================================================
 
-GfxBufferUsage webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage)
+GfxBufferUsageFlags webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage)
 {
     uint32_t gfxUsage = GFX_BUFFER_USAGE_NONE;
     if (usage & WGPUBufferUsage_MapRead) {
@@ -708,7 +708,7 @@ GfxBufferUsage webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage)
     if (usage & WGPUBufferUsage_Indirect) {
         gfxUsage |= GFX_BUFFER_USAGE_INDIRECT;
     }
-    return static_cast<GfxBufferUsage>(gfxUsage);
+    return gfxUsage;
 }
 
 GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(core::SemaphoreType type)
@@ -942,79 +942,79 @@ WGPUStoreOp gfxStoreOpToWGPUStoreOp(GfxStoreOp storeOp)
     }
 }
 
-WGPUBufferUsage gfxBufferUsageToWGPU(GfxBufferUsage usage)
+WGPUBufferUsage gfxBufferUsageToWGPU(GfxBufferUsageFlags usage)
 {
-    WGPUBufferUsage wgpu_usage = WGPUBufferUsage_None;
+    WGPUBufferUsage wgpuUsage = WGPUBufferUsage_None;
     if (usage & GFX_BUFFER_USAGE_MAP_READ) {
-        wgpu_usage |= WGPUBufferUsage_MapRead;
+        wgpuUsage |= WGPUBufferUsage_MapRead;
     }
     if (usage & GFX_BUFFER_USAGE_MAP_WRITE) {
-        wgpu_usage |= WGPUBufferUsage_MapWrite;
+        wgpuUsage |= WGPUBufferUsage_MapWrite;
     }
     if (usage & GFX_BUFFER_USAGE_COPY_SRC) {
-        wgpu_usage |= WGPUBufferUsage_CopySrc;
+        wgpuUsage |= WGPUBufferUsage_CopySrc;
     }
     if (usage & GFX_BUFFER_USAGE_COPY_DST) {
-        wgpu_usage |= WGPUBufferUsage_CopyDst;
+        wgpuUsage |= WGPUBufferUsage_CopyDst;
     }
     if (usage & GFX_BUFFER_USAGE_INDEX) {
-        wgpu_usage |= WGPUBufferUsage_Index;
+        wgpuUsage |= WGPUBufferUsage_Index;
     }
     if (usage & GFX_BUFFER_USAGE_VERTEX) {
-        wgpu_usage |= WGPUBufferUsage_Vertex;
+        wgpuUsage |= WGPUBufferUsage_Vertex;
     }
     if (usage & GFX_BUFFER_USAGE_UNIFORM) {
-        wgpu_usage |= WGPUBufferUsage_Uniform;
+        wgpuUsage |= WGPUBufferUsage_Uniform;
     }
     if (usage & GFX_BUFFER_USAGE_STORAGE) {
-        wgpu_usage |= WGPUBufferUsage_Storage;
+        wgpuUsage |= WGPUBufferUsage_Storage;
     }
     if (usage & GFX_BUFFER_USAGE_INDIRECT) {
-        wgpu_usage |= WGPUBufferUsage_Indirect;
+        wgpuUsage |= WGPUBufferUsage_Indirect;
     }
-    return wgpu_usage;
+    return wgpuUsage;
 }
 
-WGPUTextureUsage gfxTextureUsageToWGPU(GfxTextureUsage usage)
+WGPUTextureUsage gfxTextureUsageToWGPU(GfxTextureUsageFlags usage)
 {
-    WGPUTextureUsage wgpu_usage = WGPUTextureUsage_None;
+    WGPUTextureUsage wgpuUsage = WGPUTextureUsage_None;
     if (usage & GFX_TEXTURE_USAGE_COPY_SRC) {
-        wgpu_usage |= WGPUTextureUsage_CopySrc;
+        wgpuUsage |= WGPUTextureUsage_CopySrc;
     }
     if (usage & GFX_TEXTURE_USAGE_COPY_DST) {
-        wgpu_usage |= WGPUTextureUsage_CopyDst;
+        wgpuUsage |= WGPUTextureUsage_CopyDst;
     }
     if (usage & GFX_TEXTURE_USAGE_TEXTURE_BINDING) {
-        wgpu_usage |= WGPUTextureUsage_TextureBinding;
+        wgpuUsage |= WGPUTextureUsage_TextureBinding;
     }
     if (usage & GFX_TEXTURE_USAGE_STORAGE_BINDING) {
-        wgpu_usage |= WGPUTextureUsage_StorageBinding;
+        wgpuUsage |= WGPUTextureUsage_StorageBinding;
     }
     if (usage & GFX_TEXTURE_USAGE_RENDER_ATTACHMENT) {
-        wgpu_usage |= WGPUTextureUsage_RenderAttachment;
+        wgpuUsage |= WGPUTextureUsage_RenderAttachment;
     }
-    return wgpu_usage;
+    return wgpuUsage;
 }
 
-GfxTextureUsage wgpuTextureUsageToGfxTextureUsage(WGPUTextureUsage usage)
+GfxTextureUsageFlags wgpuTextureUsageToGfxTextureUsage(WGPUTextureUsage usage)
 {
-    uint32_t gfx_usage = GFX_TEXTURE_USAGE_NONE;
+    uint32_t gfxUsage = 0;
     if (usage & WGPUTextureUsage_CopySrc) {
-        gfx_usage |= GFX_TEXTURE_USAGE_COPY_SRC;
+        gfxUsage |= GFX_TEXTURE_USAGE_COPY_SRC;
     }
     if (usage & WGPUTextureUsage_CopyDst) {
-        gfx_usage |= GFX_TEXTURE_USAGE_COPY_DST;
+        gfxUsage |= GFX_TEXTURE_USAGE_COPY_DST;
     }
     if (usage & WGPUTextureUsage_TextureBinding) {
-        gfx_usage |= GFX_TEXTURE_USAGE_TEXTURE_BINDING;
+        gfxUsage |= GFX_TEXTURE_USAGE_TEXTURE_BINDING;
     }
     if (usage & WGPUTextureUsage_StorageBinding) {
-        gfx_usage |= GFX_TEXTURE_USAGE_STORAGE_BINDING;
+        gfxUsage |= GFX_TEXTURE_USAGE_STORAGE_BINDING;
     }
     if (usage & WGPUTextureUsage_RenderAttachment) {
-        gfx_usage |= GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
+        gfxUsage |= GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     }
-    return static_cast<GfxTextureUsage>(gfx_usage);
+    return gfxUsage;
 }
 
 WGPUAddressMode gfxAddressModeToWGPU(GfxAddressMode mode)
@@ -1306,8 +1306,7 @@ GfxExtent3D wgpuExtent3DToGfxExtent3D(const WGPUExtent3D& extent)
     return { extent.width, extent.height, extent.depthOrArrayLayers };
 }
 
-core::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(
-    const GfxRenderPassDescriptor* descriptor)
+core::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(const GfxRenderPassDescriptor* descriptor)
 {
     core::RenderPassCreateInfo createInfo{};
 
@@ -1343,8 +1342,7 @@ core::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(
     return createInfo;
 }
 
-core::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(
-    const GfxFramebufferDescriptor* descriptor)
+core::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(const GfxFramebufferDescriptor* descriptor)
 {
     core::FramebufferCreateInfo createInfo{};
 
@@ -1382,8 +1380,7 @@ core::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(
     return createInfo;
 }
 
-core::RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(
-    const GfxRenderPassBeginDescriptor* descriptor)
+core::RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(const GfxRenderPassBeginDescriptor* descriptor)
 {
     core::RenderPassEncoderBeginInfo beginInfo{};
 
@@ -1399,8 +1396,7 @@ core::RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(
     return beginInfo;
 }
 
-core::ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(
-    const GfxComputePassBeginDescriptor* descriptor)
+core::ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(const GfxComputePassBeginDescriptor* descriptor)
 {
     core::ComputePassEncoderCreateInfo createInfo{};
     createInfo.label = descriptor->label;

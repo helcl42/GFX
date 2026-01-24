@@ -177,7 +177,8 @@ typedef enum {
     GFX_TEXTURE_USAGE_STORAGE_BINDING = 1 << 3,
     GFX_TEXTURE_USAGE_RENDER_ATTACHMENT = 1 << 4,
     GFX_TEXTURE_USAGE_MAX_ENUM = 0x7FFFFFFF
-} GfxTextureUsage;
+} GfxTextureUsageFlagBits;
+typedef uint32_t GfxTextureUsageFlags;
 
 typedef enum {
     GFX_TEXTURE_LAYOUT_UNDEFINED = 0, // Initial layout, contents undefined
@@ -211,7 +212,8 @@ typedef enum {
     GFX_PIPELINE_STAGE_ALL_GRAPHICS = 0x0000FFFF,
     GFX_PIPELINE_STAGE_ALL_COMMANDS = 0x00010000,
     GFX_PIPELINE_STAGE_MAX_ENUM = 0x7FFFFFFF
-} GfxPipelineStage;
+} GfxPipelineStageFlagBits;
+typedef uint32_t GfxPipelineStageFlags;
 
 typedef enum {
     GFX_ACCESS_NONE = 0,
@@ -231,7 +233,8 @@ typedef enum {
     GFX_ACCESS_MEMORY_READ = 1 << 14, // 0x4000
     GFX_ACCESS_MEMORY_WRITE = 1 << 15, // 0x8000
     GFX_ACCESS_MAX_ENUM = 0x7FFFFFFF
-} GfxAccessFlags;
+} GfxAccessFlagBits;
+typedef uint32_t GfxAccessFlags;
 
 typedef enum {
     GFX_BUFFER_USAGE_NONE = 0,
@@ -245,7 +248,8 @@ typedef enum {
     GFX_BUFFER_USAGE_STORAGE = 1 << 7,
     GFX_BUFFER_USAGE_INDIRECT = 1 << 8,
     GFX_BUFFER_USAGE_MAX_ENUM = 0x7FFFFFFF
-} GfxBufferUsage;
+} GfxBufferUsageFlagBits;
+typedef uint32_t GfxBufferUsageFlags;
 
 typedef enum {
     GFX_SHADER_STAGE_NONE = 0,
@@ -253,7 +257,8 @@ typedef enum {
     GFX_SHADER_STAGE_FRAGMENT = 1 << 1,
     GFX_SHADER_STAGE_COMPUTE = 1 << 2,
     GFX_SHADER_STAGE_MAX_ENUM = 0x7FFFFFFF
-} GfxShaderStage;
+} GfxShaderStageFlagBits;
+typedef uint32_t GfxShaderStageFlags;
 
 typedef enum {
     GFX_QUEUE_FLAG_NONE = 0,
@@ -262,7 +267,8 @@ typedef enum {
     GFX_QUEUE_FLAG_TRANSFER = 1 << 2,
     GFX_QUEUE_FLAG_SPARSE_BINDING = 1 << 3,
     GFX_QUEUE_FLAG_MAX_ENUM = 0x7FFFFFFF
-} GfxQueueFlags;
+} GfxQueueFlagBits;
+typedef uint32_t GfxQueueFlags;
 
 typedef enum {
     GFX_FILTER_MODE_NEAREST = 0,
@@ -391,7 +397,8 @@ typedef enum {
     GFX_COLOR_WRITE_MASK_ALPHA = 0x8,
     GFX_COLOR_WRITE_MASK_ALL = GFX_COLOR_WRITE_MASK_RED | GFX_COLOR_WRITE_MASK_GREEN | GFX_COLOR_WRITE_MASK_BLUE | GFX_COLOR_WRITE_MASK_ALPHA,
     GFX_COLOR_WRITE_MASK_MAX_ENUM = 0x7FFFFFFF
-} GfxColorWriteMask;
+} GfxColorWriteMaskBits;
+typedef uint32_t GfxColorWriteMask;
 
 typedef enum {
     GFX_BIND_GROUP_ENTRY_TYPE_BUFFER = 0,
@@ -504,16 +511,16 @@ typedef struct {
 } GfxScissorRect;
 
 typedef struct {
-    GfxPipelineStage srcStageMask;
-    GfxPipelineStage dstStageMask;
+    GfxPipelineStageFlags srcStageMask;
+    GfxPipelineStageFlags dstStageMask;
     GfxAccessFlags srcAccessMask;
     GfxAccessFlags dstAccessMask;
 } GfxMemoryBarrier;
 
 typedef struct {
     GfxBuffer buffer;
-    GfxPipelineStage srcStageMask;
-    GfxPipelineStage dstStageMask;
+    GfxPipelineStageFlags srcStageMask;
+    GfxPipelineStageFlags dstStageMask;
     GfxAccessFlags srcAccessMask;
     GfxAccessFlags dstAccessMask;
     uint64_t offset;
@@ -524,8 +531,8 @@ typedef struct {
     GfxTexture texture;
     GfxTextureLayout oldLayout;
     GfxTextureLayout newLayout;
-    GfxPipelineStage srcStageMask;
-    GfxPipelineStage dstStageMask;
+    GfxPipelineStageFlags srcStageMask;
+    GfxPipelineStageFlags dstStageMask;
     GfxAccessFlags srcAccessMask;
     GfxAccessFlags dstAccessMask;
     uint32_t baseMipLevel;
@@ -718,13 +725,13 @@ typedef struct {
     uint32_t mipLevelCount;
     GfxSampleCount sampleCount;
     GfxTextureFormat format;
-    GfxTextureUsage usage;
+    GfxTextureUsageFlags usage;
 } GfxTextureInfo;
 
 // Buffer information
 typedef struct {
     uint64_t size;
-    GfxBufferUsage usage;
+    GfxBufferUsageFlags usage;
 } GfxBufferInfo;
 
 // Swapchain information
@@ -773,14 +780,14 @@ typedef struct {
 typedef struct {
     const char* label;
     uint64_t size;
-    GfxBufferUsage usage;
+    GfxBufferUsageFlags usage;
 } GfxBufferDescriptor;
 
 typedef struct {
     const char* label;
     void* nativeHandle; // VkBuffer or WGPUBuffer (cast to void*)
     uint64_t size;
-    GfxBufferUsage usage;
+    GfxBufferUsageFlags usage;
 } GfxBufferImportDescriptor;
 
 typedef struct {
@@ -791,7 +798,7 @@ typedef struct {
     uint32_t mipLevelCount;
     GfxSampleCount sampleCount;
     GfxTextureFormat format;
-    GfxTextureUsage usage;
+    GfxTextureUsageFlags usage;
 } GfxTextureDescriptor;
 
 typedef struct {
@@ -803,7 +810,7 @@ typedef struct {
     uint32_t mipLevelCount;
     GfxSampleCount sampleCount;
     GfxTextureFormat format;
-    GfxTextureUsage usage;
+    GfxTextureUsageFlags usage;
     GfxTextureLayout currentLayout; // Current layout of the imported texture
 } GfxTextureImportDescriptor;
 
@@ -935,7 +942,7 @@ typedef struct {
 
 typedef struct {
     uint32_t binding;
-    GfxShaderStage visibility;
+    GfxShaderStageFlags visibility;
     GfxBindingType type; // Explicitly specify the binding type
 
     // Resource type - use type field to determine which is valid
@@ -1104,7 +1111,7 @@ typedef struct {
     uint32_t width;
     uint32_t height;
     GfxTextureFormat format;
-    GfxTextureUsage usage;
+    GfxTextureUsageFlags usage;
     GfxPresentMode presentMode;
     uint32_t imageCount;
 } GfxSwapchainDescriptor;
@@ -1241,9 +1248,6 @@ GFX_API GfxResult gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder);
 
 // RenderPassEncoder functions
 GFX_API GfxResult gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline);
-// Dynamic offsets allow using a single bind group with multiple offsets into uniform/storage buffers
-// The offsets MUST be aligned to device limits (use gfxAlignUp with minUniformBufferOffsetAlignment)
-// Pass NULL and 0 if not using dynamic offsets
 GFX_API GfxResult gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount);
 GFX_API GfxResult gfxRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size);
 GFX_API GfxResult gfxRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size);
@@ -1257,9 +1261,6 @@ GFX_API GfxResult gfxRenderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder
 
 // ComputePassEncoder functions
 GFX_API GfxResult gfxComputePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline);
-// Dynamic offsets allow using a single bind group with multiple offsets into uniform/storage buffers
-// The offsets MUST be aligned to device limits (use gfxAlignUp with minUniformBufferOffsetAlignment)
-// Pass NULL and 0 if not using dynamic offsets
 GFX_API GfxResult gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, uint32_t index, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount);
 GFX_API GfxResult gfxComputePassEncoderDispatch(GfxComputePassEncoder computePassEncoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ);
 GFX_API GfxResult gfxComputePassEncoderDispatchIndirect(GfxComputePassEncoder computePassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset);

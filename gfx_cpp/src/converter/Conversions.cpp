@@ -90,22 +90,22 @@ SampleCount cSampleCountToCppCount(GfxSampleCount sampleCount)
     return static_cast<SampleCount>(sampleCount);
 }
 
-GfxBufferUsage cppBufferUsageToCUsage(BufferUsage usage)
+GfxBufferUsageFlags cppBufferUsageToCUsage(BufferUsage usage)
 {
-    return static_cast<GfxBufferUsage>(static_cast<uint32_t>(usage));
+    return static_cast<GfxBufferUsageFlags>(static_cast<uint32_t>(usage));
 }
 
-BufferUsage cBufferUsageToCppUsage(GfxBufferUsage usage)
+BufferUsage cBufferUsageToCppUsage(GfxBufferUsageFlags usage)
 {
     return static_cast<BufferUsage>(usage);
 }
 
-GfxTextureUsage cppTextureUsageToCUsage(TextureUsage usage)
+GfxTextureUsageFlags cppTextureUsageToCUsage(TextureUsage usage)
 {
-    return static_cast<GfxTextureUsage>(static_cast<uint32_t>(usage));
+    return static_cast<GfxTextureUsageFlags>(static_cast<uint32_t>(usage));
 }
 
-TextureUsage cTextureUsageToCppUsage(GfxTextureUsage usage)
+TextureUsage cTextureUsageToCppUsage(GfxTextureUsageFlags usage)
 {
     return static_cast<TextureUsage>(usage);
 }
@@ -115,9 +115,9 @@ GfxFilterMode cppFilterModeToCFilterMode(FilterMode mode)
     return static_cast<GfxFilterMode>(mode);
 }
 
-GfxPipelineStage cppPipelineStageToCPipelineStage(PipelineStage stage)
+GfxPipelineStageFlags cppPipelineStageToCPipelineStage(PipelineStage stage)
 {
-    return static_cast<GfxPipelineStage>(stage);
+    return static_cast<GfxPipelineStageFlags>(stage);
 }
 
 GfxAccessFlags cppAccessFlagsToCAccessFlags(AccessFlags flags)
@@ -570,9 +570,9 @@ GfxAdapterPreference cppAdapterPreferenceToCAdapterPreference(AdapterPreference 
     return static_cast<GfxAdapterPreference>(preference);
 }
 
-GfxShaderStage cppShaderStageToCShaderStage(ShaderStage stage)
+GfxShaderStageFlags cppShaderStageToCShaderStage(ShaderStage stage)
 {
-    return static_cast<GfxShaderStage>(static_cast<uint32_t>(stage));
+    return static_cast<GfxShaderStageFlags>(static_cast<uint32_t>(stage));
 }
 
 GfxTextureType cppTextureTypeToCType(TextureType type)

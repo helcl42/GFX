@@ -141,7 +141,7 @@ TEST_P(GfxBindGroupLayoutTest, CreateBindGroupLayoutWithUniformBuffer)
 {
     GfxBindGroupLayoutEntry entry = {};
     entry.binding = 0;
-    entry.visibility = static_cast<GfxShaderStage>(GFX_SHADER_STAGE_VERTEX | GFX_SHADER_STAGE_FRAGMENT);
+    entry.visibility = GFX_SHADER_STAGE_VERTEX | GFX_SHADER_STAGE_FRAGMENT;
     entry.type = GFX_BINDING_TYPE_BUFFER;
     entry.buffer.hasDynamicOffset = false;
     entry.buffer.minBindingSize = 256;

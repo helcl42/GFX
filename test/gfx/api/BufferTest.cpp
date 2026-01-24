@@ -74,7 +74,7 @@ TEST_P(GfxBufferTest, CreateDestroyBuffer)
     GfxBufferDescriptor desc = {};
     desc.label = "Test Buffer";
     desc.size = 1024;
-    desc.usage = (GfxBufferUsage)(GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST);
+    desc.usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST;
 
     GfxBuffer buffer = NULL;
     GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
@@ -136,7 +136,7 @@ TEST_P(GfxBufferTest, GetBufferInfo)
     GfxBufferDescriptor desc = {};
     desc.label = "Test Buffer";
     desc.size = 2048;
-    desc.usage = (GfxBufferUsage)(GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST);
+    desc.usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST;
 
     GfxBuffer buffer = NULL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, &buffer), GFX_RESULT_SUCCESS);
@@ -147,7 +147,7 @@ TEST_P(GfxBufferTest, GetBufferInfo)
 
     EXPECT_EQ(result, GFX_RESULT_SUCCESS);
     EXPECT_EQ(info.size, 2048);
-    EXPECT_EQ(info.usage, (GfxBufferUsage)(GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST));
+    EXPECT_EQ(info.usage, GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST);
 
     gfxBufferDestroy(buffer);
 }
@@ -157,7 +157,7 @@ TEST_P(GfxBufferTest, MapUnmapBuffer)
     GfxBufferDescriptor desc = {};
     desc.label = "Mappable Buffer";
     desc.size = 256;
-    desc.usage = (GfxBufferUsage)(GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC);
+    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
 
     GfxBuffer buffer = NULL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, &buffer), GFX_RESULT_SUCCESS);
@@ -185,7 +185,7 @@ TEST_P(GfxBufferTest, MapBufferInvalidArguments)
 {
     GfxBufferDescriptor desc = {};
     desc.size = 256;
-    desc.usage = (GfxBufferUsage)(GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC);
+    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
 
     GfxBuffer buffer = NULL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, &buffer), GFX_RESULT_SUCCESS);
@@ -208,7 +208,7 @@ TEST_P(GfxBufferTest, WriteBufferViaQueue)
     GfxBufferDescriptor desc = {};
     desc.label = "Queue Write Buffer";
     desc.size = 128;
-    desc.usage = (GfxBufferUsage)(GFX_BUFFER_USAGE_COPY_DST | GFX_BUFFER_USAGE_UNIFORM);
+    desc.usage = GFX_BUFFER_USAGE_COPY_DST | GFX_BUFFER_USAGE_UNIFORM;
 
     GfxBuffer buffer = NULL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, &buffer), GFX_RESULT_SUCCESS);
@@ -234,7 +234,7 @@ TEST_P(GfxBufferTest, CreateMultipleBuffers)
     for (int i = 0; i < bufferCount; ++i) {
         GfxBufferDescriptor desc = {};
         desc.size = 512 * (i + 1);
-        desc.usage = (GfxBufferUsage)(GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST);
+        desc.usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST;
 
         GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffers[i]);
         EXPECT_EQ(result, GFX_RESULT_SUCCESS);
@@ -253,7 +253,7 @@ TEST_P(GfxBufferTest, CreateBufferWithAllUsageFlags)
     GfxBufferDescriptor desc = {};
     desc.label = "All Usage Buffer";
     desc.size = 4096;
-    desc.usage = (GfxBufferUsage)(GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST | GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_INDIRECT);
+    desc.usage = GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST | GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_INDIRECT;
 
     GfxBuffer buffer = NULL;
     GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
@@ -321,7 +321,7 @@ TEST_P(GfxBufferTest, ImportBufferFromNativeHandle)
     GfxBufferDescriptor createDesc = {};
     createDesc.label = "Source Buffer";
     createDesc.size = 1024;
-    createDesc.usage = (GfxBufferUsage)(GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST);
+    createDesc.usage = GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST;
 
     GfxBuffer sourceBuffer = nullptr;
     GfxResult result = gfxDeviceCreateBuffer(device, &createDesc, &sourceBuffer);

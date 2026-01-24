@@ -128,7 +128,7 @@ core::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitDescriptor* desc
 // Reverse conversions - internal to Gfx API types
 // ============================================================================
 
-GfxBufferUsage webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage);
+GfxBufferUsageFlags webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage);
 GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(core::SemaphoreType type);
 GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const core::TextureInfo& info);
 GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const core::SwapchainInfo& info);
@@ -165,11 +165,11 @@ WGPULoadOp gfxLoadOpToWGPULoadOp(GfxLoadOp loadOp);
 WGPUStoreOp gfxStoreOpToWGPUStoreOp(GfxStoreOp storeOp);
 
 // Buffer usage conversions
-WGPUBufferUsage gfxBufferUsageToWGPU(GfxBufferUsage usage);
+WGPUBufferUsage gfxBufferUsageToWGPU(GfxBufferUsageFlags usage);
 
 // Texture usage conversions
-WGPUTextureUsage gfxTextureUsageToWGPU(GfxTextureUsage usage);
-GfxTextureUsage wgpuTextureUsageToGfxTextureUsage(WGPUTextureUsage usage);
+WGPUTextureUsage gfxTextureUsageToWGPU(GfxTextureUsageFlags usage);
+GfxTextureUsageFlags wgpuTextureUsageToGfxTextureUsage(WGPUTextureUsage usage);
 
 // Sampler conversions
 WGPUAddressMode gfxAddressModeToWGPU(GfxAddressMode mode);
