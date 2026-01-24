@@ -22,6 +22,7 @@ set(PUBLIC_TEST_SOURCES
     api/CommandEncoderTest.cpp
     api/RenderPassEncoderTest.cpp
     api/ComputePassEncoderTest.cpp
+    api/FenceTest.cpp
     api/SurfaceTest.cpp
     api/SwapchainTest.cpp
 )
