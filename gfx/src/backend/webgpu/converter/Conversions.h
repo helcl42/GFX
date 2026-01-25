@@ -8,46 +8,47 @@
 // Forward declare internal WebGPU types
 namespace gfx::backend::webgpu {
 namespace core {
-struct AdapterInfo;
-struct BufferInfo;
-struct TextureInfo;
-struct SwapchainInfo;
-struct QueueFamilyProperties;
+    struct AdapterInfo;
+    struct BufferInfo;
+    struct TextureInfo;
+    struct SwapchainInfo;
+    struct QueueFamilyProperties;
 
-struct AdapterCreateInfo;
-struct InstanceCreateInfo;
-struct DeviceCreateInfo;
-struct BufferCreateInfo;
-struct BufferImportInfo;
-struct TextureCreateInfo;
-struct TextureImportInfo;
-struct TextureViewCreateInfo;
-struct ShaderCreateInfo;
-struct SamplerCreateInfo;
-struct SemaphoreCreateInfo;
-struct FenceCreateInfo;
-struct SurfaceCreateInfo;
-struct SwapchainCreateInfo;
-struct BindGroupLayoutCreateInfo;
-struct BindGroupCreateInfo;
-struct RenderPipelineCreateInfo;
-struct ComputePipelineCreateInfo;
-struct CommandEncoderCreateInfo;
-struct RenderPassCreateInfo;
-struct FramebufferCreateInfo;
-struct RenderPassEncoderBeginInfo;
-struct ComputePassEncoderCreateInfo;
+    struct AdapterCreateInfo;
+    struct InstanceCreateInfo;
+    struct DeviceCreateInfo;
+    struct BufferCreateInfo;
+    struct BufferImportInfo;
+    struct TextureCreateInfo;
+    struct TextureImportInfo;
+    struct TextureViewCreateInfo;
+    struct ShaderCreateInfo;
+    struct SamplerCreateInfo;
+    struct SemaphoreCreateInfo;
+    struct FenceCreateInfo;
+    struct SurfaceCreateInfo;
+    struct SwapchainCreateInfo;
+    struct BindGroupLayoutCreateInfo;
+    struct BindGroupCreateInfo;
+    struct RenderPipelineCreateInfo;
+    struct ComputePipelineCreateInfo;
+    struct CommandEncoderCreateInfo;
+    struct RenderPassCreateInfo;
+    struct FramebufferCreateInfo;
+    struct RenderPassEncoderBeginInfo;
+    struct ComputePassEncoderCreateInfo;
 
-struct SubmitInfo;
-struct PlatformWindowHandle;
+    struct SubmitInfo;
+    struct PlatformWindowHandle;
 
-enum class SemaphoreType;
-enum class InstanceFeatureType;
-enum class DeviceFeatureType;
+    enum class SemaphoreType;
+    enum class InstanceFeatureType;
+    enum class DeviceFeatureType;
+    enum class ShaderSourceType;
 
-class Buffer;
-class Texture;
-class Swapchain;
+    class Buffer;
+    class Texture;
+    class Swapchain;
 } // namespace core
 } // namespace gfx::backend::webgpu
 
@@ -109,6 +110,7 @@ core::BufferImportInfo gfxExternalDescriptorToWebGPUBufferImportInfo(const GfxBu
 core::TextureCreateInfo gfxDescriptorToWebGPUTextureCreateInfo(const GfxTextureDescriptor* descriptor);
 core::TextureImportInfo gfxExternalDescriptorToWebGPUTextureImportInfo(const GfxTextureImportDescriptor* descriptor);
 core::TextureViewCreateInfo gfxDescriptorToWebGPUTextureViewCreateInfo(const GfxTextureViewDescriptor* descriptor);
+core::ShaderSourceType gfxShaderSourceTypeToWebGPU(GfxShaderSourceType sourceType);
 core::ShaderCreateInfo gfxDescriptorToWebGPUShaderCreateInfo(const GfxShaderDescriptor* descriptor);
 core::SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxSamplerDescriptor* descriptor);
 core::SemaphoreCreateInfo gfxDescriptorToWebGPUSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor);

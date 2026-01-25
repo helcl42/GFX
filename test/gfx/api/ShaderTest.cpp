@@ -235,10 +235,6 @@ TEST_P(GfxShaderTest, CreateComputeShaderWGSL)
 
 TEST_P(GfxShaderTest, CreateComputeShaderSPIRV)
 {
-    if (backend == GFX_BACKEND_WEBGPU) {
-        GTEST_SKIP() << "SPIR-V is Vulkan only";
-    }
-
     GfxShaderDescriptor desc = {};
     desc.label = "SPIR-V Compute Shader";
     desc.sourceType = GFX_SHADER_SOURCE_SPIRV;

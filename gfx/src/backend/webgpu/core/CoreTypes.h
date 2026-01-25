@@ -26,6 +26,12 @@ enum class SemaphoreType {
     Timeline
 };
 
+// Internal shader source type
+enum class ShaderSourceType {
+    WGSL = 0,
+    SPIRV = 1
+};
+
 enum class InstanceFeatureType {
     Invalid = 0,
     Surface = 1
@@ -38,10 +44,10 @@ enum class DeviceFeatureType {
 
 // Queue family properties (WebGPU has single unified queue)
 struct QueueFamilyProperties {
-    uint32_t queueCount;          // Always 1 for WebGPU
-    bool supportsGraphics;        // Always true
-    bool supportsCompute;         // Always true
-    bool supportsTransfer;        // Always true
+    uint32_t queueCount; // Always 1 for WebGPU
+    bool supportsGraphics; // Always true
+    bool supportsCompute; // Always true
+    bool supportsTransfer; // Always true
 };
 
 // ============================================================================
@@ -125,6 +131,7 @@ struct TextureViewCreateInfo {
 };
 
 struct ShaderCreateInfo {
+    ShaderSourceType sourceType;
     const void* code;
     size_t codeSize;
     const char* entryPoint; // nullptr means "main"

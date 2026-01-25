@@ -281,9 +281,21 @@ core::TextureViewCreateInfo gfxDescriptorToWebGPUTextureViewCreateInfo(const Gfx
     return createInfo;
 }
 
+core::ShaderSourceType gfxShaderSourceTypeToWebGPU(GfxShaderSourceType sourceType)
+{
+    switch (sourceType) {
+    case GFX_SHADER_SOURCE_SPIRV:
+        return core::ShaderSourceType::SPIRV;
+    case GFX_SHADER_SOURCE_WGSL:
+    default:
+        return core::ShaderSourceType::WGSL;
+    }
+}
+
 core::ShaderCreateInfo gfxDescriptorToWebGPUShaderCreateInfo(const GfxShaderDescriptor* descriptor)
 {
     core::ShaderCreateInfo createInfo{};
+    createInfo.sourceType = gfxShaderSourceTypeToWebGPU(descriptor->sourceType);
     createInfo.code = descriptor->code;
     createInfo.codeSize = descriptor->codeSize;
     createInfo.entryPoint = descriptor->entryPoint;
