@@ -11,6 +11,7 @@
 #include "core/compute/ComputePipeline.h"
 #include "core/presentation/Surface.h"
 #include "core/presentation/Swapchain.h"
+#include "core/query/QuerySet.h"
 #include "core/render/Framebuffer.h"
 #include "core/render/RenderPass.h"
 #include "core/render/RenderPipeline.h"
@@ -115,7 +116,7 @@ GfxResult Backend::enumerateInstanceExtensions(uint32_t* extensionCount, const c
         extensionNames[i] = converter::instanceExtensionNameToGfx(internalExtensions[i]);
     }
     *extensionCount = static_cast<uint32_t>(internalExtensions.size());
-    
+
     return GFX_RESULT_SUCCESS;
 }
 
@@ -236,7 +237,7 @@ GfxResult Backend::adapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t
         extensionNames[i] = converter::deviceExtensionNameToGfx(internalExtensions[i]);
     }
     *extensionCount = static_cast<uint32_t>(internalExtensions.size());
-    
+
     return GFX_RESULT_SUCCESS;
 }
 
@@ -615,6 +616,25 @@ GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDes
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
         gfx::common::Logger::instance().logError("Failed to create semaphore: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+}
+
+GfxResult Backend::deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const
+{
+    GfxResult validationResult = validator::validateDeviceCreateQuerySet(device, descriptor, outQuerySet);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToQuerySetCreateInfo(descriptor);
+        auto* querySet = new core::QuerySet(dev, createInfo);
+        *outQuerySet = converter::toGfx<GfxQuerySet>(querySet);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create query set: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
 }
@@ -1069,6 +1089,17 @@ GfxResult Backend::framebufferDestroy(GfxFramebuffer framebuffer) const
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult Backend::querySetDestroy(GfxQuerySet querySet) const
+{
+    GfxResult validationResult = validator::validateQuerySetDestroy(querySet);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
+    delete converter::toNative<core::QuerySet>(querySet);
+    return GFX_RESULT_SUCCESS;
+}
+
 // Queue functions
 GfxResult Backend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const
 {
@@ -1345,6 +1376,33 @@ GfxResult Backend::commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandE
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult Backend::commandEncoderWriteTimestamp(GfxCommandEncoder commandEncoder, GfxQuerySet querySet, uint32_t queryIndex) const
+{
+    GfxResult validationResult = validator::validateCommandEncoderWriteTimestamp(commandEncoder, querySet);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
+    auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
+    auto* query = converter::toNative<core::QuerySet>(querySet);
+    encoder->writeTimestamp(query->handle(), queryIndex);
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult Backend::commandEncoderResolveQuerySet(GfxCommandEncoder commandEncoder, GfxQuerySet querySet, uint32_t firstQuery, uint32_t queryCount, GfxBuffer destinationBuffer, uint64_t destinationOffset) const
+{
+    GfxResult validationResult = validator::validateCommandEncoderResolveQuerySet(commandEncoder, querySet, destinationBuffer);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
+    auto* encoder = converter::toNative<core::CommandEncoder>(commandEncoder);
+    auto* query = converter::toNative<core::QuerySet>(querySet);
+    auto* buffer = converter::toNative<core::Buffer>(destinationBuffer);
+    encoder->resolveQuerySet(query->handle(), firstQuery, queryCount, buffer->handle(), destinationOffset);
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult Backend::commandEncoderEnd(GfxCommandEncoder commandEncoder) const
 {
     GfxResult validationResult = validator::validateCommandEncoderEnd(commandEncoder);
@@ -1500,6 +1558,31 @@ GfxResult Backend::renderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder ren
     auto* rpe = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     auto* buffer = converter::toNative<core::Buffer>(indirectBuffer);
     rpe->drawIndexedIndirect(buffer, indirectOffset);
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult Backend::renderPassEncoderBeginOcclusionQuery(GfxRenderPassEncoder renderPassEncoder, GfxQuerySet querySet, uint32_t queryIndex) const
+{
+    GfxResult validationResult = validator::validateRenderPassEncoderBeginOcclusionQuery(renderPassEncoder, querySet);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
+    auto* encoder = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
+    auto* query = converter::toNative<core::QuerySet>(querySet);
+    encoder->beginOcclusionQuery(query->handle(), queryIndex);
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult Backend::renderPassEncoderEndOcclusionQuery(GfxRenderPassEncoder renderPassEncoder) const
+{
+    GfxResult validationResult = validator::validateRenderPassEncoderEndOcclusionQuery(renderPassEncoder);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
+    auto* encoder = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
+    encoder->endOcclusionQuery();
     return GFX_RESULT_SUCCESS;
 }
 

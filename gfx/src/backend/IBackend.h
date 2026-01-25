@@ -46,6 +46,7 @@ public:
     virtual GfxResult deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const = 0;
     virtual GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const = 0;
     virtual GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const = 0;
+    virtual GfxResult deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const = 0;
     virtual GfxResult deviceWaitIdle(GfxDevice device) const = 0;
     virtual GfxResult deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const = 0;
 
@@ -103,6 +104,9 @@ public:
     // Framebuffer functions
     virtual GfxResult framebufferDestroy(GfxFramebuffer framebuffer) const = 0;
 
+    // QuerySet functions
+    virtual GfxResult querySetDestroy(GfxQuerySet querySet) const = 0;
+
     // Queue functions
     virtual GfxResult queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const = 0;
     virtual GfxResult queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const = 0;
@@ -121,6 +125,8 @@ public:
     virtual GfxResult commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxPipelineBarrierDescriptor* descriptor) const = 0;
     virtual GfxResult commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const = 0;
     virtual GfxResult commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture, uint32_t baseMipLevel, uint32_t levelCount) const = 0;
+    virtual GfxResult commandEncoderWriteTimestamp(GfxCommandEncoder commandEncoder, GfxQuerySet querySet, uint32_t queryIndex) const = 0;
+    virtual GfxResult commandEncoderResolveQuerySet(GfxCommandEncoder commandEncoder, GfxQuerySet querySet, uint32_t firstQuery, uint32_t queryCount, GfxBuffer destinationBuffer, uint64_t destinationOffset) const = 0;
     virtual GfxResult commandEncoderEnd(GfxCommandEncoder commandEncoder) const = 0;
     virtual GfxResult commandEncoderBegin(GfxCommandEncoder commandEncoder) const = 0;
 
@@ -136,6 +142,8 @@ public:
     virtual GfxResult renderPassEncoderDrawIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset) const = 0;
     virtual GfxResult renderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset) const = 0;
     virtual GfxResult renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const = 0;
+    virtual GfxResult renderPassEncoderBeginOcclusionQuery(GfxRenderPassEncoder renderPassEncoder, GfxQuerySet querySet, uint32_t queryIndex) const = 0;
+    virtual GfxResult renderPassEncoderEndOcclusionQuery(GfxRenderPassEncoder renderPassEncoder) const = 0;
 
     // ComputePassEncoder functions
     virtual GfxResult computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const = 0;

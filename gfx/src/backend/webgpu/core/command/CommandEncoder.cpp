@@ -151,4 +151,14 @@ void CommandEncoder::blitTextureToTexture(Texture* source, const WGPUOrigin3D& s
         filter);
 }
 
+void CommandEncoder::writeTimestamp(WGPUQuerySet querySet, uint32_t queryIndex)
+{
+    wgpuCommandEncoderWriteTimestamp(m_encoder, querySet, queryIndex);
+}
+
+void CommandEncoder::resolveQuerySet(WGPUQuerySet querySet, uint32_t firstQuery, uint32_t queryCount, WGPUBuffer buffer, uint64_t destinationOffset)
+{
+    wgpuCommandEncoderResolveQuerySet(m_encoder, querySet, firstQuery, queryCount, buffer, destinationOffset);
+}
+
 } // namespace gfx::backend::webgpu::core

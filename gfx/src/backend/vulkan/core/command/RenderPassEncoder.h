@@ -37,10 +37,15 @@ public:
     void drawIndirect(Buffer* buffer, uint64_t offset);
     void drawIndexedIndirect(Buffer* buffer, uint64_t offset);
 
+    void beginOcclusionQuery(VkQueryPool queryPool, uint32_t queryIndex);
+    void endOcclusionQuery();
+
 private:
     VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
     Device* m_device = nullptr;
     CommandEncoder* m_commandEncoder = nullptr;
+    VkQueryPool m_activeQueryPool = VK_NULL_HANDLE;
+    uint32_t m_activeQueryIndex = 0;
 };
 
 } // namespace gfx::backend::vulkan::core

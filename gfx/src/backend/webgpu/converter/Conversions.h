@@ -40,6 +40,7 @@ namespace core {
 
     struct SubmitInfo;
     struct PlatformWindowHandle;
+    struct QuerySetCreateInfo;
 
     enum class SemaphoreType;
     enum class InstanceFeatureType;
@@ -128,6 +129,7 @@ core::FenceCreateInfo gfxDescriptorToWebGPUFenceCreateInfo(const GfxFenceDescrip
 core::SurfaceCreateInfo gfxDescriptorToWebGPUSurfaceCreateInfo(const GfxSurfaceDescriptor* descriptor);
 core::SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor);
 core::BindGroupLayoutCreateInfo gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(const GfxBindGroupLayoutDescriptor* descriptor);
+core::QuerySetCreateInfo gfxDescriptorToWebGPUQuerySetCreateInfo(const GfxQuerySetDescriptor* descriptor);
 
 // Entity-dependent CreateInfo Conversion Functions
 core::BindGroupCreateInfo gfxDescriptorToWebGPUBindGroupCreateInfo(const GfxBindGroupDescriptor* descriptor, WGPUBindGroupLayout layout);

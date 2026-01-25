@@ -428,6 +428,12 @@ typedef enum {
     GFX_SEMAPHORE_TYPE_MAX_ENUM = 0x7FFFFFFF
 } GfxSemaphoreType;
 
+typedef enum {
+    GFX_QUERY_TYPE_OCCLUSION = 0,
+    GFX_QUERY_TYPE_TIMESTAMP = 1,
+    GFX_QUERY_TYPE_MAX_ENUM = 0x7FFFFFFF
+} GfxQueryType;
+
 // ============================================================================
 // Extension Names (String Constants)
 // ============================================================================
@@ -466,6 +472,7 @@ typedef struct GfxFence_T* GfxFence;
 typedef struct GfxSemaphore_T* GfxSemaphore;
 typedef struct GfxRenderPass_T* GfxRenderPass;
 typedef struct GfxFramebuffer_T* GfxFramebuffer;
+typedef struct GfxQuerySet_T* GfxQuerySet;
 
 // ============================================================================
 // Callback Function Types
@@ -1009,6 +1016,12 @@ typedef struct {
 
 typedef struct {
     const char* label;
+    GfxQueryType type;
+    uint32_t count; // Number of queries in the set
+} GfxQuerySetDescriptor;
+
+typedef struct {
+    const char* label;
 } GfxCommandEncoderDescriptor;
 
 typedef struct {
@@ -1173,6 +1186,7 @@ GFX_API GfxResult gfxDeviceCreateRenderPass(GfxDevice device, const GfxRenderPas
 GFX_API GfxResult gfxDeviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer);
 GFX_API GfxResult gfxDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence);
 GFX_API GfxResult gfxDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore);
+GFX_API GfxResult gfxDeviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet);
 GFX_API GfxResult gfxDeviceWaitIdle(GfxDevice device);
 GFX_API GfxResult gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
 
@@ -1232,6 +1246,9 @@ GFX_API GfxResult gfxRenderPassDestroy(GfxRenderPass renderPass);
 // Framebuffer functions
 GFX_API GfxResult gfxFramebufferDestroy(GfxFramebuffer framebuffer);
 
+// QuerySet functions
+GFX_API GfxResult gfxQuerySetDestroy(GfxQuerySet querySet);
+
 // Queue functions
 GFX_API GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo);
 GFX_API GfxResult gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size);
@@ -1250,6 +1267,8 @@ GFX_API GfxResult gfxCommandEncoderBlitTextureToTexture(GfxCommandEncoder comman
 GFX_API GfxResult gfxCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxPipelineBarrierDescriptor* descriptor);
 GFX_API GfxResult gfxCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture);
 GFX_API GfxResult gfxCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture, uint32_t baseMipLevel, uint32_t levelCount);
+GFX_API GfxResult gfxCommandEncoderWriteTimestamp(GfxCommandEncoder commandEncoder, GfxQuerySet querySet, uint32_t queryIndex);
+GFX_API GfxResult gfxCommandEncoderResolveQuerySet(GfxCommandEncoder commandEncoder, GfxQuerySet querySet, uint32_t firstQuery, uint32_t queryCount, GfxBuffer destinationBuffer, uint64_t destinationOffset);
 GFX_API GfxResult gfxCommandEncoderEnd(GfxCommandEncoder commandEncoder);
 GFX_API GfxResult gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder);
 
@@ -1265,6 +1284,8 @@ GFX_API GfxResult gfxRenderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPas
 GFX_API GfxResult gfxRenderPassEncoderDrawIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset);
 GFX_API GfxResult gfxRenderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset);
 GFX_API GfxResult gfxRenderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder);
+GFX_API GfxResult gfxRenderPassEncoderBeginOcclusionQuery(GfxRenderPassEncoder renderPassEncoder, GfxQuerySet querySet, uint32_t queryIndex);
+GFX_API GfxResult gfxRenderPassEncoderEndOcclusionQuery(GfxRenderPassEncoder renderPassEncoder);
 
 // ComputePassEncoder functions
 GFX_API GfxResult gfxComputePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline);

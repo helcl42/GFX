@@ -145,4 +145,20 @@ void RenderPassEncoder::drawIndexedIndirect(Buffer* buffer, uint64_t offset)
     vkCmdDrawIndexedIndirect(m_commandBuffer, buffer->handle(), offset, 1, 0);
 }
 
+void RenderPassEncoder::beginOcclusionQuery(VkQueryPool queryPool, uint32_t queryIndex)
+{
+    m_activeQueryPool = queryPool;
+    m_activeQueryIndex = queryIndex;
+    vkCmdBeginQuery(m_commandBuffer, queryPool, queryIndex, 0);
+}
+
+void RenderPassEncoder::endOcclusionQuery()
+{
+    if (m_activeQueryPool != VK_NULL_HANDLE) {
+        vkCmdEndQuery(m_commandBuffer, m_activeQueryPool, m_activeQueryIndex);
+        m_activeQueryPool = VK_NULL_HANDLE;
+        m_activeQueryIndex = 0;
+    }
+}
+
 } // namespace gfx::backend::vulkan::core

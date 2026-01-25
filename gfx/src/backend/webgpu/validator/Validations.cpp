@@ -843,6 +843,17 @@ GfxResult validateDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDesc
     return validateSemaphoreDescriptor(descriptor);
 }
 
+GfxResult validateDeviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet)
+{
+    if (!device || !descriptor || !outQuerySet) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    if (descriptor->count == 0) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult validateDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
 {
     if (!device || !outLimits) {
@@ -1067,6 +1078,22 @@ GfxResult validateCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEn
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult validateCommandEncoderWriteTimestamp(GfxCommandEncoder commandEncoder, GfxQuerySet querySet)
+{
+    if (!commandEncoder || !querySet) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateCommandEncoderResolveQuerySet(GfxCommandEncoder commandEncoder, GfxQuerySet querySet, GfxBuffer destinationBuffer)
+{
+    if (!commandEncoder || !querySet || !destinationBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult validateRenderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline)
 {
     if (!renderPassEncoder || !pipeline) {
@@ -1126,6 +1153,22 @@ GfxResult validateRenderPassEncoderDrawIndirect(GfxRenderPassEncoder renderPassE
 GfxResult validateRenderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer)
 {
     if (!renderPassEncoder || !indirectBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderBeginOcclusionQuery(GfxRenderPassEncoder renderPassEncoder, GfxQuerySet querySet)
+{
+    if (!renderPassEncoder || !querySet) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateRenderPassEncoderEndOcclusionQuery(GfxRenderPassEncoder renderPassEncoder)
+{
+    if (!renderPassEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     return GFX_RESULT_SUCCESS;
@@ -1322,6 +1365,14 @@ GfxResult validateRenderPassDestroy(GfxRenderPass renderPass)
 GfxResult validateFramebufferDestroy(GfxFramebuffer framebuffer)
 {
     if (!framebuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateQuerySetDestroy(GfxQuerySet querySet)
+{
+    if (!querySet) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     return GFX_RESULT_SUCCESS;

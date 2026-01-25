@@ -47,6 +47,7 @@ public:
     GfxResult deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const override;
     GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const override;
     GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const override;
+    GfxResult deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const override;
     GfxResult deviceWaitIdle(GfxDevice device) const override;
     GfxResult deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const override;
 
@@ -104,6 +105,9 @@ public:
     // Framebuffer functions
     GfxResult framebufferDestroy(GfxFramebuffer framebuffer) const override;
 
+    // QuerySet functions
+    GfxResult querySetDestroy(GfxQuerySet querySet) const override;
+
     // Queue functions
     GfxResult queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const override;
     GfxResult queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const override;
@@ -122,6 +126,8 @@ public:
     GfxResult commandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxPipelineBarrierDescriptor* descriptor) const override;
     GfxResult commandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture) const override;
     GfxResult commandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture, uint32_t baseMipLevel, uint32_t levelCount) const override;
+    GfxResult commandEncoderWriteTimestamp(GfxCommandEncoder commandEncoder, GfxQuerySet querySet, uint32_t queryIndex) const override;
+    GfxResult commandEncoderResolveQuerySet(GfxCommandEncoder commandEncoder, GfxQuerySet querySet, uint32_t firstQuery, uint32_t queryCount, GfxBuffer destinationBuffer, uint64_t destinationOffset) const override;
     GfxResult commandEncoderEnd(GfxCommandEncoder commandEncoder) const override;
     GfxResult commandEncoderBegin(GfxCommandEncoder commandEncoder) const override;
 
@@ -136,6 +142,8 @@ public:
     GfxResult renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const override;
     GfxResult renderPassEncoderDrawIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset) const override;
     GfxResult renderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset) const override;
+    GfxResult renderPassEncoderBeginOcclusionQuery(GfxRenderPassEncoder renderPassEncoder, GfxQuerySet querySet, uint32_t queryIndex) const override;
+    GfxResult renderPassEncoderEndOcclusionQuery(GfxRenderPassEncoder renderPassEncoder) const override;
     GfxResult renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const override;
 
     // ComputePassEncoder functions
@@ -157,7 +165,6 @@ public:
     GfxResult semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const override;
     GfxResult semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const override;
     GfxResult semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const override;
-
     // Helper functions
     GfxAccessFlags getAccessFlagsForLayout(GfxTextureLayout layout) const override;
 };

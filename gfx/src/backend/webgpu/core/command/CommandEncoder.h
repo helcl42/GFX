@@ -33,6 +33,10 @@ public:
     void copyTextureToTexture(Texture* source, const WGPUOrigin3D& sourceOrigin, uint32_t sourceMipLevel, Texture* destination, const WGPUOrigin3D& destinationOrigin, uint32_t destinationMipLevel, const WGPUExtent3D& extent);
     void blitTextureToTexture(Texture* source, const WGPUOrigin3D& sourceOrigin, const WGPUExtent3D& sourceExtent, uint32_t sourceMipLevel, Texture* destination, const WGPUOrigin3D& destinationOrigin, const WGPUExtent3D& destinationExtent, uint32_t destinationMipLevel, WGPUFilterMode filter);
 
+    // Query operations
+    void writeTimestamp(WGPUQuerySet querySet, uint32_t queryIndex);
+    void resolveQuerySet(WGPUQuerySet querySet, uint32_t firstQuery, uint32_t queryCount, WGPUBuffer buffer, uint64_t destinationOffset);
+
 private:
     Device* m_device = nullptr; // Non-owning pointer
     WGPUCommandEncoder m_encoder = nullptr;

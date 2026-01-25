@@ -127,6 +127,7 @@ VkSamplerMipmapMode gfxFilterModeToVkMipMapFilterMode(GfxFilterMode filter);
 VkBlendFactor gfxBlendFactorToVkBlendFactor(GfxBlendFactor factor);
 VkBlendOp gfxBlendOpToVkBlendOp(GfxBlendOperation op);
 VkCompareOp gfxCompareOpToVkCompareOp(GfxCompareFunction func);
+VkQueryType gfxQueryTypeToVkQueryType(GfxQueryType type);
 const char* vkResultToString(VkResult result);
 
 // ============================================================================
@@ -157,6 +158,7 @@ core::RenderPassEncoderCreateInfo gfxRenderPassDescriptorToCreateInfo(const GfxR
 core::RenderPassEncoderBeginInfo gfxRenderPassBeginDescriptorToBeginInfo(const GfxRenderPassBeginDescriptor* descriptor);
 core::ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(const GfxComputePassBeginDescriptor* descriptor);
 core::SubmitInfo gfxDescriptorToSubmitInfo(const GfxSubmitDescriptor* descriptor);
+core::QuerySetCreateInfo gfxDescriptorToQuerySetCreateInfo(const GfxQuerySetDescriptor* descriptor);
 
 } // namespace gfx::backend::vulkan::converter
 

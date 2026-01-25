@@ -6,6 +6,7 @@
 #include "../core/compute/ComputePipeline.h"
 #include "../core/presentation/Surface.h"
 #include "../core/presentation/Swapchain.h"
+#include "../core/query/QuerySet.h"
 #include "../core/render/Framebuffer.h"
 #include "../core/render/RenderPass.h"
 #include "../core/render/RenderPipeline.h"
@@ -90,6 +91,18 @@ core::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreType gfxTy
         return core::SemaphoreType::Timeline;
     default:
         return core::SemaphoreType::Binary;
+    }
+}
+
+WGPUQueryType gfxQueryTypeToWebGPUQueryType(GfxQueryType type)
+{
+    switch (type) {
+    case GFX_QUERY_TYPE_OCCLUSION:
+        return WGPUQueryType_Occlusion;
+    case GFX_QUERY_TYPE_TIMESTAMP:
+        return WGPUQueryType_Timestamp;
+    default:
+        return WGPUQueryType_Occlusion;
     }
 }
 
@@ -199,11 +212,11 @@ core::AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxAdapterD
 core::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstanceDescriptor* descriptor)
 {
     core::InstanceCreateInfo createInfo{};
-    
+
     if (descriptor) {
         createInfo.applicationName = descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
         createInfo.applicationVersion = descriptor->applicationVersion;
-        
+
         // Convert enabled extensions from const char** to std::vector<std::string>
         if (descriptor->enabledExtensions && descriptor->enabledExtensionCount > 0) {
             createInfo.enabledExtensions.reserve(descriptor->enabledExtensionCount);
@@ -222,7 +235,7 @@ core::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstan
 core::DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
 {
     core::DeviceCreateInfo createInfo{};
-    
+
     if (descriptor) {
         // Convert enabled extensions from const char** to std::vector<std::string>
         if (descriptor->enabledExtensions && descriptor->enabledExtensionCount > 0) {
@@ -340,7 +353,7 @@ core::SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxSamplerD
 core::SemaphoreCreateInfo gfxDescriptorToWebGPUSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor)
 {
     core::SemaphoreCreateInfo createInfo{};
-    
+
     if (descriptor) {
         createInfo.type = gfxSemaphoreTypeToWebGPUSemaphoreType(descriptor->type);
         createInfo.initialValue = descriptor->initialValue;
@@ -348,20 +361,20 @@ core::SemaphoreCreateInfo gfxDescriptorToWebGPUSemaphoreCreateInfo(const GfxSema
         createInfo.type = core::SemaphoreType::Binary;
         createInfo.initialValue = 0;
     }
-    
+
     return createInfo;
 }
 
 core::FenceCreateInfo gfxDescriptorToWebGPUFenceCreateInfo(const GfxFenceDescriptor* descriptor)
 {
     core::FenceCreateInfo createInfo{};
-    
+
     if (descriptor) {
         createInfo.signaled = descriptor->signaled;
     } else {
         createInfo.signaled = false;
     }
-    
+
     return createInfo;
 }
 
@@ -715,6 +728,22 @@ core::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitDescriptor* desc
     submitInfo.signalValues = descriptor->signalValues;
     submitInfo.signalSemaphoreCount = descriptor->signalSemaphoreCount;
     return submitInfo;
+}
+
+core::QuerySetCreateInfo gfxDescriptorToWebGPUQuerySetCreateInfo(const GfxQuerySetDescriptor* descriptor)
+{
+    core::QuerySetCreateInfo createInfo{};
+
+    if (descriptor) {
+        createInfo.label = descriptor->label;
+        createInfo.type = gfxQueryTypeToWebGPUQueryType(descriptor->type);
+        createInfo.count = descriptor->count;
+    } else {
+        createInfo.type = WGPUQueryType_Occlusion;
+        createInfo.count = 1;
+    }
+
+    return createInfo;
 }
 
 // ============================================================================

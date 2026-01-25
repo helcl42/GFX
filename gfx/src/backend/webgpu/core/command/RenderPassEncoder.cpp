@@ -138,6 +138,16 @@ void RenderPassEncoder::drawIndexedIndirect(WGPUBuffer buffer, uint64_t offset)
     wgpuRenderPassEncoderDrawIndexedIndirect(m_encoder, buffer, offset);
 }
 
+void RenderPassEncoder::beginOcclusionQuery(WGPUQuerySet querySet, uint32_t queryIndex)
+{
+    wgpuRenderPassEncoderBeginOcclusionQuery(m_encoder, queryIndex);
+}
+
+void RenderPassEncoder::endOcclusionQuery()
+{
+    wgpuRenderPassEncoderEndOcclusionQuery(m_encoder);
+}
+
 WGPURenderPassEncoder RenderPassEncoder::handle() const
 {
     return m_encoder;

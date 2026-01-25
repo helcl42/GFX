@@ -147,6 +147,12 @@ struct FenceCreateInfo {
     bool signaled; // true = create in signaled state
 };
 
+struct QuerySetCreateInfo {
+    const char* label = nullptr;
+    WGPUQueryType type = WGPUQueryType_Occlusion;
+    uint32_t count = 0;
+};
+
 struct CommandEncoderCreateInfo {
     const char* label; // nullptr means no label
 };

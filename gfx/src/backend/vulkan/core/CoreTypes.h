@@ -130,6 +130,12 @@ struct FenceCreateInfo {
     bool signaled; // true = create in signaled state
 };
 
+struct QuerySetCreateInfo {
+    const char* label = nullptr;
+    VkQueryType type = VK_QUERY_TYPE_OCCLUSION;
+    uint32_t count = 0;
+};
+
 struct MemoryBarrier {
     VkPipelineStageFlags srcStageMask;
     VkPipelineStageFlags dstStageMask;

@@ -39,6 +39,7 @@ GfxResult validateDeviceCreateFramebuffer(GfxDevice device, const GfxFramebuffer
 GfxResult validateDeviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder);
 GfxResult validateDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence);
 GfxResult validateDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore);
+GfxResult validateDeviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet);
 GfxResult validateDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
 GfxResult validateSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount);
 GfxResult validateSurfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount);
@@ -67,6 +68,8 @@ GfxResult validateCommandEncoderBlitTextureToTexture(GfxCommandEncoder commandEn
 GfxResult validateCommandEncoderPipelineBarrier(GfxCommandEncoder commandEncoder, const GfxPipelineBarrierDescriptor* descriptor);
 GfxResult validateCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, GfxTexture texture);
 GfxResult validateCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture);
+GfxResult validateCommandEncoderWriteTimestamp(GfxCommandEncoder commandEncoder, GfxQuerySet querySet);
+GfxResult validateCommandEncoderResolveQuerySet(GfxCommandEncoder commandEncoder, GfxQuerySet querySet, GfxBuffer destinationBuffer);
 GfxResult validateRenderPassEncoderSetPipeline(GfxRenderPassEncoder renderPassEncoder, GfxRenderPipeline pipeline);
 GfxResult validateRenderPassEncoderSetBindGroup(GfxRenderPassEncoder renderPassEncoder, GfxBindGroup bindGroup);
 GfxResult validateRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder renderPassEncoder, GfxBuffer buffer);
@@ -75,6 +78,8 @@ GfxResult validateRenderPassEncoderSetViewport(GfxRenderPassEncoder renderPassEn
 GfxResult validateRenderPassEncoderSetScissorRect(GfxRenderPassEncoder renderPassEncoder, const GfxScissorRect* scissor);
 GfxResult validateRenderPassEncoderDrawIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer);
 GfxResult validateRenderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer);
+GfxResult validateRenderPassEncoderBeginOcclusionQuery(GfxRenderPassEncoder renderPassEncoder, GfxQuerySet querySet);
+GfxResult validateRenderPassEncoderEndOcclusionQuery(GfxRenderPassEncoder renderPassEncoder);
 GfxResult validateComputePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline);
 GfxResult validateComputePassEncoderSetBindGroup(GfxComputePassEncoder computePassEncoder, GfxBindGroup bindGroup);
 GfxResult validateComputePassEncoderDispatchIndirect(GfxComputePassEncoder computePassEncoder, GfxBuffer indirectBuffer);
@@ -101,6 +106,7 @@ GfxResult validateRenderPipelineDestroy(GfxRenderPipeline renderPipeline);
 GfxResult validateComputePipelineDestroy(GfxComputePipeline computePipeline);
 GfxResult validateRenderPassDestroy(GfxRenderPass renderPass);
 GfxResult validateFramebufferDestroy(GfxFramebuffer framebuffer);
+GfxResult validateQuerySetDestroy(GfxQuerySet querySet);
 GfxResult validateQueueWaitIdle(GfxQueue queue);
 GfxResult validateCommandEncoderDestroy(GfxCommandEncoder commandEncoder);
 GfxResult validateCommandEncoderEnd(GfxCommandEncoder commandEncoder);

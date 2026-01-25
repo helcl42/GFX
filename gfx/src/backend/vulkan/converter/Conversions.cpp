@@ -1,6 +1,7 @@
 #include "Conversions.h"
 
 #include "../common/Common.h"
+#include "../core/query/QuerySet.h"
 #include "../core/render/RenderPass.h"
 #include "../core/resource/BindGroup.h"
 #include "../core/resource/BindGroupLayout.h"
@@ -821,6 +822,18 @@ VkCompareOp gfxCompareOpToVkCompareOp(GfxCompareFunction func)
     }
 }
 
+VkQueryType gfxQueryTypeToVkQueryType(GfxQueryType type)
+{
+    switch (type) {
+    case GFX_QUERY_TYPE_OCCLUSION:
+        return VK_QUERY_TYPE_OCCLUSION;
+    case GFX_QUERY_TYPE_TIMESTAMP:
+        return VK_QUERY_TYPE_TIMESTAMP;
+    default:
+        return VK_QUERY_TYPE_MAX_ENUM;
+    }
+}
+
 const char* vkResultToString(VkResult result)
 {
     switch (result) {
@@ -1162,7 +1175,7 @@ core::ShaderCreateInfo gfxDescriptorToShaderCreateInfo(const GfxShaderDescriptor
 core::SemaphoreCreateInfo gfxDescriptorToSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor)
 {
     core::SemaphoreCreateInfo createInfo{};
-    
+
     if (descriptor) {
         createInfo.type = gfxSemaphoreTypeToVulkanSemaphoreType(descriptor->type);
         createInfo.initialValue = descriptor->initialValue;
@@ -1170,20 +1183,20 @@ core::SemaphoreCreateInfo gfxDescriptorToSemaphoreCreateInfo(const GfxSemaphoreD
         createInfo.type = core::SemaphoreType::Binary;
         createInfo.initialValue = 0;
     }
-    
+
     return createInfo;
 }
 
 core::FenceCreateInfo gfxDescriptorToFenceCreateInfo(const GfxFenceDescriptor* descriptor)
 {
     core::FenceCreateInfo createInfo{};
-    
+
     if (descriptor) {
         createInfo.signaled = descriptor->signaled;
     } else {
         createInfo.signaled = false;
     }
-    
+
     return createInfo;
 }
 
@@ -1264,11 +1277,11 @@ core::SamplerCreateInfo gfxDescriptorToSamplerCreateInfo(const GfxSamplerDescrip
 core::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInstanceDescriptor* descriptor)
 {
     core::InstanceCreateInfo createInfo{};
-    
+
     if (descriptor) {
         createInfo.applicationName = descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
         createInfo.applicationVersion = descriptor->applicationVersion;
-        
+
         // Convert enabled extensions from const char** to std::vector<std::string>
         if (descriptor->enabledExtensions && descriptor->enabledExtensionCount > 0) {
             createInfo.enabledExtensions.reserve(descriptor->enabledExtensionCount);
@@ -1313,7 +1326,7 @@ core::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescrip
 core::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
 {
     core::DeviceCreateInfo createInfo{};
-    
+
     if (descriptor) {
         // Convert enabled extensions from const char** to std::vector<std::string>
         if (descriptor->enabledExtensions && descriptor->enabledExtensionCount > 0) {
@@ -1770,6 +1783,22 @@ core::ComputePassEncoderCreateInfo gfxComputePassBeginDescriptorToCreateInfo(con
 {
     core::ComputePassEncoderCreateInfo createInfo{};
     createInfo.label = descriptor->label;
+    return createInfo;
+}
+
+core::QuerySetCreateInfo gfxDescriptorToQuerySetCreateInfo(const GfxQuerySetDescriptor* descriptor)
+{
+    core::QuerySetCreateInfo createInfo{};
+
+    if (descriptor) {
+        createInfo.label = descriptor->label;
+        createInfo.type = gfxQueryTypeToVkQueryType(descriptor->type);
+        createInfo.count = descriptor->count;
+    } else {
+        createInfo.type = VK_QUERY_TYPE_OCCLUSION;
+        createInfo.count = 1;
+    }
+
     return createInfo;
 }
 

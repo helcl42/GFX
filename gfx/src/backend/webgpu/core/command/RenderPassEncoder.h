@@ -31,6 +31,9 @@ public:
     void drawIndirect(WGPUBuffer buffer, uint64_t offset);
     void drawIndexedIndirect(WGPUBuffer buffer, uint64_t offset);
 
+    void beginOcclusionQuery(WGPUQuerySet querySet, uint32_t queryIndex);
+    void endOcclusionQuery();
+
     WGPURenderPassEncoder handle() const;
 
 private:

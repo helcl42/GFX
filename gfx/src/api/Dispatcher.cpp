@@ -390,6 +390,7 @@ DEVICE_CREATE_FUNC(RenderPipeline, RenderPipeline)
 DEVICE_CREATE_FUNC(ComputePipeline, ComputePipeline)
 DEVICE_CREATE_FUNC(Fence, Fence)
 DEVICE_CREATE_FUNC(Semaphore, Semaphore)
+DEVICE_CREATE_FUNC(QuerySet, QuerySet)
 
 // Import functions for external resources
 GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer)
@@ -573,6 +574,7 @@ DESTROY_FUNC(Framebuffer, framebuffer)
 DESTROY_FUNC(CommandEncoder, commandEncoder)
 DESTROY_FUNC(Fence, fence)
 DESTROY_FUNC(Semaphore, semaphore)
+DESTROY_FUNC(QuerySet, querySet)
 
 // Surface Functions
 GfxResult gfxSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats)
@@ -890,6 +892,30 @@ GfxResult gfxCommandEncoderBegin(GfxCommandEncoder commandEncoder)
     return backend->commandEncoderBegin(commandEncoder);
 }
 
+GfxResult gfxCommandEncoderWriteTimestamp(GfxCommandEncoder commandEncoder, GfxQuerySet querySet, uint32_t queryIndex)
+{
+    if (!commandEncoder || !querySet) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->commandEncoderWriteTimestamp(commandEncoder, querySet, queryIndex);
+}
+
+GfxResult gfxCommandEncoderResolveQuerySet(GfxCommandEncoder commandEncoder, GfxQuerySet querySet, uint32_t firstQuery, uint32_t queryCount, GfxBuffer destinationBuffer, uint64_t destinationOffset)
+{
+    if (!commandEncoder || !querySet || !destinationBuffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(commandEncoder);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->commandEncoderResolveQuerySet(commandEncoder, querySet, firstQuery, queryCount, destinationBuffer, destinationOffset);
+}
+
 GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     const GfxRenderPassBeginDescriptor* beginDescriptor,
     GfxRenderPassEncoder* outEncoder)
@@ -1153,6 +1179,30 @@ GfxResult gfxRenderPassEncoderEnd(GfxRenderPassEncoder encoder)
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return backend->renderPassEncoderEnd(encoder);
+}
+
+GfxResult gfxRenderPassEncoderBeginOcclusionQuery(GfxRenderPassEncoder renderPassEncoder, GfxQuerySet querySet, uint32_t queryIndex)
+{
+    if (!renderPassEncoder || !querySet) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(renderPassEncoder);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->renderPassEncoderBeginOcclusionQuery(renderPassEncoder, querySet, queryIndex);
+}
+
+GfxResult gfxRenderPassEncoderEndOcclusionQuery(GfxRenderPassEncoder renderPassEncoder)
+{
+    if (!renderPassEncoder) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(renderPassEncoder);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->renderPassEncoderEndOcclusionQuery(renderPassEncoder);
 }
 
 // Compute Pass Encoder Functions
