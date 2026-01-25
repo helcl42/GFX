@@ -12,28 +12,28 @@ namespace {
     {
         return (static_cast<uint64_t>(queueFamilyIndex) << 16) | queueIndex;
     }
+
+    bool isExtensionEnabled(const std::vector<std::string>& enabledExtensions, const char* extension)
+    {
+        for (const auto& enabledExt : enabledExtensions) {
+            if (enabledExt == extension) {
+                return true;
+            }
+        }
+        return false;
+    }
 } // anonymous namespace
 
 Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
     : m_adapter(adapter)
 {
-
-    auto isFeatureEnabled = [&](DeviceFeatureType feature) {
-        for (const auto& enabledFeature : createInfo.enabledFeatures) {
-            if (enabledFeature == feature) {
-                return true;
-            }
-        }
-        return false;
-    };
-
     // Device features
     VkPhysicalDeviceFeatures deviceFeatures{};
 
     // Device extensions
     std::vector<const char*> extensions;
 #ifndef GFX_HEADLESS_BUILD
-    if (isFeatureEnabled(DeviceFeatureType::Swapchain)) {
+    if (isExtensionEnabled(createInfo.enabledExtensions, extensions::SWAPCHAIN)) {
         extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     }
 #endif // GFX_HEADLESS_BUILD

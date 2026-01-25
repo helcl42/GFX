@@ -252,14 +252,13 @@ bool initializeGraphics(CubeApp* app)
     printf("Graphics backend loaded successfully!\n");
 
     // Create graphics instance
-    GfxInstanceFeatureType instanceFeatures[] = { GFX_INSTANCE_FEATURE_TYPE_SURFACE };
+    const char* instanceExtensions[] = { GFX_INSTANCE_EXTENSION_SURFACE, GFX_INSTANCE_EXTENSION_DEBUG };
     GfxInstanceDescriptor instanceDesc = {
         .backend = GFX_BACKEND_API,
-        .enableValidation = true,
         .applicationName = "Cube Example (C)",
         .applicationVersion = 1,
-        .enabledFeatures = instanceFeatures,
-        .enabledFeatureCount = 1
+        .enabledExtensions = instanceExtensions,
+        .enabledExtensionCount = 2
     };
 
     if (gfxCreateInstance(&instanceDesc, &app->instance) != GFX_RESULT_SUCCESS) {
@@ -289,11 +288,11 @@ bool initializeGraphics(CubeApp* app)
     printf("  Backend: %s\n", app->adapterInfo.backend == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU");
 
     // Create device
-    GfxDeviceFeatureType deviceFeatures[] = { GFX_DEVICE_FEATURE_TYPE_SWAPCHAIN };
+    const char* deviceExtensions[] = { GFX_DEVICE_EXTENSION_SWAPCHAIN };
     GfxDeviceDescriptor deviceDesc = {
         .label = "Main Device",
-        .enabledFeatures = deviceFeatures,
-        .enabledFeatureCount = 1
+        .enabledExtensions = deviceExtensions,
+        .enabledExtensionCount = 1
     };
 
     if (gfxAdapterCreateDevice(app->adapter, &deviceDesc, &app->device) != GFX_RESULT_SUCCESS) {

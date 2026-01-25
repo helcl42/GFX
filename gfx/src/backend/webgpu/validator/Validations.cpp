@@ -18,7 +18,7 @@ namespace {
         }
 
         // All fields are optional - no specific validation needed
-        // applicationName, applicationVersion, enabledFeatures are all optional
+        // applicationName, applicationVersion, enabledExtensions are all optional
         return GFX_RESULT_SUCCESS;
     }
 
@@ -95,11 +95,11 @@ namespace {
             }
         }
 
-        // Validate enabledFeatures and enabledFeatureCount consistency
-        if (descriptor->enabledFeatures != nullptr && descriptor->enabledFeatureCount == 0) {
+        // Validate enabledExtensions and enabledExtensionCount consistency
+        if (descriptor->enabledExtensions != nullptr && descriptor->enabledExtensionCount == 0) {
             return GFX_RESULT_ERROR_INVALID_ARGUMENT;
         }
-        if (descriptor->enabledFeatures == nullptr && descriptor->enabledFeatureCount != 0) {
+        if (descriptor->enabledExtensions == nullptr && descriptor->enabledExtensionCount != 0) {
             return GFX_RESULT_ERROR_INVALID_ARGUMENT;
         }
 
@@ -678,6 +678,14 @@ GfxResult validateAdapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* qu
 GfxResult validateAdapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, GfxSurface surface, bool* outSupported)
 {
     if (!adapter || !surface || !outSupported) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateAdapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t* extensionCount)
+{
+    if (!adapter || !extensionCount) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     return GFX_RESULT_SUCCESS;

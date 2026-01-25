@@ -75,6 +75,16 @@ inline InternalType* toNative(GfxHandle handle)
 }
 
 // ============================================================================
+// Extension Name Mapping
+// ============================================================================
+
+// Map internal instance extension name to public API constant
+const char* instanceExtensionNameToGfx(const char* internalName);
+
+// Map internal device extension name to public API constant
+const char* deviceExtensionNameToGfx(const char* internalName);
+
+// ============================================================================
 // Type Conversion Functions
 // ============================================================================
 

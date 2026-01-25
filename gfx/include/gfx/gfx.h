@@ -428,15 +428,17 @@ typedef enum {
     GFX_SEMAPHORE_TYPE_MAX_ENUM = 0x7FFFFFFF
 } GfxSemaphoreType;
 
-typedef enum {
-    GFX_INSTANCE_FEATURE_TYPE_SURFACE = 0,
-    GFX_INSTANCE_FEATURE_TYPE_MAX_ENUM = 0x7FFFFFFF
-} GfxInstanceFeatureType;
+// ============================================================================
+// Extension Names (String Constants)
+// ============================================================================
 
-typedef enum {
-    GFX_DEVICE_FEATURE_TYPE_SWAPCHAIN = 0,
-    GFX_DEVICE_FEATURE_TYPE_MAX_ENUM = 0x7FFFFFFF
-} GfxDeviceFeatureType;
+// Instance extensions
+#define GFX_INSTANCE_EXTENSION_SURFACE "gfx_surface"
+#define GFX_INSTANCE_EXTENSION_DEBUG "gfx_debug"
+
+// Device extensions
+#define GFX_DEVICE_EXTENSION_SWAPCHAIN "gfx_swapchain"
+#define GFX_DEVICE_EXTENSION_TIMELINE_SEMAPHORE "gfx_timeline_semaphore"
 
 // ============================================================================
 // Forward Declarations (Opaque Handles)
@@ -693,11 +695,10 @@ typedef struct {
 
 typedef struct {
     GfxBackend backend;
-    bool enableValidation;
     const char* applicationName;
     uint32_t applicationVersion;
-    const GfxInstanceFeatureType* enabledFeatures;
-    uint32_t enabledFeatureCount;
+    const char** enabledExtensions;
+    uint32_t enabledExtensionCount;
 } GfxInstanceDescriptor;
 
 // Adapter selection: specify either an index OR a preference
@@ -773,8 +774,8 @@ typedef struct {
     const char* label;
     const GfxQueueRequest* queueRequests; // Optional: explicit queue requests (NULL for automatic default queue)
     uint32_t queueRequestCount; // Number of queue requests (0 if queueRequests is NULL)
-    const GfxDeviceFeatureType* enabledFeatures;
-    uint32_t enabledFeatureCount;
+    const char** enabledExtensions;
+    uint32_t enabledExtensionCount;
 } GfxDeviceDescriptor;
 
 typedef struct {
@@ -1129,6 +1130,10 @@ GFX_API GfxResult gfxUnloadBackend(GfxBackend backend);
 GFX_API GfxResult gfxLoadAllBackends(void);
 GFX_API GfxResult gfxUnloadAllBackends(void);
 
+// Extension enumeration functions
+// Vulkan-style enumeration: call with queueFamilies=NULL to get count, then call again with allocated array
+GFX_API GfxResult gfxEnumerateInstanceExtensions(GfxBackend backend, uint32_t* extensionCount, const char** extensionNames);
+
 // Instance functions
 GFX_API GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance);
 GFX_API GfxResult gfxInstanceDestroy(GfxInstance instance);
@@ -1144,6 +1149,8 @@ GFX_API GfxResult gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLi
 // Vulkan-style enumeration: call with queueFamilies=NULL to get count, then call again with allocated array
 GFX_API GfxResult gfxAdapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFamilyCount, GfxQueueFamilyProperties* queueFamilies);
 GFX_API GfxResult gfxAdapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t queueFamilyIndex, GfxSurface surface, bool* outSupported);
+// Vulkan-style enumeration: call with queueFamilies=NULL to get count, then call again with allocated array
+GFX_API GfxResult gfxAdapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t* extensionCount, const char** extensionNames);
 
 // Device functions
 GFX_API GfxResult gfxDeviceDestroy(GfxDevice device);

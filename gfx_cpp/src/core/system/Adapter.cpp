@@ -24,10 +24,10 @@ AdapterImpl::~AdapterImpl()
 
 std::shared_ptr<Device> AdapterImpl::createDevice(const DeviceDescriptor& descriptor)
 {
-    std::vector<GfxDeviceFeatureType> cFeatures;
+    std::vector<const char*> cExtensions;
     std::vector<GfxQueueRequest> cQueueRequests;
     GfxDeviceDescriptor cDesc = {};
-    convertDeviceDescriptor(descriptor, cFeatures, cQueueRequests, cDesc);
+    convertDeviceDescriptor(descriptor, cExtensions, cQueueRequests, cDesc);
 
     GfxDevice device = nullptr;
     GfxResult result = gfxAdapterCreateDevice(m_handle, &cDesc, &device);

@@ -17,7 +17,11 @@ public:
     VkInstance handle() const;
     std::vector<VkPhysicalDevice> enumeratePhysicalDevices() const;
 
+    static std::vector<const char*> enumerateSupportedExtensions();
+
 private:
+    static std::vector<VkExtensionProperties> enumerateAvailableExtensions();
+
     void setupDebugMessenger();
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);

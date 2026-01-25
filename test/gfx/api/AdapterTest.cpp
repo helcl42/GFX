@@ -13,14 +13,16 @@ protected:
     void SetUp() override
     {
         backend = GetParam();
-        
+
         if (gfxLoadBackend(backend) != GFX_RESULT_SUCCESS) {
             GTEST_SKIP() << "Backend not available";
         }
 
         GfxInstanceDescriptor instDesc = {};
         instDesc.backend = backend;
-        instDesc.enableValidation = false;
+        const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+        instDesc.enabledExtensions = extensions;
+        instDesc.enabledExtensionCount = 1;
 
         if (gfxCreateInstance(&instDesc, &instance) != GFX_RESULT_SUCCESS) {
             gfxUnloadBackend(backend);
@@ -37,7 +39,7 @@ protected:
             GTEST_SKIP() << "Failed to get adapter";
         }
     }
-    
+
     void TearDown() override
     {
         if (adapter) {
@@ -48,7 +50,7 @@ protected:
         }
         gfxUnloadBackend(backend);
     }
-    
+
     GfxBackend backend;
     GfxInstance instance = NULL;
     GfxAdapter adapter = NULL;
@@ -60,14 +62,14 @@ TEST_P(GfxAdapterTest, GetInfo)
     GfxResult result = gfxAdapterGetInfo(adapter, &info);
 
     EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    
+
     // Verify we got some valid information
     EXPECT_GT(strlen(info.name), 0u) << "Adapter should have a name";
-    
+
     // Vendor ID should be non-zero for real hardware
     // (might be 0 for software renderers, so just check it's set)
     EXPECT_TRUE(info.vendorID >= 0);
-    
+
     // Adapter type should be valid
     EXPECT_GE(info.adapterType, GFX_ADAPTER_TYPE_DISCRETE_GPU);
     EXPECT_LE(info.adapterType, GFX_ADAPTER_TYPE_CPU);
@@ -76,11 +78,11 @@ TEST_P(GfxAdapterTest, GetInfo)
 TEST_P(GfxAdapterTest, GetInfoInvalidArguments)
 {
     GfxAdapterInfo info = {};
-    
+
     // NULL adapter
     GfxResult result = gfxAdapterGetInfo(NULL, &info);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
-    
+
     // NULL output pointer
     result = gfxAdapterGetInfo(adapter, NULL);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
@@ -92,7 +94,7 @@ TEST_P(GfxAdapterTest, GetLimits)
     GfxResult result = gfxAdapterGetLimits(adapter, &limits);
 
     EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    
+
     // Verify reasonable limits
     EXPECT_GT(limits.maxBufferSize, 0u);
     EXPECT_GT(limits.maxTextureDimension1D, 0u);
@@ -101,7 +103,7 @@ TEST_P(GfxAdapterTest, GetLimits)
     EXPECT_GT(limits.maxTextureArrayLayers, 0u);
     EXPECT_GT(limits.maxUniformBufferBindingSize, 0u);
     EXPECT_GT(limits.maxStorageBufferBindingSize, 0u);
-    
+
     // These should be at least the WebGPU minimums
     EXPECT_GE(limits.maxTextureDimension2D, 8192u);
 }
@@ -109,11 +111,11 @@ TEST_P(GfxAdapterTest, GetLimits)
 TEST_P(GfxAdapterTest, GetLimitsInvalidArguments)
 {
     GfxDeviceLimits limits = {};
-    
+
     // NULL adapter
     GfxResult result = gfxAdapterGetLimits(NULL, &limits);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
-    
+
     // NULL output pointer
     result = gfxAdapterGetLimits(adapter, NULL);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
@@ -133,7 +135,7 @@ TEST_P(GfxAdapterTest, EnumerateQueueFamilies)
     result = gfxAdapterEnumerateQueueFamilies(adapter, &queueFamilyCount, queueFamilies);
 
     EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    
+
     // Verify at least one queue family supports graphics
     bool hasGraphics = false;
     for (uint32_t i = 0; i < queueFamilyCount; i++) {
@@ -150,11 +152,11 @@ TEST_P(GfxAdapterTest, EnumerateQueueFamilies)
 TEST_P(GfxAdapterTest, EnumerateQueueFamiliesInvalidArguments)
 {
     uint32_t queueFamilyCount = 0;
-    
+
     // NULL adapter
     GfxResult result = gfxAdapterEnumerateQueueFamilies(NULL, &queueFamilyCount, NULL);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
-    
+
     // NULL count pointer
     result = gfxAdapterEnumerateQueueFamilies(adapter, NULL, NULL);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
@@ -165,13 +167,13 @@ TEST_P(GfxAdapterTest, EnumerateQueueFamiliesBufferTooSmall)
     uint32_t queueFamilyCount = 0;
     GfxResult result = gfxAdapterEnumerateQueueFamilies(adapter, &queueFamilyCount, NULL);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
-    
+
     if (queueFamilyCount > 1) {
         // Try to get with a buffer that's too small
         uint32_t smallCount = 1;
         GfxQueueFamilyProperties queueFamily = {};
         result = gfxAdapterEnumerateQueueFamilies(adapter, &smallCount, &queueFamily);
-        
+
         // Should succeed but return only 1 queue family
         EXPECT_EQ(result, GFX_RESULT_SUCCESS);
         EXPECT_EQ(smallCount, 1u);
@@ -222,13 +224,13 @@ TEST_P(GfxAdapterTest, InfoConsistency)
     // Get info multiple times and verify consistency
     GfxAdapterInfo info1 = {};
     GfxAdapterInfo info2 = {};
-    
+
     GfxResult result1 = gfxAdapterGetInfo(adapter, &info1);
     GfxResult result2 = gfxAdapterGetInfo(adapter, &info2);
-    
+
     ASSERT_EQ(result1, GFX_RESULT_SUCCESS);
     ASSERT_EQ(result2, GFX_RESULT_SUCCESS);
-    
+
     // Info should be consistent
     EXPECT_STREQ(info1.name, info2.name);
     EXPECT_EQ(info1.vendorID, info2.vendorID);
@@ -241,13 +243,13 @@ TEST_P(GfxAdapterTest, LimitsConsistency)
     // Get limits multiple times and verify consistency
     GfxDeviceLimits limits1 = {};
     GfxDeviceLimits limits2 = {};
-    
+
     GfxResult result1 = gfxAdapterGetLimits(adapter, &limits1);
     GfxResult result2 = gfxAdapterGetLimits(adapter, &limits2);
-    
+
     ASSERT_EQ(result1, GFX_RESULT_SUCCESS);
     ASSERT_EQ(result2, GFX_RESULT_SUCCESS);
-    
+
     // Limits should be consistent
     EXPECT_EQ(limits1.maxBufferSize, limits2.maxBufferSize);
     EXPECT_EQ(limits1.maxTextureDimension2D, limits2.maxTextureDimension2D);
@@ -265,5 +267,4 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU),
     [](const testing::TestParamInfo<GfxBackend>& info) {
         return info.param == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU";
-    }
-);
+    });

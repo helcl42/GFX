@@ -96,6 +96,29 @@ GfxResult Backend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* ada
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult Backend::enumerateInstanceExtensions(uint32_t* extensionCount, const char** extensionNames) const
+{
+    if (!extensionCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+
+    const auto internalExtensions = core::Instance::enumerateSupportedExtensions();
+
+    if (!extensionNames) {
+        *extensionCount = static_cast<uint32_t>(internalExtensions.size());
+        return GFX_RESULT_SUCCESS;
+    }
+
+    // Map internal names to public API constants
+    uint32_t copyCount = (*extensionCount < internalExtensions.size()) ? *extensionCount : static_cast<uint32_t>(internalExtensions.size());
+    for (uint32_t i = 0; i < copyCount; ++i) {
+        extensionNames[i] = converter::instanceExtensionNameToGfx(internalExtensions[i]);
+    }
+    *extensionCount = static_cast<uint32_t>(internalExtensions.size());
+    
+    return GFX_RESULT_SUCCESS;
+}
+
 // Adapter functions
 GfxResult Backend::adapterDestroy(GfxAdapter adapter) const
 {
@@ -189,6 +212,31 @@ GfxResult Backend::adapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint3
     auto* surf = converter::toNative<core::Surface>(surface);
 
     *outSupported = adap->supportsPresentation(queueFamilyIndex, surf->handle());
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult Backend::adapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t* extensionCount, const char** extensionNames) const
+{
+    GfxResult validationResult = validator::validateAdapterEnumerateDeviceExtensions(adapter, extensionCount);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
+    auto* adap = converter::toNative<core::Adapter>(adapter);
+    const auto internalExtensions = adap->enumerateSupportedExtensions();
+
+    if (!extensionNames) {
+        *extensionCount = static_cast<uint32_t>(internalExtensions.size());
+        return GFX_RESULT_SUCCESS;
+    }
+
+    // Map internal names to public API constants
+    uint32_t copyCount = (*extensionCount < internalExtensions.size()) ? *extensionCount : static_cast<uint32_t>(internalExtensions.size());
+    for (uint32_t i = 0; i < copyCount; ++i) {
+        extensionNames[i] = converter::deviceExtensionNameToGfx(internalExtensions[i]);
+    }
+    *extensionCount = static_cast<uint32_t>(internalExtensions.size());
+    
     return GFX_RESULT_SUCCESS;
 }
 

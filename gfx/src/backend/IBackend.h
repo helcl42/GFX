@@ -14,6 +14,7 @@ public:
     virtual GfxResult instanceDestroy(GfxInstance instance) const = 0;
     virtual GfxResult instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const = 0;
     virtual GfxResult instanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters) const = 0;
+    virtual GfxResult enumerateInstanceExtensions(uint32_t* extensionCount, const char** extensionNames) const = 0;
 
     // Adapter functions
     virtual GfxResult adapterDestroy(GfxAdapter adapter) const = 0;
@@ -22,6 +23,7 @@ public:
     virtual GfxResult adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const = 0;
     virtual GfxResult adapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFamilyCount, GfxQueueFamilyProperties* queueFamilies) const = 0;
     virtual GfxResult adapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t queueFamilyIndex, GfxSurface surface, bool* outSupported) const = 0;
+    virtual GfxResult adapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t* extensionCount, const char** extensionNames) const = 0;
 
     // Device functions
     virtual GfxResult deviceDestroy(GfxDevice device) const = 0;

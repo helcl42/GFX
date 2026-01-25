@@ -61,20 +61,10 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
         throw std::runtime_error("Failed to load graphics backend");
     }
 
-    // Convert enabled features
-    std::vector<GfxInstanceFeatureType> cFeatures;
-    cFeatures.reserve(descriptor.enabledFeatures.size());
-    for (const auto& feature : descriptor.enabledFeatures) {
-        cFeatures.push_back(cppInstanceFeatureTypeToCInstanceFeatureType(feature));
-    }
-
-    GfxInstanceDescriptor cDesc = {};
-    cDesc.backend = cBackend;
-    cDesc.enableValidation = descriptor.enableValidation;
-    cDesc.applicationName = descriptor.applicationName.c_str();
-    cDesc.applicationVersion = descriptor.applicationVersion;
-    cDesc.enabledFeatures = cFeatures.empty() ? nullptr : cFeatures.data();
-    cDesc.enabledFeatureCount = static_cast<uint32_t>(cFeatures.size());
+    // Convert C++ descriptor to C descriptor
+    std::vector<const char*> extensionsStorage;
+    GfxInstanceDescriptor cDesc = cppInstanceDescriptorToCDescriptor(
+        descriptor, cBackend, extensionsStorage);
 
     GfxInstance instance = nullptr;
     GfxResult result = gfxCreateInstance(&cDesc, &instance);

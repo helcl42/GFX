@@ -24,6 +24,25 @@ Backend cBackendToCppBackend(GfxBackend backend)
     return static_cast<Backend>(backend);
 }
 
+GfxInstanceDescriptor cppInstanceDescriptorToCDescriptor(const InstanceDescriptor& descriptor, GfxBackend backend, std::vector<const char*>& extensionsStorage)
+{
+    // Convert enabled extensions
+    extensionsStorage.clear();
+    extensionsStorage.reserve(descriptor.enabledExtensions.size());
+    for (const auto& ext : descriptor.enabledExtensions) {
+        extensionsStorage.push_back(ext.c_str());
+    }
+
+    GfxInstanceDescriptor cDesc = {};
+    cDesc.backend = backend;
+    cDesc.applicationName = descriptor.applicationName.c_str();
+    cDesc.applicationVersion = descriptor.applicationVersion;
+    cDesc.enabledExtensions = extensionsStorage.empty() ? nullptr : extensionsStorage.data();
+    cDesc.enabledExtensionCount = static_cast<uint32_t>(extensionsStorage.size());
+
+    return cDesc;
+}
+
 AdapterType cAdapterTypeToCppAdapterType(GfxAdapterType adapterType)
 {
     switch (adapterType) {
@@ -162,13 +181,13 @@ GfxQueueRequest cppQueueRequestToCQueueRequest(const QueueRequest& req)
     return cReq;
 }
 
-void convertDeviceDescriptor(const DeviceDescriptor& descriptor, std::vector<GfxDeviceFeatureType>& outFeatures, std::vector<GfxQueueRequest>& outQueueRequests, GfxDeviceDescriptor& outDesc)
+void convertDeviceDescriptor(const DeviceDescriptor& descriptor, std::vector<const char*>& outExtensions, std::vector<GfxQueueRequest>& outQueueRequests, GfxDeviceDescriptor& outDesc)
 {
-    // Convert enabled features
-    outFeatures.clear();
-    outFeatures.reserve(descriptor.enabledFeatures.size());
-    for (const auto& feature : descriptor.enabledFeatures) {
-        outFeatures.push_back(cppDeviceFeatureTypeToCDeviceFeatureType(feature));
+    // Convert enabled extensions
+    outExtensions.clear();
+    outExtensions.reserve(descriptor.enabledExtensions.size());
+    for (const auto& ext : descriptor.enabledExtensions) {
+        outExtensions.push_back(ext.c_str());
     }
 
     // Convert queue requests
@@ -181,8 +200,8 @@ void convertDeviceDescriptor(const DeviceDescriptor& descriptor, std::vector<Gfx
     // Build C descriptor
     outDesc = {};
     outDesc.label = descriptor.label.c_str();
-    outDesc.enabledFeatures = outFeatures.empty() ? nullptr : outFeatures.data();
-    outDesc.enabledFeatureCount = static_cast<uint32_t>(outFeatures.size());
+    outDesc.enabledExtensions = outExtensions.empty() ? nullptr : outExtensions.data();
+    outDesc.enabledExtensionCount = static_cast<uint32_t>(outExtensions.size());
     outDesc.queueRequests = outQueueRequests.empty() ? nullptr : outQueueRequests.data();
     outDesc.queueRequestCount = static_cast<uint32_t>(outQueueRequests.size());
 }
@@ -553,16 +572,6 @@ GfxLoadOp cppLoadOpToCLoadOp(LoadOp op)
 GfxStoreOp cppStoreOpToCStoreOp(StoreOp op)
 {
     return static_cast<GfxStoreOp>(op);
-}
-
-GfxDeviceFeatureType cppDeviceFeatureTypeToCDeviceFeatureType(DeviceFeatureType feature)
-{
-    return static_cast<GfxDeviceFeatureType>(feature);
-}
-
-GfxInstanceFeatureType cppInstanceFeatureTypeToCInstanceFeatureType(InstanceFeatureType feature)
-{
-    return static_cast<GfxInstanceFeatureType>(feature);
 }
 
 GfxAdapterPreference cppAdapterPreferenceToCAdapterPreference(AdapterPreference preference)

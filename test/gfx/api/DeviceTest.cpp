@@ -20,7 +20,9 @@ protected:
 
         GfxInstanceDescriptor instDesc = {};
         instDesc.backend = backend;
-        instDesc.enableValidation = false;
+        const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+        instDesc.enabledExtensions = extensions;
+        instDesc.enabledExtensionCount = 1;
 
         if (gfxCreateInstance(&instDesc, &instance) != GFX_RESULT_SUCCESS) {
             gfxUnloadBackend(backend);

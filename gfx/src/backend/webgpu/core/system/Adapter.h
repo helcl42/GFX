@@ -35,6 +35,9 @@ public:
     std::vector<QueueFamilyProperties> getQueueFamilyProperties() const;
     bool supportsPresentation(uint32_t queueFamilyIndex) const;
 
+    // Get supported device extensions for this adapter
+    std::vector<const char*> enumerateSupportedExtensions() const;
+
 private:
     AdapterInfo createAdapterInfo() const;
 

@@ -198,4 +198,13 @@ AdapterInfo Adapter::createAdapterInfo() const
     return adapterInfo;
 }
 
+std::vector<const char*> Adapter::enumerateSupportedExtensions() const
+{
+    static const std::vector<const char*> supportedExtensions = {
+        extensions::SWAPCHAIN,
+        extensions::TIMELINE_SEMAPHORE
+    };
+    return supportedExtensions;
+}
+
 } // namespace gfx::backend::webgpu::core

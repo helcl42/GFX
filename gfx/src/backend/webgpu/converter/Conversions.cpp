@@ -23,7 +23,38 @@
 #include "../core/system/Instance.h"
 #include "../core/system/Queue.h"
 
+#include <cstring>
+#include <vector>
+
 namespace gfx::backend::webgpu::converter {
+
+// ============================================================================
+// Extension Name Mapping
+// ============================================================================
+
+const char* instanceExtensionNameToGfx(const char* internalName)
+{
+    if (std::strcmp(internalName, core::extensions::SURFACE) == 0) {
+        return GFX_INSTANCE_EXTENSION_SURFACE;
+    }
+    if (std::strcmp(internalName, core::extensions::DEBUG) == 0) {
+        return GFX_INSTANCE_EXTENSION_DEBUG;
+    }
+    // Unknown extension - return as-is
+    return internalName;
+}
+
+const char* deviceExtensionNameToGfx(const char* internalName)
+{
+    if (std::strcmp(internalName, core::extensions::SWAPCHAIN) == 0) {
+        return GFX_DEVICE_EXTENSION_SWAPCHAIN;
+    }
+    if (std::strcmp(internalName, core::extensions::TIMELINE_SEMAPHORE) == 0) {
+        return GFX_DEVICE_EXTENSION_TIMELINE_SEMAPHORE;
+    }
+    // Unknown extension - return as-is
+    return internalName;
+}
 
 using namespace core;
 
@@ -59,26 +90,6 @@ core::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreType gfxTy
         return core::SemaphoreType::Timeline;
     default:
         return core::SemaphoreType::Binary;
-    }
-}
-
-core::InstanceFeatureType gfxInstanceFeatureTypeToWebGPU(GfxInstanceFeatureType feature)
-{
-    switch (feature) {
-    case GFX_INSTANCE_FEATURE_TYPE_SURFACE:
-        return core::InstanceFeatureType::Surface;
-    default:
-        return core::InstanceFeatureType::Invalid;
-    }
-}
-
-core::DeviceFeatureType gfxDeviceFeatureTypeToWebGPU(GfxDeviceFeatureType feature)
-{
-    switch (feature) {
-    case GFX_DEVICE_FEATURE_TYPE_SWAPCHAIN:
-        return core::DeviceFeatureType::Swapchain;
-    default:
-        return core::DeviceFeatureType::Invalid;
     }
 }
 
@@ -188,16 +199,21 @@ core::AdapterCreateInfo gfxDescriptorToWebGPUAdapterCreateInfo(const GfxAdapterD
 core::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstanceDescriptor* descriptor)
 {
     core::InstanceCreateInfo createInfo{};
-    createInfo.enableValidation = descriptor ? descriptor->enableValidation : false;
-    createInfo.applicationName = descriptor && descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
-    createInfo.applicationVersion = descriptor ? descriptor->applicationVersion : 1;
-
-    // Convert enabled features from GfxInstanceFeatureType to internal InstanceFeatureType
-    if (descriptor && descriptor->enabledFeatures && descriptor->enabledFeatureCount > 0) {
-        createInfo.enabledFeatures.reserve(descriptor->enabledFeatureCount);
-        for (uint32_t i = 0; i < descriptor->enabledFeatureCount; ++i) {
-            createInfo.enabledFeatures.push_back(gfxInstanceFeatureTypeToWebGPU(descriptor->enabledFeatures[i]));
+    
+    if (descriptor) {
+        createInfo.applicationName = descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
+        createInfo.applicationVersion = descriptor->applicationVersion;
+        
+        // Convert enabled extensions from const char** to std::vector<std::string>
+        if (descriptor->enabledExtensions && descriptor->enabledExtensionCount > 0) {
+            createInfo.enabledExtensions.reserve(descriptor->enabledExtensionCount);
+            for (uint32_t i = 0; i < descriptor->enabledExtensionCount; ++i) {
+                createInfo.enabledExtensions.push_back(descriptor->enabledExtensions[i]);
+            }
         }
+    } else {
+        createInfo.applicationName = "GfxWrapper Application";
+        createInfo.applicationVersion = 1;
     }
 
     return createInfo;
@@ -206,11 +222,14 @@ core::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstan
 core::DeviceCreateInfo gfxDescriptorToWebGPUDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
 {
     core::DeviceCreateInfo createInfo{};
-    // Convert enabled features from GfxDeviceFeatureType to internal DeviceFeatureType
-    if (descriptor && descriptor->enabledFeatures && descriptor->enabledFeatureCount > 0) {
-        createInfo.enabledFeatures.reserve(descriptor->enabledFeatureCount);
-        for (uint32_t i = 0; i < descriptor->enabledFeatureCount; ++i) {
-            createInfo.enabledFeatures.push_back(gfxDeviceFeatureTypeToWebGPU(descriptor->enabledFeatures[i]));
+    
+    if (descriptor) {
+        // Convert enabled extensions from const char** to std::vector<std::string>
+        if (descriptor->enabledExtensions && descriptor->enabledExtensionCount > 0) {
+            createInfo.enabledExtensions.reserve(descriptor->enabledExtensionCount);
+            for (uint32_t i = 0; i < descriptor->enabledExtensionCount; ++i) {
+                createInfo.enabledExtensions.push_back(descriptor->enabledExtensions[i]);
+            }
         }
     }
 
@@ -321,16 +340,28 @@ core::SamplerCreateInfo gfxDescriptorToWebGPUSamplerCreateInfo(const GfxSamplerD
 core::SemaphoreCreateInfo gfxDescriptorToWebGPUSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor)
 {
     core::SemaphoreCreateInfo createInfo{};
-    createInfo.type = descriptor ? gfxSemaphoreTypeToWebGPUSemaphoreType(descriptor->type)
-                                 : core::SemaphoreType::Binary;
-    createInfo.initialValue = descriptor ? descriptor->initialValue : 0;
+    
+    if (descriptor) {
+        createInfo.type = gfxSemaphoreTypeToWebGPUSemaphoreType(descriptor->type);
+        createInfo.initialValue = descriptor->initialValue;
+    } else {
+        createInfo.type = core::SemaphoreType::Binary;
+        createInfo.initialValue = 0;
+    }
+    
     return createInfo;
 }
 
 core::FenceCreateInfo gfxDescriptorToWebGPUFenceCreateInfo(const GfxFenceDescriptor* descriptor)
 {
     core::FenceCreateInfo createInfo{};
-    createInfo.signaled = descriptor && descriptor->signaled;
+    
+    if (descriptor) {
+        createInfo.signaled = descriptor->signaled;
+    } else {
+        createInfo.signaled = false;
+    }
+    
     return createInfo;
 }
 

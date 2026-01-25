@@ -111,7 +111,7 @@ GfxResult gfxCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance
     if (!descriptor || !outInstance) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
-    
+
     GfxBackend backend = descriptor->backend;
     auto& manager = gfx::backend::BackendManager::instance();
 
@@ -191,6 +191,18 @@ GfxResult gfxInstanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCo
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return backend->instanceEnumerateAdapters(instance, adapterCount, adapters);
+}
+
+GfxResult gfxEnumerateInstanceExtensions(GfxBackend backend, uint32_t* extensionCount, const char** extensionNames)
+{
+    if (!extensionCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backendImpl = gfx::backend::BackendManager::instance().getBackend(backend);
+    if (!backendImpl) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backendImpl->enumerateInstanceExtensions(extensionCount, extensionNames);
 }
 
 // Adapter Functions
@@ -275,6 +287,18 @@ GfxResult gfxAdapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t qu
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return backend->adapterGetQueueFamilySurfaceSupport(adapter, queueFamilyIndex, surface, outSupported);
+}
+
+GfxResult gfxAdapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t* extensionCount, const char** extensionNames)
+{
+    if (!adapter || !extensionCount) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(adapter);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->adapterEnumerateDeviceExtensions(adapter, extensionCount, extensionNames);
 }
 
 // Device Functions

@@ -228,13 +228,11 @@ enum class SemaphoreType {
     Timeline
 };
 
-enum class InstanceFeatureType {
-    Surface
-};
-
-enum class DeviceFeatureType {
-    Swapchain
-};
+// Extension name constants (matching C API)
+constexpr const char* INSTANCE_EXTENSION_SURFACE = "gfx_surface";
+constexpr const char* INSTANCE_EXTENSION_DEBUG = "gfx_debug";
+constexpr const char* DEVICE_EXTENSION_SWAPCHAIN = "gfx_swapchain";
+constexpr const char* DEVICE_EXTENSION_TIMELINE_SEMAPHORE = "gfx_timeline_semaphore";
 
 enum class QueueFlags : uint32_t {
     None = 0,
@@ -547,10 +545,9 @@ using LogCallback = std::function<void(LogLevel level, const std::string& messag
 
 struct InstanceDescriptor {
     Backend backend = Backend::Auto;
-    bool enableValidation = false;
-    std::string applicationName = "GfxWrapper Application";
+    std::string applicationName = "GfxCpp Application";
     uint32_t applicationVersion = 1;
-    std::vector<InstanceFeatureType> enabledFeatures;
+    std::vector<std::string> enabledExtensions;
 };
 
 struct AdapterDescriptor {
@@ -571,7 +568,7 @@ struct QueueRequest {
 
 struct DeviceDescriptor {
     std::string label;
-    std::vector<DeviceFeatureType> enabledFeatures;
+    std::vector<std::string> enabledExtensions;
     std::vector<QueueRequest> queueRequests; // Optional: specify which queues to create
 };
 

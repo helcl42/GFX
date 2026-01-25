@@ -14,6 +14,7 @@ public:
     GfxResult instanceDestroy(GfxInstance instance) const override;
     GfxResult instanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter) const override;
     GfxResult instanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters) const override;
+    GfxResult enumerateInstanceExtensions(uint32_t* extensionCount, const char** extensionNames) const override;
 
     // Adapter functions
     GfxResult adapterDestroy(GfxAdapter adapter) const override;
@@ -22,6 +23,7 @@ public:
     GfxResult adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const override;
     GfxResult adapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFamilyCount, GfxQueueFamilyProperties* queueFamilies) const override;
     GfxResult adapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t queueFamilyIndex, GfxSurface surface, bool* outSupported) const override;
+    GfxResult adapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t* extensionCount, const char** extensionNames) const override;
 
     // Device functions
     GfxResult deviceDestroy(GfxDevice device) const override;

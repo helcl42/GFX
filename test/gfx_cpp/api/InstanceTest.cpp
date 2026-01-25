@@ -7,7 +7,7 @@ using namespace gfx;
 TEST(GfxCppInstanceTest, CreateDestroyVulkan) {
     InstanceDescriptor desc{};
     desc.backend = Backend::Vulkan;
-    desc.enableValidation = false;
+    desc.enabledExtensions = { INSTANCE_EXTENSION_DEBUG };
     
     try {
         auto instance = createInstance(desc);
@@ -23,7 +23,7 @@ TEST(GfxCppInstanceTest, CreateDestroyVulkan) {
 TEST(GfxCppInstanceTest, CreateDestroyWebGPU) {
     InstanceDescriptor desc{};
     desc.backend = Backend::WebGPU;
-    desc.enableValidation = false;
+    desc.enabledExtensions = { INSTANCE_EXTENSION_DEBUG };
     
     try {
         auto instance = createInstance(desc);
@@ -39,7 +39,7 @@ TEST(GfxCppInstanceTest, CreateDestroyWebGPU) {
 TEST(GfxCppInstanceTest, SharedPointerSemantics) {
     InstanceDescriptor desc{};
     desc.backend = Backend::Vulkan;
-    desc.enableValidation = false;
+    desc.enabledExtensions = { INSTANCE_EXTENSION_DEBUG };
     
     try {
         auto instance1 = createInstance(desc);

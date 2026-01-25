@@ -19,7 +19,9 @@ protected:
 
         GfxInstanceDescriptor instanceDesc = {};
         instanceDesc.backend = backend;
-        instanceDesc.enableValidation = false;
+        const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+        instanceDesc.enabledExtensions = extensions;
+        instanceDesc.enabledExtensionCount = 1;
 
         result = gfxCreateInstance(&instanceDesc, &instance);
         ASSERT_EQ(result, GFX_RESULT_SUCCESS);

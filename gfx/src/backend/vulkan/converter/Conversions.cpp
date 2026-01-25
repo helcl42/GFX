@@ -10,9 +10,38 @@
 #include "../core/resource/Texture.h"
 #include "../core/resource/TextureView.h"
 
+#include <cstring>
 #include <vector>
 
 namespace gfx::backend::vulkan::converter {
+
+// ============================================================================
+// Extension Name Mapping
+// ============================================================================
+
+const char* instanceExtensionNameToGfx(const char* internalName)
+{
+    if (std::strcmp(internalName, core::extensions::SURFACE) == 0) {
+        return GFX_INSTANCE_EXTENSION_SURFACE;
+    }
+    if (std::strcmp(internalName, core::extensions::DEBUG) == 0) {
+        return GFX_INSTANCE_EXTENSION_DEBUG;
+    }
+    // Unknown extension - return as-is
+    return internalName;
+}
+
+const char* deviceExtensionNameToGfx(const char* internalName)
+{
+    if (std::strcmp(internalName, core::extensions::SWAPCHAIN) == 0) {
+        return GFX_DEVICE_EXTENSION_SWAPCHAIN;
+    }
+    if (std::strcmp(internalName, core::extensions::TIMELINE_SEMAPHORE) == 0) {
+        return GFX_DEVICE_EXTENSION_TIMELINE_SEMAPHORE;
+    }
+    // Unknown extension - return as-is
+    return internalName;
+}
 
 // ============================================================================
 // Device Limits Conversion
@@ -114,26 +143,6 @@ gfx::backend::vulkan::core::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(
         return gfx::backend::vulkan::core::SemaphoreType::Timeline;
     default:
         return gfx::backend::vulkan::core::SemaphoreType::Binary;
-    }
-}
-
-gfx::backend::vulkan::core::InstanceFeatureType gfxInstanceFeatureTypeToVulkan(GfxInstanceFeatureType feature)
-{
-    switch (feature) {
-    case GFX_INSTANCE_FEATURE_TYPE_SURFACE:
-        return gfx::backend::vulkan::core::InstanceFeatureType::Surface;
-    default:
-        return gfx::backend::vulkan::core::InstanceFeatureType::Invalid;
-    }
-}
-
-gfx::backend::vulkan::core::DeviceFeatureType gfxDeviceFeatureTypeToVulkan(GfxDeviceFeatureType feature)
-{
-    switch (feature) {
-    case GFX_DEVICE_FEATURE_TYPE_SWAPCHAIN:
-        return gfx::backend::vulkan::core::DeviceFeatureType::Swapchain;
-    default:
-        return gfx::backend::vulkan::core::DeviceFeatureType::Invalid;
     }
 }
 
@@ -1153,16 +1162,28 @@ core::ShaderCreateInfo gfxDescriptorToShaderCreateInfo(const GfxShaderDescriptor
 core::SemaphoreCreateInfo gfxDescriptorToSemaphoreCreateInfo(const GfxSemaphoreDescriptor* descriptor)
 {
     core::SemaphoreCreateInfo createInfo{};
-    createInfo.type = descriptor ? gfxSemaphoreTypeToVulkanSemaphoreType(descriptor->type)
-                                 : core::SemaphoreType::Binary;
-    createInfo.initialValue = descriptor ? descriptor->initialValue : 0;
+    
+    if (descriptor) {
+        createInfo.type = gfxSemaphoreTypeToVulkanSemaphoreType(descriptor->type);
+        createInfo.initialValue = descriptor->initialValue;
+    } else {
+        createInfo.type = core::SemaphoreType::Binary;
+        createInfo.initialValue = 0;
+    }
+    
     return createInfo;
 }
 
 core::FenceCreateInfo gfxDescriptorToFenceCreateInfo(const GfxFenceDescriptor* descriptor)
 {
     core::FenceCreateInfo createInfo{};
-    createInfo.signaled = descriptor && descriptor->signaled;
+    
+    if (descriptor) {
+        createInfo.signaled = descriptor->signaled;
+    } else {
+        createInfo.signaled = false;
+    }
+    
     return createInfo;
 }
 
@@ -1243,16 +1264,21 @@ core::SamplerCreateInfo gfxDescriptorToSamplerCreateInfo(const GfxSamplerDescrip
 core::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInstanceDescriptor* descriptor)
 {
     core::InstanceCreateInfo createInfo{};
-    createInfo.enableValidation = descriptor && descriptor->enableValidation;
-    createInfo.applicationName = descriptor && descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
-    createInfo.applicationVersion = descriptor ? descriptor->applicationVersion : 1;
-
-    // Convert enabled features from GfxInstanceFeatureType to internal InstanceFeatureType
-    if (descriptor && descriptor->enabledFeatures && descriptor->enabledFeatureCount > 0) {
-        createInfo.enabledFeatures.reserve(descriptor->enabledFeatureCount);
-        for (uint32_t i = 0; i < descriptor->enabledFeatureCount; ++i) {
-            createInfo.enabledFeatures.push_back(gfxInstanceFeatureTypeToVulkan(descriptor->enabledFeatures[i]));
+    
+    if (descriptor) {
+        createInfo.applicationName = descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
+        createInfo.applicationVersion = descriptor->applicationVersion;
+        
+        // Convert enabled extensions from const char** to std::vector<std::string>
+        if (descriptor->enabledExtensions && descriptor->enabledExtensionCount > 0) {
+            createInfo.enabledExtensions.reserve(descriptor->enabledExtensionCount);
+            for (uint32_t i = 0; i < descriptor->enabledExtensionCount; ++i) {
+                createInfo.enabledExtensions.push_back(descriptor->enabledExtensions[i]);
+            }
         }
+    } else {
+        createInfo.applicationName = "GfxWrapper Application";
+        createInfo.applicationVersion = 1;
     }
 
     return createInfo;
@@ -1261,21 +1287,24 @@ core::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescrip
 {
     core::AdapterCreateInfo createInfo{};
 
-    // Handle adapter index if specified
-    if (descriptor && descriptor->adapterIndex != UINT32_MAX) {
-        createInfo.adapterIndex = descriptor->adapterIndex;
-    } else {
-        createInfo.adapterIndex = UINT32_MAX; // Indicates no specific adapter index
-    }
+    if (descriptor) {
+        // Handle adapter index if specified
+        if (descriptor->adapterIndex != UINT32_MAX) {
+            createInfo.adapterIndex = descriptor->adapterIndex;
+        } else {
+            createInfo.adapterIndex = UINT32_MAX;
+        }
 
-    // Fall back to preference-based selection
-    if (!descriptor || descriptor->preference == GFX_ADAPTER_PREFERENCE_UNDEFINED) {
-        createInfo.devicePreference = core::DeviceTypePreference::HighPerformance;
-    } else if (descriptor->preference == GFX_ADAPTER_PREFERENCE_SOFTWARE) {
-        createInfo.devicePreference = core::DeviceTypePreference::SoftwareRenderer;
-    } else if (descriptor->preference == GFX_ADAPTER_PREFERENCE_LOW_POWER) {
-        createInfo.devicePreference = core::DeviceTypePreference::LowPower;
+        // Handle preference-based selection
+        if (descriptor->preference == GFX_ADAPTER_PREFERENCE_SOFTWARE) {
+            createInfo.devicePreference = core::DeviceTypePreference::SoftwareRenderer;
+        } else if (descriptor->preference == GFX_ADAPTER_PREFERENCE_LOW_POWER) {
+            createInfo.devicePreference = core::DeviceTypePreference::LowPower;
+        } else {
+            createInfo.devicePreference = core::DeviceTypePreference::HighPerformance;
+        }
     } else {
+        createInfo.adapterIndex = UINT32_MAX;
         createInfo.devicePreference = core::DeviceTypePreference::HighPerformance;
     }
 
@@ -1284,11 +1313,14 @@ core::AdapterCreateInfo gfxDescriptorToAdapterCreateInfo(const GfxAdapterDescrip
 core::DeviceCreateInfo gfxDescriptorToDeviceCreateInfo(const GfxDeviceDescriptor* descriptor)
 {
     core::DeviceCreateInfo createInfo{};
-    // Convert enabled features from GfxDeviceFeatureType to internal DeviceFeatureType
-    if (descriptor && descriptor->enabledFeatures && descriptor->enabledFeatureCount > 0) {
-        createInfo.enabledFeatures.reserve(descriptor->enabledFeatureCount);
-        for (uint32_t i = 0; i < descriptor->enabledFeatureCount; ++i) {
-            createInfo.enabledFeatures.push_back(gfxDeviceFeatureTypeToVulkan(descriptor->enabledFeatures[i]));
+    
+    if (descriptor) {
+        // Convert enabled extensions from const char** to std::vector<std::string>
+        if (descriptor->enabledExtensions && descriptor->enabledExtensionCount > 0) {
+            createInfo.enabledExtensions.reserve(descriptor->enabledExtensionCount);
+            for (uint32_t i = 0; i < descriptor->enabledExtensionCount; ++i) {
+                createInfo.enabledExtensions.push_back(descriptor->enabledExtensions[i]);
+            }
         }
     }
 

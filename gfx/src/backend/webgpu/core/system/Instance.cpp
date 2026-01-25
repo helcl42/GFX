@@ -28,4 +28,13 @@ WGPUInstance Instance::handle() const
     return m_instance;
 }
 
+std::vector<const char*> Instance::enumerateSupportedExtensions()
+{
+    static const std::vector<const char*> supportedExtensions = {
+        extensions::SURFACE,
+        extensions::DEBUG
+    };
+    return supportedExtensions;
+}
+
 } // namespace gfx::backend::webgpu::core

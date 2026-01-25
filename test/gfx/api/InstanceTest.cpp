@@ -41,7 +41,9 @@ TEST_P(GfxInstanceTest, CreateDestroy)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = false;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxResult result = gfxCreateInstance(&desc, &instance);
 
@@ -58,7 +60,9 @@ TEST_P(GfxInstanceTest, WithValidation)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = true;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxResult result = gfxCreateInstance(&desc, &instance);
 
@@ -72,9 +76,11 @@ TEST_P(GfxInstanceTest, WithApplicationInfo)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = false;
     desc.applicationName = "Test Application";
     desc.applicationVersion = 1;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxResult result = gfxCreateInstance(&desc, &instance);
 
@@ -86,11 +92,10 @@ TEST_P(GfxInstanceTest, WithEnabledFeatures)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = false;
 
-    GfxInstanceFeatureType features[] = { GFX_INSTANCE_FEATURE_TYPE_SURFACE };
-    desc.enabledFeatures = features;
-    desc.enabledFeatureCount = 1;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG, GFX_INSTANCE_EXTENSION_SURFACE };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 2;
 
     GfxInstance localInstance = NULL;
     GfxResult result = gfxCreateInstance(&desc, &localInstance);
@@ -106,7 +111,9 @@ TEST_P(GfxInstanceTest, RequestAdapterInvalidArguments)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = false;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxResult result = gfxCreateInstance(&desc, &instance);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -134,7 +141,9 @@ TEST_P(GfxInstanceTest, RequestAdapterByPreference)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = false;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxResult result = gfxCreateInstance(&desc, &instance);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -156,7 +165,9 @@ TEST_P(GfxInstanceTest, RequestAdapterByIndex)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = false;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxResult result = gfxCreateInstance(&desc, &instance);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -188,7 +199,9 @@ TEST_P(GfxInstanceTest, EnumerateAdaptersInvalidArguments)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = false;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxResult result = gfxCreateInstance(&desc, &instance);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -208,7 +221,9 @@ TEST_P(GfxInstanceTest, EnumerateAdaptersGetCount)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = false;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxResult result = gfxCreateInstance(&desc, &instance);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -230,7 +245,9 @@ TEST_P(GfxInstanceTest, EnumerateAdaptersGetAdapters)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = false;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxResult result = gfxCreateInstance(&desc, &instance);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -268,7 +285,9 @@ TEST_P(GfxInstanceTest, EnumerateAdaptersTwoCalls)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = false;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxResult result = gfxCreateInstance(&desc, &instance);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -307,7 +326,9 @@ TEST_P(GfxInstanceTest, MultipleInstances)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = false;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxInstance instance1 = NULL;
     GfxInstance instance2 = NULL;
@@ -331,7 +352,9 @@ TEST_P(GfxInstanceTest, DoubleDestroy)
 {
     GfxInstanceDescriptor desc = {};
     desc.backend = backend;
-    desc.enableValidation = false;
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxResult result = gfxCreateInstance(&desc, &instance);
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
@@ -367,6 +390,9 @@ TEST(GfxInstanceTestNonParam, InvalidArguments)
     // Test NULL output pointer
     GfxInstanceDescriptor desc = {};
     desc.backend = static_cast<GfxBackend>(GFX_BACKEND_VULKAN);
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    desc.enabledExtensions = extensions;
+    desc.enabledExtensionCount = 1;
 
     GfxResult result = gfxCreateInstance(&desc, NULL);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);

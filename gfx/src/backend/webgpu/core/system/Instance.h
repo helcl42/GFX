@@ -16,6 +16,8 @@ public:
 
     WGPUInstance handle() const;
 
+    static std::vector<const char*> enumerateSupportedExtensions();
+
 private:
     WGPUInstance m_instance = nullptr;
 };

@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace gfx::backend::vulkan::core {
@@ -21,6 +22,17 @@ class Buffer;
 class Texture;
 
 // ============================================================================
+// Internal Extension Names
+// ============================================================================
+
+namespace extensions {
+    constexpr const char* SURFACE = "gfx_surface";
+    constexpr const char* DEBUG = "gfx_debug";
+    constexpr const char* SWAPCHAIN = "gfx_swapchain";
+    constexpr const char* TIMELINE_SEMAPHORE = "gfx_timeline_semaphore";
+} // namespace extensions
+
+// ============================================================================
 // Internal Type Definitions
 // ============================================================================
 
@@ -33,16 +45,6 @@ enum class DeviceTypePreference {
     HighPerformance, // Prefer discrete GPU
     LowPower, // Prefer integrated GPU
     SoftwareRenderer // Force CPU-based software renderer
-};
-
-enum class InstanceFeatureType {
-    Invalid = 0,
-    Surface = 1
-};
-
-enum class DeviceFeatureType {
-    Invalid = 0,
-    Swapchain = 1
 };
 
 // ============================================================================
@@ -217,10 +219,9 @@ struct BindGroupCreateInfo {
 };
 
 struct InstanceCreateInfo {
-    bool enableValidation;
     const char* applicationName = "Gfx Application";
     uint32_t applicationVersion = 1;
-    std::vector<InstanceFeatureType> enabledFeatures;
+    std::vector<std::string> enabledExtensions;
 };
 
 struct AdapterCreateInfo {
@@ -235,7 +236,7 @@ struct DeviceCreateInfo {
         float priority;
     };
     
-    std::vector<DeviceFeatureType> enabledFeatures;
+    std::vector<std::string> enabledExtensions;
     std::vector<QueueRequest> queueRequests;
 };
 

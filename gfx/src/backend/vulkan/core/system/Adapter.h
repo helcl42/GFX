@@ -24,7 +24,10 @@ public:
     const VkPhysicalDeviceProperties& getProperties() const;
     const VkPhysicalDeviceMemoryProperties& getMemoryProperties() const;
     std::vector<VkQueueFamilyProperties> getQueueFamilyProperties() const;
+    std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties() const;
     bool supportsPresentation(uint32_t queueFamilyIndex, VkSurfaceKHR surface) const;
+
+    std::vector<const char*> enumerateSupportedExtensions() const;
 
 private:
     void initializeAdapterInfo();

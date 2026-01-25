@@ -17,6 +17,17 @@ class Semaphore;
 class TextureView;
 
 // ============================================================================
+// Internal Extension Names
+// ============================================================================
+
+namespace extensions {
+    constexpr const char* SURFACE = "gfx_surface";
+    constexpr const char* DEBUG = "gfx_debug";
+    constexpr const char* SWAPCHAIN = "gfx_swapchain";
+    constexpr const char* TIMELINE_SEMAPHORE = "gfx_timeline_semaphore";
+} // namespace extensions
+
+// ============================================================================
 // Internal Type Definitions
 // ============================================================================
 
@@ -30,16 +41,6 @@ enum class SemaphoreType {
 enum class ShaderSourceType {
     WGSL = 0,
     SPIRV = 1
-};
-
-enum class InstanceFeatureType {
-    Invalid = 0,
-    Surface = 1
-};
-
-enum class DeviceFeatureType {
-    Invalid = 0,
-    Swapchain = 1
 };
 
 // Queue family properties (WebGPU has single unified queue)
@@ -178,14 +179,13 @@ struct SamplerCreateInfo {
 };
 
 struct InstanceCreateInfo {
-    bool enableValidation;
     const char* applicationName = "Gfx Application";
     uint32_t applicationVersion = 1;
-    std::vector<InstanceFeatureType> enabledFeatures;
+    std::vector<std::string> enabledExtensions;
 };
 
 struct DeviceCreateInfo {
-    std::vector<DeviceFeatureType> enabledFeatures;
+    std::vector<std::string> enabledExtensions;
 };
 
 // Platform-specific window handles (WebGPU native)

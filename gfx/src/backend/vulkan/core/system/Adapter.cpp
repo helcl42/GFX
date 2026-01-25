@@ -2,6 +2,8 @@
 
 #include "Instance.h"
 
+#include <algorithm>
+#include <cstring>
 #include <stdexcept>
 #include <vector>
 
@@ -12,7 +14,7 @@ Adapter::Adapter(Instance* instance, const AdapterCreateInfo& createInfo)
 {
     // Enumerate physical devices
     std::vector<VkPhysicalDevice> devices = instance->enumeratePhysicalDevices();
-    
+
     if (devices.empty()) {
         throw std::runtime_error("No Vulkan physical devices found");
     }
@@ -136,6 +138,17 @@ std::vector<VkQueueFamilyProperties> Adapter::getQueueFamilyProperties() const
     return properties;
 }
 
+std::vector<VkExtensionProperties> Adapter::enumerateDeviceExtensionProperties() const
+{
+    uint32_t count = 0;
+    vkEnumerateDeviceExtensionProperties(m_physicalDevice, nullptr, &count, nullptr);
+
+    std::vector<VkExtensionProperties> extensions(count);
+    vkEnumerateDeviceExtensionProperties(m_physicalDevice, nullptr, &count, extensions.data());
+
+    return extensions;
+}
+
 bool Adapter::supportsPresentation(uint32_t queueFamilyIndex, VkSurfaceKHR surface) const
 {
     VkBool32 supported = VK_FALSE;
@@ -150,13 +163,9 @@ void Adapter::initializeAdapterInfo()
     vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &m_memoryProperties);
 
     // Find graphics queue family
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueFamilyCount, nullptr);
+    auto queueFamilies = getQueueFamilyProperties();
 
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueFamilyCount, queueFamilies.data());
-
-    for (uint32_t i = 0; i < queueFamilyCount; ++i) {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(queueFamilies.size()); ++i) {
         if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             m_graphicsQueueFamily = i;
             break;
@@ -166,6 +175,39 @@ void Adapter::initializeAdapterInfo()
     if (m_graphicsQueueFamily == UINT32_MAX) {
         throw std::runtime_error("Failed to find graphics queue family for adapter");
     }
+}
+
+std::vector<const char*> Adapter::enumerateSupportedExtensions() const
+{
+    // Map our internal extension names to actual Vulkan extension names
+    struct ExtensionMapping {
+        const char* internalName;
+        const char* vkName;
+    };
+
+    static const ExtensionMapping knownExtensions[] = {
+        { extensions::SWAPCHAIN, VK_KHR_SWAPCHAIN_EXTENSION_NAME },
+        { extensions::TIMELINE_SEMAPHORE, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME }
+    };
+
+    // Query what this physical device actually supports
+    auto availableExtensions = enumerateDeviceExtensionProperties();
+
+    // Build the intersection: extensions we care about that this device supports
+    std::vector<const char*> supportedExtensions;
+
+    for (const auto& mapping : knownExtensions) {
+        bool deviceSupportsIt = std::any_of(availableExtensions.begin(), availableExtensions.end(),
+            [&mapping](const VkExtensionProperties& props) {
+                return strcmp(props.extensionName, mapping.vkName) == 0;
+            });
+
+        if (deviceSupportsIt) {
+            supportedExtensions.push_back(mapping.internalName);
+        }
+    }
+
+    return supportedExtensions;
 }
 
 } // namespace gfx::backend::vulkan::core

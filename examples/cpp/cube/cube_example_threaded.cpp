@@ -453,14 +453,13 @@ bool CubeApp::initializeGraphics() {
     std::cout << "Graphics backend loaded successfully!\n";
 
     // Create instance
-    GfxInstanceFeatureType instanceFeatures[] = { GFX_INSTANCE_FEATURE_TYPE_SURFACE };
+    const char* instanceExtensions[] = { GFX_INSTANCE_EXTENSION_SURFACE, GFX_INSTANCE_EXTENSION_DEBUG };
     GfxInstanceDescriptor instanceDesc = {
         .backend = GFX_BACKEND_API,
-        .enableValidation = true,
         .applicationName = "Cube Example (C++ ThreadPool)",
         .applicationVersion = 1,
-        .enabledFeatures = instanceFeatures,
-        .enabledFeatureCount = 1
+        .enabledExtensions = instanceExtensions,
+        .enabledExtensionCount = 2
     };
 
     if (gfxCreateInstance(&instanceDesc, &instance) != GFX_RESULT_SUCCESS) {
@@ -490,11 +489,11 @@ bool CubeApp::initializeGraphics() {
     std::cout << "  Backend: " << (adapterInfo.backend == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU") << std::endl;
 
     // Create device
-    GfxDeviceFeatureType deviceFeatures[] = { GFX_DEVICE_FEATURE_TYPE_SWAPCHAIN };
+    const char* deviceExtensions[] = { GFX_DEVICE_EXTENSION_SWAPCHAIN };
     GfxDeviceDescriptor deviceDesc = {
         .label = "Main Device",
-        .enabledFeatures = deviceFeatures,
-        .enabledFeatureCount = 1
+        .enabledExtensions = deviceExtensions,
+        .enabledExtensionCount = 1
     };
     if (gfxAdapterCreateDevice(adapter, &deviceDesc, &device) != GFX_RESULT_SUCCESS) {
         std::cerr << "Failed to create device\n";

@@ -11,6 +11,9 @@ namespace gfx {
 GfxBackend cppBackendToCBackend(Backend backend);
 Backend cBackendToCppBackend(GfxBackend backend);
 
+// Instance type conversions
+GfxInstanceDescriptor cppInstanceDescriptorToCDescriptor(const InstanceDescriptor& descriptor, GfxBackend backend, std::vector<const char*>& extensionsStorage);
+
 // Adapter type conversions
 AdapterType cAdapterTypeToCppAdapterType(GfxAdapterType adapterType);
 
@@ -59,7 +62,7 @@ QueueFamilyProperties cQueueFamilyPropertiesToCppQueueFamilyProperties(const Gfx
 GfxQueueRequest cppQueueRequestToCQueueRequest(const QueueRequest& req);
 
 // Device descriptor conversion
-void convertDeviceDescriptor(const DeviceDescriptor& descriptor, std::vector<GfxDeviceFeatureType>& outFeatures, std::vector<GfxQueueRequest>& outQueueRequests, GfxDeviceDescriptor& outDesc);
+void convertDeviceDescriptor(const DeviceDescriptor& descriptor, std::vector<const char*>& outExtensions, std::vector<GfxQueueRequest>& outQueueRequests, GfxDeviceDescriptor& outDesc);
 
 // Buffer info conversions
 BufferInfo cBufferInfoToCppBufferInfo(const GfxBufferInfo& info);
@@ -131,10 +134,6 @@ GfxStencilOperation cppStencilOperationToCStencilOperation(StencilOperation op);
 // Load/Store op conversions
 GfxLoadOp cppLoadOpToCLoadOp(LoadOp op);
 GfxStoreOp cppStoreOpToCStoreOp(StoreOp op);
-
-// Feature type conversions
-GfxDeviceFeatureType cppDeviceFeatureTypeToCDeviceFeatureType(DeviceFeatureType feature);
-GfxInstanceFeatureType cppInstanceFeatureTypeToCInstanceFeatureType(InstanceFeatureType feature);
 
 // Adapter preference conversions
 GfxAdapterPreference cppAdapterPreferenceToCAdapterPreference(AdapterPreference preference);

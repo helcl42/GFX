@@ -4,6 +4,7 @@
 
 #include "../../../../common/Logger.h"
 
+#include <algorithm>
 #include <cstring>
 #include <stdexcept>
 #include <vector>
@@ -45,6 +46,16 @@ namespace {
         return typeStr;
     }
 
+    bool isExtensionEnabled(const std::vector<std::string>& enabledExtensions, const char* extension)
+    {
+        for (const auto& enabledExt : enabledExtensions) {
+            if (enabledExt == extension) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 } // namespace
 
 Instance::Instance(const InstanceCreateInfo& createInfo)
@@ -61,19 +72,10 @@ Instance::Instance(const InstanceCreateInfo& createInfo)
     vkCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     vkCreateInfo.pApplicationInfo = &appInfo;
 
-    auto isFeatureEnabled = [&](InstanceFeatureType feature) {
-        for (const auto& enabledFeature : createInfo.enabledFeatures) {
-            if (enabledFeature == feature) {
-                return true;
-            }
-        }
-        return false;
-    };
-
     // Extensions
     std::vector<const char*> extensions = {};
 #ifndef GFX_HEADLESS_BUILD
-    if (isFeatureEnabled(InstanceFeatureType::Surface)) {
+    if (isExtensionEnabled(createInfo.enabledExtensions, extensions::SURFACE)) {
         extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 #ifdef GFX_HAS_WIN32
         extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
@@ -97,17 +99,13 @@ Instance::Instance(const InstanceCreateInfo& createInfo)
     }
 #endif // GFX_HEADLESS_BUILD
 
-    m_validationEnabled = createInfo.enableValidation;
+    m_validationEnabled = isExtensionEnabled(createInfo.enabledExtensions, extensions::DEBUG);
     if (m_validationEnabled) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
-    // Check if all requested extensions are available
-    uint32_t availableExtensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, nullptr);
-    std::vector<VkExtensionProperties> availableExtensions(availableExtensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, availableExtensions.data());
-
+    // Check if all requested extensions are availables
+    const auto availableExtensions = enumerateAvailableExtensions();
     for (const char* requestedExt : extensions) {
         bool found = false;
         for (const auto& availableExt : availableExtensions) {
@@ -178,6 +176,16 @@ std::vector<VkPhysicalDevice> Instance::enumeratePhysicalDevices() const
     return devices;
 }
 
+std::vector<VkExtensionProperties> Instance::enumerateAvailableExtensions()
+{
+    uint32_t extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> extensions(extensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+    return extensions;
+}
+
 void Instance::setupDebugMessenger()
 {
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
@@ -212,6 +220,38 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Instance::debugCallback(VkDebugUtilsMessageSeveri
         gfx::common::Logger::instance().logDebug("Vulkan [{}|{}]: {}", severityStr, typeStr, pCallbackData->pMessage);
     }
     return VK_FALSE;
+}
+
+std::vector<const char*> Instance::enumerateSupportedExtensions()
+{
+    // Map our internal extension names to actual Vulkan extension names
+    struct ExtensionMapping {
+        const char* internalName;
+        const char* vkName;
+    };
+
+    static const ExtensionMapping knownExtensions[] = {
+        { extensions::SURFACE, VK_KHR_SURFACE_EXTENSION_NAME },
+        { extensions::DEBUG, VK_EXT_DEBUG_UTILS_EXTENSION_NAME }
+    };
+
+    const auto availableExtensions = enumerateAvailableExtensions();
+
+    // Build the intersection: extensions we care about that are available
+    std::vector<const char*> supportedExtensions;
+
+    for (const auto& mapping : knownExtensions) {
+        bool isAvailable = std::any_of(availableExtensions.begin(), availableExtensions.end(),
+            [&mapping](const VkExtensionProperties& props) {
+                return strcmp(props.extensionName, mapping.vkName) == 0;
+            });
+
+        if (isAvailable) {
+            supportedExtensions.push_back(mapping.internalName);
+        }
+    }
+
+    return supportedExtensions;
 }
 
 } // namespace gfx::backend::vulkan::core

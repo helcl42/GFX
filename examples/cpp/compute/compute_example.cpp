@@ -215,9 +215,8 @@ bool ComputeApp::initializeGraphics()
         gfx::InstanceDescriptor instanceDesc{};
         instanceDesc.applicationName = "Compute & Postprocess Example (C++)";
         instanceDesc.applicationVersion = 1;
-        instanceDesc.enableValidation = true;
         instanceDesc.backend = gfx::Backend::WebGPU;
-        instanceDesc.enabledFeatures = { gfx::InstanceFeatureType::Surface };
+        instanceDesc.enabledExtensions = { gfx::INSTANCE_EXTENSION_SURFACE, gfx::INSTANCE_EXTENSION_DEBUG };
 
         instance = gfx::createInstance(instanceDesc);
         if (!instance) {
@@ -245,7 +244,7 @@ bool ComputeApp::initializeGraphics()
         // Create device
         gfx::DeviceDescriptor deviceDesc{};
         deviceDesc.label = "Main Device";
-        deviceDesc.enabledFeatures = { gfx::DeviceFeatureType::Swapchain };
+        deviceDesc.enabledExtensions = { gfx::DEVICE_EXTENSION_SWAPCHAIN };
 
         device = adapter->createDevice(deviceDesc);
         if (!device) {

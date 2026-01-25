@@ -239,9 +239,8 @@ bool CubeApp::initializeGraphics()
         gfx::InstanceDescriptor instanceDesc{};
         instanceDesc.applicationName = "Rotating Cube Example (C++)";
         instanceDesc.applicationVersion = 1;
-        instanceDesc.enableValidation = true;
         instanceDesc.backend = BACKEND_API;
-        instanceDesc.enabledFeatures = { gfx::InstanceFeatureType::Surface };
+        instanceDesc.enabledExtensions = { gfx::INSTANCE_EXTENSION_SURFACE, gfx::INSTANCE_EXTENSION_DEBUG };
 
         instance = gfx::createInstance(instanceDesc);
         if (!instance) {
@@ -269,7 +268,7 @@ bool CubeApp::initializeGraphics()
         // Create device
         gfx::DeviceDescriptor deviceDesc{};
         deviceDesc.label = "Main Device";
-        deviceDesc.enabledFeatures = { gfx::DeviceFeatureType::Swapchain };
+        deviceDesc.enabledExtensions = { gfx::DEVICE_EXTENSION_SWAPCHAIN };
 
         device = adapter->createDevice(deviceDesc);
         if (!device) {
