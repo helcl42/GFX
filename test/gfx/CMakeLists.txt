@@ -24,6 +24,7 @@ set(PUBLIC_TEST_SOURCES
     api/ComputePassEncoderTest.cpp
     api/FenceTest.cpp
     api/SemaphoreTest.cpp
+    api/UtilTest.cpp
     api/SurfaceTest.cpp
     api/SwapchainTest.cpp
 )
