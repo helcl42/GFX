@@ -16,102 +16,102 @@ namespace gfx {
 // Core Enumerations
 // ============================================================================
 
-enum class Backend {
-    Vulkan,
-    WebGPU,
-    Auto
+enum class Backend : int32_t {
+    Vulkan = 0,
+    WebGPU = 1,
+    Auto = 2
 };
 
-enum class AdapterType {
-    DiscreteGPU,
-    IntegratedGPU,
-    CPU,
-    Unknown
+enum class AdapterType : int32_t {
+    DiscreteGPU = 0,
+    IntegratedGPU = 1,
+    CPU = 2,
+    Unknown = 3
 };
 
-enum class AdapterPreference {
-    Undefined,
-    LowPower,
-    HighPerformance,
-    Software
+enum class AdapterPreference : int32_t {
+    Undefined = 0,
+    LowPower = 1,
+    HighPerformance = 2,
+    Software = 3
 };
 
-enum class PresentMode {
-    Immediate, // No vsync, immediate presentation
-    Fifo, // Vsync, first-in-first-out queue
-    FifoRelaxed, // Vsync with relaxed timing
-    Mailbox // Triple buffering
+enum class PresentMode : int32_t {
+    Immediate = 0, // No vsync, immediate presentation
+    Fifo = 1, // Vsync, first-in-first-out queue
+    FifoRelaxed = 2, // Vsync with relaxed timing
+    Mailbox = 3 // Triple buffering
 };
 
-enum class PrimitiveTopology {
-    PointList,
-    LineList,
-    LineStrip,
-    TriangleList,
-    TriangleStrip
+enum class PrimitiveTopology : int32_t {
+    PointList = 0,
+    LineList = 1,
+    LineStrip = 2,
+    TriangleList = 3,
+    TriangleStrip = 4
 };
 
-enum class FrontFace {
-    CounterClockwise,
-    Clockwise
+enum class FrontFace : int32_t {
+    CounterClockwise = 0,
+    Clockwise = 1
 };
 
-enum class CullMode {
-    None,
-    Front,
-    Back,
-    FrontAndBack
+enum class CullMode : int32_t {
+    None = 0,
+    Front = 1,
+    Back = 2,
+    FrontAndBack = 3
 };
 
-enum class PolygonMode {
-    Fill,
-    Line,
-    Point
+enum class PolygonMode : int32_t {
+    Fill = 0,
+    Line = 1,
+    Point = 2
 };
 
-enum class IndexFormat {
-    Undefined,
-    Uint16,
-    Uint32
+enum class IndexFormat : int32_t {
+    Undefined = 0,
+    Uint16 = 1,
+    Uint32 = 2
 };
 
-enum class TextureFormat {
-    Undefined,
-    R8Unorm,
-    R8G8Unorm,
-    R8G8B8A8Unorm,
-    R8G8B8A8UnormSrgb,
-    B8G8R8A8Unorm,
-    B8G8R8A8UnormSrgb,
-    R16Float,
-    R16G16Float,
-    R16G16B16A16Float,
-    R32Float,
-    R32G32Float,
-    R32G32B32Float,
-    R32G32B32A32Float,
-    Depth16Unorm,
-    Depth24Plus,
-    Depth32Float,
-    Depth24PlusStencil8,
-    Depth32FloatStencil8
+enum class TextureFormat : int32_t {
+    Undefined = 0,
+    R8Unorm = 1,
+    R8G8Unorm = 2,
+    R8G8B8A8Unorm = 3,
+    R8G8B8A8UnormSrgb = 4,
+    B8G8R8A8Unorm = 5,
+    B8G8R8A8UnormSrgb = 6,
+    R16Float = 7,
+    R16G16Float = 8,
+    R16G16B16A16Float = 9,
+    R32Float = 10,
+    R32G32Float = 11,
+    R32G32B32Float = 12,
+    R32G32B32A32Float = 13,
+    Depth16Unorm = 14,
+    Depth24Plus = 15,
+    Depth32Float = 16,
+    Depth24PlusStencil8 = 17,
+    Depth32FloatStencil8 = 18
 };
 
-enum class TextureType {
-    Texture1D,
-    Texture2D,
-    Texture3D,
-    TextureCube
+enum class TextureType : int32_t {
+    Texture1D = 0,
+    Texture2D = 1,
+    Texture3D = 2,
+    TextureCube = 3
 };
 
-enum class TextureViewType {
-    View1D,
-    View2D,
-    View3D,
-    ViewCube,
-    View1DArray,
-    View2DArray,
-    ViewCubeArray
+enum class TextureViewType : int32_t {
+    View1D = 0,
+    View2D = 1,
+    View3D = 2,
+    ViewCube = 3,
+    View1DArray = 4,
+    View2DArray = 5,
+    ViewCubeArray = 6
 };
 
 enum class TextureUsage : uint32_t {
@@ -143,62 +143,62 @@ enum class ShaderStage : uint32_t {
     Compute = 1 << 2
 };
 
-enum class FilterMode {
-    Nearest,
-    Linear
+enum class FilterMode : int32_t {
+    Nearest = 0,
+    Linear = 1
 };
 
-enum class AddressMode {
-    Repeat,
-    MirrorRepeat,
-    ClampToEdge
+enum class AddressMode : int32_t {
+    Repeat = 0,
+    MirrorRepeat = 1,
+    ClampToEdge = 2
 };
 
-enum class CompareFunction {
-    Undefined,
-    Never,
-    Less,
-    Equal,
-    LessEqual,
-    Greater,
-    NotEqual,
-    GreaterEqual,
-    Always
+enum class CompareFunction : int32_t {
+    Undefined = 0,
+    Never = 1,
+    Less = 2,
+    Equal = 3,
+    LessEqual = 4,
+    Greater = 5,
+    NotEqual = 6,
+    GreaterEqual = 7,
+    Always = 8
 };
 
-enum class BlendOperation {
-    Add,
-    Subtract,
-    ReverseSubtract,
-    Min,
-    Max
+enum class BlendOperation : int32_t {
+    Add = 0,
+    Subtract = 1,
+    ReverseSubtract = 2,
+    Min = 3,
+    Max = 4
 };
 
-enum class BlendFactor {
-    Zero,
-    One,
-    Src,
-    OneMinusSrc,
-    SrcAlpha,
-    OneMinusSrcAlpha,
-    Dst,
-    OneMinusDst,
-    DstAlpha,
-    OneMinusDstAlpha,
-    SrcAlphaSaturated,
-    Constant,
-    OneMinusConstant
+enum class BlendFactor : int32_t {
+    Zero = 0,
+    One = 1,
+    Src = 2,
+    OneMinusSrc = 3,
+    SrcAlpha = 4,
+    OneMinusSrcAlpha = 5,
+    Dst = 6,
+    OneMinusDst = 7,
+    DstAlpha = 8,
+    OneMinusDstAlpha = 9,
+    SrcAlphaSaturated = 10,
+    Constant = 11,
+    OneMinusConstant = 12
 };
 
-enum class StencilOperation {
-    Keep,
-    Zero,
-    Replace,
-    IncrementClamp,
-    DecrementClamp,
-    Invert,
-    IncrementWrap,
-    DecrementWrap
+enum class StencilOperation : int32_t {
+    Keep = 0,
+    Zero = 1,
+    Replace = 2,
+    IncrementClamp = 3,
+    DecrementClamp = 4,
+    Invert = 5,
+    IncrementWrap = 6,
+    DecrementWrap = 7
 };
 
 enum class SampleCount {
@@ -211,21 +211,21 @@ enum class SampleCount {
     Count64 = 64
 };
 
-enum class ShaderSourceType {
-    WGSL, // WGSL text source (for WebGPU)
-    SPIRV // SPIR-V binary (for Vulkan)
+enum class ShaderSourceType : int32_t {
+    WGSL = 0, // WGSL text source (for WebGPU)
+    SPIRV = 1 // SPIR-V binary (for Vulkan)
 };
 
 // Synchronization enums
-enum class FenceStatus {
-    Unsignaled,
-    Signaled,
-    Error
+enum class FenceStatus : int32_t {
+    Unsignaled = 0,
+    Signaled = 1,
+    Error = 2
 };
 
-enum class SemaphoreType {
-    Binary,
-    Timeline
+enum class SemaphoreType : int32_t {
+    Binary = 0,
+    Timeline = 1
 };
 
 // Extension name constants (matching C API)
@@ -258,27 +258,27 @@ enum class Result {
     ErrorUnknown = -9
 };
 
-enum class LoadOp {
-    Load, // Load existing contents
-    Clear, // Clear to specified clear value
-    DontCare // Don't care about initial contents (better performance on tiled GPUs)
+enum class LoadOp : int32_t {
+    Load = 0, // Load existing contents
+    Clear = 1, // Clear to specified clear value
+    DontCare = 2 // Don't care about initial contents (better performance on tiled GPUs)
 };
 
-enum class StoreOp {
-    Store, // Store contents after render pass
-    DontCare // Don't care about contents after render pass (better performance for transient attachments)
+enum class StoreOp : int32_t {
+    Store = 0, // Store contents after render pass
+    DontCare = 1 // Don't care about contents after render pass (better performance for transient attachments)
 };
 
-enum class TextureLayout {
-    Undefined,
-    General,
-    ColorAttachment,
-    DepthStencilAttachment,
-    DepthStencilReadOnly,
-    ShaderReadOnly,
-    TransferSrc,
-    TransferDst,
-    PresentSrc
+enum class TextureLayout : int32_t {
+    Undefined = 0,
+    General = 1,
+    ColorAttachment = 2,
+    DepthStencilAttachment = 3,
+    DepthStencilReadOnly = 4,
+    ShaderReadOnly = 5,
+    TransferSrc = 6,
+    TransferDst = 7,
+    PresentSrc = 8
 };
 
 enum class PipelineStage : uint32_t {
@@ -530,11 +530,11 @@ class Semaphore;
 // Logging
 // ============================================================================
 
-enum class LogLevel {
-    Error,
-    Warning,
-    Info,
-    Debug
+enum class LogLevel : int32_t {
+    Error = 0,
+    Warning = 1,
+    Info = 2,
+    Debug = 3
 };
 
 using LogCallback = std::function<void(LogLevel level, const std::string& message)>;
@@ -673,7 +673,7 @@ enum ColorWriteMask : uint32_t {
     Green = 0x2,
     Blue = 0x4,
     Alpha = 0x8,
-    All = 0xF // R | G | B | A
+    All = Red | Green | Blue | Alpha // R | G | B | A
 };
 
 struct ColorTargetState {
@@ -1355,7 +1355,7 @@ public:
     virtual std::shared_ptr<Device> createDevice(const DeviceDescriptor& descriptor = {}) = 0;
     virtual AdapterInfo getInfo() const = 0;
     virtual DeviceLimits getLimits() const = 0;
-    
+
     // Queue family enumeration
     virtual std::vector<QueueFamilyProperties> enumerateQueueFamilies() const = 0;
     virtual bool getQueueFamilySurfaceSupport(uint32_t queueFamilyIndex, Surface* surface) const = 0;
