@@ -2,9 +2,11 @@
 
 # Public API tests - tests that verify the C++ wrapper API contract
 set(PUBLIC_TEST_SOURCES
-    api/BasicTest.cpp
+    api/AdapterTest.cpp
+    api/BackendTest.cpp
+    api/ConstantTest.cpp
+    api/DeviceTest.cpp
     api/InstanceTest.cpp
-    api/ResultTest.cpp
 )
 
 # Internal tests - tests for C++ wrapper implementation details
