@@ -17,9 +17,6 @@ AdapterImpl::AdapterImpl(GfxAdapter h)
 
 AdapterImpl::~AdapterImpl()
 {
-    if (m_handle) {
-        gfxAdapterDestroy(m_handle);
-    }
 }
 
 std::shared_ptr<Device> AdapterImpl::createDevice(const DeviceDescriptor& descriptor)
@@ -55,16 +52,16 @@ std::vector<QueueFamilyProperties> AdapterImpl::enumerateQueueFamilies() const
 {
     uint32_t count = 0;
     gfxAdapterEnumerateQueueFamilies(m_handle, &count, nullptr);
-    
+
     std::vector<GfxQueueFamilyProperties> cProps(count);
     gfxAdapterEnumerateQueueFamilies(m_handle, &count, cProps.data());
-    
+
     std::vector<QueueFamilyProperties> props;
     props.reserve(count);
     for (const auto& cProp : cProps) {
         props.push_back(cQueueFamilyPropertiesToCppQueueFamilyProperties(cProp));
     }
-    
+
     return props;
 }
 
@@ -73,12 +70,12 @@ bool AdapterImpl::getQueueFamilySurfaceSupport(uint32_t queueFamilyIndex, Surfac
     if (!surface) {
         return false;
     }
-    
+
     auto* surfaceImpl = dynamic_cast<SurfaceImpl*>(surface);
     if (!surfaceImpl) {
         return false;
     }
-    
+
     bool supported = false;
     gfxAdapterGetQueueFamilySurfaceSupport(m_handle, queueFamilyIndex, surfaceImpl->getHandle(), &supported);
     return supported;

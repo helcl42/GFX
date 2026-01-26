@@ -3,7 +3,12 @@
 
 #include "../CoreTypes.h"
 
+#include <memory>
+#include <vector>
+
 namespace gfx::backend::vulkan::core {
+
+class Adapter;
 
 class Instance {
 public:
@@ -16,6 +21,10 @@ public:
 
     VkInstance handle() const;
     std::vector<VkPhysicalDevice> enumeratePhysicalDevices() const;
+
+    // Adapter access - returns cached adapters
+    Adapter* requestAdapter(const AdapterCreateInfo& createInfo) const;
+    const std::vector<std::unique_ptr<Adapter>>& getAdapters() const { return m_adapters; }
 
     static std::vector<const char*> enumerateSupportedExtensions();
 
@@ -30,6 +39,7 @@ private:
     VkInstance m_instance = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
     bool m_validationEnabled = false;
+    mutable std::vector<std::unique_ptr<Adapter>> m_adapters; // Owned adapters, cached on creation
 };
 
 } // namespace gfx::backend::vulkan::core

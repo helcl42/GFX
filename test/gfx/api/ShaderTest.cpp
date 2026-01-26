@@ -45,7 +45,6 @@ protected:
         deviceDesc.label = "Test Device";
 
         if (gfxAdapterCreateDevice(adapter, &deviceDesc, &device) != GFX_RESULT_SUCCESS) {
-            gfxAdapterDestroy(adapter);
             gfxInstanceDestroy(instance);
             gfxUnloadBackend(backend);
             GTEST_SKIP() << "Failed to create device";
@@ -56,9 +55,6 @@ protected:
     {
         if (device) {
             gfxDeviceDestroy(device);
-        }
-        if (adapter) {
-            gfxAdapterDestroy(adapter);
         }
         if (instance) {
             gfxInstanceDestroy(instance);

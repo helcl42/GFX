@@ -1283,9 +1283,6 @@ static void cleanup(ComputeApp* app)
     if (app->device) {
         gfxDeviceDestroy(app->device);
     }
-    if (app->adapter) {
-        gfxAdapterDestroy(app->adapter);
-    }
     if (app->instance) {
         gfxInstanceDestroy(app->instance);
     }

@@ -157,7 +157,6 @@ TEST_P(GfxInstanceTest, RequestAdapterByPreference)
 
     if (result == GFX_RESULT_SUCCESS) {
         EXPECT_NE(adapter, nullptr);
-        gfxAdapterDestroy(adapter);
     }
 }
 
@@ -188,10 +187,6 @@ TEST_P(GfxInstanceTest, RequestAdapterByIndex)
 
         EXPECT_EQ(result, GFX_RESULT_SUCCESS);
         EXPECT_NE(adapter, nullptr);
-
-        if (adapter) {
-            gfxAdapterDestroy(adapter);
-        }
     }
 }
 
@@ -270,12 +265,6 @@ TEST_P(GfxInstanceTest, EnumerateAdaptersGetAdapters)
             EXPECT_NE(adapters[i], nullptr);
         }
 
-        // Cleanup adapters
-        for (uint32_t i = 0; i < adapterCount; ++i) {
-            if (adapters[i]) {
-                gfxAdapterDestroy(adapters[i]);
-            }
-        }
 
         delete[] adapters;
     }
@@ -313,12 +302,6 @@ TEST_P(GfxInstanceTest, EnumerateAdaptersTwoCalls)
     EXPECT_EQ(result, GFX_RESULT_SUCCESS);
     EXPECT_EQ(adapterCount, firstCount); // Count should remain the same
 
-    // Cleanup
-    for (uint32_t i = 0; i < adapterCount; ++i) {
-        if (adapters[i]) {
-            gfxAdapterDestroy(adapters[i]);
-        }
-    }
     delete[] adapters;
 }
 

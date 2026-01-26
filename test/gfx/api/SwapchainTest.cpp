@@ -42,7 +42,6 @@ protected:
         GfxDeviceDescriptor deviceDesc = {};
 
         if (gfxAdapterCreateDevice(adapter, &deviceDesc, &device) != GFX_RESULT_SUCCESS) {
-            gfxAdapterDestroy(adapter);
             gfxInstanceDestroy(instance);
             gfxUnloadBackend(backend);
             GTEST_SKIP() << "Failed to create device";
@@ -59,9 +58,6 @@ protected:
         }
         if (device) {
             gfxDeviceDestroy(device);
-        }
-        if (adapter) {
-            gfxAdapterDestroy(adapter);
         }
         if (instance) {
             gfxInstanceDestroy(instance);
@@ -113,7 +109,7 @@ TEST_P(GfxSwapchainTest, CreateSwapchainInvalidDimensions)
     // Test that dimension validation happens (should reject before trying to use surface)
     GfxSwapchainDescriptor desc = {};
     desc.label = "TestSwapchain";
-    desc.width = 0;  // Invalid
+    desc.width = 0; // Invalid
     desc.height = 600;
     desc.format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
@@ -150,7 +146,7 @@ TEST_P(GfxSwapchainTest, CreateSwapchainInvalidImageCount)
     desc.format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     desc.presentMode = GFX_PRESENT_MODE_FIFO;
-    desc.imageCount = 0;  // Invalid
+    desc.imageCount = 0; // Invalid
 
     // Zero image count should be rejected
     GfxResult result = gfxDeviceCreateSwapchain(device, NULL, &desc, &swapchain);

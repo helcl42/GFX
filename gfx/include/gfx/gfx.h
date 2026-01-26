@@ -1155,7 +1155,6 @@ GFX_API GfxResult gfxInstanceRequestAdapter(GfxInstance instance, const GfxAdapt
 GFX_API GfxResult gfxInstanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters);
 
 // Adapter functions
-GFX_API GfxResult gfxAdapterDestroy(GfxAdapter adapter);
 GFX_API GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice);
 GFX_API GfxResult gfxAdapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo);
 GFX_API GfxResult gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits);

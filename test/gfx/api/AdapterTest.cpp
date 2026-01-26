@@ -42,9 +42,6 @@ protected:
 
     void TearDown() override
     {
-        if (adapter) {
-            gfxAdapterDestroy(adapter);
-        }
         if (instance) {
             gfxInstanceDestroy(instance);
         }
@@ -210,12 +207,6 @@ TEST_P(GfxAdapterTest, CreateDeviceInvalidArguments)
 
     // NULL output pointer
     result = gfxAdapterCreateDevice(adapter, &desc, NULL);
-    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
-}
-
-TEST_P(GfxAdapterTest, DestroyNullAdapter)
-{
-    GfxResult result = gfxAdapterDestroy(NULL);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
 

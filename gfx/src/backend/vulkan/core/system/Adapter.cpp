@@ -9,97 +9,11 @@
 
 namespace gfx::backend::vulkan::core {
 
-Adapter::Adapter(Instance* instance, const AdapterCreateInfo& createInfo)
-    : m_instance(instance)
-{
-    // Enumerate physical devices
-    std::vector<VkPhysicalDevice> devices = instance->enumeratePhysicalDevices();
-
-    if (devices.empty()) {
-        throw std::runtime_error("No Vulkan physical devices found");
-    }
-
-    uint32_t deviceCount = static_cast<uint32_t>(devices.size());
-
-    // If adapter index is specified, use that directly
-    if (createInfo.adapterIndex != UINT32_MAX) {
-        if (createInfo.adapterIndex >= deviceCount) {
-            throw std::runtime_error("Adapter index out of range");
-        }
-        m_physicalDevice = devices[createInfo.adapterIndex];
-    } else {
-        // Otherwise, use preference-based selection
-        // Determine preferred device type based on createInfo
-        VkPhysicalDeviceType preferredType;
-        switch (createInfo.devicePreference) {
-        case DeviceTypePreference::SoftwareRenderer:
-            preferredType = VK_PHYSICAL_DEVICE_TYPE_CPU;
-            break;
-        case DeviceTypePreference::LowPower:
-            preferredType = VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
-            break;
-        case DeviceTypePreference::HighPerformance:
-        default:
-            preferredType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-            break;
-        }
-
-        // First pass: try to find preferred device type
-        m_physicalDevice = VK_NULL_HANDLE;
-        for (auto device : devices) {
-            VkPhysicalDeviceProperties props;
-            vkGetPhysicalDeviceProperties(device, &props);
-            if (props.deviceType == preferredType) {
-                m_physicalDevice = device;
-                break;
-            }
-        }
-
-        // Fallback: if preferred type not found, use first available device
-        if (m_physicalDevice == VK_NULL_HANDLE) {
-            m_physicalDevice = devices[0];
-        }
-    }
-
-    initializeAdapterInfo();
-}
-
-// Constructor for wrapping a specific physical device (used by enumerate)
-Adapter::Adapter(Instance* instance, VkPhysicalDevice physicalDevice)
-    : m_instance(instance)
-    , m_physicalDevice(physicalDevice)
+Adapter::Adapter(VkPhysicalDevice physicalDevice, Instance* instance)
+    : m_physicalDevice(physicalDevice)
+    , m_instance(instance)
 {
     initializeAdapterInfo();
-}
-
-// Static method to enumerate all available adapters
-// NOTE: Each adapter returned must be freed by the caller using the backend's adapterDestroy method
-// (e.g., gfxAdapterDestroy() in the public API)
-uint32_t Adapter::enumerate(Instance* instance, Adapter** outAdapters, uint32_t maxAdapters)
-{
-    if (!instance) {
-        return 0;
-    }
-
-    std::vector<VkPhysicalDevice> devices = instance->enumeratePhysicalDevices();
-    uint32_t deviceCount = static_cast<uint32_t>(devices.size());
-
-    if (deviceCount == 0) {
-        return 0;
-    }
-
-    // If outAdapters is NULL, just return the count
-    if (!outAdapters) {
-        return deviceCount;
-    }
-
-    // Create an adapter for each physical device
-    uint32_t count = std::min(deviceCount, maxAdapters);
-    for (uint32_t i = 0; i < count; ++i) {
-        outAdapters[i] = new Adapter(instance, devices[i]);
-    }
-
-    return count;
 }
 
 VkPhysicalDevice Adapter::handle() const

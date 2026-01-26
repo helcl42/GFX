@@ -41,9 +41,6 @@ protected:
         if (device != nullptr) {
             gfxDeviceDestroy(device);
         }
-        if (adapter != nullptr) {
-            gfxAdapterDestroy(adapter);
-        }
         if (instance != nullptr) {
             gfxInstanceDestroy(instance);
         }

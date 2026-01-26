@@ -45,9 +45,6 @@ protected:
         if (device) {
             gfxDeviceDestroy(device);
         }
-        if (adapter) {
-            gfxAdapterDestroy(adapter);
-        }
         if (instance) {
             gfxInstanceDestroy(instance);
         }

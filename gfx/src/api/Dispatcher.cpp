@@ -155,6 +155,7 @@ GfxResult gfxInstanceDestroy(GfxInstance instance)
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
+
     GfxResult result = backend->instanceDestroy(instance);
     gfx::backend::BackendManager::instance().unwrap(instance);
     return result;
@@ -190,7 +191,20 @@ GfxResult gfxInstanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCo
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->instanceEnumerateAdapters(instance, adapterCount, adapters);
+
+    GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(instance);
+    GfxResult result = backend->instanceEnumerateAdapters(instance, adapterCount, adapters);
+
+    // Wrap adapters for backend tracking
+    if (result == GFX_RESULT_SUCCESS && adapters && *adapterCount > 0) {
+        for (uint32_t i = 0; i < *adapterCount; ++i) {
+            if (adapters[i]) {
+                adapters[i] = gfx::backend::BackendManager::instance().wrap(backendType, adapters[i]);
+            }
+        }
+    }
+
+    return result;
 }
 
 GfxResult gfxEnumerateInstanceExtensions(GfxBackend backend, uint32_t* extensionCount, const char** extensionNames)
@@ -206,20 +220,6 @@ GfxResult gfxEnumerateInstanceExtensions(GfxBackend backend, uint32_t* extension
 }
 
 // Adapter Functions
-GfxResult gfxAdapterDestroy(GfxAdapter adapter)
-{
-    if (!adapter) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    auto backend = gfx::backend::BackendManager::instance().getBackend(adapter);
-    if (!backend) {
-        return GFX_RESULT_ERROR_NOT_FOUND;
-    }
-    GfxResult result = backend->adapterDestroy(adapter);
-    gfx::backend::BackendManager::instance().unwrap(adapter);
-    return result;
-}
-
 GfxResult gfxAdapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice)
 {
     if (!adapter || !descriptor || !outDevice) {

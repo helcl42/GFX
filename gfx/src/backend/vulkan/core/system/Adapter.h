@@ -12,11 +12,8 @@ public:
     Adapter(const Adapter&) = delete;
     Adapter& operator=(const Adapter&) = delete;
 
-    Adapter(Instance* instance, const AdapterCreateInfo& createInfo);
-    Adapter(Instance* instance, VkPhysicalDevice physicalDevice);
+    Adapter(VkPhysicalDevice physicalDevice, Instance* instance);
     ~Adapter() = default;
-
-    static uint32_t enumerate(Instance* instance, Adapter** outAdapters, uint32_t maxAdapters);
 
     VkPhysicalDevice handle() const;
     uint32_t getGraphicsQueueFamily() const;
@@ -32,8 +29,8 @@ public:
 private:
     void initializeAdapterInfo();
 
-    Instance* m_instance = nullptr;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+    Instance* m_instance = nullptr; // Non-owning
     VkPhysicalDeviceProperties m_properties{};
     VkPhysicalDeviceMemoryProperties m_memoryProperties{};
     uint32_t m_graphicsQueueFamily = UINT32_MAX;

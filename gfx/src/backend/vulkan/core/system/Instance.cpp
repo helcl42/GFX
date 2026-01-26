@@ -1,5 +1,7 @@
 #include "Instance.h"
 
+#include "Adapter.h"
+
 #include "../util/Utils.h"
 
 #include "../../../../common/Logger.h"
@@ -141,10 +143,20 @@ Instance::Instance(const InstanceCreateInfo& createInfo)
     if (m_validationEnabled) {
         setupDebugMessenger();
     }
+
+    // Enumerate and cache all adapters
+    auto physicalDevices = enumeratePhysicalDevices();
+    m_adapters.reserve(physicalDevices.size());
+    for (auto physicalDevice : physicalDevices) {
+        m_adapters.push_back(std::make_unique<Adapter>(physicalDevice, this));
+    }
 }
 
 Instance::~Instance()
 {
+    // Adapters are automatically cleaned up by unique_ptr
+    m_adapters.clear();
+
     if (m_debugMessenger != VK_NULL_HANDLE) {
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
             m_instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -252,6 +264,51 @@ std::vector<const char*> Instance::enumerateSupportedExtensions()
     }
 
     return supportedExtensions;
+}
+
+Adapter* Instance::requestAdapter(const AdapterCreateInfo& createInfo) const
+{
+    if (m_adapters.empty()) {
+        throw std::runtime_error("No adapters available");
+    }
+
+    // If specific adapter index requested, return that adapter
+    if (createInfo.adapterIndex != UINT32_MAX) {
+        if (createInfo.adapterIndex >= m_adapters.size()) {
+            throw std::runtime_error("Adapter index out of range");
+        }
+        return m_adapters[createInfo.adapterIndex].get();
+    }
+
+    // Map preference to Vulkan device type
+    VkPhysicalDeviceType preferredType;
+    bool allowFallback = true;
+
+    switch (createInfo.devicePreference) {
+    case DeviceTypePreference::HighPerformance:
+        preferredType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+        break;
+    case DeviceTypePreference::LowPower:
+        preferredType = VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+        break;
+    case DeviceTypePreference::SoftwareRenderer:
+        preferredType = VK_PHYSICAL_DEVICE_TYPE_CPU;
+        allowFallback = false;
+        break;
+    }
+
+    // Search for preferred device type
+    for (const auto& adapter : m_adapters) {
+        if (adapter->getProperties().deviceType == preferredType) {
+            return adapter.get();
+        }
+    }
+
+    // Fallback to first available (except for software renderer)
+    if (!allowFallback) {
+        throw std::runtime_error("Software renderer not available");
+    }
+    return m_adapters[0].get();
 }
 
 } // namespace gfx::backend::vulkan::core

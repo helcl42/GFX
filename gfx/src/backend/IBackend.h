@@ -17,7 +17,6 @@ public:
     virtual GfxResult enumerateInstanceExtensions(uint32_t* extensionCount, const char** extensionNames) const = 0;
 
     // Adapter functions
-    virtual GfxResult adapterDestroy(GfxAdapter adapter) const = 0;
     virtual GfxResult adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const = 0;
     virtual GfxResult adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const = 0;
     virtual GfxResult adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const = 0;

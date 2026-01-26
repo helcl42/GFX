@@ -85,7 +85,8 @@ GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapter
     try {
         auto* inst = converter::toNative<core::Instance>(instance);
         auto createInfo = converter::gfxDescriptorToWebGPUAdapterCreateInfo(descriptor);
-        auto* adapter = new core::Adapter(inst, createInfo);
+        auto* adapter = inst->requestAdapter(createInfo);
+
         *outAdapter = converter::toGfx<GfxAdapter>(adapter);
         return GFX_RESULT_SUCCESS;
     } catch (const std::exception& e) {
@@ -102,7 +103,19 @@ GfxResult Backend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* ada
     }
 
     auto* inst = converter::toNative<core::Instance>(instance);
-    uint32_t count = core::Adapter::enumerate(inst, reinterpret_cast<core::Adapter**>(adapters), adapters ? *adapterCount : 0);
+    const auto& cachedAdapters = inst->getAdapters();
+
+    if (!adapters) {
+        // Return the count only
+        *adapterCount = static_cast<uint32_t>(cachedAdapters.size());
+        return GFX_RESULT_SUCCESS;
+    }
+
+    // Return the adapters
+    uint32_t count = std::min(*adapterCount, static_cast<uint32_t>(cachedAdapters.size()));
+    for (uint32_t i = 0; i < count; ++i) {
+        adapters[i] = converter::toGfx<GfxAdapter>(cachedAdapters[i].get());
+    }
     *adapterCount = count;
     return GFX_RESULT_SUCCESS;
 }
@@ -131,17 +144,6 @@ GfxResult Backend::enumerateInstanceExtensions(uint32_t* extensionCount, const c
 }
 
 // Adapter functions
-GfxResult Backend::adapterDestroy(GfxAdapter adapter) const
-{
-    GfxResult validationResult = validator::validateAdapterDestroy(adapter);
-    if (validationResult != GFX_RESULT_SUCCESS) {
-        return validationResult;
-    }
-
-    delete converter::toNative<core::Adapter>(adapter);
-    return GFX_RESULT_SUCCESS;
-}
-
 GfxResult Backend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const
 {
     GfxResult validationResult = validator::validateAdapterCreateDevice(adapter, descriptor, outDevice);

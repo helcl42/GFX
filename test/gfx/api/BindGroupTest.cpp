@@ -42,7 +42,6 @@ protected:
         deviceDesc.label = "Test Device";
 
         if (gfxAdapterCreateDevice(adapter, &deviceDesc, &device) != GFX_RESULT_SUCCESS) {
-            gfxAdapterDestroy(adapter);
             gfxInstanceDestroy(instance);
             gfxUnloadBackend(backend);
             GTEST_SKIP() << "Failed to create device";
@@ -53,9 +52,6 @@ protected:
     {
         if (device) {
             gfxDeviceDestroy(device);
-        }
-        if (adapter) {
-            gfxAdapterDestroy(adapter);
         }
         if (instance) {
             gfxInstanceDestroy(instance);
@@ -299,7 +295,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithTextureView)
 
     GfxTextureDescriptor textureDesc = {};
     textureDesc.type = GFX_TEXTURE_TYPE_2D;
-    textureDesc.size = {256, 256, 1};
+    textureDesc.size = { 256, 256, 1 };
     textureDesc.arrayLayerCount = 1;
     textureDesc.mipLevelCount = 1;
     textureDesc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -399,7 +395,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithStorageBuffer)
 TEST_P(GfxBindGroupTest, CreateBindGroupWithMultipleEntries)
 {
     GfxBindGroupLayoutEntry layoutEntries[3] = {};
-    
+
     // Binding 0: Uniform buffer
     layoutEntries[0].binding = 0;
     layoutEntries[0].visibility = GFX_SHADER_STAGE_VERTEX;
@@ -453,7 +449,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithMultipleEntries)
 
     GfxTextureDescriptor textureDesc = {};
     textureDesc.type = GFX_TEXTURE_TYPE_2D;
-    textureDesc.size = {256, 256, 1};
+    textureDesc.size = { 256, 256, 1 };
     textureDesc.arrayLayerCount = 1;
     textureDesc.mipLevelCount = 1;
     textureDesc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -478,7 +474,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithMultipleEntries)
 
     // Create bind group entries
     GfxBindGroupEntry entries[3] = {};
-    
+
     entries[0].binding = 0;
     entries[0].type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER;
     entries[0].resource.buffer.buffer = buffer;

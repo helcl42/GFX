@@ -13,17 +13,9 @@ public:
     Adapter(const Adapter&) = delete;
     Adapter& operator=(const Adapter&) = delete;
 
-    // Constructor 1: Request adapter based on preferences
-    Adapter(Instance* instance, const AdapterCreateInfo& createInfo);
-    // Constructor 2: Wrap existing WGPUAdapter (used by enumerate)
+    // Wrap existing WGPUAdapter
     Adapter(WGPUAdapter adapter, Instance* instance);
     ~Adapter();
-
-    // Static method to enumerate all available adapters
-    // NOTE: WebGPU doesn't have a native enumerate API - returns the default adapter if available
-    // Each adapter returned must be freed by the caller using the backend's adapterDestroy method
-    // (e.g., gfxAdapterDestroy() in the public API)
-    static uint32_t enumerate(Instance* instance, Adapter** outAdapters, uint32_t maxAdapters);
 
     WGPUAdapter handle() const;
     Instance* getInstance() const;

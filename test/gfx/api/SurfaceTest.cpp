@@ -13,7 +13,7 @@ protected:
     void SetUp() override
     {
         backend = GetParam();
-        
+
         if (gfxLoadBackend(backend) != GFX_RESULT_SUCCESS) {
             GTEST_SKIP() << "Backend not available";
         }
@@ -42,13 +42,12 @@ protected:
         GfxDeviceDescriptor deviceDesc = {};
 
         if (gfxAdapterCreateDevice(adapter, &deviceDesc, &device) != GFX_RESULT_SUCCESS) {
-            gfxAdapterDestroy(adapter);
             gfxInstanceDestroy(instance);
             gfxUnloadBackend(backend);
             GTEST_SKIP() << "Failed to create device";
         }
     }
-    
+
     void TearDown() override
     {
         if (surface) {
@@ -57,15 +56,12 @@ protected:
         if (device) {
             gfxDeviceDestroy(device);
         }
-        if (adapter) {
-            gfxAdapterDestroy(adapter);
-        }
         if (instance) {
             gfxInstanceDestroy(instance);
         }
         gfxUnloadBackend(backend);
     }
-    
+
     GfxBackend backend;
     GfxInstance instance = NULL;
     GfxAdapter adapter = NULL;
@@ -79,7 +75,7 @@ TEST_P(GfxSurfaceTest, CreateSurfaceInvalidArguments)
     desc.label = "TestSurface";
     desc.windowHandle.windowingSystem = GFX_WINDOWING_SYSTEM_XLIB;
     desc.windowHandle.xlib.display = NULL; // Invalid display
-    desc.windowHandle.xlib.window = 0;     // Invalid window
+    desc.windowHandle.xlib.window = 0; // Invalid window
 
     // NULL device
     GfxResult result = gfxDeviceCreateSurface(NULL, &desc, &surface);
@@ -162,5 +158,4 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU),
     [](const testing::TestParamInfo<GfxBackend>& info) {
         return info.param == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU";
-    }
-);
+    });

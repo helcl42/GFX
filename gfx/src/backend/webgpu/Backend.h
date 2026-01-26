@@ -17,7 +17,6 @@ public:
     GfxResult enumerateInstanceExtensions(uint32_t* extensionCount, const char** extensionNames) const override;
 
     // Adapter functions
-    GfxResult adapterDestroy(GfxAdapter adapter) const override;
     GfxResult adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescriptor* descriptor, GfxDevice* outDevice) const override;
     GfxResult adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const override;
     GfxResult adapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits) const override;
