@@ -285,6 +285,8 @@ if(BUILD_VULKAN_BACKEND)
         # Sync
         gfx/src/backend/vulkan/core/sync/Semaphore.cpp
         gfx/src/backend/vulkan/core/sync/Fence.cpp
+        # Query
+        gfx/src/backend/vulkan/core/query/QuerySet.cpp
         # Presentation
         gfx/src/backend/vulkan/core/presentation/Swapchain.cpp
         gfx/src/backend/vulkan/core/presentation/Surface.cpp
@@ -324,6 +326,8 @@ if(BUILD_WEBGPU_BACKEND)
         # Sync
         gfx/src/backend/webgpu/core/sync/Fence.cpp
         gfx/src/backend/webgpu/core/sync/Semaphore.cpp
+        # Query
+        gfx/src/backend/webgpu/core/query/QuerySet.cpp
         # Presentation
         gfx/src/backend/webgpu/core/presentation/Surface.cpp
         gfx/src/backend/webgpu/core/presentation/Swapchain.cpp
