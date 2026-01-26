@@ -66,6 +66,9 @@ static void logCallback(gfx::LogLevel level, const std::string& message)
     case gfx::LogLevel::Debug:
         levelStr = "DEBUG";
         break;
+    default:
+        levelStr = "UNKNOWN";
+        break;
     }
     std::cout << "[" << levelStr << "] " << message << std::endl;
 }

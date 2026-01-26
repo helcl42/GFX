@@ -140,6 +140,7 @@ void RenderPassEncoder::drawIndexedIndirect(WGPUBuffer buffer, uint64_t offset)
 
 void RenderPassEncoder::beginOcclusionQuery(WGPUQuerySet querySet, uint32_t queryIndex)
 {
+    (void)querySet; // WebGPU doesn't use query set in begin call
     wgpuRenderPassEncoderBeginOcclusionQuery(m_encoder, queryIndex);
 }
 

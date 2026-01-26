@@ -137,6 +137,9 @@ static void logCallback(GfxLogLevel level, const char* message, void* userData)
     case GFX_LOG_LEVEL_DEBUG:
         levelStr = "DEBUG";
         break;
+    default:
+        levelStr = "UNKNOWN";
+        break;
     }
     std::cout << "[" << levelStr << "] " << message << std::endl;
 }
@@ -405,7 +408,7 @@ bool CubeApp::initWindow()
         std::cerr << "Failed to initialize GLFW\n";
         return false;
     }
-    
+
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
@@ -425,7 +428,8 @@ bool CubeApp::initWindow()
     return true;
 }
 
-GfxPlatformWindowHandle CubeApp::getPlatformWindowHandle() {
+GfxPlatformWindowHandle CubeApp::getPlatformWindowHandle()
+{
     GfxPlatformWindowHandle handle = {}; // Use empty initializer for C++
 #if defined(__EMSCRIPTEN__)
     handle = gfxPlatformWindowHandleFromEmscripten("#canvas");
@@ -439,7 +443,8 @@ GfxPlatformWindowHandle CubeApp::getPlatformWindowHandle() {
     return handle;
 }
 
-bool CubeApp::initializeGraphics() {
+bool CubeApp::initializeGraphics()
+{
     // Set up logging callback
     gfxSetLogCallback(logCallback, nullptr);
 
@@ -497,7 +502,7 @@ bool CubeApp::initializeGraphics() {
         std::cerr << "Failed to create device\n";
         return false;
     }
-    
+
     // Query device limits
     GfxDeviceLimits limits;
     if (gfxDeviceGetLimits(device, &limits) != GFX_RESULT_SUCCESS) {
@@ -505,10 +510,10 @@ bool CubeApp::initializeGraphics() {
         return false;
     }
     std::cout << "Device Limits:\n";
-    std::cout << std::format("  Min Uniform Buffer Offset Alignment: {} bytes\n", 
-                             limits.minUniformBufferOffsetAlignment);
+    std::cout << std::format("  Min Uniform Buffer Offset Alignment: {} bytes\n",
+        limits.minUniformBufferOffsetAlignment);
     std::cout << std::format("  Max Buffer Size: {} bytes\n", limits.maxBufferSize);
-    
+
     // Get queue
     if (gfxDeviceGetQueue(device, &queue) != GFX_RESULT_SUCCESS) {
         std::cerr << "Failed to get device queue\n";
@@ -634,20 +639,20 @@ bool CubeApp::createFramebuffers(uint32_t width, uint32_t height)
             std::cerr << std::format("Failed to get swapchain image view {}\n", i);
             return false;
         }
-        
+
         GfxFramebufferAttachment fbColorAttachment = {
             .view = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? msaaColorTextureView : backbuffer,
             .resolveTarget = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? backbuffer : nullptr
         };
-        
+
         GfxFramebufferAttachment fbDepthAttachment = {
             .view = depthTextureView,
             .resolveTarget = nullptr
         };
-        
+
         std::string labelStr = std::format("Framebuffer {}", i);
         const char* label = labelStr.c_str();
-        
+
         GfxFramebufferDescriptor fbDesc = {
             .label = label,
             .renderPass = resolveRenderPass,
@@ -1191,35 +1196,35 @@ bool CubeApp::createSyncObjects()
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         std::string labelStr;
-        
+
         labelStr = std::format("Image Available Semaphore {}", i);
         semaphoreDesc.label = labelStr.c_str();
         if (gfxDeviceCreateSemaphore(device, &semaphoreDesc, &imageAvailableSemaphores[i]) != GFX_RESULT_SUCCESS) {
             std::cerr << std::format("Failed to create image available semaphore {}\n", i);
             return false;
         }
-        
+
         labelStr = std::format("Clear Finished Semaphore {}", i);
         semaphoreDesc.label = labelStr.c_str();
         if (gfxDeviceCreateSemaphore(device, &semaphoreDesc, &clearFinishedSemaphores[i]) != GFX_RESULT_SUCCESS) {
             std::cerr << std::format("Failed to create clear finished semaphore {}\n", i);
             return false;
         }
-        
+
         labelStr = std::format("Render Finished Semaphore {}", i);
         semaphoreDesc.label = labelStr.c_str();
         if (gfxDeviceCreateSemaphore(device, &semaphoreDesc, &renderFinishedSemaphores[i]) != GFX_RESULT_SUCCESS) {
             std::cerr << std::format("Failed to create render finished semaphore {}\n", i);
             return false;
         }
-        
+
         labelStr = std::format("In Flight Fence {}", i);
         fenceDesc.label = labelStr.c_str();
         if (gfxDeviceCreateFence(device, &fenceDesc, &inFlightFences[i]) != GFX_RESULT_SUCCESS) {
             std::cerr << std::format("Failed to create in flight fence {}\n", i);
             return false;
         }
-        
+
         // Create clear encoder
         labelStr = std::format("Clear Encoder Frame {}", i);
         GfxCommandEncoderDescriptor encoderDesc = { .label = labelStr.c_str() };
@@ -1227,7 +1232,7 @@ bool CubeApp::createSyncObjects()
             std::cerr << std::format("Failed to create clear encoder {}\n", i);
             return false;
         }
-        
+
         // Create cube encoders
         for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
             labelStr = std::format("Command Encoder Frame {} Cube {}", i, cubeIdx);
@@ -1237,7 +1242,7 @@ bool CubeApp::createSyncObjects()
                 return false;
             }
         }
-        
+
         // Create resolve encoder
         labelStr = std::format("Resolve Encoder Frame {}", i);
         GfxCommandEncoderDescriptor resolveEncoderDesc = { .label = labelStr.c_str() };

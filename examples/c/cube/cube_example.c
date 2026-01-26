@@ -60,6 +60,9 @@ static void logCallback(GfxLogLevel level, const char* message, void* userData)
     case GFX_LOG_LEVEL_DEBUG:
         levelStr = "DEBUG";
         break;
+    default:
+        levelStr = "UNKNOWN";
+        break;
     }
     printf("[%s] %s\n", levelStr, message);
 }
