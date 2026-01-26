@@ -13,14 +13,16 @@ protected:
         backend = GetParam();
 
         try {
-            gfx::InstanceDescriptor instDesc{};
-            instDesc.backend = backend;
-            instDesc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG };
+            gfx::InstanceDescriptor instDesc{
+                .backend = backend,
+                .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG }
+            };
 
             instance = gfx::createInstance(instDesc);
 
-            gfx::AdapterDescriptor adapterDesc{};
-            adapterDesc.preference = gfx::AdapterPreference::HighPerformance;
+            gfx::AdapterDescriptor adapterDesc{
+                .preference = gfx::AdapterPreference::HighPerformance
+            };
 
             adapter = instance->requestAdapter(adapterDesc);
         } catch (const std::exception& e) {
@@ -93,8 +95,9 @@ TEST_P(GfxCppAdapterTest, CreateDevice)
 {
     ASSERT_NE(adapter, nullptr);
 
-    gfx::DeviceDescriptor desc{};
-    desc.label = "Test Device";
+    gfx::DeviceDescriptor desc{
+        .label = "Test Device"
+    };
 
     auto device = adapter->createDevice(desc);
     EXPECT_NE(device, nullptr);

@@ -4,6 +4,8 @@
 set(PUBLIC_TEST_SOURCES
     api/AdapterTest.cpp
     api/BackendTest.cpp
+    api/BindGroupLayoutTest.cpp
+    api/BindGroupTest.cpp
     api/ConstantTest.cpp
     api/DeviceTest.cpp
     api/InstanceTest.cpp

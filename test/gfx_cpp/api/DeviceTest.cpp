@@ -13,13 +13,15 @@ protected:
         backend = GetParam();
 
         try {
-            gfx::InstanceDescriptor instDesc{};
-            instDesc.backend = backend;
-            instDesc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG };
+            gfx::InstanceDescriptor instDesc{
+                .backend = backend,
+                .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG }
+            };
             instance = gfx::createInstance(instDesc);
 
-            gfx::AdapterDescriptor adapterDesc{};
-            adapterDesc.preference = gfx::AdapterPreference::HighPerformance;
+            gfx::AdapterDescriptor adapterDesc{
+                .preference = gfx::AdapterPreference::HighPerformance
+            };
             adapter = instance->requestAdapter(adapterDesc);
         } catch (const std::exception& e) {
             GTEST_SKIP() << "Failed to set up: " << e.what();
@@ -35,8 +37,9 @@ TEST_P(GfxCppDeviceTest, CreateDestroyDevice)
 {
     ASSERT_NE(adapter, nullptr);
 
-    gfx::DeviceDescriptor desc{};
-    desc.label = "Test Device";
+    gfx::DeviceDescriptor desc{
+        .label = "Test Device"
+    };
 
     auto device = adapter->createDevice(desc);
     EXPECT_NE(device, nullptr);
@@ -149,9 +152,10 @@ TEST_P(GfxCppDeviceTest, CreateBuffer)
     auto device = adapter->createDevice(desc);
     ASSERT_NE(device, nullptr);
 
-    gfx::BufferDescriptor bufferDesc{};
-    bufferDesc.size = 1024;
-    bufferDesc.usage = gfx::BufferUsage::Vertex | gfx::BufferUsage::CopyDst;
+    gfx::BufferDescriptor bufferDesc{
+        .size = 1024,
+        .usage = gfx::BufferUsage::Vertex | gfx::BufferUsage::CopyDst
+    };
 
     auto buffer = device->createBuffer(bufferDesc);
     EXPECT_NE(buffer, nullptr);

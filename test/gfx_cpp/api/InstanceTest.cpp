@@ -18,9 +18,10 @@ protected:
 
 TEST_P(GfxCppInstanceTest, CreateDestroy)
 {
-    gfx::InstanceDescriptor desc{};
-    desc.backend = backend;
-    desc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG };
+    gfx::InstanceDescriptor desc{
+        .backend = backend,
+        .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG }
+    };
 
     try {
         auto instance = gfx::createInstance(desc);
@@ -33,9 +34,10 @@ TEST_P(GfxCppInstanceTest, CreateDestroy)
 
 TEST_P(GfxCppInstanceTest, WithValidation)
 {
-    gfx::InstanceDescriptor desc{};
-    desc.backend = backend;
-    desc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG };
+    gfx::InstanceDescriptor desc{
+        .backend = backend,
+        .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG }
+    };
 
     try {
         auto instance = gfx::createInstance(desc);
@@ -48,11 +50,12 @@ TEST_P(GfxCppInstanceTest, WithValidation)
 
 TEST_P(GfxCppInstanceTest, WithApplicationInfo)
 {
-    gfx::InstanceDescriptor desc{};
-    desc.backend = backend;
-    desc.applicationName = "Test Application";
-    desc.applicationVersion = 1;
-    desc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG };
+    gfx::InstanceDescriptor desc{
+        .backend = backend,
+        .applicationName = "Test Application",
+        .applicationVersion = 1,
+        .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG }
+    };
 
     try {
         auto instance = gfx::createInstance(desc);
@@ -64,9 +67,10 @@ TEST_P(GfxCppInstanceTest, WithApplicationInfo)
 
 TEST_P(GfxCppInstanceTest, WithEnabledFeatures)
 {
-    gfx::InstanceDescriptor desc{};
-    desc.backend = backend;
-    desc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG, gfx::INSTANCE_EXTENSION_SURFACE };
+    gfx::InstanceDescriptor desc{
+        .backend = backend,
+        .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG, gfx::INSTANCE_EXTENSION_SURFACE }
+    };
 
     try {
         auto instance = gfx::createInstance(desc);
@@ -79,16 +83,18 @@ TEST_P(GfxCppInstanceTest, WithEnabledFeatures)
 
 TEST_P(GfxCppInstanceTest, RequestAdapterByPreference)
 {
-    gfx::InstanceDescriptor desc{};
-    desc.backend = backend;
-    desc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG };
+    gfx::InstanceDescriptor desc{
+        .backend = backend,
+        .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG }
+    };
 
     try {
         auto instance = gfx::createInstance(desc);
         ASSERT_NE(instance, nullptr);
 
-        gfx::AdapterDescriptor adapterDesc{};
-        adapterDesc.preference = gfx::AdapterPreference::HighPerformance;
+        gfx::AdapterDescriptor adapterDesc{
+            .preference = gfx::AdapterPreference::HighPerformance
+        };
 
         auto adapter = instance->requestAdapter(adapterDesc);
         EXPECT_NE(adapter, nullptr);
@@ -99,9 +105,10 @@ TEST_P(GfxCppInstanceTest, RequestAdapterByPreference)
 
 TEST_P(GfxCppInstanceTest, RequestAdapterByIndex)
 {
-    gfx::InstanceDescriptor desc{};
-    desc.backend = backend;
-    desc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG };
+    gfx::InstanceDescriptor desc{
+        .backend = backend,
+        .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG }
+    };
 
     try {
         auto instance = gfx::createInstance(desc);
@@ -112,9 +119,10 @@ TEST_P(GfxCppInstanceTest, RequestAdapterByIndex)
 
         if (!adapters.empty()) {
             // Request first adapter by index
-            gfx::AdapterDescriptor adapterDesc{};
-            adapterDesc.adapterIndex = 0;
-            adapterDesc.preference = gfx::AdapterPreference::HighPerformance;
+            gfx::AdapterDescriptor adapterDesc{
+                .adapterIndex = 0,
+                .preference = gfx::AdapterPreference::HighPerformance
+            };
 
             auto adapter = instance->requestAdapter(adapterDesc);
             EXPECT_NE(adapter, nullptr);
@@ -128,9 +136,10 @@ TEST_P(GfxCppInstanceTest, RequestAdapterByIndex)
 
 TEST_P(GfxCppInstanceTest, EnumerateAdaptersGetCount)
 {
-    gfx::InstanceDescriptor desc{};
-    desc.backend = backend;
-    desc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG };
+    gfx::InstanceDescriptor desc{
+        .backend = backend,
+        .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG }
+    };
 
     try {
         auto instance = gfx::createInstance(desc);
@@ -150,9 +159,10 @@ TEST_P(GfxCppInstanceTest, EnumerateAdaptersGetCount)
 
 TEST_P(GfxCppInstanceTest, EnumerateAdaptersGetAdapters)
 {
-    gfx::InstanceDescriptor desc{};
-    desc.backend = backend;
-    desc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG };
+    gfx::InstanceDescriptor desc{
+        .backend = backend,
+        .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG }
+    };
 
     try {
         auto instance = gfx::createInstance(desc);
@@ -174,9 +184,10 @@ TEST_P(GfxCppInstanceTest, EnumerateAdaptersGetAdapters)
 
 TEST_P(GfxCppInstanceTest, EnumerateAdaptersTwoCalls)
 {
-    gfx::InstanceDescriptor desc{};
-    desc.backend = backend;
-    desc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG };
+    gfx::InstanceDescriptor desc{
+        .backend = backend,
+        .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG }
+    };
 
     try {
         auto instance = gfx::createInstance(desc);
@@ -203,9 +214,10 @@ TEST_P(GfxCppInstanceTest, EnumerateAdaptersTwoCalls)
 
 TEST_P(GfxCppInstanceTest, MultipleInstances)
 {
-    gfx::InstanceDescriptor desc{};
-    desc.backend = backend;
-    desc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG };
+    gfx::InstanceDescriptor desc{
+        .backend = backend,
+        .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG }
+    };
 
     try {
         auto instance1 = gfx::createInstance(desc);
@@ -221,9 +233,10 @@ TEST_P(GfxCppInstanceTest, MultipleInstances)
 
 TEST_P(GfxCppInstanceTest, SharedPointerSemantics)
 {
-    gfx::InstanceDescriptor desc{};
-    desc.backend = backend;
-    desc.enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG };
+    gfx::InstanceDescriptor desc{
+        .backend = backend,
+        .enabledExtensions = { gfx::INSTANCE_EXTENSION_DEBUG }
+    };
 
     try {
         auto instance1 = gfx::createInstance(desc);
