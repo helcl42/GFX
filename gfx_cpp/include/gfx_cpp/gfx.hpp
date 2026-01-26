@@ -1382,6 +1382,9 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor = 
 // Set global log callback for all logging output
 void setLogCallback(LogCallback callback);
 
+// Get runtime library version - returns major, minor, patch
+std::tuple<uint32_t, uint32_t, uint32_t> getVersion();
+
 namespace utils {
     // Alignment helpers - align buffer offsets/sizes to device requirements
     uint64_t alignUp(uint64_t value, uint64_t alignment);

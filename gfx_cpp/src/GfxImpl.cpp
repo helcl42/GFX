@@ -92,4 +92,14 @@ void setLogCallback(LogCallback callback)
     }
 }
 
+std::tuple<uint32_t, uint32_t, uint32_t> getVersion()
+{
+    uint32_t major = 0, minor = 0, patch = 0;
+    GfxResult result = gfxGetVersion(&major, &minor, &patch);
+    if (result != GFX_RESULT_SUCCESS) {
+        throw std::runtime_error("Failed to query library version");
+    }
+    return std::make_tuple(major, minor, patch);
+}
+
 } // namespace gfx

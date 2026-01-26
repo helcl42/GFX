@@ -12,6 +12,17 @@
 
 extern "C" {
 
+GfxResult gfxGetVersion(uint32_t* major, uint32_t* minor, uint32_t* patch)
+{
+    if (!major || !minor || !patch) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    *major = GFX_VERSION_MAJOR;
+    *minor = GFX_VERSION_MINOR;
+    *patch = GFX_VERSION_PATCH;
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult gfxLoadBackend(GfxBackend backend)
 {
     if (backend == GFX_BACKEND_AUTO) {

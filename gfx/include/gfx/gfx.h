@@ -6,6 +6,25 @@
 #include <stdint.h>
 
 // ============================================================================
+// API Version - Semantic Versioning (https://semver.org/)
+// ============================================================================
+
+// MAJOR version: Incompatible API changes
+// MINOR version: Added functionality (backwards compatible)
+// PATCH version: Bug fixes (backwards compatible)
+#define GFX_VERSION_MAJOR 1
+#define GFX_VERSION_MINOR 0
+#define GFX_VERSION_PATCH 0
+
+// Helper macro to create version number for comparison (Vulkan-style bit packing)
+// Bits 31-22: major (10 bits, 0-1023), Bits 21-12: minor (10 bits, 0-1023), Bits 11-0: patch (12 bits, 0-4095)
+// Example: #if GFX_VERSION < GFX_MAKE_VERSION(1, 2, 0)
+#define GFX_MAKE_VERSION(major, minor, patch) (((major) << 22) | ((minor) << 12) | (patch))
+
+// Combined version number for comparison
+#define GFX_VERSION GFX_MAKE_VERSION(GFX_VERSION_MAJOR, GFX_VERSION_MINOR, GFX_VERSION_PATCH)
+
+// ============================================================================
 // DLL Export/Import Macros for Windows
 // ============================================================================
 
@@ -1142,6 +1161,10 @@ GFX_API GfxResult gfxLoadBackend(GfxBackend backend);
 GFX_API GfxResult gfxUnloadBackend(GfxBackend backend);
 GFX_API GfxResult gfxLoadAllBackends(void);
 GFX_API GfxResult gfxUnloadAllBackends(void);
+
+// Version query function - Returns the runtime library version
+// This allows checking if the compiled version matches the linked version
+GFX_API GfxResult gfxGetVersion(uint32_t* major, uint32_t* minor, uint32_t* patch);
 
 // Extension enumeration functions
 // Vulkan-style enumeration: call with queueFamilies=NULL to get count, then call again with allocated array
