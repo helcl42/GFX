@@ -1,9 +1,9 @@
 #include "RenderPassEncoder.h"
 
+#include "../query/QuerySet.h"
 #include "../render/RenderPipeline.h"
 #include "../resource/BindGroup.h"
 #include "../resource/Buffer.h"
-#include "../query/QuerySet.h"
 
 #include <stdexcept>
 
@@ -23,6 +23,9 @@ RenderPassEncoderImpl::~RenderPassEncoderImpl()
 
 void RenderPassEncoderImpl::setPipeline(std::shared_ptr<RenderPipeline> pipeline)
 {
+    if (!pipeline) {
+        throw std::invalid_argument("Render pipeline cannot be null");
+    }
     auto impl = std::dynamic_pointer_cast<RenderPipelineImpl>(pipeline);
     if (!impl) {
         throw std::runtime_error("Invalid render pipeline type");
@@ -35,6 +38,9 @@ void RenderPassEncoderImpl::setPipeline(std::shared_ptr<RenderPipeline> pipeline
 
 void RenderPassEncoderImpl::setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
+    if (!bindGroup) {
+        throw std::invalid_argument("Bind group cannot be null");
+    }
     auto impl = std::dynamic_pointer_cast<BindGroupImpl>(bindGroup);
     if (!impl) {
         throw std::runtime_error("Invalid bind group type");
@@ -47,6 +53,9 @@ void RenderPassEncoderImpl::setBindGroup(uint32_t index, std::shared_ptr<BindGro
 
 void RenderPassEncoderImpl::setVertexBuffer(uint32_t slot, std::shared_ptr<Buffer> buffer, uint64_t offset, uint64_t size)
 {
+    if (!buffer) {
+        throw std::invalid_argument("Buffer cannot be null");
+    }
     auto impl = std::dynamic_pointer_cast<BufferImpl>(buffer);
     if (!impl) {
         throw std::runtime_error("Invalid buffer type");
@@ -59,6 +68,9 @@ void RenderPassEncoderImpl::setVertexBuffer(uint32_t slot, std::shared_ptr<Buffe
 
 void RenderPassEncoderImpl::setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset, uint64_t size)
 {
+    if (!buffer) {
+        throw std::invalid_argument("Buffer cannot be null");
+    }
     auto impl = std::dynamic_pointer_cast<BufferImpl>(buffer);
     if (!impl) {
         throw std::runtime_error("Invalid buffer type");
@@ -139,12 +151,12 @@ void RenderPassEncoderImpl::beginOcclusionQuery(std::shared_ptr<QuerySet> queryS
     if (!querySet) {
         throw std::invalid_argument("QuerySet cannot be null");
     }
-    
+
     auto qs = std::dynamic_pointer_cast<QuerySetImpl>(querySet);
     if (!qs) {
         throw std::runtime_error("Invalid QuerySet type");
     }
-    
+
     GfxResult result = gfxRenderPassEncoderBeginOcclusionQuery(m_handle, qs->getHandle(), queryIndex);
     if (result != GFX_RESULT_SUCCESS) {
         throw std::runtime_error("Failed to begin occlusion query");

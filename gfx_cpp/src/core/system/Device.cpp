@@ -267,6 +267,10 @@ std::shared_ptr<RenderPipeline> DeviceImpl::createRenderPipeline(const RenderPip
 
 std::shared_ptr<ComputePipeline> DeviceImpl::createComputePipeline(const ComputePipelineDescriptor& descriptor)
 {
+    if (!descriptor.compute) {
+        throw std::invalid_argument("Compute shader cannot be null");
+    }
+
     auto shaderImpl = std::dynamic_pointer_cast<ShaderImpl>(descriptor.compute);
     if (!shaderImpl) {
         throw std::runtime_error("Invalid shader type");

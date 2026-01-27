@@ -22,6 +22,9 @@ ComputePassEncoderImpl::~ComputePassEncoderImpl()
 
 void ComputePassEncoderImpl::setPipeline(std::shared_ptr<ComputePipeline> pipeline)
 {
+    if (!pipeline) {
+        throw std::invalid_argument("Compute pipeline cannot be null");
+    }
     auto impl = std::dynamic_pointer_cast<ComputePipelineImpl>(pipeline);
     if (!impl) {
         throw std::runtime_error("Invalid compute pipeline type");
@@ -34,6 +37,9 @@ void ComputePassEncoderImpl::setPipeline(std::shared_ptr<ComputePipeline> pipeli
 
 void ComputePassEncoderImpl::setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
 {
+    if (!bindGroup) {
+        throw std::invalid_argument("Bind group cannot be null");
+    }
     auto impl = std::dynamic_pointer_cast<BindGroupImpl>(bindGroup);
     if (!impl) {
         throw std::runtime_error("Invalid bind group type");
