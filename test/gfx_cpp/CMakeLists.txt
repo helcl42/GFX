@@ -8,10 +8,15 @@ set(PUBLIC_TEST_SOURCES
     api/BindGroupTest.cpp
     api/BufferTest.cpp
     api/CommandEncoderTest.cpp
+    api/ComputePassEncoderTest.cpp
+    api/ComputePipelineTest.cpp
     api/ConstantTest.cpp
     api/DeviceTest.cpp
+    api/FenceTest.cpp
+    api/FramebufferTest.cpp
     api/InstanceTest.cpp
     api/QuerySetTest.cpp
+    api/RenderPassEncoderTest.cpp
 )
 
 # Internal tests - tests for C++ wrapper implementation details
