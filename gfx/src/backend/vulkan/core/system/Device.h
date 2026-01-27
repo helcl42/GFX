@@ -27,10 +27,17 @@ public:
     Adapter* getAdapter();
     const VkPhysicalDeviceProperties& getProperties() const;
 
+    // Extension function pointer loaders
+    template <typename T>
+    T loadFunction(const char* name) const
+    {
+        return reinterpret_cast<T>(vkGetDeviceProcAddr(m_device, name));
+    }
+
 private:
     VkDevice m_device = VK_NULL_HANDLE;
     Adapter* m_adapter = nullptr; // Non-owning pointer
-    
+
     // Map of (queueFamilyIndex << 16 | queueIndex) -> Queue
     std::unordered_map<uint64_t, std::unique_ptr<Queue>> m_queues;
     Queue* m_defaultQueue = nullptr; // Non-owning pointer to default queue

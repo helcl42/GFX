@@ -26,6 +26,11 @@ private:
     VkSemaphore m_semaphore = VK_NULL_HANDLE;
     Device* m_device = nullptr;
     SemaphoreType m_type = SemaphoreType::Binary;
+    
+    // Cached function pointers for timeline semaphore operations
+    PFN_vkGetSemaphoreCounterValue m_pfnGetSemaphoreCounterValue = nullptr;
+    PFN_vkWaitSemaphores m_pfnWaitSemaphores = nullptr;
+    PFN_vkSignalSemaphore m_pfnSignalSemaphore = nullptr;
 };
 
 } // namespace gfx::backend::vulkan::core

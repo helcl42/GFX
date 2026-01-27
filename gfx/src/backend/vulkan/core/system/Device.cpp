@@ -38,6 +38,20 @@ Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
     }
 #endif // GFX_HEADLESS_BUILD
 
+    // Enable timeline semaphore extension if requested
+    bool timelineSemaphoreEnabled = isExtensionEnabled(createInfo.enabledExtensions, extensions::TIMELINE_SEMAPHORE);
+    if (timelineSemaphoreEnabled) {
+        extensions.push_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
+    }
+
+    // Timeline semaphore features (VK_KHR_timeline_semaphore extension for Vulkan 1.1)
+    VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{};
+    if (timelineSemaphoreEnabled) {
+        timelineSemaphoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+        timelineSemaphoreFeatures.pNext = nullptr;
+        timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
+    }
+
     // Determine which queues to create
     std::vector<DeviceCreateInfo::QueueRequest> queueRequests;
     if (createInfo.queueRequests.empty()) {
@@ -79,6 +93,7 @@ Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
 
     VkDeviceCreateInfo vkCreateInfo{};
     vkCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    vkCreateInfo.pNext = timelineSemaphoreEnabled ? &timelineSemaphoreFeatures : nullptr;
     vkCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     vkCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
     vkCreateInfo.pEnabledFeatures = &deviceFeatures;

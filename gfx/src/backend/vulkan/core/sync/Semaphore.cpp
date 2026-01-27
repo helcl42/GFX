@@ -9,6 +9,9 @@ namespace gfx::backend::vulkan::core {
 Semaphore::Semaphore(Device* device, const SemaphoreCreateInfo& createInfo)
     : m_device(device)
     , m_type(createInfo.type)
+    , m_pfnGetSemaphoreCounterValue(device->loadFunction<PFN_vkGetSemaphoreCounterValueKHR>("vkGetSemaphoreCounterValueKHR"))
+    , m_pfnWaitSemaphores(device->loadFunction<PFN_vkWaitSemaphoresKHR>("vkWaitSemaphoresKHR"))
+    , m_pfnSignalSemaphore(device->loadFunction<PFN_vkSignalSemaphoreKHR>("vkSignalSemaphoreKHR"))
 {
 
     if (m_type == SemaphoreType::Timeline) {
@@ -61,12 +64,16 @@ VkResult Semaphore::signal(uint64_t value)
         return VK_ERROR_VALIDATION_FAILED_EXT; // Binary semaphores can't be manually signaled
     }
 
+    if (!m_pfnSignalSemaphore) {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+
     VkSemaphoreSignalInfo signalInfo{};
     signalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
     signalInfo.semaphore = m_semaphore;
     signalInfo.value = value;
 
-    return vkSignalSemaphore(m_device->handle(), &signalInfo);
+    return m_pfnSignalSemaphore(m_device->handle(), &signalInfo);
 }
 
 VkResult Semaphore::wait(uint64_t value, uint64_t timeoutNs)
@@ -75,13 +82,17 @@ VkResult Semaphore::wait(uint64_t value, uint64_t timeoutNs)
         return VK_ERROR_VALIDATION_FAILED_EXT; // Binary semaphores can't be manually waited
     }
 
+    if (!m_pfnWaitSemaphores) {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+
     VkSemaphoreWaitInfo waitInfo{};
     waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
     waitInfo.semaphoreCount = 1;
     waitInfo.pSemaphores = &m_semaphore;
     waitInfo.pValues = &value;
 
-    return vkWaitSemaphores(m_device->handle(), &waitInfo, timeoutNs);
+    return m_pfnWaitSemaphores(m_device->handle(), &waitInfo, timeoutNs);
 }
 
 uint64_t Semaphore::getValue() const
@@ -90,8 +101,12 @@ uint64_t Semaphore::getValue() const
         return 0; // Binary semaphores don't have values
     }
 
+    if (!m_pfnGetSemaphoreCounterValue) {
+        return 0;
+    }
+
     uint64_t value = 0;
-    vkGetSemaphoreCounterValue(m_device->handle(), m_semaphore, &value);
+    m_pfnGetSemaphoreCounterValue(m_device->handle(), m_semaphore, &value);
     return value;
 }
 
