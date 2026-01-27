@@ -524,6 +524,16 @@ GfxSemaphoreType cppSemaphoreTypeToCSemaphoreType(SemaphoreType type)
     return static_cast<GfxSemaphoreType>(type);
 }
 
+QueryType cQueryTypeToCppQueryType(GfxQueryType type)
+{
+    return static_cast<QueryType>(type);
+}
+
+GfxQueryType cppQueryTypeToCQueryType(QueryType type)
+{
+    return static_cast<GfxQueryType>(type);
+}
+
 GfxBlendOperation cppBlendOperationToCBlendOperation(BlendOperation op)
 {
     return static_cast<GfxBlendOperation>(op);
@@ -775,6 +785,14 @@ void convertSemaphoreDescriptor(const SemaphoreDescriptor& descriptor, GfxSemaph
     outDesc.label = descriptor.label.c_str();
     outDesc.type = cppSemaphoreTypeToCSemaphoreType(descriptor.type);
     outDesc.initialValue = descriptor.initialValue;
+}
+
+void convertQuerySetDescriptor(const QuerySetDescriptor& descriptor, GfxQuerySetDescriptor& outDesc)
+{
+    outDesc = {};
+    outDesc.label = descriptor.label.c_str();
+    outDesc.type = cppQueryTypeToCQueryType(descriptor.type);
+    outDesc.count = descriptor.count;
 }
 
 void convertBindGroupLayoutDescriptor(const BindGroupLayoutDescriptor& descriptor, std::vector<GfxBindGroupLayoutEntry>& outEntries, GfxBindGroupLayoutDescriptor& outDesc)

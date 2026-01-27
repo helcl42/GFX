@@ -27,6 +27,9 @@ public:
     void drawIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset) override;
     void drawIndexedIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset) override;
 
+    void beginOcclusionQuery(std::shared_ptr<QuerySet> querySet, uint32_t queryIndex) override;
+    void endOcclusionQuery() override;
+
 private:
     GfxRenderPassEncoder m_handle;
 };

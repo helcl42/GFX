@@ -107,6 +107,10 @@ GfxShaderSourceType cppShaderSourceTypeToCShaderSourceType(ShaderSourceType type
 SemaphoreType cSemaphoreTypeToCppSemaphoreType(GfxSemaphoreType type);
 GfxSemaphoreType cppSemaphoreTypeToCSemaphoreType(SemaphoreType type);
 
+// Query type conversions
+QueryType cQueryTypeToCppQueryType(GfxQueryType type);
+GfxQueryType cppQueryTypeToCQueryType(QueryType type);
+
 // Blend operation conversions
 GfxBlendOperation cppBlendOperationToCBlendOperation(BlendOperation op);
 
@@ -173,6 +177,7 @@ void convertShaderDescriptor(const ShaderDescriptor& descriptor, GfxShaderDescri
 void convertCommandEncoderDescriptor(const CommandEncoderDescriptor& descriptor, GfxCommandEncoderDescriptor& outDesc);
 void convertFenceDescriptor(const FenceDescriptor& descriptor, GfxFenceDescriptor& outDesc);
 void convertSemaphoreDescriptor(const SemaphoreDescriptor& descriptor, GfxSemaphoreDescriptor& outDesc);
+void convertQuerySetDescriptor(const QuerySetDescriptor& descriptor, GfxQuerySetDescriptor& outDesc);
 void convertBindGroupLayoutDescriptor(const BindGroupLayoutDescriptor& descriptor, std::vector<GfxBindGroupLayoutEntry>& outEntries, GfxBindGroupLayoutDescriptor& outDesc);
 void convertBindGroupDescriptor(const BindGroupDescriptor& descriptor, std::vector<GfxBindGroupEntry>& outEntries, GfxBindGroupDescriptor& outDesc);
 void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, std::vector<GfxRenderPassColorAttachment>& outColorAttachments, std::vector<GfxRenderPassColorAttachmentTarget>& outColorTargets, std::vector<GfxRenderPassColorAttachmentTarget>& outColorResolveTargets, GfxRenderPassDepthStencilAttachment& outDepthStencilAttachment, GfxRenderPassDepthStencilAttachmentTarget& outDepthTarget, GfxRenderPassDepthStencilAttachmentTarget& outDepthResolveTarget, GfxRenderPassDescriptor& outDesc);

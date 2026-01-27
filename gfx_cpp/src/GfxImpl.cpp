@@ -37,6 +37,9 @@
 #include "core/sync/Fence.h"
 #include "core/sync/Semaphore.h"
 
+// Query implementations
+#include "core/query/QuerySet.h"
+
 // System implementations
 #include "core/system/Adapter.h"
 #include "core/system/Device.h"

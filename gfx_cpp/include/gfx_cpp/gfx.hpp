@@ -228,6 +228,11 @@ enum class SemaphoreType : int32_t {
     Timeline = 1
 };
 
+enum class QueryType : int32_t {
+    Occlusion = 0,
+    Timestamp = 1
+};
+
 // Extension name constants (matching C API)
 constexpr const char* INSTANCE_EXTENSION_SURFACE = "gfx_surface";
 constexpr const char* INSTANCE_EXTENSION_DEBUG = "gfx_debug";
@@ -525,6 +530,7 @@ class RenderPass;
 class Framebuffer;
 class Fence;
 class Semaphore;
+class QuerySet;
 
 // ============================================================================
 // Logging
@@ -841,6 +847,12 @@ struct SemaphoreDescriptor {
     std::string label;
     SemaphoreType type = SemaphoreType::Binary;
     uint64_t initialValue = 0; // For timeline semaphores, ignored for binary
+};
+
+struct QuerySetDescriptor {
+    std::string label;
+    QueryType type = QueryType::Occlusion;
+    uint32_t count = 1; // Number of queries in the set
 };
 
 struct CommandEncoderDescriptor {
@@ -1232,6 +1244,9 @@ public:
     virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t baseVertex = 0, uint32_t firstInstance = 0) = 0;
     virtual void drawIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset) = 0;
     virtual void drawIndexedIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset) = 0;
+
+    virtual void beginOcclusionQuery(std::shared_ptr<QuerySet> querySet, uint32_t queryIndex) = 0;
+    virtual void endOcclusionQuery() = 0;
 };
 
 class ComputePassEncoder {
@@ -1263,6 +1278,9 @@ public:
     virtual void generateMipmaps(std::shared_ptr<Texture> texture) = 0;
     virtual void generateMipmapsRange(std::shared_ptr<Texture> texture, uint32_t baseMipLevel, uint32_t levelCount) = 0;
 
+    virtual void writeTimestamp(std::shared_ptr<QuerySet> querySet, uint32_t queryIndex) = 0;
+    virtual void resolveQuerySet(std::shared_ptr<QuerySet> querySet, uint32_t firstQuery, uint32_t queryCount, std::shared_ptr<Buffer> destinationBuffer, uint64_t destinationOffset) = 0;
+
     virtual void end() = 0;
     virtual void begin() = 0;
 };
@@ -1293,6 +1311,14 @@ public:
     virtual uint64_t getValue() const = 0;
     virtual void signal(uint64_t value) = 0;
     virtual bool wait(uint64_t value, uint64_t timeoutNanoseconds = UINT64_MAX) = 0;
+};
+
+class QuerySet {
+public:
+    virtual ~QuerySet() = default;
+
+    virtual QueryType getType() const = 0;
+    virtual uint32_t getCount() const = 0;
 };
 
 class Queue {
@@ -1343,6 +1369,7 @@ public:
     // Synchronization objects
     virtual std::shared_ptr<Fence> createFence(const FenceDescriptor& descriptor = {}) = 0;
     virtual std::shared_ptr<Semaphore> createSemaphore(const SemaphoreDescriptor& descriptor = {}) = 0;
+    virtual std::shared_ptr<QuerySet> createQuerySet(const QuerySetDescriptor& descriptor) = 0;
 
     virtual void waitIdle() = 0;
     virtual DeviceLimits getLimits() const = 0;

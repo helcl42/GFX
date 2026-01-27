@@ -3,6 +3,7 @@
 #include "ComputePassEncoder.h"
 #include "RenderPassEncoder.h"
 
+#include "../query/QuerySet.h"
 #include "../render/Framebuffer.h"
 #include "../resource/Buffer.h"
 #include "../resource/Texture.h"
@@ -123,9 +124,9 @@ void CommandEncoderImpl::pipelineBarrier(const PipelineBarrierDescriptor& descri
     std::vector<GfxMemoryBarrier> memBarriers;
     std::vector<GfxBufferBarrier> bufBarriers;
     std::vector<GfxTextureBarrier> texBarriers;
-    
+
     convertPipelineBarrierDescriptor(descriptor, cDesc, memBarriers, bufBarriers, texBarriers);
-    
+
     GfxResult result = gfxCommandEncoderPipelineBarrier(m_handle, &cDesc);
     if (result != GFX_RESULT_SUCCESS) {
         throw std::runtime_error("Failed to insert pipeline barrier");
@@ -151,6 +152,48 @@ void CommandEncoderImpl::generateMipmapsRange(std::shared_ptr<Texture> texture, 
         if (result != GFX_RESULT_SUCCESS) {
             throw std::runtime_error("Failed to generate mipmaps range");
         }
+    }
+}
+
+void CommandEncoderImpl::writeTimestamp(std::shared_ptr<QuerySet> querySet, uint32_t queryIndex)
+{
+    if (!querySet) {
+        throw std::invalid_argument("QuerySet cannot be null");
+    }
+
+    auto qs = std::dynamic_pointer_cast<QuerySetImpl>(querySet);
+    if (!qs) {
+        throw std::runtime_error("Invalid QuerySet type");
+    }
+
+    GfxResult result = gfxCommandEncoderWriteTimestamp(m_handle, qs->getHandle(), queryIndex);
+    if (result != GFX_RESULT_SUCCESS) {
+        throw std::runtime_error("Failed to write timestamp");
+    }
+}
+
+void CommandEncoderImpl::resolveQuerySet(std::shared_ptr<QuerySet> querySet, uint32_t firstQuery, uint32_t queryCount, std::shared_ptr<Buffer> destinationBuffer, uint64_t destinationOffset)
+{
+    if (!querySet) {
+        throw std::invalid_argument("QuerySet cannot be null");
+    }
+    if (!destinationBuffer) {
+        throw std::invalid_argument("Destination buffer cannot be null");
+    }
+
+    auto qs = std::dynamic_pointer_cast<QuerySetImpl>(querySet);
+    if (!qs) {
+        throw std::runtime_error("Invalid QuerySet type");
+    }
+
+    auto buf = std::dynamic_pointer_cast<BufferImpl>(destinationBuffer);
+    if (!buf) {
+        throw std::runtime_error("Invalid Buffer type");
+    }
+
+    GfxResult result = gfxCommandEncoderResolveQuerySet(m_handle, qs->getHandle(), firstQuery, queryCount, buf->getHandle(), destinationOffset);
+    if (result != GFX_RESULT_SUCCESS) {
+        throw std::runtime_error("Failed to resolve query set");
     }
 }
 

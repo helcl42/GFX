@@ -6,6 +6,7 @@
 #include "../compute/ComputePipeline.h"
 #include "../presentation/Surface.h"
 #include "../presentation/Swapchain.h"
+#include "../query/QuerySet.h"
 #include "../render/Framebuffer.h"
 #include "../render/RenderPass.h"
 #include "../render/RenderPipeline.h"
@@ -359,6 +360,19 @@ std::shared_ptr<Semaphore> DeviceImpl::createSemaphore(const SemaphoreDescriptor
         throw std::runtime_error("Failed to create semaphore");
     }
     return std::make_shared<SemaphoreImpl>(semaphore);
+}
+
+std::shared_ptr<QuerySet> DeviceImpl::createQuerySet(const QuerySetDescriptor& descriptor)
+{
+    GfxQuerySetDescriptor cDesc;
+    convertQuerySetDescriptor(descriptor, cDesc);
+
+    GfxQuerySet querySet = nullptr;
+    GfxResult result = gfxDeviceCreateQuerySet(m_handle, &cDesc, &querySet);
+    if (result != GFX_RESULT_SUCCESS || !querySet) {
+        throw std::runtime_error("Failed to create query set");
+    }
+    return std::make_shared<QuerySetImpl>(querySet, descriptor.type, descriptor.count);
 }
 
 void DeviceImpl::waitIdle()

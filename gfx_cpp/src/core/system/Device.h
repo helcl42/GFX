@@ -51,6 +51,8 @@ public:
 
     std::shared_ptr<Semaphore> createSemaphore(const SemaphoreDescriptor& descriptor = {}) override;
 
+    std::shared_ptr<QuerySet> createQuerySet(const QuerySetDescriptor& descriptor) override;
+
     void waitIdle() override;
 
     DeviceLimits getLimits() const override;

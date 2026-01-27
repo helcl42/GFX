@@ -3,6 +3,7 @@
 #include "../render/RenderPipeline.h"
 #include "../resource/BindGroup.h"
 #include "../resource/Buffer.h"
+#include "../query/QuerySet.h"
 
 #include <stdexcept>
 
@@ -130,6 +131,31 @@ void RenderPassEncoderImpl::drawIndexedIndirect(std::shared_ptr<Buffer> indirect
     GfxResult result = gfxRenderPassEncoderDrawIndexedIndirect(m_handle, bufferImpl->getHandle(), indirectOffset);
     if (result != GFX_RESULT_SUCCESS) {
         throw std::runtime_error("Failed to draw indexed indirect");
+    }
+}
+
+void RenderPassEncoderImpl::beginOcclusionQuery(std::shared_ptr<QuerySet> querySet, uint32_t queryIndex)
+{
+    if (!querySet) {
+        throw std::invalid_argument("QuerySet cannot be null");
+    }
+    
+    auto qs = std::dynamic_pointer_cast<QuerySetImpl>(querySet);
+    if (!qs) {
+        throw std::runtime_error("Invalid QuerySet type");
+    }
+    
+    GfxResult result = gfxRenderPassEncoderBeginOcclusionQuery(m_handle, qs->getHandle(), queryIndex);
+    if (result != GFX_RESULT_SUCCESS) {
+        throw std::runtime_error("Failed to begin occlusion query");
+    }
+}
+
+void RenderPassEncoderImpl::endOcclusionQuery()
+{
+    GfxResult result = gfxRenderPassEncoderEndOcclusionQuery(m_handle);
+    if (result != GFX_RESULT_SUCCESS) {
+        throw std::runtime_error("Failed to end occlusion query");
     }
 }
 
