@@ -21,6 +21,7 @@ set(PUBLIC_TEST_SOURCES
     api/RenderPassTest.cpp
     api/RenderPipelineTest.cpp
     api/SamplerTest.cpp
+    api/SemaphoreTest.cpp
 )
 
 # Internal tests - tests for C++ wrapper implementation details
