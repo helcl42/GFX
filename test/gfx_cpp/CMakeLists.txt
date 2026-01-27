@@ -16,7 +16,10 @@ set(PUBLIC_TEST_SOURCES
     api/FramebufferTest.cpp
     api/InstanceTest.cpp
     api/QuerySetTest.cpp
+    api/QueueTest.cpp
     api/RenderPassEncoderTest.cpp
+    api/RenderPassTest.cpp
+    api/RenderPipelineTest.cpp
 )
 
 # Internal tests - tests for C++ wrapper implementation details
