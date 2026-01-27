@@ -42,6 +42,27 @@ protected:
 
         GfxDeviceDescriptor deviceDesc = {};
         deviceDesc.label = "Test Device";
+        
+        // Check if timeline semaphore extension is supported
+        uint32_t extensionCount = 0;
+        gfxAdapterEnumerateDeviceExtensions(adapter, &extensionCount, nullptr);
+        std::vector<const char*> supportedExtensions(extensionCount);
+        gfxAdapterEnumerateDeviceExtensions(adapter, &extensionCount, supportedExtensions.data());
+        
+        bool timelineSemaphoreSupported = false;
+        for (uint32_t i = 0; i < extensionCount; i++) {
+            if (strcmp(supportedExtensions[i], GFX_DEVICE_EXTENSION_TIMELINE_SEMAPHORE) == 0) {
+                timelineSemaphoreSupported = true;
+                break;
+            }
+        }
+        
+        // Enable timeline semaphore extension if supported
+        const char* deviceExtensions[] = { GFX_DEVICE_EXTENSION_TIMELINE_SEMAPHORE };
+        if (timelineSemaphoreSupported) {
+            deviceDesc.enabledExtensions = deviceExtensions;
+            deviceDesc.enabledExtensionCount = 1;
+        }
 
         if (gfxAdapterCreateDevice(adapter, &deviceDesc, &device) != GFX_RESULT_SUCCESS) {
             gfxInstanceDestroy(instance);
@@ -221,10 +242,6 @@ TEST_P(GfxSemaphoreTest, GetTypeTimeline)
 
 TEST_P(GfxSemaphoreTest, TimelineInitialValue)
 {
-    if (backend == GFX_BACKEND_VULKAN) {
-        GTEST_SKIP() << "Timeline semaphores have issues on Vulkan";
-    }
-
     GfxSemaphoreDescriptor semaphoreDesc = {};
     semaphoreDesc.type = GFX_SEMAPHORE_TYPE_TIMELINE;
     semaphoreDesc.initialValue = 42;
@@ -244,10 +261,6 @@ TEST_P(GfxSemaphoreTest, TimelineInitialValue)
 
 TEST_P(GfxSemaphoreTest, TimelineSignal)
 {
-    if (backend == GFX_BACKEND_VULKAN) {
-        GTEST_SKIP() << "Timeline semaphores have issues on Vulkan";
-    }
-
     GfxSemaphoreDescriptor semaphoreDesc = {};
     semaphoreDesc.type = GFX_SEMAPHORE_TYPE_TIMELINE;
     semaphoreDesc.initialValue = 0;
@@ -269,10 +282,6 @@ TEST_P(GfxSemaphoreTest, TimelineSignal)
 
 TEST_P(GfxSemaphoreTest, TimelineWait)
 {
-    if (backend == GFX_BACKEND_VULKAN) {
-        GTEST_SKIP() << "Timeline semaphores have issues on Vulkan";
-    }
-
     GfxSemaphoreDescriptor semaphoreDesc = {};
     semaphoreDesc.type = GFX_SEMAPHORE_TYPE_TIMELINE;
     semaphoreDesc.initialValue = 5;
