@@ -6,9 +6,12 @@ set(PUBLIC_TEST_SOURCES
     api/BackendTest.cpp
     api/BindGroupLayoutTest.cpp
     api/BindGroupTest.cpp
+    api/BufferTest.cpp
+    api/CommandEncoderTest.cpp
     api/ConstantTest.cpp
     api/DeviceTest.cpp
     api/InstanceTest.cpp
+    api/QuerySetTest.cpp
 )
 
 # Internal tests - tests for C++ wrapper implementation details
