@@ -23,6 +23,11 @@ set(PUBLIC_TEST_SOURCES
     api/SamplerTest.cpp
     api/SemaphoreTest.cpp
     api/ShaderTest.cpp
+    api/SurfaceTest.cpp
+    api/SwapchainTest.cpp
+    api/TextureTest.cpp
+    api/TextureViewTest.cpp
+    api/UtilTest.cpp
 )
 
 # Internal tests - tests for C++ wrapper implementation details
