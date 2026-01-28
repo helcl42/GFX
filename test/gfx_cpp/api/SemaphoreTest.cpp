@@ -21,7 +21,7 @@ protected:
             adapter = instance->requestAdapter({ .adapterIndex = 0 });
 
             // Check if timeline semaphore extension is supported
-            auto supportedExtensions = adapter->enumerateDeviceExtensions();
+            auto supportedExtensions = adapter->enumerateExtensions();
             bool timelineSemaphoreSupported = std::find(supportedExtensions.begin(), supportedExtensions.end(),
                                                   std::string(gfx::DEVICE_EXTENSION_TIMELINE_SEMAPHORE))
                 != supportedExtensions.end();
