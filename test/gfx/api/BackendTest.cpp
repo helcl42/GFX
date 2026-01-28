@@ -33,18 +33,23 @@ TEST(GfxBackendTest, GetVersionNullParams)
     GfxResult result = gfxGetVersion(NULL, NULL, NULL);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
 
-    // At least one valid pointer should succeed
+    // Any NULL should fail (all three are required)
     result = gfxGetVersion(&version, NULL, NULL);
-    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_EQ(version, 1u);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
 
     result = gfxGetVersion(NULL, &version, NULL);
-    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_EQ(version, 0u);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
 
     result = gfxGetVersion(NULL, NULL, &version);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
+
+    // All three non-null should succeed
+    uint32_t major = 0, minor = 0, patch = 0;
+    result = gfxGetVersion(&major, &minor, &patch);
     EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_EQ(version, 0u);
+    EXPECT_EQ(major, 1u);
+    EXPECT_EQ(minor, 0u);
+    EXPECT_EQ(patch, 0u);
 }
 
 // Test backend loading for Vulkan
