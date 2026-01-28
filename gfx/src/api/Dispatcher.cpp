@@ -300,7 +300,7 @@ GfxResult gfxAdapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t qu
     return backend->adapterGetQueueFamilySurfaceSupport(adapter, queueFamilyIndex, surface, outSupported);
 }
 
-GfxResult gfxAdapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t* extensionCount, const char** extensionNames)
+GfxResult gfxAdapterEnumerateExtensions(GfxAdapter adapter, uint32_t* extensionCount, const char** extensionNames)
 {
     if (!adapter || !extensionCount) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -309,7 +309,7 @@ GfxResult gfxAdapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t* exte
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->adapterEnumerateDeviceExtensions(adapter, extensionCount, extensionNames);
+    return backend->adapterEnumerateExtensions(adapter, extensionCount, extensionNames);
 }
 
 // Device Functions

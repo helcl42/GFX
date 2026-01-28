@@ -134,6 +134,101 @@ TEST_P(GfxCppAdapterTest, LimitsConsistency)
     EXPECT_EQ(limits1.maxUniformBufferBindingSize, limits2.maxUniformBufferBindingSize);
 }
 
+TEST_P(GfxCppAdapterTest, EnumerateExtensions)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    auto extensions = adapter->enumerateExtensions();
+
+    EXPECT_GT(extensions.size(), 0) << "Adapter should support at least one device extension";
+
+    // Verify all extensions are valid strings
+    for (const auto& ext : extensions) {
+        EXPECT_FALSE(ext.empty()) << "Extension name should not be empty";
+    }
+
+    // Check for expected swapchain extension
+    auto it = std::find(extensions.begin(), extensions.end(), std::string(gfx::DEVICE_EXTENSION_SWAPCHAIN));
+    EXPECT_NE(it, extensions.end()) << "Swapchain extension should be available";
+}
+
+TEST_P(GfxCppAdapterTest, EnumerateExtensionsNoDuplicates)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    auto extensions = adapter->enumerateExtensions();
+
+    // Check for duplicates
+    for (size_t i = 0; i < extensions.size(); ++i) {
+        for (size_t j = i + 1; j < extensions.size(); ++j) {
+            EXPECT_NE(extensions[i], extensions[j])
+                << "Found duplicate extension: " << extensions[i];
+        }
+    }
+}
+
+TEST_P(GfxCppAdapterTest, EnumerateExtensionsConsistency)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    // Call twice and verify we get the same results
+    auto firstCall = adapter->enumerateExtensions();
+    auto secondCall = adapter->enumerateExtensions();
+
+    ASSERT_EQ(firstCall.size(), secondCall.size()) << "Extension count should be consistent";
+
+    // Verify same extensions (order might differ, so sort first)
+    std::sort(firstCall.begin(), firstCall.end());
+    std::sort(secondCall.begin(), secondCall.end());
+
+    for (size_t i = 0; i < firstCall.size(); ++i) {
+        EXPECT_EQ(firstCall[i], secondCall[i]) << "Extension at index " << i << " differs between calls";
+    }
+}
+
+TEST_P(GfxCppAdapterTest, CheckTimelineSemaphoreExtension)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    auto extensions = adapter->enumerateExtensions();
+
+    // Look for timeline semaphore extension
+    auto it = std::find(extensions.begin(), extensions.end(), std::string(gfx::DEVICE_EXTENSION_TIMELINE_SEMAPHORE));
+
+    // Timeline semaphore should be available on both Vulkan and WebGPU
+    EXPECT_NE(it, extensions.end()) << "Timeline semaphore extension should be available";
+}
+
+TEST_P(GfxCppAdapterTest, InstanceAndDeviceExtensionsAreDifferent)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    auto instanceExtensions = gfx::enumerateInstanceExtensions(backend);
+    auto deviceExtensions = adapter->enumerateExtensions();
+
+    // Surface extension should be instance-level only
+    bool surfaceInInstance = std::find(instanceExtensions.begin(), instanceExtensions.end(),
+                                 std::string(gfx::INSTANCE_EXTENSION_SURFACE))
+        != instanceExtensions.end();
+    bool surfaceInDevice = std::find(deviceExtensions.begin(), deviceExtensions.end(),
+                               std::string(gfx::INSTANCE_EXTENSION_SURFACE))
+        != deviceExtensions.end();
+
+    EXPECT_TRUE(surfaceInInstance) << "Surface should be an instance extension";
+    EXPECT_FALSE(surfaceInDevice) << "Surface should not be a device extension";
+
+    // Swapchain extension should be device-level only
+    bool swapchainInInstance = std::find(instanceExtensions.begin(), instanceExtensions.end(),
+                                   std::string(gfx::DEVICE_EXTENSION_SWAPCHAIN))
+        != instanceExtensions.end();
+    bool swapchainInDevice = std::find(deviceExtensions.begin(), deviceExtensions.end(),
+                                 std::string(gfx::DEVICE_EXTENSION_SWAPCHAIN))
+        != deviceExtensions.end();
+
+    EXPECT_FALSE(swapchainInInstance) << "Swapchain should not be an instance extension";
+    EXPECT_TRUE(swapchainInDevice) << "Swapchain should be a device extension";
+}
+
 INSTANTIATE_TEST_SUITE_P(
     AllBackends,
     GfxCppAdapterTest,

@@ -224,9 +224,9 @@ GfxResult Backend::adapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint3
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::adapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t* extensionCount, const char** extensionNames) const
+GfxResult Backend::adapterEnumerateExtensions(GfxAdapter adapter, uint32_t* extensionCount, const char** extensionNames) const
 {
-    GfxResult validationResult = validator::validateAdapterEnumerateDeviceExtensions(adapter, extensionCount);
+    GfxResult validationResult = validator::validateAdapterEnumerateExtensions(adapter, extensionCount);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }

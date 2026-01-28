@@ -45,9 +45,9 @@ protected:
         
         // Check if timeline semaphore extension is supported
         uint32_t extensionCount = 0;
-        gfxAdapterEnumerateDeviceExtensions(adapter, &extensionCount, nullptr);
+        gfxAdapterEnumerateExtensions(adapter, &extensionCount, nullptr);
         std::vector<const char*> supportedExtensions(extensionCount);
-        gfxAdapterEnumerateDeviceExtensions(adapter, &extensionCount, supportedExtensions.data());
+        gfxAdapterEnumerateExtensions(adapter, &extensionCount, supportedExtensions.data());
         
         bool timelineSemaphoreSupported = false;
         for (uint32_t i = 0; i < extensionCount; i++) {

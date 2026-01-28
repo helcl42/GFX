@@ -1386,6 +1386,9 @@ public:
     // Queue family enumeration
     virtual std::vector<QueueFamilyProperties> enumerateQueueFamilies() const = 0;
     virtual bool getQueueFamilySurfaceSupport(uint32_t queueFamilyIndex, Surface* surface) const = 0;
+
+    // Device extension enumeration
+    virtual std::vector<std::string> enumerateExtensions() const = 0;
 };
 
 class Instance {
@@ -1405,6 +1408,9 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor = 
 // ============================================================================
 // Utility Functions
 // ============================================================================
+
+// Enumerate available instance extensions for a backend
+std::vector<std::string> enumerateInstanceExtensions(Backend backend);
 
 // Set global log callback for all logging output
 void setLogCallback(LogCallback callback);

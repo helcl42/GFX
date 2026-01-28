@@ -251,6 +251,35 @@ TEST_P(GfxCppInstanceTest, SharedPointerSemantics)
     }
 }
 
+TEST_P(GfxCppInstanceTest, EnumerateInstanceExtensions)
+{
+    auto extensions = gfx::enumerateInstanceExtensions(backend);
+
+    EXPECT_GT(extensions.size(), 0) << "Backend should support at least one instance extension";
+
+    // Verify all extensions are valid strings
+    for (const auto& ext : extensions) {
+        EXPECT_FALSE(ext.empty()) << "Extension name should not be empty";
+    }
+
+    // Check for expected surface extension
+    auto it = std::find(extensions.begin(), extensions.end(), std::string(gfx::INSTANCE_EXTENSION_SURFACE));
+    EXPECT_NE(it, extensions.end()) << "Surface extension should be available";
+}
+
+TEST_P(GfxCppInstanceTest, EnumerateInstanceExtensionsNoDuplicates)
+{
+    auto extensions = gfx::enumerateInstanceExtensions(backend);
+
+    // Check for duplicates
+    for (size_t i = 0; i < extensions.size(); ++i) {
+        for (size_t j = i + 1; j < extensions.size(); ++j) {
+            EXPECT_NE(extensions[i], extensions[j])
+                << "Found duplicate extension: " << extensions[i];
+        }
+    }
+}
+
 // ===========================================================================
 // Test Instantiation
 // ===========================================================================

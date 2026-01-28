@@ -23,6 +23,8 @@ public:
     std::vector<QueueFamilyProperties> enumerateQueueFamilies() const override;
     bool getQueueFamilySurfaceSupport(uint32_t queueFamilyIndex, Surface* surface) const override;
 
+    std::vector<std::string> enumerateExtensions() const override;
+
 private:
     GfxAdapter m_handle;
 };

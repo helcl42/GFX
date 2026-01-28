@@ -1185,7 +1185,7 @@ GFX_API GfxResult gfxAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLi
 GFX_API GfxResult gfxAdapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFamilyCount, GfxQueueFamilyProperties* queueFamilies);
 GFX_API GfxResult gfxAdapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, uint32_t queueFamilyIndex, GfxSurface surface, bool* outSupported);
 // Vulkan-style enumeration: call with queueFamilies=NULL to get count, then call again with allocated array
-GFX_API GfxResult gfxAdapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t* extensionCount, const char** extensionNames);
+GFX_API GfxResult gfxAdapterEnumerateExtensions(GfxAdapter adapter, uint32_t* extensionCount, const char** extensionNames);
 
 // Device functions
 GFX_API GfxResult gfxDeviceDestroy(GfxDevice device);

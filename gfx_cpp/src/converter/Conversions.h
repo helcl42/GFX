@@ -11,6 +11,9 @@ namespace gfx {
 GfxBackend cppBackendToCBackend(Backend backend);
 Backend cBackendToCppBackend(GfxBackend backend);
 
+// String array conversions
+std::vector<std::string> cStringArrayToCppStringVector(const char** strings, uint32_t count);
+
 // Instance type conversions
 GfxInstanceDescriptor cppInstanceDescriptorToCDescriptor(const InstanceDescriptor& descriptor, GfxBackend backend, std::vector<const char*>& extensionsStorage);
 

@@ -19,7 +19,7 @@ GfxResult validateAdapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo);
 GfxResult validateAdapterGetLimits(GfxAdapter adapter, GfxDeviceLimits* outLimits);
 GfxResult validateAdapterEnumerateQueueFamilies(GfxAdapter adapter, uint32_t* queueFamilyCount);
 GfxResult validateAdapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, GfxSurface surface, bool* outSupported);
-GfxResult validateAdapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t* extensionCount);
+GfxResult validateAdapterEnumerateExtensions(GfxAdapter adapter, uint32_t* extensionCount);
 GfxResult validateDeviceGetQueue(GfxDevice device, GfxQueue* outQueue);
 GfxResult validateDeviceGetQueueByIndex(GfxDevice device, GfxQueue* outQueue);
 GfxResult validateDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface);

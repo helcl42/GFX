@@ -2,6 +2,10 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 // C API tests compiled with C++ for GoogleTest compatibility
 
 // ===========================================================================
@@ -265,7 +269,6 @@ TEST_P(GfxInstanceTest, EnumerateAdaptersGetAdapters)
             EXPECT_NE(adapters[i], nullptr);
         }
 
-
         delete[] adapters;
     }
 }
@@ -350,6 +353,41 @@ TEST_P(GfxInstanceTest, DoubleDestroy)
 
     // Second destroy of same instance is undefined behavior, but we test it doesn't crash
     // Note: In production code, don't do this - just testing robustness
+}
+
+TEST_P(GfxInstanceTest, EnumerateInstanceExtensions)
+{
+    // First call: get count
+    uint32_t extensionCount = 0;
+    EXPECT_EQ(gfxEnumerateInstanceExtensions(backend, &extensionCount, nullptr), GFX_RESULT_SUCCESS);
+    EXPECT_GT(extensionCount, 0) << "Backend should support at least one instance extension";
+
+    // Second call: get extensions
+    std::vector<const char*> extensionNames(extensionCount);
+    EXPECT_EQ(gfxEnumerateInstanceExtensions(backend, &extensionCount, extensionNames.data()), GFX_RESULT_SUCCESS);
+
+    // Verify extensions
+    for (uint32_t i = 0; i < extensionCount; ++i) {
+        EXPECT_NE(extensionNames[i], nullptr) << "Extension name at index " << i << " should not be null";
+        EXPECT_GT(strlen(extensionNames[i]), 0) << "Extension name at index " << i << " should not be empty";
+
+        // All extensions should be non-null strings
+        std::string extName(extensionNames[i]);
+        EXPECT_FALSE(extName.empty()) << "Extension " << i << " has empty name";
+    }
+
+    // Check for expected surface extension
+    auto it = std::find_if(extensionNames.begin(), extensionNames.end(),
+        [](const char* name) { return strcmp(name, GFX_INSTANCE_EXTENSION_SURFACE) == 0; });
+    EXPECT_NE(it, extensionNames.end()) << "Surface extension should be available";
+}
+
+TEST_P(GfxInstanceTest, EnumerateInstanceExtensionsWithZeroCount)
+{
+    // Query with zero count should still succeed and return the count
+    uint32_t extensionCount = 0;
+    EXPECT_EQ(gfxEnumerateInstanceExtensions(backend, &extensionCount, nullptr), GFX_RESULT_SUCCESS);
+    EXPECT_GT(extensionCount, 0);
 }
 
 // ===========================================================================

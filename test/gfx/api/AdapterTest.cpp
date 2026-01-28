@@ -2,6 +2,10 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 // C API tests compiled with C++ for GoogleTest compatibility
 
 // ===========================================================================
@@ -246,6 +250,68 @@ TEST_P(GfxAdapterTest, LimitsConsistency)
     EXPECT_EQ(limits1.maxTextureDimension2D, limits2.maxTextureDimension2D);
     EXPECT_EQ(limits1.maxTextureArrayLayers, limits2.maxTextureArrayLayers);
     EXPECT_EQ(limits1.maxUniformBufferBindingSize, limits2.maxUniformBufferBindingSize);
+}
+
+TEST_P(GfxAdapterTest, EnumerateAdapterExtensions)
+{
+    // First call: get count
+    uint32_t extensionCount = 0;
+    EXPECT_EQ(gfxAdapterEnumerateExtensions(adapter, &extensionCount, nullptr), GFX_RESULT_SUCCESS);
+    EXPECT_GT(extensionCount, 0) << "Adapter should support at least one device extension";
+
+    // Second call: get extensions
+    std::vector<const char*> extensionNames(extensionCount);
+    EXPECT_EQ(gfxAdapterEnumerateExtensions(adapter, &extensionCount, extensionNames.data()), GFX_RESULT_SUCCESS);
+
+    // Verify extensions
+    for (uint32_t i = 0; i < extensionCount; ++i) {
+        EXPECT_NE(extensionNames[i], nullptr) << "Extension name at index " << i << " should not be null";
+        EXPECT_GT(strlen(extensionNames[i]), 0) << "Extension name at index " << i << " should not be empty";
+
+        std::string extName(extensionNames[i]);
+        EXPECT_FALSE(extName.empty()) << "Extension " << i << " has empty name";
+    }
+
+    // Check for expected swapchain extension
+    auto it = std::find_if(extensionNames.begin(), extensionNames.end(),
+        [](const char* name) { return strcmp(name, GFX_DEVICE_EXTENSION_SWAPCHAIN) == 0; });
+    EXPECT_NE(it, extensionNames.end()) << "Swapchain extension should be available";
+}
+
+TEST_P(GfxAdapterTest, EnumerateAdapterExtensionsWithZeroCount)
+{
+    // Query with zero count should still succeed and return the count
+    uint32_t extensionCount = 0;
+    EXPECT_EQ(gfxAdapterEnumerateExtensions(adapter, &extensionCount, nullptr), GFX_RESULT_SUCCESS);
+    EXPECT_GT(extensionCount, 0);
+}
+
+TEST_P(GfxAdapterTest, EnumerateAdapterExtensionsConsistency)
+{
+    // Call twice and verify we get the same count
+    uint32_t firstCount = 0;
+    EXPECT_EQ(gfxAdapterEnumerateExtensions(adapter, &firstCount, nullptr), GFX_RESULT_SUCCESS);
+
+    uint32_t secondCount = 0;
+    EXPECT_EQ(gfxAdapterEnumerateExtensions(adapter, &secondCount, nullptr), GFX_RESULT_SUCCESS);
+
+    EXPECT_EQ(firstCount, secondCount) << "Extension count should be consistent between calls";
+}
+
+TEST_P(GfxAdapterTest, CheckTimelineSemaphoreExtension)
+{
+    uint32_t extensionCount = 0;
+    EXPECT_EQ(gfxAdapterEnumerateExtensions(adapter, &extensionCount, nullptr), GFX_RESULT_SUCCESS);
+
+    std::vector<const char*> extensionNames(extensionCount);
+    EXPECT_EQ(gfxAdapterEnumerateExtensions(adapter, &extensionCount, extensionNames.data()), GFX_RESULT_SUCCESS);
+
+    // Look for timeline semaphore extension
+    auto it = std::find_if(extensionNames.begin(), extensionNames.end(),
+        [](const char* name) { return strcmp(name, GFX_DEVICE_EXTENSION_TIMELINE_SEMAPHORE) == 0; });
+
+    // Timeline semaphore should be available on both Vulkan and WebGPU
+    EXPECT_NE(it, extensionNames.end()) << "Timeline semaphore extension should be available";
 }
 
 // ===========================================================================

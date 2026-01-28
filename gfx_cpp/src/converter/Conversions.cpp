@@ -24,6 +24,18 @@ Backend cBackendToCppBackend(GfxBackend backend)
     return static_cast<Backend>(backend);
 }
 
+std::vector<std::string> cStringArrayToCppStringVector(const char** strings, uint32_t count)
+{
+    std::vector<std::string> result;
+    result.reserve(count);
+    for (uint32_t i = 0; i < count; ++i) {
+        if (strings[i]) {
+            result.emplace_back(strings[i]);
+        }
+    }
+    return result;
+}
+
 GfxInstanceDescriptor cppInstanceDescriptorToCDescriptor(const InstanceDescriptor& descriptor, GfxBackend backend, std::vector<const char*>& extensionsStorage)
 {
     // Convert enabled extensions

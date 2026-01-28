@@ -678,7 +678,7 @@ GfxResult validateAdapterGetQueueFamilySurfaceSupport(GfxAdapter adapter, GfxSur
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult validateAdapterEnumerateDeviceExtensions(GfxAdapter adapter, uint32_t* extensionCount)
+GfxResult validateAdapterEnumerateExtensions(GfxAdapter adapter, uint32_t* extensionCount)
 {
     if (!adapter || !extensionCount) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;

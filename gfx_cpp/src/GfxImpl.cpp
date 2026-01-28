@@ -78,6 +78,25 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
     return std::make_shared<InstanceImpl>(instance);
 }
 
+std::vector<std::string> enumerateInstanceExtensions(Backend backend)
+{
+    GfxBackend cBackend = cppBackendToCBackend(backend);
+
+    uint32_t count = 0;
+    GfxResult result = gfxEnumerateInstanceExtensions(cBackend, &count, nullptr);
+    if (result != GFX_RESULT_SUCCESS) {
+        throw std::runtime_error("Failed to enumerate instance extensions");
+    }
+
+    std::vector<const char*> extensionNames(count);
+    result = gfxEnumerateInstanceExtensions(cBackend, &count, extensionNames.data());
+    if (result != GFX_RESULT_SUCCESS) {
+        throw std::runtime_error("Failed to enumerate instance extensions");
+    }
+
+    return cStringArrayToCppStringVector(extensionNames.data(), count);
+}
+
 // Global log callback storage (needed because gfxSetLogCallback requires a C function pointer)
 void setLogCallback(LogCallback callback)
 {
