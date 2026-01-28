@@ -46,4 +46,6 @@ target_link_libraries(gfx_cpp_test
 )
 
 # Discover tests
-gtest_discover_tests(gfx_cpp_test)
+if(NOT ENABLE_ASAN)
+    gtest_discover_tests(gfx_cpp_test)
+endif()

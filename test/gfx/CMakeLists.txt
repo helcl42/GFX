@@ -45,5 +45,7 @@ target_link_libraries(gfx_test
     GTest::gtest_main
 )
 
-# Discover tests
-gtest_discover_tests(gfx_test)
+# Discover tests (skip when ASAN is enabled due to runtime initialization issues)
+if(NOT ENABLE_ASAN)
+    gtest_discover_tests(gfx_test)
+endif()

@@ -27,12 +27,6 @@ option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
 option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
 option(BUILD_HEADLESS "Build without windowing system support (no surface creation)" OFF)
 
-# Disable ASAN when building tests to avoid LD_PRELOAD requirement
-if(BUILD_TESTS)
-    message(STATUS "BUILD_TESTS enabled: Disabling ASAN to avoid library/test mismatch")
-    set(ENABLE_ASAN OFF CACHE BOOL "Disabled for test builds" FORCE)
-endif()
-
 # Find required packages
 find_package(PkgConfig REQUIRED)
 
@@ -43,13 +37,25 @@ endif()
 
 # Vulkan
 if(BUILD_VULKAN_BACKEND AND NOT BUILD_FOR_WEB)
-    find_package(Vulkan REQUIRED)
+    # Don't use find_package(Vulkan) - we'll use Dawn's bundled Vulkan headers
+    # Just find the Vulkan loader library and glslc compiler
+    
+    # Find Vulkan loader library manually
+    find_library(Vulkan_LIBRARY
+        NAMES vulkan vulkan-1
+        HINTS
+            ENV VULKAN_SDK
+        PATH_SUFFIXES lib
+    )
+    
+    if(NOT Vulkan_LIBRARY)
+        message(FATAL_ERROR "Vulkan loader library not found. Please install Vulkan SDK.")
+    endif()
     
     # Find glslc shader compiler (comes with Vulkan SDK)
     find_program(GLSLC_EXECUTABLE
         NAMES glslc
         HINTS
-            ${Vulkan_GLSLC_EXECUTABLE}
             ENV VULKAN_SDK
         PATH_SUFFIXES bin
     )
@@ -98,8 +104,8 @@ function(compile_wgsl_shader target shader_source)
     
     add_custom_command(
         OUTPUT ${shader_output}
-        COMMAND ${CMAKE_BINARY_DIR}/dawn/tint ${shader_source} -o ${shader_output} --format spirv --entry-point main
-        DEPENDS ${shader_source} tint
+        COMMAND $<TARGET_FILE:tint_cmd_tint_cmd> ${shader_source} -o ${shader_output} --format spirv --entry-point main
+        DEPENDS ${shader_source} tint_cmd_tint_cmd
         COMMENT "Compiling WGSL shader: ${shader_name}${shader_ext} -> ${shader_base}.spv"
         VERBATIM
     )
@@ -110,8 +116,21 @@ endfunction()
 
 # WebGPU (Dawn)
 if(BUILD_WEBGPU_BACKEND)
-    # Use Dawn from specific location as subdirectory
-    set(DAWN_ROOT "/home/lhelcl/Dev/webgpu-cross-platform-app/dawn")
+    # Check for Dawn in multiple locations (submodule, environment, or custom path)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/dawn/CMakeLists.txt")
+        set(DAWN_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/dawn")
+        message(STATUS "Using Dawn from submodule: ${DAWN_ROOT}")
+    elseif(DEFINED ENV{DAWN_ROOT} AND EXISTS "$ENV{DAWN_ROOT}/CMakeLists.txt")
+        set(DAWN_ROOT "$ENV{DAWN_ROOT}")
+        message(STATUS "Using Dawn from environment variable: ${DAWN_ROOT}")
+    elseif(DEFINED DAWN_ROOT AND EXISTS "${DAWN_ROOT}/CMakeLists.txt")
+        message(STATUS "Using Dawn from CMake variable: ${DAWN_ROOT}")
+    else()
+        message(FATAL_ERROR "Dawn not found. Please either:\n"
+                            "  1. Initialize submodule: git submodule update --init\n"
+                            "  2. Set DAWN_ROOT environment variable\n"
+                            "  3. Pass -DDAWN_ROOT=/path/to/dawn to CMake")
+    endif()
     
     if(EXISTS "${DAWN_ROOT}/CMakeLists.txt")
         message(STATUS "Adding Dawn from: ${DAWN_ROOT}")
@@ -361,9 +380,23 @@ target_include_directories(gfx
 
 # Link Vulkan if available
 if(BUILD_VULKAN_BACKEND)
-    target_link_libraries(gfx PUBLIC Vulkan::Vulkan)
+    target_link_libraries(gfx PUBLIC ${Vulkan_LIBRARY})
     target_compile_definitions(gfx PUBLIC GFX_ENABLE_VULKAN=1)
-    # Don't include bundled headers - use system Vulkan headers instead
+    # Use Dawn's bundled Vulkan headers if WebGPU backend is enabled to avoid version conflicts
+    if(BUILD_WEBGPU_BACKEND AND TARGET Vulkan::Headers)
+        target_link_libraries(gfx PUBLIC Vulkan::Headers)
+    else()
+        # Fall back to system Vulkan headers if Dawn is not available
+        find_path(SYSTEM_VULKAN_INCLUDE_DIR vulkan/vulkan.h
+            HINTS ENV VULKAN_SDK
+            PATH_SUFFIXES include
+        )
+        if(SYSTEM_VULKAN_INCLUDE_DIR)
+            target_include_directories(gfx PUBLIC ${SYSTEM_VULKAN_INCLUDE_DIR})
+        else()
+            message(FATAL_ERROR "Vulkan headers not found. Please install Vulkan SDK.")
+        endif()
+    endif()
 endif()
 
 # Link WebGPU if available
@@ -450,6 +483,9 @@ if(BUILD_CPP_WRAPPER)
         gfx_cpp/src/core/sync/Fence.cpp
         gfx_cpp/src/core/sync/Semaphore.h
         gfx_cpp/src/core/sync/Semaphore.cpp
+        # Query
+        gfx_cpp/src/core/query/QuerySet.h
+        gfx_cpp/src/core/query/QuerySet.cpp
         # Resources
         gfx_cpp/src/core/resource/Buffer.h
         gfx_cpp/src/core/resource/Buffer.cpp
@@ -521,8 +557,12 @@ if(BUILD_CPP_WRAPPER)
 
     # Link Vulkan if available
     if(BUILD_VULKAN_BACKEND)
-        target_link_libraries(gfx_cpp PUBLIC Vulkan::Vulkan)
+        target_link_libraries(gfx_cpp PUBLIC ${Vulkan_LIBRARY})
         target_compile_definitions(gfx_cpp PUBLIC GFX_ENABLE_VULKAN=1)
+        # Use Dawn's bundled Vulkan headers if WebGPU backend is enabled to avoid version conflicts
+        if(BUILD_WEBGPU_BACKEND AND TARGET Vulkan::Headers)
+            target_link_libraries(gfx_cpp PUBLIC Vulkan::Headers)
+        endif()
     endif()
 
     # Link WebGPU if available
@@ -638,6 +678,7 @@ if(BUILD_EXAMPLES)
             -sDISABLE_EXCEPTION_CATCHING=0
             -sEXPORTED_RUNTIME_METHODS=requestFullscreen
             --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders@shaders
+            --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/textures@../examples/c/cube/textures
             -g
             -O0
             --shell-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/web/shell.html
@@ -698,7 +739,7 @@ if(BUILD_EXAMPLES)
             -sSAFE_HEAP=1
             -sDISABLE_EXCEPTION_CATCHING=0
             -sEXPORTED_RUNTIME_METHODS=requestFullscreen
-            --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders@shaders
+            --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/cpp/cube/shaders@shaders
             -g
             -O0
             --shell-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/web/shell.html
@@ -755,7 +796,7 @@ if(BUILD_EXAMPLES)
         compile_wgsl_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl)
         compile_wgsl_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl)
         
-        # Copy WGSL shaders to build directory for WebGPU runtime loading
+        # Copy WGSL shaders and compiled SPIR-V to build directory
         add_custom_command(TARGET cube_example_c POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -764,7 +805,13 @@ if(BUILD_EXAMPLES)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl
                 ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
-            COMMENT "Copying WGSL shaders for WebGPU runtime"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_BINARY_DIR}/cube.vert.spv
+                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.spv
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_BINARY_DIR}/cube.frag.spv
+                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.spv
+            COMMENT "Copying WGSL and SPIR-V shaders"
         )
         
         # Native C Threaded Cube Example (uses pthreads)
@@ -778,7 +825,7 @@ if(BUILD_EXAMPLES)
         compile_wgsl_shader(cube_example_c_threaded ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl)
         compile_wgsl_shader(cube_example_c_threaded ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl)
         
-        # Copy WGSL shaders to build directory for threaded example
+        # Copy WGSL shaders and compiled SPIR-V for threaded example
         add_custom_command(TARGET cube_example_c_threaded POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -787,7 +834,13 @@ if(BUILD_EXAMPLES)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl
                 ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
-            COMMENT "Copying WGSL shaders for threaded example"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_BINARY_DIR}/cube.vert.spv
+                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.spv
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_BINARY_DIR}/cube.frag.spv
+                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.spv
+            COMMENT "Copying WGSL and SPIR-V shaders for threaded example"
         )
     
         # Threaded C++ Cube Example (uses C API with C++ language features)
@@ -797,9 +850,8 @@ if(BUILD_EXAMPLES)
             target_link_options(cube_example_cpp_threaded PRIVATE -fsanitize=address)
         endif()
         
-        # Share shaders with regular cube example
-        compile_wgsl_shader(cube_example_cpp_threaded ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl)
-        compile_wgsl_shader(cube_example_cpp_threaded ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl)
+        # Share shaders with cube_example_c_threaded (same cube shaders)
+        add_dependencies(cube_example_cpp_threaded cube_example_c_threaded)
         
         add_custom_command(TARGET cube_example_cpp_threaded POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
@@ -809,7 +861,13 @@ if(BUILD_EXAMPLES)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl
                 ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
-            COMMENT "Copying WGSL shaders for C++ threaded example"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_BINARY_DIR}/cube.vert.spv
+                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.spv
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_BINARY_DIR}/cube.frag.spv
+                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.spv
+            COMMENT "Copying WGSL and SPIR-V shaders for C++ threaded example"
         )
     endif()  # BUILD_FOR_WEB
     
@@ -823,20 +881,26 @@ if(BUILD_EXAMPLES)
                 target_link_options(cube_example_cpp PRIVATE -fsanitize=address)
             endif()
             
-            # Compile WGSL shaders to SPIR-V for C++ wrapper example (shares with C example)
-            compile_wgsl_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl)
-            compile_wgsl_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl)
+            # Compile WGSL shaders to SPIR-V for C++ wrapper example (uses its own simpler shaders)
+            compile_wgsl_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/cpp/cube/shaders/cube.vert.wgsl)
+            compile_wgsl_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/cpp/cube/shaders/cube.frag.wgsl)
             
-            # Copy WGSL shaders for WebGPU runtime loading
+            # Copy WGSL shaders and compiled SPIR-V
             add_custom_command(TARGET cube_example_cpp POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl
+                    ${CMAKE_CURRENT_SOURCE_DIR}/examples/cpp/cube/shaders/cube.vert.wgsl
                     ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.wgsl
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl
+                    ${CMAKE_CURRENT_SOURCE_DIR}/examples/cpp/cube/shaders/cube.frag.wgsl
                     ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
-                COMMENT "Copying WGSL shaders for C++ wrapper example"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${CMAKE_CURRENT_BINARY_DIR}/cube.vert.spv
+                    ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.spv
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${CMAKE_CURRENT_BINARY_DIR}/cube.frag.spv
+                    ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.spv
+                COMMENT "Copying WGSL and SPIR-V shaders for C++ wrapper example"
             )
         endif()  # BUILD_CPP_WRAPPER
     
@@ -852,7 +916,7 @@ if(BUILD_EXAMPLES)
         compile_wgsl_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/fullscreen.vert.wgsl)
         compile_wgsl_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/postprocess.frag.wgsl)
         
-        # Copy WGSL shaders to build directory for WebGPU runtime loading
+        # Copy WGSL shaders and compiled SPIR-V to build directory
         add_custom_command(TARGET compute_example_c POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -864,7 +928,16 @@ if(BUILD_EXAMPLES)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/postprocess.frag.wgsl
                 ${CMAKE_CURRENT_BINARY_DIR}/shaders/postprocess.frag.wgsl
-            COMMENT "Copying WGSL shaders for WebGPU runtime"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_BINARY_DIR}/generate.comp.spv
+                ${CMAKE_CURRENT_BINARY_DIR}/shaders/generate.comp.spv
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_BINARY_DIR}/fullscreen.vert.spv
+                ${CMAKE_CURRENT_BINARY_DIR}/shaders/fullscreen.vert.spv
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_BINARY_DIR}/postprocess.frag.spv
+                ${CMAKE_CURRENT_BINARY_DIR}/shaders/postprocess.frag.spv
+            COMMENT "Copying WGSL and SPIR-V shaders"
         )
     
         # C++ Compute Example
@@ -924,9 +997,9 @@ message(STATUS "  Address Sanitizer: ${ENABLE_ASAN}")
 message(STATUS "  Vulkan backend: ${BUILD_VULKAN_BACKEND}")
 message(STATUS "  WebGPU backend: ${BUILD_WEBGPU_BACKEND}")
 if(BUILD_VULKAN_BACKEND)
-    message(STATUS "  Vulkan library: ${Vulkan_LIBRARIES}")
+    message(STATUS "  Vulkan library: ${Vulkan_LIBRARY}")
 endif()
 if(BUILD_WEBGPU_BACKEND AND WEBGPU_FOUND)
-    message(STATUS "  WebGPU library: ${WEBGPU_LIBRARY}")
+    message(STATUS "  WebGPU library: webgpu_dawn (target)")
 endif()
 message(STATUS "")
