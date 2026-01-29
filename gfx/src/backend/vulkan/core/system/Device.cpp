@@ -3,6 +3,7 @@
 #include "Adapter.h"
 #include "Queue.h"
 
+#include <cstring>
 #include <stdexcept>
 
 namespace gfx::backend::vulkan::core {
@@ -22,6 +23,16 @@ namespace {
         }
         return false;
     }
+
+    bool isExtensionAvailable(const std::vector<VkExtensionProperties>& availableExtensions, const char* extension)
+    {
+        for (const auto& availableExt : availableExtensions) {
+            if (strcmp(extension, availableExt.extensionName) == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
 } // anonymous namespace
 
 Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
@@ -31,17 +42,27 @@ Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
     VkPhysicalDeviceFeatures deviceFeatures{};
 
     // Device extensions
-    std::vector<const char*> extensions;
+    std::vector<const char*> requestedExtensions;
 #ifndef GFX_HEADLESS_BUILD
     if (isExtensionEnabled(createInfo.enabledExtensions, extensions::SWAPCHAIN)) {
-        extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        requestedExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     }
 #endif // GFX_HEADLESS_BUILD
 
     // Enable timeline semaphore extension if requested
     bool timelineSemaphoreEnabled = isExtensionEnabled(createInfo.enabledExtensions, extensions::TIMELINE_SEMAPHORE);
     if (timelineSemaphoreEnabled) {
-        extensions.push_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
+        requestedExtensions.push_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
+    }
+
+    // Check if all requested extensions are available
+    const auto availableExtensions = m_adapter->enumerateDeviceExtensionProperties();
+    for (const char* requestedExt : requestedExtensions) {
+        if (!isExtensionAvailable(availableExtensions, requestedExt)) {
+            std::string errorMsg = "Required Vulkan device extension not available: ";
+            errorMsg += requestedExt;
+            throw std::runtime_error(errorMsg);
+        }
     }
 
     // Timeline semaphore features (VK_KHR_timeline_semaphore extension for Vulkan 1.1)
@@ -97,8 +118,8 @@ Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
     vkCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     vkCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
     vkCreateInfo.pEnabledFeatures = &deviceFeatures;
-    vkCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-    vkCreateInfo.ppEnabledExtensionNames = extensions.data();
+    vkCreateInfo.enabledExtensionCount = static_cast<uint32_t>(requestedExtensions.size());
+    vkCreateInfo.ppEnabledExtensionNames = requestedExtensions.data();
 
     VkResult result = vkCreateDevice(m_adapter->handle(), &vkCreateInfo, nullptr, &m_device);
     if (result != VK_SUCCESS) {
