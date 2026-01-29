@@ -33,6 +33,7 @@ set(PUBLIC_TEST_SOURCES
 # Internal tests - tests for Dispatcher, converters, backend internals
 set(INTERNAL_TEST_SOURCES
     internal/GfxImplTest.cpp
+    internal/common/LoggerTest.cpp
 )
 
 add_executable(gfx_test
