@@ -266,10 +266,10 @@ endif()
 # C API Library (implemented in C++)
 set(GFX_C_SOURCES
     gfx/include/gfx/gfx.h
+    gfx/src/GfxImpl.cpp
     gfx/src/backend/IBackend.h
     gfx/src/backend/Factory.cpp
     gfx/src/backend/Manager.cpp
-    gfx/src/api/Dispatcher.cpp
     gfx/src/common/Logger.cpp
 )
 
