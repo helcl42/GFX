@@ -131,6 +131,16 @@ BufferUsage cBufferUsageToCppUsage(GfxBufferUsageFlags usage)
     return static_cast<BufferUsage>(usage);
 }
 
+GfxMemoryPropertyFlags cppMemoryPropertyToCMemoryProperty(MemoryProperty property)
+{
+    return static_cast<GfxMemoryPropertyFlags>(static_cast<uint32_t>(property));
+}
+
+MemoryProperty cMemoryPropertyToCppMemoryProperty(GfxMemoryPropertyFlags property)
+{
+    return static_cast<MemoryProperty>(property);
+}
+
 GfxTextureUsageFlags cppTextureUsageToCUsage(TextureUsage usage)
 {
     return static_cast<GfxTextureUsageFlags>(static_cast<uint32_t>(usage));
@@ -701,6 +711,7 @@ void convertBufferDescriptor(const BufferDescriptor& descriptor, GfxBufferDescri
     outDesc.label = descriptor.label.c_str();
     outDesc.size = descriptor.size;
     outDesc.usage = cppBufferUsageToCUsage(descriptor.usage);
+    outDesc.memoryProperties = cppMemoryPropertyToCMemoryProperty(descriptor.memoryProperties);
 }
 
 void convertBufferImportDescriptor(const BufferImportDescriptor& descriptor, GfxBufferImportDescriptor& outDesc)

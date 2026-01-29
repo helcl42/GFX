@@ -271,6 +271,15 @@ typedef enum {
 typedef uint32_t GfxBufferUsageFlags;
 
 typedef enum {
+    GFX_MEMORY_PROPERTY_DEVICE_LOCAL = 1 << 0,
+    GFX_MEMORY_PROPERTY_HOST_VISIBLE = 1 << 1,
+    GFX_MEMORY_PROPERTY_HOST_COHERENT = 1 << 2,
+    GFX_MEMORY_PROPERTY_HOST_CACHED = 1 << 3,
+    GFX_MEMORY_PROPERTY_MAX_ENUM = 0x7FFFFFFF
+} GfxMemoryPropertyFlagBits;
+typedef uint32_t GfxMemoryPropertyFlags;
+
+typedef enum {
     GFX_SHADER_STAGE_NONE = 0,
     GFX_SHADER_STAGE_VERTEX = 1 << 0,
     GFX_SHADER_STAGE_FRAGMENT = 1 << 1,
@@ -759,6 +768,7 @@ typedef struct {
 typedef struct {
     uint64_t size;
     GfxBufferUsageFlags usage;
+    GfxMemoryPropertyFlags memoryProperties;
 } GfxBufferInfo;
 
 // Swapchain information
@@ -808,6 +818,7 @@ typedef struct {
     const char* label;
     uint64_t size;
     GfxBufferUsageFlags usage;
+    GfxMemoryPropertyFlags memoryProperties;
 } GfxBufferDescriptor;
 
 typedef struct {

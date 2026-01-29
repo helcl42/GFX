@@ -277,15 +277,8 @@ void Queue::writeTexture(Texture* texture, const VkOffset3D& origin, uint32_t mi
 
     const VkPhysicalDeviceMemoryProperties& memProperties = m_device->getAdapter()->getMemoryProperties();
 
-    uint32_t memoryTypeIndex = UINT32_MAX;
     VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
-        if ((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            memoryTypeIndex = i;
-            break;
-        }
-    }
+    uint32_t memoryTypeIndex = findMemoryType(memProperties, memRequirements.memoryTypeBits, properties);
 
     if (memoryTypeIndex == UINT32_MAX) {
         gfx::common::Logger::instance().logError("Failed to find suitable memory type for staging buffer");

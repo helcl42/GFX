@@ -136,6 +136,13 @@ enum class BufferUsage : uint32_t {
     Indirect = 1 << 8
 };
 
+enum class MemoryProperty : uint32_t {
+    DeviceLocal = 1 << 0,
+    HostVisible = 1 << 1,
+    HostCoherent = 1 << 2,
+    HostCached = 1 << 3
+};
+
 enum class ShaderStage : uint32_t {
     None = 0,
     Vertex = 1 << 0,
@@ -582,6 +589,7 @@ struct BufferDescriptor {
     std::string label;
     uint64_t size = 0;
     BufferUsage usage = BufferUsage::None;
+    MemoryProperty memoryProperties = MemoryProperty::DeviceLocal;
 };
 
 struct BufferImportDescriptor {

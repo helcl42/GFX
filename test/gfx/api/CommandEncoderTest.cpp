@@ -169,6 +169,7 @@ TEST_P(GfxCommandEncoderTest, CopyBufferToBuffer)
     srcBufferDesc.label = "source_buffer";
     srcBufferDesc.size = 256;
     srcBufferDesc.usage = GFX_BUFFER_USAGE_COPY_SRC;
+    srcBufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
     GfxBuffer srcBuffer = nullptr;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &srcBufferDesc, &srcBuffer), GFX_RESULT_SUCCESS);
 
@@ -176,6 +177,7 @@ TEST_P(GfxCommandEncoderTest, CopyBufferToBuffer)
     dstBufferDesc.label = "destination_buffer";
     dstBufferDesc.size = 256;
     dstBufferDesc.usage = GFX_BUFFER_USAGE_COPY_DST;
+    dstBufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
     GfxBuffer dstBuffer = nullptr;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &dstBufferDesc, &dstBuffer), GFX_RESULT_SUCCESS);
 

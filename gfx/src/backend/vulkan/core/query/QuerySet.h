@@ -3,7 +3,7 @@
 
 #include "../CoreTypes.h"
 
-#include <vulkan/vulkan.h>
+#include "../../common/Common.h"
 
 namespace gfx::backend::vulkan::core {
 

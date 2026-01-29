@@ -923,7 +923,8 @@ bool CubeApp::createGeometry()
     GfxBufferDescriptor vertexBufferDesc = {
         .label = "Cube Vertices",
         .size = sizeof(vertices),
-        .usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST
+        .usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST,
+        .memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL
     };
 
     if (gfxDeviceCreateBuffer(device, &vertexBufferDesc, &vertexBuffer) != GFX_RESULT_SUCCESS) {
@@ -935,7 +936,8 @@ bool CubeApp::createGeometry()
     GfxBufferDescriptor indexBufferDesc = {
         .label = "Cube Indices",
         .size = sizeof(indices),
-        .usage = GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_COPY_DST
+        .usage = GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_COPY_DST,
+        .memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL
     };
 
     if (gfxDeviceCreateBuffer(device, &indexBufferDesc, &indexBuffer) != GFX_RESULT_SUCCESS) {
@@ -965,7 +967,8 @@ bool CubeApp::createUniformBuffer()
     GfxBufferDescriptor uniformBufferDesc = {
         .label = "Shared Transform Uniforms",
         .size = totalBufferSize,
-        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST
+        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST,
+        .memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT
     };
 
     if (gfxDeviceCreateBuffer(device, &uniformBufferDesc, &sharedUniformBuffer) != GFX_RESULT_SUCCESS) {

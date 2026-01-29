@@ -52,7 +52,8 @@ TEST_P(GfxCppBufferTest, CreateDestroyBuffer)
     gfx::BufferDescriptor desc{
         .label = "Test Buffer",
         .size = 1024,
-        .usage = gfx::BufferUsage::Vertex | gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::Vertex | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
 
     auto buffer = device->createBuffer(desc);
@@ -68,7 +69,8 @@ TEST_P(GfxCppBufferTest, CreateBufferInvalidArguments)
 
     gfx::BufferDescriptor validDesc{
         .size = 1024,
-        .usage = gfx::BufferUsage::Vertex
+        .usage = gfx::BufferUsage::Vertex,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
 
     // These should succeed as baseline
@@ -82,7 +84,8 @@ TEST_P(GfxCppBufferTest, CreateBufferZeroSize)
 
     gfx::BufferDescriptor desc{
         .size = 0,
-        .usage = gfx::BufferUsage::Vertex
+        .usage = gfx::BufferUsage::Vertex,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
 
     // C++ API should throw on invalid arguments
@@ -109,7 +112,8 @@ TEST_P(GfxCppBufferTest, GetBufferInfo)
     gfx::BufferDescriptor desc{
         .label = "Test Buffer",
         .size = 2048,
-        .usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
 
     auto buffer = device->createBuffer(desc);
@@ -128,7 +132,8 @@ TEST_P(GfxCppBufferTest, MapUnmapBuffer)
     gfx::BufferDescriptor desc{
         .label = "Mappable Buffer",
         .size = 256,
-        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc
+        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
 
     auto buffer = device->createBuffer(desc);
@@ -152,7 +157,8 @@ TEST_P(GfxCppBufferTest, MapBufferInvalidArguments)
 
     gfx::BufferDescriptor desc{
         .size = 256,
-        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc
+        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
 
     auto buffer = device->createBuffer(desc);
@@ -177,7 +183,8 @@ TEST_P(GfxCppBufferTest, WriteBufferViaQueue)
     gfx::BufferDescriptor desc{
         .label = "Queue Write Buffer",
         .size = 128,
-        .usage = gfx::BufferUsage::CopyDst | gfx::BufferUsage::Uniform
+        .usage = gfx::BufferUsage::CopyDst | gfx::BufferUsage::Uniform,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
 
     auto buffer = device->createBuffer(desc);
@@ -200,7 +207,8 @@ TEST_P(GfxCppBufferTest, CreateMultipleBuffers)
     for (int i = 0; i < bufferCount; ++i) {
         gfx::BufferDescriptor desc{
             .size = static_cast<uint64_t>(512 * (i + 1)),
-            .usage = gfx::BufferUsage::Vertex | gfx::BufferUsage::CopyDst
+            .usage = gfx::BufferUsage::Vertex | gfx::BufferUsage::CopyDst,
+            .memoryProperties = gfx::MemoryProperty::DeviceLocal
         };
 
         auto buffer = device->createBuffer(desc);
@@ -218,7 +226,8 @@ TEST_P(GfxCppBufferTest, CreateBufferWithAllUsageFlags)
     gfx::BufferDescriptor desc{
         .label = "All Usage Buffer",
         .size = 4096,
-        .usage = gfx::BufferUsage::MapRead | gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst | gfx::BufferUsage::Index | gfx::BufferUsage::Vertex | gfx::BufferUsage::Uniform | gfx::BufferUsage::Storage | gfx::BufferUsage::Indirect
+        .usage = gfx::BufferUsage::MapRead | gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst | gfx::BufferUsage::Index | gfx::BufferUsage::Vertex | gfx::BufferUsage::Uniform | gfx::BufferUsage::Storage | gfx::BufferUsage::Indirect,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
 
     auto buffer = device->createBuffer(desc);
@@ -280,7 +289,8 @@ TEST_P(GfxCppBufferTest, ImportBufferFromNativeHandle)
     gfx::BufferDescriptor createDesc{
         .label = "Source Buffer",
         .size = 1024,
-        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
 
     auto sourceBuffer = device->createBuffer(createDesc);
@@ -309,6 +319,171 @@ TEST_P(GfxCppBufferTest, ImportBufferFromNativeHandle)
         EXPECT_EQ(importedInfo.size, info.size);
         EXPECT_EQ(importedInfo.usage, info.usage);
     }
+}
+
+// ===========================================================================
+// Memory Property Tests
+// ===========================================================================
+
+TEST_P(GfxCppBufferTest, CreateBufferWithDeviceLocalOnly)
+{
+    ASSERT_NE(device, nullptr);
+
+    gfx::BufferDescriptor desc{
+        .label = "Device Local Buffer",
+        .size = 1024,
+        .usage = gfx::BufferUsage::Vertex | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
+    };
+
+    auto buffer = device->createBuffer(desc);
+    EXPECT_NE(buffer, nullptr);
+
+    if (buffer) {
+        auto info = buffer->getInfo();
+        EXPECT_EQ(info.size, 1024);
+        EXPECT_EQ(info.usage, gfx::BufferUsage::Vertex | gfx::BufferUsage::CopyDst);
+    }
+}
+
+TEST_P(GfxCppBufferTest, CreateBufferWithHostVisibleAndHostCoherent)
+{
+    ASSERT_NE(device, nullptr);
+
+    gfx::BufferDescriptor desc{
+        .label = "Host Visible Coherent Buffer",
+        .size = 512,
+        .usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst | gfx::BufferUsage::MapWrite,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
+    };
+
+    auto buffer = device->createBuffer(desc);
+    EXPECT_NE(buffer, nullptr);
+
+    if (buffer) {
+        auto info = buffer->getInfo();
+        EXPECT_EQ(info.size, 512);
+        // Don't check usage - backend may add additional flags like MapRead with MapWrite
+
+        // This buffer should be mappable
+        void* mappedData = buffer->map(0, 512);
+        EXPECT_NE(mappedData, nullptr);
+        if (mappedData) {
+            buffer->unmap();
+        }
+    }
+}
+
+TEST_P(GfxCppBufferTest, CreateBufferWithHostVisibleAndHostCached)
+{
+    ASSERT_NE(device, nullptr);
+
+    gfx::BufferDescriptor desc{
+        .label = "Host Visible Cached Buffer",
+        .size = 256,
+        .usage = gfx::BufferUsage::MapRead | gfx::BufferUsage::CopySrc,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCached
+    };
+
+    auto buffer = device->createBuffer(desc);
+    EXPECT_NE(buffer, nullptr);
+
+    if (buffer) {
+        auto info = buffer->getInfo();
+        EXPECT_EQ(info.size, 256);
+        // Don't check usage - backend may add additional flags
+
+        // This buffer should be mappable for read
+        void* mappedData = buffer->map(0, 256);
+        EXPECT_NE(mappedData, nullptr);
+        if (mappedData) {
+            buffer->unmap();
+        }
+    }
+}
+
+TEST_P(GfxCppBufferTest, CreateBufferWithAllMemoryProperties)
+{
+    ASSERT_NE(device, nullptr);
+
+    gfx::BufferDescriptor desc{
+        .label = "All Memory Properties Buffer",
+        .size = 2048,
+        .usage = gfx::BufferUsage::Storage | gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal | gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent | gfx::MemoryProperty::HostCached
+    };
+
+    // This combination may not be supported on all platforms, but shouldn't crash
+    try {
+        auto buffer = device->createBuffer(desc);
+        if (buffer) {
+            auto info = buffer->getInfo();
+            EXPECT_EQ(info.size, 2048);
+        }
+    } catch (const std::exception&) {
+        // Some platforms may not support this combination, which is acceptable
+        SUCCEED();
+    }
+}
+
+TEST_P(GfxCppBufferTest, CreateBufferWithNoMemoryPropertiesThrows)
+{
+    ASSERT_NE(device, nullptr);
+
+    // WebGPU doesn't validate memory properties, so skip this test
+    if (backend == gfx::Backend::WebGPU) {
+        GTEST_SKIP() << "WebGPU backend doesn't validate memory properties";
+    }
+
+    gfx::BufferDescriptor desc{
+        .label = "No Memory Properties Buffer",
+        .size = 1024,
+        .usage = gfx::BufferUsage::Vertex,
+        .memoryProperties = static_cast<gfx::MemoryProperty>(0)
+    };
+
+    // Creating buffer with no memory properties should throw
+    EXPECT_THROW(device->createBuffer(desc), std::exception);
+}
+
+TEST_P(GfxCppBufferTest, CreateBufferWithHostCoherentWithoutHostVisibleThrows)
+{
+    ASSERT_NE(device, nullptr);
+
+    // WebGPU doesn't validate memory properties, so skip this test
+    if (backend == gfx::Backend::WebGPU) {
+        GTEST_SKIP() << "WebGPU backend doesn't validate memory properties";
+    }
+
+    gfx::BufferDescriptor desc{
+        .label = "Invalid: HostCoherent without HostVisible",
+        .size = 1024,
+        .usage = gfx::BufferUsage::Uniform,
+        .memoryProperties = gfx::MemoryProperty::HostCoherent
+    };
+
+    // HostCoherent requires HostVisible - should throw
+    EXPECT_THROW(device->createBuffer(desc), std::exception);
+}
+
+TEST_P(GfxCppBufferTest, CreateBufferWithHostCachedWithoutHostVisibleThrows)
+{
+    ASSERT_NE(device, nullptr);
+
+    // WebGPU doesn't validate memory properties, so skip this test
+    if (backend == gfx::Backend::WebGPU) {
+        GTEST_SKIP() << "WebGPU backend doesn't validate memory properties";
+    }
+
+    gfx::BufferDescriptor desc{
+        .label = "Invalid: HostCached without HostVisible",
+        .size = 1024,
+        .usage = gfx::BufferUsage::Uniform,
+        .memoryProperties = gfx::MemoryProperty::HostCached
+    };
+
+    // HostCached requires HostVisible - should throw
+    EXPECT_THROW(device->createBuffer(desc), std::exception);
 }
 
 // ===========================================================================

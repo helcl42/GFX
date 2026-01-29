@@ -75,7 +75,8 @@ TEST_P(GfxCppCommandEncoderTest, CopyBufferToBuffer)
     gfx::BufferDescriptor srcBufferDesc{
         .label = "source_buffer",
         .size = 256,
-        .usage = gfx::BufferUsage::CopySrc
+        .usage = gfx::BufferUsage::CopySrc,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
     auto srcBuffer = device->createBuffer(srcBufferDesc);
     ASSERT_NE(srcBuffer, nullptr);
@@ -83,7 +84,8 @@ TEST_P(GfxCppCommandEncoderTest, CopyBufferToBuffer)
     gfx::BufferDescriptor dstBufferDesc{
         .label = "destination_buffer",
         .size = 256,
-        .usage = gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
     auto dstBuffer = device->createBuffer(dstBufferDesc);
     ASSERT_NE(dstBuffer, nullptr);
@@ -145,14 +147,16 @@ TEST_P(GfxCppCommandEncoderTest, CopyBufferToBufferAndEnd)
     gfx::BufferDescriptor srcBufferDesc{
         .label = "source_buffer",
         .size = 256,
-        .usage = gfx::BufferUsage::CopySrc
+        .usage = gfx::BufferUsage::CopySrc,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
     auto srcBuffer = device->createBuffer(srcBufferDesc);
 
     gfx::BufferDescriptor dstBufferDesc{
         .label = "destination_buffer",
         .size = 256,
-        .usage = gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
     auto dstBuffer = device->createBuffer(dstBufferDesc);
 
@@ -199,13 +203,15 @@ TEST_P(GfxCppCommandEncoderTest, CopyWithOffsets)
     // Create buffers
     gfx::BufferDescriptor srcBufferDesc{
         .size = 512,
-        .usage = gfx::BufferUsage::CopySrc
+        .usage = gfx::BufferUsage::CopySrc,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
     auto srcBuffer = device->createBuffer(srcBufferDesc);
 
     gfx::BufferDescriptor dstBufferDesc{
         .size = 512,
-        .usage = gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
     auto dstBuffer = device->createBuffer(dstBufferDesc);
 
@@ -232,7 +238,8 @@ TEST_P(GfxCppCommandEncoderTest, MultipleCopyOperations)
     // Create buffers
     gfx::BufferDescriptor bufferDesc{
         .size = 256,
-        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
     auto buffer1 = device->createBuffer(bufferDesc);
     auto buffer2 = device->createBuffer(bufferDesc);
@@ -298,7 +305,8 @@ TEST_P(GfxCppCommandEncoderTest, CopyBufferToTexture)
     // Create source buffer
     gfx::BufferDescriptor bufferDesc{
         .size = 256 * 256 * 4,
-        .usage = gfx::BufferUsage::CopySrc
+        .usage = gfx::BufferUsage::CopySrc,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
     auto buffer = device->createBuffer(bufferDesc);
     ASSERT_NE(buffer, nullptr);
@@ -354,7 +362,8 @@ TEST_P(GfxCppCommandEncoderTest, CopyTextureToBuffer)
     // Create destination buffer
     gfx::BufferDescriptor bufferDesc{
         .size = 256 * 256 * 4,
-        .usage = gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
     auto buffer = device->createBuffer(bufferDesc);
     ASSERT_NE(buffer, nullptr);

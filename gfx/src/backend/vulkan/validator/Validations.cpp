@@ -122,6 +122,35 @@ namespace {
             return GFX_RESULT_ERROR_INVALID_ARGUMENT;
         }
 
+        // Validate memory properties - must be specified
+        if (descriptor->memoryProperties == 0) {
+            return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+
+        // Validate memory properties - check for invalid flag combinations
+        {
+            constexpr uint32_t validFlags = GFX_MEMORY_PROPERTY_DEVICE_LOCAL |
+                                            GFX_MEMORY_PROPERTY_HOST_VISIBLE |
+                                            GFX_MEMORY_PROPERTY_HOST_COHERENT |
+                                            GFX_MEMORY_PROPERTY_HOST_CACHED;
+            
+            if (descriptor->memoryProperties & ~validFlags) {
+                return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+            }
+
+            // HOST_COHERENT requires HOST_VISIBLE
+            if ((descriptor->memoryProperties & GFX_MEMORY_PROPERTY_HOST_COHERENT) &&
+                !(descriptor->memoryProperties & GFX_MEMORY_PROPERTY_HOST_VISIBLE)) {
+                return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+            }
+
+            // HOST_CACHED requires HOST_VISIBLE
+            if ((descriptor->memoryProperties & GFX_MEMORY_PROPERTY_HOST_CACHED) &&
+                !(descriptor->memoryProperties & GFX_MEMORY_PROPERTY_HOST_VISIBLE)) {
+                return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+            }
+        }
+
         return GFX_RESULT_SUCCESS;
     }
 

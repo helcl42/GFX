@@ -245,7 +245,8 @@ TEST_P(GfxCppQuerySetTest, ResolveQuerySetOperation)
 
     gfx::BufferDescriptor bufferDesc{
         .size = 2 * sizeof(uint64_t),
-        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
     auto buffer = device->createBuffer(bufferDesc);
     ASSERT_NE(buffer, nullptr);
@@ -312,7 +313,8 @@ TEST_P(GfxCppQuerySetTest, ResolveQuerySetPartialRange)
 
     gfx::BufferDescriptor bufferDesc{
         .size = 8 * sizeof(uint64_t),
-        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
     auto buffer = device->createBuffer(bufferDesc);
     ASSERT_NE(buffer, nullptr);
@@ -351,7 +353,8 @@ TEST_P(GfxCppQuerySetTest, ResolveQuerySetWithOffset)
 
     gfx::BufferDescriptor bufferDesc{
         .size = 8 * sizeof(uint64_t),
-        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
     auto buffer = device->createBuffer(bufferDesc);
     ASSERT_NE(buffer, nullptr);
@@ -391,13 +394,15 @@ TEST_P(GfxCppQuerySetTest, MultipleResolveOperations)
 
     gfx::BufferDescriptor bufferDesc1{
         .size = 4 * sizeof(uint64_t),
-        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
     auto buffer1 = device->createBuffer(bufferDesc1);
 
     gfx::BufferDescriptor bufferDesc2{
         .size = 4 * sizeof(uint64_t),
-        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
     auto buffer2 = device->createBuffer(bufferDesc2);
 

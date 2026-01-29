@@ -73,6 +73,7 @@ TEST_P(GfxBufferTest, CreateDestroyBuffer)
     desc.label = "Test Buffer";
     desc.size = 1024;
     desc.usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
     GfxBuffer buffer = NULL;
     GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
@@ -90,6 +91,7 @@ TEST_P(GfxBufferTest, CreateBufferInvalidArguments)
     GfxBufferDescriptor desc = {};
     desc.size = 1024;
     desc.usage = GFX_BUFFER_USAGE_VERTEX;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
     // NULL device
     GfxBuffer buffer = NULL;
@@ -110,6 +112,7 @@ TEST_P(GfxBufferTest, CreateBufferZeroSize)
     GfxBufferDescriptor desc = {};
     desc.size = 0;
     desc.usage = GFX_BUFFER_USAGE_VERTEX;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
     GfxBuffer buffer = NULL;
     GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
@@ -122,6 +125,7 @@ TEST_P(GfxBufferTest, CreateBufferNoUsage)
     GfxBufferDescriptor desc = {};
     desc.size = 1024;
     desc.usage = GFX_BUFFER_USAGE_NONE;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
     GfxBuffer buffer = NULL;
     GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
@@ -135,6 +139,7 @@ TEST_P(GfxBufferTest, GetBufferInfo)
     desc.label = "Test Buffer";
     desc.size = 2048;
     desc.usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
     GfxBuffer buffer = NULL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, &buffer), GFX_RESULT_SUCCESS);
@@ -156,6 +161,7 @@ TEST_P(GfxBufferTest, MapUnmapBuffer)
     desc.label = "Mappable Buffer";
     desc.size = 256;
     desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
     GfxBuffer buffer = NULL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, &buffer), GFX_RESULT_SUCCESS);
@@ -184,6 +190,7 @@ TEST_P(GfxBufferTest, MapBufferInvalidArguments)
     GfxBufferDescriptor desc = {};
     desc.size = 256;
     desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
     GfxBuffer buffer = NULL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, &buffer), GFX_RESULT_SUCCESS);
@@ -207,6 +214,7 @@ TEST_P(GfxBufferTest, WriteBufferViaQueue)
     desc.label = "Queue Write Buffer";
     desc.size = 128;
     desc.usage = GFX_BUFFER_USAGE_COPY_DST | GFX_BUFFER_USAGE_UNIFORM;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
     GfxBuffer buffer = NULL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, &buffer), GFX_RESULT_SUCCESS);
@@ -233,6 +241,7 @@ TEST_P(GfxBufferTest, CreateMultipleBuffers)
         GfxBufferDescriptor desc = {};
         desc.size = 512 * (i + 1);
         desc.usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST;
+        desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
         GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffers[i]);
         EXPECT_EQ(result, GFX_RESULT_SUCCESS);
@@ -252,6 +261,7 @@ TEST_P(GfxBufferTest, CreateBufferWithAllUsageFlags)
     desc.label = "All Usage Buffer";
     desc.size = 4096;
     desc.usage = GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST | GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_INDIRECT;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
     GfxBuffer buffer = NULL;
     GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
@@ -320,6 +330,7 @@ TEST_P(GfxBufferTest, ImportBufferFromNativeHandle)
     createDesc.label = "Source Buffer";
     createDesc.size = 1024;
     createDesc.usage = GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST;
+    createDesc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
     GfxBuffer sourceBuffer = nullptr;
     GfxResult result = gfxDeviceCreateBuffer(device, &createDesc, &sourceBuffer);

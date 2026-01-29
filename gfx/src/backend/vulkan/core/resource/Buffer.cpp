@@ -2,6 +2,7 @@
 
 #include "../system/Adapter.h"
 #include "../system/Device.h"
+#include "../util/Utils.h"
 
 #include <stdexcept>
 
@@ -32,17 +33,9 @@ Buffer::Buffer(Device* device, const BufferCreateInfo& createInfo)
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(m_device->getAdapter()->handle(), &memProperties);
 
-    uint32_t memoryTypeIndex = UINT32_MAX;
-    VkMemoryPropertyFlags properties = createInfo.mapped
-        ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
-        if ((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            memoryTypeIndex = i;
-            break;
-        }
-    }
+    // Memory properties must be explicitly provided (validated at API level)
+    VkMemoryPropertyFlags desiredProperties = createInfo.memoryProperties;
+    uint32_t memoryTypeIndex = findMemoryType(memProperties, memRequirements.memoryTypeBits, desiredProperties);
 
     if (memoryTypeIndex == UINT32_MAX) {
         vkDestroyBuffer(m_device->handle(), m_buffer, nullptr);

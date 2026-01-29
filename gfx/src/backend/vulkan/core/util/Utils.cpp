@@ -58,6 +58,17 @@ VkAccessFlags getVkAccessFlagsForLayout(VkImageLayout layout)
     }
 }
 
+uint32_t findMemoryType(const VkPhysicalDeviceMemoryProperties& memProperties, uint32_t memoryTypeBits, VkMemoryPropertyFlags requiredProperties)
+{
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
+        if ((memoryTypeBits & (1 << i)) &&
+            (memProperties.memoryTypes[i].propertyFlags & requiredProperties) == requiredProperties) {
+            return i;
+        }
+    }
+    return UINT32_MAX;
+}
+
 // ============================================================================
 // Vulkan Error Handling
 // ============================================================================

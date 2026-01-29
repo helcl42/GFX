@@ -184,6 +184,7 @@ TEST_P(GfxQueueTest, WriteBufferWithNullData)
     bufferDesc.label = "Test Buffer";
     bufferDesc.size = 256;
     bufferDesc.usage = GFX_BUFFER_USAGE_COPY_DST;
+    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
     GfxBuffer buffer = nullptr;
     result = gfxDeviceCreateBuffer(device, &bufferDesc, &buffer);
@@ -207,6 +208,7 @@ TEST_P(GfxQueueTest, WriteBuffer)
     bufferDesc.label = "Test Buffer";
     bufferDesc.size = 256;
     bufferDesc.usage = GFX_BUFFER_USAGE_COPY_DST;
+    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
     GfxBuffer buffer = nullptr;
     result = gfxDeviceCreateBuffer(device, &bufferDesc, &buffer);
@@ -254,6 +256,7 @@ TEST_P(GfxQueueTest, WriteBufferWithOffset)
     bufferDesc.label = "Test Buffer";
     bufferDesc.size = 256;
     bufferDesc.usage = GFX_BUFFER_USAGE_COPY_DST;
+    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
     GfxBuffer buffer = nullptr;
     result = gfxDeviceCreateBuffer(device, &bufferDesc, &buffer);

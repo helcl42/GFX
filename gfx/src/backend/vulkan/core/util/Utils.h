@@ -21,6 +21,10 @@ bool isDepthFormat(VkFormat format);
 // Check if format has stencil component
 bool hasStencilComponent(VkFormat format);
 
+// Find suitable memory type index for given requirements and properties
+// Returns UINT32_MAX if no suitable memory type is found
+uint32_t findMemoryType(const VkPhysicalDeviceMemoryProperties& memProperties, uint32_t memoryTypeBits, VkMemoryPropertyFlags requiredProperties);
+
 // ============================================================================
 // Vulkan Error Handling
 // ============================================================================

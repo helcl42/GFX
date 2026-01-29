@@ -451,7 +451,8 @@ static bool createComputeUniformBuffers(ComputeApp* app)
 {
     GfxBufferDescriptor computeUniformBufferDesc = {
         .size = sizeof(ComputeUniformData),
-        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST
+        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST,
+        .memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT
     };
 
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
@@ -803,7 +804,8 @@ static bool createRenderUniformBuffers(ComputeApp* app)
     // Create render uniform buffers (one per frame in flight)
     GfxBufferDescriptor renderUniformBufferDesc = {
         .size = sizeof(RenderUniformData),
-        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST
+        .usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST,
+        .memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT
     };
 
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {

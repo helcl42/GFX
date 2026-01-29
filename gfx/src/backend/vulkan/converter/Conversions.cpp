@@ -297,6 +297,42 @@ GfxBufferUsageFlags vkBufferUsageToGfxBufferUsage(VkBufferUsageFlags vkUsage)
     return usage;
 }
 
+VkMemoryPropertyFlags gfxMemoryPropertyToVkMemoryProperty(GfxMemoryPropertyFlags gfxMemoryProperty)
+{
+    VkMemoryPropertyFlags flags = 0;
+    if (gfxMemoryProperty & GFX_MEMORY_PROPERTY_DEVICE_LOCAL) {
+        flags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    }
+    if (gfxMemoryProperty & GFX_MEMORY_PROPERTY_HOST_VISIBLE) {
+        flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    }
+    if (gfxMemoryProperty & GFX_MEMORY_PROPERTY_HOST_COHERENT) {
+        flags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    }
+    if (gfxMemoryProperty & GFX_MEMORY_PROPERTY_HOST_CACHED) {
+        flags |= VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    }
+    return flags;
+}
+
+GfxMemoryPropertyFlags vkMemoryPropertyToGfxMemoryProperty(VkMemoryPropertyFlags vkMemoryProperty)
+{
+    GfxMemoryPropertyFlags flags = 0;
+    if (vkMemoryProperty & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+        flags |= GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
+    }
+    if (vkMemoryProperty & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
+        flags |= GFX_MEMORY_PROPERTY_HOST_VISIBLE;
+    }
+    if (vkMemoryProperty & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {
+        flags |= GFX_MEMORY_PROPERTY_HOST_COHERENT;
+    }
+    if (vkMemoryProperty & VK_MEMORY_PROPERTY_HOST_CACHED_BIT) {
+        flags |= GFX_MEMORY_PROPERTY_HOST_CACHED;
+    }
+    return flags;
+}
+
 GfxTextureUsageFlags vkImageUsageToGfxTextureUsage(VkImageUsageFlags vkUsage)
 {
     GfxTextureUsageFlags usage = GFX_TEXTURE_USAGE_NONE;
@@ -571,6 +607,7 @@ GfxBufferInfo vkBufferToGfxBufferInfo(const core::BufferInfo& info)
     GfxBufferInfo gfxInfo{};
     gfxInfo.size = info.size;
     gfxInfo.usage = vkBufferUsageToGfxBufferUsage(info.usage) | mappedFlagToVkBufferUsage(info.mapped);
+    gfxInfo.memoryProperties = vkMemoryPropertyToGfxMemoryProperty(info.memoryProperties);
     return gfxInfo;
 }
 
@@ -1150,6 +1187,7 @@ core::BufferCreateInfo gfxDescriptorToBufferCreateInfo(const GfxBufferDescriptor
     core::BufferCreateInfo createInfo{};
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
+    createInfo.memoryProperties = gfxMemoryPropertyToVkMemoryProperty(descriptor->memoryProperties);
     createInfo.mapped = gfxBufferUsageToMappedFlag(descriptor->usage);
     return createInfo;
 }
@@ -1159,6 +1197,7 @@ core::BufferImportInfo gfxExternalDescriptorToBufferImportInfo(const GfxBufferIm
     core::BufferImportInfo createInfo{};
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
+    createInfo.memoryProperties = 0; // Imported buffers don't specify memory properties
     createInfo.mapped = gfxBufferUsageToMappedFlag(descriptor->usage);
     return createInfo;
 }

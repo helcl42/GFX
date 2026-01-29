@@ -48,6 +48,8 @@ VkFormat gfxFormatToVkFormat(GfxTextureFormat format);
 GfxTextureFormat vkFormatToGfxFormat(VkFormat format);
 VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsageFlags gfxUsage);
 GfxBufferUsageFlags vkBufferUsageToGfxBufferUsage(VkBufferUsageFlags vkUsage);
+VkMemoryPropertyFlags gfxMemoryPropertyToVkMemoryProperty(GfxMemoryPropertyFlags gfxMemoryProperty);
+GfxMemoryPropertyFlags vkMemoryPropertyToGfxMemoryProperty(VkMemoryPropertyFlags vkMemoryProperty);
 bool gfxBufferUsageToMappedFlag(GfxBufferUsageFlags gfxUsage);
 GfxBufferUsageFlags mappedFlagToVkBufferUsage(bool mapped);
 VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsageFlags gfxUsage, VkFormat format);

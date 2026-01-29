@@ -91,6 +91,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithNullDevice)
     GfxBufferDescriptor bufferDesc = {};
     bufferDesc.size = 256;
     bufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM;
+    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
     GfxBuffer buffer = nullptr;
     result = gfxDeviceCreateBuffer(device, &bufferDesc, &buffer);
@@ -147,6 +148,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithNullOutput)
     GfxBufferDescriptor bufferDesc = {};
     bufferDesc.size = 256;
     bufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM;
+    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
     GfxBuffer buffer = nullptr;
     result = gfxDeviceCreateBuffer(device, &bufferDesc, &buffer);
@@ -194,6 +196,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithUniformBuffer)
     GfxBufferDescriptor bufferDesc = {};
     bufferDesc.size = 256;
     bufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM;
+    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
     GfxBuffer buffer = nullptr;
     result = gfxDeviceCreateBuffer(device, &bufferDesc, &buffer);
@@ -363,6 +366,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithStorageBuffer)
     GfxBufferDescriptor bufferDesc = {};
     bufferDesc.size = 1024;
     bufferDesc.usage = GFX_BUFFER_USAGE_STORAGE;
+    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
     GfxBuffer buffer = nullptr;
     result = gfxDeviceCreateBuffer(device, &bufferDesc, &buffer);
@@ -430,6 +434,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithMultipleEntries)
     GfxBufferDescriptor bufferDesc = {};
     bufferDesc.size = 256;
     bufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM;
+    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
     GfxBuffer buffer = nullptr;
     result = gfxDeviceCreateBuffer(device, &bufferDesc, &buffer);
@@ -529,6 +534,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithBufferOffset)
     GfxBufferDescriptor bufferDesc = {};
     bufferDesc.size = 512;
     bufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM;
+    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
     GfxBuffer buffer = nullptr;
     result = gfxDeviceCreateBuffer(device, &bufferDesc, &buffer);
@@ -580,6 +586,7 @@ TEST_P(GfxBindGroupTest, CreateMultipleBindGroupsWithSameLayout)
     GfxBufferDescriptor bufferDesc = {};
     bufferDesc.size = 256;
     bufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM;
+    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
     GfxBuffer buffer1 = nullptr;
     result = gfxDeviceCreateBuffer(device, &bufferDesc, &buffer1);

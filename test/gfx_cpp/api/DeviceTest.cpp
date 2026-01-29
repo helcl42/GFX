@@ -154,7 +154,8 @@ TEST_P(GfxCppDeviceTest, CreateBuffer)
 
     gfx::BufferDescriptor bufferDesc{
         .size = 1024,
-        .usage = gfx::BufferUsage::Vertex | gfx::BufferUsage::CopyDst
+        .usage = gfx::BufferUsage::Vertex | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::DeviceLocal
     };
 
     auto buffer = device->createBuffer(bufferDesc);

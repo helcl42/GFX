@@ -67,7 +67,8 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithUniformBuffer)
     // Create uniform buffer
     gfx::BufferDescriptor bufferDesc{
         .size = 256,
-        .usage = gfx::BufferUsage::Uniform
+        .usage = gfx::BufferUsage::Uniform,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
 
     auto buffer = device->createBuffer(bufferDesc);
@@ -225,7 +226,8 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithStorageBuffer)
     // Create storage buffer
     gfx::BufferDescriptor bufferDesc{
         .size = 1024,
-        .usage = gfx::BufferUsage::Storage
+        .usage = gfx::BufferUsage::Storage,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
 
     auto buffer = device->createBuffer(bufferDesc);
@@ -294,7 +296,8 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithMultipleEntries)
     // Create resources
     gfx::BufferDescriptor bufferDesc{
         .size = 256,
-        .usage = gfx::BufferUsage::Uniform
+        .usage = gfx::BufferUsage::Uniform,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
     auto buffer = device->createBuffer(bufferDesc);
     ASSERT_NE(buffer, nullptr);
@@ -386,7 +389,8 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithBufferOffset)
     // Create buffer
     gfx::BufferDescriptor bufferDesc{
         .size = 512,
-        .usage = gfx::BufferUsage::Uniform
+        .usage = gfx::BufferUsage::Uniform,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
 
     auto buffer = device->createBuffer(bufferDesc);
@@ -433,7 +437,8 @@ TEST_P(GfxCppBindGroupTest, CreateMultipleBindGroupsWithSameLayout)
     // Create two buffers
     gfx::BufferDescriptor bufferDesc{
         .size = 256,
-        .usage = gfx::BufferUsage::Uniform
+        .usage = gfx::BufferUsage::Uniform,
+        .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
 
     auto buffer1 = device->createBuffer(bufferDesc);

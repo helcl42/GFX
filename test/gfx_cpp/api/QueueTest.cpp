@@ -83,7 +83,7 @@ TEST_P(GfxCppQueueTest, WriteBuffer)
     ASSERT_NE(queue, nullptr);
 
     // Create a buffer
-    auto buffer = device->createBuffer({ .size = 256, .usage = gfx::BufferUsage::CopyDst });
+    auto buffer = device->createBuffer({ .size = 256, .usage = gfx::BufferUsage::CopyDst, .memoryProperties = gfx::MemoryProperty::DeviceLocal });
     ASSERT_NE(buffer, nullptr);
 
     // Write data to buffer
@@ -123,7 +123,7 @@ TEST_P(GfxCppQueueTest, WriteBufferWithOffset)
     ASSERT_NE(queue, nullptr);
 
     // Create a buffer
-    auto buffer = device->createBuffer({ .size = 256, .usage = gfx::BufferUsage::CopyDst });
+    auto buffer = device->createBuffer({ .size = 256, .usage = gfx::BufferUsage::CopyDst, .memoryProperties = gfx::MemoryProperty::DeviceLocal });
     ASSERT_NE(buffer, nullptr);
 
     // Write data at offset 64
@@ -142,7 +142,7 @@ TEST_P(GfxCppQueueTest, WriteBufferTemplateHelper)
     ASSERT_NE(queue, nullptr);
 
     // Create a buffer
-    auto buffer = device->createBuffer({ .size = 256, .usage = gfx::BufferUsage::CopyDst });
+    auto buffer = device->createBuffer({ .size = 256, .usage = gfx::BufferUsage::CopyDst, .memoryProperties = gfx::MemoryProperty::DeviceLocal });
     ASSERT_NE(buffer, nullptr);
 
     // Write data using vector template helper
@@ -161,7 +161,7 @@ TEST_P(GfxCppQueueTest, WriteBufferAndSync)
     ASSERT_NE(queue, nullptr);
 
     // Create a buffer
-    auto buffer = device->createBuffer({ .size = 1024, .usage = gfx::BufferUsage::CopyDst });
+    auto buffer = device->createBuffer({ .size = 1024, .usage = gfx::BufferUsage::CopyDst, .memoryProperties = gfx::MemoryProperty::DeviceLocal });
     ASSERT_NE(buffer, nullptr);
 
     // Write data

@@ -522,6 +522,9 @@ TEST_F(GfxImplTest, DeviceDestroy_NullDevice_ReturnsError)
 TEST_F(GfxImplTest, DeviceCreateBuffer_NullDevice_ReturnsError)
 {
     GfxBufferDescriptor desc = {};
+    desc.size = 1024;
+    desc.usage = GFX_BUFFER_USAGE_VERTEX;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
     GfxBuffer buffer;
     ASSERT_EQ(gfxDeviceCreateBuffer(nullptr, &desc, &buffer), GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
@@ -537,6 +540,9 @@ TEST_F(GfxImplTest, DeviceCreateBuffer_NullOutBuffer_ReturnsError)
 {
     GfxDevice device = reinterpret_cast<GfxDevice>(0x1);
     GfxBufferDescriptor desc = {};
+    desc.size = 1024;
+    desc.usage = GFX_BUFFER_USAGE_VERTEX;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, nullptr), GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
 
