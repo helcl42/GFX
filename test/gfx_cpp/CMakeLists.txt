@@ -32,7 +32,7 @@ set(PUBLIC_TEST_SOURCES
 
 # Internal tests - tests for C++ wrapper implementation details
 set(INTERNAL_TEST_SOURCES
-    # Add internal tests here as needed
+    internal/GfxImplTest.cpp
 )
 
 add_executable(gfx_cpp_test

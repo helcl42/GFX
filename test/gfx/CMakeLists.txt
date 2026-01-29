@@ -32,7 +32,7 @@ set(PUBLIC_TEST_SOURCES
 
 # Internal tests - tests for Dispatcher, converters, backend internals
 set(INTERNAL_TEST_SOURCES
-    # Add internal tests here as needed
+    internal/GfxImplTest.cpp
 )
 
 add_executable(gfx_test
@@ -43,6 +43,12 @@ add_executable(gfx_test
 target_link_libraries(gfx_test
     gfx
     GTest::gtest_main
+    GTest::gmock
+)
+
+# Add include directory for internal tests to access private headers
+target_include_directories(gfx_test PRIVATE
+    ${CMAKE_SOURCE_DIR}/gfx/src
 )
 
 # Discover tests (skip when ASAN is enabled due to runtime initialization issues)
