@@ -38,6 +38,9 @@ namespace {
 Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
     : m_adapter(adapter)
 {
+    // Query available device features
+    const auto& availableFeatures = m_adapter->getFeatures();
+
     // Device features
     VkPhysicalDeviceFeatures deviceFeatures{};
 
@@ -61,8 +64,16 @@ Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
         requestedExtensions.push_back(VK_KHR_MULTIVIEW_EXTENSION_NAME);
     }
 
+    // Enable anisotropic filtering if requested
+    if (isExtensionEnabled(createInfo.enabledExtensions, extensions::ANISOTROPIC_FILTERING)) {
+        if (!availableFeatures.samplerAnisotropy) {
+            throw std::runtime_error("Anisotropic filtering is not supported by this device");
+        }
+        deviceFeatures.samplerAnisotropy = VK_TRUE;
+    }
+
     // Check if all requested extensions are available
-    const auto availableExtensions = m_adapter->enumerateDeviceExtensionProperties();
+    const auto availableExtensions = m_adapter->enumerateExtensionProperties();
     for (const char* requestedExt : requestedExtensions) {
         if (!isExtensionAvailable(availableExtensions, requestedExt)) {
             std::string errorMsg = "Required Vulkan device extension not available: ";

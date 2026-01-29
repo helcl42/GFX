@@ -474,6 +474,7 @@ typedef enum {
 #define GFX_DEVICE_EXTENSION_SWAPCHAIN "gfx_swapchain"
 #define GFX_DEVICE_EXTENSION_TIMELINE_SEMAPHORE "gfx_timeline_semaphore"
 #define GFX_DEVICE_EXTENSION_MULTIVIEW "gfx_multiview"
+#define GFX_DEVICE_EXTENSION_ANISOTROPIC_FILTERING "gfx_anisotropic_filtering"
 
 // ============================================================================
 // Forward Declarations (Opaque Handles)

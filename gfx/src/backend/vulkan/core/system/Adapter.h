@@ -20,8 +20,9 @@ public:
     Instance* getInstance() const;
     const VkPhysicalDeviceProperties& getProperties() const;
     const VkPhysicalDeviceMemoryProperties& getMemoryProperties() const;
+    const VkPhysicalDeviceFeatures& getFeatures() const;
     std::vector<VkQueueFamilyProperties> getQueueFamilyProperties() const;
-    std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties() const;
+    std::vector<VkExtensionProperties> enumerateExtensionProperties() const;
     bool supportsPresentation(uint32_t queueFamilyIndex, VkSurfaceKHR surface) const;
 
     std::vector<const char*> enumerateSupportedExtensions() const;
@@ -33,6 +34,7 @@ private:
     Instance* m_instance = nullptr; // Non-owning
     VkPhysicalDeviceProperties m_properties{};
     VkPhysicalDeviceMemoryProperties m_memoryProperties{};
+    VkPhysicalDeviceFeatures m_features{};
     uint32_t m_graphicsQueueFamily = UINT32_MAX;
 };
 

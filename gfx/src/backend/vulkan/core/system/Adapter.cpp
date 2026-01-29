@@ -41,6 +41,11 @@ const VkPhysicalDeviceMemoryProperties& Adapter::getMemoryProperties() const
     return m_memoryProperties;
 }
 
+const VkPhysicalDeviceFeatures& Adapter::getFeatures() const
+{
+    return m_features;
+}
+
 std::vector<VkQueueFamilyProperties> Adapter::getQueueFamilyProperties() const
 {
     uint32_t count = 0;
@@ -52,7 +57,7 @@ std::vector<VkQueueFamilyProperties> Adapter::getQueueFamilyProperties() const
     return properties;
 }
 
-std::vector<VkExtensionProperties> Adapter::enumerateDeviceExtensionProperties() const
+std::vector<VkExtensionProperties> Adapter::enumerateExtensionProperties() const
 {
     uint32_t count = 0;
     vkEnumerateDeviceExtensionProperties(m_physicalDevice, nullptr, &count, nullptr);
@@ -75,6 +80,7 @@ void Adapter::initializeAdapterInfo()
 {
     vkGetPhysicalDeviceProperties(m_physicalDevice, &m_properties);
     vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &m_memoryProperties);
+    vkGetPhysicalDeviceFeatures(m_physicalDevice, &m_features);
 
     // Find graphics queue family
     auto queueFamilies = getQueueFamilyProperties();
@@ -106,7 +112,10 @@ std::vector<const char*> Adapter::enumerateSupportedExtensions() const
     };
 
     // Query what this physical device actually supports
-    auto availableExtensions = enumerateDeviceExtensionProperties();
+    auto availableExtensions = enumerateExtensionProperties();
+
+    // Query device features for non-extension capabilities
+    const auto& availableFeatures = getFeatures();
 
     // Build the intersection: extensions we care about that this device supports
     std::vector<const char*> supportedExtensions;
@@ -120,6 +129,11 @@ std::vector<const char*> Adapter::enumerateSupportedExtensions() const
         if (deviceSupportsIt) {
             supportedExtensions.push_back(mapping.internalName);
         }
+    }
+
+    // Add feature-based "extensions"
+    if (availableFeatures.samplerAnisotropy) {
+        supportedExtensions.push_back(extensions::ANISOTROPIC_FILTERING);
     }
 
     return supportedExtensions;

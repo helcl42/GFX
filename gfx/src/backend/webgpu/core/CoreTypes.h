@@ -25,6 +25,7 @@ namespace extensions {
     constexpr const char* DEBUG = "gfx_debug";
     constexpr const char* SWAPCHAIN = "gfx_swapchain";
     constexpr const char* TIMELINE_SEMAPHORE = "gfx_timeline_semaphore";
+    constexpr const char* ANISOTROPIC_FILTERING = "gfx_anisotropic_filtering";
 } // namespace extensions
 
 // ============================================================================

@@ -92,7 +92,8 @@ std::vector<const char*> Adapter::enumerateSupportedExtensions() const
 {
     static const std::vector<const char*> supportedExtensions = {
         extensions::SWAPCHAIN,
-        extensions::TIMELINE_SEMAPHORE
+        extensions::TIMELINE_SEMAPHORE,
+        extensions::ANISOTROPIC_FILTERING
     };
     return supportedExtensions;
 }
