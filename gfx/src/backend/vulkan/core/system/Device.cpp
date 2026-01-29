@@ -55,6 +55,12 @@ Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
         requestedExtensions.push_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
     }
 
+    // Enable multiview extension if requested
+    bool multiviewEnabled = isExtensionEnabled(createInfo.enabledExtensions, extensions::MULTIVIEW);
+    if (multiviewEnabled) {
+        requestedExtensions.push_back(VK_KHR_MULTIVIEW_EXTENSION_NAME);
+    }
+
     // Check if all requested extensions are available
     const auto availableExtensions = m_adapter->enumerateDeviceExtensionProperties();
     for (const char* requestedExt : requestedExtensions) {
@@ -71,6 +77,14 @@ Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
         timelineSemaphoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
         timelineSemaphoreFeatures.pNext = nullptr;
         timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
+    }
+
+    // Multiview features (VK_KHR_multiview extension for Vulkan 1.1)
+    VkPhysicalDeviceMultiviewFeatures multiviewFeatures{};
+    if (multiviewEnabled) {
+        multiviewFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES;
+        multiviewFeatures.pNext = timelineSemaphoreEnabled ? &timelineSemaphoreFeatures : nullptr;
+        multiviewFeatures.multiview = VK_TRUE;
     }
 
     // Determine which queues to create
@@ -112,9 +126,16 @@ Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
         priorityStorage.push_back(std::move(priorities));
     }
 
+    void* pNext = nullptr;
+    if (multiviewEnabled) {
+        pNext = &multiviewFeatures;
+    } else if (timelineSemaphoreEnabled) {
+        pNext = &timelineSemaphoreFeatures;
+    }
+
     VkDeviceCreateInfo vkCreateInfo{};
     vkCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    vkCreateInfo.pNext = timelineSemaphoreEnabled ? &timelineSemaphoreFeatures : nullptr;
+    vkCreateInfo.pNext = pNext;
     vkCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     vkCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
     vkCreateInfo.pEnabledFeatures = &deviceFeatures;

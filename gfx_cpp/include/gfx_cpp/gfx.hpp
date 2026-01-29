@@ -245,6 +245,7 @@ constexpr const char* INSTANCE_EXTENSION_SURFACE = "gfx_surface";
 constexpr const char* INSTANCE_EXTENSION_DEBUG = "gfx_debug";
 constexpr const char* DEVICE_EXTENSION_SWAPCHAIN = "gfx_swapchain";
 constexpr const char* DEVICE_EXTENSION_TIMELINE_SEMAPHORE = "gfx_timeline_semaphore";
+constexpr const char* DEVICE_EXTENSION_MULTIVIEW = "gfx_multiview";
 
 enum class QueueFlags : uint32_t {
     None = 0,

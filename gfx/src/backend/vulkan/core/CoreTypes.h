@@ -30,6 +30,7 @@ namespace extensions {
     constexpr const char* DEBUG = "gfx_debug";
     constexpr const char* SWAPCHAIN = "gfx_swapchain";
     constexpr const char* TIMELINE_SEMAPHORE = "gfx_timeline_semaphore";
+    constexpr const char* MULTIVIEW = "gfx_multiview";
 } // namespace extensions
 
 // ============================================================================
