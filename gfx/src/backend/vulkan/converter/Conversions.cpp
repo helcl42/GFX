@@ -606,7 +606,7 @@ GfxBufferInfo vkBufferToGfxBufferInfo(const core::BufferInfo& info)
 {
     GfxBufferInfo gfxInfo{};
     gfxInfo.size = info.size;
-    gfxInfo.usage = vkBufferUsageToGfxBufferUsage(info.usage) | mappedFlagToVkBufferUsage(info.mapped);
+    gfxInfo.usage = vkBufferUsageToGfxBufferUsage(info.usage);
     gfxInfo.memoryProperties = vkMemoryPropertyToGfxMemoryProperty(info.memoryProperties);
     return gfxInfo;
 }
@@ -968,26 +968,6 @@ VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsageFlags gfxUsage)
     return usage;
 }
 
-bool gfxBufferUsageToMappedFlag(GfxBufferUsageFlags gfxUsage)
-{
-    bool mapped = false;
-    if (gfxUsage & GFX_BUFFER_USAGE_MAP_READ) {
-        mapped = true;
-    }
-    if (gfxUsage & GFX_BUFFER_USAGE_MAP_WRITE) {
-        mapped = true;
-    }
-    return mapped;
-}
-
-GfxBufferUsageFlags mappedFlagToVkBufferUsage(bool mapped)
-{
-    if (mapped) {
-        return GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_MAP_WRITE;
-    }
-    return GFX_BUFFER_USAGE_NONE;
-}
-
 VkImageUsageFlags gfxTextureUsageToVkImageUsage(GfxTextureUsageFlags gfxUsage, VkFormat format)
 {
     VkImageUsageFlags usage = 0;
@@ -1188,7 +1168,6 @@ core::BufferCreateInfo gfxDescriptorToBufferCreateInfo(const GfxBufferDescriptor
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
     createInfo.memoryProperties = gfxMemoryPropertyToVkMemoryProperty(descriptor->memoryProperties);
-    createInfo.mapped = gfxBufferUsageToMappedFlag(descriptor->usage);
     return createInfo;
 }
 
@@ -1198,7 +1177,6 @@ core::BufferImportInfo gfxExternalDescriptorToBufferImportInfo(const GfxBufferIm
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
     createInfo.memoryProperties = 0; // Imported buffers don't specify memory properties
-    createInfo.mapped = gfxBufferUsageToMappedFlag(descriptor->usage);
     return createInfo;
 }
 

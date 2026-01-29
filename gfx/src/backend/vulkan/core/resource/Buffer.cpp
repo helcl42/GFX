@@ -80,7 +80,7 @@ Buffer::~Buffer()
 
 void* Buffer::map()
 {
-    if (!m_info.mapped) {
+    if ((m_info.memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
         return nullptr;
     }
 
@@ -91,7 +91,7 @@ void* Buffer::map()
 
 void Buffer::unmap()
 {
-    if (!m_info.mapped) {
+    if ((m_info.memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
         return;
     }
 
@@ -123,7 +123,7 @@ BufferInfo Buffer::createBufferInfo(const BufferCreateInfo& createInfo)
     BufferInfo info{};
     info.size = createInfo.size;
     info.usage = createInfo.usage;
-    info.mapped = createInfo.mapped;
+    info.memoryProperties = createInfo.memoryProperties;
     return info;
 }
 
@@ -132,7 +132,7 @@ BufferInfo Buffer::createBufferInfo(const BufferImportInfo& importInfo)
     BufferInfo info{};
     info.size = importInfo.size;
     info.usage = importInfo.usage;
-    info.mapped = importInfo.mapped;
+    info.memoryProperties = 0; // Imported buffers don't specify memory properties
     return info;
 }
 
