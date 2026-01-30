@@ -1,19 +1,6 @@
 #include <backend/vulkan/converter/Conversions.h>
 #include <backend/vulkan/core/CoreTypes.h>
 
-// Undefine X11 macros that conflict with gtest
-#ifdef None
-#undef None
-#endif
-#ifdef Bool
-#undef Bool
-#endif
-#ifdef True
-#undef True
-#endif
-#ifdef False
-#undef False
-#endif
 
 #include <gtest/gtest.h>
 
