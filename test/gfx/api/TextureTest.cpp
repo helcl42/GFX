@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+namespace {
+
 class GfxTextureTest : public ::testing::TestWithParam<GfxBackend> {
 protected:
     GfxInstance instance = nullptr;
@@ -567,3 +569,5 @@ INSTANTIATE_TEST_SUITE_P(
     [](const ::testing::TestParamInfo<GfxBackend>& info) {
         return info.param == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU";
     });
+
+} // namespace

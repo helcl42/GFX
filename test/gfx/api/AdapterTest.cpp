@@ -12,6 +12,8 @@
 // Parameterized Tests - Run on both Vulkan and WebGPU backends
 // ===========================================================================
 
+namespace {
+
 class GfxAdapterTest : public testing::TestWithParam<GfxBackend> {
 protected:
     void SetUp() override
@@ -325,3 +327,5 @@ INSTANTIATE_TEST_SUITE_P(
     [](const testing::TestParamInfo<GfxBackend>& info) {
         return info.param == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU";
     });
+
+} // namespace

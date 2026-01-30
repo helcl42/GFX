@@ -8,6 +8,8 @@
 // Parameterized Tests - Run on both Vulkan and WebGPU backends
 // ===========================================================================
 
+namespace {
+
 class GfxDeviceTest : public testing::TestWithParam<GfxBackend> {
 protected:
     void SetUp() override
@@ -245,3 +247,5 @@ TEST(GfxDeviceTestNonParam, DestroyNullDevice)
     GfxResult result = gfxDeviceDestroy(NULL);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
+
+} // namespace

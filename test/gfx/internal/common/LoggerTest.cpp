@@ -13,6 +13,9 @@
 // Test Fixture with Captured Logs
 // ============================================================================
 
+
+namespace {
+
 struct LogEntry {
     GfxLogLevel level;
     std::string message;
@@ -362,3 +365,5 @@ TEST_F(LoggerTest, LogMessage_VeryLongMessage_HandlesCorrectly)
     EXPECT_EQ(capturedLogs[0].message.size(), 10000u);
     EXPECT_EQ(capturedLogs[0].message, longMessage);
 }
+
+} // namespace

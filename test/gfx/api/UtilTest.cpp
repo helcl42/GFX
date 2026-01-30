@@ -11,6 +11,9 @@
 // ===========================================================================
 
 // Alignment tests
+
+namespace {
+
 TEST(GfxUtilTest, AlignUpBasic)
 {
     EXPECT_EQ(gfxAlignUp(0, 4), 0);
@@ -289,3 +292,5 @@ TEST(GfxUtilTest, PlatformWindowHandleFromMetal)
     EXPECT_EQ(handle.windowingSystem, GFX_WINDOWING_SYSTEM_METAL);
     EXPECT_EQ(handle.metal.layer, layer);
 }
+
+} // namespace

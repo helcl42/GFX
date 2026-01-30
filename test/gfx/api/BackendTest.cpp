@@ -5,6 +5,9 @@
 // C API tests compiled with C++ for GoogleTest compatibility
 
 // Test version query function
+
+namespace {
+
 TEST(GfxBackendTest, GetVersion)
 {
     uint32_t major = 0;
@@ -256,3 +259,5 @@ TEST(GfxBackendTest, LoadAutoBackend)
         gfxUnloadBackend(GFX_BACKEND_AUTO);
     }
 }
+
+} // namespace

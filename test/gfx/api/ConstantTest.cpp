@@ -5,6 +5,9 @@
 // C API tests compiled with C++ for GoogleTest compatibility
 
 // Basic sanity test
+
+namespace {
+
 TEST(GfxConstantTest, LibraryVersion) {
     // Just verify we can link against the library
     EXPECT_TRUE(true);
@@ -213,3 +216,5 @@ TEST(GfxConstantTest, AdapterPreferenceValues) {
     EXPECT_EQ(GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE, 2);
     EXPECT_EQ(GFX_ADAPTER_PREFERENCE_SOFTWARE, 3);
 }
+
+} // namespace
