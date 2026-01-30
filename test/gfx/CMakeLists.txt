@@ -49,6 +49,9 @@ set(INTERNAL_TEST_SOURCES
     internal/backend/vulkan/core/system/InstanceTest.cpp
     internal/backend/vulkan/core/system/QueueTest.cpp
     internal/backend/vulkan/core/util/UtilsTest.cpp
+    internal/backend/vulkan/core/render/FramebufferTest.cpp
+    internal/backend/vulkan/core/render/RenderPassTest.cpp
+    internal/backend/vulkan/core/render/RenderPipelineTest.cpp
 )
 
 add_executable(gfx_test
