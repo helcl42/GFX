@@ -1,5 +1,8 @@
 #include <gfx_cpp/gfx.hpp>
+
 #include <gtest/gtest.h>
+
+namespace {
 
 class GfxCppTextureViewTest : public ::testing::TestWithParam<gfx::Backend> {
 protected:
@@ -456,3 +459,5 @@ INSTANTIATE_TEST_SUITE_P(
     [](const ::testing::TestParamInfo<gfx::Backend>& info) {
         return info.param == gfx::Backend::Vulkan ? "Vulkan" : "WebGPU";
     });
+
+} // namespace

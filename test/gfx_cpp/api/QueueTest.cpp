@@ -8,6 +8,8 @@
 // Queue Test Suite
 // ===========================================================================
 
+namespace {
+
 class GfxCppQueueTest : public testing::TestWithParam<gfx::Backend> {
 protected:
     void SetUp() override
@@ -196,3 +198,5 @@ INSTANTIATE_TEST_SUITE_P(
     [](const testing::TestParamInfo<gfx::Backend>& info) {
         return info.param == gfx::Backend::Vulkan ? "Vulkan" : "WebGPU";
     });
+
+} // namespace

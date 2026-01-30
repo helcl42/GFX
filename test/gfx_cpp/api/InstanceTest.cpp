@@ -6,6 +6,8 @@
 // Parameterized Tests - Run on both Vulkan and WebGPU backends
 // ===========================================================================
 
+namespace {
+
 class GfxCppInstanceTest : public testing::TestWithParam<gfx::Backend> {
 protected:
     void SetUp() override
@@ -301,3 +303,5 @@ TEST(GfxCppInstanceTestNonParam, NullInstance)
     std::shared_ptr<gfx::Instance> instance; // Default constructed = null
     EXPECT_EQ(instance, nullptr);
 }
+
+} // namespace

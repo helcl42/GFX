@@ -3,6 +3,9 @@
 #include <gtest/gtest.h>
 
 // Basic sanity test
+
+namespace {
+
 TEST(GfxCppConstantTest, LibraryVersion)
 {
     // Just verify we can link against the library
@@ -238,3 +241,5 @@ TEST(GfxCppConstantTest, AdapterPreferenceValues)
     EXPECT_EQ(static_cast<int32_t>(gfx::AdapterPreference::HighPerformance), 2);
     EXPECT_EQ(static_cast<int32_t>(gfx::AdapterPreference::Software), 3);
 }
+
+} // namespace

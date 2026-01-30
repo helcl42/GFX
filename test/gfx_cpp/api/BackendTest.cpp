@@ -3,6 +3,9 @@
 #include <gtest/gtest.h>
 
 // Test version query function
+
+namespace {
+
 TEST(GfxCppBackendTest, GetVersion)
 {
     auto [major, minor, patch] = gfx::getVersion();
@@ -12,3 +15,5 @@ TEST(GfxCppBackendTest, GetVersion)
     EXPECT_EQ(minor, 0u);
     EXPECT_EQ(patch, 0u);
 }
+
+} // namespace
