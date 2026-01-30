@@ -34,6 +34,7 @@ set(PUBLIC_TEST_SOURCES
 set(INTERNAL_TEST_SOURCES
     internal/GfxImplTest.cpp
     internal/common/LoggerTest.cpp
+    internal/backend/vulkan/converter/ConversionsTest.cpp
 )
 
 add_executable(gfx_test
