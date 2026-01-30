@@ -42,6 +42,12 @@ set(INTERNAL_TEST_SOURCES
     internal/backend/vulkan/core/resource/ShaderTest.cpp
     internal/backend/vulkan/core/resource/TextureTest.cpp
     internal/backend/vulkan/core/resource/TextureViewTest.cpp
+    internal/backend/vulkan/core/sync/FenceTest.cpp
+    internal/backend/vulkan/core/sync/SemaphoreTest.cpp
+    internal/backend/vulkan/core/system/AdapterTest.cpp
+    internal/backend/vulkan/core/system/DeviceTest.cpp
+    internal/backend/vulkan/core/system/InstanceTest.cpp
+    internal/backend/vulkan/core/system/QueueTest.cpp
 )
 
 add_executable(gfx_test
