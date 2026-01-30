@@ -52,4 +52,18 @@ typedef void CAMetalLayer;
 
 #include <vulkan/vulkan.h>
 
+// Undefine X11 macros that conflict with gtest
+#ifdef None
+#undef None
+#endif
+#ifdef Bool
+#undef Bool
+#endif
+#ifdef True
+#undef True
+#endif
+#ifdef False
+#undef False
+#endif
+
 #endif // VULKAN_COMMON_H
