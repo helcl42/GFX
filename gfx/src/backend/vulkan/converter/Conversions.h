@@ -128,7 +128,6 @@ VkBlendFactor gfxBlendFactorToVkBlendFactor(GfxBlendFactor factor);
 VkBlendOp gfxBlendOpToVkBlendOp(GfxBlendOperation op);
 VkCompareOp gfxCompareOpToVkCompareOp(GfxCompareFunction func);
 VkQueryType gfxQueryTypeToVkQueryType(GfxQueryType type);
-const char* vkResultToString(VkResult result);
 
 // ============================================================================
 // XInfo Conversion Functions - GfxDescriptor to Internal XInfo
