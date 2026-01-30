@@ -69,6 +69,8 @@ public:
     GfxResult bufferGetNativeHandle(GfxBuffer buffer, void** outHandle) const override;
     GfxResult bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const override;
     GfxResult bufferUnmap(GfxBuffer buffer) const override;
+    GfxResult bufferFlushMappedRange(GfxBuffer buffer, uint64_t offset, uint64_t size) const override;
+    GfxResult bufferInvalidateMappedRange(GfxBuffer buffer, uint64_t offset, uint64_t size) const override;
 
     // Texture functions
     GfxResult textureDestroy(GfxTexture texture) const override;

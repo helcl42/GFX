@@ -375,6 +375,129 @@ TEST_P(GfxBufferTest, ImportBufferFromNativeHandle)
     gfxBufferDestroy(sourceBuffer);
 }
 
+TEST_P(GfxBufferTest, FlushMappedRange)
+{
+    // Skip on WebGPU - memory is always coherent
+    if (backend == GFX_BACKEND_WEBGPU) {
+        GTEST_SKIP() << "WebGPU memory is always coherent";
+    }
+
+    // Create a host-visible, non-coherent buffer for testing flush
+    GfxBufferDescriptor desc = {};
+    desc.label = "Flush Test Buffer";
+    desc.size = 1024;
+    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_SRC;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE; // Non-coherent
+
+    GfxBuffer buffer = nullptr;
+    GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    ASSERT_NE(buffer, nullptr);
+
+    // Map the buffer
+    void* mappedPtr = nullptr;
+    result = gfxBufferMap(buffer, 0, desc.size, &mappedPtr);
+
+    // Skip test if mapping failed (WebGPU might not support synchronous mapping)
+    if (result != GFX_RESULT_SUCCESS || mappedPtr == nullptr) {
+        gfxBufferDestroy(buffer);
+        GTEST_SKIP() << "Buffer mapping not supported or failed";
+        return;
+    }
+
+    // Write some data
+    std::memset(mappedPtr, 0x42, 512);
+
+    // Flush the written range (CPU -> GPU)
+    result = gfxBufferFlushMappedRange(buffer, 0, 512);
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+
+    gfxBufferUnmap(buffer);
+    gfxBufferDestroy(buffer);
+}
+
+TEST_P(GfxBufferTest, InvalidateMappedRange)
+{
+    // Skip on WebGPU - memory is always coherent
+    if (backend == GFX_BACKEND_WEBGPU) {
+        GTEST_SKIP() << "WebGPU memory is always coherent";
+    }
+
+    // Create a host-visible, non-coherent buffer for testing invalidate
+    GfxBufferDescriptor desc = {};
+    desc.label = "Invalidate Test Buffer";
+    desc.size = 1024;
+    desc.usage = GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_COPY_DST;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE; // Non-coherent for testing
+
+    GfxBuffer buffer = nullptr;
+    GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+
+    // Skip if buffer creation failed (some backends might not support this configuration)
+    if (result != GFX_RESULT_SUCCESS || buffer == nullptr) {
+        GTEST_SKIP() << "Buffer creation not supported or failed";
+        return;
+    }
+
+    // Map the buffer first
+    void* mappedPtr = nullptr;
+    result = gfxBufferMap(buffer, 0, desc.size, &mappedPtr);
+
+    if (result == GFX_RESULT_SUCCESS && mappedPtr != nullptr) {
+        // In a real scenario, GPU would write to this buffer
+        // Invalidate to make GPU writes visible to CPU (GPU -> CPU)
+        result = gfxBufferInvalidateMappedRange(buffer, 0, desc.size);
+        EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+
+        gfxBufferUnmap(buffer);
+    }
+
+    gfxBufferDestroy(buffer);
+}
+
+TEST_P(GfxBufferTest, FlushInvalidateCombined)
+{
+    // Skip on WebGPU - memory is always coherent
+    if (backend == GFX_BACKEND_WEBGPU) {
+        GTEST_SKIP() << "WebGPU memory is always coherent";
+    }
+
+    // Test flush and invalidate together on non-coherent memory
+    GfxBufferDescriptor desc = {};
+    desc.label = "Flush+Invalidate Test Buffer";
+    desc.size = 2048;
+    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE; // Non-coherent for testing
+
+    GfxBuffer buffer = nullptr;
+    GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+
+    if (result != GFX_RESULT_SUCCESS || buffer == nullptr) {
+        GTEST_SKIP() << "Buffer creation not supported or failed";
+        return;
+    }
+
+    void* mappedPtr = nullptr;
+    result = gfxBufferMap(buffer, 0, desc.size, &mappedPtr);
+
+    if (result == GFX_RESULT_SUCCESS && mappedPtr != nullptr) {
+        // Write data to first half
+        std::memset(mappedPtr, 0xAA, 1024);
+
+        // Flush first half (CPU writes -> GPU)
+        result = gfxBufferFlushMappedRange(buffer, 0, 1024);
+        EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+
+        // Invalidate second half (GPU writes -> CPU)
+        result = gfxBufferInvalidateMappedRange(buffer, 1024, 1024);
+        EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+
+        gfxBufferUnmap(buffer);
+    }
+
+    gfxBufferDestroy(buffer);
+}
+
 // ===========================================================================
 // Test Instantiation
 // ===========================================================================

@@ -1164,6 +1164,8 @@ public:
     // Mapping functions
     virtual void* map(uint64_t offset = 0, uint64_t size = 0) = 0;
     virtual void unmap() = 0;
+    virtual void flushMappedRange(uint64_t offset, uint64_t size) = 0;
+    virtual void invalidateMappedRange(uint64_t offset, uint64_t size) = 0;
 
     // Convenience functions
     template <typename T>

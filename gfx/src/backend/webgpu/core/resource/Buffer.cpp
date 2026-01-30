@@ -130,6 +130,20 @@ void Buffer::unmap()
     wgpuBufferUnmap(m_buffer);
 }
 
+void Buffer::flushMappedRange(uint64_t offset, uint64_t size)
+{
+    // WebGPU memory is always coherent - no-op
+    (void)offset;
+    (void)size;
+}
+
+void Buffer::invalidateMappedRange(uint64_t offset, uint64_t size)
+{
+    // WebGPU memory is always coherent - no-op
+    (void)offset;
+    (void)size;
+}
+
 BufferInfo Buffer::createBufferInfo(const BufferCreateInfo& createInfo)
 {
     BufferInfo info{};

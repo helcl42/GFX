@@ -18,6 +18,8 @@ public:
 
     void* map();
     void unmap();
+    void flushMappedRange(uint64_t offset, uint64_t size);
+    void invalidateMappedRange(uint64_t offset, uint64_t size);
 
     VkBuffer handle() const;
     size_t size() const;

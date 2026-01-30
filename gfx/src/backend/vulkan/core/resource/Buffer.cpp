@@ -98,6 +98,46 @@ void Buffer::unmap()
     vkUnmapMemory(m_device->handle(), m_memory);
 }
 
+void Buffer::flushMappedRange(uint64_t offset, uint64_t size)
+{
+    // Only needed for non-coherent memory
+    if ((m_info.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0) {
+        return; // Coherent memory is automatically visible
+    }
+
+    if ((m_info.memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
+        return; // Not host-visible, cannot flush
+    }
+
+    VkMappedMemoryRange range{};
+    range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    range.memory = m_memory;
+    range.offset = offset;
+    range.size = size;
+
+    vkFlushMappedMemoryRanges(m_device->handle(), 1, &range);
+}
+
+void Buffer::invalidateMappedRange(uint64_t offset, uint64_t size)
+{
+    // Only needed for non-coherent memory
+    if ((m_info.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0) {
+        return; // Coherent memory is automatically visible
+    }
+
+    if ((m_info.memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
+        return; // Not host-visible, cannot invalidate
+    }
+
+    VkMappedMemoryRange range{};
+    range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    range.memory = m_memory;
+    range.offset = offset;
+    range.size = size;
+
+    vkInvalidateMappedMemoryRanges(m_device->handle(), 1, &range);
+}
+
 VkBuffer Buffer::handle() const
 {
     return m_buffer;

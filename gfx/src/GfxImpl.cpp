@@ -734,6 +734,30 @@ GfxResult gfxBufferUnmap(GfxBuffer buffer)
     return backend->bufferUnmap(buffer);
 }
 
+GfxResult gfxBufferFlushMappedRange(GfxBuffer buffer, uint64_t offset, uint64_t size)
+{
+    if (!buffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(buffer);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->bufferFlushMappedRange(buffer, offset, size);
+}
+
+GfxResult gfxBufferInvalidateMappedRange(GfxBuffer buffer, uint64_t offset, uint64_t size)
+{
+    if (!buffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(buffer);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->bufferInvalidateMappedRange(buffer, offset, size);
+}
+
 // Texture Functions
 GfxResult gfxTextureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo)
 {

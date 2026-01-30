@@ -1246,6 +1246,8 @@ GFX_API GfxResult gfxBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo);
 GFX_API GfxResult gfxBufferGetNativeHandle(GfxBuffer buffer, void** outHandle);
 GFX_API GfxResult gfxBufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer);
 GFX_API GfxResult gfxBufferUnmap(GfxBuffer buffer);
+GFX_API GfxResult gfxBufferFlushMappedRange(GfxBuffer buffer, uint64_t offset, uint64_t size);
+GFX_API GfxResult gfxBufferInvalidateMappedRange(GfxBuffer buffer, uint64_t offset, uint64_t size);
 
 // Texture functions
 GFX_API GfxResult gfxTextureDestroy(GfxTexture texture);

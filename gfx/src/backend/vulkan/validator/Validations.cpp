@@ -1314,6 +1314,22 @@ GfxResult validateBufferUnmap(GfxBuffer buffer)
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult validateBufferFlushMappedRange(GfxBuffer buffer)
+{
+    if (!buffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult validateBufferInvalidateMappedRange(GfxBuffer buffer)
+{
+    if (!buffer) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult validateTextureDestroy(GfxTexture texture)
 {
     if (!texture) {

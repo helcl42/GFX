@@ -68,6 +68,8 @@ public:
     virtual GfxResult bufferGetNativeHandle(GfxBuffer buffer, void** outHandle) const = 0;
     virtual GfxResult bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, void** outMappedPointer) const = 0;
     virtual GfxResult bufferUnmap(GfxBuffer buffer) const = 0;
+    virtual GfxResult bufferFlushMappedRange(GfxBuffer buffer, uint64_t offset, uint64_t size) const = 0;
+    virtual GfxResult bufferInvalidateMappedRange(GfxBuffer buffer, uint64_t offset, uint64_t size) const = 0;
 
     // Texture functions
     virtual GfxResult textureDestroy(GfxTexture texture) const = 0;

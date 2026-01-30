@@ -96,6 +96,8 @@ GfxResult validateSurfaceDestroy(GfxSurface surface);
 GfxResult validateSwapchainDestroy(GfxSwapchain swapchain);
 GfxResult validateBufferDestroy(GfxBuffer buffer);
 GfxResult validateBufferUnmap(GfxBuffer buffer);
+GfxResult validateBufferFlushMappedRange(GfxBuffer buffer);
+GfxResult validateBufferInvalidateMappedRange(GfxBuffer buffer);
 GfxResult validateTextureDestroy(GfxTexture texture);
 GfxResult validateTextureViewDestroy(GfxTextureView textureView);
 GfxResult validateSamplerDestroy(GfxSampler sampler);

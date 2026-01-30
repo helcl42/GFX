@@ -925,6 +925,30 @@ GfxResult Backend::bufferUnmap(GfxBuffer buffer) const
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult Backend::bufferFlushMappedRange(GfxBuffer buffer, uint64_t offset, uint64_t size) const
+{
+    GfxResult validationResult = validator::validateBufferFlushMappedRange(buffer);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
+    auto* buf = converter::toNative<core::Buffer>(buffer);
+    buf->flushMappedRange(offset, size);
+    return GFX_RESULT_SUCCESS;
+}
+
+GfxResult Backend::bufferInvalidateMappedRange(GfxBuffer buffer, uint64_t offset, uint64_t size) const
+{
+    GfxResult validationResult = validator::validateBufferInvalidateMappedRange(buffer);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
+    auto* buf = converter::toNative<core::Buffer>(buffer);
+    buf->invalidateMappedRange(offset, size);
+    return GFX_RESULT_SUCCESS;
+}
+
 // Texture functions
 GfxResult Backend::textureDestroy(GfxTexture texture) const
 {

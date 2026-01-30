@@ -486,6 +486,111 @@ TEST_P(GfxCppBufferTest, CreateBufferWithHostCachedWithoutHostVisibleThrows)
     EXPECT_THROW(device->createBuffer(desc), std::exception);
 }
 
+TEST_P(GfxCppBufferTest, FlushMappedRange)
+{
+    ASSERT_NE(device, nullptr);
+
+    // Skip on WebGPU - memory is always coherent, no synchronous mapping
+    if (backend == gfx::Backend::WebGPU) {
+        GTEST_SKIP() << "WebGPU memory is always coherent";
+    }
+
+    // Create a host-visible, non-coherent buffer for testing flush
+    gfx::BufferDescriptor desc{
+        .label = "Flush Test Buffer",
+        .size = 1024,
+        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::Uniform | gfx::BufferUsage::CopySrc,
+        .memoryProperties = gfx::MemoryProperty::HostVisible // Non-coherent
+    };
+
+    auto buffer = device->createBuffer(desc);
+    ASSERT_NE(buffer, nullptr);
+
+    // Map the buffer
+    void* mappedPtr = buffer->map(0, desc.size);
+    EXPECT_NE(mappedPtr, nullptr);
+
+    if (mappedPtr) {
+        // Write some data
+        std::memset(mappedPtr, 0x42, 512);
+
+        // Flush the written range (CPU -> GPU)
+        EXPECT_NO_THROW(buffer->flushMappedRange(0, 512));
+
+        buffer->unmap();
+    }
+}
+
+TEST_P(GfxCppBufferTest, InvalidateMappedRange)
+{
+    ASSERT_NE(device, nullptr);
+
+    // Skip on WebGPU - memory is always coherent, no synchronous mapping
+    if (backend == gfx::Backend::WebGPU) {
+        GTEST_SKIP() << "WebGPU memory is always coherent";
+    }
+
+    // Create a host-visible buffer for testing invalidate
+    gfx::BufferDescriptor desc{
+        .label = "Invalidate Test Buffer",
+        .size = 1024,
+        .usage = gfx::BufferUsage::MapRead | gfx::BufferUsage::Storage | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::HostVisible
+    };
+
+    auto buffer = device->createBuffer(desc);
+    ASSERT_NE(buffer, nullptr);
+
+    // In a real scenario, GPU would write to this buffer
+    // Invalidate to make GPU writes visible to CPU (GPU -> CPU)
+    EXPECT_NO_THROW(buffer->invalidateMappedRange(0, desc.size));
+
+    // Map and read
+    void* mappedPtr = buffer->map(0, desc.size);
+    EXPECT_NE(mappedPtr, nullptr);
+
+    if (mappedPtr) {
+        buffer->unmap();
+    }
+}
+
+TEST_P(GfxCppBufferTest, FlushInvalidateCombined)
+{
+    ASSERT_NE(device, nullptr);
+
+    // Skip on WebGPU - memory is always coherent, no synchronous mapping
+    if (backend == gfx::Backend::WebGPU) {
+        GTEST_SKIP() << "WebGPU memory is always coherent";
+    }
+
+    // Test flush and invalidate together
+    gfx::BufferDescriptor desc{
+        .label = "Flush+Invalidate Test Buffer",
+        .size = 2048,
+        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::MapRead | gfx::BufferUsage::Storage | gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst,
+        .memoryProperties = gfx::MemoryProperty::HostVisible
+    };
+
+    auto buffer = device->createBuffer(desc);
+    ASSERT_NE(buffer, nullptr);
+
+    void* mappedPtr = buffer->map(0, desc.size);
+    ASSERT_NE(mappedPtr, nullptr);
+
+    if (mappedPtr) {
+        // Write data to first half
+        std::memset(mappedPtr, 0xAA, 1024);
+
+        // Flush first half (CPU writes -> GPU)
+        EXPECT_NO_THROW(buffer->flushMappedRange(0, 1024));
+
+        // Invalidate second half (GPU writes -> CPU)
+        EXPECT_NO_THROW(buffer->invalidateMappedRange(1024, 1024));
+
+        buffer->unmap();
+    }
+}
+
 // ===========================================================================
 // Test Instantiation
 // ===========================================================================

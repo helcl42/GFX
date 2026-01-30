@@ -57,4 +57,14 @@ void BufferImpl::unmap()
     gfxBufferUnmap(m_handle);
 }
 
+void BufferImpl::flushMappedRange(uint64_t offset, uint64_t size)
+{
+    gfxBufferFlushMappedRange(m_handle, offset, size);
+}
+
+void BufferImpl::invalidateMappedRange(uint64_t offset, uint64_t size)
+{
+    gfxBufferInvalidateMappedRange(m_handle, offset, size);
+}
+
 } // namespace gfx

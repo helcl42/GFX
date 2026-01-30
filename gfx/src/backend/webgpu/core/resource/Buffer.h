@@ -30,6 +30,10 @@ public:
     void* map(uint64_t offset, uint64_t size);
     void unmap();
 
+    // Memory synchronization (no-ops on WebGPU - memory is always coherent)
+    void flushMappedRange(uint64_t offset, uint64_t size);
+    void invalidateMappedRange(uint64_t offset, uint64_t size);
+
 private:
     static BufferInfo createBufferInfo(const BufferCreateInfo& createInfo);
     static BufferInfo createBufferInfo(const BufferImportInfo& importInfo);
