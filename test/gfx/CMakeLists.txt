@@ -55,6 +55,10 @@ set(INTERNAL_TEST_SOURCES
     internal/backend/vulkan/core/query/QuerySetTest.cpp
     internal/backend/vulkan/core/presentation/SurfaceTest.cpp
     internal/backend/vulkan/core/presentation/SwapchainTest.cpp
+    internal/backend/vulkan/core/compute/ComputePipelineTest.cpp
+    internal/backend/vulkan/core/command/CommandEncoderTest.cpp
+    internal/backend/vulkan/core/command/ComputePassEncoderTest.cpp
+    internal/backend/vulkan/core/command/RenderPassEncoderTest.cpp
 )
 
 add_executable(gfx_test
