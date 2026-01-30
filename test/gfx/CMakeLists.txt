@@ -35,6 +35,13 @@ set(INTERNAL_TEST_SOURCES
     internal/GfxImplTest.cpp
     internal/common/LoggerTest.cpp
     internal/backend/vulkan/converter/ConversionsTest.cpp
+    internal/backend/vulkan/core/resource/BindGroupTest.cpp
+    internal/backend/vulkan/core/resource/BindGroupLayoutTest.cpp
+    internal/backend/vulkan/core/resource/BufferTest.cpp
+    internal/backend/vulkan/core/resource/SamplerTest.cpp
+    internal/backend/vulkan/core/resource/ShaderTest.cpp
+    internal/backend/vulkan/core/resource/TextureTest.cpp
+    internal/backend/vulkan/core/resource/TextureViewTest.cpp
 )
 
 add_executable(gfx_test
