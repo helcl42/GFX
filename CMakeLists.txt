@@ -310,6 +310,7 @@ if(BUILD_VULKAN_BACKEND)
         gfx/src/backend/vulkan/core/presentation/Swapchain.cpp
         gfx/src/backend/vulkan/core/presentation/Surface.cpp
         # Util
+        gfx/src/backend/vulkan/core/util/CommandExecutor.cpp
         gfx/src/backend/vulkan/core/util/Utils.cpp
     )
 endif()
