@@ -1,7 +1,9 @@
 # C++ Wrapper Tests
 
-# Public API tests - tests that verify the C++ wrapper API contract
-set(PUBLIC_TEST_SOURCES
+# =============================================================================
+# Public API Tests - Always built, backend-agnostic
+# =============================================================================
+add_executable(gfx_cpp_api_test
     api/AdapterTest.cpp
     api/BackendTest.cpp
     api/BindGroupLayoutTest.cpp
@@ -30,22 +32,27 @@ set(PUBLIC_TEST_SOURCES
     api/UtilTest.cpp
 )
 
-# Internal tests - tests for C++ wrapper implementation details
-set(INTERNAL_TEST_SOURCES
-    internal/GfxImplTest.cpp
-)
-
-add_executable(gfx_cpp_test
-    ${PUBLIC_TEST_SOURCES}
-    ${INTERNAL_TEST_SOURCES}
-)
-
-target_link_libraries(gfx_cpp_test
+target_link_libraries(gfx_cpp_api_test
     gfx_cpp
     GTest::gtest_main
 )
 
-# Discover tests
 if(NOT ENABLE_ASAN)
-    gtest_discover_tests(gfx_cpp_test)
+    gtest_discover_tests(gfx_cpp_api_test)
+endif()
+
+# =============================================================================
+# Internal Tests - Always built
+# =============================================================================
+add_executable(gfx_cpp_internal_test
+    internal/GfxImplTest.cpp
+)
+
+target_link_libraries(gfx_cpp_internal_test
+    gfx_cpp
+    GTest::gtest_main
+)
+
+if(NOT ENABLE_ASAN)
+    gtest_discover_tests(gfx_cpp_internal_test)
 endif()
