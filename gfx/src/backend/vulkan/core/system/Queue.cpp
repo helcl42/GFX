@@ -8,6 +8,7 @@
 #include "../resource/Texture.h"
 #include "../sync/Fence.h"
 #include "../sync/Semaphore.h"
+#include "../util/CommandExecutor.h"
 #include "../util/Utils.h"
 
 #include "common/Logger.h"
@@ -186,60 +187,17 @@ void Queue::writeBuffer(Buffer* buffer, uint64_t offset, const void* data, uint6
         memcpy(stagingMapped, data, size);
         vkUnmapMemory(vkDevice, stagingMemory);
 
-        // Create and submit copy command
-        VkCommandBufferAllocateInfo cmdAllocInfo{};
-        cmdAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        cmdAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        cmdAllocInfo.commandBufferCount = 1;
-
-        VkCommandPool cmdPool;
-        VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = family();
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-
-        if (vkCreateCommandPool(vkDevice, &poolInfo, nullptr, &cmdPool) != VK_SUCCESS) {
-            vkFreeMemory(vkDevice, stagingMemory, nullptr);
-            vkDestroyBuffer(vkDevice, stagingBuffer, nullptr);
-            throw std::runtime_error("Failed to create command pool for buffer write");
-        }
-
-        cmdAllocInfo.commandPool = cmdPool;
-
-        VkCommandBuffer cmdBuffer;
-        vkAllocateCommandBuffers(vkDevice, &cmdAllocInfo, &cmdBuffer);
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(cmdBuffer, &beginInfo);
-
-        VkBufferCopy copyRegion{};
-        copyRegion.srcOffset = 0;
-        copyRegion.dstOffset = offset;
-        copyRegion.size = size;
-        vkCmdCopyBuffer(cmdBuffer, stagingBuffer, buffer->handle(), 1, &copyRegion);
-
-        vkEndCommandBuffer(cmdBuffer);
-
-        // Create fence for synchronization
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        VkFence fence = VK_NULL_HANDLE;
-        vkCreateFence(vkDevice, &fenceInfo, nullptr, &fence);
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &cmdBuffer;
-
-        vkQueueSubmit(m_queue, 1, &submitInfo, fence);
-        vkWaitForFences(vkDevice, 1, &fence, VK_TRUE, UINT64_MAX);
-        vkDestroyFence(vkDevice, fence, nullptr);
+        // Execute copy command
+        CommandExecutor executor(this);
+        executor.execute([&](VkCommandBuffer cmd) {
+            VkBufferCopy copyRegion{};
+            copyRegion.srcOffset = 0;
+            copyRegion.dstOffset = offset;
+            copyRegion.size = size;
+            vkCmdCopyBuffer(cmd, stagingBuffer, buffer->handle(), 1, &copyRegion);
+        });
 
         // Cleanup
-        vkDestroyCommandPool(vkDevice, cmdPool, nullptr);
         vkFreeMemory(vkDevice, stagingMemory, nullptr);
         vkDestroyBuffer(vkDevice, stagingBuffer, nullptr);
     }
@@ -301,71 +259,32 @@ void Queue::writeTexture(Texture* texture, const VkOffset3D& origin, uint32_t mi
     memcpy(mappedData, data, dataSize);
     vkUnmapMemory(device, stagingMemory);
 
-    // Create temporary command buffer
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    poolInfo.queueFamilyIndex = m_queueFamily;
+    // Execute copy command
+    CommandExecutor executor(this);
+    executor.execute([&](VkCommandBuffer cmd) {
+        // Transition image to transfer dst optimal
+        texture->transitionLayout(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel, 1, 0, 1);
 
-    VkCommandPool commandPool = VK_NULL_HANDLE;
-    vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool);
+        // Copy buffer to image
+        VkBufferImageCopy region{};
+        region.bufferOffset = 0;
+        region.bufferRowLength = 0; // Tightly packed
+        region.bufferImageHeight = 0;
+        region.imageSubresource.aspectMask = getImageAspectMask(texture->getFormat());
+        region.imageSubresource.mipLevel = mipLevel;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+        region.imageOffset = origin;
+        region.imageExtent = extent;
 
-    VkCommandBufferAllocateInfo allocCmdInfo{};
-    allocCmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocCmdInfo.commandPool = commandPool;
-    allocCmdInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocCmdInfo.commandBufferCount = 1;
+        vkCmdCopyBufferToImage(cmd, stagingBuffer, texture->handle(),
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-    vkAllocateCommandBuffers(device, &allocCmdInfo, &commandBuffer);
-
-    // Begin command buffer
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-    // Transition image to transfer dst optimal
-    texture->transitionLayout(commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel, 1, 0, 1);
-
-    // Copy buffer to image
-    VkBufferImageCopy region{};
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0; // Tightly packed
-    region.bufferImageHeight = 0;
-    region.imageSubresource.aspectMask = getImageAspectMask(texture->getFormat());
-    region.imageSubresource.mipLevel = mipLevel;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
-    region.imageOffset = origin;
-    region.imageExtent = extent;
-
-    vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, texture->handle(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-    // Transition image to final layout
-    texture->transitionLayout(commandBuffer, finalLayout, mipLevel, 1, 0, 1);
-
-    // End and submit
-    vkEndCommandBuffer(commandBuffer);
-
-    // Create fence for synchronization
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    VkFence fence = VK_NULL_HANDLE;
-    vkCreateFence(device, &fenceInfo, nullptr, &fence);
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    vkQueueSubmit(m_queue, 1, &submitInfo, fence);
-    vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
-    vkDestroyFence(device, fence, nullptr);
+        // Transition image to final layout
+        texture->transitionLayout(cmd, finalLayout, mipLevel, 1, 0, 1);
+    });
 
     // Cleanup
-    vkDestroyCommandPool(device, commandPool, nullptr);
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingMemory, nullptr);
 }

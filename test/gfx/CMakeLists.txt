@@ -48,6 +48,7 @@ set(INTERNAL_TEST_SOURCES
     internal/backend/vulkan/core/system/DeviceTest.cpp
     internal/backend/vulkan/core/system/InstanceTest.cpp
     internal/backend/vulkan/core/system/QueueTest.cpp
+    internal/backend/vulkan/core/util/CommandExecutorTest.cpp
     internal/backend/vulkan/core/util/UtilsTest.cpp
     internal/backend/vulkan/core/render/FramebufferTest.cpp
     internal/backend/vulkan/core/render/RenderPassTest.cpp
