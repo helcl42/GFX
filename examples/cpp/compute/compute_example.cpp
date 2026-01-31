@@ -25,6 +25,7 @@
 #endif
 
 #include <array>
+#include <cfloat>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -155,6 +156,12 @@ private:
 
     size_t currentFrame = 0;
     float elapsedTime = 0.0f;
+    
+    // FPS tracking
+    uint32_t fpsFrameCount = 0;
+    float fpsTimeAccumulator = 0.0f;
+    float fpsFrameTimeMin = FLT_MAX;
+    float fpsFrameTimeMax = 0.0f;
 };
 
 bool ComputeApp::initialize()
@@ -939,6 +946,36 @@ bool ComputeApp::mainLoopIteration()
     // Calculate delta time
     float currentTime = getCurrentTime();
     float deltaTime = currentTime - elapsedTime;
+    
+    // Track FPS
+    if (deltaTime > 0.0f) {
+        fpsFrameCount++;
+        fpsTimeAccumulator += deltaTime;
+        
+        if (deltaTime < fpsFrameTimeMin) {
+            fpsFrameTimeMin = deltaTime;
+        }
+        if (deltaTime > fpsFrameTimeMax) {
+            fpsFrameTimeMax = deltaTime;
+        }
+        
+        // Log FPS every second
+        if (fpsTimeAccumulator >= 1.0f) {
+            float avgFPS = static_cast<float>(fpsFrameCount) / fpsTimeAccumulator;
+            float avgFrameTime = (fpsTimeAccumulator / static_cast<float>(fpsFrameCount)) * 1000.0f;
+            float minFPS = 1.0f / fpsFrameTimeMax;
+            float maxFPS = 1.0f / fpsFrameTimeMin;
+            std::cout << "FPS - Avg: " << avgFPS << ", Min: " << minFPS << ", Max: " << maxFPS
+                      << " | Frame Time - Avg: " << avgFrameTime << " ms, Min: " << (fpsFrameTimeMin * 1000.0f)
+                      << " ms, Max: " << (fpsFrameTimeMax * 1000.0f) << " ms" << std::endl;
+            
+            // Reset for next second
+            fpsFrameCount = 0;
+            fpsTimeAccumulator = 0.0f;
+            fpsFrameTimeMin = FLT_MAX;
+            fpsFrameTimeMax = 0.0f;
+        }
+    }
 
     update(deltaTime);
     render();

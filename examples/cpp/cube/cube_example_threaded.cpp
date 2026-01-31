@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cfloat>
 #include <cmath>
 #include <condition_variable>
 #include <cstddef>
@@ -246,6 +247,12 @@ private:
     uint32_t previousWidth = WINDOW_WIDTH;
     uint32_t previousHeight = WINDOW_HEIGHT;
     float lastTime = 0.0f;
+    
+    // FPS tracking
+    uint32_t fpsFrameCount = 0;
+    float fpsTimeAccumulator = 0.0f;
+    float fpsFrameTimeMin = FLT_MAX;
+    float fpsFrameTimeMax = 0.0f;
 
     // Threading
     std::unique_ptr<ThreadPool> threadPool;
@@ -1590,6 +1597,36 @@ bool CubeApp::mainLoopIteration()
     float currentTime = getCurrentTime();
     float deltaTime = currentTime - lastTime;
     lastTime = currentTime;
+    
+    // Track FPS
+    if (deltaTime > 0.0f) {
+        fpsFrameCount++;
+        fpsTimeAccumulator += deltaTime;
+        
+        if (deltaTime < fpsFrameTimeMin) {
+            fpsFrameTimeMin = deltaTime;
+        }
+        if (deltaTime > fpsFrameTimeMax) {
+            fpsFrameTimeMax = deltaTime;
+        }
+        
+        // Log FPS every second
+        if (fpsTimeAccumulator >= 1.0f) {
+            float avgFPS = static_cast<float>(fpsFrameCount) / fpsTimeAccumulator;
+            float avgFrameTime = (fpsTimeAccumulator / static_cast<float>(fpsFrameCount)) * 1000.0f;
+            float minFPS = 1.0f / fpsFrameTimeMax;
+            float maxFPS = 1.0f / fpsFrameTimeMin;
+            std::cout << "FPS - Avg: " << avgFPS << ", Min: " << minFPS << ", Max: " << maxFPS
+                      << " | Frame Time - Avg: " << avgFrameTime << " ms, Min: " << (fpsFrameTimeMin * 1000.0f)
+                      << " ms, Max: " << (fpsFrameTimeMax * 1000.0f) << " ms" << std::endl;
+            
+            // Reset for next second
+            fpsFrameCount = 0;
+            fpsTimeAccumulator = 0.0f;
+            fpsFrameTimeMin = FLT_MAX;
+            fpsFrameTimeMax = 0.0f;
+        }
+    }
 
     update(deltaTime);
     render();
@@ -1621,6 +1658,12 @@ bool CubeApp::initialize()
     previousWidth = windowWidth;
     previousHeight = windowHeight;
     lastTime = getCurrentTime();
+    
+    // Initialize FPS tracking
+    fpsFrameCount = 0;
+    fpsTimeAccumulator = 0.0f;
+    fpsFrameTimeMin = FLT_MAX;
+    fpsFrameTimeMax = 0.0f;
 
     std::cout << "Application initialized successfully!" << std::endl;
     if constexpr (USE_THREADING) {

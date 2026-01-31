@@ -17,6 +17,7 @@
 #endif
 
 #include <math.h>
+#include <float.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -119,6 +120,12 @@ typedef struct {
     uint32_t previousWidth;
     uint32_t previousHeight;
     float elapsedTime;
+    
+    // FPS tracking
+    uint32_t fpsFrameCount;
+    float fpsTimeAccumulator;
+    float fpsFrameTimeMin;
+    float fpsFrameTimeMax;
 } ComputeApp;
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
@@ -1383,6 +1390,36 @@ static bool mainLoopIteration(ComputeApp* app)
     // Calculate delta time
     float currentTime = getCurrentTime();
     float deltaTime = currentTime - app->elapsedTime;
+    
+    // Track FPS
+    if (deltaTime > 0.0f) {
+        app->fpsFrameCount++;
+        app->fpsTimeAccumulator += deltaTime;
+        
+        if (deltaTime < app->fpsFrameTimeMin) {
+            app->fpsFrameTimeMin = deltaTime;
+        }
+        if (deltaTime > app->fpsFrameTimeMax) {
+            app->fpsFrameTimeMax = deltaTime;
+        }
+        
+        // Log FPS every second
+        if (app->fpsTimeAccumulator >= 1.0f) {
+            float avgFPS = (float)app->fpsFrameCount / app->fpsTimeAccumulator;
+            float avgFrameTime = (app->fpsTimeAccumulator / (float)app->fpsFrameCount) * 1000.0f;
+            float minFPS = 1.0f / app->fpsFrameTimeMax;
+            float maxFPS = 1.0f / app->fpsFrameTimeMin;
+            printf("FPS - Avg: %.1f, Min: %.1f, Max: %.1f | Frame Time - Avg: %.2f ms, Min: %.2f ms, Max: %.2f ms\n", 
+                   avgFPS, minFPS, maxFPS,
+                   avgFrameTime, app->fpsFrameTimeMin * 1000.0f, app->fpsFrameTimeMax * 1000.0f);
+            
+            // Reset for next second
+            app->fpsFrameCount = 0;
+            app->fpsTimeAccumulator = 0.0f;
+            app->fpsFrameTimeMin = FLT_MAX;
+            app->fpsFrameTimeMax = 0.0f;
+        }
+    }
 
     update(app, deltaTime);
     render(app);
@@ -1446,6 +1483,12 @@ int main(void)
     app.previousWidth = app.windowWidth;
     app.previousHeight = app.windowHeight;
     app.elapsedTime = 0.0f;
+    
+    // Initialize FPS tracking
+    app.fpsFrameCount = 0;
+    app.fpsTimeAccumulator = 0.0f;
+    app.fpsFrameTimeMin = FLT_MAX;
+    app.fpsFrameTimeMax = 0.0f;
 
     // Run main loop (platform-specific)
 #if defined(__EMSCRIPTEN__)
