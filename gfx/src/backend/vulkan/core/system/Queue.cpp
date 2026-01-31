@@ -159,14 +159,8 @@ void Queue::writeBuffer(Buffer* buffer, uint64_t offset, const void* data, uint6
 
         const VkPhysicalDeviceMemoryProperties& memProps = m_device->getAdapter()->getMemoryProperties();
 
-        uint32_t memTypeIndex = UINT32_MAX;
         VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        for (uint32_t i = 0; i < memProps.memoryTypeCount; ++i) {
-            if ((memReq.memoryTypeBits & (1 << i)) && (memProps.memoryTypes[i].propertyFlags & flags) == flags) {
-                memTypeIndex = i;
-                break;
-            }
-        }
+        uint32_t memTypeIndex = findMemoryType(memProps, memReq.memoryTypeBits, flags);
 
         if (memTypeIndex == UINT32_MAX) {
             vkDestroyBuffer(vkDevice, stagingBuffer, nullptr);
