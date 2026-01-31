@@ -47,6 +47,8 @@ endif()
 # =============================================================================
 add_executable(gfx_internal_test
     internal/GfxImplTest.cpp
+    internal/ManagerTest.cpp
+    internal/FactoryTest.cpp
     internal/common/LoggerTest.cpp
 )
 
