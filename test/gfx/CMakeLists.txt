@@ -59,6 +59,32 @@ set(INTERNAL_TEST_SOURCES
     internal/backend/vulkan/core/command/CommandEncoderTest.cpp
     internal/backend/vulkan/core/command/ComputePassEncoderTest.cpp
     internal/backend/vulkan/core/command/RenderPassEncoderTest.cpp
+    internal/backend/webgpu/core/system/InstanceTest.cpp
+    internal/backend/webgpu/core/system/AdapterTest.cpp
+    internal/backend/webgpu/core/system/DeviceTest.cpp
+    internal/backend/webgpu/core/system/QueueTest.cpp
+    internal/backend/webgpu/core/resource/BufferTest.cpp
+    internal/backend/webgpu/core/resource/TextureTest.cpp
+    internal/backend/webgpu/core/resource/TextureViewTest.cpp
+    internal/backend/webgpu/core/resource/SamplerTest.cpp
+    internal/backend/webgpu/core/resource/ShaderTest.cpp
+    internal/backend/webgpu/core/resource/BindGroupLayoutTest.cpp
+    internal/backend/webgpu/core/resource/BindGroupTest.cpp
+    internal/backend/webgpu/core/sync/FenceTest.cpp
+    internal/backend/webgpu/core/sync/SemaphoreTest.cpp
+    internal/backend/webgpu/core/render/RenderPassTest.cpp
+    internal/backend/webgpu/core/render/FramebufferTest.cpp
+    internal/backend/webgpu/core/render/RenderPipelineTest.cpp
+    internal/backend/webgpu/core/compute/ComputePipelineTest.cpp
+    internal/backend/webgpu/core/query/QuerySetTest.cpp
+    internal/backend/webgpu/core/presentation/SurfaceTest.cpp
+    internal/backend/webgpu/core/presentation/SwapchainTest.cpp
+    internal/backend/webgpu/core/command/CommandEncoderTest.cpp
+    internal/backend/webgpu/core/command/ComputePassEncoderTest.cpp
+    internal/backend/webgpu/core/command/RenderPassEncoderTest.cpp
+    internal/backend/webgpu/core/util/BlitTest.cpp
+    internal/backend/webgpu/core/util/UtilsTest.cpp
+    internal/backend/webgpu/converter/ConversionsTest.cpp
 )
 
 add_executable(gfx_test

@@ -43,4 +43,15 @@ typedef void CAMetalLayer;
 
 #include <webgpu/webgpu.h>
 
+// Undefine X11 macros that conflict with other headers (e.g., gtest)
+// These must be undefined after including X11 headers
+#ifdef GFX_HAS_X11
+#undef None
+#undef Bool
+#undef Status
+#undef Success
+#undef True
+#undef False
+#endif
+
 #endif // GFX_WEBGPU_COMMON_H
