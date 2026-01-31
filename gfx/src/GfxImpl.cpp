@@ -1433,41 +1433,37 @@ uint64_t gfxAlignDown(uint64_t value, uint64_t alignment)
 uint32_t gfxGetFormatBytesPerPixel(GfxTextureFormat format)
 {
     switch (format) {
+    // 1 byte
     case GFX_TEXTURE_FORMAT_R8_UNORM:
+    case GFX_TEXTURE_FORMAT_STENCIL8:
         return 1;
+    // 2 bytes
     case GFX_TEXTURE_FORMAT_R8G8_UNORM:
+    case GFX_TEXTURE_FORMAT_R16_FLOAT:
+    case GFX_TEXTURE_FORMAT_DEPTH16_UNORM:
         return 2;
+    // 4 bytes
     case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM:
     case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB:
     case GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM:
     case GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB:
-        return 4;
-    case GFX_TEXTURE_FORMAT_R16_FLOAT:
-        return 2;
     case GFX_TEXTURE_FORMAT_R16G16_FLOAT:
-        return 4;
-    case GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT:
-        return 8;
     case GFX_TEXTURE_FORMAT_R32_FLOAT:
-        return 4;
-    case GFX_TEXTURE_FORMAT_R32G32_FLOAT:
-        return 8;
-    case GFX_TEXTURE_FORMAT_R32G32B32_FLOAT:
-        return 12;
-    case GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT:
-        return 16;
-    case GFX_TEXTURE_FORMAT_DEPTH16_UNORM:
-        return 2;
     case GFX_TEXTURE_FORMAT_DEPTH24_PLUS:
-        return 4;
     case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT:
-        return 4;
-    case GFX_TEXTURE_FORMAT_STENCIL8:
-        return 1;
     case GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8:
         return 4;
+    // 8 bytes
+    case GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT:
+    case GFX_TEXTURE_FORMAT_R32G32_FLOAT:
     case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8:
         return 8;
+    // 12 bytes
+    case GFX_TEXTURE_FORMAT_R32G32B32_FLOAT:
+        return 12;
+    // 16 bytes
+    case GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT:
+        return 16;
     case GFX_TEXTURE_FORMAT_UNDEFINED:
     default:
         return 0;
