@@ -402,18 +402,17 @@ endif()
 
 # Link WebGPU if available
 if(BUILD_WEBGPU_BACKEND)
-    # For native builds, link to webgpu_dawn; for web builds, use Emscripten port
-    if(NOT BUILD_FOR_WEB)
-        target_link_libraries(gfx PUBLIC webgpu_dawn)
-    endif()
-    
-    # Add Emscripten-specific generated headers BEFORE source headers
+    # Configure WebGPU for native vs web builds
     if(BUILD_FOR_WEB)
+        # For web builds, use emdawnwebgpu port
+        target_link_options(gfx PUBLIC --use-port=emdawnwebgpu)
         target_include_directories(gfx PUBLIC 
             ${CMAKE_BINARY_DIR}/dawn/gen/src/emdawnwebgpu/include  # Generated headers first
             ${WEBGPU_INCLUDE_DIR}                                  # Source headers second
         )
     else()
+        # For native builds, link to webgpu_dawn
+        target_link_libraries(gfx PUBLIC webgpu_dawn)
         target_include_directories(gfx PUBLIC 
             ${CMAKE_BINARY_DIR}/dawn/gen/include
             ${WEBGPU_INCLUDE_DIR}
@@ -570,7 +569,7 @@ if(BUILD_CPP_WRAPPER)
     if(BUILD_WEBGPU_BACKEND)
         target_link_libraries(gfx_cpp PUBLIC ${WEBGPU_LIBRARY})
         
-        # Add Emscripten-specific generated headers BEFORE source headers
+        # Configure WebGPU headers for native vs web builds
         if(BUILD_FOR_WEB)
             target_include_directories(gfx_cpp PUBLIC 
                 ${CMAKE_BINARY_DIR}/dawn/gen/src/emdawnwebgpu/include  # Generated headers first

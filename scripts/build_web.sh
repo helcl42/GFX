@@ -20,6 +20,7 @@ cd "$BUILD_DIR"
 
 # Configure with emcmake
 emcmake cmake .. \
+    -G Ninja \
     -DCMAKE_BUILD_TYPE=Debug \
     -DBUILD_EXAMPLES=ON \
     -DBUILD_WEBGPU_BACKEND=ON \
@@ -27,7 +28,7 @@ emcmake cmake .. \
 
 echo ""
 echo "Building..."
-emmake make -j$(nproc)
+ninja
 
 echo ""
 echo "=== Build Complete! ==="
