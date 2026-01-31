@@ -1462,6 +1462,8 @@ uint32_t gfxGetFormatBytesPerPixel(GfxTextureFormat format)
         return 4;
     case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT:
         return 4;
+    case GFX_TEXTURE_FORMAT_STENCIL8:
+        return 1;
     case GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8:
         return 4;
     case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8:

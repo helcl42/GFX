@@ -872,6 +872,8 @@ WGPUTextureFormat gfxFormatToWGPUFormat(GfxTextureFormat format)
         return WGPUTextureFormat_Depth24Plus;
     case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT:
         return WGPUTextureFormat_Depth32Float;
+    case GFX_TEXTURE_FORMAT_STENCIL8:
+        return WGPUTextureFormat_Stencil8;
     case GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8:
         return WGPUTextureFormat_Depth24PlusStencil8;
     case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8:
@@ -914,6 +916,8 @@ GfxTextureFormat wgpuFormatToGfxFormat(WGPUTextureFormat format)
         return GFX_TEXTURE_FORMAT_DEPTH24_PLUS;
     case WGPUTextureFormat_Depth32Float:
         return GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
+    case WGPUTextureFormat_Stencil8:
+        return GFX_TEXTURE_FORMAT_STENCIL8;
     case WGPUTextureFormat_Depth24PlusStencil8:
         return GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8;
     case WGPUTextureFormat_Depth32FloatStencil8:
@@ -980,6 +984,7 @@ WGPUPresentMode gfxPresentModeToWGPU(GfxPresentMode mode)
 bool formatHasStencil(GfxTextureFormat format)
 {
     switch (format) {
+    case GFX_TEXTURE_FORMAT_STENCIL8:
     case GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8:
     case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8:
         return true;

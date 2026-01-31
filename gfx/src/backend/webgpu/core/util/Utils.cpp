@@ -30,6 +30,7 @@ uint32_t getFormatBytesPerPixel(WGPUTextureFormat format)
     case WGPUTextureFormat_R8Snorm:
     case WGPUTextureFormat_R8Uint:
     case WGPUTextureFormat_R8Sint:
+    case WGPUTextureFormat_Stencil8:
         return 1;
     case WGPUTextureFormat_R16Uint:
     case WGPUTextureFormat_R16Sint:
@@ -130,8 +131,6 @@ uint32_t getFormatBytesPerPixel(WGPUTextureFormat format)
     case WGPUTextureFormat_ASTC12x12Unorm:
     case WGPUTextureFormat_ASTC12x12UnormSrgb:
         return 16; // 128 bits per block
-    case WGPUTextureFormat_Stencil8:
-        return 1;
     case WGPUTextureFormat_Undefined:
     default:
         return 0;

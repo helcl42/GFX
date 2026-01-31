@@ -93,8 +93,9 @@ enum class TextureFormat : int32_t {
     Depth16Unorm = 14,
     Depth24Plus = 15,
     Depth32Float = 16,
-    Depth24PlusStencil8 = 17,
-    Depth32FloatStencil8 = 18
+    Stencil8 = 17,
+    Depth24PlusStencil8 = 18,
+    Depth32FloatStencil8 = 19
 };
 
 enum class TextureType : int32_t {
