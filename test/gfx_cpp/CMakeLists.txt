@@ -46,6 +46,36 @@ endif()
 # =============================================================================
 add_executable(gfx_cpp_internal_test
     internal/GfxImplTest.cpp
+    internal/converter/ConversionsTest.cpp
+    internal/core/util/HandleExtractorTest.cpp
+    internal/core/util/UtilsTest.cpp
+    internal/core/resource/BufferTest.cpp
+    internal/core/resource/TextureTest.cpp
+    internal/core/resource/TextureViewTest.cpp
+    internal/core/resource/SamplerTest.cpp
+    internal/core/resource/ShaderTest.cpp
+    internal/core/resource/BindGroupLayoutTest.cpp
+    internal/core/resource/BindGroupTest.cpp
+    internal/core/system/InstanceTest.cpp
+    internal/core/system/AdapterTest.cpp
+    internal/core/system/DeviceTest.cpp
+    internal/core/system/QueueTest.cpp
+    internal/core/sync/FenceTest.cpp
+    internal/core/sync/SemaphoreTest.cpp
+    internal/core/render/RenderPipelineTest.cpp
+    internal/core/render/RenderPassTest.cpp
+    internal/core/render/FramebufferTest.cpp
+    internal/core/compute/ComputePipelineTest.cpp
+    internal/core/query/QuerySetTest.cpp
+    internal/core/command/CommandEncoderTest.cpp
+    internal/core/command/RenderPassEncoderTest.cpp
+    internal/core/command/ComputePassEncoderTest.cpp
+    internal/core/presentation/SurfaceTest.cpp
+    internal/core/presentation/SwapchainTest.cpp
+)
+
+target_include_directories(gfx_cpp_internal_test PRIVATE
+    ${CMAKE_SOURCE_DIR}/gfx_cpp/src
 )
 
 target_link_libraries(gfx_cpp_internal_test
