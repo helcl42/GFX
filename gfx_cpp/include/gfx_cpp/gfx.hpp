@@ -1386,6 +1386,7 @@ public:
 
     virtual void waitIdle() = 0;
     virtual DeviceLimits getLimits() const = 0;
+    virtual bool supportsShaderFormat(ShaderSourceType format) const = 0;
 };
 
 class Adapter {

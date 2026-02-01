@@ -391,4 +391,15 @@ DeviceLimits DeviceImpl::getLimits() const
     return cDeviceLimitsToCppDeviceLimits(cLimits);
 }
 
+bool DeviceImpl::supportsShaderFormat(ShaderSourceType format) const
+{
+    bool supported = false;
+    GfxShaderSourceType cFormat = cppShaderSourceTypeToCShaderSourceType(format);
+    GfxResult result = gfxDeviceSupportsShaderFormat(m_handle, cFormat, &supported);
+    if (result != GFX_RESULT_SUCCESS) {
+        return false;
+    }
+    return supported;
+}
+
 } // namespace gfx

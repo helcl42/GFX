@@ -90,6 +90,7 @@ const char* deviceExtensionNameToGfx(const char* internalName);
 // ============================================================================
 
 core::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreType gfxType);
+core::ShaderSourceType gfxShaderSourceTypeToWebGPUShaderSourceType(GfxShaderSourceType type);
 
 // ============================================================================
 // Adapter Type Conversion

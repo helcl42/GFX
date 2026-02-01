@@ -49,6 +49,7 @@ public:
     GfxResult deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const override;
     GfxResult deviceWaitIdle(GfxDevice device) const override;
     GfxResult deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const override;
+    GfxResult deviceSupportsShaderFormat(GfxDevice device, GfxShaderSourceType format, bool* outSupported) const override;
 
     // Surface functions
     GfxResult surfaceDestroy(GfxSurface surface) const override;

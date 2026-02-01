@@ -248,4 +248,56 @@ TEST(GfxDeviceTestNonParam, DestroyNullDevice)
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
 
+TEST_P(GfxDeviceTest, SupportsShaderFormatSPIRV)
+{
+    GfxDeviceDescriptor desc = {};
+    GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    ASSERT_NE(device, nullptr);
+
+    bool supported = false;
+    result = gfxDeviceSupportsShaderFormat(device, GFX_SHADER_SOURCE_SPIRV, &supported);
+
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+    // Both Vulkan and WebGPU support SPIR-V (except Emscripten)
+    EXPECT_TRUE(supported);
+}
+
+TEST_P(GfxDeviceTest, SupportsShaderFormatWGSL)
+{
+    GfxDeviceDescriptor desc = {};
+    GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    ASSERT_NE(device, nullptr);
+
+    bool supported = false;
+    result = gfxDeviceSupportsShaderFormat(device, GFX_SHADER_SOURCE_WGSL, &supported);
+
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+    // Vulkan doesn't support WGSL, WebGPU does
+    if (backend == GFX_BACKEND_VULKAN) {
+        EXPECT_FALSE(supported);
+    } else {
+        EXPECT_TRUE(supported);
+    }
+}
+
+TEST_P(GfxDeviceTest, SupportsShaderFormatNullDevice)
+{
+    bool supported = false;
+    GfxResult result = gfxDeviceSupportsShaderFormat(NULL, GFX_SHADER_SOURCE_SPIRV, &supported);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
+}
+
+TEST_P(GfxDeviceTest, SupportsShaderFormatNullOutput)
+{
+    GfxDeviceDescriptor desc = {};
+    GfxResult result = gfxAdapterCreateDevice(adapter, &desc, &device);
+    ASSERT_EQ(result, GFX_RESULT_SUCCESS);
+    ASSERT_NE(device, nullptr);
+
+    result = gfxDeviceSupportsShaderFormat(device, GFX_SHADER_SOURCE_SPIRV, NULL);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
+}
+
 } // namespace

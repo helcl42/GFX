@@ -554,6 +554,18 @@ GfxResult gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
     return backend->deviceGetLimits(device, outLimits);
 }
 
+GfxResult gfxDeviceSupportsShaderFormat(GfxDevice device, GfxShaderSourceType format, bool* outSupported)
+{
+    if (!device || !outSupported) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(device);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->deviceSupportsShaderFormat(device, format, outSupported);
+}
+
 // Macro for simple destroy functions
 #define DESTROY_FUNC(TypeName, typeName)                                              \
     GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \

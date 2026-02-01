@@ -214,4 +214,10 @@ const VkPhysicalDeviceProperties& Device::getProperties() const
     return m_adapter->getProperties();
 }
 
+bool Device::supportsShaderFormat(ShaderSourceType format) const
+{
+    // Vulkan backend only supports SPIR-V
+    return format == ShaderSourceType::SPIRV;
+}
+
 } // namespace gfx::backend::vulkan::core

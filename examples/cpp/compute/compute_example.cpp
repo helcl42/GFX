@@ -156,7 +156,7 @@ private:
 
     size_t currentFrame = 0;
     float elapsedTime = 0.0f;
-    
+
     // FPS tracking
     uint32_t fpsFrameCount = 0;
     float fpsTimeAccumulator = 0.0f;
@@ -325,17 +325,21 @@ bool ComputeApp::createComputeResources()
             return false;
         }
 
-        // Load compute shader (WGSL for WebGPU, SPIR-V for Vulkan)
         gfx::ShaderSourceType shaderSourceType;
         std::string computeShaderCode;
 
-        if (adapterInfo.backend == gfx::Backend::WebGPU) {
-            shaderSourceType = gfx::ShaderSourceType::WGSL;
-            computeShaderCode = loadTextFile("shaders/generate.comp.wgsl");
-        } else {
+        if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
             shaderSourceType = gfx::ShaderSourceType::SPIRV;
+            std::cout << "Loading SPIR-V compute shader..." << std::endl;
             auto spirv = loadBinaryFile("generate.comp.spv");
             computeShaderCode = std::string(reinterpret_cast<const char*>(spirv.data()), spirv.size());
+        } else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
+            shaderSourceType = gfx::ShaderSourceType::WGSL;
+            std::cout << "Loading WGSL compute shader..." << std::endl;
+            computeShaderCode = loadTextFile("shaders/generate.comp.wgsl");
+        } else {
+            std::cerr << "Error: No supported shader format found" << std::endl;
+            return false;
         }
 
         if (computeShaderCode.empty()) {
@@ -481,20 +485,25 @@ bool ComputeApp::createComputeResources()
 bool ComputeApp::createRenderResources()
 {
     try {
-        // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
+        // Load shaders - try SPIR-V first, then WGSL
         gfx::ShaderSourceType shaderSourceType;
         std::string vertexShaderCode, fragmentShaderCode;
 
-        if (adapterInfo.backend == gfx::Backend::WebGPU) {
-            shaderSourceType = gfx::ShaderSourceType::WGSL;
-            vertexShaderCode = loadTextFile("shaders/fullscreen.vert.wgsl");
-            fragmentShaderCode = loadTextFile("shaders/postprocess.frag.wgsl");
-        } else {
+        if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
             shaderSourceType = gfx::ShaderSourceType::SPIRV;
+            std::cout << "Loading SPIR-V shaders..." << std::endl;
             auto vertexSpirv = loadBinaryFile("fullscreen.vert.spv");
             auto fragmentSpirv = loadBinaryFile("postprocess.frag.spv");
             vertexShaderCode = std::string(reinterpret_cast<const char*>(vertexSpirv.data()), vertexSpirv.size());
             fragmentShaderCode = std::string(reinterpret_cast<const char*>(fragmentSpirv.data()), fragmentSpirv.size());
+        } else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
+            shaderSourceType = gfx::ShaderSourceType::WGSL;
+            std::cout << "Loading WGSL shaders..." << std::endl;
+            vertexShaderCode = loadTextFile("shaders/fullscreen.vert.wgsl");
+            fragmentShaderCode = loadTextFile("shaders/postprocess.frag.wgsl");
+        } else {
+            std::cerr << "Error: No supported shader format found" << std::endl;
+            return false;
         }
 
         if (vertexShaderCode.empty() || fragmentShaderCode.empty()) {
@@ -946,19 +955,19 @@ bool ComputeApp::mainLoopIteration()
     // Calculate delta time
     float currentTime = getCurrentTime();
     float deltaTime = currentTime - elapsedTime;
-    
+
     // Track FPS
     if (deltaTime > 0.0f) {
         fpsFrameCount++;
         fpsTimeAccumulator += deltaTime;
-        
+
         if (deltaTime < fpsFrameTimeMin) {
             fpsFrameTimeMin = deltaTime;
         }
         if (deltaTime > fpsFrameTimeMax) {
             fpsFrameTimeMax = deltaTime;
         }
-        
+
         // Log FPS every second
         if (fpsTimeAccumulator >= 1.0f) {
             float avgFPS = static_cast<float>(fpsFrameCount) / fpsTimeAccumulator;
@@ -968,7 +977,7 @@ bool ComputeApp::mainLoopIteration()
             std::cout << "FPS - Avg: " << avgFPS << ", Min: " << minFPS << ", Max: " << maxFPS
                       << " | Frame Time - Avg: " << avgFrameTime << " ms, Min: " << (fpsFrameTimeMin * 1000.0f)
                       << " ms, Max: " << (fpsFrameTimeMax * 1000.0f) << " ms" << std::endl;
-            
+
             // Reset for next second
             fpsFrameCount = 0;
             fpsTimeAccumulator = 0.0f;

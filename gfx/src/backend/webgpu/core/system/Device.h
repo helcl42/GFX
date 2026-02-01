@@ -29,6 +29,8 @@ public:
 
     void waitIdle() const;
 
+    bool supportsShaderFormat(ShaderSourceType format) const;
+
     Blit* getBlit();
 
 private:

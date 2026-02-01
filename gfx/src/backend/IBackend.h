@@ -48,6 +48,7 @@ public:
     virtual GfxResult deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const = 0;
     virtual GfxResult deviceWaitIdle(GfxDevice device) const = 0;
     virtual GfxResult deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const = 0;
+    virtual GfxResult deviceSupportsShaderFormat(GfxDevice device, GfxShaderSourceType format, bool* outSupported) const = 0;
 
     // Surface functions
     virtual GfxResult surfaceDestroy(GfxSurface surface) const = 0;

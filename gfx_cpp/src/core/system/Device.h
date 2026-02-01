@@ -57,6 +57,8 @@ public:
 
     DeviceLimits getLimits() const override;
 
+    bool supportsShaderFormat(ShaderSourceType format) const override;
+
 private:
     GfxDevice m_handle;
     std::shared_ptr<class QueueImpl> m_queue;

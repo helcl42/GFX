@@ -27,6 +27,8 @@ public:
     Adapter* getAdapter();
     const VkPhysicalDeviceProperties& getProperties() const;
 
+    bool supportsShaderFormat(ShaderSourceType format) const;
+
     // Extension function pointer loaders
     template <typename T>
     T loadFunction(const char* name) const

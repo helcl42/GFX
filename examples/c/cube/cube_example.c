@@ -812,31 +812,50 @@ static bool createShaders(CubeApp* app)
     void* vertexShaderCode = NULL;
     void* fragmentShaderCode = NULL;
 
+    // Query shader format support and use the first supported format
     GfxShaderSourceType sourceType;
-    if (app->adapterInfo.backend == GFX_BACKEND_WEBGPU) {
+    bool formatSupported = false;
+
+    // Try SPIR-V first (generally better performance on native)
+    if (gfxDeviceSupportsShaderFormat(app->device, GFX_SHADER_SOURCE_SPIRV, &formatSupported) == GFX_RESULT_SUCCESS && formatSupported) {
+        sourceType = GFX_SHADER_SOURCE_SPIRV;
+        printf("Loading SPIR-V shaders...\n");
+        vertexShaderCode = loadBinaryFile("cube_textured.vert.spv", &vertexShaderSize);
+        fragmentShaderCode = loadBinaryFile("cube_textured.frag.spv", &fragmentShaderSize);
+        if (vertexShaderCode && fragmentShaderCode) {
+            printf("Successfully loaded SPIR-V shaders (vertex: %zu bytes, fragment: %zu bytes)\n",
+                vertexShaderSize, fragmentShaderSize);
+        } else {
+            // SPIR-V files not found, fall back to WGSL
+            if (vertexShaderCode)
+                free(vertexShaderCode);
+            if (fragmentShaderCode)
+                free(fragmentShaderCode);
+            vertexShaderCode = NULL;
+            fragmentShaderCode = NULL;
+            formatSupported = false; // Reset to try WGSL
+        }
+    }
+
+    // Try WGSL if SPIR-V is not available or failed to load
+    if (!vertexShaderCode && !fragmentShaderCode && gfxDeviceSupportsShaderFormat(app->device, GFX_SHADER_SOURCE_WGSL, &formatSupported) == GFX_RESULT_SUCCESS && formatSupported) {
         sourceType = GFX_SHADER_SOURCE_WGSL;
-        // Load WGSL shaders for WebGPU (both native and web)
         printf("Loading WGSL shaders...\n");
-        vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl", &vertexShaderSize);
-        fragmentShaderCode = loadTextFile("shaders/cube.frag.wgsl", &fragmentShaderSize);
+        vertexShaderCode = loadTextFile("shaders/cube_textured.vert.wgsl", &vertexShaderSize);
+        fragmentShaderCode = loadTextFile("shaders/cube_textured.frag.wgsl", &fragmentShaderSize);
         if (!vertexShaderCode || !fragmentShaderCode) {
             fprintf(stderr, "Failed to load WGSL shaders\n");
+            free(vertexShaderCode);
+            free(fragmentShaderCode);
             return false;
         }
         printf("Successfully loaded WGSL shaders (vertex: %zu bytes, fragment: %zu bytes)\n",
             vertexShaderSize, fragmentShaderSize);
-    } else {
-        sourceType = GFX_SHADER_SOURCE_SPIRV;
-        // Load SPIR-V shaders for Vulkan
-        printf("Loading SPIR-V shaders...\n");
-        vertexShaderCode = loadBinaryFile("cube.vert.spv", &vertexShaderSize);
-        fragmentShaderCode = loadBinaryFile("cube.frag.spv", &fragmentShaderSize);
-        if (!vertexShaderCode || !fragmentShaderCode) {
-            fprintf(stderr, "Failed to load SPIR-V shaders\n");
-            return false;
-        }
-        printf("Successfully loaded SPIR-V shaders (vertex: %zu bytes, fragment: %zu bytes)\n",
-            vertexShaderSize, fragmentShaderSize);
+    }
+
+    if (!vertexShaderCode || !fragmentShaderCode) {
+        fprintf(stderr, "Error: No supported shader format found or failed to load shaders\n");
+        return false;
     }
 
     // Create vertex shader

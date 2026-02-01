@@ -1225,6 +1225,7 @@ GFX_API GfxResult gfxDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreD
 GFX_API GfxResult gfxDeviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet);
 GFX_API GfxResult gfxDeviceWaitIdle(GfxDevice device);
 GFX_API GfxResult gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
+GFX_API GfxResult gfxDeviceSupportsShaderFormat(GfxDevice device, GfxShaderSourceType format, bool* outSupported);
 
 // Surface functions
 GFX_API GfxResult gfxSurfaceDestroy(GfxSurface surface);

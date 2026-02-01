@@ -334,4 +334,26 @@ TEST_F(VulkanDeviceTest, CreateMultipleDevicesSameAdapter_AllValid)
     EXPECT_NE(device1->handle(), device2->handle());
 }
 
+// ============================================================================
+// Shader Format Support Tests
+// ============================================================================
+
+TEST_F(VulkanDeviceTest, SupportsShaderFormat_SPIRV)
+{
+    gfx::backend::vulkan::core::DeviceCreateInfo createInfo{};
+    gfx::backend::vulkan::core::Device device(adapter, createInfo);
+
+    bool supported = device.supportsShaderFormat(gfx::backend::vulkan::core::ShaderSourceType::SPIRV);
+    EXPECT_TRUE(supported);
+}
+
+TEST_F(VulkanDeviceTest, SupportsShaderFormat_WGSL)
+{
+    gfx::backend::vulkan::core::DeviceCreateInfo createInfo{};
+    gfx::backend::vulkan::core::Device device(adapter, createInfo);
+
+    bool supported = device.supportsShaderFormat(gfx::backend::vulkan::core::ShaderSourceType::WGSL);
+    EXPECT_FALSE(supported);
+}
+
 } // namespace

@@ -4,6 +4,7 @@ project(GfxWrapper VERSION 1.0.0 LANGUAGES C CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Detect Emscripten
 if(EMSCRIPTEN)
@@ -143,6 +144,12 @@ if(BUILD_WEBGPU_BACKEND)
         set(DAWN_FETCH_DEPENDENCIES ON CACHE BOOL "" FORCE)
         set(DAWN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
         set(DAWN_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+        
+        # Enable SPIR-V support in Tint (required for native WebGPU)
+        if(NOT BUILD_FOR_WEB)
+            set(TINT_BUILD_SPV_READER ON CACHE BOOL "Enable SPIR-V reader for WebGPU backend" FORCE)
+            set(TINT_BUILD_SPV_WRITER ON CACHE BOOL "Enable SPIR-V writer for WebGPU backend" FORCE)
+        endif()
         
         # Platform-specific Dawn options
         if(BUILD_FOR_WEB)

@@ -37,6 +37,23 @@ Device::Device(Adapter* adapter, const DeviceCreateInfo& createInfo)
     WGPUDeviceDescriptor wgpuDesc = WGPU_DEVICE_DESCRIPTOR_INIT;
     wgpuDesc.uncapturedErrorCallbackInfo = errorCallbackInfo;
     wgpuDesc.deviceLostCallbackInfo = deviceLostCallbackInfo;
+
+#ifndef __EMSCRIPTEN__
+    // Enable Dawn toggles to allow SPIR-V at device level (Dawn-specific)
+    static const char* enabledToggles[] = { "allow_unsafe_apis" };
+    static const char* disabledToggles[] = { "disallow_spirv" };
+    WGPUDawnTogglesDescriptor deviceTogglesDesc = {};
+    deviceTogglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
+    deviceTogglesDesc.enabledToggleCount = 1;
+    deviceTogglesDesc.enabledToggles = enabledToggles;
+    deviceTogglesDesc.disabledToggleCount = 1;
+    deviceTogglesDesc.disabledToggles = disabledToggles;
+
+    gfx::common::Logger::instance().logDebug("WebGPU Device: Enabling Dawn toggles - allow_unsafe_apis (enabled), disallow_spirv (disabled)");
+
+    wgpuDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&deviceTogglesDesc);
+#endif
+
     // DeviceCreateInfo is currently empty, but we keep it for future extensibility
     (void)createInfo;
 
@@ -149,6 +166,17 @@ void Device::waitIdle() const
 Blit* Device::getBlit()
 {
     return m_blit.get();
+}
+
+bool Device::supportsShaderFormat(ShaderSourceType format) const
+{
+#ifdef __EMSCRIPTEN__
+    // Emscripten (WebAssembly) only supports WGSL, SPIR-V doesn't work
+    return format == ShaderSourceType::WGSL;
+#else
+    // Native WebGPU (Dawn) supports both SPIR-V and WGSL
+    return format == ShaderSourceType::SPIRV || format == ShaderSourceType::WGSL;
+#endif
 }
 
 } // namespace gfx::backend::webgpu::core

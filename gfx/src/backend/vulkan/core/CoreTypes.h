@@ -43,6 +43,11 @@ enum class SemaphoreType {
     Timeline
 };
 
+enum class ShaderSourceType {
+    WGSL = 0,
+    SPIRV = 1
+};
+
 enum class DeviceTypePreference {
     HighPerformance, // Prefer discrete GPU
     LowPower, // Prefer integrated GPU
@@ -245,7 +250,7 @@ struct DeviceCreateInfo {
         uint32_t queueIndex;
         float priority;
     };
-    
+
     std::vector<std::string> enabledExtensions;
     std::vector<QueueRequest> queueRequests;
 };

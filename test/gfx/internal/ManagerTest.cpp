@@ -50,6 +50,7 @@ public:
     GfxResult deviceCreateQuerySet(GfxDevice, const GfxQuerySetDescriptor*, GfxQuerySet*) const override { return GFX_RESULT_SUCCESS; }
     GfxResult deviceWaitIdle(GfxDevice) const override { return GFX_RESULT_SUCCESS; }
     GfxResult deviceGetLimits(GfxDevice, GfxDeviceLimits*) const override { return GFX_RESULT_SUCCESS; }
+    GfxResult deviceSupportsShaderFormat(GfxDevice, GfxShaderSourceType, bool*) const override { return GFX_RESULT_SUCCESS; }
     GfxResult surfaceDestroy(GfxSurface) const override { return GFX_RESULT_SUCCESS; }
     GfxResult surfaceEnumerateSupportedFormats(GfxSurface, uint32_t*, GfxTextureFormat*) const override { return GFX_RESULT_SUCCESS; }
     GfxResult surfaceEnumerateSupportedPresentModes(GfxSurface, uint32_t*, GfxPresentMode*) const override { return GFX_RESULT_SUCCESS; }

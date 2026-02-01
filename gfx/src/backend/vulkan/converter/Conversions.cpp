@@ -147,6 +147,18 @@ gfx::backend::vulkan::core::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(
     }
 }
 
+gfx::backend::vulkan::core::ShaderSourceType gfxShaderSourceTypeToVulkanShaderSourceType(GfxShaderSourceType type)
+{
+    switch (type) {
+    case GFX_SHADER_SOURCE_WGSL:
+        return gfx::backend::vulkan::core::ShaderSourceType::WGSL;
+    case GFX_SHADER_SOURCE_SPIRV:
+        return gfx::backend::vulkan::core::ShaderSourceType::SPIRV;
+    default:
+        return gfx::backend::vulkan::core::ShaderSourceType::SPIRV;
+    }
+}
+
 // ============================================================================
 // Format Conversion Functions
 // ============================================================================

@@ -665,6 +665,17 @@ GfxResult Backend::deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult Backend::deviceSupportsShaderFormat(GfxDevice device, GfxShaderSourceType format, bool* outSupported) const
+{
+    if (!device || !outSupported) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto internalFormat = converter::gfxShaderSourceTypeToWebGPUShaderSourceType(format);
+    *outSupported = devicePtr->supportsShaderFormat(internalFormat);
+    return GFX_RESULT_SUCCESS;
+}
+
 // Surface functions
 GfxResult Backend::surfaceDestroy(GfxSurface surface) const
 {

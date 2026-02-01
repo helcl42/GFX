@@ -413,29 +413,34 @@ static bool createComputeTexture(ComputeApp* app)
 static bool createComputeShaders(ComputeApp* app)
 {
     GfxShaderSourceType sourceType;
-    // Load compute shader based on backend
     void* computeCode = NULL;
     size_t computeSize = 0;
-    GfxBackend backend = app->adapterInfo.backend;
-    printf("Backend: %s\n", backend == GFX_BACKEND_WEBGPU ? "WebGPU" : "Vulkan");
-    if (backend == GFX_BACKEND_WEBGPU) {
-        sourceType = GFX_SHADER_SOURCE_WGSL;
-        // Load WGSL shader for WebGPU
-        printf("Loading WGSL shader: shaders/generate.comp.wgsl\n");
-        computeCode = loadTextFile("shaders/generate.comp.wgsl", &computeSize);
-        if (!computeCode) {
-            fprintf(stderr, "Failed to load WGSL compute shader\n");
-            return false;
-        }
-    } else {
+    bool formatSupported = false;
+
+    // Query shader format support and use the first supported format
+    // Try SPIR-V first (generally better performance)
+    if (gfxDeviceSupportsShaderFormat(app->device, GFX_SHADER_SOURCE_SPIRV, &formatSupported) == GFX_RESULT_SUCCESS && formatSupported) {
         sourceType = GFX_SHADER_SOURCE_SPIRV;
-        // Load SPIR-V shader for Vulkan
         printf("Loading SPIR-V shader: generate.comp.spv\n");
         computeCode = loadBinaryFile("generate.comp.spv", &computeSize);
         if (!computeCode) {
             fprintf(stderr, "Failed to load SPIR-V compute shader\n");
             return false;
         }
+    }
+    // Fall back to WGSL
+    else if (gfxDeviceSupportsShaderFormat(app->device, GFX_SHADER_SOURCE_WGSL, &formatSupported) == GFX_RESULT_SUCCESS && formatSupported) {
+        sourceType = GFX_SHADER_SOURCE_WGSL;
+        printf("Loading WGSL shader: shaders/generate.comp.wgsl\n");
+        computeCode = loadTextFile("shaders/generate.comp.wgsl", &computeSize);
+        if (!computeCode) {
+            fprintf(stderr, "Failed to load WGSL compute shader\n");
+            return false;
+        }
+    }
+    else {
+        fprintf(stderr, "Error: No supported shader format found (neither SPIR-V nor WGSL)\n");
+        return false;
     }
 
     GfxShaderDescriptor computeShaderDesc = {
@@ -715,26 +720,32 @@ static bool createFramebuffers(ComputeApp* app)
 static bool createRenderShaders(ComputeApp* app)
 {
     GfxShaderSourceType vertexSourceType;
-    // Load shaders based on backend
     void* vertexCode = NULL;
     size_t vertexSize = 0;
-    GfxBackend backend = app->adapterInfo.backend;
-    if (backend == GFX_BACKEND_WEBGPU) {
-        vertexSourceType = GFX_SHADER_SOURCE_WGSL;
-        // Load WGSL shader for WebGPU
-        vertexCode = loadTextFile("shaders/fullscreen.vert.wgsl", &vertexSize);
-        if (!vertexCode) {
-            fprintf(stderr, "Failed to load WGSL vertex shader\n");
-            return false;
-        }
-    } else {
+    bool formatSupported = false;
+
+    // Query shader format support and use the first supported format
+    // Try SPIR-V first
+    if (gfxDeviceSupportsShaderFormat(app->device, GFX_SHADER_SOURCE_SPIRV, &formatSupported) == GFX_RESULT_SUCCESS && formatSupported) {
         vertexSourceType = GFX_SHADER_SOURCE_SPIRV;
-        // Load SPIR-V shader for Vulkan
         vertexCode = loadBinaryFile("fullscreen.vert.spv", &vertexSize);
         if (!vertexCode) {
             fprintf(stderr, "Failed to load SPIR-V vertex shader\n");
             return false;
         }
+    }
+    // Fall back to WGSL
+    else if (gfxDeviceSupportsShaderFormat(app->device, GFX_SHADER_SOURCE_WGSL, &formatSupported) == GFX_RESULT_SUCCESS && formatSupported) {
+        vertexSourceType = GFX_SHADER_SOURCE_WGSL;
+        vertexCode = loadTextFile("shaders/fullscreen.vert.wgsl", &vertexSize);
+        if (!vertexCode) {
+            fprintf(stderr, "Failed to load WGSL vertex shader\n");
+            return false;
+        }
+    }
+    else {
+        fprintf(stderr, "Error: No supported shader format found\n");
+        return false;
     }
 
     GfxShaderDescriptor vertexShaderDesc = {
@@ -754,20 +765,20 @@ static bool createRenderShaders(ComputeApp* app)
     GfxShaderSourceType fragmentSourceType;
     void* fragmentCode = NULL;
     size_t fragmentSize = 0;
-    if (backend == GFX_BACKEND_WEBGPU) {
-        fragmentSourceType = GFX_SHADER_SOURCE_WGSL;
-        // Load WGSL shader for WebGPU
-        fragmentCode = loadTextFile("shaders/postprocess.frag.wgsl", &fragmentSize);
-        if (!fragmentCode) {
-            fprintf(stderr, "Failed to load WGSL fragment shader\n");
-            return false;
-        }
-    } else {
+
+    // Use same format as vertex shader (already queried above)
+    if (vertexSourceType == GFX_SHADER_SOURCE_SPIRV) {
         fragmentSourceType = GFX_SHADER_SOURCE_SPIRV;
-        // Load SPIR-V shader for Vulkan
         fragmentCode = loadBinaryFile("postprocess.frag.spv", &fragmentSize);
         if (!fragmentCode) {
             fprintf(stderr, "Failed to load SPIR-V fragment shader\n");
+            return false;
+        }
+    } else {
+        fragmentSourceType = GFX_SHADER_SOURCE_WGSL;
+        fragmentCode = loadTextFile("shaders/postprocess.frag.wgsl", &fragmentSize);
+        if (!fragmentCode) {
+            fprintf(stderr, "Failed to load WGSL fragment shader\n");
             return false;
         }
     }

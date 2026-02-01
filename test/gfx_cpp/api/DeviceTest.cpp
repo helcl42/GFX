@@ -164,6 +164,36 @@ TEST_P(GfxCppDeviceTest, CreateBuffer)
     EXPECT_NE(buffer, nullptr);
 }
 
+TEST_P(GfxCppDeviceTest, SupportsShaderFormat_SPIRV)
+{
+    ASSERT_NE(adapter, nullptr);
+    
+    gfx::DeviceDescriptor desc{};
+    auto device = adapter->createDevice(desc);
+    ASSERT_NE(device, nullptr);
+
+    bool supported = device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV);
+    // Both Vulkan and WebGPU support SPIR-V (except Emscripten)
+    EXPECT_TRUE(supported);
+}
+
+TEST_P(GfxCppDeviceTest, SupportsShaderFormat_WGSL)
+{
+    ASSERT_NE(adapter, nullptr);
+    
+    gfx::DeviceDescriptor desc{};
+    auto device = adapter->createDevice(desc);
+    ASSERT_NE(device, nullptr);
+
+    bool supported = device->supportsShaderFormat(gfx::ShaderSourceType::WGSL);
+    // Vulkan doesn't support WGSL, WebGPU does
+    if (backend == gfx::Backend::Vulkan) {
+        EXPECT_FALSE(supported);
+    } else {
+        EXPECT_TRUE(supported);
+    }
+}
+
 INSTANTIATE_TEST_SUITE_P(
     AllBackends,
     GfxCppDeviceTest,

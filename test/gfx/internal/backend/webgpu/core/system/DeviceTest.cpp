@@ -157,4 +157,27 @@ TEST_F(WebGPUDeviceTest, MultipleDevices_FromDifferentAdapters)
     EXPECT_NE(device->handle(), device2->handle());
 }
 
+// ============================================================================
+// Shader Format Support Tests
+// ============================================================================
+
+TEST_F(WebGPUDeviceTest, SupportsShaderFormat_SPIRV)
+{
+    bool supported = device->supportsShaderFormat(gfx::backend::webgpu::core::ShaderSourceType::SPIRV);
+#ifdef __EMSCRIPTEN__
+    // Emscripten doesn't support SPIR-V
+    EXPECT_FALSE(supported);
+#else
+    // Native WebGPU (Dawn) supports SPIR-V
+    EXPECT_TRUE(supported);
+#endif
+}
+
+TEST_F(WebGPUDeviceTest, SupportsShaderFormat_WGSL)
+{
+    bool supported = device->supportsShaderFormat(gfx::backend::webgpu::core::ShaderSourceType::WGSL);
+    // WebGPU always supports WGSL
+    EXPECT_TRUE(supported);
+}
+
 } // anonymous namespace

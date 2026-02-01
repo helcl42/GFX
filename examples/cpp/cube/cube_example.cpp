@@ -177,7 +177,7 @@ private:
     float rotationAngleX = 0.0f;
     float rotationAngleY = 0.0f;
     float lastTime = 0.0f;
-    
+
     // FPS tracking
     uint32_t fpsFrameCount = 0;
     float fpsTimeAccumulator = 0.0f;
@@ -209,7 +209,7 @@ bool CubeApp::initialize()
 
     std::cout << "Application initialized successfully!" << std::endl;
     std::cout << "Press ESC or close window to exit" << std::endl;
-    
+
     // Initialize timing
     lastTime = getCurrentTime();
 
@@ -696,18 +696,11 @@ bool CubeApp::createRenderingResources()
         std::string vertexShaderCode;
         std::string fragmentShaderCode;
 
-        if (adapterInfo.backend == gfx::Backend::WebGPU) {
-            shaderSourceType = gfx::ShaderSourceType::WGSL;
-            // Load WGSL shaders for WebGPU
-            vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl");
-            fragmentShaderCode = loadTextFile("shaders/cube.frag.wgsl");
-            if (vertexShaderCode.empty() || fragmentShaderCode.empty()) {
-                std::cerr << "Failed to load WGSL shader files" << std::endl;
-                return false;
-            }
-        } else {
+        // Query shader format support and use the first supported format
+        // Try SPIR-V first (generally better performance)
+        if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
             shaderSourceType = gfx::ShaderSourceType::SPIRV;
-            // Load SPIR-V shaders for Vulkan
+            std::cout << "Loading SPIR-V shaders..." << std::endl;
             auto vertexSpirv = loadBinaryFile("cube.vert.spv");
             auto fragmentSpirv = loadBinaryFile("cube.frag.spv");
             if (vertexSpirv.empty() || fragmentSpirv.empty()) {
@@ -716,6 +709,20 @@ bool CubeApp::createRenderingResources()
             }
             vertexShaderCode = std::string(reinterpret_cast<const char*>(vertexSpirv.data()), vertexSpirv.size());
             fragmentShaderCode = std::string(reinterpret_cast<const char*>(fragmentSpirv.data()), fragmentSpirv.size());
+        }
+        // Fall back to WGSL
+        else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
+            shaderSourceType = gfx::ShaderSourceType::WGSL;
+            std::cout << "Loading WGSL shaders..." << std::endl;
+            vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl");
+            fragmentShaderCode = loadTextFile("shaders/cube.frag.wgsl");
+            if (vertexShaderCode.empty() || fragmentShaderCode.empty()) {
+                std::cerr << "Failed to load WGSL shader files" << std::endl;
+                return false;
+            }
+        } else {
+            std::cerr << "Error: No supported shader format found (neither SPIR-V nor WGSL)" << std::endl;
+            return false;
         }
 
         // Create vertex shader
@@ -1048,19 +1055,19 @@ bool CubeApp::mainLoopIteration()
     float currentTime = getCurrentTime();
     float deltaTime = currentTime - lastTime;
     lastTime = currentTime;
-    
+
     // Track FPS
     if (deltaTime > 0.0f) {
         fpsFrameCount++;
         fpsTimeAccumulator += deltaTime;
-        
+
         if (deltaTime < fpsFrameTimeMin) {
             fpsFrameTimeMin = deltaTime;
         }
         if (deltaTime > fpsFrameTimeMax) {
             fpsFrameTimeMax = deltaTime;
         }
-        
+
         // Log FPS every second
         if (fpsTimeAccumulator >= 1.0f) {
             float avgFPS = static_cast<float>(fpsFrameCount) / fpsTimeAccumulator;
@@ -1070,7 +1077,7 @@ bool CubeApp::mainLoopIteration()
             std::cout << "FPS - Avg: " << avgFPS << ", Min: " << minFPS << ", Max: " << maxFPS
                       << " | Frame Time - Avg: " << avgFrameTime << " ms, Min: " << (fpsFrameTimeMin * 1000.0f)
                       << " ms, Max: " << (fpsFrameTimeMax * 1000.0f) << " ms" << std::endl;
-            
+
             // Reset for next second
             fpsFrameCount = 0;
             fpsTimeAccumulator = 0.0f;

@@ -2,6 +2,8 @@
 
 #include "Adapter.h"
 
+#include "common/Logger.h"
+
 #include <algorithm>
 
 namespace gfx::backend::webgpu::core {
@@ -9,14 +11,35 @@ namespace gfx::backend::webgpu::core {
 Instance::Instance(const InstanceCreateInfo& createInfo)
 {
     (void)createInfo; // Descriptor not used in current implementation
+
     // Request TimedWaitAny feature for proper async callback handling
+    // For native Dawn, also request ShaderSourceSPIRV for SPIR-V shader support
     static const WGPUInstanceFeatureName requiredFeatures[] = {
-        WGPUInstanceFeatureName_TimedWaitAny
+        WGPUInstanceFeatureName_TimedWaitAny,
+#ifndef __EMSCRIPTEN__
+        WGPUInstanceFeatureName_ShaderSourceSPIRV
+#endif
     };
 
+#ifndef __EMSCRIPTEN__
+    // Enable Dawn toggles to allow SPIR-V at instance level (Dawn-specific)
+    static const char* enabledToggles[] = { "allow_unsafe_apis" };
+    WGPUDawnTogglesDescriptor instanceTogglesDesc = {};
+    instanceTogglesDesc.chain.sType = WGPUSType_DawnTogglesDescriptor;
+    instanceTogglesDesc.enabledToggleCount = 1;
+    instanceTogglesDesc.enabledToggles = enabledToggles;
+    instanceTogglesDesc.disabledToggleCount = 0;
+    instanceTogglesDesc.disabledToggles = nullptr;
+
+    gfx::common::Logger::instance().logDebug("WebGPU Instance: Enabling allow_unsafe_apis toggle and requesting ShaderSourceSPIRV feature");
+#endif
+
     WGPUInstanceDescriptor wgpuDesc = WGPU_INSTANCE_DESCRIPTOR_INIT;
-    wgpuDesc.requiredFeatureCount = 1;
+    wgpuDesc.requiredFeatureCount = sizeof(requiredFeatures) / sizeof(requiredFeatures[0]);
     wgpuDesc.requiredFeatures = requiredFeatures;
+#ifndef __EMSCRIPTEN__
+    wgpuDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&instanceTogglesDesc);
+#endif
     m_instance = wgpuCreateInstance(&wgpuDesc);
 
     // Enumerate and cache adapters by trying different power preferences and fallback

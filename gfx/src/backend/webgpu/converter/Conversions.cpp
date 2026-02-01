@@ -94,6 +94,18 @@ core::SemaphoreType gfxSemaphoreTypeToWebGPUSemaphoreType(GfxSemaphoreType gfxTy
     }
 }
 
+core::ShaderSourceType gfxShaderSourceTypeToWebGPUShaderSourceType(GfxShaderSourceType type)
+{
+    switch (type) {
+    case GFX_SHADER_SOURCE_WGSL:
+        return core::ShaderSourceType::WGSL;
+    case GFX_SHADER_SOURCE_SPIRV:
+        return core::ShaderSourceType::SPIRV;
+    default:
+        return core::ShaderSourceType::WGSL; // WebGPU defaults to WGSL
+    }
+}
+
 WGPUQueryType gfxQueryTypeToWebGPUQueryType(GfxQueryType type)
 {
     switch (type) {
