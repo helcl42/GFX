@@ -900,7 +900,7 @@ typedef struct {
 
 typedef struct {
     GfxTextureFormat format;
-    GfxBlendState* blend; // NULL if not used
+    const GfxBlendState* blend; // NULL if not used
     uint32_t writeMask; // Combination of GfxColorWriteMask flags
 } GfxColorTargetState;
 
@@ -962,13 +962,13 @@ typedef struct {
 typedef struct {
     const char* label;
     GfxRenderPass renderPass; // Render pass this pipeline will be used with
-    GfxVertexState* vertex;
-    GfxFragmentState* fragment; // NULL if not used
-    GfxPrimitiveState* primitive;
-    GfxDepthStencilState* depthStencil; // NULL if not used
+    const GfxVertexState* vertex;
+    const GfxFragmentState* fragment; // NULL if not used
+    const GfxPrimitiveState* primitive;
+    const GfxDepthStencilState* depthStencil; // NULL if not used
     GfxSampleCount sampleCount;
     // Bind group layouts for the pipeline
-    GfxBindGroupLayout* bindGroupLayouts;
+    const GfxBindGroupLayout* bindGroupLayouts;
     uint32_t bindGroupLayoutCount;
 } GfxRenderPipelineDescriptor;
 
@@ -977,7 +977,7 @@ typedef struct {
     GfxShader compute;
     const char* entryPoint;
     // Bind group layouts for the pipeline
-    GfxBindGroupLayout* bindGroupLayouts;
+    const GfxBindGroupLayout* bindGroupLayouts;
     uint32_t bindGroupLayoutCount;
 } GfxComputePipelineDescriptor;
 
@@ -1104,14 +1104,9 @@ typedef struct GfxWin32Handle {
 } GfxWin32Handle;
 
 typedef struct GfxXlibHandle {
-    unsigned long window; // Window
     void* display; // Display*
+    unsigned long window; // Window
 } GfxXlibHandle;
-
-typedef struct GfxX11Handle {
-    void* connection;
-    uint32_t window;
-} GfxX11Handle;
 
 typedef struct GfxWaylandHandle {
     void* surface; // wl_surface*
@@ -1271,7 +1266,7 @@ GFX_API GfxResult gfxShaderDestroy(GfxShader shader);
 GFX_API GfxResult gfxBindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout);
 
 // BindGroup functions
-GFX_API GfxResult gfxBindGroupDestroy(GfxBindGroup);
+GFX_API GfxResult gfxBindGroupDestroy(GfxBindGroup bindGroup);
 
 // RenderPipeline functions
 GFX_API GfxResult gfxRenderPipelineDestroy(GfxRenderPipeline renderPipeline);
@@ -1371,13 +1366,13 @@ GFX_API uint64_t gfxAlignDown(uint64_t value, uint64_t alignment);
 GFX_API uint32_t gfxGetFormatBytesPerPixel(GfxTextureFormat format);
 
 // Cross-platform helpers available on all platforms
-GfxPlatformWindowHandle gfxPlatformWindowHandleFromXlib(void* display, unsigned long window);
-GfxPlatformWindowHandle gfxPlatformWindowHandleFromWayland(void* surface, void* display);
-GfxPlatformWindowHandle gfxPlatformWindowHandleFromXCB(void* connection, uint32_t window);
-GfxPlatformWindowHandle gfxPlatformWindowHandleFromWin32(void* hwnd, void* hinstance);
-GfxPlatformWindowHandle gfxPlatformWindowHandleFromEmscripten(const char* canvasSelector);
-GfxPlatformWindowHandle gfxPlatformWindowHandleFromAndroid(void* window);
-GfxPlatformWindowHandle gfxPlatformWindowHandleFromMetal(void* layer);
+GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromXlib(void* display, unsigned long window);
+GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromWayland(void* surface, void* display);
+GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromXCB(void* connection, uint32_t window);
+GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromWin32(void* hwnd, void* hinstance);
+GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromEmscripten(const char* canvasSelector);
+GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromAndroid(void* window);
+GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromMetal(void* layer);
 
 #ifdef __cplusplus
 }
