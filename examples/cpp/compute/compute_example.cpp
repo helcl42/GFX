@@ -77,10 +77,12 @@ static void logCallback(gfx::LogLevel level, const std::string& message)
 // Uniform structures
 struct ComputeUniformData {
     float time;
+    float padding[3]; // WebGPU requires 16-byte alignment for uniform buffers
 };
 
 struct RenderUniformData {
     float postProcessStrength;
+    float padding[3]; // WebGPU requires 16-byte alignment for uniform buffers
 };
 
 class ComputeApp {
@@ -326,17 +328,17 @@ bool ComputeApp::createComputeResources()
         }
 
         gfx::ShaderSourceType shaderSourceType;
-        std::string computeShaderCode;
+        std::vector<uint8_t> computeShaderCode;
 
         if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
             shaderSourceType = gfx::ShaderSourceType::SPIRV;
             std::cout << "Loading SPIR-V compute shader..." << std::endl;
-            auto spirv = loadBinaryFile("generate.comp.spv");
-            computeShaderCode = std::string(reinterpret_cast<const char*>(spirv.data()), spirv.size());
+            computeShaderCode = loadBinaryFile("generate.comp.spv");
         } else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
             shaderSourceType = gfx::ShaderSourceType::WGSL;
             std::cout << "Loading WGSL compute shader..." << std::endl;
-            computeShaderCode = loadTextFile("shaders/generate.comp.wgsl");
+            auto wgsl = loadTextFile("shaders/generate.comp.wgsl");
+            computeShaderCode.assign(wgsl.begin(), wgsl.end());
         } else {
             std::cerr << "Error: No supported shader format found" << std::endl;
             return false;
@@ -487,20 +489,20 @@ bool ComputeApp::createRenderResources()
     try {
         // Load shaders - try SPIR-V first, then WGSL
         gfx::ShaderSourceType shaderSourceType;
-        std::string vertexShaderCode, fragmentShaderCode;
+        std::vector<uint8_t> vertexShaderCode, fragmentShaderCode;
 
         if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
             shaderSourceType = gfx::ShaderSourceType::SPIRV;
             std::cout << "Loading SPIR-V shaders..." << std::endl;
-            auto vertexSpirv = loadBinaryFile("fullscreen.vert.spv");
-            auto fragmentSpirv = loadBinaryFile("postprocess.frag.spv");
-            vertexShaderCode = std::string(reinterpret_cast<const char*>(vertexSpirv.data()), vertexSpirv.size());
-            fragmentShaderCode = std::string(reinterpret_cast<const char*>(fragmentSpirv.data()), fragmentSpirv.size());
+            vertexShaderCode = loadBinaryFile("fullscreen.vert.spv");
+            fragmentShaderCode = loadBinaryFile("postprocess.frag.spv");
         } else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
             shaderSourceType = gfx::ShaderSourceType::WGSL;
             std::cout << "Loading WGSL shaders..." << std::endl;
-            vertexShaderCode = loadTextFile("shaders/fullscreen.vert.wgsl");
-            fragmentShaderCode = loadTextFile("shaders/postprocess.frag.wgsl");
+            auto vertexWgsl = loadTextFile("shaders/fullscreen.vert.wgsl");
+            auto fragmentWgsl = loadTextFile("shaders/postprocess.frag.wgsl");
+            vertexShaderCode.assign(vertexWgsl.begin(), vertexWgsl.end());
+            fragmentShaderCode.assign(fragmentWgsl.begin(), fragmentWgsl.end());
         } else {
             std::cerr << "Error: No supported shader format found" << std::endl;
             return false;

@@ -693,8 +693,8 @@ bool CubeApp::createRenderingResources()
 
         // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
         gfx::ShaderSourceType shaderSourceType;
-        std::string vertexShaderCode;
-        std::string fragmentShaderCode;
+        std::vector<uint8_t> vertexShaderCode;
+        std::vector<uint8_t> fragmentShaderCode;
 
         // Query shader format support and use the first supported format
         // Try SPIR-V first (generally better performance)
@@ -707,19 +707,21 @@ bool CubeApp::createRenderingResources()
                 std::cerr << "Failed to load SPIR-V shader files" << std::endl;
                 return false;
             }
-            vertexShaderCode = std::string(reinterpret_cast<const char*>(vertexSpirv.data()), vertexSpirv.size());
-            fragmentShaderCode = std::string(reinterpret_cast<const char*>(fragmentSpirv.data()), fragmentSpirv.size());
+            vertexShaderCode = vertexSpirv;
+            fragmentShaderCode = fragmentSpirv;
         }
         // Fall back to WGSL
         else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
             shaderSourceType = gfx::ShaderSourceType::WGSL;
             std::cout << "Loading WGSL shaders..." << std::endl;
-            vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl");
-            fragmentShaderCode = loadTextFile("shaders/cube.frag.wgsl");
-            if (vertexShaderCode.empty() || fragmentShaderCode.empty()) {
+            auto vertexWgsl = loadTextFile("shaders/cube.vert.wgsl");
+            auto fragmentWgsl = loadTextFile("shaders/cube.frag.wgsl");
+            if (vertexWgsl.empty() || fragmentWgsl.empty()) {
                 std::cerr << "Failed to load WGSL shader files" << std::endl;
                 return false;
             }
+            vertexShaderCode.assign(vertexWgsl.begin(), vertexWgsl.end());
+            fragmentShaderCode.assign(fragmentWgsl.begin(), fragmentWgsl.end());
         } else {
             std::cerr << "Error: No supported shader format found (neither SPIR-V nor WGSL)" << std::endl;
             return false;
