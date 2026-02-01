@@ -163,6 +163,7 @@ BufferInfo Buffer::createBufferInfo(const BufferCreateInfo& createInfo)
     BufferInfo info{};
     info.size = createInfo.size;
     info.usage = createInfo.usage;
+    info.originalUsage = createInfo.originalUsage;
     info.memoryProperties = createInfo.memoryProperties;
     return info;
 }
@@ -172,6 +173,7 @@ BufferInfo Buffer::createBufferInfo(const BufferImportInfo& importInfo)
     BufferInfo info{};
     info.size = importInfo.size;
     info.usage = importInfo.usage;
+    info.originalUsage = importInfo.originalUsage;
     info.memoryProperties = 0; // Imported buffers don't specify memory properties
     return info;
 }

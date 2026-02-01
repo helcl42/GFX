@@ -485,6 +485,64 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithSPIRVShaders)
     EXPECT_NE(pipeline, nullptr);
 }
 
+TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithBindGroupLayouts)
+{
+    auto renderPass = device->createRenderPass({ .colorAttachments = { gfx::RenderPassColorAttachment{
+                                                     .target = {
+                                                         .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                                                         .sampleCount = gfx::SampleCount::Count1,
+                                                         .loadOp = gfx::LoadOp::Clear,
+                                                         .storeOp = gfx::StoreOp::Store,
+                                                         .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
+    ASSERT_NE(renderPass, nullptr);
+
+    // Create bind group layout
+    auto bindGroupLayout = device->createBindGroupLayout({ .entries = { gfx::BindGroupLayoutEntry{
+                                                               .binding = 0,
+                                                               .visibility = gfx::ShaderStage::Vertex,
+                                                               .resource = gfx::BindGroupLayoutEntry::BufferBinding{
+                                                                   .hasDynamicOffset = false,
+                                                                   .minBindingSize = 0 } } } });
+    ASSERT_NE(bindGroupLayout, nullptr);
+
+    // Create shaders based on backend
+    gfx::ShaderSourceType sourceType = backend == gfx::Backend::Vulkan ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL;
+    std::string vertexCode = backend == gfx::Backend::Vulkan ? std::string(reinterpret_cast<const char*>(spirvVertexShader), sizeof(spirvVertexShader)) : std::string(wgslVertexShader);
+    std::string fragmentCode = backend == gfx::Backend::Vulkan ? std::string(reinterpret_cast<const char*>(spirvFragmentShader), sizeof(spirvFragmentShader)) : std::string(wgslFragmentShader);
+
+    auto vertexShader = device->createShader({ .label = "Vertex Shader",
+        .sourceType = sourceType,
+        .code = vertexCode,
+        .entryPoint = "main" });
+    ASSERT_NE(vertexShader, nullptr);
+
+    auto fragmentShader = device->createShader({ .label = "Fragment Shader",
+        .sourceType = sourceType,
+        .code = fragmentCode,
+        .entryPoint = "main" });
+    ASSERT_NE(fragmentShader, nullptr);
+
+    // Create pipeline with bind group layouts
+    auto pipeline = device->createRenderPipeline({ .label = "Pipeline With Bind Group",
+        .renderPass = renderPass,
+        .vertex = {
+            .module = vertexShader,
+            .entryPoint = "main",
+            .buffers = {
+                gfx::VertexBufferLayout{
+                    .arrayStride = 12,
+                    .attributes = {
+                        gfx::VertexAttribute{
+                            .format = gfx::TextureFormat::R32G32B32Float,
+                            .offset = 0,
+                            .shaderLocation = 0 } } } } },
+        .fragment = gfx::FragmentState{ .module = fragmentShader, .entryPoint = "main", .targets = { gfx::ColorTargetState{ .format = gfx::TextureFormat::R8G8B8A8Unorm, .writeMask = gfx::ColorWriteMask::All } } },
+        .primitive = { .topology = gfx::PrimitiveTopology::TriangleList, .frontFace = gfx::FrontFace::CounterClockwise, .cullMode = gfx::CullMode::None },
+        .bindGroupLayouts = { bindGroupLayout } });
+
+    EXPECT_NE(pipeline, nullptr);
+}
+
 // ===========================================================================
 // Test Instantiation
 // ===========================================================================

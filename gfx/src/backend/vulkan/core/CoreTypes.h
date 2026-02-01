@@ -60,18 +60,21 @@ enum class DeviceTypePreference {
 struct BufferCreateInfo {
     size_t size;
     VkBufferUsageFlags usage;
+    uint32_t originalUsage; // Original usage flags as uint32_t (underlying type, not GfxBufferUsageFlags)
     VkMemoryPropertyFlags memoryProperties;
 };
 
 struct BufferImportInfo {
     size_t size;
     VkBufferUsageFlags usage;
+    uint32_t originalUsage; // Original usage flags as uint32_t (underlying type, not GfxBufferUsageFlags)
     VkMemoryPropertyFlags memoryProperties;
 };
 
 struct BufferInfo {
     uint64_t size;
     VkBufferUsageFlags usage;
+    uint32_t originalUsage; // Original usage flags as uint32_t (underlying type, not GfxBufferUsageFlags)
     VkMemoryPropertyFlags memoryProperties;
 };
 

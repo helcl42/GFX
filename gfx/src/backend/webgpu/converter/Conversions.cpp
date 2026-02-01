@@ -266,6 +266,7 @@ core::BufferCreateInfo gfxDescriptorToWebGPUBufferCreateInfo(const GfxBufferDesc
     core::BufferCreateInfo createInfo{};
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToWGPU(descriptor->usage);
+    createInfo.memoryProperties = descriptor->memoryProperties;
     return createInfo;
 }
 
@@ -274,6 +275,7 @@ core::BufferImportInfo gfxExternalDescriptorToWebGPUBufferImportInfo(const GfxBu
     core::BufferImportInfo importInfo{};
     importInfo.size = descriptor->size;
     importInfo.usage = gfxBufferUsageToWGPU(descriptor->usage);
+    importInfo.memoryProperties = 0; // External buffers have unknown/unspecified memory properties
     return importInfo;
 }
 
@@ -836,6 +838,7 @@ GfxBufferInfo wgpuBufferToGfxBufferInfo(const core::BufferInfo& info)
     GfxBufferInfo gfxInfo{};
     gfxInfo.size = info.size;
     gfxInfo.usage = webgpuBufferUsageToGfxBufferUsage(info.usage);
+    gfxInfo.memoryProperties = info.memoryProperties;
     return gfxInfo;
 }
 

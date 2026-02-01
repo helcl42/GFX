@@ -114,7 +114,7 @@ TEST_P(GfxCppBufferTest, GetBufferInfo)
     gfx::BufferDescriptor desc{
         .label = "Test Buffer",
         .size = 2048,
-        .usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst,
+        .usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst | gfx::BufferUsage::MapRead,
         .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
 
@@ -124,7 +124,7 @@ TEST_P(GfxCppBufferTest, GetBufferInfo)
     auto info = buffer->getInfo();
 
     EXPECT_EQ(info.size, 2048);
-    EXPECT_EQ(info.usage, gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst);
+    EXPECT_EQ(info.usage, gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst | gfx::BufferUsage::MapRead);
 }
 
 TEST_P(GfxCppBufferTest, MapUnmapBuffer)
@@ -355,7 +355,7 @@ TEST_P(GfxCppBufferTest, CreateBufferWithHostVisibleAndHostCoherent)
     gfx::BufferDescriptor desc{
         .label = "Host Visible Coherent Buffer",
         .size = 512,
-        .usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst | gfx::BufferUsage::MapWrite,
+        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc,
         .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCoherent
     };
 
@@ -365,7 +365,7 @@ TEST_P(GfxCppBufferTest, CreateBufferWithHostVisibleAndHostCoherent)
     if (buffer) {
         auto info = buffer->getInfo();
         EXPECT_EQ(info.size, 512);
-        // Don't check usage - backend may add additional flags like MapRead with MapWrite
+        EXPECT_EQ(info.usage, gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc);
 
         // This buffer should be mappable
         void* mappedData = buffer->map(0, 512);
@@ -383,7 +383,7 @@ TEST_P(GfxCppBufferTest, CreateBufferWithHostVisibleAndHostCached)
     gfx::BufferDescriptor desc{
         .label = "Host Visible Cached Buffer",
         .size = 256,
-        .usage = gfx::BufferUsage::MapRead | gfx::BufferUsage::CopySrc,
+        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc,
         .memoryProperties = gfx::MemoryProperty::HostVisible | gfx::MemoryProperty::HostCached
     };
 
@@ -393,9 +393,9 @@ TEST_P(GfxCppBufferTest, CreateBufferWithHostVisibleAndHostCached)
     if (buffer) {
         auto info = buffer->getInfo();
         EXPECT_EQ(info.size, 256);
-        // Don't check usage - backend may add additional flags
+        EXPECT_EQ(info.usage, gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc);
 
-        // This buffer should be mappable for read
+        // This buffer should be mappable for write
         void* mappedData = buffer->map(0, 256);
         EXPECT_NE(mappedData, nullptr);
         if (mappedData) {
@@ -432,11 +432,6 @@ TEST_P(GfxCppBufferTest, CreateBufferWithNoMemoryPropertiesThrows)
 {
     ASSERT_NE(device, nullptr);
 
-    // WebGPU doesn't validate memory properties, so skip this test
-    if (backend == gfx::Backend::WebGPU) {
-        GTEST_SKIP() << "WebGPU backend doesn't validate memory properties";
-    }
-
     gfx::BufferDescriptor desc{
         .label = "No Memory Properties Buffer",
         .size = 1024,
@@ -451,11 +446,6 @@ TEST_P(GfxCppBufferTest, CreateBufferWithNoMemoryPropertiesThrows)
 TEST_P(GfxCppBufferTest, CreateBufferWithHostCoherentWithoutHostVisibleThrows)
 {
     ASSERT_NE(device, nullptr);
-
-    // WebGPU doesn't validate memory properties, so skip this test
-    if (backend == gfx::Backend::WebGPU) {
-        GTEST_SKIP() << "WebGPU backend doesn't validate memory properties";
-    }
 
     gfx::BufferDescriptor desc{
         .label = "Invalid: HostCoherent without HostVisible",
@@ -472,11 +462,6 @@ TEST_P(GfxCppBufferTest, CreateBufferWithHostCachedWithoutHostVisibleThrows)
 {
     ASSERT_NE(device, nullptr);
 
-    // WebGPU doesn't validate memory properties, so skip this test
-    if (backend == gfx::Backend::WebGPU) {
-        GTEST_SKIP() << "WebGPU backend doesn't validate memory properties";
-    }
-
     gfx::BufferDescriptor desc{
         .label = "Invalid: HostCached without HostVisible",
         .size = 1024,
@@ -492,16 +477,12 @@ TEST_P(GfxCppBufferTest, FlushMappedRange)
 {
     ASSERT_NE(device, nullptr);
 
-    // Skip on WebGPU - memory is always coherent, no synchronous mapping
-    if (backend == gfx::Backend::WebGPU) {
-        GTEST_SKIP() << "WebGPU memory is always coherent";
-    }
-
     // Create a host-visible, non-coherent buffer for testing flush
+    // On WebGPU, flush is a no-op since memory is always coherent
     gfx::BufferDescriptor desc{
         .label = "Flush Test Buffer",
         .size = 1024,
-        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::Uniform | gfx::BufferUsage::CopySrc,
+        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc,
         .memoryProperties = gfx::MemoryProperty::HostVisible // Non-coherent
     };
 
@@ -527,16 +508,13 @@ TEST_P(GfxCppBufferTest, InvalidateMappedRange)
 {
     ASSERT_NE(device, nullptr);
 
-    // Skip on WebGPU - memory is always coherent, no synchronous mapping
-    if (backend == gfx::Backend::WebGPU) {
-        GTEST_SKIP() << "WebGPU memory is always coherent";
-    }
-
     // Create a host-visible buffer for testing invalidate
+    // On WebGPU, invalidate is a no-op since memory is always coherent
+    // Using MapWrite+CopySrc as MapRead doesn't work on WebGPU without prior data
     gfx::BufferDescriptor desc{
         .label = "Invalidate Test Buffer",
         .size = 1024,
-        .usage = gfx::BufferUsage::MapRead | gfx::BufferUsage::Storage | gfx::BufferUsage::CopyDst,
+        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc,
         .memoryProperties = gfx::MemoryProperty::HostVisible
     };
 
@@ -560,16 +538,13 @@ TEST_P(GfxCppBufferTest, FlushInvalidateCombined)
 {
     ASSERT_NE(device, nullptr);
 
-    // Skip on WebGPU - memory is always coherent, no synchronous mapping
-    if (backend == gfx::Backend::WebGPU) {
-        GTEST_SKIP() << "WebGPU memory is always coherent";
-    }
-
     // Test flush and invalidate together
+    // On WebGPU, these are no-ops since memory is always coherent
+    // Using MapWrite+CopySrc as MapRead/MapWrite+CopyDst doesn't work on WebGPU
     gfx::BufferDescriptor desc{
         .label = "Flush+Invalidate Test Buffer",
         .size = 2048,
-        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::MapRead | gfx::BufferUsage::Storage | gfx::BufferUsage::CopySrc | gfx::BufferUsage::CopyDst,
+        .usage = gfx::BufferUsage::MapWrite | gfx::BufferUsage::CopySrc,
         .memoryProperties = gfx::MemoryProperty::HostVisible
     };
 

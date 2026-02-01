@@ -73,16 +73,19 @@ struct AdapterInfo {
 struct BufferCreateInfo {
     size_t size;
     WGPUBufferUsage usage;
+    uint32_t memoryProperties; // Stored for API consistency (WebGPU doesn't use memory properties)
 };
 
 struct BufferImportInfo {
     size_t size;
     WGPUBufferUsage usage;
+    uint32_t memoryProperties; // Stored for API consistency (WebGPU doesn't use memory properties)
 };
 
 struct BufferInfo {
     uint64_t size;
     WGPUBufferUsage usage;
+    uint32_t memoryProperties; // Stored for API consistency (WebGPU doesn't use memory properties)
 };
 
 struct TextureInfo {

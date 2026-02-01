@@ -622,7 +622,7 @@ GfxBufferInfo vkBufferToGfxBufferInfo(const core::BufferInfo& info)
 {
     GfxBufferInfo gfxInfo{};
     gfxInfo.size = info.size;
-    gfxInfo.usage = vkBufferUsageToGfxBufferUsage(info.usage);
+    gfxInfo.usage = info.originalUsage; // Use preserved original GFX usage flags
     gfxInfo.memoryProperties = vkMemoryPropertyToGfxMemoryProperty(info.memoryProperties);
     return gfxInfo;
 }
@@ -1117,6 +1117,7 @@ core::BufferCreateInfo gfxDescriptorToBufferCreateInfo(const GfxBufferDescriptor
     core::BufferCreateInfo createInfo{};
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
+    createInfo.originalUsage = descriptor->usage; // Preserve original GFX usage
     createInfo.memoryProperties = gfxMemoryPropertyToVkMemoryProperty(descriptor->memoryProperties);
     return createInfo;
 }
@@ -1126,6 +1127,7 @@ core::BufferImportInfo gfxExternalDescriptorToBufferImportInfo(const GfxBufferIm
     core::BufferImportInfo createInfo{};
     createInfo.size = descriptor->size;
     createInfo.usage = gfxBufferUsageToVkBufferUsage(descriptor->usage);
+    createInfo.originalUsage = descriptor->usage; // Preserve original GFX usage
     createInfo.memoryProperties = 0; // Imported buffers don't specify memory properties
     return createInfo;
 }

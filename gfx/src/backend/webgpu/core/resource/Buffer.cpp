@@ -75,7 +75,8 @@ void* Buffer::map(uint64_t offset, uint64_t size)
         mapSize = m_info.size - offset;
     }
 
-    // Determine map mode based on buffer usage
+    // Determine map mode based on original GFX usage flags (not WebGPU usage)
+    // WebGPU usage is derived from GFX usage and has MapRead/MapWrite
     WGPUMapMode mapMode = WGPUMapMode_None;
     if (m_info.usage & WGPUBufferUsage_MapRead) {
         mapMode |= WGPUMapMode_Read;
@@ -149,6 +150,7 @@ BufferInfo Buffer::createBufferInfo(const BufferCreateInfo& createInfo)
     BufferInfo info{};
     info.size = createInfo.size;
     info.usage = createInfo.usage;
+    info.memoryProperties = createInfo.memoryProperties;
     return info;
 }
 
@@ -157,6 +159,7 @@ BufferInfo Buffer::createBufferInfo(const BufferImportInfo& importInfo)
     BufferInfo info{};
     info.size = importInfo.size;
     info.usage = importInfo.usage;
+    info.memoryProperties = importInfo.memoryProperties;
     return info;
 }
 
