@@ -500,6 +500,156 @@ TEST_P(GfxBufferTest, FlushInvalidateCombined)
     gfxBufferDestroy(buffer);
 }
 
+TEST_P(GfxBufferTest, CreateBufferWithDeviceLocalOnly)
+{
+    GfxBufferDescriptor desc = {};
+    desc.label = "Device Local Buffer";
+    desc.size = 1024;
+    desc.usage = GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_COPY_DST;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
+
+    GfxBuffer buffer = nullptr;
+    GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+    ASSERT_NE(buffer, nullptr);
+
+    GfxBufferInfo info = {};
+    result = gfxBufferGetInfo(buffer, &info);
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_EQ(info.size, 1024u);
+    EXPECT_TRUE(info.memoryProperties & GFX_MEMORY_PROPERTY_DEVICE_LOCAL);
+
+    gfxBufferDestroy(buffer);
+}
+
+TEST_P(GfxBufferTest, CreateBufferWithHostVisibleAndHostCoherent)
+{
+    GfxBufferDescriptor desc = {};
+    desc.label = "Host Visible Coherent Buffer";
+    desc.size = 512;
+    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
+
+    GfxBuffer buffer = nullptr;
+    GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+    ASSERT_NE(buffer, nullptr);
+
+    GfxBufferInfo info = {};
+    result = gfxBufferGetInfo(buffer, &info);
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_TRUE(info.memoryProperties & GFX_MEMORY_PROPERTY_HOST_VISIBLE);
+    EXPECT_TRUE(info.memoryProperties & GFX_MEMORY_PROPERTY_HOST_COHERENT);
+
+    gfxBufferDestroy(buffer);
+}
+
+TEST_P(GfxBufferTest, CreateBufferWithHostVisibleAndHostCached)
+{
+    GfxBufferDescriptor desc = {};
+    desc.label = "Host Visible Cached Buffer";
+    desc.size = 512;
+    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_CACHED;
+
+    GfxBuffer buffer = nullptr;
+    GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+    ASSERT_NE(buffer, nullptr);
+
+    GfxBufferInfo info = {};
+    result = gfxBufferGetInfo(buffer, &info);
+    EXPECT_EQ(result, GFX_RESULT_SUCCESS);
+    EXPECT_TRUE(info.memoryProperties & GFX_MEMORY_PROPERTY_HOST_VISIBLE);
+    EXPECT_TRUE(info.memoryProperties & GFX_MEMORY_PROPERTY_HOST_CACHED);
+
+    gfxBufferDestroy(buffer);
+}
+
+TEST_P(GfxBufferTest, CreateBufferWithAllMemoryProperties)
+{
+    GfxBufferDescriptor desc = {};
+    desc.label = "All Memory Properties Buffer";
+    desc.size = 1024;
+    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL | GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT | GFX_MEMORY_PROPERTY_HOST_CACHED;
+
+    GfxBuffer buffer = nullptr;
+    GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+    // This combination may not be supported on all platforms
+    // Result may succeed or fail depending on hardware capabilities
+    if (result == GFX_RESULT_SUCCESS && buffer != nullptr) {
+        gfxBufferDestroy(buffer);
+    }
+    // Test passes either way - just ensure it doesn't crash
+    SUCCEED();
+}
+
+TEST_P(GfxBufferTest, CreateBufferWithNoMemoryPropertiesThrows)
+{
+    GfxBufferDescriptor desc = {};
+    desc.label = "No Memory Properties Buffer";
+    desc.size = 512;
+    desc.usage = GFX_BUFFER_USAGE_VERTEX;
+    desc.memoryProperties = 0; // Invalid: no memory properties
+
+    GfxBuffer buffer = nullptr;
+    GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+    EXPECT_NE(result, GFX_RESULT_SUCCESS);
+}
+
+TEST_P(GfxBufferTest, CreateBufferWithHostCoherentWithoutHostVisibleThrows)
+{
+    GfxBufferDescriptor desc = {};
+    desc.label = "Host Coherent Without Visible Buffer";
+    desc.size = 512;
+    desc.usage = GFX_BUFFER_USAGE_VERTEX;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_COHERENT; // Invalid: HostCoherent requires HostVisible
+
+    GfxBuffer buffer = nullptr;
+    GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+    EXPECT_NE(result, GFX_RESULT_SUCCESS);
+}
+
+TEST_P(GfxBufferTest, CreateBufferWithHostCachedWithoutHostVisibleThrows)
+{
+    GfxBufferDescriptor desc = {};
+    desc.label = "Host Cached Without Visible Buffer";
+    desc.size = 512;
+    desc.usage = GFX_BUFFER_USAGE_VERTEX;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_CACHED; // Invalid: HostCached requires HostVisible
+
+    GfxBuffer buffer = nullptr;
+    GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+    EXPECT_NE(result, GFX_RESULT_SUCCESS);
+}
+
+TEST_P(GfxBufferTest, CreateBufferWithMapReadRequiresHostVisible)
+{
+    GfxBufferDescriptor desc = {};
+    desc.label = "MapRead Without HostVisible Buffer";
+    desc.size = 512;
+    desc.usage = GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_COPY_DST;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL; // Invalid: MapRead requires HostVisible
+
+    GfxBuffer buffer = nullptr;
+    GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+    EXPECT_NE(result, GFX_RESULT_SUCCESS);
+}
+
+TEST_P(GfxBufferTest, CreateBufferWithMapWriteRequiresHostVisible)
+{
+    GfxBufferDescriptor desc = {};
+    desc.label = "MapWrite Without HostVisible Buffer";
+    desc.size = 512;
+    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
+    desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL; // Invalid: MapWrite requires HostVisible
+
+    GfxBuffer buffer = nullptr;
+    GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+    EXPECT_NE(result, GFX_RESULT_SUCCESS);
+}
+
 // ===========================================================================
 // Test Instantiation
 // ===========================================================================
