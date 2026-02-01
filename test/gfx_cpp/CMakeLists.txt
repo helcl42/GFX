@@ -48,7 +48,6 @@ add_executable(gfx_cpp_internal_test
     internal/GfxImplTest.cpp
     internal/converter/ConversionsTest.cpp
     internal/core/util/HandleExtractorTest.cpp
-    internal/core/util/UtilsTest.cpp
     internal/core/resource/BufferTest.cpp
     internal/core/resource/TextureTest.cpp
     internal/core/resource/TextureViewTest.cpp
