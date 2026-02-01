@@ -668,7 +668,7 @@ struct SamplerDescriptor {
 struct ShaderDescriptor {
     std::string label;
     ShaderSourceType sourceType = ShaderSourceType::SPIRV; // Default to SPIR-V for compatibility
-    std::string code;
+    std::vector<uint8_t> code;
     std::string entryPoint = "main";
 };
 

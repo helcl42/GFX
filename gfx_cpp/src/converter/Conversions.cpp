@@ -784,7 +784,7 @@ void convertShaderDescriptor(const ShaderDescriptor& descriptor, GfxShaderDescri
     outDesc = {};
     outDesc.label = descriptor.label.c_str();
     outDesc.sourceType = cppShaderSourceTypeToCShaderSourceType(descriptor.sourceType);
-    outDesc.code = descriptor.code.c_str();
+    outDesc.code = descriptor.code.data();
     outDesc.codeSize = descriptor.code.size();
     outDesc.entryPoint = descriptor.entryPoint.c_str();
 }

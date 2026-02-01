@@ -101,6 +101,19 @@ static const uint32_t spirvComputeShader[] = {
     0x0000001a, 0x00000019, 0x00000009, 0x0003003e, 0x0000001a, 0x0000001c, 0x000100fd, 0x00010038
 };
 
+// Helper functions to convert shader code to vector<uint8_t>
+inline std::vector<uint8_t> toShaderCode(const char* text)
+{
+    const uint8_t* begin = reinterpret_cast<const uint8_t*>(text);
+    return std::vector<uint8_t>(begin, begin + strlen(text));
+}
+
+inline std::vector<uint8_t> toShaderCode(const uint32_t* spirv, size_t size)
+{
+    const uint8_t* begin = reinterpret_cast<const uint8_t*>(spirv);
+    return std::vector<uint8_t>(begin, begin + size);
+}
+
 TEST_P(GfxCppShaderTest, CreateComputeShaderWGSL)
 {
     if (GetParam() == gfx::Backend::Vulkan) {
@@ -109,7 +122,7 @@ TEST_P(GfxCppShaderTest, CreateComputeShaderWGSL)
 
     auto shader = device->createShader({ .label = "WGSL Compute Shader",
         .sourceType = gfx::ShaderSourceType::WGSL,
-        .code = wgslComputeShader,
+        .code = toShaderCode(wgslComputeShader),
         .entryPoint = "main" });
 
     EXPECT_NE(shader, nullptr);
@@ -117,11 +130,9 @@ TEST_P(GfxCppShaderTest, CreateComputeShaderWGSL)
 
 TEST_P(GfxCppShaderTest, CreateComputeShaderSPIRV)
 {
-    std::string spirvCode(reinterpret_cast<const char*>(spirvComputeShader), sizeof(spirvComputeShader));
-
     auto shader = device->createShader({ .label = "SPIR-V Compute Shader",
         .sourceType = gfx::ShaderSourceType::SPIRV,
-        .code = spirvCode,
+        .code = toShaderCode(spirvComputeShader, sizeof(spirvComputeShader)),
         .entryPoint = "main" });
 
     EXPECT_NE(shader, nullptr);
@@ -135,7 +146,7 @@ TEST_P(GfxCppShaderTest, CreateVertexShaderWGSL)
 
     auto shader = device->createShader({ .label = "WGSL Vertex Shader",
         .sourceType = gfx::ShaderSourceType::WGSL,
-        .code = wgslVertexShader,
+        .code = toShaderCode(wgslVertexShader),
         .entryPoint = "main" });
 
     EXPECT_NE(shader, nullptr);
@@ -149,7 +160,7 @@ TEST_P(GfxCppShaderTest, CreateFragmentShaderWGSL)
 
     auto shader = device->createShader({ .label = "WGSL Fragment Shader",
         .sourceType = gfx::ShaderSourceType::WGSL,
-        .code = wgslFragmentShader,
+        .code = toShaderCode(wgslFragmentShader),
         .entryPoint = "main" });
 
     EXPECT_NE(shader, nullptr);
@@ -157,7 +168,7 @@ TEST_P(GfxCppShaderTest, CreateFragmentShaderWGSL)
 
 TEST_P(GfxCppShaderTest, CreateMultipleShaders)
 {
-    std::string spirvCode(reinterpret_cast<const char*>(spirvComputeShader), sizeof(spirvComputeShader));
+    auto spirvCode = toShaderCode(spirvComputeShader, sizeof(spirvComputeShader));
 
     auto shader1 = device->createShader({ .label = "Compute Shader 1",
         .sourceType = gfx::ShaderSourceType::SPIRV,
@@ -181,7 +192,7 @@ TEST_P(GfxCppShaderTest, CreateMultipleShaders)
 
 TEST_P(GfxCppShaderTest, CreateShaderWithDefaultDescriptor)
 {
-    std::string spirvCode(reinterpret_cast<const char*>(spirvComputeShader), sizeof(spirvComputeShader));
+    auto spirvCode = toShaderCode(spirvComputeShader, sizeof(spirvComputeShader));
 
     // Default descriptor uses SPIRV source type and "main" entry point
     auto shader = device->createShader({ .code = spirvCode });

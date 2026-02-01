@@ -97,6 +97,19 @@ static const uint32_t spirvFragmentShader[] = {
     0x00000003, 0x000200f8, 0x00000005, 0x0003003e, 0x00000009, 0x0000000c, 0x000100fd, 0x00010038
 };
 
+// Helper functions to convert shader code to vector<uint8_t>
+inline std::vector<uint8_t> toShaderCode(const char* text)
+{
+    const uint8_t* begin = reinterpret_cast<const uint8_t*>(text);
+    return std::vector<uint8_t>(begin, begin + strlen(text));
+}
+
+inline std::vector<uint8_t> toShaderCode(const uint32_t* spirv, size_t size)
+{
+    const uint8_t* begin = reinterpret_cast<const uint8_t*>(spirv);
+    return std::vector<uint8_t>(begin, begin + size);
+}
+
 // ===========================================================================
 // RenderPipeline Tests
 // ===========================================================================
@@ -122,8 +135,8 @@ TEST_P(GfxCppRenderPipelineTest, CreateBasicRenderPipeline)
         .label = "Vertex Shader",
         .sourceType = backend == gfx::Backend::Vulkan ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
         .code = backend == gfx::Backend::Vulkan
-            ? std::string(reinterpret_cast<const char*>(spirvVertexShader), sizeof(spirvVertexShader))
-            : std::string(wgslVertexShader),
+            ? toShaderCode(spirvVertexShader, sizeof(spirvVertexShader))
+            : toShaderCode(wgslVertexShader),
         .entryPoint = "main"
     };
     auto vertexShader = device->createShader(shaderDesc);
@@ -168,16 +181,16 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithFragmentShader)
     auto vertexShader = device->createShader({ .label = "Vertex Shader",
         .sourceType = backend == gfx::Backend::Vulkan ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
         .code = backend == gfx::Backend::Vulkan
-            ? std::string(reinterpret_cast<const char*>(spirvVertexShader), sizeof(spirvVertexShader))
-            : std::string(wgslVertexShader),
+            ? toShaderCode(spirvVertexShader, sizeof(spirvVertexShader))
+            : toShaderCode(wgslVertexShader),
         .entryPoint = "main" });
     ASSERT_NE(vertexShader, nullptr);
 
     auto fragmentShader = device->createShader({ .label = "Fragment Shader",
         .sourceType = backend == gfx::Backend::Vulkan ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
         .code = backend == gfx::Backend::Vulkan
-            ? std::string(reinterpret_cast<const char*>(spirvFragmentShader), sizeof(spirvFragmentShader))
-            : std::string(wgslFragmentShader),
+            ? toShaderCode(spirvFragmentShader, sizeof(spirvFragmentShader))
+            : toShaderCode(wgslFragmentShader),
         .entryPoint = "main" });
     ASSERT_NE(fragmentShader, nullptr);
 
@@ -224,8 +237,8 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithNullRenderPass)
 {
     auto vertexShader = device->createShader({ .sourceType = backend == gfx::Backend::Vulkan ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
         .code = backend == gfx::Backend::Vulkan
-            ? std::string(reinterpret_cast<const char*>(spirvVertexShader), sizeof(spirvVertexShader))
-            : std::string(wgslVertexShader),
+            ? toShaderCode(spirvVertexShader, sizeof(spirvVertexShader))
+            : toShaderCode(wgslVertexShader),
         .entryPoint = "main" });
     ASSERT_NE(vertexShader, nullptr);
 
@@ -250,8 +263,8 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithDifferentTopologies)
 
     auto vertexShader = device->createShader({ .sourceType = backend == gfx::Backend::Vulkan ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
         .code = backend == gfx::Backend::Vulkan
-            ? std::string(reinterpret_cast<const char*>(spirvVertexShader), sizeof(spirvVertexShader))
-            : std::string(wgslVertexShader),
+            ? toShaderCode(spirvVertexShader, sizeof(spirvVertexShader))
+            : toShaderCode(wgslVertexShader),
         .entryPoint = "main" });
     ASSERT_NE(vertexShader, nullptr);
 
@@ -297,8 +310,8 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithCulling)
 
     auto vertexShader = device->createShader({ .sourceType = backend == gfx::Backend::Vulkan ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
         .code = backend == gfx::Backend::Vulkan
-            ? std::string(reinterpret_cast<const char*>(spirvVertexShader), sizeof(spirvVertexShader))
-            : std::string(wgslVertexShader),
+            ? toShaderCode(spirvVertexShader, sizeof(spirvVertexShader))
+            : toShaderCode(wgslVertexShader),
         .entryPoint = "main" });
     ASSERT_NE(vertexShader, nullptr);
 
@@ -364,8 +377,8 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
 
     auto vertexShader = device->createShader({ .sourceType = backend == gfx::Backend::Vulkan ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
         .code = backend == gfx::Backend::Vulkan
-            ? std::string(reinterpret_cast<const char*>(spirvVertexShader), sizeof(spirvVertexShader))
-            : std::string(wgslVertexShader),
+            ? toShaderCode(spirvVertexShader, sizeof(spirvVertexShader))
+            : toShaderCode(wgslVertexShader),
         .entryPoint = "main" });
     ASSERT_NE(vertexShader, nullptr);
 
@@ -409,8 +422,8 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithMultipleVertexAttribute
 
     auto vertexShader = device->createShader({ .sourceType = backend == gfx::Backend::Vulkan ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
         .code = backend == gfx::Backend::Vulkan
-            ? std::string(reinterpret_cast<const char*>(spirvVertexShader), sizeof(spirvVertexShader))
-            : std::string(wgslVertexShader),
+            ? toShaderCode(spirvVertexShader, sizeof(spirvVertexShader))
+            : toShaderCode(wgslVertexShader),
         .entryPoint = "main" });
     ASSERT_NE(vertexShader, nullptr);
 
@@ -455,13 +468,13 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithSPIRVShaders)
     // Create shaders using SPIR-V on both backends to test SPIR-V support
     auto vertexShader = device->createShader({ .label = "SPIR-V Vertex Shader",
         .sourceType = gfx::ShaderSourceType::SPIRV,
-        .code = std::string(reinterpret_cast<const char*>(spirvVertexShader), sizeof(spirvVertexShader)),
+        .code = toShaderCode(spirvVertexShader, sizeof(spirvVertexShader)),
         .entryPoint = "main" });
     ASSERT_NE(vertexShader, nullptr);
 
     auto fragmentShader = device->createShader({ .label = "SPIR-V Fragment Shader",
         .sourceType = gfx::ShaderSourceType::SPIRV,
-        .code = std::string(reinterpret_cast<const char*>(spirvFragmentShader), sizeof(spirvFragmentShader)),
+        .code = toShaderCode(spirvFragmentShader, sizeof(spirvFragmentShader)),
         .entryPoint = "main" });
     ASSERT_NE(fragmentShader, nullptr);
 
@@ -507,8 +520,8 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithBindGroupLayouts)
 
     // Create shaders based on backend
     gfx::ShaderSourceType sourceType = backend == gfx::Backend::Vulkan ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL;
-    std::string vertexCode = backend == gfx::Backend::Vulkan ? std::string(reinterpret_cast<const char*>(spirvVertexShader), sizeof(spirvVertexShader)) : std::string(wgslVertexShader);
-    std::string fragmentCode = backend == gfx::Backend::Vulkan ? std::string(reinterpret_cast<const char*>(spirvFragmentShader), sizeof(spirvFragmentShader)) : std::string(wgslFragmentShader);
+    auto vertexCode = backend == gfx::Backend::Vulkan ? toShaderCode(spirvVertexShader, sizeof(spirvVertexShader)) : toShaderCode(wgslVertexShader);
+    auto fragmentCode = backend == gfx::Backend::Vulkan ? toShaderCode(spirvFragmentShader, sizeof(spirvFragmentShader)) : toShaderCode(wgslFragmentShader);
 
     auto vertexShader = device->createShader({ .label = "Vertex Shader",
         .sourceType = sourceType,

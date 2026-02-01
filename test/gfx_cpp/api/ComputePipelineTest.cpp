@@ -81,6 +81,19 @@ static const uint32_t spirvComputeShader[] = {
     0x000100fd, 0x00010038,
 };
 
+// Helper functions to convert shader code to vector<uint8_t>
+inline std::vector<uint8_t> toShaderCode(const char* text)
+{
+    const uint8_t* begin = reinterpret_cast<const uint8_t*>(text);
+    return std::vector<uint8_t>(begin, begin + strlen(text));
+}
+
+inline std::vector<uint8_t> toShaderCode(const uint32_t* spirv, size_t size)
+{
+    const uint8_t* begin = reinterpret_cast<const uint8_t*>(spirv);
+    return std::vector<uint8_t>(begin, begin + size);
+}
+
 // NULL parameter validation tests
 TEST_P(GfxCppComputePipelineTest, CreateComputePipelineWithNullShader)
 {
@@ -104,8 +117,8 @@ TEST_P(GfxCppComputePipelineTest, CreateBasicComputePipeline)
         .label = "Test Compute Shader",
         .sourceType = (backend == gfx::Backend::Vulkan) ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
         .code = (backend == gfx::Backend::Vulkan) 
-            ? std::string(reinterpret_cast<const char*>(spirvComputeShader), sizeof(spirvComputeShader)) 
-            : std::string(wgslComputeShader),
+            ? toShaderCode(spirvComputeShader, sizeof(spirvComputeShader))
+            : toShaderCode(wgslComputeShader),
         .entryPoint = "main"
     };
 
@@ -129,7 +142,7 @@ TEST_P(GfxCppComputePipelineTest, CreateComputePipelineWithEmptyLabel)
     gfx::ShaderDescriptor shaderDesc{
         .label = "Test Compute Shader",
         .sourceType = (backend == gfx::Backend::Vulkan) ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
-        .code = (backend == gfx::Backend::Vulkan) ? std::string(reinterpret_cast<const char*>(spirvComputeShader), sizeof(spirvComputeShader)) : std::string(wgslComputeShader),
+        .code = (backend == gfx::Backend::Vulkan) ? toShaderCode(spirvComputeShader, sizeof(spirvComputeShader)) : toShaderCode(wgslComputeShader),
         .entryPoint = "main"
     };
 
@@ -172,7 +185,7 @@ TEST_P(GfxCppComputePipelineTest, CreateComputePipelineWithBindGroupLayouts)
     gfx::ShaderDescriptor shaderDesc{
         .label = "Test Compute Shader",
         .sourceType = (backend == gfx::Backend::Vulkan) ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
-        .code = (backend == gfx::Backend::Vulkan) ? std::string(reinterpret_cast<const char*>(spirvComputeShader), sizeof(spirvComputeShader)) : std::string(wgslComputeShader),
+        .code = (backend == gfx::Backend::Vulkan) ? toShaderCode(spirvComputeShader, sizeof(spirvComputeShader)) : toShaderCode(wgslComputeShader),
         .entryPoint = "main"
     };
 
@@ -235,7 +248,7 @@ TEST_P(GfxCppComputePipelineTest, CreateComputePipelineWithMultipleBindGroupLayo
     gfx::ShaderDescriptor shaderDesc{
         .label = "Test Compute Shader",
         .sourceType = (backend == gfx::Backend::Vulkan) ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
-        .code = (backend == gfx::Backend::Vulkan) ? std::string(reinterpret_cast<const char*>(spirvComputeShader), sizeof(spirvComputeShader)) : std::string(wgslComputeShader),
+        .code = (backend == gfx::Backend::Vulkan) ? toShaderCode(spirvComputeShader, sizeof(spirvComputeShader)) : toShaderCode(wgslComputeShader),
         .entryPoint = "main"
     };
 
@@ -261,7 +274,7 @@ TEST_P(GfxCppComputePipelineTest, CreateComputePipelineWithEmptyBindGroupLayouts
     gfx::ShaderDescriptor shaderDesc{
         .label = "Test Compute Shader",
         .sourceType = (backend == gfx::Backend::Vulkan) ? gfx::ShaderSourceType::SPIRV : gfx::ShaderSourceType::WGSL,
-        .code = (backend == gfx::Backend::Vulkan) ? std::string(reinterpret_cast<const char*>(spirvComputeShader), sizeof(spirvComputeShader)) : std::string(wgslComputeShader),
+        .code = (backend == gfx::Backend::Vulkan) ? toShaderCode(spirvComputeShader, sizeof(spirvComputeShader)) : toShaderCode(wgslComputeShader),
         .entryPoint = "main"
     };
 
