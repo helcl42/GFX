@@ -20,15 +20,18 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "SemaphoreImplTest";
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "SemaphoreImplTest"
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc = {};
+        GfxAdapterDescriptor adapterDesc{
+            .adapterIndex = 0
+        };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc = {};
+        GfxDeviceDescriptor deviceDesc{};
 
         // Check if timeline semaphore extension is supported
         uint32_t extensionCount = 0;
@@ -47,8 +50,13 @@ protected:
         // Enable timeline semaphore extension if supported
         const char* deviceExtensions[] = { GFX_DEVICE_EXTENSION_TIMELINE_SEMAPHORE };
         if (timelineSemaphoreSupported) {
-            deviceDesc.enabledExtensions = deviceExtensions;
-            deviceDesc.enabledExtensionCount = 1;
+            deviceDesc = {
+                .label = nullptr,
+                .queueRequests = nullptr,
+                .queueRequestCount = 0,
+                .enabledExtensions = deviceExtensions,
+                .enabledExtensionCount = 1
+            };
         }
 
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);

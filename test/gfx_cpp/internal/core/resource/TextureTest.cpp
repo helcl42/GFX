@@ -17,15 +17,24 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "TextureImplTest";
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "TextureImplTest"
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc = {};
+        GfxAdapterDescriptor adapterDesc{
+            .adapterIndex = 0
+        };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc = {};
+        GfxDeviceDescriptor deviceDesc{
+            .label = nullptr,
+            .queueRequests = nullptr,
+            .queueRequestCount = 0,
+            .enabledExtensions = nullptr,
+            .enabledExtensionCount = 0
+        };
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);
     }
 
@@ -50,13 +59,14 @@ TEST_P(TextureImplTest, CreateTexture)
 {
     DeviceImpl deviceWrapper(device);
 
-    TextureDescriptor desc = {};
-    desc.size = { 256, 256, 1 };
-    desc.mipLevelCount = 1;
-    desc.arrayLayerCount = 1;
-    desc.format = TextureFormat::R8G8B8A8Unorm;
-    desc.usage = TextureUsage::TextureBinding;
-    desc.type = TextureType::Texture2D;
+    TextureDescriptor desc{
+        .type = TextureType::Texture2D,
+        .size = { 256, 256, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
     auto texture = deviceWrapper.createTexture(desc);
     ASSERT_NE(texture, nullptr);
@@ -71,13 +81,14 @@ TEST_P(TextureImplTest, CreateTextureWithMipLevels)
 {
     DeviceImpl deviceWrapper(device);
 
-    TextureDescriptor desc = {};
-    desc.size = { 512, 512, 1 };
-    desc.mipLevelCount = 4;
-    desc.arrayLayerCount = 1;
-    desc.format = TextureFormat::R32Float;
-    desc.usage = TextureUsage::RenderAttachment;
-    desc.type = TextureType::Texture2D;
+    TextureDescriptor desc{
+        .type = TextureType::Texture2D,
+        .size = { 512, 512, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 4,
+        .format = TextureFormat::R32Float,
+        .usage = TextureUsage::RenderAttachment
+    };
 
     auto texture = deviceWrapper.createTexture(desc);
     ASSERT_NE(texture, nullptr);
@@ -93,21 +104,23 @@ TEST_P(TextureImplTest, MultipleTextures_IndependentHandles)
 {
     DeviceImpl deviceWrapper(device);
 
-    TextureDescriptor desc1 = {};
-    desc1.size = { 128, 128, 1 };
-    desc1.mipLevelCount = 1;
-    desc1.arrayLayerCount = 1;
-    desc1.format = TextureFormat::R8G8B8A8Unorm;
-    desc1.usage = TextureUsage::TextureBinding;
-    desc1.type = TextureType::Texture2D;
+    TextureDescriptor desc1{
+        .type = TextureType::Texture2D,
+        .size = { 128, 128, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
-    TextureDescriptor desc2 = {};
-    desc2.size = { 256, 256, 1 };
-    desc2.mipLevelCount = 1;
-    desc2.arrayLayerCount = 1;
-    desc2.format = TextureFormat::R16G16B16A16Float;
-    desc2.usage = TextureUsage::RenderAttachment;
-    desc2.type = TextureType::Texture2D;
+    TextureDescriptor desc2{
+        .type = TextureType::Texture2D,
+        .size = { 256, 256, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .format = TextureFormat::R16G16B16A16Float,
+        .usage = TextureUsage::RenderAttachment
+    };
 
     auto texture1 = deviceWrapper.createTexture(desc1);
     auto texture2 = deviceWrapper.createTexture(desc2);
@@ -124,13 +137,14 @@ TEST_P(TextureImplTest, GetNativeHandle)
 {
     DeviceImpl deviceWrapper(device);
 
-    TextureDescriptor desc = {};
-    desc.size = { 64, 64, 1 };
-    desc.mipLevelCount = 1;
-    desc.arrayLayerCount = 1;
-    desc.format = TextureFormat::R8G8B8A8Unorm;
-    desc.usage = TextureUsage::TextureBinding;
-    desc.type = TextureType::Texture2D;
+    TextureDescriptor desc{
+        .type = TextureType::Texture2D,
+        .size = { 64, 64, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
     auto texture = deviceWrapper.createTexture(desc);
     ASSERT_NE(texture, nullptr);
@@ -143,13 +157,14 @@ TEST_P(TextureImplTest, GetLayout)
 {
     DeviceImpl deviceWrapper(device);
 
-    TextureDescriptor desc = {};
-    desc.size = { 128, 128, 1 };
-    desc.mipLevelCount = 1;
-    desc.arrayLayerCount = 1;
-    desc.format = TextureFormat::R8G8B8A8Unorm;
-    desc.usage = TextureUsage::TextureBinding;
-    desc.type = TextureType::Texture2D;
+    TextureDescriptor desc{
+        .type = TextureType::Texture2D,
+        .size = { 128, 128, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
     auto texture = deviceWrapper.createTexture(desc);
     ASSERT_NE(texture, nullptr);
@@ -164,13 +179,14 @@ TEST_P(TextureImplTest, ImportTexture)
     DeviceImpl deviceWrapper(device);
 
     // Create a texture to get its native handle
-    TextureDescriptor createDesc = {};
-    createDesc.size = { 256, 256, 1 };
-    createDesc.mipLevelCount = 1;
-    createDesc.arrayLayerCount = 1;
-    createDesc.format = TextureFormat::R8G8B8A8Unorm;
-    createDesc.usage = TextureUsage::TextureBinding;
-    createDesc.type = TextureType::Texture2D;
+    TextureDescriptor createDesc{
+        .type = TextureType::Texture2D,
+        .size = { 256, 256, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
     auto originalTexture = deviceWrapper.createTexture(createDesc);
     ASSERT_NE(originalTexture, nullptr);
@@ -180,14 +196,15 @@ TEST_P(TextureImplTest, ImportTexture)
     ASSERT_NE(nativeHandle, nullptr);
 
     // Import using the native handle
-    TextureImportDescriptor importDesc = {};
-    importDesc.nativeHandle = nativeHandle;
-    importDesc.size = { 256, 256, 1 };
-    importDesc.mipLevelCount = 1;
-    importDesc.arrayLayerCount = 1;
-    importDesc.format = TextureFormat::R8G8B8A8Unorm;
-    importDesc.usage = TextureUsage::TextureBinding;
-    importDesc.type = TextureType::Texture2D;
+    TextureImportDescriptor importDesc{
+        .nativeHandle = nativeHandle,
+        .type = TextureType::Texture2D,
+        .size = { 256, 256, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
     auto importedTexture = deviceWrapper.importTexture(importDesc);
     ASSERT_NE(importedTexture, nullptr);

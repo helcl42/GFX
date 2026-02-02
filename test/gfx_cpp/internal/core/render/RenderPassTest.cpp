@@ -17,17 +17,19 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "RenderPassTest";
-        instanceDesc.applicationVersion = 1;
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "RenderPassTest",
+            .applicationVersion = 1
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc = {};
-        adapterDesc.adapterIndex = 0;
+        GfxAdapterDescriptor adapterDesc{
+            .adapterIndex = 0
+        };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc = {};
+        GfxDeviceDescriptor deviceDesc{};
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);
     }
 
@@ -52,9 +54,9 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithColorAttachment)
 {
     DeviceImpl deviceWrapper(device);
 
-    RenderPassCreateDescriptor renderPassDesc;
-    renderPassDesc.label = "Test Render Pass";
-    renderPassDesc.colorAttachments = {
+    RenderPassCreateDescriptor renderPassDesc{
+        .label = "Test Render Pass",
+        .colorAttachments = {
         RenderPassColorAttachment{
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
@@ -62,6 +64,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithColorAttachment)
                 .loadOp = LoadOp::Clear,
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment } }
+        }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
@@ -72,9 +75,9 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithMultipleColorAttachments)
 {
     DeviceImpl deviceWrapper(device);
 
-    RenderPassCreateDescriptor renderPassDesc;
-    renderPassDesc.label = "Multi-Attachment Render Pass";
-    renderPassDesc.colorAttachments = {
+    RenderPassCreateDescriptor renderPassDesc{
+        .label = "Multi-Attachment Render Pass",
+        .colorAttachments = {
         RenderPassColorAttachment{
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
@@ -83,6 +86,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithMultipleColorAttachments)
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment } },
         RenderPassColorAttachment{ .target = { .format = TextureFormat::R16G16B16A16Float, .sampleCount = SampleCount::Count1, .loadOp = LoadOp::Load, .storeOp = StoreOp::Store, .finalLayout = TextureLayout::ColorAttachment } }
+        }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
@@ -93,22 +97,24 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithDepthStencilAttachment)
 {
     DeviceImpl deviceWrapper(device);
 
-    RenderPassDepthStencilAttachmentTarget depthStencilTarget;
-    depthStencilTarget.format = TextureFormat::Depth24PlusStencil8;
-    depthStencilTarget.sampleCount = SampleCount::Count1;
-    depthStencilTarget.depthLoadOp = LoadOp::Clear;
-    depthStencilTarget.depthStoreOp = StoreOp::Store;
-    depthStencilTarget.stencilLoadOp = LoadOp::Clear;
-    depthStencilTarget.stencilStoreOp = StoreOp::Store;
-    depthStencilTarget.finalLayout = TextureLayout::DepthStencilAttachment;
+    RenderPassDepthStencilAttachmentTarget depthStencilTarget{
+        .format = TextureFormat::Depth24PlusStencil8,
+        .sampleCount = SampleCount::Count1,
+        .depthLoadOp = LoadOp::Clear,
+        .depthStoreOp = StoreOp::Store,
+        .stencilLoadOp = LoadOp::Clear,
+        .stencilStoreOp = StoreOp::Store,
+        .finalLayout = TextureLayout::DepthStencilAttachment
+    };
 
-    RenderPassDepthStencilAttachment depthStencilAttachment;
-    depthStencilAttachment.target = depthStencilTarget;
-    depthStencilAttachment.resolveTarget = std::nullopt;
+    RenderPassDepthStencilAttachment depthStencilAttachment{
+        .target = depthStencilTarget,
+        .resolveTarget = std::nullopt
+    };
 
-    RenderPassCreateDescriptor renderPassDesc;
-    renderPassDesc.label = "Depth-Stencil Render Pass";
-    renderPassDesc.colorAttachments = {
+    RenderPassCreateDescriptor renderPassDesc{
+        .label = "Depth-Stencil Render Pass",
+        .colorAttachments = {
         RenderPassColorAttachment{
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
@@ -116,8 +122,9 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithDepthStencilAttachment)
                 .loadOp = LoadOp::Clear,
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment } }
+        },
+        .depthStencilAttachment = depthStencilAttachment
     };
-    renderPassDesc.depthStencilAttachment = depthStencilAttachment;
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
     EXPECT_NE(renderPass, nullptr);
@@ -127,8 +134,8 @@ TEST_P(RenderPassImplTest, CreateMultipleRenderPasses_IndependentHandles)
 {
     DeviceImpl deviceWrapper(device);
 
-    RenderPassCreateDescriptor renderPassDesc;
-    renderPassDesc.colorAttachments = {
+    RenderPassCreateDescriptor renderPassDesc{
+        .colorAttachments = {
         RenderPassColorAttachment{
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
@@ -136,6 +143,7 @@ TEST_P(RenderPassImplTest, CreateMultipleRenderPasses_IndependentHandles)
                 .loadOp = LoadOp::Clear,
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment } }
+        }
     };
 
     auto renderPass1 = deviceWrapper.createRenderPass(renderPassDesc);
@@ -150,16 +158,17 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithMSAAAndResolve)
 {
     DeviceImpl deviceWrapper(device);
 
-    RenderPassColorAttachmentTarget resolveTarget;
-    resolveTarget.format = TextureFormat::R8G8B8A8Unorm;
-    resolveTarget.sampleCount = SampleCount::Count1;
-    resolveTarget.loadOp = LoadOp::DontCare;
-    resolveTarget.storeOp = StoreOp::Store;
-    resolveTarget.finalLayout = TextureLayout::ColorAttachment;
+    RenderPassColorAttachmentTarget resolveTarget{
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .sampleCount = SampleCount::Count1,
+        .loadOp = LoadOp::DontCare,
+        .storeOp = StoreOp::Store,
+        .finalLayout = TextureLayout::ColorAttachment
+    };
 
-    RenderPassCreateDescriptor renderPassDesc;
-    renderPassDesc.label = "MSAA Render Pass with Resolve";
-    renderPassDesc.colorAttachments = {
+    RenderPassCreateDescriptor renderPassDesc{
+        .label = "MSAA Render Pass with Resolve",
+        .colorAttachments = {
         RenderPassColorAttachment{
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
@@ -168,6 +177,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithMSAAAndResolve)
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment },
             .resolveTarget = resolveTarget }
+        }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);

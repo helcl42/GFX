@@ -76,9 +76,10 @@ TEST(GfxImplTest, EnumerateInstanceExtensions_WebGPUBackend_ReturnsExtensions)
 
 TEST(GfxImplTest, CreateInstance_InvalidBackend_Throws)
 {
-    gfx::InstanceDescriptor desc;
-    desc.backend = static_cast<gfx::Backend>(999); // Invalid backend
-    desc.applicationName = "Test";
+    gfx::InstanceDescriptor desc{
+        .backend = static_cast<gfx::Backend>(999), // Invalid backend
+        .applicationName = "Test"
+    };
 
     EXPECT_THROW({ auto instance = gfx::createInstance(desc); }, std::runtime_error);
 }
@@ -86,10 +87,11 @@ TEST(GfxImplTest, CreateInstance_InvalidBackend_Throws)
 #ifdef GFX_ENABLE_VULKAN
 TEST(GfxImplTest, CreateInstance_VulkanBackend_Succeeds)
 {
-    gfx::InstanceDescriptor desc;
-    desc.backend = gfx::Backend::Vulkan;
-    desc.applicationName = "GfxImplTest";
-    desc.applicationVersion = 1;
+    gfx::InstanceDescriptor desc{
+        .backend = gfx::Backend::Vulkan,
+        .applicationName = "GfxImplTest",
+        .applicationVersion = 1
+    };
 
     std::shared_ptr<gfx::Instance> instance;
     EXPECT_NO_THROW({
@@ -105,10 +107,11 @@ TEST(GfxImplTest, CreateInstance_VulkanBackend_Succeeds)
 #ifdef GFX_ENABLE_WEBGPU
 TEST(GfxImplTest, CreateInstance_WebGPUBackend_Succeeds)
 {
-    gfx::InstanceDescriptor desc;
-    desc.backend = gfx::Backend::WebGPU;
-    desc.applicationName = "GfxImplTest";
-    desc.applicationVersion = 1;
+    gfx::InstanceDescriptor desc{
+        .backend = gfx::Backend::WebGPU,
+        .applicationName = "GfxImplTest",
+        .applicationVersion = 1
+    };
 
     std::shared_ptr<gfx::Instance> instance;
     EXPECT_NO_THROW({
@@ -124,11 +127,12 @@ TEST(GfxImplTest, CreateInstance_WebGPUBackend_Succeeds)
 TEST(GfxImplTest, CreateInstance_WithExtensions_Succeeds)
 {
 #ifdef GFX_ENABLE_VULKAN
-    gfx::InstanceDescriptor desc;
-    desc.backend = gfx::Backend::Vulkan;
-    desc.applicationName = "GfxImplTest";
-    desc.applicationVersion = 1;
-    desc.enabledExtensions = {}; // Empty extensions list should work
+    gfx::InstanceDescriptor desc{
+        .backend = gfx::Backend::Vulkan,
+        .applicationName = "GfxImplTest",
+        .applicationVersion = 1,
+        .enabledExtensions = {} // Empty extensions list should work
+    };
 
     EXPECT_NO_THROW({
         auto instance = gfx::createInstance(desc);
@@ -183,9 +187,10 @@ TEST(GfxImplTest, SetLogCallback_ClearCallback_DoesNotCrash)
 TEST(GfxImplTest, CreateInstance_InvalidDescriptor_Throws)
 {
     // Backend that doesn't exist
-    gfx::InstanceDescriptor desc;
-    desc.backend = static_cast<gfx::Backend>(999);
-    desc.applicationName = "Test";
+    gfx::InstanceDescriptor desc{
+        .backend = static_cast<gfx::Backend>(999),
+        .applicationName = "Test"
+    };
 
     EXPECT_THROW({ auto instance = gfx::createInstance(desc); }, std::runtime_error);
 }

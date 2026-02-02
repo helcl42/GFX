@@ -19,15 +19,24 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "RenderPipelineImplTest";
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "RenderPipelineImplTest"
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc = {};
+        GfxAdapterDescriptor adapterDesc{
+            .adapterIndex = 0
+        };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc = {};
+        GfxDeviceDescriptor deviceDesc{
+            .label = nullptr,
+            .queueRequests = nullptr,
+            .queueRequestCount = 0,
+            .enabledExtensions = nullptr,
+            .enabledExtensionCount = 0
+        };
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);
     }
 
@@ -100,18 +109,19 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipeline)
     DeviceImpl deviceWrapper(device);
 
     // Create shader using DeviceImpl
-    ShaderDescriptor shaderDesc;
-    shaderDesc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor shaderDesc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     shaderDesc.code.assign(reinterpret_cast<const uint8_t*>(vertexShaderCode),
         reinterpret_cast<const uint8_t*>(vertexShaderCode) + sizeof(vertexShaderCode));
-    shaderDesc.entryPoint = "main";
 
     auto shader = deviceWrapper.createShader(shaderDesc);
     ASSERT_NE(shader, nullptr);
 
     // Create render pass using DeviceImpl
-    RenderPassCreateDescriptor renderPassDesc;
-    renderPassDesc.colorAttachments = {
+    RenderPassCreateDescriptor renderPassDesc{
+        .colorAttachments = {
         RenderPassColorAttachment{
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
@@ -119,25 +129,27 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipeline)
                 .loadOp = LoadOp::Clear,
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment } }
+        }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
     ASSERT_NE(renderPass, nullptr);
 
     // Create render pipeline using DeviceImpl
-    RenderPipelineDescriptor pipelineDesc;
-    pipelineDesc.renderPass = renderPass;
-    pipelineDesc.vertex = {
-        .module = shader,
-        .entryPoint = "main",
-        .buffers = {}
+    RenderPipelineDescriptor pipelineDesc{
+        .renderPass = renderPass,
+        .vertex = {
+            .module = shader,
+            .entryPoint = "main",
+            .buffers = {}
+        },
+        .primitive = {
+            .topology = PrimitiveTopology::TriangleList,
+            .frontFace = FrontFace::CounterClockwise,
+            .cullMode = CullMode::None
+        },
+        .sampleCount = SampleCount::Count1
     };
-    pipelineDesc.primitive = {
-        .topology = PrimitiveTopology::TriangleList,
-        .frontFace = FrontFace::CounterClockwise,
-        .cullMode = CullMode::None
-    };
-    pipelineDesc.sampleCount = SampleCount::Count1;
 
     auto pipeline = deviceWrapper.createRenderPipeline(pipelineDesc);
     EXPECT_NE(pipeline, nullptr);
@@ -148,18 +160,19 @@ TEST_P(RenderPipelineImplTest, MultipleRenderPipelines_IndependentHandles)
     DeviceImpl deviceWrapper(device);
 
     // Create shader
-    ShaderDescriptor shaderDesc;
-    shaderDesc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor shaderDesc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     shaderDesc.code.assign(reinterpret_cast<const uint8_t*>(vertexShaderCode),
         reinterpret_cast<const uint8_t*>(vertexShaderCode) + sizeof(vertexShaderCode));
-    shaderDesc.entryPoint = "main";
 
     auto shader = deviceWrapper.createShader(shaderDesc);
     ASSERT_NE(shader, nullptr);
 
     // Create render pass
-    RenderPassCreateDescriptor renderPassDesc;
-    renderPassDesc.colorAttachments = {
+    RenderPassCreateDescriptor renderPassDesc{
+        .colorAttachments = {
         RenderPassColorAttachment{
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
@@ -167,25 +180,27 @@ TEST_P(RenderPipelineImplTest, MultipleRenderPipelines_IndependentHandles)
                 .loadOp = LoadOp::Clear,
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment } }
+        }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
     ASSERT_NE(renderPass, nullptr);
 
     // Create render pipeline descriptor
-    RenderPipelineDescriptor pipelineDesc;
-    pipelineDesc.renderPass = renderPass;
-    pipelineDesc.vertex = {
-        .module = shader,
-        .entryPoint = "main",
-        .buffers = {}
+    RenderPipelineDescriptor pipelineDesc{
+        .renderPass = renderPass,
+        .vertex = {
+            .module = shader,
+            .entryPoint = "main",
+            .buffers = {}
+        },
+        .primitive = {
+            .topology = PrimitiveTopology::TriangleList,
+            .frontFace = FrontFace::CounterClockwise,
+            .cullMode = CullMode::None
+        },
+        .sampleCount = SampleCount::Count1
     };
-    pipelineDesc.primitive = {
-        .topology = PrimitiveTopology::TriangleList,
-        .frontFace = FrontFace::CounterClockwise,
-        .cullMode = CullMode::None
-    };
-    pipelineDesc.sampleCount = SampleCount::Count1;
 
     // Create two pipelines with same descriptor
     auto pipeline1 = deviceWrapper.createRenderPipeline(pipelineDesc);
@@ -201,28 +216,30 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithFragmentShader)
     DeviceImpl deviceWrapper(device);
 
     // Create vertex shader (SPIR-V)
-    ShaderDescriptor vertexShaderDesc;
-    vertexShaderDesc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor vertexShaderDesc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     vertexShaderDesc.code.assign(reinterpret_cast<const uint8_t*>(vertexShaderCode),
         reinterpret_cast<const uint8_t*>(vertexShaderCode) + sizeof(vertexShaderCode));
-    vertexShaderDesc.entryPoint = "main";
 
     auto vertexShader = deviceWrapper.createShader(vertexShaderDesc);
     ASSERT_NE(vertexShader, nullptr);
 
     // Create fragment shader (SPIR-V)
-    ShaderDescriptor fragmentShaderDesc;
-    fragmentShaderDesc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor fragmentShaderDesc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     fragmentShaderDesc.code.assign(reinterpret_cast<const uint8_t*>(fragmentShaderCode),
         reinterpret_cast<const uint8_t*>(fragmentShaderCode) + sizeof(fragmentShaderCode));
-    fragmentShaderDesc.entryPoint = "main";
 
     auto fragmentShader = deviceWrapper.createShader(fragmentShaderDesc);
     ASSERT_NE(fragmentShader, nullptr);
 
     // Create render pass
-    RenderPassCreateDescriptor renderPassDesc;
-    renderPassDesc.colorAttachments = {
+    RenderPassCreateDescriptor renderPassDesc{
+        .colorAttachments = {
         RenderPassColorAttachment{
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
@@ -230,33 +247,35 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithFragmentShader)
                 .loadOp = LoadOp::Clear,
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment } }
+        }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
     ASSERT_NE(renderPass, nullptr);
 
     // Create render pipeline with fragment shader
-    RenderPipelineDescriptor pipelineDesc;
-    pipelineDesc.renderPass = renderPass;
-    pipelineDesc.vertex = {
-        .module = vertexShader,
-        .entryPoint = "main",
-        .buffers = {}
+    RenderPipelineDescriptor pipelineDesc{
+        .renderPass = renderPass,
+        .vertex = {
+            .module = vertexShader,
+            .entryPoint = "main",
+            .buffers = {}
+        },
+        .fragment = FragmentState{
+            .module = fragmentShader,
+            .entryPoint = "main",
+            .targets = {
+                ColorTargetState{
+                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .writeMask = 0xF } }
+        },
+        .primitive = {
+            .topology = PrimitiveTopology::TriangleList,
+            .frontFace = FrontFace::CounterClockwise,
+            .cullMode = CullMode::None
+        },
+        .sampleCount = SampleCount::Count1
     };
-    pipelineDesc.fragment = FragmentState{
-        .module = fragmentShader,
-        .entryPoint = "main",
-        .targets = {
-            ColorTargetState{
-                .format = TextureFormat::R8G8B8A8Unorm,
-                .writeMask = 0xF } }
-    };
-    pipelineDesc.primitive = {
-        .topology = PrimitiveTopology::TriangleList,
-        .frontFace = FrontFace::CounterClockwise,
-        .cullMode = CullMode::None
-    };
-    pipelineDesc.sampleCount = SampleCount::Count1;
 
     auto pipeline = deviceWrapper.createRenderPipeline(pipelineDesc);
     EXPECT_NE(pipeline, nullptr);
@@ -272,28 +291,30 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithWGSLShaders)
     DeviceImpl deviceWrapper(device);
 
     // Create vertex shader (WGSL)
-    ShaderDescriptor vertexShaderDesc;
-    vertexShaderDesc.sourceType = ShaderSourceType::WGSL;
+    ShaderDescriptor vertexShaderDesc{
+        .sourceType = ShaderSourceType::WGSL,
+        .entryPoint = "main"
+    };
     vertexShaderDesc.code.assign(reinterpret_cast<const uint8_t*>(wgslVertexShader),
         reinterpret_cast<const uint8_t*>(wgslVertexShader) + strlen(wgslVertexShader));
-    vertexShaderDesc.entryPoint = "main";
 
     auto vertexShader = deviceWrapper.createShader(vertexShaderDesc);
     ASSERT_NE(vertexShader, nullptr);
 
     // Create fragment shader (WGSL)
-    ShaderDescriptor fragmentShaderDesc;
-    fragmentShaderDesc.sourceType = ShaderSourceType::WGSL;
+    ShaderDescriptor fragmentShaderDesc{
+        .sourceType = ShaderSourceType::WGSL,
+        .entryPoint = "main"
+    };
     fragmentShaderDesc.code.assign(reinterpret_cast<const uint8_t*>(wgslFragmentShader),
         reinterpret_cast<const uint8_t*>(wgslFragmentShader) + strlen(wgslFragmentShader));
-    fragmentShaderDesc.entryPoint = "main";
 
     auto fragmentShader = deviceWrapper.createShader(fragmentShaderDesc);
     ASSERT_NE(fragmentShader, nullptr);
 
     // Create render pass
-    RenderPassCreateDescriptor renderPassDesc;
-    renderPassDesc.colorAttachments = {
+    RenderPassCreateDescriptor renderPassDesc{
+        .colorAttachments = {
         RenderPassColorAttachment{
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
@@ -301,33 +322,35 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithWGSLShaders)
                 .loadOp = LoadOp::Clear,
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment } }
+        }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
     ASSERT_NE(renderPass, nullptr);
 
     // Create render pipeline with WGSL shaders
-    RenderPipelineDescriptor pipelineDesc;
-    pipelineDesc.renderPass = renderPass;
-    pipelineDesc.vertex = {
-        .module = vertexShader,
-        .entryPoint = "main",
-        .buffers = {}
+    RenderPipelineDescriptor pipelineDesc{
+        .renderPass = renderPass,
+        .vertex = {
+            .module = vertexShader,
+            .entryPoint = "main",
+            .buffers = {}
+        },
+        .fragment = FragmentState{
+            .module = fragmentShader,
+            .entryPoint = "main",
+            .targets = {
+                ColorTargetState{
+                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .writeMask = 0xF } }
+        },
+        .primitive = {
+            .topology = PrimitiveTopology::TriangleList,
+            .frontFace = FrontFace::CounterClockwise,
+            .cullMode = CullMode::None
+        },
+        .sampleCount = SampleCount::Count1
     };
-    pipelineDesc.fragment = FragmentState{
-        .module = fragmentShader,
-        .entryPoint = "main",
-        .targets = {
-            ColorTargetState{
-                .format = TextureFormat::R8G8B8A8Unorm,
-                .writeMask = 0xF } }
-    };
-    pipelineDesc.primitive = {
-        .topology = PrimitiveTopology::TriangleList,
-        .frontFace = FrontFace::CounterClockwise,
-        .cullMode = CullMode::None
-    };
-    pipelineDesc.sampleCount = SampleCount::Count1;
 
     auto pipeline = deviceWrapper.createRenderPipeline(pipelineDesc);
     EXPECT_NE(pipeline, nullptr);
@@ -343,28 +366,30 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithMixedShaderFormats)
     DeviceImpl deviceWrapper(device);
 
     // Create vertex shader (WGSL)
-    ShaderDescriptor vertexShaderDesc;
-    vertexShaderDesc.sourceType = ShaderSourceType::WGSL;
+    ShaderDescriptor vertexShaderDesc{
+        .sourceType = ShaderSourceType::WGSL,
+        .entryPoint = "main"
+    };
     vertexShaderDesc.code.assign(reinterpret_cast<const uint8_t*>(wgslVertexShader),
         reinterpret_cast<const uint8_t*>(wgslVertexShader) + strlen(wgslVertexShader));
-    vertexShaderDesc.entryPoint = "main";
 
     auto vertexShader = deviceWrapper.createShader(vertexShaderDesc);
     ASSERT_NE(vertexShader, nullptr);
 
     // Create fragment shader (SPIR-V)
-    ShaderDescriptor fragmentShaderDesc;
-    fragmentShaderDesc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor fragmentShaderDesc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     fragmentShaderDesc.code.assign(reinterpret_cast<const uint8_t*>(fragmentShaderCode),
         reinterpret_cast<const uint8_t*>(fragmentShaderCode) + sizeof(fragmentShaderCode));
-    fragmentShaderDesc.entryPoint = "main";
 
     auto fragmentShader = deviceWrapper.createShader(fragmentShaderDesc);
     ASSERT_NE(fragmentShader, nullptr);
 
     // Create render pass
-    RenderPassCreateDescriptor renderPassDesc;
-    renderPassDesc.colorAttachments = {
+    RenderPassCreateDescriptor renderPassDesc{
+        .colorAttachments = {
         RenderPassColorAttachment{
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
@@ -372,33 +397,35 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithMixedShaderFormats)
                 .loadOp = LoadOp::Clear,
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment } }
+        }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
     ASSERT_NE(renderPass, nullptr);
 
     // Create render pipeline with mixed shader formats (WGSL vertex, SPIRV fragment)
-    RenderPipelineDescriptor pipelineDesc;
-    pipelineDesc.renderPass = renderPass;
-    pipelineDesc.vertex = {
-        .module = vertexShader,
-        .entryPoint = "main",
-        .buffers = {}
+    RenderPipelineDescriptor pipelineDesc{
+        .renderPass = renderPass,
+        .vertex = {
+            .module = vertexShader,
+            .entryPoint = "main",
+            .buffers = {}
+        },
+        .fragment = FragmentState{
+            .module = fragmentShader,
+            .entryPoint = "main",
+            .targets = {
+                ColorTargetState{
+                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .writeMask = 0xF } }
+        },
+        .primitive = {
+            .topology = PrimitiveTopology::TriangleList,
+            .frontFace = FrontFace::CounterClockwise,
+            .cullMode = CullMode::None
+        },
+        .sampleCount = SampleCount::Count1
     };
-    pipelineDesc.fragment = FragmentState{
-        .module = fragmentShader,
-        .entryPoint = "main",
-        .targets = {
-            ColorTargetState{
-                .format = TextureFormat::R8G8B8A8Unorm,
-                .writeMask = 0xF } }
-    };
-    pipelineDesc.primitive = {
-        .topology = PrimitiveTopology::TriangleList,
-        .frontFace = FrontFace::CounterClockwise,
-        .cullMode = CullMode::None
-    };
-    pipelineDesc.sampleCount = SampleCount::Count1;
 
     auto pipeline = deviceWrapper.createRenderPipeline(pipelineDesc);
     EXPECT_NE(pipeline, nullptr);
@@ -409,28 +436,30 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithMultisampling)
     DeviceImpl deviceWrapper(device);
 
     // Create vertex shader (SPIR-V)
-    ShaderDescriptor vertexShaderDesc;
-    vertexShaderDesc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor vertexShaderDesc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     vertexShaderDesc.code.assign(reinterpret_cast<const uint8_t*>(vertexShaderCode),
         reinterpret_cast<const uint8_t*>(vertexShaderCode) + sizeof(vertexShaderCode));
-    vertexShaderDesc.entryPoint = "main";
 
     auto vertexShader = deviceWrapper.createShader(vertexShaderDesc);
     ASSERT_NE(vertexShader, nullptr);
 
     // Create fragment shader (SPIR-V)
-    ShaderDescriptor fragmentShaderDesc;
-    fragmentShaderDesc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor fragmentShaderDesc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     fragmentShaderDesc.code.assign(reinterpret_cast<const uint8_t*>(fragmentShaderCode),
         reinterpret_cast<const uint8_t*>(fragmentShaderCode) + sizeof(fragmentShaderCode));
-    fragmentShaderDesc.entryPoint = "main";
 
     auto fragmentShader = deviceWrapper.createShader(fragmentShaderDesc);
     ASSERT_NE(fragmentShader, nullptr);
 
     // Create render pass with MSAA x4
-    RenderPassCreateDescriptor renderPassDesc;
-    renderPassDesc.colorAttachments = {
+    RenderPassCreateDescriptor renderPassDesc{
+        .colorAttachments = {
         RenderPassColorAttachment{
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
@@ -438,33 +467,35 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithMultisampling)
                 .loadOp = LoadOp::Clear,
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment } }
+        }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
     ASSERT_NE(renderPass, nullptr);
 
     // Create render pipeline with MSAA x4
-    RenderPipelineDescriptor pipelineDesc;
-    pipelineDesc.renderPass = renderPass;
-    pipelineDesc.vertex = {
-        .module = vertexShader,
-        .entryPoint = "main",
-        .buffers = {}
+    RenderPipelineDescriptor pipelineDesc{
+        .renderPass = renderPass,
+        .vertex = {
+            .module = vertexShader,
+            .entryPoint = "main",
+            .buffers = {}
+        },
+        .fragment = FragmentState{
+            .module = fragmentShader,
+            .entryPoint = "main",
+            .targets = {
+                ColorTargetState{
+                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .writeMask = 0xF } }
+        },
+        .primitive = {
+            .topology = PrimitiveTopology::TriangleList,
+            .frontFace = FrontFace::CounterClockwise,
+            .cullMode = CullMode::None
+        },
+        .sampleCount = SampleCount::Count4
     };
-    pipelineDesc.fragment = FragmentState{
-        .module = fragmentShader,
-        .entryPoint = "main",
-        .targets = {
-            ColorTargetState{
-                .format = TextureFormat::R8G8B8A8Unorm,
-                .writeMask = 0xF } }
-    };
-    pipelineDesc.primitive = {
-        .topology = PrimitiveTopology::TriangleList,
-        .frontFace = FrontFace::CounterClockwise,
-        .cullMode = CullMode::None
-    };
-    pipelineDesc.sampleCount = SampleCount::Count4;
 
     auto pipeline = deviceWrapper.createRenderPipeline(pipelineDesc);
     EXPECT_NE(pipeline, nullptr);

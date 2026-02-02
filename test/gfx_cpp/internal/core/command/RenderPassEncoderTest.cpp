@@ -18,17 +18,19 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "RenderPassEncoderTest";
-        instanceDesc.applicationVersion = 1;
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "RenderPassEncoderTest",
+            .applicationVersion = 1
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc = {};
-        adapterDesc.adapterIndex = 0;
+        GfxAdapterDescriptor adapterDesc{
+            .adapterIndex = 0
+        };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc = {};
+        GfxDeviceDescriptor deviceDesc{};
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);
     }
 

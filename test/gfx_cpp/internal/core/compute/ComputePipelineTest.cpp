@@ -17,15 +17,24 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "ComputePipelineImplTest";
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "ComputePipelineImplTest"
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc = {};
+        GfxAdapterDescriptor adapterDesc{
+            .adapterIndex = 0
+        };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc = {};
+        GfxDeviceDescriptor deviceDesc{
+            .label = nullptr,
+            .queueRequests = nullptr,
+            .queueRequestCount = 0,
+            .enabledExtensions = nullptr,
+            .enabledExtensionCount = 0
+        };
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);
     }
 
@@ -68,19 +77,21 @@ TEST_P(ComputePipelineImplTest, CreateComputePipeline)
     DeviceImpl deviceWrapper(device);
 
     // Create shader using DeviceImpl
-    ShaderDescriptor shaderDesc;
-    shaderDesc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor shaderDesc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     shaderDesc.code.assign(reinterpret_cast<const uint8_t*>(computeShaderCode),
         reinterpret_cast<const uint8_t*>(computeShaderCode) + sizeof(computeShaderCode));
-    shaderDesc.entryPoint = "main";
 
     auto shader = deviceWrapper.createShader(shaderDesc);
     ASSERT_NE(shader, nullptr);
 
     // Create compute pipeline using DeviceImpl
-    ComputePipelineDescriptor pipelineDesc;
-    pipelineDesc.compute = shader;
-    pipelineDesc.entryPoint = "main";
+    ComputePipelineDescriptor pipelineDesc{
+        .compute = shader,
+        .entryPoint = "main"
+    };
 
     auto pipeline = deviceWrapper.createComputePipeline(pipelineDesc);
     EXPECT_NE(pipeline, nullptr);
@@ -91,19 +102,21 @@ TEST_P(ComputePipelineImplTest, MultipleComputePipelines_IndependentHandles)
     DeviceImpl deviceWrapper(device);
 
     // Create shader
-    ShaderDescriptor shaderDesc;
-    shaderDesc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor shaderDesc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     shaderDesc.code.assign(reinterpret_cast<const uint8_t*>(computeShaderCode),
         reinterpret_cast<const uint8_t*>(computeShaderCode) + sizeof(computeShaderCode));
-    shaderDesc.entryPoint = "main";
 
     auto shader = deviceWrapper.createShader(shaderDesc);
     ASSERT_NE(shader, nullptr);
 
     // Create multiple pipelines
-    ComputePipelineDescriptor pipelineDesc;
-    pipelineDesc.compute = shader;
-    pipelineDesc.entryPoint = "main";
+    ComputePipelineDescriptor pipelineDesc{
+        .compute = shader,
+        .entryPoint = "main"
+    };
 
     auto pipeline1 = deviceWrapper.createComputePipeline(pipelineDesc);
     auto pipeline2 = deviceWrapper.createComputePipeline(pipelineDesc);
@@ -118,18 +131,19 @@ TEST_P(ComputePipelineImplTest, CreateComputePipelineWithBindGroupLayouts)
     DeviceImpl deviceWrapper(device);
 
     // Create shader
-    ShaderDescriptor shaderDesc;
-    shaderDesc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor shaderDesc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     shaderDesc.code.assign(reinterpret_cast<const uint8_t*>(computeShaderCode),
         reinterpret_cast<const uint8_t*>(computeShaderCode) + sizeof(computeShaderCode));
-    shaderDesc.entryPoint = "main";
 
     auto shader = deviceWrapper.createShader(shaderDesc);
     ASSERT_NE(shader, nullptr);
 
     // Create bind group layout
-    BindGroupLayoutDescriptor layoutDesc;
-    layoutDesc.entries = {
+    BindGroupLayoutDescriptor layoutDesc{
+        .entries = {
         BindGroupLayoutEntry{
             .binding = 0,
             .visibility = ShaderStage::Compute,
@@ -137,16 +151,18 @@ TEST_P(ComputePipelineImplTest, CreateComputePipelineWithBindGroupLayouts)
 
                 .hasDynamicOffset = false,
                 .minBindingSize = 0 } }
+        }
     };
 
     auto bindGroupLayout = deviceWrapper.createBindGroupLayout(layoutDesc);
     ASSERT_NE(bindGroupLayout, nullptr);
 
     // Create compute pipeline with bind group layout
-    ComputePipelineDescriptor pipelineDesc;
-    pipelineDesc.compute = shader;
-    pipelineDesc.entryPoint = "main";
-    pipelineDesc.bindGroupLayouts = { bindGroupLayout };
+    ComputePipelineDescriptor pipelineDesc{
+        .compute = shader,
+        .entryPoint = "main",
+        .bindGroupLayouts = { bindGroupLayout }
+    };
 
     auto pipeline = deviceWrapper.createComputePipeline(pipelineDesc);
     EXPECT_NE(pipeline, nullptr);
@@ -157,48 +173,52 @@ TEST_P(ComputePipelineImplTest, CreateComputePipelineWithMultipleBindGroupLayout
     DeviceImpl deviceWrapper(device);
 
     // Create shader
-    ShaderDescriptor shaderDesc;
-    shaderDesc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor shaderDesc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     shaderDesc.code.assign(reinterpret_cast<const uint8_t*>(computeShaderCode),
         reinterpret_cast<const uint8_t*>(computeShaderCode) + sizeof(computeShaderCode));
-    shaderDesc.entryPoint = "main";
 
     auto shader = deviceWrapper.createShader(shaderDesc);
     ASSERT_NE(shader, nullptr);
 
     // Create first bind group layout
-    BindGroupLayoutDescriptor layoutDesc1;
-    layoutDesc1.entries = {
+    BindGroupLayoutDescriptor layoutDesc1{
+        .entries = {
         BindGroupLayoutEntry{
             .binding = 0,
             .visibility = ShaderStage::Compute,
             .resource = BindGroupLayoutEntry::BufferBinding{
                 .hasDynamicOffset = false,
                 .minBindingSize = 0 } }
+        }
     };
 
     auto bindGroupLayout1 = deviceWrapper.createBindGroupLayout(layoutDesc1);
     ASSERT_NE(bindGroupLayout1, nullptr);
 
     // Create second bind group layout
-    BindGroupLayoutDescriptor layoutDesc2;
-    layoutDesc2.entries = {
+    BindGroupLayoutDescriptor layoutDesc2{
+        .entries = {
         BindGroupLayoutEntry{
             .binding = 0,
             .visibility = ShaderStage::Compute,
             .resource = BindGroupLayoutEntry::BufferBinding{
                 .hasDynamicOffset = false,
                 .minBindingSize = 0 } }
+        }
     };
 
     auto bindGroupLayout2 = deviceWrapper.createBindGroupLayout(layoutDesc2);
     ASSERT_NE(bindGroupLayout2, nullptr);
 
     // Create compute pipeline with multiple bind group layouts
-    ComputePipelineDescriptor pipelineDesc;
-    pipelineDesc.compute = shader;
-    pipelineDesc.entryPoint = "main";
-    pipelineDesc.bindGroupLayouts = { bindGroupLayout1, bindGroupLayout2 };
+    ComputePipelineDescriptor pipelineDesc{
+        .compute = shader,
+        .entryPoint = "main",
+        .bindGroupLayouts = { bindGroupLayout1, bindGroupLayout2 }
+    };
 
     auto pipeline = deviceWrapper.createComputePipeline(pipelineDesc);
     EXPECT_NE(pipeline, nullptr);
@@ -214,19 +234,21 @@ TEST_P(ComputePipelineImplTest, CreateComputePipelineWithWGSLShader)
     DeviceImpl deviceWrapper(device);
 
     // Create shader (WGSL)
-    ShaderDescriptor shaderDesc;
-    shaderDesc.sourceType = ShaderSourceType::WGSL;
+    ShaderDescriptor shaderDesc{
+        .sourceType = ShaderSourceType::WGSL,
+        .entryPoint = "main"
+    };
     shaderDesc.code.assign(reinterpret_cast<const uint8_t*>(wgslComputeShader),
         reinterpret_cast<const uint8_t*>(wgslComputeShader) + strlen(wgslComputeShader));
-    shaderDesc.entryPoint = "main";
 
     auto shader = deviceWrapper.createShader(shaderDesc);
     ASSERT_NE(shader, nullptr);
 
     // Create compute pipeline with WGSL shader
-    ComputePipelineDescriptor pipelineDesc;
-    pipelineDesc.compute = shader;
-    pipelineDesc.entryPoint = "main";
+    ComputePipelineDescriptor pipelineDesc{
+        .compute = shader,
+        .entryPoint = "main"
+    };
 
     auto pipeline = deviceWrapper.createComputePipeline(pipelineDesc);
     EXPECT_NE(pipeline, nullptr);

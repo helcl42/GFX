@@ -17,15 +17,24 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "SamplerImplTest";
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "SamplerImplTest"
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc = {};
+        GfxAdapterDescriptor adapterDesc{
+            .adapterIndex = 0
+        };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc = {};
+        GfxDeviceDescriptor deviceDesc{
+            .label = nullptr,
+            .queueRequests = nullptr,
+            .queueRequestCount = 0,
+            .enabledExtensions = nullptr,
+            .enabledExtensionCount = 0
+        };
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);
     }
 
@@ -50,17 +59,18 @@ TEST_P(SamplerImplTest, CreateSampler)
 {
     DeviceImpl deviceWrapper(device);
 
-    SamplerDescriptor desc = {};
-    desc.addressModeU = AddressMode::Repeat;
-    desc.addressModeV = AddressMode::Repeat;
-    desc.addressModeW = AddressMode::Repeat;
-    desc.magFilter = FilterMode::Linear;
-    desc.minFilter = FilterMode::Linear;
-    desc.mipmapFilter = FilterMode::Linear;
-    desc.lodMinClamp = 0.0f;
-    desc.lodMaxClamp = 1000.0f;
-    desc.compare = CompareFunction::Never;
-    desc.maxAnisotropy = 1.0f;
+    SamplerDescriptor desc{
+        .addressModeU = AddressMode::Repeat,
+        .addressModeV = AddressMode::Repeat,
+        .addressModeW = AddressMode::Repeat,
+        .magFilter = FilterMode::Linear,
+        .minFilter = FilterMode::Linear,
+        .mipmapFilter = FilterMode::Linear,
+        .lodMinClamp = 0.0f,
+        .lodMaxClamp = 1000.0f,
+        .compare = CompareFunction::Never,
+        .maxAnisotropy = 1
+    };
 
     auto sampler = deviceWrapper.createSampler(desc);
     ASSERT_NE(sampler, nullptr);
@@ -75,17 +85,18 @@ TEST_P(SamplerImplTest, CreateSamplerWithAnisotropy)
 {
     DeviceImpl deviceWrapper(device);
 
-    SamplerDescriptor desc = {};
-    desc.addressModeU = AddressMode::ClampToEdge;
-    desc.addressModeV = AddressMode::ClampToEdge;
-    desc.addressModeW = AddressMode::ClampToEdge;
-    desc.magFilter = FilterMode::Linear;
-    desc.minFilter = FilterMode::Linear;
-    desc.mipmapFilter = FilterMode::Linear;
-    desc.lodMinClamp = 0.0f;
-    desc.lodMaxClamp = 1000.0f;
-    desc.compare = CompareFunction::Never;
-    desc.maxAnisotropy = 16.0f;
+    SamplerDescriptor desc{
+        .addressModeU = AddressMode::ClampToEdge,
+        .addressModeV = AddressMode::ClampToEdge,
+        .addressModeW = AddressMode::ClampToEdge,
+        .magFilter = FilterMode::Linear,
+        .minFilter = FilterMode::Linear,
+        .mipmapFilter = FilterMode::Linear,
+        .lodMinClamp = 0.0f,
+        .lodMaxClamp = 1000.0f,
+        .compare = CompareFunction::Never,
+        .maxAnisotropy = 16
+    };
 
     auto sampler = deviceWrapper.createSampler(desc);
     ASSERT_NE(sampler, nullptr);
@@ -95,17 +106,18 @@ TEST_P(SamplerImplTest, CreateSamplerWithComparison)
 {
     DeviceImpl deviceWrapper(device);
 
-    SamplerDescriptor desc = {};
-    desc.addressModeU = AddressMode::ClampToEdge;
-    desc.addressModeV = AddressMode::ClampToEdge;
-    desc.addressModeW = AddressMode::ClampToEdge;
-    desc.magFilter = FilterMode::Linear;
-    desc.minFilter = FilterMode::Linear;
-    desc.mipmapFilter = FilterMode::Linear;
-    desc.lodMinClamp = 0.0f;
-    desc.lodMaxClamp = 1000.0f;
-    desc.compare = CompareFunction::LessEqual;
-    desc.maxAnisotropy = 1.0f;
+    SamplerDescriptor desc{
+        .addressModeU = AddressMode::ClampToEdge,
+        .addressModeV = AddressMode::ClampToEdge,
+        .addressModeW = AddressMode::ClampToEdge,
+        .magFilter = FilterMode::Linear,
+        .minFilter = FilterMode::Linear,
+        .mipmapFilter = FilterMode::Linear,
+        .lodMinClamp = 0.0f,
+        .lodMaxClamp = 1000.0f,
+        .compare = CompareFunction::LessEqual,
+        .maxAnisotropy = 1
+    };
 
     auto sampler = deviceWrapper.createSampler(desc);
     ASSERT_NE(sampler, nullptr);
@@ -115,17 +127,18 @@ TEST_P(SamplerImplTest, MultipleSamplers_IndependentHandles)
 {
     DeviceImpl deviceWrapper(device);
 
-    SamplerDescriptor desc;
-    desc.addressModeU = AddressMode::Repeat;
-    desc.addressModeV = AddressMode::Repeat;
-    desc.addressModeW = AddressMode::Repeat;
-    desc.magFilter = FilterMode::Linear;
-    desc.minFilter = FilterMode::Linear;
-    desc.mipmapFilter = FilterMode::Linear;
-    desc.lodMinClamp = 0.0f;
-    desc.lodMaxClamp = 1000.0f;
-    desc.compare = CompareFunction::Never;
-    desc.maxAnisotropy = 1.0f;
+    SamplerDescriptor desc{
+        .addressModeU = AddressMode::Repeat,
+        .addressModeV = AddressMode::Repeat,
+        .addressModeW = AddressMode::Repeat,
+        .magFilter = FilterMode::Linear,
+        .minFilter = FilterMode::Linear,
+        .mipmapFilter = FilterMode::Linear,
+        .lodMinClamp = 0.0f,
+        .lodMaxClamp = 1000.0f,
+        .compare = CompareFunction::Never,
+        .maxAnisotropy = 1
+    };
 
     auto sampler1 = deviceWrapper.createSampler(desc);
     auto sampler2 = deviceWrapper.createSampler(desc);

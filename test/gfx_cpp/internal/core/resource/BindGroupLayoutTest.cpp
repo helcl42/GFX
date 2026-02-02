@@ -19,15 +19,24 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "BindGroupLayoutImplTest";
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "BindGroupLayoutImplTest"
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc = {};
+        GfxAdapterDescriptor adapterDesc{
+            .adapterIndex = 0
+        };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc = {};
+        GfxDeviceDescriptor deviceDesc{
+            .label = nullptr,
+            .queueRequests = nullptr,
+            .queueRequestCount = 0,
+            .enabledExtensions = nullptr,
+            .enabledExtensionCount = 0
+        };
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);
     }
 
@@ -61,8 +70,9 @@ TEST_P(BindGroupLayoutImplTest, CreateBindGroupLayout)
         }
     };
 
-    BindGroupLayoutDescriptor desc;
-    desc.entries = {entry};
+    BindGroupLayoutDescriptor desc{
+        .entries = {entry}
+    };
 
     auto layout = deviceWrapper.createBindGroupLayout(desc);
     ASSERT_NE(layout, nullptr);
@@ -93,8 +103,9 @@ TEST_P(BindGroupLayoutImplTest, CreateBindGroupLayoutWithMultipleBindings)
         }
     };
 
-    BindGroupLayoutDescriptor desc;
-    desc.entries = {bufferEntry, samplerEntry, textureEntry};
+    BindGroupLayoutDescriptor desc{
+        .entries = {bufferEntry, samplerEntry, textureEntry}
+    };
 
     auto layout = deviceWrapper.createBindGroupLayout(desc);
     ASSERT_NE(layout, nullptr);
@@ -113,8 +124,9 @@ TEST_P(BindGroupLayoutImplTest, CreateBindGroupLayoutWithStorageBuffer)
         }
     };
 
-    BindGroupLayoutDescriptor desc;
-    desc.entries = {entry};
+    BindGroupLayoutDescriptor desc{
+        .entries = {entry}
+    };
 
     auto layout = deviceWrapper.createBindGroupLayout(desc);
     ASSERT_NE(layout, nullptr);
@@ -133,8 +145,9 @@ TEST_P(BindGroupLayoutImplTest, CreateBindGroupLayoutWithDynamicOffset)
         }
     };
 
-    BindGroupLayoutDescriptor desc;
-    desc.entries = {entry};
+    BindGroupLayoutDescriptor desc{
+        .entries = {entry}
+    };
 
     auto layout = deviceWrapper.createBindGroupLayout(desc);
     ASSERT_NE(layout, nullptr);
@@ -154,8 +167,9 @@ TEST_P(BindGroupLayoutImplTest, CreateBindGroupLayoutWithStorageTexture)
         }
     };
 
-    BindGroupLayoutDescriptor desc;
-    desc.entries = {entry};
+    BindGroupLayoutDescriptor desc{
+        .entries = {entry}
+    };
 
     auto layout = deviceWrapper.createBindGroupLayout(desc);
     ASSERT_NE(layout, nullptr);
@@ -174,8 +188,9 @@ TEST_P(BindGroupLayoutImplTest, MultipleLayouts_IndependentHandles)
         }
     };
 
-    BindGroupLayoutDescriptor desc;
-    desc.entries = {entry};
+    BindGroupLayoutDescriptor desc{
+        .entries = {entry}
+    };
 
     auto layout1 = deviceWrapper.createBindGroupLayout(desc);
     auto layout2 = deviceWrapper.createBindGroupLayout(desc);

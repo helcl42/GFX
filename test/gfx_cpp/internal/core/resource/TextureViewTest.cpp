@@ -18,15 +18,24 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "TextureViewImplTest";
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "TextureViewImplTest"
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc = {};
+        GfxAdapterDescriptor adapterDesc{
+            .adapterIndex = 0
+        };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc = {};
+        GfxDeviceDescriptor deviceDesc{
+            .label = nullptr,
+            .queueRequests = nullptr,
+            .queueRequestCount = 0,
+            .enabledExtensions = nullptr,
+            .enabledExtensionCount = 0
+        };
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);
     }
 
@@ -52,26 +61,28 @@ TEST_P(TextureViewImplTest, CreateTextureView)
     DeviceImpl deviceWrapper(device);
 
     // Create texture using DeviceImpl
-    TextureDescriptor textureDesc;
-    textureDesc.type = TextureType::Texture2D;
-    textureDesc.size = { 256, 256, 1 };
-    textureDesc.arrayLayerCount = 1;
-    textureDesc.format = TextureFormat::R8G8B8A8Unorm;
-    textureDesc.mipLevelCount = 1;
-    textureDesc.sampleCount = SampleCount::Count1;
-    textureDesc.usage = TextureUsage::TextureBinding;
+    TextureDescriptor textureDesc{
+        .type = TextureType::Texture2D,
+        .size = { 256, 256, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .sampleCount = SampleCount::Count1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
     auto texture = deviceWrapper.createTexture(textureDesc);
     ASSERT_NE(texture, nullptr);
 
     // Create texture view using C++ API
-    TextureViewDescriptor viewDesc;
-    viewDesc.format = TextureFormat::R8G8B8A8Unorm;
-    viewDesc.viewType = TextureViewType::View2D;
-    viewDesc.baseMipLevel = 0;
-    viewDesc.mipLevelCount = 1;
-    viewDesc.baseArrayLayer = 0;
-    viewDesc.arrayLayerCount = 1;
+    TextureViewDescriptor viewDesc{
+        .viewType = TextureViewType::View2D,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .baseMipLevel = 0,
+        .mipLevelCount = 1,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 1
+    };
 
     auto view = texture->createView(viewDesc);
     EXPECT_NE(view, nullptr);
@@ -82,26 +93,28 @@ TEST_P(TextureViewImplTest, CreateTextureViewWithMipLevel)
     DeviceImpl deviceWrapper(device);
 
     // Create texture with multiple mip levels
-    TextureDescriptor textureDesc;
-    textureDesc.type = TextureType::Texture2D;
-    textureDesc.size = { 256, 256, 1 };
-    textureDesc.arrayLayerCount = 1;
-    textureDesc.format = TextureFormat::R8G8B8A8Unorm;
-    textureDesc.mipLevelCount = 4;
-    textureDesc.sampleCount = SampleCount::Count1;
-    textureDesc.usage = TextureUsage::TextureBinding;
+    TextureDescriptor textureDesc{
+        .type = TextureType::Texture2D,
+        .size = { 256, 256, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 4,
+        .sampleCount = SampleCount::Count1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
     auto texture = deviceWrapper.createTexture(textureDesc);
     ASSERT_NE(texture, nullptr);
 
     // Create texture view for a specific mip level
-    TextureViewDescriptor viewDesc;
-    viewDesc.format = TextureFormat::R8G8B8A8Unorm;
-    viewDesc.viewType = TextureViewType::View2D;
-    viewDesc.baseMipLevel = 2;
-    viewDesc.mipLevelCount = 1;
-    viewDesc.baseArrayLayer = 0;
-    viewDesc.arrayLayerCount = 1;
+    TextureViewDescriptor viewDesc{
+        .viewType = TextureViewType::View2D,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .baseMipLevel = 2,
+        .mipLevelCount = 1,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 1
+    };
 
     auto view = texture->createView(viewDesc);
     EXPECT_NE(view, nullptr);
@@ -112,38 +125,41 @@ TEST_P(TextureViewImplTest, CreateMultipleViews_SameTexture)
     DeviceImpl deviceWrapper(device);
 
     // Create texture
-    TextureDescriptor textureDesc;
-    textureDesc.type = TextureType::Texture2D;
-    textureDesc.size = { 256, 256, 1 };
-    textureDesc.arrayLayerCount = 1;
-    textureDesc.format = TextureFormat::R8G8B8A8Unorm;
-    textureDesc.mipLevelCount = 4;
-    textureDesc.sampleCount = SampleCount::Count1;
-    textureDesc.usage = TextureUsage::TextureBinding;
+    TextureDescriptor textureDesc{
+        .type = TextureType::Texture2D,
+        .size = { 256, 256, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 4,
+        .sampleCount = SampleCount::Count1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
     auto texture = deviceWrapper.createTexture(textureDesc);
     ASSERT_NE(texture, nullptr);
 
     // Create first view
-    TextureViewDescriptor viewDesc1;
-    viewDesc1.format = TextureFormat::R8G8B8A8Unorm;
-    viewDesc1.viewType = TextureViewType::View2D;
-    viewDesc1.baseMipLevel = 0;
-    viewDesc1.mipLevelCount = 2;
-    viewDesc1.baseArrayLayer = 0;
-    viewDesc1.arrayLayerCount = 1;
+    TextureViewDescriptor viewDesc1{
+        .viewType = TextureViewType::View2D,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .baseMipLevel = 0,
+        .mipLevelCount = 2,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 1
+    };
 
     auto view1 = texture->createView(viewDesc1);
     ASSERT_NE(view1, nullptr);
 
     // Create second view
-    TextureViewDescriptor viewDesc2;
-    viewDesc2.format = TextureFormat::R8G8B8A8Unorm;
-    viewDesc2.viewType = TextureViewType::View2D;
-    viewDesc2.baseMipLevel = 2;
-    viewDesc2.mipLevelCount = 2;
-    viewDesc2.baseArrayLayer = 0;
-    viewDesc2.arrayLayerCount = 1;
+    TextureViewDescriptor viewDesc2{
+        .viewType = TextureViewType::View2D,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .baseMipLevel = 2,
+        .mipLevelCount = 2,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 1
+    };
 
     auto view2 = texture->createView(viewDesc2);
     ASSERT_NE(view2, nullptr);
@@ -155,26 +171,28 @@ TEST_P(TextureViewImplTest, CreateView1DArray)
     DeviceImpl deviceWrapper(device);
 
     // Create 1D array texture
-    TextureDescriptor textureDesc;
-    textureDesc.type = TextureType::Texture1D;
-    textureDesc.size = { 256, 1, 1 };
-    textureDesc.arrayLayerCount = 4;
-    textureDesc.format = TextureFormat::R8G8B8A8Unorm;
-    textureDesc.mipLevelCount = 1;
-    textureDesc.sampleCount = SampleCount::Count1;
-    textureDesc.usage = TextureUsage::TextureBinding;
+    TextureDescriptor textureDesc{
+        .type = TextureType::Texture1D,
+        .size = { 256, 1, 1 },
+        .arrayLayerCount = 4,
+        .mipLevelCount = 1,
+        .sampleCount = SampleCount::Count1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
     auto texture = deviceWrapper.createTexture(textureDesc);
     ASSERT_NE(texture, nullptr);
 
     // Create 1D array view
-    TextureViewDescriptor viewDesc;
-    viewDesc.format = TextureFormat::R8G8B8A8Unorm;
-    viewDesc.viewType = TextureViewType::View1DArray;
-    viewDesc.baseMipLevel = 0;
-    viewDesc.mipLevelCount = 1;
-    viewDesc.baseArrayLayer = 0;
-    viewDesc.arrayLayerCount = 4;
+    TextureViewDescriptor viewDesc{
+        .viewType = TextureViewType::View1DArray,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .baseMipLevel = 0,
+        .mipLevelCount = 1,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 4
+    };
 
     auto view = texture->createView(viewDesc);
     EXPECT_NE(view, nullptr);
@@ -185,26 +203,28 @@ TEST_P(TextureViewImplTest, CreateView2DArray)
     DeviceImpl deviceWrapper(device);
 
     // Create 2D array texture
-    TextureDescriptor textureDesc;
-    textureDesc.type = TextureType::Texture2D;
-    textureDesc.size = { 256, 256, 1 };
-    textureDesc.arrayLayerCount = 6;
-    textureDesc.format = TextureFormat::R8G8B8A8Unorm;
-    textureDesc.mipLevelCount = 1;
-    textureDesc.sampleCount = SampleCount::Count1;
-    textureDesc.usage = TextureUsage::TextureBinding;
+    TextureDescriptor textureDesc{
+        .type = TextureType::Texture2D,
+        .size = { 256, 256, 1 },
+        .arrayLayerCount = 6,
+        .mipLevelCount = 1,
+        .sampleCount = SampleCount::Count1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
     auto texture = deviceWrapper.createTexture(textureDesc);
     ASSERT_NE(texture, nullptr);
 
     // Create 2D array view
-    TextureViewDescriptor viewDesc;
-    viewDesc.format = TextureFormat::R8G8B8A8Unorm;
-    viewDesc.viewType = TextureViewType::View2DArray;
-    viewDesc.baseMipLevel = 0;
-    viewDesc.mipLevelCount = 1;
-    viewDesc.baseArrayLayer = 0;
-    viewDesc.arrayLayerCount = 6;
+    TextureViewDescriptor viewDesc{
+        .viewType = TextureViewType::View2DArray,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .baseMipLevel = 0,
+        .mipLevelCount = 1,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 6
+    };
 
     auto view = texture->createView(viewDesc);
     EXPECT_NE(view, nullptr);
@@ -214,26 +234,28 @@ TEST_P(TextureViewImplTest, CreateCubeTextureView)
     DeviceImpl deviceWrapper(device);
 
     // Create cube texture
-    TextureDescriptor textureDesc;
-    textureDesc.type = TextureType::TextureCube;
-    textureDesc.size = { 256, 256, 1 };
-    textureDesc.arrayLayerCount = 6;
-    textureDesc.format = TextureFormat::R8G8B8A8Unorm;
-    textureDesc.mipLevelCount = 1;
-    textureDesc.sampleCount = SampleCount::Count1;
-    textureDesc.usage = TextureUsage::TextureBinding;
+    TextureDescriptor textureDesc{
+        .type = TextureType::TextureCube,
+        .size = { 256, 256, 1 },
+        .arrayLayerCount = 6,
+        .mipLevelCount = 1,
+        .sampleCount = SampleCount::Count1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
     auto texture = deviceWrapper.createTexture(textureDesc);
     ASSERT_NE(texture, nullptr);
 
     // Create cube view
-    TextureViewDescriptor viewDesc;
-    viewDesc.format = TextureFormat::R8G8B8A8Unorm;
-    viewDesc.viewType = TextureViewType::ViewCube;
-    viewDesc.baseMipLevel = 0;
-    viewDesc.mipLevelCount = 1;
-    viewDesc.baseArrayLayer = 0;
-    viewDesc.arrayLayerCount = 6;
+    TextureViewDescriptor viewDesc{
+        .viewType = TextureViewType::ViewCube,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .baseMipLevel = 0,
+        .mipLevelCount = 1,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 6
+    };
 
     auto view = texture->createView(viewDesc);
     EXPECT_NE(view, nullptr);

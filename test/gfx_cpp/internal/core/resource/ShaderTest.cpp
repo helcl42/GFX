@@ -20,15 +20,24 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "ShaderImplTest";
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "ShaderImplTest"
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc = {};
+        GfxAdapterDescriptor adapterDesc{
+            .adapterIndex = 0
+        };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc = {};
+        GfxDeviceDescriptor deviceDesc{
+            .label = nullptr,
+            .queueRequests = nullptr,
+            .queueRequestCount = 0,
+            .enabledExtensions = nullptr,
+            .enabledExtensionCount = 0
+        };
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);
     }
 
@@ -72,11 +81,12 @@ TEST_P(ShaderImplTest, CreateShader)
 {
     DeviceImpl deviceWrapper(device);
 
-    ShaderDescriptor desc;
-    desc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor desc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     desc.code.assign(reinterpret_cast<const uint8_t*>(minimalComputeShader),
                      reinterpret_cast<const uint8_t*>(minimalComputeShader) + sizeof(minimalComputeShader));
-    desc.entryPoint = "main";
 
     auto shader = deviceWrapper.createShader(desc);
     ASSERT_NE(shader, nullptr);
@@ -86,11 +96,12 @@ TEST_P(ShaderImplTest, CreateShaderWithCustomEntryPoint)
 {
     DeviceImpl deviceWrapper(device);
 
-    ShaderDescriptor desc;
-    desc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor desc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main" // Entry point is "main" in the shader
+    };
     desc.code.assign(reinterpret_cast<const uint8_t*>(minimalComputeShader),
                      reinterpret_cast<const uint8_t*>(minimalComputeShader) + sizeof(minimalComputeShader));
-    desc.entryPoint = "main"; // Entry point is "main" in the shader
 
     auto shader = deviceWrapper.createShader(desc);
     ASSERT_NE(shader, nullptr);
@@ -100,11 +111,12 @@ TEST_P(ShaderImplTest, MultipleShaders_IndependentHandles)
 {
     DeviceImpl deviceWrapper(device);
 
-    ShaderDescriptor desc;
-    desc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor desc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     desc.code.assign(reinterpret_cast<const uint8_t*>(minimalComputeShader),
                      reinterpret_cast<const uint8_t*>(minimalComputeShader) + sizeof(minimalComputeShader));
-    desc.entryPoint = "main";
 
     auto shader1 = deviceWrapper.createShader(desc);
     auto shader2 = deviceWrapper.createShader(desc);
@@ -118,12 +130,13 @@ TEST_P(ShaderImplTest, CreateWGSLShader)
 {
     DeviceImpl deviceWrapper(device);
 
-    ShaderDescriptor desc;
-    desc.sourceType = ShaderSourceType::WGSL;
+    ShaderDescriptor desc{
+        .sourceType = ShaderSourceType::WGSL,
+        .entryPoint = "main"
+    };
     const char* wgslCode = minimalWGSLShader;
     desc.code.assign(reinterpret_cast<const uint8_t*>(wgslCode),
                      reinterpret_cast<const uint8_t*>(wgslCode) + strlen(wgslCode));
-    desc.entryPoint = "main";
 
     auto shader = deviceWrapper.createShader(desc);
     ASSERT_NE(shader, nullptr);
@@ -134,22 +147,24 @@ TEST_P(ShaderImplTest, MixedShaderTypes_IndependentHandles)
     DeviceImpl deviceWrapper(device);
 
     // Create SPIR-V shader
-    ShaderDescriptor spirvDesc;
-    spirvDesc.sourceType = ShaderSourceType::SPIRV;
+    ShaderDescriptor spirvDesc{
+        .sourceType = ShaderSourceType::SPIRV,
+        .entryPoint = "main"
+    };
     spirvDesc.code.assign(reinterpret_cast<const uint8_t*>(minimalComputeShader),
                           reinterpret_cast<const uint8_t*>(minimalComputeShader) + sizeof(minimalComputeShader));
-    spirvDesc.entryPoint = "main";
 
     auto spirvShader = deviceWrapper.createShader(spirvDesc);
     ASSERT_NE(spirvShader, nullptr);
 
     // Create WGSL shader
-    ShaderDescriptor wgslDesc;
-    wgslDesc.sourceType = ShaderSourceType::WGSL;
+    ShaderDescriptor wgslDesc{
+        .sourceType = ShaderSourceType::WGSL,
+        .entryPoint = "main"
+    };
     const char* wgslCode = minimalWGSLShader;
     wgslDesc.code.assign(reinterpret_cast<const uint8_t*>(wgslCode),
                          reinterpret_cast<const uint8_t*>(wgslCode) + strlen(wgslCode));
-    wgslDesc.entryPoint = "main";
 
     auto wgslShader = deviceWrapper.createShader(wgslDesc);
     ASSERT_NE(wgslShader, nullptr);

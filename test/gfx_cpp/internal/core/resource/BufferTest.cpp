@@ -17,15 +17,24 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "BufferImplTest";
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "BufferImplTest"
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc = {};
+        GfxAdapterDescriptor adapterDesc{
+            .adapterIndex = 0
+        };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc = {};
+        GfxDeviceDescriptor deviceDesc{
+            .label = nullptr,
+            .queueRequests = nullptr,
+            .queueRequestCount = 0,
+            .enabledExtensions = nullptr,
+            .enabledExtensionCount = 0
+        };
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);
     }
 
@@ -50,9 +59,10 @@ TEST_P(BufferImplTest, CreateBuffer)
 {
     DeviceImpl deviceWrapper(device);
 
-    BufferDescriptor desc = {};
-    desc.size = 1024;
-    desc.usage = BufferUsage::Vertex;
+    BufferDescriptor desc{
+        .size = 1024,
+        .usage = BufferUsage::Vertex
+    };
 
     auto buffer = deviceWrapper.createBuffer(desc);
     ASSERT_NE(buffer, nullptr);
@@ -66,10 +76,11 @@ TEST_P(BufferImplTest, CreateBufferWithMultipleUsages)
 {
     DeviceImpl deviceWrapper(device);
 
-    BufferDescriptor desc = {};
-    desc.size = 2048;
-    desc.usage = static_cast<BufferUsage>(
-        static_cast<uint32_t>(BufferUsage::Uniform) | static_cast<uint32_t>(BufferUsage::CopyDst));
+    BufferDescriptor desc{
+        .size = 2048,
+        .usage = static_cast<BufferUsage>(
+            static_cast<uint32_t>(BufferUsage::Uniform) | static_cast<uint32_t>(BufferUsage::CopyDst))
+    };
 
     auto buffer = deviceWrapper.createBuffer(desc);
     ASSERT_NE(buffer, nullptr);
@@ -83,13 +94,15 @@ TEST_P(BufferImplTest, MultipleBuffers_IndependentHandles)
 {
     DeviceImpl deviceWrapper(device);
 
-    BufferDescriptor desc1 = {};
-    desc1.size = 1024;
-    desc1.usage = BufferUsage::Vertex;
+    BufferDescriptor desc1{
+        .size = 1024,
+        .usage = BufferUsage::Vertex
+    };
 
-    BufferDescriptor desc2 = {};
-    desc2.size = 2048;
-    desc2.usage = BufferUsage::Index;
+    BufferDescriptor desc2{
+        .size = 2048,
+        .usage = BufferUsage::Index
+    };
 
     auto buffer1 = deviceWrapper.createBuffer(desc1);
     auto buffer2 = deviceWrapper.createBuffer(desc2);
@@ -106,9 +119,10 @@ TEST_P(BufferImplTest, GetNativeHandle)
 {
     DeviceImpl deviceWrapper(device);
 
-    BufferDescriptor desc = {};
-    desc.size = 512;
-    desc.usage = BufferUsage::Vertex;
+    BufferDescriptor desc{
+        .size = 512,
+        .usage = BufferUsage::Vertex
+    };
 
     auto buffer = deviceWrapper.createBuffer(desc);
     ASSERT_NE(buffer, nullptr);
@@ -121,11 +135,12 @@ TEST_P(BufferImplTest, MapUnmap)
 {
     DeviceImpl deviceWrapper(device);
 
-    BufferDescriptor desc = {};
-    desc.size = 256;
-    desc.usage = static_cast<BufferUsage>(
-        static_cast<uint32_t>(BufferUsage::MapWrite) | static_cast<uint32_t>(BufferUsage::CopySrc));
-    desc.memoryProperties = static_cast<MemoryProperty>(static_cast<uint32_t>(MemoryProperty::HostVisible));
+    BufferDescriptor desc{
+        .size = 256,
+        .usage = static_cast<BufferUsage>(
+            static_cast<uint32_t>(BufferUsage::MapWrite) | static_cast<uint32_t>(BufferUsage::CopySrc)),
+        .memoryProperties = static_cast<MemoryProperty>(static_cast<uint32_t>(MemoryProperty::HostVisible))
+    };
 
     auto buffer = deviceWrapper.createBuffer(desc);
     ASSERT_NE(buffer, nullptr);
@@ -147,11 +162,12 @@ TEST_P(BufferImplTest, FlushMappedRange)
 {
     DeviceImpl deviceWrapper(device);
 
-    BufferDescriptor desc = {};
-    desc.size = 256;
-    desc.usage = static_cast<BufferUsage>(
-        static_cast<uint32_t>(BufferUsage::MapWrite) | static_cast<uint32_t>(BufferUsage::CopySrc));
-    desc.memoryProperties = static_cast<MemoryProperty>(static_cast<uint32_t>(MemoryProperty::HostVisible));
+    BufferDescriptor desc{
+        .size = 256,
+        .usage = static_cast<BufferUsage>(
+            static_cast<uint32_t>(BufferUsage::MapWrite) | static_cast<uint32_t>(BufferUsage::CopySrc)),
+        .memoryProperties = static_cast<MemoryProperty>(static_cast<uint32_t>(MemoryProperty::HostVisible))
+    };
 
     auto buffer = deviceWrapper.createBuffer(desc);
     ASSERT_NE(buffer, nullptr);
@@ -172,11 +188,12 @@ TEST_P(BufferImplTest, InvalidateMappedRange)
 {
     DeviceImpl deviceWrapper(device);
 
-    BufferDescriptor desc = {};
-    desc.size = 256;
-    desc.usage = static_cast<BufferUsage>(
-        static_cast<uint32_t>(BufferUsage::MapWrite) | static_cast<uint32_t>(BufferUsage::CopySrc));
-    desc.memoryProperties = static_cast<MemoryProperty>(static_cast<uint32_t>(MemoryProperty::HostVisible));
+    BufferDescriptor desc{
+        .size = 256,
+        .usage = static_cast<BufferUsage>(
+            static_cast<uint32_t>(BufferUsage::MapWrite) | static_cast<uint32_t>(BufferUsage::CopySrc)),
+        .memoryProperties = static_cast<MemoryProperty>(static_cast<uint32_t>(MemoryProperty::HostVisible))
+    };
 
     auto buffer = deviceWrapper.createBuffer(desc);
     ASSERT_NE(buffer, nullptr);
@@ -195,9 +212,10 @@ TEST_P(BufferImplTest, ImportBuffer)
     DeviceImpl deviceWrapper(device);
 
     // Create a buffer to get its native handle
-    BufferDescriptor createDesc = {};
-    createDesc.size = 512;
-    createDesc.usage = BufferUsage::Vertex;
+    BufferDescriptor createDesc{
+        .size = 512,
+        .usage = BufferUsage::Vertex
+    };
     auto originalBuffer = deviceWrapper.createBuffer(createDesc);
     ASSERT_NE(originalBuffer, nullptr);
 
@@ -206,10 +224,11 @@ TEST_P(BufferImplTest, ImportBuffer)
     ASSERT_NE(nativeHandle, nullptr);
 
     // Import using the native handle
-    BufferImportDescriptor importDesc = {};
-    importDesc.nativeHandle = nativeHandle;
-    importDesc.size = 512;
-    importDesc.usage = BufferUsage::Vertex;
+    BufferImportDescriptor importDesc{
+        .nativeHandle = nativeHandle,
+        .size = 512,
+        .usage = BufferUsage::Vertex
+    };
 
     auto importedBuffer = deviceWrapper.importBuffer(importDesc);
     ASSERT_NE(importedBuffer, nullptr);

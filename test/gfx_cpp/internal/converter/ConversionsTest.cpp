@@ -306,16 +306,17 @@ TEST(ConversionsTest, AccessFlagsRoundTrip)
 
 TEST(ConversionsTest, CDeviceLimitsToCppDeviceLimits)
 {
-    GfxDeviceLimits cLimits = {};
-    cLimits.minUniformBufferOffsetAlignment = 256;
-    cLimits.minStorageBufferOffsetAlignment = 128;
-    cLimits.maxUniformBufferBindingSize = 65536;
-    cLimits.maxStorageBufferBindingSize = 134217728;
-    cLimits.maxBufferSize = 1073741824;
-    cLimits.maxTextureDimension1D = 16384;
-    cLimits.maxTextureDimension2D = 16384;
-    cLimits.maxTextureDimension3D = 2048;
-    cLimits.maxTextureArrayLayers = 2048;
+    GfxDeviceLimits cLimits{
+        .minUniformBufferOffsetAlignment = 256,
+        .minStorageBufferOffsetAlignment = 128,
+        .maxUniformBufferBindingSize = 65536,
+        .maxStorageBufferBindingSize = 134217728,
+        .maxBufferSize = 1073741824,
+        .maxTextureDimension1D = 16384,
+        .maxTextureDimension2D = 16384,
+        .maxTextureDimension3D = 2048,
+        .maxTextureArrayLayers = 2048
+    };
 
     auto cppLimits = cDeviceLimitsToCppDeviceLimits(cLimits);
 
@@ -336,15 +337,16 @@ TEST(ConversionsTest, CDeviceLimitsToCppDeviceLimits)
 
 TEST(ConversionsTest, CAdapterInfoToCppAdapterInfo_WithStrings)
 {
-    GfxAdapterInfo cInfo = {};
     const char* name = "Test GPU";
     const char* description = "Test Driver";
-    cInfo.name = name;
-    cInfo.driverDescription = description;
-    cInfo.vendorID = 0x10DE;
-    cInfo.deviceID = 0x1234;
-    cInfo.adapterType = GFX_ADAPTER_TYPE_DISCRETE_GPU;
-    cInfo.backend = GFX_BACKEND_VULKAN;
+    GfxAdapterInfo cInfo{
+        .name = name,
+        .driverDescription = description,
+        .vendorID = 0x10DE,
+        .deviceID = 0x1234,
+        .adapterType = GFX_ADAPTER_TYPE_DISCRETE_GPU,
+        .backend = GFX_BACKEND_VULKAN
+    };
 
     auto cppInfo = cAdapterInfoToCppAdapterInfo(cInfo);
 
@@ -358,13 +360,14 @@ TEST(ConversionsTest, CAdapterInfoToCppAdapterInfo_WithStrings)
 
 TEST(ConversionsTest, CAdapterInfoToCppAdapterInfo_WithNullStrings)
 {
-    GfxAdapterInfo cInfo = {};
-    cInfo.name = nullptr;
-    cInfo.driverDescription = nullptr;
-    cInfo.vendorID = 0;
-    cInfo.deviceID = 0;
-    cInfo.adapterType = GFX_ADAPTER_TYPE_UNKNOWN;
-    cInfo.backend = GFX_BACKEND_AUTO;
+    GfxAdapterInfo cInfo{
+        .name = nullptr,
+        .driverDescription = nullptr,
+        .vendorID = 0,
+        .deviceID = 0,
+        .adapterType = GFX_ADAPTER_TYPE_UNKNOWN,
+        .backend = GFX_BACKEND_AUTO
+    };
 
     auto cppInfo = cAdapterInfoToCppAdapterInfo(cInfo);
 
@@ -736,9 +739,10 @@ TEST(ConversionsTest, CppHandleToCHandle_XCB)
 
 TEST(ConversionsTest, CQueueFamilyPropertiesToCppQueueFamilyProperties)
 {
-    GfxQueueFamilyProperties cProps = {};
-    cProps.flags = GFX_QUEUE_FLAG_GRAPHICS | GFX_QUEUE_FLAG_COMPUTE;
-    cProps.queueCount = 4;
+    GfxQueueFamilyProperties cProps{
+        .flags = GFX_QUEUE_FLAG_GRAPHICS | GFX_QUEUE_FLAG_COMPUTE,
+        .queueCount = 4
+    };
 
     auto cppProps = cQueueFamilyPropertiesToCppQueueFamilyProperties(cProps);
 
@@ -753,9 +757,10 @@ TEST(ConversionsTest, CQueueFamilyPropertiesToCppQueueFamilyProperties)
 
 TEST(ConversionsTest, CppQueueRequestToCQueueRequest)
 {
-    QueueRequest cppReq;
-    cppReq.queueFamilyIndex = 2;
-    cppReq.queueIndex = 1;
+    QueueRequest cppReq{
+        .queueFamilyIndex = 2,
+        .queueIndex = 1
+    };
 
     GfxQueueRequest cReq = cppQueueRequestToCQueueRequest(cppReq);
 
@@ -769,9 +774,10 @@ TEST(ConversionsTest, CppQueueRequestToCQueueRequest)
 
 TEST(ConversionsTest, CBufferInfoToCppBufferInfo)
 {
-    GfxBufferInfo cInfo = {};
-    cInfo.size = 4096;
-    cInfo.usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST;
+    GfxBufferInfo cInfo{
+        .size = 4096,
+        .usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST
+    };
 
     auto cppInfo = cBufferInfoToCppBufferInfo(cInfo);
 
@@ -782,16 +788,15 @@ TEST(ConversionsTest, CBufferInfoToCppBufferInfo)
 
 TEST(ConversionsTest, CTextureInfoToCppTextureInfo)
 {
-    GfxTextureInfo cInfo = {};
-    cInfo.type = GFX_TEXTURE_TYPE_2D;
-    cInfo.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
-    cInfo.size.width = 512;
-    cInfo.size.height = 512;
-    cInfo.size.depth = 1;
-    cInfo.mipLevelCount = 1;
-    cInfo.arrayLayerCount = 1;
-    cInfo.sampleCount = GFX_SAMPLE_COUNT_1;
-    cInfo.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
+    GfxTextureInfo cInfo{
+        .type = GFX_TEXTURE_TYPE_2D,
+        .size = { 512, 512, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .sampleCount = GFX_SAMPLE_COUNT_1,
+        .format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM,
+        .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT
+    };
 
     auto cppInfo = cTextureInfoToCppTextureInfo(cInfo);
 
@@ -805,12 +810,13 @@ TEST(ConversionsTest, CTextureInfoToCppTextureInfo)
 
 TEST(ConversionsTest, CSwapchainInfoToCppSwapchainInfo)
 {
-    GfxSwapchainInfo cInfo = {};
-    cInfo.format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
-    cInfo.width = 1920;
-    cInfo.height = 1080;
-    cInfo.imageCount = 3;
-    cInfo.presentMode = GFX_PRESENT_MODE_MAILBOX;
+    GfxSwapchainInfo cInfo{
+        .width = 1920,
+        .height = 1080,
+        .format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM,
+        .imageCount = 3,
+        .presentMode = GFX_PRESENT_MODE_MAILBOX
+    };
 
     auto cppInfo = cSwapchainInfoToCppSwapchainInfo(cInfo);
 
@@ -827,9 +833,10 @@ TEST(ConversionsTest, CSwapchainInfoToCppSwapchainInfo)
 
 TEST(ConversionsTest, ConvertMemoryBarrier)
 {
-    MemoryBarrier cppBarrier;
-    cppBarrier.srcAccessMask = AccessFlags::ShaderWrite;
-    cppBarrier.dstAccessMask = AccessFlags::ShaderRead;
+    MemoryBarrier cppBarrier{
+        .srcAccessMask = AccessFlags::ShaderWrite,
+        .dstAccessMask = AccessFlags::ShaderRead
+    };
 
     GfxMemoryBarrier cBarrier;
     convertMemoryBarrier(cppBarrier, cBarrier);
@@ -848,8 +855,9 @@ TEST(ConversionsTest, ConvertMemoryBarrier)
 
 TEST(ConversionsTest, ConvertCommandEncoderDescriptor)
 {
-    CommandEncoderDescriptor cppDesc;
-    cppDesc.label = "TestEncoder";
+    CommandEncoderDescriptor cppDesc{
+        .label = "TestEncoder"
+    };
 
     GfxCommandEncoderDescriptor cDesc;
     convertCommandEncoderDescriptor(cppDesc, cDesc);
@@ -859,8 +867,9 @@ TEST(ConversionsTest, ConvertCommandEncoderDescriptor)
 
 TEST(ConversionsTest, ConvertFenceDescriptor)
 {
-    FenceDescriptor cppDesc;
-    cppDesc.signaled = true;
+    FenceDescriptor cppDesc{
+        .signaled = true
+    };
 
     GfxFenceDescriptor cDesc;
     convertFenceDescriptor(cppDesc, cDesc);
@@ -870,9 +879,10 @@ TEST(ConversionsTest, ConvertFenceDescriptor)
 
 TEST(ConversionsTest, ConvertSemaphoreDescriptor)
 {
-    SemaphoreDescriptor cppDesc;
-    cppDesc.type = SemaphoreType::Timeline;
-    cppDesc.initialValue = 42;
+    SemaphoreDescriptor cppDesc{
+        .type = SemaphoreType::Timeline,
+        .initialValue = 42
+    };
 
     GfxSemaphoreDescriptor cDesc;
     convertSemaphoreDescriptor(cppDesc, cDesc);
@@ -883,9 +893,10 @@ TEST(ConversionsTest, ConvertSemaphoreDescriptor)
 
 TEST(ConversionsTest, ConvertQuerySetDescriptor)
 {
-    QuerySetDescriptor cppDesc;
-    cppDesc.type = QueryType::Timestamp;
-    cppDesc.count = 8;
+    QuerySetDescriptor cppDesc{
+        .type = QueryType::Timestamp,
+        .count = 8
+    };
 
     GfxQuerySetDescriptor cDesc;
     convertQuerySetDescriptor(cppDesc, cDesc);
@@ -896,10 +907,11 @@ TEST(ConversionsTest, ConvertQuerySetDescriptor)
 
 TEST(ConversionsTest, ConvertBufferDescriptor)
 {
-    BufferDescriptor cppDesc;
-    cppDesc.size = 2048;
-    cppDesc.usage = BufferUsage::Uniform | BufferUsage::CopyDst;
-    cppDesc.label = "UniformBuffer";
+    BufferDescriptor cppDesc{
+        .label = "UniformBuffer",
+        .size = 2048,
+        .usage = BufferUsage::Uniform | BufferUsage::CopyDst
+    };
 
     GfxBufferDescriptor cDesc;
     convertBufferDescriptor(cppDesc, cDesc);
@@ -911,15 +923,16 @@ TEST(ConversionsTest, ConvertBufferDescriptor)
 
 TEST(ConversionsTest, ConvertTextureDescriptor)
 {
-    TextureDescriptor cppDesc;
-    cppDesc.type = TextureType::Texture2D;
-    cppDesc.size = { 256, 256, 1 };
-    cppDesc.arrayLayerCount = 1;
-    cppDesc.mipLevelCount = 1;
-    cppDesc.sampleCount = SampleCount::Count1;
-    cppDesc.format = TextureFormat::R8G8B8A8Unorm;
-    cppDesc.usage = TextureUsage::TextureBinding | TextureUsage::CopyDst;
-    cppDesc.label = "TestTexture";
+    TextureDescriptor cppDesc{
+        .label = "TestTexture",
+        .type = TextureType::Texture2D,
+        .size = { 256, 256, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .sampleCount = SampleCount::Count1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding | TextureUsage::CopyDst
+    };
 
     GfxTextureDescriptor cDesc;
     convertTextureDescriptor(cppDesc, cDesc);
@@ -934,13 +947,14 @@ TEST(ConversionsTest, ConvertTextureDescriptor)
 
 TEST(ConversionsTest, ConvertTextureViewDescriptor)
 {
-    TextureViewDescriptor cppDesc;
-    cppDesc.viewType = TextureViewType::View2D;
-    cppDesc.format = TextureFormat::R8G8B8A8Unorm;
-    cppDesc.baseMipLevel = 0;
-    cppDesc.mipLevelCount = 1;
-    cppDesc.baseArrayLayer = 0;
-    cppDesc.arrayLayerCount = 1;
+    TextureViewDescriptor cppDesc{
+        .viewType = TextureViewType::View2D,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .baseMipLevel = 0,
+        .mipLevelCount = 1,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 1
+    };
 
     GfxTextureViewDescriptor cDesc;
     convertTextureViewDescriptor(cppDesc, cDesc);
@@ -953,14 +967,15 @@ TEST(ConversionsTest, ConvertTextureViewDescriptor)
 
 TEST(ConversionsTest, ConvertSamplerDescriptor)
 {
-    SamplerDescriptor cppDesc;
-    cppDesc.magFilter = FilterMode::Linear;
-    cppDesc.minFilter = FilterMode::Linear;
-    cppDesc.mipmapFilter = FilterMode::Linear;
-    cppDesc.addressModeU = AddressMode::Repeat;
-    cppDesc.addressModeV = AddressMode::Repeat;
-    cppDesc.addressModeW = AddressMode::Repeat;
-    cppDesc.maxAnisotropy = 16;
+    SamplerDescriptor cppDesc{
+        .addressModeU = AddressMode::Repeat,
+        .addressModeV = AddressMode::Repeat,
+        .addressModeW = AddressMode::Repeat,
+        .magFilter = FilterMode::Linear,
+        .minFilter = FilterMode::Linear,
+        .mipmapFilter = FilterMode::Linear,
+        .maxAnisotropy = 16
+    };
 
     GfxSamplerDescriptor cDesc;
     convertSamplerDescriptor(cppDesc, cDesc);
@@ -975,8 +990,9 @@ TEST(ConversionsTest, ConvertSamplerDescriptor)
 
 TEST(ConversionsTest, ConvertComputePassBeginDescriptor)
 {
-    ComputePassBeginDescriptor cppDesc;
-    cppDesc.label = "ComputePass";
+    ComputePassBeginDescriptor cppDesc{
+        .label = "ComputePass"
+    };
 
     GfxComputePassBeginDescriptor cDesc;
     convertComputePassBeginDescriptor(cppDesc, cDesc);
@@ -986,10 +1002,11 @@ TEST(ConversionsTest, ConvertComputePassBeginDescriptor)
 
 TEST(ConversionsTest, ConvertPrimitiveState)
 {
-    PrimitiveState cppState;
-    cppState.topology = PrimitiveTopology::TriangleList;
-    cppState.frontFace = FrontFace::CounterClockwise;
-    cppState.cullMode = CullMode::Back;
+    PrimitiveState cppState{
+        .topology = PrimitiveTopology::TriangleList,
+        .frontFace = FrontFace::CounterClockwise,
+        .cullMode = CullMode::Back
+    };
 
     GfxPrimitiveState cState;
     convertPrimitiveState(cppState, cState);
@@ -1001,11 +1018,12 @@ TEST(ConversionsTest, ConvertPrimitiveState)
 
 TEST(ConversionsTest, ConvertDepthStencilState)
 {
-    DepthStencilState cppState;
-    cppState.depthWriteEnabled = true;
-    cppState.depthCompare = CompareFunction::Less;
-    cppState.stencilReadMask = 0xFF;
-    cppState.stencilWriteMask = 0xFF;
+    DepthStencilState cppState{
+        .depthWriteEnabled = true,
+        .depthCompare = CompareFunction::Less,
+        .stencilReadMask = 0xFF,
+        .stencilWriteMask = 0xFF
+    };
 
     GfxDepthStencilState cState;
     convertDepthStencilState(cppState, cState);

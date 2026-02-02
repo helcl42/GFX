@@ -22,15 +22,24 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "BindGroupImplTest";
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "BindGroupImplTest"
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc = {};
+        GfxAdapterDescriptor adapterDesc{
+            .adapterIndex = 0
+        };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc = {};
+        GfxDeviceDescriptor deviceDesc{
+            .label = nullptr,
+            .queueRequests = nullptr,
+            .queueRequestCount = 0,
+            .enabledExtensions = nullptr,
+            .enabledExtensionCount = 0
+        };
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);
     }
 
@@ -64,17 +73,19 @@ TEST_P(BindGroupImplTest, CreateBindGroupWithBuffer)
             .minBindingSize = 0 }
     };
 
-    BindGroupLayoutDescriptor layoutDesc;
-    layoutDesc.entries = { layoutEntry };
+    BindGroupLayoutDescriptor layoutDesc{
+        .entries = { layoutEntry }
+    };
 
     auto layout = deviceWrapper.createBindGroupLayout(layoutDesc);
     ASSERT_NE(layout, nullptr);
 
     // Create buffer using C++ API
-    BufferDescriptor bufferDesc;
-    bufferDesc.size = 1024;
-    bufferDesc.usage = BufferUsage::Uniform;
-    bufferDesc.memoryProperties = MemoryProperty::DeviceLocal;
+    BufferDescriptor bufferDesc{
+        .size = 1024,
+        .usage = BufferUsage::Uniform,
+        .memoryProperties = MemoryProperty::DeviceLocal
+    };
 
     auto buffer = deviceWrapper.createBuffer(bufferDesc);
     ASSERT_NE(buffer, nullptr);
@@ -87,9 +98,10 @@ TEST_P(BindGroupImplTest, CreateBindGroupWithBuffer)
         .size = 1024
     };
 
-    BindGroupDescriptor bindGroupDesc;
-    bindGroupDesc.layout = layout;
-    bindGroupDesc.entries = { entry };
+    BindGroupDescriptor bindGroupDesc{
+        .layout = layout,
+        .entries = { entry }
+    };
 
     auto bindGroup = deviceWrapper.createBindGroup(bindGroupDesc);
     EXPECT_NE(bindGroup, nullptr);
@@ -108,33 +120,36 @@ TEST_P(BindGroupImplTest, CreateBindGroupWithTextureView)
             .viewDimension = TextureViewType::View2D }
     };
 
-    BindGroupLayoutDescriptor layoutDesc;
-    layoutDesc.entries = { layoutEntry };
+    BindGroupLayoutDescriptor layoutDesc{
+        .entries = { layoutEntry }
+    };
 
     auto layout = deviceWrapper.createBindGroupLayout(layoutDesc);
     ASSERT_NE(layout, nullptr);
 
     // Create texture
-    TextureDescriptor textureDesc;
-    textureDesc.type = TextureType::Texture2D;
-    textureDesc.size = { 256, 256, 1 };
-    textureDesc.arrayLayerCount = 1;
-    textureDesc.mipLevelCount = 1;
-    textureDesc.sampleCount = SampleCount::Count1;
-    textureDesc.format = TextureFormat::R8G8B8A8Unorm;
-    textureDesc.usage = TextureUsage::TextureBinding;
+    TextureDescriptor textureDesc{
+        .type = TextureType::Texture2D,
+        .size = { 256, 256, 1 },
+        .arrayLayerCount = 1,
+        .mipLevelCount = 1,
+        .sampleCount = SampleCount::Count1,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .usage = TextureUsage::TextureBinding
+    };
 
     auto texture = deviceWrapper.createTexture(textureDesc);
     ASSERT_NE(texture, nullptr);
 
     // Create texture view
-    TextureViewDescriptor viewDesc;
-    viewDesc.format = TextureFormat::R8G8B8A8Unorm;
-    viewDesc.viewType = TextureViewType::View2D;
-    viewDesc.baseMipLevel = 0;
-    viewDesc.mipLevelCount = 1;
-    viewDesc.baseArrayLayer = 0;
-    viewDesc.arrayLayerCount = 1;
+    TextureViewDescriptor viewDesc{
+        .viewType = TextureViewType::View2D,
+        .format = TextureFormat::R8G8B8A8Unorm,
+        .baseMipLevel = 0,
+        .mipLevelCount = 1,
+        .baseArrayLayer = 0,
+        .arrayLayerCount = 1
+    };
 
     auto textureView = texture->createView(viewDesc);
     ASSERT_NE(textureView, nullptr);
@@ -145,9 +160,10 @@ TEST_P(BindGroupImplTest, CreateBindGroupWithTextureView)
         .resource = textureView
     };
 
-    BindGroupDescriptor bindGroupDesc;
-    bindGroupDesc.layout = layout;
-    bindGroupDesc.entries = { entry };
+    BindGroupDescriptor bindGroupDesc{
+        .layout = layout,
+        .entries = { entry }
+    };
 
     auto bindGroup = deviceWrapper.createBindGroup(bindGroupDesc);
     EXPECT_NE(bindGroup, nullptr);
@@ -165,24 +181,26 @@ TEST_P(BindGroupImplTest, CreateBindGroupWithSampler)
             .comparison = false }
     };
 
-    BindGroupLayoutDescriptor layoutDesc;
-    layoutDesc.entries = { layoutEntry };
+    BindGroupLayoutDescriptor layoutDesc{
+        .entries = { layoutEntry }
+    };
 
     auto layout = deviceWrapper.createBindGroupLayout(layoutDesc);
     ASSERT_NE(layout, nullptr);
 
     // Create sampler
-    SamplerDescriptor samplerDesc;
-    samplerDesc.addressModeU = AddressMode::Repeat;
-    samplerDesc.addressModeV = AddressMode::Repeat;
-    samplerDesc.addressModeW = AddressMode::Repeat;
-    samplerDesc.magFilter = FilterMode::Linear;
-    samplerDesc.minFilter = FilterMode::Linear;
-    samplerDesc.mipmapFilter = FilterMode::Linear;
-    samplerDesc.lodMinClamp = 0.0f;
-    samplerDesc.lodMaxClamp = 1000.0f;
-    samplerDesc.compare = CompareFunction::Never;
-    samplerDesc.maxAnisotropy = 1.0f;
+    SamplerDescriptor samplerDesc{
+        .addressModeU = AddressMode::Repeat,
+        .addressModeV = AddressMode::Repeat,
+        .addressModeW = AddressMode::Repeat,
+        .magFilter = FilterMode::Linear,
+        .minFilter = FilterMode::Linear,
+        .mipmapFilter = FilterMode::Linear,
+        .lodMinClamp = 0.0f,
+        .lodMaxClamp = 1000.0f,
+        .compare = CompareFunction::Never,
+        .maxAnisotropy = 1
+    };
 
     auto sampler = deviceWrapper.createSampler(samplerDesc);
     ASSERT_NE(sampler, nullptr);
@@ -193,9 +211,10 @@ TEST_P(BindGroupImplTest, CreateBindGroupWithSampler)
         .resource = sampler
     };
 
-    BindGroupDescriptor bindGroupDesc;
-    bindGroupDesc.layout = layout;
-    bindGroupDesc.entries = { entry };
+    BindGroupDescriptor bindGroupDesc{
+        .layout = layout,
+        .entries = { entry }
+    };
 
     auto bindGroup = deviceWrapper.createBindGroup(bindGroupDesc);
     EXPECT_NE(bindGroup, nullptr);
@@ -223,33 +242,36 @@ TEST_P(BindGroupImplTest, CreateBindGroupWithMultipleBindings)
         }
     };
 
-    BindGroupLayoutDescriptor layoutDesc;
-    layoutDesc.entries = {bufferLayoutEntry, samplerLayoutEntry};
+    BindGroupLayoutDescriptor layoutDesc{
+        .entries = {bufferLayoutEntry, samplerLayoutEntry}
+    };
 
     auto layout = deviceWrapper.createBindGroupLayout(layoutDesc);
     ASSERT_NE(layout, nullptr);
 
     // Create buffer
-    BufferDescriptor bufferDesc;
-    bufferDesc.size = 1024;
-    bufferDesc.usage = BufferUsage::Uniform;
-    bufferDesc.memoryProperties = MemoryProperty::DeviceLocal;
+    BufferDescriptor bufferDesc{
+        .size = 1024,
+        .usage = BufferUsage::Uniform,
+        .memoryProperties = MemoryProperty::DeviceLocal
+    };
 
     auto buffer = deviceWrapper.createBuffer(bufferDesc);
     ASSERT_NE(buffer, nullptr);
 
     // Create sampler
-    SamplerDescriptor samplerDesc;
-    samplerDesc.addressModeU = AddressMode::Repeat;
-    samplerDesc.addressModeV = AddressMode::Repeat;
-    samplerDesc.addressModeW = AddressMode::Repeat;
-    samplerDesc.magFilter = FilterMode::Linear;
-    samplerDesc.minFilter = FilterMode::Linear;
-    samplerDesc.mipmapFilter = FilterMode::Linear;
-    samplerDesc.lodMinClamp = 0.0f;
-    samplerDesc.lodMaxClamp = 1000.0f;
-    samplerDesc.compare = CompareFunction::Never;
-    samplerDesc.maxAnisotropy = 1.0f;
+    SamplerDescriptor samplerDesc{
+        .addressModeU = AddressMode::Repeat,
+        .addressModeV = AddressMode::Repeat,
+        .addressModeW = AddressMode::Repeat,
+        .magFilter = FilterMode::Linear,
+        .minFilter = FilterMode::Linear,
+        .mipmapFilter = FilterMode::Linear,
+        .lodMinClamp = 0.0f,
+        .lodMaxClamp = 1000.0f,
+        .compare = CompareFunction::Never,
+        .maxAnisotropy = 1
+    };
 
     auto sampler = deviceWrapper.createSampler(samplerDesc);
     ASSERT_NE(sampler, nullptr);
@@ -267,9 +289,10 @@ TEST_P(BindGroupImplTest, CreateBindGroupWithMultipleBindings)
         .resource = sampler
     };
 
-    BindGroupDescriptor bindGroupDesc;
-    bindGroupDesc.layout = layout;
-    bindGroupDesc.entries = {bufferEntry, samplerEntry};
+    BindGroupDescriptor bindGroupDesc{
+        .layout = layout,
+        .entries = {bufferEntry, samplerEntry}
+    };
 
     auto bindGroup = deviceWrapper.createBindGroup(bindGroupDesc);
     EXPECT_NE(bindGroup, nullptr);
@@ -289,17 +312,19 @@ TEST_P(BindGroupImplTest, MultipleBindGroups_IndependentHandles)
         }
     };
 
-    BindGroupLayoutDescriptor layoutDesc;
-    layoutDesc.entries = {layoutEntry};
+    BindGroupLayoutDescriptor layoutDesc{
+        .entries = {layoutEntry}
+    };
 
     auto layout = deviceWrapper.createBindGroupLayout(layoutDesc);
     ASSERT_NE(layout, nullptr);
 
     // Create buffer
-    BufferDescriptor bufferDesc;
-    bufferDesc.size = 1024;
-    bufferDesc.usage = BufferUsage::Uniform;
-    bufferDesc.memoryProperties = MemoryProperty::DeviceLocal;
+    BufferDescriptor bufferDesc{
+        .size = 1024,
+        .usage = BufferUsage::Uniform,
+        .memoryProperties = MemoryProperty::DeviceLocal
+    };
 
     auto buffer = deviceWrapper.createBuffer(bufferDesc);
     ASSERT_NE(buffer, nullptr);
@@ -312,9 +337,10 @@ TEST_P(BindGroupImplTest, MultipleBindGroups_IndependentHandles)
         .size = 1024
     };
 
-    BindGroupDescriptor bindGroupDesc;
-    bindGroupDesc.layout = layout;
-    bindGroupDesc.entries = {entry};
+    BindGroupDescriptor bindGroupDesc{
+        .layout = layout,
+        .entries = {entry}
+    };
 
     auto bindGroup1 = deviceWrapper.createBindGroup(bindGroupDesc);
     auto bindGroup2 = deviceWrapper.createBindGroup(bindGroupDesc);

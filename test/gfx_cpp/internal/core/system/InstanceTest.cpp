@@ -16,9 +16,10 @@ protected:
 
         ASSERT_EQ(gfxLoadBackend(backend), GFX_RESULT_SUCCESS);
 
-        GfxInstanceDescriptor instanceDesc = {};
-        instanceDesc.backend = backend;
-        instanceDesc.applicationName = "InstanceImplTest";
+        GfxInstanceDescriptor instanceDesc{
+            .backend = backend,
+            .applicationName = "InstanceImplTest"
+        };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
     }
 
@@ -44,7 +45,7 @@ TEST_P(InstanceImplTest, RequestAdapter)
 {
     InstanceImpl wrapper(instance);
 
-    AdapterDescriptor desc = {};
+    AdapterDescriptor desc{};
     auto adapter = wrapper.requestAdapter(desc);
 
     EXPECT_NE(adapter, nullptr);
@@ -54,8 +55,9 @@ TEST_P(InstanceImplTest, RequestAdapterWithPreference)
 {
     InstanceImpl wrapper(instance);
 
-    AdapterDescriptor desc = {};
-    desc.preference = AdapterPreference::HighPerformance;
+    AdapterDescriptor desc{
+        .preference = AdapterPreference::HighPerformance
+    };
     auto adapter = wrapper.requestAdapter(desc);
 
     EXPECT_NE(adapter, nullptr);
