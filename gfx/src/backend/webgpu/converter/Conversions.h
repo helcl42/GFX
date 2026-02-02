@@ -196,6 +196,7 @@ WGPUPrimitiveTopology gfxPrimitiveTopologyToWGPU(GfxPrimitiveTopology topology);
 WGPUFrontFace gfxFrontFaceToWGPU(GfxFrontFace frontFace);
 WGPUCullMode gfxCullModeToWGPU(GfxCullMode cullMode);
 WGPUIndexFormat gfxIndexFormatToWGPU(GfxIndexFormat format);
+WGPUVertexStepMode gfxVertexStepModeToWGPU(GfxVertexStepMode mode);
 
 // Blend state conversions
 WGPUBlendOperation gfxBlendOperationToWGPU(GfxBlendOperation operation);

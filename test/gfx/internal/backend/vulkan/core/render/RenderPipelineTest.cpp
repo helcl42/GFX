@@ -182,7 +182,7 @@ TEST_F(VulkanRenderPipelineTest, CreateWithVertexInput_CreatesSuccessfully)
     // Add vertex buffer layout
     gfx::backend::vulkan::core::VertexBufferLayout vertexBuffer{};
     vertexBuffer.arrayStride = 12; // 3 floats
-    vertexBuffer.stepModeInstance = false;
+    vertexBuffer.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     VkVertexInputAttributeDescription attr{};
     attr.binding = 0;

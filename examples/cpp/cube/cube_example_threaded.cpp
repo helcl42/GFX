@@ -1123,7 +1123,7 @@ bool CubeApp::createRenderPipeline()
         .arrayStride = sizeof(Vertex),
         .attributes = attributes,
         .attributeCount = 2,
-        .stepModeInstance = false
+        .stepMode = GFX_VERTEX_STEP_MODE_VERTEX
     };
 
     GfxVertexState vertexState = {

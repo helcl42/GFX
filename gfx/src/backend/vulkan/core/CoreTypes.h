@@ -316,7 +316,7 @@ struct SwapchainCreateInfo {
 // Pipeline CreateInfo structs - these are complex
 struct VertexBufferLayout {
     uint64_t arrayStride;
-    bool stepModeInstance;
+    VkVertexInputRate inputRate;
     std::vector<VkVertexInputAttributeDescription> attributes;
 };
 

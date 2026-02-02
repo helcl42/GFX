@@ -76,6 +76,11 @@ enum class IndexFormat : int32_t {
     Uint32 = 2
 };
 
+enum class VertexStepMode : int32_t {
+    Vertex = 0,
+    Instance = 1
+};
+
 enum class TextureFormat : int32_t {
     Undefined = 0,
     R8Unorm = 1,
@@ -716,7 +721,7 @@ struct VertexAttribute {
 struct VertexBufferLayout {
     uint64_t arrayStride = 0;
     std::vector<VertexAttribute> attributes;
-    bool stepModeInstance = false; // false = vertex, true = instance
+    VertexStepMode stepMode = VertexStepMode::Vertex;
 };
 
 struct VertexState {

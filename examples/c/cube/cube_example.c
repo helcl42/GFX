@@ -1003,8 +1003,8 @@ bool createRenderPipeline(CubeApp* app)
     GfxVertexBufferLayout vertexBufferLayout = {
         .arrayStride = sizeof(Vertex),
         .attributes = attributes,
-        .attributeCount = 2,
-        .stepModeInstance = false
+        .attributeCount = 3,
+        .stepMode = GFX_VERTEX_STEP_MODE_VERTEX
     };
 
     // Vertex state

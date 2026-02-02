@@ -122,6 +122,7 @@ VkCullModeFlags gfxCullModeToVkCullMode(GfxCullMode cullMode);
 VkFrontFace gfxFrontFaceToVkFrontFace(GfxFrontFace frontFace);
 VkPolygonMode gfxPolygonModeToVkPolygonMode(GfxPolygonMode polygonMode);
 VkPrimitiveTopology gfxPrimitiveTopologyToVkPrimitiveTopology(GfxPrimitiveTopology topology);
+VkVertexInputRate gfxVertexStepModeToVkVertexInputRate(GfxVertexStepMode mode);
 VkSamplerAddressMode gfxAddressModeToVkAddressMode(GfxAddressMode addressMode);
 VkFilter gfxFilterToVkFilter(GfxFilterMode filter);
 VkSamplerMipmapMode gfxFilterModeToVkMipMapFilterMode(GfxFilterMode filter);

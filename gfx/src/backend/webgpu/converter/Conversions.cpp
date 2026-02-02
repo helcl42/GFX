@@ -600,7 +600,7 @@ core::RenderPipelineCreateInfo gfxDescriptorToWebGPURenderPipelineCreateInfo(con
             const auto& buffer = descriptor->vertex->buffers[i];
             VertexBufferLayout vbLayout{};
             vbLayout.arrayStride = buffer.arrayStride;
-            vbLayout.stepMode = buffer.stepModeInstance ? WGPUVertexStepMode_Instance : WGPUVertexStepMode_Vertex;
+            vbLayout.stepMode = gfxVertexStepModeToWGPU(buffer.stepMode);
 
             // Convert attributes
             vbLayout.attributes.reserve(buffer.attributeCount);
@@ -1180,6 +1180,17 @@ WGPUIndexFormat gfxIndexFormatToWGPU(GfxIndexFormat format)
     case GFX_INDEX_FORMAT_UNDEFINED:
     default:
         return WGPUIndexFormat_Undefined;
+    }
+}
+
+WGPUVertexStepMode gfxVertexStepModeToWGPU(GfxVertexStepMode mode)
+{
+    switch (mode) {
+    case GFX_VERTEX_STEP_MODE_INSTANCE:
+        return WGPUVertexStepMode_Instance;
+    case GFX_VERTEX_STEP_MODE_VERTEX:
+    default:
+        return WGPUVertexStepMode_Vertex;
     }
 }
 

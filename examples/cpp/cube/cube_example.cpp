@@ -780,7 +780,7 @@ bool CubeApp::createRenderPipeline()
         gfx::VertexBufferLayout vertexLayout{};
         vertexLayout.arrayStride = sizeof(Vertex);
         vertexLayout.attributes = attributes;
-        vertexLayout.stepModeInstance = false; // Vertex mode
+        vertexLayout.stepMode = gfx::VertexStepMode::Vertex;
 
         // Create render pipeline descriptor
         gfx::VertexState vertexState{};

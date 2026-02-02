@@ -156,6 +156,16 @@ GfxFilterMode cppFilterModeToCFilterMode(FilterMode mode)
     return static_cast<GfxFilterMode>(mode);
 }
 
+GfxIndexFormat cppIndexFormatToCIndexFormat(IndexFormat format)
+{
+    return static_cast<GfxIndexFormat>(format);
+}
+
+GfxVertexStepMode cppVertexStepModeToCVertexStepMode(VertexStepMode mode)
+{
+    return static_cast<GfxVertexStepMode>(mode);
+}
+
 GfxPipelineStageFlags cppPipelineStageToCPipelineStage(PipelineStage stage)
 {
     return static_cast<GfxPipelineStageFlags>(stage);
@@ -263,11 +273,6 @@ SwapchainInfo cSwapchainInfoToCppSwapchainInfo(const GfxSwapchainInfo& cInfo)
 GfxAddressMode cppAddressModeToCAddressMode(AddressMode mode)
 {
     return static_cast<GfxAddressMode>(mode);
-}
-
-GfxIndexFormat cppIndexFormatToCIndexFormat(IndexFormat format)
-{
-    return static_cast<GfxIndexFormat>(format);
 }
 
 void convertAdapterDescriptor(const AdapterDescriptor& input, GfxAdapterDescriptor& output)
@@ -1088,7 +1093,7 @@ void convertVertexState(const VertexState& input, GfxShader vertexShaderHandle, 
         cBuffer.arrayStride = buffer.arrayStride;
         cBuffer.attributes = outAttributesPerBuffer.back().data();
         cBuffer.attributeCount = static_cast<uint32_t>(outAttributesPerBuffer.back().size());
-        cBuffer.stepModeInstance = buffer.stepModeInstance;
+        cBuffer.stepMode = cppVertexStepModeToCVertexStepMode(buffer.stepMode);
         outVertexBuffers.push_back(cBuffer);
     }
 

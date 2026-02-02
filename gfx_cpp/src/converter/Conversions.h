@@ -82,6 +82,9 @@ GfxAddressMode cppAddressModeToCAddressMode(AddressMode mode);
 // Index format conversions
 GfxIndexFormat cppIndexFormatToCIndexFormat(IndexFormat format);
 
+// Vertex step mode conversions
+GfxVertexStepMode cppVertexStepModeToCVertexStepMode(VertexStepMode mode);
+
 // Adapter descriptor conversion
 void convertAdapterDescriptor(const AdapterDescriptor& input, GfxAdapterDescriptor& output);
 

@@ -761,6 +761,18 @@ VkPrimitiveTopology gfxPrimitiveTopologyToVkPrimitiveTopology(GfxPrimitiveTopolo
     }
 }
 
+VkVertexInputRate gfxVertexStepModeToVkVertexInputRate(GfxVertexStepMode mode)
+{
+    switch (mode) {
+        case GFX_VERTEX_STEP_MODE_VERTEX:
+            return VK_VERTEX_INPUT_RATE_VERTEX;
+        case GFX_VERTEX_STEP_MODE_INSTANCE:
+            return VK_VERTEX_INPUT_RATE_INSTANCE;
+        default:
+            return VK_VERTEX_INPUT_RATE_VERTEX;
+    }
+}
+
 VkSamplerAddressMode gfxAddressModeToVkAddressMode(GfxAddressMode addressMode)
 {
     switch (addressMode) {
@@ -1493,7 +1505,7 @@ core::RenderPipelineCreateInfo gfxDescriptorToRenderPipelineCreateInfo(const Gfx
 
         core::VertexBufferLayout vkBufferLayout{};
         vkBufferLayout.arrayStride = bufferLayout.arrayStride;
-        vkBufferLayout.stepModeInstance = bufferLayout.stepModeInstance;
+        vkBufferLayout.inputRate = gfxVertexStepModeToVkVertexInputRate(bufferLayout.stepMode);
 
         for (uint32_t j = 0; j < bufferLayout.attributeCount; ++j) {
             const auto& attr = bufferLayout.attributes[j];

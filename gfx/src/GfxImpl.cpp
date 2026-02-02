@@ -901,8 +901,7 @@ GfxResult gfxCommandEncoderGenerateMipmaps(GfxCommandEncoder commandEncoder, Gfx
     return backend->commandEncoderGenerateMipmaps(commandEncoder, texture);
 }
 
-GfxResult gfxCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture,
-    uint32_t baseMipLevel, uint32_t levelCount)
+GfxResult gfxCommandEncoderGenerateMipmapsRange(GfxCommandEncoder commandEncoder, GfxTexture texture, uint32_t baseMipLevel, uint32_t levelCount)
 {
     if (!commandEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;

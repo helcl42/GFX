@@ -49,7 +49,7 @@ RenderPipeline::RenderPipeline(Device* device, const RenderPipelineCreateInfo& c
         VkVertexInputBindingDescription binding{};
         binding.binding = static_cast<uint32_t>(i);
         binding.stride = static_cast<uint32_t>(bufferLayout.arrayStride);
-        binding.inputRate = bufferLayout.stepModeInstance ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
+        binding.inputRate = bufferLayout.inputRate;
         bindings.push_back(binding);
 
         attributes.insert(attributes.end(), bufferLayout.attributes.begin(), bufferLayout.attributes.end());

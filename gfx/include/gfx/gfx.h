@@ -138,6 +138,12 @@ typedef enum {
 } GfxIndexFormat;
 
 typedef enum {
+    GFX_VERTEX_STEP_MODE_VERTEX = 0,
+    GFX_VERTEX_STEP_MODE_INSTANCE = 1,
+    GFX_VERTEX_STEP_MODE_MAX_ENUM = 0x7FFFFFFF
+} GfxVertexStepMode;
+
+typedef enum {
     GFX_TEXTURE_FORMAT_UNDEFINED = 0,
     GFX_TEXTURE_FORMAT_R8_UNORM = 1,
     GFX_TEXTURE_FORMAT_R8G8_UNORM = 2,
@@ -914,7 +920,7 @@ typedef struct {
     uint64_t arrayStride;
     const GfxVertexAttribute* attributes;
     uint32_t attributeCount;
-    bool stepModeInstance;
+    GfxVertexStepMode stepMode;
 } GfxVertexBufferLayout;
 
 typedef struct {

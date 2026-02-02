@@ -188,7 +188,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithNullDevice)
     vertexBufferLayout.arrayStride = 12;
     vertexBufferLayout.attributes = &vertexAttr;
     vertexBufferLayout.attributeCount = 1;
-    vertexBufferLayout.stepModeInstance = false;
+    vertexBufferLayout.stepMode = GFX_VERTEX_STEP_MODE_VERTEX;
 
     GfxVertexState vertexState = {};
     vertexState.module = vertexShader;
@@ -274,7 +274,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithNullOutput)
     vertexBufferLayout.arrayStride = 12;
     vertexBufferLayout.attributes = &vertexAttr;
     vertexBufferLayout.attributeCount = 1;
-    vertexBufferLayout.stepModeInstance = false;
+    vertexBufferLayout.stepMode = GFX_VERTEX_STEP_MODE_VERTEX;
 
     GfxVertexState vertexState = {};
     vertexState.module = vertexShader;
@@ -353,7 +353,7 @@ TEST_P(GfxRenderPipelineTest, CreateBasicRenderPipeline)
     vertexBufferLayout.arrayStride = 12;
     vertexBufferLayout.attributes = &vertexAttr;
     vertexBufferLayout.attributeCount = 1;
-    vertexBufferLayout.stepModeInstance = false;
+    vertexBufferLayout.stepMode = GFX_VERTEX_STEP_MODE_VERTEX;
 
     GfxVertexState vertexState = {};
     vertexState.module = vertexShader;
@@ -481,7 +481,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithFragmentShader)
     vertexBufferLayout.arrayStride = 12;
     vertexBufferLayout.attributes = &vertexAttr;
     vertexBufferLayout.attributeCount = 1;
-    vertexBufferLayout.stepModeInstance = false;
+    vertexBufferLayout.stepMode = GFX_VERTEX_STEP_MODE_VERTEX;
 
     GfxVertexState vertexState = {};
     vertexState.module = vertexShader;
@@ -578,7 +578,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithVertexShaderOnly)
     vertexBufferLayout.arrayStride = 12;
     vertexBufferLayout.attributes = &vertexAttr;
     vertexBufferLayout.attributeCount = 1;
-    vertexBufferLayout.stepModeInstance = false;
+    vertexBufferLayout.stepMode = GFX_VERTEX_STEP_MODE_VERTEX;
 
     GfxVertexState vertexState = {};
     vertexState.module = vertexShader;
@@ -682,7 +682,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithDifferentTopologies)
     vertexBufferLayout.arrayStride = 12;
     vertexBufferLayout.attributes = &vertexAttr;
     vertexBufferLayout.attributeCount = 1;
-    vertexBufferLayout.stepModeInstance = false;
+    vertexBufferLayout.stepMode = GFX_VERTEX_STEP_MODE_VERTEX;
 
     GfxVertexState vertexState = {};
     vertexState.module = vertexShader;
@@ -813,7 +813,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithCulling)
     vertexBufferLayout.arrayStride = 12;
     vertexBufferLayout.attributes = &vertexAttr;
     vertexBufferLayout.attributeCount = 1;
-    vertexBufferLayout.stepModeInstance = false;
+    vertexBufferLayout.stepMode = GFX_VERTEX_STEP_MODE_VERTEX;
 
     GfxVertexState vertexState = {};
     vertexState.module = vertexShader;
@@ -938,7 +938,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
     vertexBufferLayout.arrayStride = 12;
     vertexBufferLayout.attributes = &vertexAttr;
     vertexBufferLayout.attributeCount = 1;
-    vertexBufferLayout.stepModeInstance = false;
+    vertexBufferLayout.stepMode = GFX_VERTEX_STEP_MODE_VERTEX;
 
     GfxVertexState vertexState = {};
     vertexState.module = vertexShader;
@@ -1072,7 +1072,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithBindGroupLayouts)
     vertexBufferLayout.arrayStride = 12;
     vertexBufferLayout.attributes = &vertexAttr;
     vertexBufferLayout.attributeCount = 1;
-    vertexBufferLayout.stepModeInstance = false;
+    vertexBufferLayout.stepMode = GFX_VERTEX_STEP_MODE_VERTEX;
 
     GfxVertexState vertexState = {};
     vertexState.module = vertexShader;
@@ -1197,7 +1197,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithMultipleVertexAttributes)
     vertexBufferLayout.arrayStride = 32;
     vertexBufferLayout.attributes = vertexAttrs;
     vertexBufferLayout.attributeCount = 3;
-    vertexBufferLayout.stepModeInstance = false;
+    vertexBufferLayout.stepMode = GFX_VERTEX_STEP_MODE_VERTEX;
 
     GfxVertexState vertexState = {};
     vertexState.module = vertexShader;
