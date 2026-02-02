@@ -1150,6 +1150,7 @@ typedef struct {
 
 typedef struct {
     const char* label;
+    GfxSurface surface;
     uint32_t width;
     uint32_t height;
     GfxTextureFormat format;
@@ -1201,7 +1202,7 @@ GFX_API GfxResult gfxDeviceDestroy(GfxDevice device);
 GFX_API GfxResult gfxDeviceGetQueue(GfxDevice device, GfxQueue* outQueue);
 GFX_API GfxResult gfxDeviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, GfxQueue* outQueue);
 GFX_API GfxResult gfxDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface);
-GFX_API GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain);
+GFX_API GfxResult gfxDeviceCreateSwapchain(GfxDevice device, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain);
 GFX_API GfxResult gfxDeviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer);
 GFX_API GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer);
 GFX_API GfxResult gfxDeviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture);

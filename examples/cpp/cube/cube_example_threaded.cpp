@@ -546,6 +546,7 @@ bool CubeApp::createSwapchain(uint32_t width, uint32_t height)
 {
     GfxSwapchainDescriptor swapchainDesc = {
         .label = "Main Swapchain",
+        .surface = surface,
         .width = width,
         .height = height,
         .format = COLOR_FORMAT,
@@ -554,7 +555,7 @@ bool CubeApp::createSwapchain(uint32_t width, uint32_t height)
         .imageCount = MAX_FRAMES_IN_FLIGHT
     };
 
-    if (gfxDeviceCreateSwapchain(device, surface, &swapchainDesc, &swapchain) != GFX_RESULT_SUCCESS) {
+    if (gfxDeviceCreateSwapchain(device, &swapchainDesc, &swapchain) != GFX_RESULT_SUCCESS) {
         std::cerr << "Failed to create swapchain" << std::endl;
         return false;
     }

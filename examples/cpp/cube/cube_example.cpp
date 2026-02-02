@@ -318,6 +318,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         // Create swapchain
         gfx::SwapchainDescriptor swapchainDesc{};
         swapchainDesc.label = "Main Swapchain";
+        swapchainDesc.surface = surface;
         swapchainDesc.width = static_cast<uint32_t>(width);
         swapchainDesc.height = static_cast<uint32_t>(height);
         swapchainDesc.format = COLOR_FORMAT;
@@ -325,7 +326,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         swapchainDesc.presentMode = gfx::PresentMode::Fifo;
         swapchainDesc.imageCount = MAX_FRAMES_IN_FLIGHT;
 
-        swapchain = device->createSwapchain(surface, swapchainDesc);
+        swapchain = device->createSwapchain(swapchainDesc);
         if (!swapchain) {
             std::cerr << "Failed to create swapchain" << std::endl;
             return false;

@@ -19,7 +19,7 @@ public:
 
     std::shared_ptr<Surface> createSurface(const SurfaceDescriptor& descriptor) override;
 
-    std::shared_ptr<Swapchain> createSwapchain(std::shared_ptr<Surface> surface, const SwapchainDescriptor& descriptor) override;
+    std::shared_ptr<Swapchain> createSwapchain(const SwapchainDescriptor& descriptor) override;
 
     std::shared_ptr<Buffer> createBuffer(const BufferDescriptor& descriptor) override;
 

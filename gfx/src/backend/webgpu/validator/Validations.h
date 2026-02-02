@@ -23,7 +23,7 @@ GfxResult validateAdapterEnumerateExtensions(GfxAdapter adapter, uint32_t* exten
 GfxResult validateDeviceGetQueue(GfxDevice device, GfxQueue* outQueue);
 GfxResult validateDeviceGetQueueByIndex(GfxDevice device, GfxQueue* outQueue);
 GfxResult validateDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface);
-GfxResult validateDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain);
+GfxResult validateDeviceCreateSwapchain(GfxDevice device, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain);
 GfxResult validateDeviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer);
 GfxResult validateDeviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer);
 GfxResult validateDeviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture);

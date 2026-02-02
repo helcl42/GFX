@@ -82,6 +82,7 @@ TEST_P(GfxSwapchainTest, CreateSwapchainInvalidArguments)
 
     GfxSwapchainDescriptor desc = {};
     desc.label = "TestSwapchain";
+    desc.surface = dummySurface;
     desc.width = 800;
     desc.height = 600;
     desc.format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
@@ -90,19 +91,21 @@ TEST_P(GfxSwapchainTest, CreateSwapchainInvalidArguments)
     desc.imageCount = 2;
 
     // NULL device
-    GfxResult result = gfxDeviceCreateSwapchain(NULL, dummySurface, &desc, &swapchain);
+    GfxResult result = gfxDeviceCreateSwapchain(NULL, &desc, &swapchain);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
 
-    // NULL surface
-    result = gfxDeviceCreateSwapchain(device, NULL, &desc, &swapchain);
+    // NULL surface in descriptor
+    desc.surface = NULL;
+    result = gfxDeviceCreateSwapchain(device, &desc, &swapchain);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
 
     // NULL descriptor
-    result = gfxDeviceCreateSwapchain(device, dummySurface, NULL, &swapchain);
+    result = gfxDeviceCreateSwapchain(device, NULL, &swapchain);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
 
     // NULL output pointer
-    result = gfxDeviceCreateSwapchain(device, dummySurface, &desc, NULL);
+    desc.surface = dummySurface;
+    result = gfxDeviceCreateSwapchain(device, &desc, NULL);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
 
@@ -112,6 +115,7 @@ TEST_P(GfxSwapchainTest, CreateSwapchainInvalidDimensions)
     GfxSwapchainDescriptor desc = {};
     desc.label = "TestSwapchain";
     desc.width = 0; // Invalid
+    desc.surface = NULL;
     desc.height = 600;
     desc.format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
@@ -119,21 +123,21 @@ TEST_P(GfxSwapchainTest, CreateSwapchainInvalidDimensions)
     desc.imageCount = 2;
 
     // Zero width should be rejected before surface is accessed
-    GfxResult result = gfxDeviceCreateSwapchain(device, NULL, &desc, &swapchain);
+    GfxResult result = gfxDeviceCreateSwapchain(device, &desc, &swapchain);
     EXPECT_NE(result, GFX_RESULT_SUCCESS);
     EXPECT_TRUE(result == GFX_RESULT_ERROR_INVALID_ARGUMENT || result < 0);
 
     // Zero height should be rejected
     desc.width = 800;
     desc.height = 0;
-    result = gfxDeviceCreateSwapchain(device, NULL, &desc, &swapchain);
+    result = gfxDeviceCreateSwapchain(device, &desc, &swapchain);
     EXPECT_NE(result, GFX_RESULT_SUCCESS);
     EXPECT_TRUE(result == GFX_RESULT_ERROR_INVALID_ARGUMENT || result < 0);
 
     // Both zero should be rejected
     desc.width = 0;
     desc.height = 0;
-    result = gfxDeviceCreateSwapchain(device, NULL, &desc, &swapchain);
+    result = gfxDeviceCreateSwapchain(device, &desc, &swapchain);
     EXPECT_NE(result, GFX_RESULT_SUCCESS);
     EXPECT_TRUE(result == GFX_RESULT_ERROR_INVALID_ARGUMENT || result < 0);
 }
@@ -143,6 +147,7 @@ TEST_P(GfxSwapchainTest, CreateSwapchainInvalidImageCount)
     // Test that imageCount validation happens
     GfxSwapchainDescriptor desc = {};
     desc.label = "TestSwapchain";
+    desc.surface = NULL;
     desc.width = 800;
     desc.height = 600;
     desc.format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
@@ -151,7 +156,7 @@ TEST_P(GfxSwapchainTest, CreateSwapchainInvalidImageCount)
     desc.imageCount = 0; // Invalid
 
     // Zero image count should be rejected
-    GfxResult result = gfxDeviceCreateSwapchain(device, NULL, &desc, &swapchain);
+    GfxResult result = gfxDeviceCreateSwapchain(device, &desc, &swapchain);
     EXPECT_NE(result, GFX_RESULT_SUCCESS);
     EXPECT_TRUE(result == GFX_RESULT_ERROR_INVALID_ARGUMENT || result < 0);
 }

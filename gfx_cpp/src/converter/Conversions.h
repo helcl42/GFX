@@ -169,7 +169,7 @@ GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& windowHan
 
 // Descriptor conversions - output parameter pattern
 void convertSurfaceDescriptor(const SurfaceDescriptor& descriptor, GfxSurfaceDescriptor& outDesc);
-void convertSwapchainDescriptor(const SwapchainDescriptor& descriptor, GfxSwapchainDescriptor& outDesc);
+void convertSwapchainDescriptor(const SwapchainDescriptor& descriptor, GfxSwapchainDescriptor& outDesc, GfxSurface cSurface);
 void convertBufferDescriptor(const BufferDescriptor& descriptor, GfxBufferDescriptor& outDesc);
 void convertBufferImportDescriptor(const BufferImportDescriptor& descriptor, GfxBufferImportDescriptor& outDesc);
 void convertTextureDescriptor(const TextureDescriptor& descriptor, GfxTextureDescriptor& outDesc);

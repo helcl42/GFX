@@ -39,7 +39,7 @@ public:
     MOCK_METHOD(GfxResult, deviceGetQueue, (GfxDevice, GfxQueue*), (const, override));
     MOCK_METHOD(GfxResult, deviceGetQueueByIndex, (GfxDevice, uint32_t, uint32_t, GfxQueue*), (const, override));
     MOCK_METHOD(GfxResult, deviceCreateSurface, (GfxDevice, const GfxSurfaceDescriptor*, GfxSurface*), (const, override));
-    MOCK_METHOD(GfxResult, deviceCreateSwapchain, (GfxDevice, GfxSurface, const GfxSwapchainDescriptor*, GfxSwapchain*), (const, override));
+    MOCK_METHOD(GfxResult, deviceCreateSwapchain, (GfxDevice, const GfxSwapchainDescriptor*, GfxSwapchain*), (const, override));
     MOCK_METHOD(GfxResult, deviceCreateBuffer, (GfxDevice, const GfxBufferDescriptor*, GfxBuffer*), (const, override));
     MOCK_METHOD(GfxResult, deviceImportBuffer, (GfxDevice, const GfxBufferImportDescriptor*, GfxBuffer*), (const, override));
     MOCK_METHOD(GfxResult, deviceCreateTexture, (GfxDevice, const GfxTextureDescriptor*, GfxTexture*), (const, override));
@@ -756,16 +756,18 @@ TEST_F(GfxImplTest, DeviceCreateSwapchain_NullDevice_ReturnsError)
 {
     GfxSurface surface = reinterpret_cast<GfxSurface>(0x1);
     GfxSwapchainDescriptor desc = {};
+    desc.surface = surface;
     GfxSwapchain swapchain;
-    ASSERT_EQ(gfxDeviceCreateSwapchain(nullptr, surface, &desc, &swapchain), GFX_RESULT_ERROR_INVALID_ARGUMENT);
+    ASSERT_EQ(gfxDeviceCreateSwapchain(nullptr, &desc, &swapchain), GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
 
 TEST_F(GfxImplTest, DeviceCreateSwapchain_NullSurface_ReturnsError)
 {
     GfxDevice device = reinterpret_cast<GfxDevice>(0x1);
     GfxSwapchainDescriptor desc = {};
+    desc.surface = nullptr;
     GfxSwapchain swapchain;
-    ASSERT_EQ(gfxDeviceCreateSwapchain(device, nullptr, &desc, &swapchain), GFX_RESULT_ERROR_INVALID_ARGUMENT);
+    ASSERT_EQ(gfxDeviceCreateSwapchain(device, &desc, &swapchain), GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
 
 TEST_F(GfxImplTest, DeviceCreateSwapchain_NullOutSwapchain_ReturnsError)
@@ -773,7 +775,8 @@ TEST_F(GfxImplTest, DeviceCreateSwapchain_NullOutSwapchain_ReturnsError)
     GfxDevice device = reinterpret_cast<GfxDevice>(0x1);
     GfxSurface surface = reinterpret_cast<GfxSurface>(0x1);
     GfxSwapchainDescriptor desc = {};
-    ASSERT_EQ(gfxDeviceCreateSwapchain(device, surface, &desc, nullptr), GFX_RESULT_ERROR_INVALID_ARGUMENT);
+    desc.surface = surface;
+    ASSERT_EQ(gfxDeviceCreateSwapchain(device, &desc, nullptr), GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
 
 TEST_F(GfxImplTest, SwapchainDestroy_NullSwapchain_ReturnsError)

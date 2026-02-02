@@ -31,7 +31,7 @@ public:
     GfxResult deviceGetQueue(GfxDevice, GfxQueue*) const override { return GFX_RESULT_SUCCESS; }
     GfxResult deviceGetQueueByIndex(GfxDevice, uint32_t, uint32_t, GfxQueue*) const override { return GFX_RESULT_SUCCESS; }
     GfxResult deviceCreateSurface(GfxDevice, const GfxSurfaceDescriptor*, GfxSurface*) const override { return GFX_RESULT_SUCCESS; }
-    GfxResult deviceCreateSwapchain(GfxDevice, GfxSurface, const GfxSwapchainDescriptor*, GfxSwapchain*) const override { return GFX_RESULT_SUCCESS; }
+    GfxResult deviceCreateSwapchain(GfxDevice, const GfxSwapchainDescriptor*, GfxSwapchain*) const override { return GFX_RESULT_SUCCESS; }
     GfxResult deviceCreateBuffer(GfxDevice, const GfxBufferDescriptor*, GfxBuffer*) const override { return GFX_RESULT_SUCCESS; }
     GfxResult deviceImportBuffer(GfxDevice, const GfxBufferImportDescriptor*, GfxBuffer*) const override { return GFX_RESULT_SUCCESS; }
     GfxResult deviceCreateTexture(GfxDevice, const GfxTextureDescriptor*, GfxTexture*) const override { return GFX_RESULT_SUCCESS; }

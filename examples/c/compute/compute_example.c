@@ -282,6 +282,7 @@ static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
 static bool createSwapchain(ComputeApp* app, uint32_t width, uint32_t height)
 {
     GfxSwapchainDescriptor swapchainDesc = {
+        .surface = app->surface,
         .width = width,
         .height = height,
         .format = COLOR_FORMAT,
@@ -290,7 +291,7 @@ static bool createSwapchain(ComputeApp* app, uint32_t width, uint32_t height)
         .imageCount = MAX_FRAMES_IN_FLIGHT
     };
 
-    if (gfxDeviceCreateSwapchain(app->device, app->surface, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
+    if (gfxDeviceCreateSwapchain(app->device, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create swapchain\n");
         return false;
     }

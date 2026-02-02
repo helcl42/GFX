@@ -317,16 +317,16 @@ GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescrip
 #endif
 }
 
-GfxResult Backend::deviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
+GfxResult Backend::deviceCreateSwapchain(GfxDevice device, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
 {
-    GfxResult validationResult = validator::validateDeviceCreateSwapchain(device, surface, descriptor, outSwapchain);
+    GfxResult validationResult = validator::validateDeviceCreateSwapchain(device, descriptor, outSwapchain);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
 
     try {
         auto* devicePtr = converter::toNative<core::Device>(device);
-        auto* surfacePtr = converter::toNative<core::Surface>(surface);
+        auto* surfacePtr = converter::toNative<core::Surface>(descriptor->surface);
         auto createInfo = converter::gfxDescriptorToWebGPUSwapchainCreateInfo(descriptor);
         auto* swapchain = new core::Swapchain(devicePtr, surfacePtr, createInfo);
         *outSwapchain = converter::toGfx<GfxSwapchain>(swapchain);

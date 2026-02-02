@@ -839,6 +839,7 @@ struct SurfaceDescriptor {
 
 struct SwapchainDescriptor {
     std::string label;
+    std::shared_ptr<Surface> surface;
     uint32_t width = 0;
     uint32_t height = 0;
     TextureFormat format = TextureFormat::B8G8R8A8Unorm;
@@ -1317,7 +1318,7 @@ public:
 
     // Generic surface creation - works with any windowing system
     virtual std::shared_ptr<Surface> createSurface(const SurfaceDescriptor& descriptor) = 0;
-    virtual std::shared_ptr<Swapchain> createSwapchain(std::shared_ptr<Surface> surface, const SwapchainDescriptor& descriptor) = 0;
+    virtual std::shared_ptr<Swapchain> createSwapchain(const SwapchainDescriptor& descriptor) = 0;
 
     virtual std::shared_ptr<Buffer> createBuffer(const BufferDescriptor& descriptor) = 0;
     virtual std::shared_ptr<Buffer> importBuffer(const BufferImportDescriptor& descriptor) = 0;

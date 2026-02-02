@@ -722,6 +722,7 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 {
     try {
         gfx::SwapchainDescriptor swapchainDesc{};
+        swapchainDesc.surface = surface;
         swapchainDesc.width = width;
         swapchainDesc.height = height;
         swapchainDesc.format = COLOR_FORMAT;
@@ -729,7 +730,7 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         swapchainDesc.presentMode = gfx::PresentMode::Fifo;
         swapchainDesc.imageCount = MAX_FRAMES_IN_FLIGHT;
 
-        swapchain = device->createSwapchain(surface, swapchainDesc);
+        swapchain = device->createSwapchain(swapchainDesc);
         if (!swapchain) {
             std::cerr << "Failed to create swapchain" << std::endl;
             return false;

@@ -692,10 +692,11 @@ void convertSurfaceDescriptor(const SurfaceDescriptor& descriptor, GfxSurfaceDes
     outDesc.windowHandle = cppHandleToCHandle(descriptor.windowHandle);
 }
 
-void convertSwapchainDescriptor(const SwapchainDescriptor& descriptor, GfxSwapchainDescriptor& outDesc)
+void convertSwapchainDescriptor(const SwapchainDescriptor& descriptor, GfxSwapchainDescriptor& outDesc, GfxSurface cSurface)
 {
     outDesc = {};
     outDesc.label = descriptor.label.c_str();
+    outDesc.surface = cSurface;
     outDesc.width = descriptor.width;
     outDesc.height = descriptor.height;
     outDesc.format = cppFormatToCFormat(descriptor.format);

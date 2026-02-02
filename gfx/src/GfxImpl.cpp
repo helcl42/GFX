@@ -442,9 +442,12 @@ GfxResult gfxDeviceImportTexture(GfxDevice device, const GfxTextureImportDescrip
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain)
+GfxResult gfxDeviceCreateSwapchain(GfxDevice device, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain)
 {
-    if (!device || !surface || !outSwapchain) {
+    if (!device || !outSwapchain) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    if (!descriptor || !descriptor->surface) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(device);
@@ -454,11 +457,7 @@ GfxResult gfxDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const G
 
     GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);
     GfxSwapchain nativeSwapchain = nullptr;
-    GfxResult result = backend->deviceCreateSwapchain(
-        device,
-        surface,
-        descriptor,
-        &nativeSwapchain);
+    GfxResult result = backend->deviceCreateSwapchain(device, descriptor, &nativeSwapchain);
 
     if (result != GFX_RESULT_SUCCESS) {
         return result;
@@ -977,10 +976,7 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
 
     GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(encoder);
     GfxRenderPassEncoder nativePass = nullptr;
-    GfxResult result = backend->commandEncoderBeginRenderPass(
-        encoder,
-        beginDescriptor,
-        &nativePass);
+    GfxResult result = backend->commandEncoderBeginRenderPass(encoder, beginDescriptor, &nativePass);
     if (result != GFX_RESULT_SUCCESS) {
         return result;
     }
@@ -1080,9 +1076,7 @@ GfxResult gfxRenderPassEncoderSetPipeline(GfxRenderPassEncoder encoder, GfxRende
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->renderPassEncoderSetPipeline(
-        encoder,
-        pipeline);
+    return backend->renderPassEncoderSetPipeline(encoder, pipeline);
 }
 
 GfxResult gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
@@ -1094,12 +1088,7 @@ GfxResult gfxRenderPassEncoderSetBindGroup(GfxRenderPassEncoder encoder, uint32_
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->renderPassEncoderSetBindGroup(
-        encoder,
-        groupIndex,
-        bindGroup,
-        dynamicOffsets,
-        dynamicOffsetCount);
+    return backend->renderPassEncoderSetBindGroup(encoder, groupIndex, bindGroup, dynamicOffsets, dynamicOffsetCount);
 }
 
 GfxResult gfxRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder encoder, uint32_t slot, GfxBuffer buffer, uint64_t offset, uint64_t size)
@@ -1111,12 +1100,7 @@ GfxResult gfxRenderPassEncoderSetVertexBuffer(GfxRenderPassEncoder encoder, uint
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->renderPassEncoderSetVertexBuffer(
-        encoder,
-        slot,
-        buffer,
-        offset,
-        size);
+    return backend->renderPassEncoderSetVertexBuffer(encoder, slot, buffer, offset, size);
 }
 
 GfxResult gfxRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder encoder, GfxBuffer buffer, GfxIndexFormat format, uint64_t offset, uint64_t size)
@@ -1128,12 +1112,7 @@ GfxResult gfxRenderPassEncoderSetIndexBuffer(GfxRenderPassEncoder encoder, GfxBu
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->renderPassEncoderSetIndexBuffer(
-        encoder,
-        buffer,
-        format,
-        offset,
-        size);
+    return backend->renderPassEncoderSetIndexBuffer(encoder, buffer, format, offset, size);
 }
 
 GfxResult gfxRenderPassEncoderSetViewport(GfxRenderPassEncoder encoder, const GfxViewport* viewport)
@@ -1145,9 +1124,7 @@ GfxResult gfxRenderPassEncoderSetViewport(GfxRenderPassEncoder encoder, const Gf
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->renderPassEncoderSetViewport(
-        encoder,
-        viewport);
+    return backend->renderPassEncoderSetViewport(encoder, viewport);
 }
 
 GfxResult gfxRenderPassEncoderSetScissorRect(GfxRenderPassEncoder encoder, const GfxScissorRect* scissor)
@@ -1159,9 +1136,7 @@ GfxResult gfxRenderPassEncoderSetScissorRect(GfxRenderPassEncoder encoder, const
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->renderPassEncoderSetScissorRect(
-        encoder,
-        scissor);
+    return backend->renderPassEncoderSetScissorRect(encoder, scissor);
 }
 
 GfxResult gfxRenderPassEncoderDraw(GfxRenderPassEncoder encoder, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
@@ -1173,9 +1148,7 @@ GfxResult gfxRenderPassEncoderDraw(GfxRenderPassEncoder encoder, uint32_t vertex
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->renderPassEncoderDraw(
-        encoder,
-        vertexCount, instanceCount, firstVertex, firstInstance);
+    return backend->renderPassEncoderDraw(encoder, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 GfxResult gfxRenderPassEncoderDrawIndexed(GfxRenderPassEncoder encoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance)
@@ -1262,9 +1235,7 @@ GfxResult gfxComputePassEncoderSetPipeline(GfxComputePassEncoder encoder, GfxCom
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->computePassEncoderSetPipeline(
-        encoder,
-        pipeline);
+    return backend->computePassEncoderSetPipeline(encoder, pipeline);
 }
 
 GfxResult gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint32_t groupIndex, GfxBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount)
@@ -1276,12 +1247,7 @@ GfxResult gfxComputePassEncoderSetBindGroup(GfxComputePassEncoder encoder, uint3
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->computePassEncoderSetBindGroup(
-        encoder,
-        groupIndex,
-        bindGroup,
-        dynamicOffsets,
-        dynamicOffsetCount);
+    return backend->computePassEncoderSetBindGroup(encoder, groupIndex, bindGroup, dynamicOffsets, dynamicOffsetCount);
 }
 
 GfxResult gfxComputePassEncoderDispatch(GfxComputePassEncoder encoder, uint32_t workgroupCountX, uint32_t workgroupCountY, uint32_t workgroupCountZ)
@@ -1293,9 +1259,7 @@ GfxResult gfxComputePassEncoderDispatch(GfxComputePassEncoder encoder, uint32_t 
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->computePassEncoderDispatch(
-        encoder,
-        workgroupCountX, workgroupCountY, workgroupCountZ);
+    return backend->computePassEncoderDispatch(encoder, workgroupCountX, workgroupCountY, workgroupCountZ);
 }
 
 GfxResult gfxComputePassEncoderDispatchIndirect(GfxComputePassEncoder encoder, GfxBuffer indirectBuffer, uint64_t indirectOffset)

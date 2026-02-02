@@ -40,6 +40,11 @@ namespace {
             return GFX_RESULT_ERROR_INVALID_ARGUMENT;
         }
 
+        // Validate surface
+        if (!descriptor->surface) {
+            return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+        }
+
         // Validate dimensions
         if (descriptor->width == 0 || descriptor->height == 0) {
             return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -749,9 +754,9 @@ GfxResult validateDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescript
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult validateDeviceCreateSwapchain(GfxDevice device, GfxSurface surface, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain)
+GfxResult validateDeviceCreateSwapchain(GfxDevice device, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain)
 {
-    if (!device || !surface || !descriptor || !outSwapchain) {
+    if (!device || !descriptor || !outSwapchain) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     return validateSwapchainDescriptor(descriptor);

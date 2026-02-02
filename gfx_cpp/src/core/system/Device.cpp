@@ -73,18 +73,22 @@ std::shared_ptr<Surface> DeviceImpl::createSurface(const SurfaceDescriptor& desc
     return std::make_shared<SurfaceImpl>(surface);
 }
 
-std::shared_ptr<Swapchain> DeviceImpl::createSwapchain(std::shared_ptr<Surface> surface, const SwapchainDescriptor& descriptor)
+std::shared_ptr<Swapchain> DeviceImpl::createSwapchain(const SwapchainDescriptor& descriptor)
 {
-    auto surfaceImpl = std::dynamic_pointer_cast<SurfaceImpl>(surface);
+    if (!descriptor.surface) {
+        throw std::runtime_error("Surface is required in SwapchainDescriptor");
+    }
+
+    auto surfaceImpl = std::dynamic_pointer_cast<SurfaceImpl>(descriptor.surface);
     if (!surfaceImpl) {
         throw std::runtime_error("Invalid surface type");
     }
 
     GfxSwapchainDescriptor cDesc;
-    convertSwapchainDescriptor(descriptor, cDesc);
+    convertSwapchainDescriptor(descriptor, cDesc, surfaceImpl->getHandle());
 
     GfxSwapchain swapchain = nullptr;
-    GfxResult result = gfxDeviceCreateSwapchain(m_handle, surfaceImpl->getHandle(), &cDesc, &swapchain);
+    GfxResult result = gfxDeviceCreateSwapchain(m_handle, &cDesc, &swapchain);
     if (result != GFX_RESULT_SUCCESS || !swapchain) {
         throw std::runtime_error("Failed to create swapchain");
     }

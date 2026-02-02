@@ -60,6 +60,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainNullSurface)
 
     gfx::SwapchainDescriptor desc{
         .label = "TestSwapchain",
+        .surface = nullSurface,
         .width = 800,
         .height = 600,
         .format = gfx::TextureFormat::B8G8R8A8Unorm,
@@ -70,7 +71,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainNullSurface)
 
     // Creating swapchain with null surface should throw or fail gracefully
     try {
-        swapchain = device->createSwapchain(nullSurface, desc);
+        swapchain = device->createSwapchain(desc);
         // If it doesn't throw, swapchain should be null
         EXPECT_EQ(swapchain, nullptr) << "Swapchain creation with null surface should fail";
     } catch (const std::exception& e) {
@@ -88,6 +89,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainInvalidDimensions)
     // Zero width should be rejected
     gfx::SwapchainDescriptor desc{
         .label = "TestSwapchain",
+        .surface = nullSurface,
         .width = 0,
         .height = 600,
         .format = gfx::TextureFormat::B8G8R8A8Unorm,
@@ -97,7 +99,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainInvalidDimensions)
     };
 
     try {
-        swapchain = device->createSwapchain(nullSurface, desc);
+        swapchain = device->createSwapchain(desc);
         EXPECT_EQ(swapchain, nullptr) << "Swapchain creation with zero width should fail";
     } catch (const std::exception& e) {
         SUCCEED() << "Correctly rejected zero width: " << e.what();
@@ -108,7 +110,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainInvalidDimensions)
     desc.height = 0;
 
     try {
-        swapchain = device->createSwapchain(nullSurface, desc);
+        swapchain = device->createSwapchain(desc);
         EXPECT_EQ(swapchain, nullptr) << "Swapchain creation with zero height should fail";
     } catch (const std::exception& e) {
         SUCCEED() << "Correctly rejected zero height: " << e.what();
@@ -119,7 +121,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainInvalidDimensions)
     desc.height = 0;
 
     try {
-        swapchain = device->createSwapchain(nullSurface, desc);
+        swapchain = device->createSwapchain(desc);
         EXPECT_EQ(swapchain, nullptr) << "Swapchain creation with zero dimensions should fail";
     } catch (const std::exception& e) {
         SUCCEED() << "Correctly rejected zero dimensions: " << e.what();
@@ -134,6 +136,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainInvalidImageCount)
 
     gfx::SwapchainDescriptor desc{
         .label = "TestSwapchain",
+        .surface = nullSurface,
         .width = 800,
         .height = 600,
         .format = gfx::TextureFormat::B8G8R8A8Unorm,
@@ -144,7 +147,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainInvalidImageCount)
 
     // Zero image count should be rejected
     try {
-        swapchain = device->createSwapchain(nullSurface, desc);
+        swapchain = device->createSwapchain(desc);
         EXPECT_EQ(swapchain, nullptr) << "Swapchain creation with zero image count should fail";
     } catch (const std::exception& e) {
         SUCCEED() << "Correctly rejected zero image count: " << e.what();
