@@ -1168,6 +1168,19 @@ typedef struct {
 // ============================================================================
 // API Functions
 // ============================================================================
+//
+// PARAMETER CONVENTIONS:
+// - Input-only descriptor pointers are marked 'const'
+// - Output parameters use 'out' prefix (e.g., outInstance, outAdapter)
+// - Boolean output parameters use 'is' or 'outSupported' prefix
+// - Array + count parameters follow Vulkan style: pass NULL to query count
+//
+// THREAD SAFETY:
+// - Object creation/destruction functions are NOT thread-safe
+// - Multiple threads can submit to different queues simultaneously
+// - Single queue must not be accessed from multiple threads concurrently
+// - Command encoder recording is NOT thread-safe (one per thread)
+//
 
 // Backend loading/unloading functions
 // These should be called before creating any instances
