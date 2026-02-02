@@ -677,9 +677,8 @@ GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& windowHan
     case WindowingSystem::Android:
         cHandle.android.window = windowHandle.handle.android.window;
         break;
-    case WindowingSystem::Unknown:
     default:
-        // Unknown platform - leave handles null
+        // Unknown or unsupported platform - leave handles null
         break;
     }
 

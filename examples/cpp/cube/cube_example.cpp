@@ -298,8 +298,6 @@ bool CubeApp::initializeGraphics()
         gfx::SurfaceDescriptor surfaceDesc{};
         surfaceDesc.label = "Main Surface";
         surfaceDesc.windowHandle = extractNativeHandle();
-        surfaceDesc.width = static_cast<uint32_t>(width);
-        surfaceDesc.height = static_cast<uint32_t>(height);
 
         surface = device->createSurface(surfaceDesc);
         if (!surface) {

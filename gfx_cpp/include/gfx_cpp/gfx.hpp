@@ -409,8 +409,7 @@ enum class WindowingSystem {
     XCB = 3,
     Metal = 4,
     Emscripten = 5,
-    Android = 6,
-    Unknown = -1
+    Android = 6
 };
 
 // Common platform window handle struct with union for all windowing systems
@@ -510,6 +509,14 @@ struct PlatformWindowHandle {
         PlatformWindowHandle h{};
         h.windowingSystem = WindowingSystem::Emscripten;
         h.handle.emscripten.canvasSelector = canvasSelector;
+        return h;
+    }
+
+    static PlatformWindowHandle fromAndroid(void* window)
+    {
+        PlatformWindowHandle h{};
+        h.windowingSystem = WindowingSystem::Android;
+        h.handle.android.window = window;
         return h;
     }
 };
@@ -827,8 +834,6 @@ struct BindGroupDescriptor {
 struct SurfaceDescriptor {
     std::string label;
     PlatformWindowHandle windowHandle; // Generic platform handle
-    uint32_t width = 0;
-    uint32_t height = 0;
 };
 
 struct SwapchainDescriptor {
