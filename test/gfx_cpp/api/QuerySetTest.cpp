@@ -452,7 +452,7 @@ TEST_P(GfxCppQuerySetTest, BeginOcclusionQueryInRenderPass)
 
     gfx::RenderPassColorAttachment colorAttachment{
         .target = colorTarget,
-        .resolveTarget = nullptr
+        .resolveTarget = std::nullopt
     };
 
     gfx::RenderPassCreateDescriptor renderPassDesc{
@@ -546,7 +546,7 @@ TEST_P(GfxCppQuerySetTest, EndOcclusionQueryInRenderPass)
 
     gfx::RenderPassColorAttachment colorAttachment{
         .target = colorTarget,
-        .resolveTarget = nullptr
+        .resolveTarget = std::nullopt
     };
 
     gfx::RenderPassCreateDescriptor renderPassDesc{

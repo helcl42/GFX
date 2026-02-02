@@ -370,7 +370,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
                     .loadOp = gfx::LoadOp::Clear,
                     .storeOp = gfx::StoreOp::Store,
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } },
-        .depthStencilAttachment = &depthAttachment
+        .depthStencilAttachment = depthAttachment
     };
     auto renderPass = device->createRenderPass(rpDesc);
     ASSERT_NE(renderPass, nullptr);

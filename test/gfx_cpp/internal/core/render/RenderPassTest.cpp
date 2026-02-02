@@ -104,7 +104,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithDepthStencilAttachment)
 
     RenderPassDepthStencilAttachment depthStencilAttachment;
     depthStencilAttachment.target = depthStencilTarget;
-    depthStencilAttachment.resolveTarget = nullptr;
+    depthStencilAttachment.resolveTarget = std::nullopt;
 
     RenderPassCreateDescriptor renderPassDesc;
     renderPassDesc.label = "Depth-Stencil Render Pass";
@@ -117,7 +117,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithDepthStencilAttachment)
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment } }
     };
-    renderPassDesc.depthStencilAttachment = &depthStencilAttachment;
+    renderPassDesc.depthStencilAttachment = depthStencilAttachment;
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
     EXPECT_NE(renderPass, nullptr);
@@ -167,7 +167,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithMSAAAndResolve)
                 .loadOp = LoadOp::Clear,
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment },
-            .resolveTarget = &resolveTarget }
+            .resolveTarget = resolveTarget }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);

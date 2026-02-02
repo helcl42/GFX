@@ -172,7 +172,7 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithDepthAttachment)
                     .loadOp = gfx::LoadOp::Clear,
                     .storeOp = gfx::StoreOp::Store,
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } },
-        .depthStencilAttachment = &depthAttachment
+        .depthStencilAttachment = depthAttachment
     };
     auto renderPass = device->createRenderPass(renderPassDesc);
     ASSERT_NE(renderPass, nullptr);
@@ -195,7 +195,7 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithDepthAttachment)
     auto framebuffer = device->createFramebuffer({ .label = "Depth Framebuffer",
         .renderPass = renderPass,
         .colorAttachments = { gfx::FramebufferColorAttachment{ .view = colorView } },
-        .depthStencilAttachment = &fbDepthAttachment,
+        .depthStencilAttachment = fbDepthAttachment,
         .width = 1024,
         .height = 768 });
     EXPECT_NE(framebuffer, nullptr);

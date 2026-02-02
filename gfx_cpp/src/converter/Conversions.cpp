@@ -914,7 +914,7 @@ void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, s
         outColorTargets.push_back(cTarget);
         cAttachment.target = outColorTargets.back();
 
-        if (attachment.resolveTarget) {
+        if (attachment.resolveTarget.has_value()) {
             GfxRenderPassColorAttachmentTarget cResolveTarget = {};
             cResolveTarget.format = cppFormatToCFormat(attachment.resolveTarget->format);
             cResolveTarget.sampleCount = cppSampleCountToCCount(attachment.resolveTarget->sampleCount);
@@ -936,7 +936,7 @@ void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, s
     outDepthResolveTarget = {};
     const GfxRenderPassDepthStencilAttachment* cDepthStencilPtr = nullptr;
 
-    if (descriptor.depthStencilAttachment) {
+    if (descriptor.depthStencilAttachment.has_value()) {
         outDepthTarget.format = cppFormatToCFormat(descriptor.depthStencilAttachment->target.format);
         outDepthTarget.sampleCount = cppSampleCountToCCount(descriptor.depthStencilAttachment->target.sampleCount);
         outDepthTarget.depthOps.loadOp = cppLoadOpToCLoadOp(descriptor.depthStencilAttachment->target.depthLoadOp);
@@ -946,7 +946,7 @@ void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, s
         outDepthTarget.finalLayout = cppLayoutToCLayout(descriptor.depthStencilAttachment->target.finalLayout);
         outDepthStencilAttachment.target = outDepthTarget;
 
-        if (descriptor.depthStencilAttachment->resolveTarget) {
+        if (descriptor.depthStencilAttachment->resolveTarget.has_value()) {
             outDepthResolveTarget.format = cppFormatToCFormat(descriptor.depthStencilAttachment->resolveTarget->format);
             outDepthResolveTarget.sampleCount = cppSampleCountToCCount(descriptor.depthStencilAttachment->resolveTarget->sampleCount);
             outDepthResolveTarget.depthOps.loadOp = cppLoadOpToCLoadOp(descriptor.depthStencilAttachment->resolveTarget->depthLoadOp);
@@ -1041,7 +1041,7 @@ void convertFramebufferDescriptor(const FramebufferDescriptor& descriptor, GfxRe
     // Convert depth/stencil attachment if present
     outDepthStencilAttachment = { nullptr, nullptr };
 
-    if (descriptor.depthStencilAttachment) {
+    if (descriptor.depthStencilAttachment.has_value()) {
         auto viewImpl = std::dynamic_pointer_cast<TextureViewImpl>(descriptor.depthStencilAttachment->view);
         if (!viewImpl) {
             throw std::runtime_error("Invalid depth/stencil texture view type");

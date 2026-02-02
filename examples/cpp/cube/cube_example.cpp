@@ -423,7 +423,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
             resolveTarget.loadOp = gfx::LoadOp::DontCare;
             resolveTarget.storeOp = gfx::StoreOp::Store;
             resolveTarget.finalLayout = gfx::TextureLayout::PresentSrc;
-            colorAttachment.resolveTarget = &resolveTarget;
+            colorAttachment.resolveTarget = resolveTarget;
         } else {
             // No MSAA: Store directly
             colorAttachment.target.storeOp = gfx::StoreOp::Store;
@@ -442,7 +442,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         depthAttachment.target.stencilStoreOp = gfx::StoreOp::DontCare;
         depthAttachment.target.finalLayout = gfx::TextureLayout::DepthStencilAttachment;
 
-        renderPassDesc.depthStencilAttachment = &depthAttachment;
+        renderPassDesc.depthStencilAttachment = depthAttachment;
 
         renderPass = device->createRenderPass(renderPassDesc);
         if (!renderPass) {
@@ -471,7 +471,7 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 
             // Depth attachment (must be a pointer)
             gfx::FramebufferDepthStencilAttachment depthAttachment{ depthTextureView };
-            framebufferDesc.depthStencilAttachment = &depthAttachment;
+            framebufferDesc.depthStencilAttachment = depthAttachment;
 
             framebuffers[i] = device->createFramebuffer(framebufferDesc);
             if (!framebuffers[i]) {

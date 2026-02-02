@@ -117,7 +117,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDepthAttachment)
                     .loadOp = gfx::LoadOp::Clear,
                     .storeOp = gfx::StoreOp::Store,
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } },
-        .depthStencilAttachment = &depthAttachment
+        .depthStencilAttachment = depthAttachment
     };
 
     auto renderPass = device->createRenderPass(renderPassDesc);
@@ -148,7 +148,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDepthStencilAttachment)
                     .loadOp = gfx::LoadOp::Clear,
                     .storeOp = gfx::StoreOp::Store,
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } },
-        .depthStencilAttachment = &depthStencilAttachment
+        .depthStencilAttachment = depthStencilAttachment
     };
 
     auto renderPass = device->createRenderPass(renderPassDesc);

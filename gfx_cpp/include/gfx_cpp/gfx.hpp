@@ -948,18 +948,6 @@ struct TextureBarrier {
     uint32_t arrayLayerCount = 1;
 };
 
-struct ColorAttachmentOps {
-    LoadOp loadOp = LoadOp::Clear;
-    StoreOp storeOp = StoreOp::Store;
-    Color clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
-};
-
-struct ColorAttachmentTarget {
-    std::shared_ptr<TextureView> view;
-    ColorAttachmentOps ops;
-    TextureLayout finalLayout = TextureLayout::Undefined;
-};
-
 // Render Pass API structures (cached, reusable render pass objects)
 struct RenderPassColorAttachmentTarget {
     TextureFormat format = TextureFormat::Undefined;
@@ -971,7 +959,7 @@ struct RenderPassColorAttachmentTarget {
 
 struct RenderPassColorAttachment {
     RenderPassColorAttachmentTarget target;
-    RenderPassColorAttachmentTarget* resolveTarget = nullptr;
+    std::optional<RenderPassColorAttachmentTarget> resolveTarget;
 };
 
 struct RenderPassDepthStencilAttachmentTarget {
@@ -986,13 +974,13 @@ struct RenderPassDepthStencilAttachmentTarget {
 
 struct RenderPassDepthStencilAttachment {
     RenderPassDepthStencilAttachmentTarget target;
-    RenderPassDepthStencilAttachmentTarget* resolveTarget = nullptr;
+    std::optional<RenderPassDepthStencilAttachmentTarget> resolveTarget;
 };
 
 struct RenderPassCreateDescriptor {
     std::string label;
     std::vector<RenderPassColorAttachment> colorAttachments;
-    RenderPassDepthStencilAttachment* depthStencilAttachment = nullptr;
+    std::optional<RenderPassDepthStencilAttachment> depthStencilAttachment;
 };
 
 // Framebuffer structures
@@ -1010,7 +998,7 @@ struct FramebufferDescriptor {
     std::string label;
     std::shared_ptr<RenderPass> renderPass;
     std::vector<FramebufferColorAttachment> colorAttachments;
-    FramebufferDepthStencilAttachment* depthStencilAttachment = nullptr;
+    std::optional<FramebufferDepthStencilAttachment> depthStencilAttachment;
     uint32_t width;
     uint32_t height;
 };
@@ -1021,42 +1009,6 @@ struct RenderPassBeginDescriptor {
     std::vector<Color> colorClearValues;
     float depthClearValue = 1.0f;
     uint32_t stencilClearValue = 0;
-};
-
-// Legacy inline render pass structures (for backwards compatibility)
-struct ColorAttachment {
-    ColorAttachmentTarget target;
-    ColorAttachmentTarget* resolveTarget = nullptr;
-};
-
-struct DepthAttachmentOps {
-    LoadOp loadOp = LoadOp::Clear;
-    StoreOp storeOp = StoreOp::Store;
-    float clearValue = 1.0f;
-};
-
-struct StencilAttachmentOps {
-    LoadOp loadOp = LoadOp::Clear;
-    StoreOp storeOp = StoreOp::Store;
-    uint32_t clearValue = 0;
-};
-
-struct DepthStencilAttachmentTarget {
-    std::shared_ptr<TextureView> view;
-    DepthAttachmentOps* depthOps = nullptr; // Optional: set to nullptr if not used
-    StencilAttachmentOps* stencilOps = nullptr; // Optional: set to nullptr if not used
-    TextureLayout finalLayout = TextureLayout::Undefined;
-};
-
-struct DepthStencilAttachment {
-    DepthStencilAttachmentTarget target;
-    DepthStencilAttachmentTarget* resolveTarget = nullptr;
-};
-
-struct RenderPassDescriptor {
-    std::string label;
-    std::vector<ColorAttachment> colorAttachments;
-    DepthStencilAttachment* depthStencilAttachment = nullptr; // nullptr if not used
 };
 
 struct ComputePassBeginDescriptor {

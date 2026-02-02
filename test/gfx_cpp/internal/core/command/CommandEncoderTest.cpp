@@ -161,7 +161,7 @@ TEST_P(CommandEncoderImplTest, BeginRenderPass)
 
     RenderPassColorAttachment colorAttachment{
         .target = colorTarget,
-        .resolveTarget = nullptr
+        .resolveTarget = std::nullopt
     };
 
     RenderPassCreateDescriptor renderPassDesc{

@@ -208,7 +208,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithDepthStencilAttachment)
 
     RenderPassDepthStencilAttachment depthStencilAttachment;
     depthStencilAttachment.target = depthStencilTarget;
-    depthStencilAttachment.resolveTarget = nullptr;
+    depthStencilAttachment.resolveTarget = std::nullopt;
 
     RenderPassCreateDescriptor renderPassDesc;
     renderPassDesc.colorAttachments = {
@@ -220,7 +220,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithDepthStencilAttachment)
                 .storeOp = StoreOp::Store,
                 .finalLayout = TextureLayout::ColorAttachment } }
     };
-    renderPassDesc.depthStencilAttachment = &depthStencilAttachment;
+    renderPassDesc.depthStencilAttachment = depthStencilAttachment;
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
     ASSERT_NE(renderPass, nullptr);
@@ -284,7 +284,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithDepthStencilAttachment)
     framebufferDesc.colorAttachments = {
         FramebufferColorAttachment{ .view = colorView }
     };
-    framebufferDesc.depthStencilAttachment = &fbDepthStencilAttachment;
+    framebufferDesc.depthStencilAttachment = fbDepthStencilAttachment;
     framebufferDesc.width = 800;
     framebufferDesc.height = 600;
 

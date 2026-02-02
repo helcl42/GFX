@@ -64,7 +64,7 @@ TEST_P(RenderPassEncoderImplTest, SetViewportAndScissor)
 
     RenderPassColorAttachment colorAttachment{
         .target = colorTarget,
-        .resolveTarget = nullptr
+        .resolveTarget = std::nullopt
     };
 
     RenderPassCreateDescriptor renderPassDesc{
