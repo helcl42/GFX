@@ -466,11 +466,11 @@ bool ComputeApp::createComputeResources()
             initFenceDesc.signaled = false;
             auto initFence = device->createFence(initFenceDesc);
 
-            gfx::SubmitDescriptor submitInfo{};
-            submitInfo.commandEncoders = { initEncoder };
-            submitInfo.signalFence = initFence;
+            gfx::SubmitDescriptor submitDescriptor{};
+            submitDescriptor.commandEncoders = { initEncoder };
+            submitDescriptor.signalFence = initFence;
 
-            queue->submit(submitInfo);
+            queue->submit(submitDescriptor);
             initFence->wait(UINT64_MAX);
         }
 
@@ -897,19 +897,19 @@ void ComputeApp::render()
         encoder->end();
 
         // Submit
-        gfx::SubmitDescriptor submitInfo{};
-        submitInfo.commandEncoders = { encoder };
-        submitInfo.waitSemaphores = { imageAvailableSemaphores[frameIndex] };
-        submitInfo.signalSemaphores = { renderFinishedSemaphores[frameIndex] };
-        submitInfo.signalFence = inFlightFences[frameIndex];
+        gfx::SubmitDescriptor submitDescriptor{};
+        submitDescriptor.commandEncoders = { encoder };
+        submitDescriptor.waitSemaphores = { imageAvailableSemaphores[frameIndex] };
+        submitDescriptor.signalSemaphores = { renderFinishedSemaphores[frameIndex] };
+        submitDescriptor.signalFence = inFlightFences[frameIndex];
 
-        queue->submit(submitInfo);
+        queue->submit(submitDescriptor);
 
         // Present
-        gfx::PresentInfo presentInfo{};
-        presentInfo.waitSemaphores = { renderFinishedSemaphores[frameIndex] };
+        gfx::PresentDescriptor presentDescriptor{};
+        presentDescriptor.waitSemaphores = { renderFinishedSemaphores[frameIndex] };
 
-        result = swapchain->present(presentInfo);
+        result = swapchain->present(presentDescriptor);
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     } catch (const std::exception& e) {

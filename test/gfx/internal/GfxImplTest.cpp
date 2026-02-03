@@ -70,7 +70,7 @@ public:
     MOCK_METHOD(GfxResult, swapchainAcquireNextImage, (GfxSwapchain, uint64_t, GfxSemaphore, GfxFence, uint32_t*), (const, override));
     MOCK_METHOD(GfxResult, swapchainGetTextureView, (GfxSwapchain, uint32_t, GfxTextureView*), (const, override));
     MOCK_METHOD(GfxResult, swapchainGetCurrentTextureView, (GfxSwapchain, GfxTextureView*), (const, override));
-    MOCK_METHOD(GfxResult, swapchainPresent, (GfxSwapchain, const GfxPresentInfo*), (const, override));
+    MOCK_METHOD(GfxResult, swapchainPresent, (GfxSwapchain, const GfxPresentDescriptor*), (const, override));
 
     // Buffer functions
     MOCK_METHOD(GfxResult, bufferDestroy, (GfxBuffer), (const, override));

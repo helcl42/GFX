@@ -22,12 +22,11 @@ protected:
         };
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
-        GfxAdapterDescriptor adapterDesc{
-            .preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE
-        };
+        GfxAdapterDescriptor adapterDesc = GFX_ADAPTER_DESCRIPTOR_INIT;
+        adapterDesc.preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE;
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc{};
+        GfxDeviceDescriptor deviceDesc = GFX_DEVICE_DESCRIPTOR_INIT;
         ASSERT_EQ(gfxAdapterCreateDevice(adapter, &deviceDesc, &device), GFX_RESULT_SUCCESS);
     }
 

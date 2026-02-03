@@ -45,7 +45,7 @@ GfxInstanceDescriptor cppInstanceDescriptorToCDescriptor(const InstanceDescripto
         extensionsStorage.push_back(ext.c_str());
     }
 
-    GfxInstanceDescriptor cDesc = {};
+    GfxInstanceDescriptor cDesc = GFX_INSTANCE_DESCRIPTOR_INIT;
     cDesc.backend = backend;
     cDesc.applicationName = descriptor.applicationName.c_str();
     cDesc.applicationVersion = descriptor.applicationVersion;
@@ -230,7 +230,7 @@ void convertDeviceDescriptor(const DeviceDescriptor& descriptor, std::vector<con
     }
 
     // Build C descriptor
-    outDesc = {};
+    outDesc = GFX_DEVICE_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.enabledExtensions = outExtensions.empty() ? nullptr : outExtensions.data();
     outDesc.enabledExtensionCount = static_cast<uint32_t>(outExtensions.size());
@@ -692,14 +692,14 @@ GfxPlatformWindowHandle cppHandleToCHandle(const PlatformWindowHandle& windowHan
 
 void convertSurfaceDescriptor(const SurfaceDescriptor& descriptor, GfxSurfaceDescriptor& outDesc)
 {
-    outDesc = {};
+    outDesc = GFX_SURFACE_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.windowHandle = cppHandleToCHandle(descriptor.windowHandle);
 }
 
 void convertSwapchainDescriptor(const SwapchainDescriptor& descriptor, GfxSwapchainDescriptor& outDesc, GfxSurface cSurface)
 {
-    outDesc = {};
+    outDesc = GFX_SWAPCHAIN_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.surface = cSurface;
     outDesc.width = descriptor.width;
@@ -712,7 +712,7 @@ void convertSwapchainDescriptor(const SwapchainDescriptor& descriptor, GfxSwapch
 
 void convertBufferDescriptor(const BufferDescriptor& descriptor, GfxBufferDescriptor& outDesc)
 {
-    outDesc = {};
+    outDesc = GFX_BUFFER_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.size = descriptor.size;
     outDesc.usage = cppBufferUsageToCUsage(descriptor.usage);
@@ -721,7 +721,7 @@ void convertBufferDescriptor(const BufferDescriptor& descriptor, GfxBufferDescri
 
 void convertBufferImportDescriptor(const BufferImportDescriptor& descriptor, GfxBufferImportDescriptor& outDesc)
 {
-    outDesc = {};
+    outDesc = GFX_BUFFER_IMPORT_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.nativeHandle = descriptor.nativeHandle;
     outDesc.size = descriptor.size;
@@ -730,7 +730,7 @@ void convertBufferImportDescriptor(const BufferImportDescriptor& descriptor, Gfx
 
 void convertTextureDescriptor(const TextureDescriptor& descriptor, GfxTextureDescriptor& outDesc)
 {
-    outDesc = {};
+    outDesc = GFX_TEXTURE_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.type = cppTextureTypeToCType(descriptor.type);
     outDesc.size = { descriptor.size.width, descriptor.size.height, descriptor.size.depth };
@@ -743,7 +743,7 @@ void convertTextureDescriptor(const TextureDescriptor& descriptor, GfxTextureDes
 
 void convertTextureImportDescriptor(const TextureImportDescriptor& descriptor, GfxTextureImportDescriptor& outDesc)
 {
-    outDesc = {};
+    outDesc = GFX_TEXTURE_IMPORT_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.nativeHandle = descriptor.nativeHandle;
     outDesc.type = cppTextureTypeToCType(descriptor.type);
@@ -758,7 +758,7 @@ void convertTextureImportDescriptor(const TextureImportDescriptor& descriptor, G
 
 void convertTextureViewDescriptor(const TextureViewDescriptor& descriptor, GfxTextureViewDescriptor& outDesc)
 {
-    outDesc = {};
+    outDesc = GFX_TEXTURE_VIEW_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.viewType = cppTextureViewTypeToCType(descriptor.viewType);
     outDesc.format = cppFormatToCFormat(descriptor.format);
@@ -770,7 +770,7 @@ void convertTextureViewDescriptor(const TextureViewDescriptor& descriptor, GfxTe
 
 void convertSamplerDescriptor(const SamplerDescriptor& descriptor, GfxSamplerDescriptor& outDesc)
 {
-    outDesc = {};
+    outDesc = GFX_SAMPLER_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.addressModeU = cppAddressModeToCAddressMode(descriptor.addressModeU);
     outDesc.addressModeV = cppAddressModeToCAddressMode(descriptor.addressModeV);
@@ -786,7 +786,7 @@ void convertSamplerDescriptor(const SamplerDescriptor& descriptor, GfxSamplerDes
 
 void convertShaderDescriptor(const ShaderDescriptor& descriptor, GfxShaderDescriptor& outDesc)
 {
-    outDesc = {};
+    outDesc = GFX_SHADER_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.sourceType = cppShaderSourceTypeToCShaderSourceType(descriptor.sourceType);
     outDesc.code = descriptor.code.data();
@@ -796,20 +796,20 @@ void convertShaderDescriptor(const ShaderDescriptor& descriptor, GfxShaderDescri
 
 void convertCommandEncoderDescriptor(const CommandEncoderDescriptor& descriptor, GfxCommandEncoderDescriptor& outDesc)
 {
-    outDesc = {};
+    outDesc = GFX_COMMAND_ENCODER_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
 }
 
 void convertFenceDescriptor(const FenceDescriptor& descriptor, GfxFenceDescriptor& outDesc)
 {
-    outDesc = {};
+    outDesc = GFX_FENCE_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.signaled = descriptor.signaled;
 }
 
 void convertSemaphoreDescriptor(const SemaphoreDescriptor& descriptor, GfxSemaphoreDescriptor& outDesc)
 {
-    outDesc = {};
+    outDesc = GFX_SEMAPHORE_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.type = cppSemaphoreTypeToCSemaphoreType(descriptor.type);
     outDesc.initialValue = descriptor.initialValue;
@@ -817,7 +817,7 @@ void convertSemaphoreDescriptor(const SemaphoreDescriptor& descriptor, GfxSemaph
 
 void convertQuerySetDescriptor(const QuerySetDescriptor& descriptor, GfxQuerySetDescriptor& outDesc)
 {
-    outDesc = {};
+    outDesc = GFX_QUERY_SET_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.type = cppQueryTypeToCQueryType(descriptor.type);
     outDesc.count = descriptor.count;
@@ -968,7 +968,7 @@ void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, s
         cDepthStencilPtr = &outDepthStencilAttachment;
     }
 
-    outDesc = {};
+    outDesc = GFX_RENDER_PASS_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.colorAttachments = outColorAttachments.empty() ? nullptr : outColorAttachments.data();
     outDesc.colorAttachmentCount = static_cast<uint32_t>(outColorAttachments.size());
@@ -999,18 +999,18 @@ void convertComputePassBeginDescriptor(const ComputePassBeginDescriptor& descrip
     outDesc.label = descriptor.label.c_str();
 }
 
-void convertPresentInfo(const PresentInfo& info, std::vector<GfxSemaphore>& outWaitSemaphores, GfxPresentInfo& outInfo)
+void convertPresentDescriptor(const PresentDescriptor& descriptor, std::vector<GfxSemaphore>& outWaitSemaphores, GfxPresentDescriptor& outDescriptor)
 {
     outWaitSemaphores.clear();
-    outWaitSemaphores.reserve(info.waitSemaphores.size());
+    outWaitSemaphores.reserve(descriptor.waitSemaphores.size());
 
-    for (const auto& sem : info.waitSemaphores) {
+    for (const auto& sem : descriptor.waitSemaphores) {
         outWaitSemaphores.push_back(extractNativeHandle<GfxSemaphore>(sem));
     }
 
-    outInfo = {};
-    outInfo.waitSemaphores = outWaitSemaphores.empty() ? nullptr : outWaitSemaphores.data();
-    outInfo.waitSemaphoreCount = static_cast<uint32_t>(outWaitSemaphores.size());
+    outDescriptor = GFX_PRESENT_DESCRIPTOR_INIT;
+    outDescriptor.waitSemaphores = outWaitSemaphores.empty() ? nullptr : outWaitSemaphores.data();
+    outDescriptor.waitSemaphoreCount = static_cast<uint32_t>(outWaitSemaphores.size());
 }
 
 void convertFramebufferDescriptor(const FramebufferDescriptor& descriptor, GfxRenderPass renderPassHandle, std::vector<GfxFramebufferAttachment>& outColorAttachments, GfxFramebufferAttachment& outDepthStencilAttachment, GfxFramebufferDescriptor& outDesc)
@@ -1063,7 +1063,7 @@ void convertFramebufferDescriptor(const FramebufferDescriptor& descriptor, GfxRe
         }
     }
 
-    outDesc = {};
+    outDesc = GFX_FRAMEBUFFER_DESCRIPTOR_INIT;
     outDesc.label = descriptor.label.c_str();
     outDesc.renderPass = renderPassHandle;
     outDesc.colorAttachments = outColorAttachments.empty() ? nullptr : outColorAttachments.data();
@@ -1182,7 +1182,7 @@ void convertRenderPipelineDescriptor(const RenderPipelineDescriptor& descriptor,
         }
     }
 
-    out = {};
+    out = GFX_RENDER_PIPELINE_DESCRIPTOR_INIT;
     out.label = descriptor.label.c_str();
     out.renderPass = renderPassHandle;
     out.vertex = const_cast<GfxVertexState*>(&vertexState);
@@ -1204,7 +1204,7 @@ void convertComputePipelineDescriptor(const ComputePipelineDescriptor& descripto
         }
     }
 
-    out = {};
+    out = GFX_COMPUTE_PIPELINE_DESCRIPTOR_INIT;
     out.label = descriptor.label.c_str();
     out.compute = computeShaderHandle;
     out.entryPoint = descriptor.entryPoint.c_str();

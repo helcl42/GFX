@@ -55,13 +55,13 @@ std::shared_ptr<TextureView> SwapchainImpl::getTextureView(uint32_t index)
     return std::make_shared<TextureViewImpl>(view);
 }
 
-Result SwapchainImpl::present(const PresentInfo& info)
+Result SwapchainImpl::present(const PresentDescriptor& descriptor)
 {
     std::vector<GfxSemaphore> cWaitSemaphores;
-    GfxPresentInfo cInfo;
-    convertPresentInfo(info, cWaitSemaphores, cInfo);
+    GfxPresentDescriptor cDescriptor;
+    convertPresentDescriptor(descriptor, cWaitSemaphores, cDescriptor);
 
-    GfxResult result = gfxSwapchainPresent(m_handle, &cInfo);
+    GfxResult result = gfxSwapchainPresent(m_handle, &cDescriptor);
     return cResultToCppResult(result);
 }
 

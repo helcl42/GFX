@@ -189,7 +189,7 @@ void convertBindGroupDescriptor(const BindGroupDescriptor& descriptor, std::vect
 void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, std::vector<GfxRenderPassColorAttachment>& outColorAttachments, std::vector<GfxRenderPassColorAttachmentTarget>& outColorTargets, std::vector<GfxRenderPassColorAttachmentTarget>& outColorResolveTargets, GfxRenderPassDepthStencilAttachment& outDepthStencilAttachment, GfxRenderPassDepthStencilAttachmentTarget& outDepthTarget, GfxRenderPassDepthStencilAttachmentTarget& outDepthResolveTarget, GfxRenderPassDescriptor& outDesc);
 void convertRenderPassBeginDescriptor(const RenderPassBeginDescriptor& descriptor, GfxRenderPass renderPassHandle, GfxFramebuffer framebufferHandle, std::vector<GfxColor>& outClearValues, GfxRenderPassBeginDescriptor& outDesc);
 void convertComputePassBeginDescriptor(const ComputePassBeginDescriptor& descriptor, GfxComputePassBeginDescriptor& outDesc);
-void convertPresentInfo(const PresentInfo& info, std::vector<GfxSemaphore>& outWaitSemaphores, GfxPresentInfo& outInfo);
+void convertPresentDescriptor(const PresentDescriptor& descriptor, std::vector<GfxSemaphore>& outWaitSemaphores, GfxPresentDescriptor& outDescriptor);
 void convertFramebufferDescriptor(const FramebufferDescriptor& descriptor, GfxRenderPass renderPassHandle, std::vector<GfxFramebufferAttachment>& outColorAttachments, GfxFramebufferAttachment& outDepthStencilAttachment, GfxFramebufferDescriptor& outDesc);
 
 // RenderPipeline state conversions

@@ -684,7 +684,7 @@ GfxResult gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureVi
     return backend->swapchainGetCurrentTextureView(swapchain, outView);
 }
 
-GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo)
+GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentDescriptor* presentDescriptor)
 {
     if (!swapchain) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -693,7 +693,7 @@ GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* pres
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->swapchainPresent(swapchain, presentInfo);
+    return backend->swapchainPresent(swapchain, presentDescriptor);
 }
 
 // Buffer Functions
@@ -828,7 +828,7 @@ GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescripto
 }
 
 // Queue Functions
-GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo)
+GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor)
 {
     if (!queue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -837,7 +837,7 @@ GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo)
     if (!backend) {
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
-    return backend->queueSubmit(queue, submitInfo);
+    return backend->queueSubmit(queue, submitDescriptor);
 }
 
 GfxResult gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size)

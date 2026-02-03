@@ -821,7 +821,7 @@ GfxResult Backend::swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t ti
     // Signal fence if provided (even though WebGPU doesn't truly have fences)
     if (fence && result == GFX_RESULT_SUCCESS) {
         auto* fencePtr = converter::toNative<core::Fence>(fence);
-        fencePtr->setSignaled(true);
+        fencePtr->signal();
     }
 
     return result;
@@ -853,16 +853,24 @@ GfxResult Backend::swapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTex
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const
+GfxResult Backend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentDescriptor* presentDescriptor) const
 {
-    GfxResult validationResult = validator::validateSwapchainPresent(swapchain);
+    GfxResult validationResult = validator::validateSwapchainPresent(swapchain, presentDescriptor);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
 
     // WebGPU doesn't support explicit wait semaphores for present
     // The queue submission already ensures ordering, so we just present
-    (void)presentInfo; // Wait semaphores are noted but not used in WebGPU
+    // However, we signal the semaphores for API consistency
+    if (presentDescriptor && presentDescriptor->waitSemaphoreCount > 0) {
+        for (uint32_t i = 0; i < presentDescriptor->waitSemaphoreCount; ++i) {
+            if (presentDescriptor->waitSemaphores[i]) {
+                auto* sem = converter::toNative<core::Semaphore>(presentDescriptor->waitSemaphores[i]);
+                sem->signal();
+            }
+        }
+    }
 
     auto* swapchainPtr = converter::toNative<core::Swapchain>(swapchain);
     swapchainPtr->present();
@@ -1723,9 +1731,8 @@ GfxResult Backend::fenceWait(GfxFence fence, uint64_t timeoutNs) const
 
     // Fence is already properly signaled by queueSubmit after GPU work completes
     // Just check the status
-    (void)timeoutNs; // Timeout is handled in queueSubmit
-
-    return fencePtr->isSignaled() ? GFX_RESULT_SUCCESS : GFX_RESULT_TIMEOUT;
+    bool signaled = fencePtr->wait(timeoutNs);
+    return signaled ? GFX_RESULT_SUCCESS : GFX_RESULT_TIMEOUT;
 }
 
 GfxResult Backend::fenceReset(GfxFence fence) const
@@ -1736,7 +1743,7 @@ GfxResult Backend::fenceReset(GfxFence fence) const
     }
 
     auto* fencePtr = converter::toNative<core::Fence>(fence);
-    fencePtr->setSignaled(false);
+    fencePtr->reset();
     return GFX_RESULT_SUCCESS;
 }
 
@@ -1772,9 +1779,7 @@ GfxResult Backend::semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const
     }
 
     auto* semaphorePtr = converter::toNative<core::Semaphore>(semaphore);
-    if (semaphorePtr->getType() == core::SemaphoreType::Timeline) {
-        semaphorePtr->setValue(value);
-    }
+    semaphorePtr->signal(value);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -1785,13 +1790,10 @@ GfxResult Backend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_
         return validationResult;
     }
 
-    (void)timeoutNs; // WebGPU doesn't support timeout for semaphore waits
-
     auto* semaphorePtr = converter::toNative<core::Semaphore>(semaphore);
-    if (semaphorePtr->getType() == core::SemaphoreType::Timeline) {
-        return (semaphorePtr->getValue() >= value) ? GFX_RESULT_SUCCESS : GFX_RESULT_TIMEOUT;
-    }
-    return GFX_RESULT_SUCCESS;
+    bool satisfied = semaphorePtr->wait(value, timeoutNs);
+
+    return satisfied ? GFX_RESULT_SUCCESS : GFX_RESULT_TIMEOUT;
 }
 
 GfxResult Backend::semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const

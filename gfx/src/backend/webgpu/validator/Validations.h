@@ -49,7 +49,7 @@ GfxResult validateSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* out
 GfxResult validateSwapchainAcquireNextImage(GfxSwapchain swapchain, uint32_t* outImageIndex);
 GfxResult validateSwapchainGetTextureView(GfxSwapchain swapchain, GfxTextureView* outView);
 GfxResult validateSwapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView);
-GfxResult validateSwapchainPresent(GfxSwapchain swapchain);
+GfxResult validateSwapchainPresent(GfxSwapchain swapchain, const GfxPresentDescriptor* presentDescriptor);
 GfxResult validateBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo);
 GfxResult validateBufferGetNativeHandle(GfxBuffer buffer, void** outHandle);
 GfxResult validateBufferMap(GfxBuffer buffer, void** outMappedPointer);

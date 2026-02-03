@@ -31,7 +31,7 @@ protected:
         };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
-        GfxDeviceDescriptor deviceDesc{};
+        GfxDeviceDescriptor deviceDesc = GFX_DEVICE_DESCRIPTOR_INIT;
 
         // Check if timeline semaphore extension is supported
         uint32_t extensionCount = 0;

@@ -825,9 +825,9 @@ GfxResult Backend::swapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTex
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult Backend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const
+GfxResult Backend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentDescriptor* presentDescriptor) const
 {
-    GfxResult validationResult = validator::validateSwapchainPresent(swapchain);
+    GfxResult validationResult = validator::validateSwapchainPresent(swapchain, presentDescriptor);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
@@ -835,10 +835,10 @@ GfxResult Backend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo
     auto* sc = converter::toNative<core::Swapchain>(swapchain);
 
     std::vector<VkSemaphore> waitSemaphores;
-    if (presentInfo && presentInfo->waitSemaphoreCount > 0) {
-        waitSemaphores.reserve(presentInfo->waitSemaphoreCount);
-        for (uint32_t i = 0; i < presentInfo->waitSemaphoreCount; ++i) {
-            auto* sem = converter::toNative<core::Semaphore>(presentInfo->waitSemaphores[i]);
+    if (presentDescriptor && presentDescriptor->waitSemaphoreCount > 0) {
+        waitSemaphores.reserve(presentDescriptor->waitSemaphoreCount);
+        for (uint32_t i = 0; i < presentDescriptor->waitSemaphoreCount; ++i) {
+            auto* sem = converter::toNative<core::Semaphore>(presentDescriptor->waitSemaphores[i]);
             if (sem) {
                 waitSemaphores.push_back(sem->handle());
             }
@@ -1135,15 +1135,15 @@ GfxResult Backend::querySetDestroy(GfxQuerySet querySet) const
 }
 
 // Queue functions
-GfxResult Backend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const
+GfxResult Backend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor) const
 {
-    GfxResult validationResult = validator::validateQueueSubmit(queue, submitInfo);
+    GfxResult validationResult = validator::validateQueueSubmit(queue, submitDescriptor);
     if (validationResult != GFX_RESULT_SUCCESS) {
         return validationResult;
     }
 
     auto* q = converter::toNative<core::Queue>(queue);
-    auto internalSubmitInfo = converter::gfxDescriptorToSubmitInfo(submitInfo);
+    auto internalSubmitInfo = converter::gfxDescriptorToSubmitInfo(submitDescriptor);
     VkResult result = q->submit(internalSubmitInfo);
     return (result == VK_SUCCESS) ? GFX_RESULT_SUCCESS : GFX_RESULT_ERROR_UNKNOWN;
 }
@@ -1782,7 +1782,7 @@ GfxResult Backend::semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* ou
     }
 
     auto* s = converter::toNative<core::Semaphore>(semaphore);
-    *outType = s->getType() == core::SemaphoreType::Timeline ? GFX_SEMAPHORE_TYPE_TIMELINE : GFX_SEMAPHORE_TYPE_BINARY;
+    *outType = converter::vulkanSemaphoreTypeToGfxSemaphoreType(s->getType());
     return GFX_RESULT_SUCCESS;
 }
 

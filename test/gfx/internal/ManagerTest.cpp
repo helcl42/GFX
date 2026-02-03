@@ -59,7 +59,7 @@ public:
     GfxResult swapchainAcquireNextImage(GfxSwapchain, uint64_t, GfxSemaphore, GfxFence, uint32_t*) const override { return GFX_RESULT_SUCCESS; }
     GfxResult swapchainGetTextureView(GfxSwapchain, uint32_t, GfxTextureView*) const override { return GFX_RESULT_SUCCESS; }
     GfxResult swapchainGetCurrentTextureView(GfxSwapchain, GfxTextureView*) const override { return GFX_RESULT_SUCCESS; }
-    GfxResult swapchainPresent(GfxSwapchain, const GfxPresentInfo*) const override { return GFX_RESULT_SUCCESS; }
+    GfxResult swapchainPresent(GfxSwapchain, const GfxPresentDescriptor*) const override { return GFX_RESULT_SUCCESS; }
     GfxResult bufferDestroy(GfxBuffer) const override { return GFX_RESULT_SUCCESS; }
     GfxResult bufferGetInfo(GfxBuffer, GfxBufferInfo*) const override { return GFX_RESULT_SUCCESS; }
     GfxResult bufferGetNativeHandle(GfxBuffer, void**) const override { return GFX_RESULT_SUCCESS; }

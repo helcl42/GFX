@@ -15,9 +15,12 @@ public:
     ~Fence() = default;
 
     bool isSignaled() const;
-    void setSignaled(bool signaled);
+    void signal();
+    void reset();
+    bool wait(uint64_t timeoutNs);
 
 private:
+    void setSignaled(bool signaled);
     bool m_signaled = false;
 };
 

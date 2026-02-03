@@ -947,19 +947,19 @@ void CubeApp::render()
         commandEncoder->end();
 
         // Submit with explicit synchronization
-        gfx::SubmitDescriptor submitInfo{};
-        submitInfo.commandEncoders = { commandEncoder };
-        submitInfo.waitSemaphores = { imageAvailableSemaphores[currentFrame] };
-        submitInfo.signalSemaphores = { renderFinishedSemaphores[currentFrame] };
-        submitInfo.signalFence = inFlightFences[currentFrame];
+        gfx::SubmitDescriptor submitDescriptor{};
+        submitDescriptor.commandEncoders = { commandEncoder };
+        submitDescriptor.waitSemaphores = { imageAvailableSemaphores[currentFrame] };
+        submitDescriptor.signalSemaphores = { renderFinishedSemaphores[currentFrame] };
+        submitDescriptor.signalFence = inFlightFences[currentFrame];
 
-        queue->submit(submitInfo);
+        queue->submit(submitDescriptor);
 
         // Present with explicit synchronization
-        gfx::PresentInfo presentInfo{};
-        presentInfo.waitSemaphores = { renderFinishedSemaphores[currentFrame] };
+        gfx::PresentDescriptor presentDescriptor{};
+        presentDescriptor.waitSemaphores = { renderFinishedSemaphores[currentFrame] };
 
-        result = swapchain->present(presentInfo);
+        result = swapchain->present(presentDescriptor);
         if (result != gfx::Result::Success) {
             std::cerr << "Failed to present" << std::endl;
         }

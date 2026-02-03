@@ -39,6 +39,7 @@ const char* deviceExtensionNameToGfx(const char* internalName);
 // ============================================================================
 
 core::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(GfxSemaphoreType type);
+GfxSemaphoreType vulkanSemaphoreTypeToGfxSemaphoreType(core::SemaphoreType type);
 core::ShaderSourceType gfxShaderSourceTypeToVulkanShaderSourceType(GfxShaderSourceType type);
 
 // ============================================================================

@@ -247,7 +247,7 @@ private:
     uint32_t previousWidth = WINDOW_WIDTH;
     uint32_t previousHeight = WINDOW_HEIGHT;
     float lastTime = 0.0f;
-    
+
     // FPS tracking
     uint32_t fpsFrameCount = 0;
     float fpsTimeAccumulator = 0.0f;
@@ -1547,7 +1547,7 @@ void CubeApp::render()
 
         gfxCommandEncoderEnd(encoder);
 
-        GfxSubmitDescriptor submitInfo = {
+        GfxSubmitDescriptor submitDescriptor = {
             .commandEncoders = &encoder,
             .commandEncoderCount = 1,
             .waitSemaphores = &imageAvailableSemaphores[currentFrame],
@@ -1556,15 +1556,14 @@ void CubeApp::render()
             .signalSemaphoreCount = 1,
             .signalFence = inFlightFences[currentFrame]
         };
-        gfxQueueSubmit(queue, &submitInfo);
+        gfxQueueSubmit(queue, &submitDescriptor);
     }
 
     // Present
-    GfxPresentInfo presentInfo = {
-        .waitSemaphores = &renderFinishedSemaphores[currentFrame],
-        .waitSemaphoreCount = 1
-    };
-    gfxSwapchainPresent(swapchain, &presentInfo);
+    GfxPresentDescriptor presentDescriptor = GFX_PRESENT_DESCRIPTOR_INIT;
+    presentDescriptor.waitSemaphores = &renderFinishedSemaphores[currentFrame];
+    presentDescriptor.waitSemaphoreCount = 1;
+    gfxSwapchainPresent(swapchain, &presentDescriptor);
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -1598,19 +1597,19 @@ bool CubeApp::mainLoopIteration()
     float currentTime = getCurrentTime();
     float deltaTime = currentTime - lastTime;
     lastTime = currentTime;
-    
+
     // Track FPS
     if (deltaTime > 0.0f) {
         fpsFrameCount++;
         fpsTimeAccumulator += deltaTime;
-        
+
         if (deltaTime < fpsFrameTimeMin) {
             fpsFrameTimeMin = deltaTime;
         }
         if (deltaTime > fpsFrameTimeMax) {
             fpsFrameTimeMax = deltaTime;
         }
-        
+
         // Log FPS every second
         if (fpsTimeAccumulator >= 1.0f) {
             float avgFPS = static_cast<float>(fpsFrameCount) / fpsTimeAccumulator;
@@ -1620,7 +1619,7 @@ bool CubeApp::mainLoopIteration()
             std::cout << "FPS - Avg: " << avgFPS << ", Min: " << minFPS << ", Max: " << maxFPS
                       << " | Frame Time - Avg: " << avgFrameTime << " ms, Min: " << (fpsFrameTimeMin * 1000.0f)
                       << " ms, Max: " << (fpsFrameTimeMax * 1000.0f) << " ms" << std::endl;
-            
+
             // Reset for next second
             fpsFrameCount = 0;
             fpsTimeAccumulator = 0.0f;
@@ -1659,7 +1658,7 @@ bool CubeApp::initialize()
     previousWidth = windowWidth;
     previousHeight = windowHeight;
     lastTime = getCurrentTime();
-    
+
     // Initialize FPS tracking
     fpsFrameCount = 0;
     fpsTimeAccumulator = 0.0f;

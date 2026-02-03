@@ -61,7 +61,7 @@ public:
     GfxResult swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const override;
     GfxResult swapchainGetTextureView(GfxSwapchain swapchain, uint32_t imageIndex, GfxTextureView* outView) const override;
     GfxResult swapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView) const override;
-    GfxResult swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const override;
+    GfxResult swapchainPresent(GfxSwapchain swapchain, const GfxPresentDescriptor* presentDescriptor) const override;
 
     // Buffer functions
     GfxResult bufferDestroy(GfxBuffer buffer) const override;
@@ -110,7 +110,7 @@ public:
     GfxResult querySetDestroy(GfxQuerySet querySet) const override;
 
     // Queue functions
-    GfxResult queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const override;
+    GfxResult queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor) const override;
     GfxResult queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const override;
     GfxResult queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const override;
     GfxResult queueWaitIdle(GfxQueue queue) const override;

@@ -918,7 +918,7 @@ struct SubmitDescriptor {
     std::shared_ptr<Fence> signalFence;
 };
 
-struct PresentInfo {
+struct PresentDescriptor {
     // Wait semaphores (must be signaled before presentation)
     std::vector<std::shared_ptr<Semaphore>> waitSemaphores;
     std::vector<uint64_t> waitValues; // For timeline semaphores, empty for binary
@@ -1112,7 +1112,7 @@ public:
     virtual std::shared_ptr<TextureView> getTextureView(uint32_t index) = 0;
 
     // Present with explicit synchronization
-    virtual Result present(const PresentInfo& info) = 0;
+    virtual Result present(const PresentDescriptor& descriptor) = 0;
 };
 
 // ============================================================================
@@ -1302,7 +1302,7 @@ class Queue {
 public:
     virtual ~Queue() = default;
 
-    virtual void submit(const SubmitDescriptor& submitInfo) = 0;
+    virtual void submit(const SubmitDescriptor& submitDescriptor) = 0;
     virtual void writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size) = 0;
     virtual void writeTexture(std::shared_ptr<Texture> texture, const Origin3D& origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const Extent3D& extent, TextureLayout finalLayout) = 0;
     virtual void waitIdle() = 0;

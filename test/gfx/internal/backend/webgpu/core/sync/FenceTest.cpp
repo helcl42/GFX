@@ -28,7 +28,7 @@ TEST_F(WebGPUFenceTest, SetSignaled_ToTrue)
     auto fence = std::make_unique<gfx::backend::webgpu::core::Fence>(false);
     EXPECT_FALSE(fence->isSignaled());
 
-    fence->setSignaled(true);
+    fence->signal();
     EXPECT_TRUE(fence->isSignaled());
 }
 
@@ -37,7 +37,7 @@ TEST_F(WebGPUFenceTest, SetSignaled_ToFalse)
     auto fence = std::make_unique<gfx::backend::webgpu::core::Fence>(true);
     EXPECT_TRUE(fence->isSignaled());
 
-    fence->setSignaled(false);
+    fence->reset();
     EXPECT_FALSE(fence->isSignaled());
 }
 
@@ -49,7 +49,7 @@ TEST_F(WebGPUFenceTest, MultipleFences_IndependentState)
     EXPECT_FALSE(fence1->isSignaled());
     EXPECT_TRUE(fence2->isSignaled());
 
-    fence1->setSignaled(true);
+    fence1->signal();
     EXPECT_TRUE(fence1->isSignaled());
     EXPECT_TRUE(fence2->isSignaled());
 }

@@ -61,7 +61,7 @@ public:
     virtual GfxResult swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const = 0;
     virtual GfxResult swapchainGetTextureView(GfxSwapchain swapchain, uint32_t imageIndex, GfxTextureView* outView) const = 0;
     virtual GfxResult swapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView) const = 0;
-    virtual GfxResult swapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo) const = 0;
+    virtual GfxResult swapchainPresent(GfxSwapchain swapchain, const GfxPresentDescriptor* presentDescriptor) const = 0;
 
     // Buffer functions
     virtual GfxResult bufferDestroy(GfxBuffer buffer) const = 0;
@@ -110,7 +110,7 @@ public:
     virtual GfxResult querySetDestroy(GfxQuerySet querySet) const = 0;
 
     // Queue functions
-    virtual GfxResult queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo) const = 0;
+    virtual GfxResult queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor) const = 0;
     virtual GfxResult queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const = 0;
     virtual GfxResult queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const = 0;
     virtual GfxResult queueWaitIdle(GfxQueue queue) const = 0;

@@ -210,8 +210,8 @@ TEST_P(GfxCppSwapchainTest, PresentNullSwapchain)
     EXPECT_EQ(nullSwapchain, nullptr);
     
     // The following would crash if uncommented (expected behavior):
-    // gfx::PresentInfo info{};
-    // auto result = nullSwapchain->present(info);
+    // gfx::PresentDescriptor descriptor{};
+    // auto result = nullSwapchain->present(descriptor);
 }
 
 // Note: Creating actual swapchains requires valid surfaces with real window handles.

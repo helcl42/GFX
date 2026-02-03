@@ -469,6 +469,67 @@ typedef enum {
     GFX_QUERY_TYPE_MAX_ENUM = 0x7FFFFFFF
 } GfxQueryType;
 
+// Structure types for extensibility (Vulkan-style)
+typedef enum {
+    GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR = 1,
+    GFX_STRUCTURE_TYPE_ADAPTER_DESCRIPTOR = 2,
+    GFX_STRUCTURE_TYPE_DEVICE_DESCRIPTOR = 3,
+    GFX_STRUCTURE_TYPE_BUFFER_DESCRIPTOR = 4,
+    GFX_STRUCTURE_TYPE_BUFFER_IMPORT_DESCRIPTOR = 5,
+    GFX_STRUCTURE_TYPE_TEXTURE_DESCRIPTOR = 6,
+    GFX_STRUCTURE_TYPE_TEXTURE_IMPORT_DESCRIPTOR = 7,
+    GFX_STRUCTURE_TYPE_TEXTURE_VIEW_DESCRIPTOR = 8,
+    GFX_STRUCTURE_TYPE_SAMPLER_DESCRIPTOR = 9,
+    GFX_STRUCTURE_TYPE_SHADER_DESCRIPTOR = 10,
+    GFX_STRUCTURE_TYPE_RENDER_PIPELINE_DESCRIPTOR = 11,
+    GFX_STRUCTURE_TYPE_COMPUTE_PIPELINE_DESCRIPTOR = 12,
+    GFX_STRUCTURE_TYPE_BIND_GROUP_LAYOUT_DESCRIPTOR = 13,
+    GFX_STRUCTURE_TYPE_BIND_GROUP_DESCRIPTOR = 14,
+    GFX_STRUCTURE_TYPE_RENDER_PASS_DESCRIPTOR = 15,
+    GFX_STRUCTURE_TYPE_FRAMEBUFFER_DESCRIPTOR = 16,
+    GFX_STRUCTURE_TYPE_FENCE_DESCRIPTOR = 17,
+    GFX_STRUCTURE_TYPE_SEMAPHORE_DESCRIPTOR = 18,
+    GFX_STRUCTURE_TYPE_QUERY_SET_DESCRIPTOR = 19,
+    GFX_STRUCTURE_TYPE_COMMAND_ENCODER_DESCRIPTOR = 20,
+    GFX_STRUCTURE_TYPE_SURFACE_DESCRIPTOR = 21,
+    GFX_STRUCTURE_TYPE_SWAPCHAIN_DESCRIPTOR = 22,
+    GFX_STRUCTURE_TYPE_PIPELINE_BARRIER_DESCRIPTOR = 23,
+    GFX_STRUCTURE_TYPE_SUBMIT_DESCRIPTOR = 24,
+    GFX_STRUCTURE_TYPE_RENDER_PASS_BEGIN_DESCRIPTOR = 25,
+    GFX_STRUCTURE_TYPE_COMPUTE_PASS_BEGIN_DESCRIPTOR = 26,
+    GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR = 27,
+    GFX_STRUCTURE_TYPE_MAX_ENUM = 0x7FFFFFFF
+} GfxStructureType;
+
+// Helper macros for initializing descriptors with correct sType
+#define GFX_INSTANCE_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR, NULL }
+#define GFX_ADAPTER_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_ADAPTER_DESCRIPTOR, NULL }
+#define GFX_DEVICE_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_DEVICE_DESCRIPTOR, NULL }
+#define GFX_BUFFER_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_BUFFER_DESCRIPTOR, NULL }
+#define GFX_BUFFER_IMPORT_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_BUFFER_IMPORT_DESCRIPTOR, NULL }
+#define GFX_TEXTURE_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_TEXTURE_DESCRIPTOR, NULL }
+#define GFX_TEXTURE_IMPORT_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_TEXTURE_IMPORT_DESCRIPTOR, NULL }
+#define GFX_TEXTURE_VIEW_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_TEXTURE_VIEW_DESCRIPTOR, NULL }
+#define GFX_SAMPLER_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_SAMPLER_DESCRIPTOR, NULL }
+#define GFX_SHADER_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_SHADER_DESCRIPTOR, NULL }
+#define GFX_RENDER_PIPELINE_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_RENDER_PIPELINE_DESCRIPTOR, NULL }
+#define GFX_COMPUTE_PIPELINE_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_COMPUTE_PIPELINE_DESCRIPTOR, NULL }
+#define GFX_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_BIND_GROUP_LAYOUT_DESCRIPTOR, NULL }
+#define GFX_BIND_GROUP_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_BIND_GROUP_DESCRIPTOR, NULL }
+#define GFX_RENDER_PASS_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_RENDER_PASS_DESCRIPTOR, NULL }
+#define GFX_FRAMEBUFFER_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_FRAMEBUFFER_DESCRIPTOR, NULL }
+#define GFX_FENCE_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_FENCE_DESCRIPTOR, NULL }
+#define GFX_SEMAPHORE_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_SEMAPHORE_DESCRIPTOR, NULL }
+#define GFX_QUERY_SET_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_QUERY_SET_DESCRIPTOR, NULL }
+#define GFX_COMMAND_ENCODER_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_COMMAND_ENCODER_DESCRIPTOR, NULL }
+#define GFX_SURFACE_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_SURFACE_DESCRIPTOR, NULL }
+#define GFX_SWAPCHAIN_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_SWAPCHAIN_DESCRIPTOR, NULL }
+#define GFX_PIPELINE_BARRIER_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_PIPELINE_BARRIER_DESCRIPTOR, NULL }
+#define GFX_SUBMIT_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_SUBMIT_DESCRIPTOR, NULL }
+#define GFX_RENDER_PASS_BEGIN_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_RENDER_PASS_BEGIN_DESCRIPTOR, NULL }
+#define GFX_COMPUTE_PASS_BEGIN_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_COMPUTE_PASS_BEGIN_DESCRIPTOR, NULL }
+#define GFX_PRESENT_DESCRIPTOR_INIT { GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR, NULL }
+
 // ============================================================================
 // Extension Names (String Constants)
 // ============================================================================
@@ -624,6 +685,8 @@ typedef struct {
 
 // Render pass descriptor: defines attachment formats and load/store operations (cached, reusable)
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
 
     // Color attachments
@@ -642,6 +705,8 @@ typedef struct {
 
 // Framebuffer descriptor: binds actual image views to a render pass
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxRenderPass renderPass; // The render pass this framebuffer is compatible with
 
@@ -658,6 +723,8 @@ typedef struct {
 
 // Render pass begin descriptor: used to BEGIN a render pass (with clear values)
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxRenderPass renderPass; // The render pass to begin
     GfxFramebuffer framebuffer; // The framebuffer to render into
@@ -670,6 +737,8 @@ typedef struct {
 } GfxRenderPassBeginDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
 } GfxComputePassBeginDescriptor;
 
@@ -729,6 +798,8 @@ typedef struct {
 } GfxBlitTextureToTextureDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const GfxMemoryBarrier* memoryBarriers;
     uint32_t memoryBarrierCount;
     const GfxBufferBarrier* bufferBarriers;
@@ -738,6 +809,8 @@ typedef struct {
 } GfxPipelineBarrierDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     GfxBackend backend;
     const char* applicationName;
     uint32_t applicationVersion;
@@ -748,6 +821,8 @@ typedef struct {
 // Adapter selection: specify either an index OR a preference
 // Set adapterIndex to UINT32_MAX to use preference-based selection
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     uint32_t adapterIndex; // Adapter index from enumeration (use UINT32_MAX to ignore)
     GfxAdapterPreference preference; // Used only when adapterIndex is UINT32_MAX
 } GfxAdapterDescriptor;
@@ -816,6 +891,8 @@ typedef struct {
 } GfxQueueRequest;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     const GfxQueueRequest* queueRequests; // Optional: explicit queue requests (NULL for automatic default queue)
     uint32_t queueRequestCount; // Number of queue requests (0 if queueRequests is NULL)
@@ -824,6 +901,8 @@ typedef struct {
 } GfxDeviceDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     uint64_t size;
     GfxBufferUsageFlags usage;
@@ -831,6 +910,8 @@ typedef struct {
 } GfxBufferDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     void* nativeHandle; // VkBuffer or WGPUBuffer (cast to void*)
     uint64_t size;
@@ -838,6 +919,8 @@ typedef struct {
 } GfxBufferImportDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxTextureType type;
     GfxExtent3D size;
@@ -849,6 +932,8 @@ typedef struct {
 } GfxTextureDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     void* nativeHandle; // VkImage or WGPUTexture (cast to void*)
     GfxTextureType type;
@@ -862,6 +947,8 @@ typedef struct {
 } GfxTextureImportDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxTextureViewType viewType;
     GfxTextureFormat format;
@@ -872,6 +959,8 @@ typedef struct {
 } GfxTextureViewDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxAddressMode addressModeU;
     GfxAddressMode addressModeV;
@@ -886,6 +975,8 @@ typedef struct {
 } GfxSamplerDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxShaderSourceType sourceType; // Explicitly specify WGSL or SPIR-V
     const void* code; // Shader code - WGSL source (const char*) or SPIR-V binary (uint32_t*)
@@ -966,6 +1057,8 @@ typedef struct {
 } GfxDepthStencilState;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxRenderPass renderPass; // Render pass this pipeline will be used with
     const GfxVertexState* vertex;
@@ -979,6 +1072,8 @@ typedef struct {
 } GfxRenderPipelineDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxShader compute;
     const char* entryPoint;
@@ -1016,6 +1111,8 @@ typedef struct {
 } GfxBindGroupLayoutEntry;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     const GfxBindGroupLayoutEntry* entries;
     uint32_t entryCount;
@@ -1036,6 +1133,8 @@ typedef struct {
 } GfxBindGroupEntry;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxBindGroupLayout layout;
     const GfxBindGroupEntry* entries;
@@ -1043,27 +1142,37 @@ typedef struct {
 } GfxBindGroupDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     bool signaled; // Initial state - true for signaled, false for unsignaled
 } GfxFenceDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxSemaphoreType type;
     uint64_t initialValue; // For timeline semaphores, ignored for binary
 } GfxSemaphoreDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxQueryType type;
     uint32_t count; // Number of queries in the set
 } GfxQuerySetDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
 } GfxCommandEncoderDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     GfxCommandEncoder* commandEncoders;
     uint32_t commandEncoderCount;
 
@@ -1082,10 +1191,12 @@ typedef struct {
 } GfxSubmitDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     // Wait semaphores (rendering must complete before present)
     GfxSemaphore* waitSemaphores;
     uint32_t waitSemaphoreCount;
-} GfxPresentInfo;
+} GfxPresentDescriptor;
 
 // ============================================================================
 // Platform Specific
@@ -1150,11 +1261,15 @@ typedef struct {
 } GfxPlatformWindowHandle;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxPlatformWindowHandle windowHandle;
 } GfxSurfaceDescriptor;
 
 typedef struct {
+    GfxStructureType sType;
+    const void* pNext;
     const char* label;
     GfxSurface surface;
     uint32_t width;
@@ -1255,7 +1370,7 @@ GFX_API GfxResult gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* 
 GFX_API GfxResult gfxSwapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex);
 GFX_API GfxResult gfxSwapchainGetTextureView(GfxSwapchain swapchain, uint32_t imageIndex, GfxTextureView* outView);
 GFX_API GfxResult gfxSwapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxTextureView* outView);
-GFX_API GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentInfo* presentInfo);
+GFX_API GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentDescriptor* presentDescriptor);
 
 // Buffer functions
 GFX_API GfxResult gfxBufferDestroy(GfxBuffer buffer);
@@ -1304,7 +1419,7 @@ GFX_API GfxResult gfxFramebufferDestroy(GfxFramebuffer framebuffer);
 GFX_API GfxResult gfxQuerySetDestroy(GfxQuerySet querySet);
 
 // Queue functions
-GFX_API GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo);
+GFX_API GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor);
 GFX_API GfxResult gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size);
 GFX_API GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout);
 GFX_API GfxResult gfxQueueWaitIdle(GfxQueue queue);

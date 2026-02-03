@@ -949,9 +949,13 @@ GfxResult validateSwapchainGetCurrentTextureView(GfxSwapchain swapchain, GfxText
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult validateSwapchainPresent(GfxSwapchain swapchain)
+GfxResult validateSwapchainPresent(GfxSwapchain swapchain, const GfxPresentDescriptor* presentDescriptor)
 {
     if (!swapchain) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    // presentDescriptor is optional, but if provided, validate its sType
+    if (presentDescriptor && presentDescriptor->sType != GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     return GFX_RESULT_SUCCESS;
@@ -1013,9 +1017,9 @@ GfxResult validateTextureCreateView(GfxTexture texture, const GfxTextureViewDesc
     return validateTextureViewDescriptor(descriptor);
 }
 
-GfxResult validateQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitInfo)
+GfxResult validateQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor)
 {
-    if (!queue || !submitInfo) {
+    if (!queue || !submitDescriptor) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
     }
     return GFX_RESULT_SUCCESS;

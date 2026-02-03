@@ -147,6 +147,18 @@ gfx::backend::vulkan::core::SemaphoreType gfxSemaphoreTypeToVulkanSemaphoreType(
     }
 }
 
+GfxSemaphoreType vulkanSemaphoreTypeToGfxSemaphoreType(gfx::backend::vulkan::core::SemaphoreType type)
+{
+    switch (type) {
+    case gfx::backend::vulkan::core::SemaphoreType::Binary:
+        return GFX_SEMAPHORE_TYPE_BINARY;
+    case gfx::backend::vulkan::core::SemaphoreType::Timeline:
+        return GFX_SEMAPHORE_TYPE_TIMELINE;
+    default:
+        return GFX_SEMAPHORE_TYPE_BINARY;
+    }
+}
+
 gfx::backend::vulkan::core::ShaderSourceType gfxShaderSourceTypeToVulkanShaderSourceType(GfxShaderSourceType type)
 {
     switch (type) {
@@ -764,12 +776,12 @@ VkPrimitiveTopology gfxPrimitiveTopologyToVkPrimitiveTopology(GfxPrimitiveTopolo
 VkVertexInputRate gfxVertexStepModeToVkVertexInputRate(GfxVertexStepMode mode)
 {
     switch (mode) {
-        case GFX_VERTEX_STEP_MODE_VERTEX:
-            return VK_VERTEX_INPUT_RATE_VERTEX;
-        case GFX_VERTEX_STEP_MODE_INSTANCE:
-            return VK_VERTEX_INPUT_RATE_INSTANCE;
-        default:
-            return VK_VERTEX_INPUT_RATE_VERTEX;
+    case GFX_VERTEX_STEP_MODE_VERTEX:
+        return VK_VERTEX_INPUT_RATE_VERTEX;
+    case GFX_VERTEX_STEP_MODE_INSTANCE:
+        return VK_VERTEX_INPUT_RATE_INSTANCE;
+    default:
+        return VK_VERTEX_INPUT_RATE_VERTEX;
     }
 }
 

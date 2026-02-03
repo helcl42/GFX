@@ -63,7 +63,7 @@ bool Queue::submit(const SubmitInfo& submitInfo)
         static auto fenceSignalCallback = [](WGPUQueueWorkDoneStatus status, WGPUStringView, void* userdata1, void*) {
             auto* fence = static_cast<Fence*>(userdata1);
             if (status == WGPUQueueWorkDoneStatus_Success) {
-                fence->setSignaled(true);
+                fence->signal();
             }
         };
 
