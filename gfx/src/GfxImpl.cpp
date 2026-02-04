@@ -1384,6 +1384,38 @@ GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout)
     return backend->getAccessFlagsForLayout(layout);
 }
 
+const char* gfxResultToString(GfxResult result)
+{
+    switch (result) {
+    case GFX_RESULT_SUCCESS:
+        return "GFX_RESULT_SUCCESS";
+    case GFX_RESULT_TIMEOUT:
+        return "GFX_RESULT_TIMEOUT";
+    case GFX_RESULT_NOT_READY:
+        return "GFX_RESULT_NOT_READY";
+    case GFX_RESULT_ERROR_INVALID_ARGUMENT:
+        return "GFX_RESULT_ERROR_INVALID_ARGUMENT";
+    case GFX_RESULT_ERROR_NOT_FOUND:
+        return "GFX_RESULT_ERROR_NOT_FOUND";
+    case GFX_RESULT_ERROR_OUT_OF_MEMORY:
+        return "GFX_RESULT_ERROR_OUT_OF_MEMORY";
+    case GFX_RESULT_ERROR_DEVICE_LOST:
+        return "GFX_RESULT_ERROR_DEVICE_LOST";
+    case GFX_RESULT_ERROR_SURFACE_LOST:
+        return "GFX_RESULT_ERROR_SURFACE_LOST";
+    case GFX_RESULT_ERROR_OUT_OF_DATE:
+        return "GFX_RESULT_ERROR_OUT_OF_DATE";
+    case GFX_RESULT_ERROR_BACKEND_NOT_LOADED:
+        return "GFX_RESULT_ERROR_BACKEND_NOT_LOADED";
+    case GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED:
+        return "GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED";
+    case GFX_RESULT_ERROR_UNKNOWN:
+        return "GFX_RESULT_ERROR_UNKNOWN";
+    default:
+        return "GFX_RESULT_UNKNOWN";
+    }
+}
+
 void gfxSetLogCallback(GfxLogCallback callback, void* userData)
 {
     gfx::common::Logger::instance().setCallback(callback, userData);

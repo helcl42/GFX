@@ -1456,6 +1456,12 @@ GFX_API GfxResult gfxSemaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValu
 // Pass NULL to callback to disable logging
 GFX_API void gfxSetLogCallback(GfxLogCallback callback, void* userData);
 
+// Error handling
+// Convert a GfxResult code to a human-readable string
+// Returns a static string that does not need to be freed
+// Example: "GFX_RESULT_SUCCESS", "GFX_RESULT_ERROR_OUT_OF_MEMORY"
+GFX_API const char* gfxResultToString(GfxResult result);
+
 // Helper function to deduce access flags from texture layout
 // Returns appropriate access flags for the given layout (deterministic mapping)
 // Note: WebGPU backends with implicit synchronization may ignore these flags
