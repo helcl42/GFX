@@ -1,20 +1,47 @@
-# GfxWrapper C++ Wrapper Tests
+# GfxWrapper C++ API Tests
 
-Simple tests for the C++ wrapper using Google Test.
+Tests for the C++ API using Google Test, organized into separate test targets.
+
+## Test Targets
+
+### `gfx_cpp_api_test` - Public API Tests (Always Built)
+
+Black-box tests that verify the public C++ API contract. These tests:
+- Use only public header: `#include <gfx_cpp/gfx.hpp>`
+- Test API behavior from a user's perspective
+- Are backend-agnostic (work with any backend)
+- Run on all platforms
+
+**Location**: `test/gfx_cpp/api/`
+
+### `gfx_cpp_internal_test` - Internal Implementation Tests (Always Built)
+
+White-box tests for internal C++ wrapper implementation:
+- Converter logic (C++ to C descriptor conversion)
+- Shared pointer management
+- Internal utilities
+
+**Location**: `test/gfx_cpp/internal/`
 
 ## Running Tests
 
 ```bash
 cd build
-./gfx_cpp_test/gfx_cpp_test
+
+# Run all C++ API tests
+./test/gfx_cpp/gfx_cpp_api_test
+
+# Run internal C++ wrapper tests
+./test/gfx_cpp/gfx_cpp_internal_test
+
+# Run all tests with CTest
+ctest
+
+# Run specific test suite using filters
+./test/gfx_cpp/gfx_cpp_api_test --gtest_filter="InstanceTest.*"
 ```
-
-## Test Coverage
-
-- **BasicTest.cpp**: Basic sanity tests (enum values, linking)
-- **InstanceTest.cpp**: Instance creation/destruction tests using shared_ptr semantics
-- **ResultTest.cpp**: Result enum and error handling pattern tests
 
 ## Adding Tests
 
-Add new test files to `CMakeLists.txt` and follow the existing pattern using Google Test macros.
+1. **Public API test**: Add to `test/gfx_cpp/api/` and update the `gfx_cpp_api_test` target in `CMakeLists.txt`
+2. **Internal wrapper test**: Add to `test/gfx_cpp/internal/` and update `gfx_cpp_internal_test` target

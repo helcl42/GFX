@@ -1,673 +1,491 @@
-# GfxWrapper - Unified Graphics API
+# GFX - Cross-Platform Graphics Abstraction Library
 
-A cross-platform graphics abstraction library that provides a unified C and C++ API over Vulkan and WebGPU backends.
+A graphics library providing a low-level Vulkan-like API that works "identically" on both native platforms (via Vulkan/WebGPU) and the web (via WebGPU). Write your rendering code once using modern graphics concepts, and deploy everywhere without modifications - from high-performance desktop/mobile applications to web browsers.
 
 ## Features
 
-- **Unified API**: Single API that works with both Vulkan and WebGPU backends
-- **Cross-Platform**: Windows, macOS, and Linux support
-- **Dual Language Support**: Both C and C++ APIs with identical functionality
-- **Modern Design**: Uses contemporary graphics API concepts (command buffers, render passes, pipelines)
-- **Zero-Cost Abstraction**: Thin wrapper that doesn't add significant overhead
-- **Automatic Backend Selection**: Chooses the best available backend automatically
-- **Decoupled Backend Loading**: Explicit control over backend API loading and instance lifecycle
-- **Extensible Architecture**: Easy to add new backends without modifying dispatcher code
-- **Automatic Shader Compilation**: GLSL shaders compiled to SPIR-V during build via CMake
+- **Unified API**: Single, consistent API across Vulkan and WebGPU backends(open for other backends like Metal, D3D12)
+- **Cross-Platform**: Native support for Android, Windows, macOS, iOS, Linux, and WebAssembly
+- **Dual Language APIs**: Idiomatic C and C++ interfaces with identical functionality
+- **Production Ready**: Comprehensive documentation, error handling, and validation
+- **Modern Architecture**: Command buffers, render passes, compute pipelines, and explicit synchronization
+- **Zero-Cost Abstraction**: Thin wrapper with minimal overhead
+- **Extension System**: Type-safe extension chains for optional features (multiview, etc.)
+- **Thread-Safe**: Device and queue operations are thread-safe for multi-threaded rendering
+- **Backend Agnostic**: Write once, run on Vulkan/WebGPU natively or in web(Emscripten) without code changes
 
 ## Project Structure
 
 ```
-GfxWrapper/
+gfx/
 ├── README.md
-├── CMakeLists.txt           # Build system with shader compilation
-├── gfx/                     # C API
-│   ├── GfxApi.h            # C API header
-│   ├── GfxBackend.h        # Backend interface
-│   ├── GfxDispatcher.c     # Runtime dispatcher
-│   ├── GfxVulkan.c         # Vulkan backend (C)
-│   └── GfxWebGPU.c         # WebGPU backend (C)
-├── gfx_cpp/                # C++ API
-│   ├── GfxApi.hpp          # C++ API header
-│   └── GfxApiImpl.cpp      # C++ wrapper implementation
-├── examples/               # Example applications
-│   ├── c/
-│   │   ├── cube_example.c
-│   │   └── shaders/
-│   │       ├── cube.vert   # GLSL vertex shader
-│   │       └── cube.frag   # GLSL fragment shader
-│   └── cpp/
-│       └── cube_example.cpp
-└── build/                  # Build output
-    ├── cube_example_c
-    ├── cube_example_cpp
-    ├── cube.vert.spv       # Compiled SPIR-V shaders
-    └── cube.frag.spv
+├── CMakeLists.txt
+├── gfx/                            # C API library
+│   ├── include/gfx/
+│   │   └── gfx.h                   # Public C API header
+│   └── src/
+│       ├── GfxImpl.cpp             # API implementation and dispatcher
+│       └── backend/
+│           ├── vulkan/             # Vulkan backend implementation
+│           └── webgpu/             # WebGPU/Dawn backend implementation
+├── gfx_cpp/                        # C++ API library (wraps C API)
+│   ├── include/gfx_cpp/
+│   │   └── gfx.hpp                 # Public C++ API header
+│   └── src/
+│       ├── core/                   # C++ implementation classes
+│       └── converter/              # C++ to C descriptor conversion
+├── examples/                       # Example applications
+│   ├── c/                          # C API examples
+│   │   ├── cube/                   # Rotating 3D cube
+│   │   └── compute/                # Compute shader example
+│   ├── cpp/                        # C++ API examples
+│   └── web/                        # HTML templates for web builds
+├── test/                           # Unit tests (Google Test)
+│   ├── gfx/                        # C API tests
+│   └── gfx_cpp/                    # C++ API tests
+├── scripts/                        # Build and utility scripts
+├── third_party/
+│   └── dawn/                       # Dawn WebGPU implementation (via CMake FetchContent)
+├── build/                          # Native build output (gitignored)
+└── build_web/                      # Emscripten build output (gitignored)
 ```
 
 ## Requirements
 
 ### Build Dependencies
-- CMake 3.16 or later
-- C11 and C++17 compatible compiler
-- GLFW 3.x (for examples)
-- Vulkan SDK with `glslc` shader compiler
+- **CMake** 3.16 or later
+- **C/C++ Compiler**: C11 and C++17 compatible
+  - GCC 7+, Clang 6+, MSVC 2019+, or Emscripten 3.1+
+- **Python** 3.6+ (for Dawn build system)
+- **Git** (for fetching Dawn via CMake FetchContent)
+
+### Platform Libraries
+- **GLFW** 3.3+ (for windowing in examples)
+- **Vulkan SDK** 1.1+ (optional, for Vulkan backend)
+  - Download from [vulkan.lunarg.com](https://vulkan.lunarg.com)
 
 ### Runtime Dependencies
-- **Vulkan**: Vulkan SDK installed with drivers
-- **WebGPU**: Dawn library (optional, falls back to Vulkan)
+The library automatically uses whichever backend is available:
+- **Vulkan Backend**: Requires Vulkan SDK and compatible GPU drivers
+- **WebGPU Backend**: Uses Dawn (git submodule at `third_party/dawn/`)
 
-### Platform-Specific
-- **Windows**: Visual Studio 2019+ or MinGW-w64
-- **macOS**: Xcode 11+ with Metal support via MoltenVK
-- **Linux**: GCC 7+ or Clang 6+, X11 development libraries
+**First Build Note:** Dawn's dependencies (~2GB) are automatically fetched during the first CMake build. This takes 10-15 minutes but only happens once.
 
 ## Building
 
-### Basic Build
+### Quick Start
 ```bash
-mkdir build && cd build
-cmake ..
-cmake --build .
+# Clone repository with submodules (Dawn WebGPU)
+git clone --recurse-submodules https://github.com/helcl42/gfx.git
+cd gfx
+
+# Configure and build (Dawn dependencies auto-fetched on first build)
+cmake -B build
+cmake --build build
+
+# Run examples
+./build/cube_example_c
+./build/cube_example_cpp
 ```
 
-### Build Options
+### CMake Options
 ```bash
-# Disable WebGPU backend
-cmake -DBUILD_WEBGPU_BACKEND=OFF ..
+# Backend selection
+cmake -B build -DBUILD_VULKAN_BACKEND=ON   # Enable Vulkan (default: ON)
+cmake -B build -DBUILD_WEBGPU_BACKEND=ON   # Enable WebGPU (default: ON)
 
-# Disable Vulkan backend
-cmake -DBUILD_VULKAN_BACKEND=OFF ..
+# Components
+cmake -B build -DBUILD_CPP_WRAPPER=ON      # Build C++ API (default: ON)
+cmake -B build -DBUILD_EXAMPLES=ON         # Build examples (default: ON)
+cmake -B build -DBUILD_TESTS=ON            # Build unit tests (default: ON)
 
-# Skip examples
-cmake -DBUILD_EXAMPLES=OFF ..
+# Library type
+cmake -B build -DBUILD_SHARED_LIBS=OFF     # Build static libs (default: ON for shared)
 ```
 
-### WebAssembly Build (Emscripten)
+### WebAssembly Build
 
-For building the web examples that run in the browser:
+Build for the web using Emscripten:
 
 ```bash
-cd examples/web/cube
-./build_web.sh
+# Install Emscripten SDK (one-time setup)
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+./emsdk install latest
+./emsdk activate latest
+source ./emsdk_env.sh
 
-# kill any runninng server instance
-pkill -9 -f "python3.*http.server" 2>/dev/null || true
-# run the server
-cd /home/lhelcl/Dev/GfxWrapper/build_web/web && python3 -m http.server 8080
+# Configure and build for WebAssembly
+cd /path/to/gfx
+emcmake cmake -B build_web
+cmake --build build_web
 
-# open url in browser
-http://localhost:8080/cube_example_web.html
+# Setup HTTPS (required for WebGPU)
+./scripts/setup_https.sh  # Generates self-signed certificate
+
+# Serve examples via HTTPS
+python3 scripts/https_server.py build_web/web
+
+# Access in browser at https://localhost:8443/
+# - cube_example_web.html
+# - compute_example_web.html
+# - cube_example_cpp_web.html
+# - compute_example_cpp_web.html
+
+# Or test on mobile devices (find your local IP first)
+# Access at https://YOUR_LOCAL_IP:8443/
+# (Accept certificate warning on device)
 ```
 
-**Requirements for Web Build:**
-- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)
-- Browser with WebGPU support (Chrome 113+, Edge 113+)
+**Why HTTPS?**
+- WebGPU requires secure context (HTTPS or localhost)
+- Self-signed certificate works for development
+- Use `setup_https.sh` to generate certificate for your local IP
 
-### Shader Compilation
-Shaders are automatically compiled from GLSL to SPIR-V during the build process using `glslc` from the Vulkan SDK. No manual compilation step is needed!
-
-The build system will:
-1. Detect `glslc` from your Vulkan SDK installation
-2. Compile `.vert` and `.frag` shaders to `.spv` files
-3. Place compiled shaders in the build directory
-4. Rebuild shaders automatically when source files change
+**Browser Requirements:**
+- Chrome/Edge 113+ with WebGPU enabled
+- Firefox Nightly with `dom.webgpu.enabled` flag
 
 ### Installation
 ```bash
-cmake --build . --target install
+# Install to system directories (requires sudo on Linux/macOS)
+cmake --build build --target install
+
+# Or specify custom install prefix
+cmake -B build -DCMAKE_INSTALL_PREFIX=/opt/gfx
+cmake --build build --target install
 ```
+
+Installs:
+- Headers: `${PREFIX}/include/gfx/` and `${PREFIX}/include/gfx_cpp/`
+- Libraries: `${PREFIX}/lib/`
+- CMake config: `${PREFIX}/lib/cmake/gfx/`
 
 ## Quick Start
 
 ### C API Example
 ```c
-#include "GfxApi.h"
+#include <gfx/gfx.h>
+#include <stdio.h>
 
-// Load the backend API first (decoupled from instance creation)
-if (!gfxLoadBackend(GFX_BACKEND_AUTO)) {
-    fprintf(stderr, "Failed to load graphics backend\n");
-    return -1;
+int main() {
+    // Create instance with automatic backend selection
+    GfxInstanceDescriptor instanceDesc = {
+        .sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR,
+        .pNext = NULL,
+        .backend = GFX_BACKEND_AUTO,
+        .applicationName = "My Application",
+        .applicationVersion = GFX_MAKE_VERSION(1, 0, 0),
+        .enabledExtensions = (const char*[]){GFX_INSTANCE_EXTENSION_SURFACE},
+        .enabledExtensionCount = 1
+    };
+    
+    GfxInstance instance;
+    GfxResult result = gfxCreateInstance(&instanceDesc, &instance);
+    if (result != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create instance: %s\n", gfxResultToString(result));
+        return -1;
+    }
+
+    // Request adapter and create device
+    GfxAdapter adapter;
+    result = gfxInstanceRequestAdapter(instance, NULL, &adapter);
+    
+    GfxDevice device;
+    result = gfxAdapterCreateDevice(adapter, NULL, &device);
+    
+    GfxQueue queue;
+    result = gfxDeviceGetQueue(device, &queue);
+
+    // Create resources, record commands, render...
+
+    // Cleanup
+    gfxDeviceDestroy(device);
+    gfxAdapterDestroy(adapter);
+    gfxInstanceDestroy(instance);
+    
+    return 0;
 }
-
-// Create instance (backend is already loaded)
-GfxInstanceDescriptor instanceDesc = {
-    .backend = GFX_BACKEND_AUTO,
-    .enableValidation = true,
-    .applicationName = "My App",
-    .applicationVersion = 1
-};
-GfxInstance instance = gfxCreateInstance(&instanceDesc);
-
-// Get adapter and create device
-GfxAdapterDescriptor adapterDesc = {
-    .powerPreference = GFX_POWER_PREFERENCE_HIGH_PERFORMANCE
-};
-GfxAdapter adapter = gfxInstanceRequestAdapter(instance, &adapterDesc);
-GfxDevice device = gfxAdapterCreateDevice(adapter, NULL);
-GfxQueue queue = gfxDeviceGetQueue(device);
-
-// Create resources...
-
-// Cleanup
-gfxDeviceDestroy(device);
-gfxAdapterDestroy(adapter);
-gfxInstanceDestroy(instance);
-
-// Unload backend API when done
-gfxUnloadBackend(GFX_BACKEND_AUTO);
 ```
 
 ### C++ API Example
 ```cpp
-#include "GfxApi.hpp"
-using namespace gfx;
+#include <gfx_cpp/gfx.hpp>
+#include <iostream>
 
-// Create instance
-InstanceDescriptor desc{};
-desc.applicationName = "My App";
-desc.enableValidation = true;
+int main() {
+    try {
+        // Create instance with RAII semantics
+        gfx::InstanceDescriptor desc{};
+        desc.backend = gfx::Backend::Auto;
+        desc.applicationName = "My Application";
+        desc.applicationVersion = GFX_MAKE_VERSION(1, 0, 0);
+        desc.enabledExtensions = {gfx::INSTANCE_EXTENSION_SURFACE};
+        
+        auto instance = gfx::createInstance(desc);
+        auto adapter = instance->requestAdapter();
+        auto device = adapter->createDevice();
+        auto queue = device->getQueue();
 
-auto instance = createInstance(desc);
-auto adapter = instance->requestAdapter();
-auto device = adapter->createDevice();
-auto queue = device->getQueue();
-
-// Create resources...
-// C++ destructors handle cleanup automatically
+        // Create resources, record commands, render...
+        
+        // Automatic cleanup via shared_ptr destructors
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return -1;
+    }
+    
+    return 0;
+}
 ```
 
-## Core Concepts
+**Key Differences:**
+- C API uses explicit error codes (`GfxResult`) and manual cleanup
+- C++ API uses exceptions and RAII (`std::shared_ptr`) for automatic cleanup
 
-### Instance
-The root object that represents the graphics system. Creates adapters.
+## API Documentation
 
-### Adapter
-Represents a physical graphics device (GPU). Creates logical devices.
+### Core Architecture
 
-### Device
-Logical connection to an adapter. Creates all other graphics resources.
+**Instance** → **Adapter** → **Device** → **Resources**
 
-#### Device Limits and Buffer Alignment
-Modern GPUs have hardware-specific alignment requirements for uniform and storage buffers. The API provides functions to query these limits:
+- **Instance**: Root object representing the graphics system
+- **Adapter**: Physical GPU device with capabilities query
+- **Device**: Logical device for resource creation
+- **Queue**: Command submission and synchronization
+- **Resources**: Buffers, textures, shaders, pipelines
+
+All APIs follow this hierarchy consistently across C and C++.
+
+### Extension System
+
+GFX uses a Vulkan-style extension chain system for optional features:
 
 **C API:**
 ```c
-GfxDeviceLimits limits;
-gfxDeviceGetLimits(device, &limits);
+// All structures in pNext chains start with GfxChainHeader
+typedef struct GfxChainHeader {
+    GfxStructureType sType;
+    const void* pNext;
+} GfxChainHeader;
 
-// Use alignment helpers for buffer offsets
-uint64_t offset = calculateSomeOffset();
-uint64_t alignedOffset = gfxAlignUp(offset, limits.minUniformBufferOffsetAlignment);
+// Example: Multiview rendering for VR/stereo
+uint32_t mask = 0x3; // Render stereo
 
-// Common use case: multiple uniform blocks in one buffer
-uint64_t block1Offset = 0;
-uint64_t block2Offset = gfxAlignUp(block1Size, limits.minUniformBufferOffsetAlignment);
-uint64_t block3Offset = gfxAlignUp(block2Offset + block2Size, limits.minUniformBufferOffsetAlignment);
+GfxRenderPassMultiviewInfo multiview = {
+    .sType = GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_INFO,
+    .pNext = NULL,
+    .viewMask = mask,  
+    .correlationMasks = &mask,
+    .correlationMaskCount = 1
+};
+
+GfxRenderPassDescriptor rpDesc = {
+    .sType = GFX_STRUCTURE_TYPE_RENDER_PASS_DESCRIPTOR,
+    .pNext = &multiview,  // Chain the extension
+    // ... other fields
+};
 ```
 
 **C++ API:**
 ```cpp
-auto limits = device->getLimits();
-
-// Use utils namespace helpers
-uint64_t alignedOffset = gfx::utils::alignUp(offset, limits.minUniformBufferOffsetAlignment);
-```
-
-**Available Limits:**
-- `minUniformBufferOffsetAlignment` - Minimum alignment for uniform buffer offsets (typically 64-256 bytes)
-- `minStorageBufferOffsetAlignment` - Minimum alignment for storage buffer offsets (typically 4-32 bytes)
-- `maxUniformBufferBindingSize` - Maximum size of a uniform buffer binding
-- `maxStorageBufferBindingSize` - Maximum size of a storage buffer binding
-- `maxBufferSize` - Maximum total buffer size
-- `maxTextureDimension1D/2D/3D` - Maximum texture dimensions
-- `maxTextureArrayLayers` - Maximum array layers for texture arrays
-
-**Why This Matters:**
-- Dynamic offsets in bind groups MUST be aligned to `minUniformBufferOffsetAlignment`
-- Suballocating multiple uniform blocks within a single buffer requires proper alignment
-- Failure to align can cause validation errors or GPU faults
-
-### Queue
-Submits command buffers for execution on the GPU.
-
-### Resources
-- **Buffer**: Linear data storage (vertices, indices, uniforms)
-- **Texture**: Image data with filtering and sampling
-- **Sampler**: Defines how textures are filtered and addressed
-- **Shader**: Programmable shader code (vertex, fragment, compute)
-
-### Pipelines
-- **RenderPipeline**: Graphics rendering state and shaders
-- **ComputePipeline**: Compute shader execution state
-
-### Command Recording
-- **CommandEncoder**: Records GPU commands
-- **RenderPassEncoder**: Records rendering commands within a render pass
-- **ComputePassEncoder**: Records compute dispatch commands
-
-### Presentation
-- **Surface**: Platform window surface for rendering
-- **Swapchain**: Manages framebuffers for presentation
-
-### Backend Loading (New!)
-Backend APIs are now loaded explicitly and independently from instance creation. This provides better control over the API lifecycle:
-
-#### C API
-```c
-// Load a specific backend
-bool success = gfxLoadBackend(GFX_BACKEND_VULKAN);
-
-// Load all available backends
-bool anyLoaded = gfxLoadAllBackends();
-
-// Unload when done
-gfxUnloadBackend(GFX_BACKEND_VULKAN);
-gfxUnloadAllBackends();
-```
-
-**Benefits:**
-- **Decoupled Lifecycle**: Backend loading is separate from instance creation
-- **Explicit Control**: You decide when to load/unload backend APIs
-- **Multiple Instances**: Create multiple instances without reloading the backend
-- **Reference Counting**: Backends are automatically managed with ref-counting
-
-**Typical Usage Pattern:**
-1. Load backend(s) once at application startup
-2. Create one or more instances as needed
-3. Destroy instances when done
-4. Unload backend(s) at application shutdown
-
-## Architecture
-
-### Handle Metadata System (NEW!)
-
-Instead of trying to dispatch calls to all backends simultaneously, GfxWrapper now uses a **handle metadata** system:
-
-- Every handle returned to users is wrapped with metadata that identifies which backend it belongs to
-- Each handle contains:
-  - A magic number for validation
-  - The backend type (Vulkan, WebGPU, etc.)
-  - The actual backend-specific handle
-
-**Benefits:**
-- ✅ **Correct Semantics**: Calls are routed to the exact backend that created the handle
-- ✅ **No Cross-Backend Confusion**: A Vulkan buffer is always handled by Vulkan, never WebGPU
-- ✅ **Easy to Extend**: Adding a new backend requires:
-  1. Implementing the backend API functions
-  2. Adding a case to `gfxLoadBackend()` and `gfxUnloadBackend()`
-  3. That's it! No changes to dispatcher logic needed
-- ✅ **Type Safety**: Magic number validation catches invalid handles
-- ✅ **Memory Efficient**: Small metadata overhead per handle
-
-### Adding a New Backend
-
-To add a new backend (e.g., Metal, DirectX 12):
-
-1. **Define the backend enum** in `GfxBackend.h`:
-   ```c
-   typedef enum {
-       GFX_BACKEND_VULKAN = 0,
-       GFX_BACKEND_WEBGPU = 1,
-       GFX_BACKEND_METAL = 2,    // Add here
-       GFX_BACKEND_AUTO = 99
-   } GfxBackend;
-   ```
-
-2. **Implement the backend API** (create `GfxMetal.c`):
-   ```c
-   const GfxBackendAPI* gfxGetMetalBackend(void) {
-       static GfxBackendAPI api = {
-           .createInstance = metalCreateInstance,
-           .instanceDestroy = metalInstanceDestroy,
-           // ... implement all API functions
-       };
-       return &api;
-   }
-   ```
-
-3. **Add load/unload cases** in `GfxDispatcher.c`:
-   ```c
-   case GFX_BACKEND_METAL:
-   #ifdef GFX_ENABLE_METAL
-       if (!g_backendAPIs[GFX_BACKEND_METAL]) {
-           g_backendAPIs[GFX_BACKEND_METAL] = gfxGetMetalBackend();
-           // ...
-       }
-   #endif
-   ```
-
-That's it! The handle metadata system automatically routes all calls to the correct backend.
-
-## API Documentation
-
-### Buffer Management
-```c
-// C API
-GfxBufferDescriptor bufferDesc = {
-    .size = 1024,
-    .usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST,
-    .mappedAtCreation = false
+// All extensions inherit from ChainedStruct
+struct RenderPassMultiviewInfo : public gfx::ChainedStruct {
+    uint32_t viewMask = 0;
+    std::vector<uint32_t> correlationMasks;
 };
-GfxBuffer buffer = gfxDeviceCreateBuffer(device, &bufferDesc);
+
+RenderPassMultiviewInfo multiview{};
+multiview.viewMask = 0x3;
+multiview.correlationMasks = {0x3};
+
+gfx::RenderPassCreateDescriptor desc{};
+desc.next = &multiview;  // Type-safe chaining
 ```
 
+**Available Extensions:**
+- `DEVICE_EXTENSION_MULTIVIEW` - Multi-view rendering (VR/stereo)
+- `DEVICE_EXTENSION_TIMELINE_SEMAPHORE` - Timeline semaphores
+- `DEVICE_EXTENSION_ANISOTROPIC_FILTERING` - Anisotropic texture filtering
+
+### Threading Model
+
+**Thread-Safe Operations:**
+- Device creation and destruction
+- Queue submission (`gfxQueueSubmit` / `queue->submit()`)
+- Resource creation on device
+
+**Not Thread-Safe:**
+- Command encoder recording (use one encoder per thread)
+- Resource mapping/unmapping
+
+**Best Practice:**
 ```cpp
-// C++ API
-BufferDescriptor desc{};
-desc.size = 1024;
-desc.usage = BufferUsage::Vertex | BufferUsage::CopyDst;
-auto buffer = device->createBuffer(desc);
+// Per-thread command encoding
+std::thread worker([&device]() {
+    auto encoder = device->createCommandEncoder();
+    // Record commands...
+    encoder->end();
+});
 ```
 
-### Shader Creation
-
-#### Using SPIR-V Shaders (Recommended)
-```c
-// Load compiled SPIR-V binary
-size_t shaderSize;
-void* shaderCode = loadBinaryFile("shader.vert.spv", &shaderSize);
-
-GfxShaderDescriptor shaderDesc = {
-    .code = shaderCode,
-    .codeSize = shaderSize,
-    .entryPoint = "main"  // SPIR-V entry point
-};
-GfxShader shader = gfxDeviceCreateShader(device, &shaderDesc);
-```
-
-```cpp
-// C++ API
-auto shaderCode = loadBinaryFile("shader.vert.spv");
-ShaderDescriptor desc{};
-desc.code = std::string(reinterpret_cast<const char*>(shaderCode.data()), 
-                        shaderCode.size());
-desc.entryPoint = "main";
-auto shader = device->createShader(desc);
-```
-
-#### GLSL Shader Example
-```glsl
-// cube.vert - Vertex shader
-#version 450
-
-layout(location = 0) in vec3 position;
-layout(location = 1) in vec3 color;
-
-layout(binding = 0) uniform UniformData {
-    mat4 model;
-    mat4 view;
-    mat4 projection;
-} uniforms;
-
-layout(location = 0) out vec3 fragColor;
-
-void main() {
-    gl_Position = uniforms.projection * uniforms.view * uniforms.model * vec4(position, 1.0);
-    fragColor = color;
-}
-```
-
-### Render Pipeline
-```c
-// C API
-GfxVertexAttribute attributes[] = {
-    {.format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT, .offset = 0, .shaderLocation = 0}
-};
-GfxVertexBufferLayout layout = {
-    .arrayStride = sizeof(Vertex),
-    .attributes = attributes,
-    .attributeCount = 1
-};
-GfxRenderPipelineDescriptor pipelineDesc = {
-    .vertex = {.module = vertexShader, .entryPoint = "vs_main", .buffers = &layout, .bufferCount = 1},
-    .fragment = &fragmentState,
-    .primitive = {.topology = GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST}
-};
-GfxRenderPipeline pipeline = gfxDeviceCreateRenderPipeline(device, &pipelineDesc);
-```
-
-### Command Recording and Submission
-```c
-// C API
-GfxCommandEncoder encoder = gfxDeviceCreateCommandEncoder(device, "Render");
-GfxRenderPassEncoder renderPass = gfxCommandEncoderBeginRenderPass(encoder, ...);
-
-gfxRenderPassEncoderSetPipeline(renderPass, pipeline);
-gfxRenderPassEncoderSetVertexBuffer(renderPass, 0, vertexBuffer, 0, bufferSize);
-gfxRenderPassEncoderDraw(renderPass, 3, 1, 0, 0);
-gfxRenderPassEncoderEnd(renderPass);
-
-gfxCommandEncoderFinish(encoder);
-gfxQueueSubmit(queue, encoder);
-```
-
-## Backend Selection
-
-The library automatically selects the best available backend:
-
-1. **GFX_BACKEND_AUTO**: Try Vulkan first, fallback to WebGPU
-2. **GFX_BACKEND_VULKAN**: Force Vulkan (fails if not available)
-3. **GFX_BACKEND_WEBGPU**: Force WebGPU (fails if not available)
-
-## Platform Support
-
-| Platform | Vulkan | WebGPU | Notes |
-|----------|--------|---------|-------|
-| Windows  | ✅     | ✅*     | WebGPU via Dawn |
-| macOS    | ✅**   | ✅      | **MoltenVK required |
-| Linux    | ✅     | ✅*     | X11 and Wayland |
-
-*WebGPU support depends on Dawn availability
-**Vulkan on macOS requires MoltenVK
+See [gfx/include/gfx/gfx.h](gfx/include/gfx/gfx.h) documentation for complete threading guidelines.
 
 ## Error Handling
 
-### C API
-Functions return NULL/0 on failure. Check return values:
+### C API - Explicit Error Codes
+All fallible operations return `GfxResult`:
+
 ```c
-GfxDevice device = gfxAdapterCreateDevice(adapter, NULL);
-if (!device) {
-    fprintf(stderr, "Failed to create device\n");
-    return -1;
+GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+if (result != GFX_RESULT_SUCCESS) {
+    fprintf(stderr, "Buffer creation failed: %s\n", gfxResultToString(result));
+    // Handle error...
 }
 ```
 
-### C++ API
-Uses exceptions for error reporting:
+**Common Result Codes:**
+- `GFX_RESULT_SUCCESS` - Operation succeeded
+- `GFX_RESULT_ERROR_OUT_OF_MEMORY` - Allocation failed
+- `GFX_RESULT_ERROR_DEVICE_LOST` - GPU crashed or disconnected
+- `GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED` - Feature unavailable on this device
+
+See [gfx.h](gfx/include/gfx/gfx.h) for complete error code documentation.
+
+### C++ API - Exceptions
 ```cpp
 try {
-    auto device = adapter->createDevice();
-} catch (const std::exception& e) {
-    std::cerr << "Error: " << e.what() << std::endl;
+    auto buffer = device->createBuffer(desc);
+    // Use buffer...
+} catch (const std::runtime_error& e) {
+    std::cerr << "Buffer creation failed: " << e.what() << std::endl;
 }
 ```
+
+C++ exceptions map to C error codes internally.
+
+## Platform Support
+
+| Platform      | Vulkan | WebGPU | Notes                          |
+|---------------|--------|--------|--------------------------------|
+| Windows x64   | ✅     | ✅     | WebGPU via Dawn                |
+| macOS         | ✅     | ✅     | Vulkan via MoltenVK            |
+| Linux x64     | ✅     | ✅     | X11/Wayland support            |
+| WebAssembly   | ❌     | ✅     | WebGPU only (via Emscripten)   |
+
+**Backend Availability:**
+- **Vulkan**: Requires Vulkan SDK 1.1+ and compatible drivers
+- **WebGPU**: Uses Dawn (automatically downloaded during build)
 
 ## Examples
 
-### Rotating Cube Example
-Both C and C++ examples render a colorful rotating 3D cube with:
-- Dual-axis rotation (X and Y)
-- Per-vertex colors with gradient interpolation
-- Depth testing for proper 3D rendering
-- Uniform buffer for transformation matrices
-- Back-face culling
+The library includes complete working examples demonstrating various features:
 
-**Features demonstrated:**
+### Cube Example (`examples/c/cube` and `examples/cpp/cube`)
+Renders a rotating 3D cube with:
 - Vertex and index buffers
-- Uniform buffers with matrix transformations
-- SPIR-V shader loading
-- Render pipeline creation with depth testing
-- Command encoding and submission
+- Uniform buffer transformations
+- Depth testing
+- Per-vertex color interpolation
+- WGSL/SPIR-V shader loading
 - Swapchain presentation
-- Keyboard input (ESC to exit)
 
-Run examples:
 ```bash
+./build/cube_example_c
+./build/cube_example_cpp
+```
+
+### Compute Example (`examples/c/compute` and `examples/cpp/compute`)
+GPU compute shader demonstration:
+- Compute pipeline creation
+- Storage buffer usage
+- Dispatch workgroups
+- Fullscreen rendering
+
+```bash
+./build/compute_example_c
+./build/compute_example_cpp
+```
+
+All examples work on native platforms and web (Emscripten).
+
+## Testing
+
+The library includes comprehensive unit tests using Google Test:
+
+```bash
+# Run all tests
 cd build
-./cube_example_c      # C version
-./cube_example_cpp    # C++ version
+ctest
+
+# Run specific test suites
+./test/gfx/gfx_api_test                    # C API tests
+./test/gfx/gfx_internal_test               # Internal implementation tests
+./test/gfx/gfx_internal_vulkan_test        # Vulkan backend tests (if built)
+./test/gfx_cpp/gfx_cpp_api_test            # C++ API tests
+./test/gfx_cpp/gfx_cpp_internal_test       # C++ wrapper tests
+
+# Run with filter
+./test/gfx/gfx_api_test --gtest_filter="InstanceTest.*"
 ```
 
-Both examples create an 800x600 window displaying a rotating cube. Press ESC to exit.
+See [test/gfx/README.md](test/gfx/README.md) and [test/gfx_cpp/README.md](test/gfx_cpp/README.md) for details.
 
-## Advanced Usage
+## Documentation
 
-### Depth Testing
-```c
-// Enable depth testing in render pipeline
-GfxDepthStencilState depthStencil = {
-    .format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT,
-    .depthWriteEnabled = true,
-    .depthCompare = GFX_COMPARE_FUNCTION_LESS
-};
-
-GfxRenderPipelineDescriptor pipelineDesc = {
-    // ...existing code...
-    .depthStencil = &depthStencil
-};
-```
-
-### Bind Groups and Layouts
-```c
-// Create bind group layout for uniform buffers
-GfxBindGroupLayoutEntry layoutEntry = {
-    .binding = 0,
-    .visibility = GFX_SHADER_STAGE_VERTEX,
-    .type = GFX_BINDING_TYPE_BUFFER,
-    .buffer = {
-        .hasDynamicOffset = false,
-        .minBindingSize = sizeof(UniformData)
-    }
-};
-
-GfxBindGroupLayoutDescriptor layoutDesc = {
-    .entries = &layoutEntry,
-    .entryCount = 1
-};
-
-GfxBindGroupLayout layout = gfxDeviceCreateBindGroupLayout(device, &layoutDesc);
-
-// Create bind group
-GfxBindGroupEntry entry = {
-    .binding = 0,
-    .type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER,
-    .resource.buffer = {
-        .buffer = uniformBuffer,
-        .offset = 0,
-        .size = sizeof(UniformData)
-    }
-};
-
-GfxBindGroupDescriptor bindGroupDesc = {
-    .layout = layout,
-    .entries = &entry,
-    .entryCount = 1
-};
-
-GfxBindGroup bindGroup = gfxDeviceCreateBindGroup(device, &bindGroupDesc);
-```
-
-### Multi-threading
-```cpp
-// Each device can be used from multiple threads
-// Command encoders are not thread-safe - use one per thread
-auto encoder1 = device->createCommandEncoder("Thread 1");
-auto encoder2 = device->createCommandEncoder("Thread 2");
-
-// Record commands independently on different threads
-// Submit to queue when ready (queue is thread-safe)
-```
-
-### Validation and Debugging
-Enable validation layers during development:
-```c
-GfxInstanceDescriptor desc = {
-    .enableValidation = true  // Enable debug validation
-};
-```
-
-## Performance Notes
-
-- Use buffer mapping for frequent updates
-- Batch draw calls when possible
-- Prefer uniform buffers over push constants for large data
-- Use appropriate texture formats for your data
-- Enable multisampling judiciously (performance cost)
+- **API Reference**: See header files with comprehensive inline documentation
+  - [gfx/include/gfx/gfx.h](gfx/include/gfx/gfx.h) - C API (400+ lines of documentation)
+  - [gfx_cpp/include/gfx_cpp/gfx.hpp](gfx_cpp/include/gfx_cpp/gfx.hpp) - C++ API
+- **Threading Model**: Documented in gfx.h (lines 26-120)
+- **Memory Ownership**: Documented in gfx.h (lines 122-240)
+- **Error Handling**: Documented in gfx.h (lines 242-349)
+- **Examples**: Complete working code in `examples/` directory
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+Contributions are welcome! Please:
+
+1. Follow the existing code style
+2. Add tests for new features
+3. Update documentation in header files
+4. Ensure all tests pass before submitting
+5. Submit pull requests with clear descriptions
 
 ## License
 
-This project is provided as-is for educational purposes. See individual backend licenses (Vulkan, WebGPU/Dawn) for their terms.
+MIT License
 
-## Troubleshooting
+Copyright (c) 2026 helcl42
 
-### Common Issues
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-**"Failed to load graphics backend"**
-- Ensure Vulkan SDK is installed with proper drivers
-- Check that Vulkan runtime is in your system PATH
-- Verify GPU supports Vulkan 1.1 or higher
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-**"glslc not found - shaders will not be compiled automatically"**
-- Install or update the Vulkan SDK
-- Ensure `glslc` is in your PATH or set `VULKAN_SDK` environment variable
-- On Linux: `export VULKAN_SDK=/path/to/vulkan/sdk`
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
-**"Failed to create render pipeline" with validation errors**
-- Check that bind group layouts match shader declarations
-- Verify vertex attribute formats match shader inputs
-- Ensure depth/stencil formats are compatible with render targets
+## Acknowledgments
 
-**"No suitable adapter found"**
-- Update GPU drivers to latest version
-- Check hardware compatibility (Vulkan 1.1+ required)
-- Try forcing Vulkan backend: `GFX_BACKEND_VULKAN`
-
-**Cube not rendering or appears black**
-- Verify shaders compiled successfully (check build output)
-- Check that uniform buffer is being updated each frame
-- Ensure depth testing is properly configured
-- Verify face winding order matches pipeline cull mode
-
-**Compilation errors**
-- Ensure C11/C++17 compiler support
-- Install required dependencies (GLFW, Vulkan SDK)
-- Check CMake configuration output for missing packages
-
-### Debug Information
-Enable validation layers for detailed error messages:
-```c
-GfxInstanceDescriptor desc = {
-    .enableValidation = true  // Shows Vulkan validation layer errors
-};
-```
-
-### Platform-Specific Notes
-
-**Linux:**
-- X11 and Wayland are both supported
-- May need to install: `libx11-dev`, `libxcb1-dev`, `libwayland-dev`
-- Vulkan validation layers: `apt install vulkan-validationlayers`
-
-**macOS:**
-- Requires MoltenVK for Vulkan support
-- Install Vulkan SDK which includes MoltenVK
-- Metal is the native API on macOS
-
-**Windows:**
-- Vulkan SDK installs required runtime components
-- Ensure graphics drivers are up to date
-- Visual Studio 2019+ recommended for best compatibility
+- **Vulkan**: Khronos Group Vulkan API
+- **WebGPU**: W3C WebGPU specification
+- **Dawn**: Google's WebGPU implementation
+- **GLFW**: Multi-platform windowing library
 
 ### Getting Help
-- Check the cube examples for complete reference implementations
-- Review API documentation in `GfxApi.h` and `GfxApi.hpp`
-- Enable validation layers for detailed error diagnostics
-- Submit issues on GitHub for bugs or feature requests
+
+- **Documentation**: Check inline comments in [gfx.h](gfx/include/gfx/gfx.h) and [gfx.hpp](gfx_cpp/include/gfx_cpp/gfx.hpp)
+- **Examples**: Review `examples/` directory for complete reference implementations
+- **Issues**: Report bugs or request features on GitHub
+- **Validation**: Enable validation layers for detailed diagnostics
