@@ -828,6 +828,17 @@ typedef enum {
 } GfxStructureType;
 
 // ============================================================================
+// Extension Chain Base Structure
+// ============================================================================
+
+// Base header for all structures in pNext chains
+// All extensible structures must start with these two fields
+typedef struct GfxChainHeader {
+    GfxStructureType sType;
+    const void* pNext;
+} GfxChainHeader;
+
+// ============================================================================
 // Extension Names (String Constants)
 // ============================================================================
 
