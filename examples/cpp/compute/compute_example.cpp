@@ -441,25 +441,28 @@ bool ComputeApp::createComputeResources()
         }
 
         // Transition compute texture to SHADER_READ_ONLY layout initially
-        auto initEncoder = device->createCommandEncoder({ "Init Layout Transition" });
+        gfx::CommandEncoderDescriptor initEncoderDesc{};
+        initEncoderDesc.label = "Init Layout Transition";
+        auto initEncoder = device->createCommandEncoder(initEncoderDesc);
         if (initEncoder) {
             initEncoder->begin();
 
-            gfx::TextureBarrier initBarrier{
-                .texture = computeTexture,
-                .oldLayout = gfx::TextureLayout::Undefined,
-                .newLayout = gfx::TextureLayout::ShaderReadOnly,
-                .srcStageMask = gfx::PipelineStage::TopOfPipe,
-                .dstStageMask = gfx::PipelineStage::FragmentShader,
-                .srcAccessMask = gfx::AccessFlags::None,
-                .dstAccessMask = gfx::AccessFlags::ShaderRead,
-                .baseMipLevel = 0,
-                .mipLevelCount = 1,
-                .baseArrayLayer = 0,
-                .arrayLayerCount = 1
-            };
+            gfx::TextureBarrier initBarrier{};
+            initBarrier.texture = computeTexture;
+            initBarrier.oldLayout = gfx::TextureLayout::Undefined;
+            initBarrier.newLayout = gfx::TextureLayout::ShaderReadOnly;
+            initBarrier.srcStageMask = gfx::PipelineStage::TopOfPipe;
+            initBarrier.dstStageMask = gfx::PipelineStage::FragmentShader;
+            initBarrier.srcAccessMask = gfx::AccessFlags::None;
+            initBarrier.dstAccessMask = gfx::AccessFlags::ShaderRead;
+            initBarrier.baseMipLevel = 0;
+            initBarrier.mipLevelCount = 1;
+            initBarrier.baseArrayLayer = 0;
+            initBarrier.arrayLayerCount = 1;
 
-            initEncoder->pipelineBarrier({ .textureBarriers = { initBarrier } });
+            gfx::PipelineBarrierDescriptor barrierDesc{};
+            barrierDesc.textureBarriers = { initBarrier };
+            initEncoder->pipelineBarrier(barrierDesc);
             initEncoder->end();
 
             gfx::FenceDescriptor initFenceDesc{};
@@ -467,7 +470,7 @@ bool ComputeApp::createComputeResources()
             auto initFence = device->createFence(initFenceDesc);
 
             gfx::SubmitDescriptor submitDescriptor{};
-            submitDescriptor.commandEncoders = { initEncoder };
+            submitDescriptor.commandEncoders.push_back(initEncoder);
             submitDescriptor.signalFence = initFence;
 
             queue->submit(submitDescriptor);
