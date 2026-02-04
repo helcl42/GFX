@@ -569,10 +569,32 @@ enum class LogLevel : int32_t {
 using LogCallback = std::function<void(LogLevel level, const std::string& message)>;
 
 // ============================================================================
+// Extension Chain Support
+// ============================================================================
+
+// Base class for extension chain structures
+// Use dynamic_cast to determine the actual type at runtime
+struct ChainedStruct {
+    const ChainedStruct* next = nullptr;
+    
+    ChainedStruct() = default;
+    virtual ~ChainedStruct() = default;
+    
+    // Prevent copying to avoid slicing
+    ChainedStruct(const ChainedStruct&) = delete;
+    ChainedStruct& operator=(const ChainedStruct&) = delete;
+    
+    // Allow moving
+    ChainedStruct(ChainedStruct&&) noexcept = default;
+    ChainedStruct& operator=(ChainedStruct&&) noexcept = default;
+};
+
+// ============================================================================
 // Descriptor Structures
 // ============================================================================
 
 struct InstanceDescriptor {
+    const ChainedStruct* next = nullptr;
     Backend backend = Backend::Auto;
     std::string applicationName = "GfxCpp Application";
     uint32_t applicationVersion = 1;
@@ -580,6 +602,7 @@ struct InstanceDescriptor {
 };
 
 struct AdapterDescriptor {
+    const ChainedStruct* next = nullptr;
     uint32_t adapterIndex = UINT32_MAX; // Adapter index from enumeration (use UINT32_MAX to ignore)
     AdapterPreference preference = AdapterPreference::Undefined; // Used only when adapterIndex is UINT32_MAX
 };
@@ -596,12 +619,14 @@ struct QueueRequest {
 };
 
 struct DeviceDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     std::vector<std::string> enabledExtensions;
     std::vector<QueueRequest> queueRequests; // Optional: specify which queues to create
 };
 
 struct BufferDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     uint64_t size = 0;
     BufferUsage usage = BufferUsage::None;
@@ -609,6 +634,7 @@ struct BufferDescriptor {
 };
 
 struct BufferImportDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     void* nativeHandle = nullptr; // VkBuffer or WGPUBuffer (cast to void*)
     uint64_t size = 0;
@@ -631,6 +657,7 @@ struct TextureInfo {
 };
 
 struct TextureDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     TextureType type = TextureType::Texture2D;
     Extent3D size;
@@ -642,6 +669,7 @@ struct TextureDescriptor {
 };
 
 struct TextureImportDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     void* nativeHandle = nullptr; // VkImage or WGPUTexture (cast to void*)
     TextureType type = TextureType::Texture2D;
@@ -655,6 +683,7 @@ struct TextureImportDescriptor {
 };
 
 struct TextureViewDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     TextureViewType viewType = TextureViewType::View2D;
     TextureFormat format = TextureFormat::Undefined;
@@ -665,6 +694,7 @@ struct TextureViewDescriptor {
 };
 
 struct SamplerDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     AddressMode addressModeU = AddressMode::ClampToEdge;
     AddressMode addressModeV = AddressMode::ClampToEdge;
@@ -679,6 +709,7 @@ struct SamplerDescriptor {
 };
 
 struct ShaderDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     ShaderSourceType sourceType = ShaderSourceType::SPIRV; // Default to SPIR-V for compatibility
     std::vector<uint8_t> code;
@@ -765,6 +796,7 @@ struct DepthStencilState {
 };
 
 struct RenderPipelineDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     std::shared_ptr<RenderPass> renderPass; // Render pass this pipeline will be used with
     VertexState vertex;
@@ -776,6 +808,7 @@ struct RenderPipelineDescriptor {
 };
 
 struct ComputePipelineDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     std::shared_ptr<Shader> compute;
     std::string entryPoint = "main";
@@ -811,6 +844,7 @@ struct BindGroupLayoutEntry {
 };
 
 struct BindGroupLayoutDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     std::vector<BindGroupLayoutEntry> entries;
 };
@@ -831,6 +865,7 @@ struct BindGroupEntry {
 };
 
 struct BindGroupDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     std::shared_ptr<BindGroupLayout> layout;
     std::vector<BindGroupEntry> entries;
@@ -838,11 +873,13 @@ struct BindGroupDescriptor {
 
 // Generic surface descriptor - completely windowing-system agnostic
 struct SurfaceDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     PlatformWindowHandle windowHandle; // Generic platform handle
 };
 
 struct SwapchainDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     std::shared_ptr<Surface> surface;
     uint32_t width = 0;
@@ -862,23 +899,27 @@ struct SwapchainInfo {
 };
 
 struct FenceDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     bool signaled = false; // Initial state - true for signaled, false for unsignaled
 };
 
 struct SemaphoreDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     SemaphoreType type = SemaphoreType::Binary;
     uint64_t initialValue = 0; // For timeline semaphores, ignored for binary
 };
 
 struct QuerySetDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     QueryType type = QueryType::Occlusion;
     uint32_t count = 1; // Number of queries in the set
 };
 
 struct CommandEncoderDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
 };
 
@@ -904,6 +945,9 @@ struct AdapterInfo {
 };
 
 struct SubmitDescriptor {
+    // Extension chain support (not yet passed to C API)
+    const ChainedStruct* next = nullptr;
+    
     std::vector<std::shared_ptr<CommandEncoder>> commandEncoders;
 
     // Wait semaphores (must be signaled before execution)
@@ -919,6 +963,9 @@ struct SubmitDescriptor {
 };
 
 struct PresentDescriptor {
+    // Extension chain support (not yet passed to C API)
+    const ChainedStruct* next = nullptr;
+    
     // Wait semaphores (must be signaled before presentation)
     std::vector<std::shared_ptr<Semaphore>> waitSemaphores;
     std::vector<uint64_t> waitValues; // For timeline semaphores, empty for binary
@@ -985,6 +1032,7 @@ struct RenderPassDepthStencilAttachment {
 };
 
 struct RenderPassCreateDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     std::vector<RenderPassColorAttachment> colorAttachments;
     std::optional<RenderPassDepthStencilAttachment> depthStencilAttachment;
@@ -1002,6 +1050,7 @@ struct FramebufferDepthStencilAttachment {
 };
 
 struct FramebufferDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
     std::shared_ptr<RenderPass> renderPass;
     std::vector<FramebufferColorAttachment> colorAttachments;
@@ -1012,6 +1061,7 @@ struct FramebufferDescriptor {
 
 // Render pass begin descriptor (runtime values)
 struct RenderPassBeginDescriptor {
+    const ChainedStruct* next = nullptr;
     std::shared_ptr<Framebuffer> framebuffer;
     std::vector<Color> colorClearValues;
     float depthClearValue = 1.0f;
@@ -1019,6 +1069,7 @@ struct RenderPassBeginDescriptor {
 };
 
 struct ComputePassBeginDescriptor {
+    const ChainedStruct* next = nullptr;
     std::string label;
 };
 
@@ -1078,6 +1129,7 @@ struct BlitTextureToTextureDescriptor {
 };
 
 struct PipelineBarrierDescriptor {
+    const ChainedStruct* next = nullptr;
     std::vector<MemoryBarrier> memoryBarriers = {};
     std::vector<BufferBarrier> bufferBarriers = {};
     std::vector<TextureBarrier> textureBarriers = {};
@@ -1406,6 +1458,18 @@ namespace utils {
 
     // Get bytes per pixel for a texture format
     uint32_t getFormatBytesPerPixel(TextureFormat format);
+
+    // Helper to find a specific extension type in the next chain using dynamic_cast
+    template<typename T>
+    const T* findInChain(const ChainedStruct* chain) {
+        while (chain) {
+            if (const T* result = dynamic_cast<const T*>(chain)) {
+                return result;
+            }
+            chain = chain->next;
+        }
+        return nullptr;
+    }
 } // namespace utils
 
 } // namespace gfx
