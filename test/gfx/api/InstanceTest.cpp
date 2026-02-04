@@ -45,9 +45,11 @@ protected:
 
 TEST_P(GfxInstanceTest, CreateDestroy)
 {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = backend;
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = backend;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
@@ -64,9 +66,11 @@ TEST_P(GfxInstanceTest, CreateDestroy)
 
 TEST_P(GfxInstanceTest, WithValidation)
 {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = backend;
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = backend;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
@@ -80,11 +84,13 @@ TEST_P(GfxInstanceTest, WithValidation)
 
 TEST_P(GfxInstanceTest, WithApplicationInfo)
 {
+    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
     GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
     desc.backend = backend;
     desc.applicationName = "Test Application";
     desc.applicationVersion = 1;
-    const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
@@ -96,10 +102,11 @@ TEST_P(GfxInstanceTest, WithApplicationInfo)
 
 TEST_P(GfxInstanceTest, WithEnabledFeatures)
 {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = backend;
-
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG, GFX_INSTANCE_EXTENSION_SURFACE };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = backend;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 2;
 
@@ -115,9 +122,11 @@ TEST_P(GfxInstanceTest, WithEnabledFeatures)
 
 TEST_P(GfxInstanceTest, RequestAdapterInvalidArguments)
 {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = backend;
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = backend;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
@@ -127,6 +136,8 @@ TEST_P(GfxInstanceTest, RequestAdapterInvalidArguments)
 
     // Test NULL instance
     GfxAdapterDescriptor adapterDesc = {};
+    adapterDesc.sType = GFX_STRUCTURE_TYPE_ADAPTER_DESCRIPTOR;
+    adapterDesc.pNext = nullptr;
     adapterDesc.adapterIndex = UINT32_MAX;
     adapterDesc.preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE;
 
@@ -145,9 +156,11 @@ TEST_P(GfxInstanceTest, RequestAdapterInvalidArguments)
 
 TEST_P(GfxInstanceTest, RequestAdapterByPreference)
 {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = backend;
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = backend;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
@@ -155,6 +168,8 @@ TEST_P(GfxInstanceTest, RequestAdapterByPreference)
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
 
     GfxAdapterDescriptor adapterDesc = {};
+    adapterDesc.sType = GFX_STRUCTURE_TYPE_ADAPTER_DESCRIPTOR;
+    adapterDesc.pNext = nullptr;
     adapterDesc.adapterIndex = UINT32_MAX;
     adapterDesc.preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE;
 
@@ -168,9 +183,11 @@ TEST_P(GfxInstanceTest, RequestAdapterByPreference)
 
 TEST_P(GfxInstanceTest, RequestAdapterByIndex)
 {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = backend;
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = backend;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
@@ -185,6 +202,8 @@ TEST_P(GfxInstanceTest, RequestAdapterByIndex)
     if (result == GFX_RESULT_SUCCESS && adapterCount > 0) {
         // Request first adapter by index
         GfxAdapterDescriptor adapterDesc = {};
+        adapterDesc.sType = GFX_STRUCTURE_TYPE_ADAPTER_DESCRIPTOR;
+        adapterDesc.pNext = nullptr;
         adapterDesc.adapterIndex = 0;
         adapterDesc.preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE;
 
@@ -198,9 +217,11 @@ TEST_P(GfxInstanceTest, RequestAdapterByIndex)
 
 TEST_P(GfxInstanceTest, EnumerateAdaptersInvalidArguments)
 {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = backend;
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = backend;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
@@ -220,9 +241,11 @@ TEST_P(GfxInstanceTest, EnumerateAdaptersInvalidArguments)
 
 TEST_P(GfxInstanceTest, EnumerateAdaptersGetCount)
 {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = backend;
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = backend;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
@@ -244,9 +267,11 @@ TEST_P(GfxInstanceTest, EnumerateAdaptersGetCount)
 
 TEST_P(GfxInstanceTest, EnumerateAdaptersGetAdapters)
 {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = backend;
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = backend;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
@@ -277,9 +302,11 @@ TEST_P(GfxInstanceTest, EnumerateAdaptersGetAdapters)
 
 TEST_P(GfxInstanceTest, EnumerateAdaptersTwoCalls)
 {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = backend;
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = backend;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
@@ -312,9 +339,11 @@ TEST_P(GfxInstanceTest, EnumerateAdaptersTwoCalls)
 
 TEST_P(GfxInstanceTest, MultipleInstances)
 {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = backend;
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = backend;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
@@ -338,9 +367,11 @@ TEST_P(GfxInstanceTest, MultipleInstances)
 
 TEST_P(GfxInstanceTest, DoubleDestroy)
 {
-    GfxInstanceDescriptor desc = {};
-    desc.backend = backend;
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = backend;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
@@ -411,9 +442,11 @@ INSTANTIATE_TEST_SUITE_P(
 TEST(GfxInstanceTestNonParam, InvalidArguments)
 {
     // Test NULL output pointer
-    GfxInstanceDescriptor desc = {};
-    desc.backend = static_cast<GfxBackend>(GFX_BACKEND_VULKAN);
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = static_cast<GfxBackend>(GFX_BACKEND_VULKAN);;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 

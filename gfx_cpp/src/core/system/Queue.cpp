@@ -24,7 +24,7 @@ void QueueImpl::submit(const SubmitDescriptor& submitDescriptor)
     std::vector<GfxSemaphore> cWaitSems;
     std::vector<GfxSemaphore> cSignalSems;
 
-    GfxSubmitDescriptor cDescriptor = GFX_SUBMIT_DESCRIPTOR_INIT;
+    GfxSubmitDescriptor cDescriptor = {};
     convertSubmitDescriptor(submitDescriptor, cDescriptor, cEncoders, cWaitSems, cSignalSems);
 
     gfxQueueSubmit(m_handle, &cDescriptor);

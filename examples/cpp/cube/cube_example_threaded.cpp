@@ -1560,7 +1560,9 @@ void CubeApp::render()
     }
 
     // Present
-    GfxPresentDescriptor presentDescriptor = GFX_PRESENT_DESCRIPTOR_INIT;
+    GfxPresentDescriptor presentDescriptor = {};
+    presentDescriptor.sType = GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR;
+    presentDescriptor.pNext = NULL;
     presentDescriptor.waitSemaphores = &renderFinishedSemaphores[currentFrame];
     presentDescriptor.waitSemaphoreCount = 1;
     gfxSwapchainPresent(swapchain, &presentDescriptor);

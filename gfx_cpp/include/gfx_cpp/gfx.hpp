@@ -709,7 +709,7 @@ enum ColorWriteMask : uint32_t {
 struct ColorTargetState {
     TextureFormat format = TextureFormat::Undefined;
     std::optional<BlendState> blend;
-    uint32_t writeMask = ColorWriteMask::All;
+    ColorWriteMask writeMask = ColorWriteMask::All;
 };
 
 struct VertexAttribute {

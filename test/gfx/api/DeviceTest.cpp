@@ -20,9 +20,11 @@ protected:
             GTEST_SKIP() << "Backend not available";
         }
 
-        GfxInstanceDescriptor instDesc = {};
-        instDesc.backend = backend;
         const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+        GfxInstanceDescriptor instDesc = {};
+        instDesc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+        instDesc.pNext = nullptr;
+        instDesc.backend = backend;
         instDesc.enabledExtensions = extensions;
         instDesc.enabledExtensionCount = 1;
 
@@ -32,6 +34,8 @@ protected:
         }
 
         GfxAdapterDescriptor adapterDesc = {};
+        adapterDesc.sType = GFX_STRUCTURE_TYPE_ADAPTER_DESCRIPTOR;
+        adapterDesc.pNext = nullptr;
         adapterDesc.adapterIndex = UINT32_MAX;
         adapterDesc.preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE;
 

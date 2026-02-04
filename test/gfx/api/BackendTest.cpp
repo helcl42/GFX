@@ -204,13 +204,15 @@ TEST(GfxBackendTest, InstanceCreationRequiresLoadedBackend)
     gfxUnloadBackend(GFX_BACKEND_VULKAN);
 
     // Try to create instance without loading backend
-    GfxInstanceDescriptor desc = {};
-    desc.backend = GFX_BACKEND_VULKAN;
     const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+    GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
+    desc.backend = GFX_BACKEND_VULKAN;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 
-    GfxInstance instance = NULL;
+    GfxInstance instance = nullptr;
     GfxResult result = gfxCreateInstance(&desc, &instance);
 
     // Should fail with backend not loaded error

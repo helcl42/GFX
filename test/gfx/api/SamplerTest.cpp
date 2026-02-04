@@ -20,9 +20,11 @@ protected:
             GTEST_SKIP() << "Backend not available";
         }
 
-        GfxInstanceDescriptor instDesc = {};
-        instDesc.backend = backend;
         const char* extensions[] = { GFX_INSTANCE_EXTENSION_DEBUG };
+        GfxInstanceDescriptor instDesc = {};
+        instDesc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+        instDesc.pNext = nullptr;
+        instDesc.backend = backend;
         instDesc.enabledExtensions = extensions;
         instDesc.enabledExtensionCount = 1;
 
@@ -32,6 +34,8 @@ protected:
         }
 
         GfxAdapterDescriptor adapterDesc = {};
+        adapterDesc.sType = GFX_STRUCTURE_TYPE_ADAPTER_DESCRIPTOR;
+        adapterDesc.pNext = nullptr;
         adapterDesc.adapterIndex = 0;
 
         if (gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter) != GFX_RESULT_SUCCESS) {
@@ -41,6 +45,8 @@ protected:
         }
 
         GfxDeviceDescriptor deviceDesc = {};
+        deviceDesc.sType = GFX_STRUCTURE_TYPE_DEVICE_DESCRIPTOR;
+        deviceDesc.pNext = nullptr;
         deviceDesc.label = "Test Device";
 
         if (gfxAdapterCreateDevice(adapter, &deviceDesc, &device) != GFX_RESULT_SUCCESS) {

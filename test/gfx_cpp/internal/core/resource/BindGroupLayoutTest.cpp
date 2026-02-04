@@ -26,11 +26,15 @@ protected:
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
         GfxAdapterDescriptor adapterDesc{
+            .sType = GFX_STRUCTURE_TYPE_ADAPTER_DESCRIPTOR,
+            .pNext = nullptr,
             .adapterIndex = 0
         };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
         GfxDeviceDescriptor deviceDesc{
+            .sType = GFX_STRUCTURE_TYPE_DEVICE_DESCRIPTOR,
+            .pNext = nullptr,
             .label = nullptr,
             .queueRequests = nullptr,
             .queueRequestCount = 0,

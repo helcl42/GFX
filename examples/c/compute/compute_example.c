@@ -281,7 +281,9 @@ static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
 
 static bool createSwapchain(ComputeApp* app, uint32_t width, uint32_t height)
 {
-    GfxSwapchainDescriptor swapchainDesc = GFX_SWAPCHAIN_DESCRIPTOR_INIT;
+    GfxSwapchainDescriptor swapchainDesc = {};
+    swapchainDesc.sType = GFX_STRUCTURE_TYPE_SWAPCHAIN_DESCRIPTOR;
+    swapchainDesc.pNext = NULL;
     swapchainDesc.surface = app->surface;
     swapchainDesc.width = width;
     swapchainDesc.height = height;
@@ -312,7 +314,9 @@ static bool initGraphics(ComputeApp* app)
 
     // Create graphics instance
     const char* instanceExtensions[] = { GFX_INSTANCE_EXTENSION_SURFACE, GFX_INSTANCE_EXTENSION_DEBUG };
-    GfxInstanceDescriptor instanceDesc = GFX_INSTANCE_DESCRIPTOR_INIT;
+    GfxInstanceDescriptor instanceDesc = {};
+    instanceDesc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    instanceDesc.pNext = NULL;
     instanceDesc.backend = GFX_BACKEND_API;
     instanceDesc.applicationName = "Compute Example (C)";
     instanceDesc.applicationVersion = 1;
@@ -325,7 +329,9 @@ static bool initGraphics(ComputeApp* app)
     }
 
     // Get adapter
-    GfxAdapterDescriptor adapterDesc = GFX_ADAPTER_DESCRIPTOR_INIT;
+    GfxAdapterDescriptor adapterDesc = {};
+    adapterDesc.sType = GFX_STRUCTURE_TYPE_ADAPTER_DESCRIPTOR;
+    adapterDesc.pNext = NULL;
     adapterDesc.adapterIndex = UINT32_MAX;
     adapterDesc.preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE;
 
@@ -341,7 +347,9 @@ static bool initGraphics(ComputeApp* app)
 
     // Create device
     const char* deviceExtensions[] = { GFX_DEVICE_EXTENSION_SWAPCHAIN };
-    GfxDeviceDescriptor deviceDesc = GFX_DEVICE_DESCRIPTOR_INIT;
+    GfxDeviceDescriptor deviceDesc = {};
+    deviceDesc.sType = GFX_STRUCTURE_TYPE_DEVICE_DESCRIPTOR;
+    deviceDesc.pNext = NULL;
     deviceDesc.label = NULL;
     deviceDesc.queueRequests = NULL;
     deviceDesc.queueRequestCount = 0;
@@ -359,7 +367,9 @@ static bool initGraphics(ComputeApp* app)
     }
 
     GfxPlatformWindowHandle windowHandle = getPlatformWindowHandle(app->window);
-    GfxSurfaceDescriptor surfaceDesc = GFX_SURFACE_DESCRIPTOR_INIT;
+    GfxSurfaceDescriptor surfaceDesc = {};
+    surfaceDesc.sType = GFX_STRUCTURE_TYPE_SURFACE_DESCRIPTOR;
+    surfaceDesc.pNext = NULL;
     surfaceDesc.label = "Main Surface";
     surfaceDesc.windowHandle = windowHandle;
 
@@ -373,7 +383,9 @@ static bool initGraphics(ComputeApp* app)
 
 static bool createComputeTexture(ComputeApp* app)
 {
-    GfxTextureDescriptor textureDesc = GFX_TEXTURE_DESCRIPTOR_INIT;
+    GfxTextureDescriptor textureDesc = {};
+    textureDesc.sType = GFX_STRUCTURE_TYPE_TEXTURE_DESCRIPTOR;
+    textureDesc.pNext = NULL;
     textureDesc.type = GFX_TEXTURE_TYPE_2D;
     textureDesc.size = (GfxExtent3D){ COMPUTE_TEXTURE_WIDTH, COMPUTE_TEXTURE_HEIGHT, 1 };
     textureDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
@@ -389,7 +401,9 @@ static bool createComputeTexture(ComputeApp* app)
 
     printf("Created compute texture: %dx%d\n", COMPUTE_TEXTURE_WIDTH, COMPUTE_TEXTURE_HEIGHT);
 
-    GfxTextureViewDescriptor viewDesc = GFX_TEXTURE_VIEW_DESCRIPTOR_INIT;
+    GfxTextureViewDescriptor viewDesc = {};
+    viewDesc.sType = GFX_STRUCTURE_TYPE_TEXTURE_VIEW_DESCRIPTOR;
+    viewDesc.pNext = NULL;
     viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
     viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
     viewDesc.baseMipLevel = 0;
@@ -437,7 +451,9 @@ static bool createComputeShaders(ComputeApp* app)
         return false;
     }
 
-    GfxShaderDescriptor computeShaderDesc = GFX_SHADER_DESCRIPTOR_INIT;
+    GfxShaderDescriptor computeShaderDesc = {};
+    computeShaderDesc.sType = GFX_STRUCTURE_TYPE_SHADER_DESCRIPTOR;
+    computeShaderDesc.pNext = NULL;
     computeShaderDesc.sourceType = sourceType;
     computeShaderDesc.code = computeCode;
     computeShaderDesc.codeSize = computeSize;
@@ -454,7 +470,9 @@ static bool createComputeShaders(ComputeApp* app)
 
 static bool createComputeUniformBuffers(ComputeApp* app)
 {
-    GfxBufferDescriptor computeUniformBufferDesc = GFX_BUFFER_DESCRIPTOR_INIT;
+    GfxBufferDescriptor computeUniformBufferDesc = {};
+    computeUniformBufferDesc.sType = GFX_STRUCTURE_TYPE_BUFFER_DESCRIPTOR;
+    computeUniformBufferDesc.pNext = NULL;
     computeUniformBufferDesc.size = sizeof(ComputeUniformData);
     computeUniformBufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST;
     computeUniformBufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
@@ -493,7 +511,9 @@ static bool createComputeBindGroup(ComputeApp* app)
         }
     };
 
-    GfxBindGroupLayoutDescriptor computeLayoutDesc = GFX_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
+    GfxBindGroupLayoutDescriptor computeLayoutDesc = {};
+    computeLayoutDesc.sType = GFX_STRUCTURE_TYPE_BIND_GROUP_LAYOUT_DESCRIPTOR;
+    computeLayoutDesc.pNext = NULL;
     computeLayoutDesc.entryCount = 2;
     computeLayoutDesc.entries = computeLayoutEntries;
 
@@ -525,7 +545,9 @@ static bool createComputeBindGroup(ComputeApp* app)
             },
         };
 
-        GfxBindGroupDescriptor computeBindGroupDesc = GFX_BIND_GROUP_DESCRIPTOR_INIT;
+        GfxBindGroupDescriptor computeBindGroupDesc = {};
+        computeBindGroupDesc.sType = GFX_STRUCTURE_TYPE_BIND_GROUP_DESCRIPTOR;
+        computeBindGroupDesc.pNext = NULL;
         computeBindGroupDesc.layout = app->computeBindGroupLayout;
         computeBindGroupDesc.entryCount = 2;
         computeBindGroupDesc.entries = computeEntries;
@@ -540,7 +562,9 @@ static bool createComputeBindGroup(ComputeApp* app)
 
 static bool createComputePipeline(ComputeApp* app)
 {
-    GfxComputePipelineDescriptor computePipelineDesc = GFX_COMPUTE_PIPELINE_DESCRIPTOR_INIT;
+    GfxComputePipelineDescriptor computePipelineDesc = {};
+    computePipelineDesc.sType = GFX_STRUCTURE_TYPE_COMPUTE_PIPELINE_DESCRIPTOR;
+    computePipelineDesc.pNext = NULL;
     computePipelineDesc.compute = app->computeShader;
     computePipelineDesc.entryPoint = "main";
     computePipelineDesc.bindGroupLayouts = &app->computeBindGroupLayout;
@@ -558,7 +582,9 @@ static bool transitionComputeTexture(ComputeApp* app)
     // Transition compute texture to SHADER_READ_ONLY layout initially
     // This way we don't need special handling for the first frame
     GfxCommandEncoder initEncoder = NULL;
-    GfxCommandEncoderDescriptor initEncoderDesc = GFX_COMMAND_ENCODER_DESCRIPTOR_INIT;
+    GfxCommandEncoderDescriptor initEncoderDesc = {};
+    initEncoderDesc.sType = GFX_STRUCTURE_TYPE_COMMAND_ENCODER_DESCRIPTOR;
+    initEncoderDesc.pNext = NULL;
     initEncoderDesc.label = "Init Layout Transition";
 
     if (gfxDeviceCreateCommandEncoder(app->device, &initEncoderDesc, &initEncoder) != GFX_RESULT_SUCCESS) {
@@ -581,7 +607,9 @@ static bool transitionComputeTexture(ComputeApp* app)
         .baseArrayLayer = 0,
         .arrayLayerCount = 1
     };
-    GfxPipelineBarrierDescriptor barrierDesc = GFX_PIPELINE_BARRIER_DESCRIPTOR_INIT;
+    GfxPipelineBarrierDescriptor barrierDesc = {};
+    barrierDesc.sType = GFX_STRUCTURE_TYPE_PIPELINE_BARRIER_DESCRIPTOR;
+    barrierDesc.pNext = NULL;
     barrierDesc.memoryBarriers = NULL;
     barrierDesc.memoryBarrierCount = 0;
     barrierDesc.bufferBarriers = NULL;
@@ -593,7 +621,9 @@ static bool transitionComputeTexture(ComputeApp* app)
 
     gfxCommandEncoderEnd(initEncoder);
 
-    GfxSubmitDescriptor submitDescriptor = GFX_SUBMIT_DESCRIPTOR_INIT;
+    GfxSubmitDescriptor submitDescriptor = {};
+    submitDescriptor.sType = GFX_STRUCTURE_TYPE_SUBMIT_DESCRIPTOR;
+    submitDescriptor.pNext = NULL;
     submitDescriptor.commandEncoderCount = 1;
     submitDescriptor.commandEncoders = &initEncoder;
 
@@ -651,7 +681,9 @@ static bool createRenderPass(ComputeApp* app)
         .resolveTarget = NULL
     };
 
-    GfxRenderPassDescriptor renderPassDesc = GFX_RENDER_PASS_DESCRIPTOR_INIT;
+    GfxRenderPassDescriptor renderPassDesc = {};
+    renderPassDesc.sType = GFX_STRUCTURE_TYPE_RENDER_PASS_DESCRIPTOR;
+    renderPassDesc.pNext = NULL;
     renderPassDesc.label = "Fullscreen Render Pass";
     renderPassDesc.colorAttachments = &colorAttachment;
     renderPassDesc.colorAttachmentCount = 1;
@@ -688,7 +720,9 @@ static bool createFramebuffers(ComputeApp* app)
         char label[64];
         snprintf(label, sizeof(label), "Framebuffer %u", i);
 
-        GfxFramebufferDescriptor fbDesc = GFX_FRAMEBUFFER_DESCRIPTOR_INIT;
+        GfxFramebufferDescriptor fbDesc = {};
+        fbDesc.sType = GFX_STRUCTURE_TYPE_FRAMEBUFFER_DESCRIPTOR;
+        fbDesc.pNext = NULL;
         fbDesc.label = label;
         fbDesc.renderPass = app->renderPass;
         fbDesc.colorAttachments = &fbColorAttachment;
@@ -736,7 +770,9 @@ static bool createRenderShaders(ComputeApp* app)
         return false;
     }
 
-    GfxShaderDescriptor vertexShaderDesc = GFX_SHADER_DESCRIPTOR_INIT;
+    GfxShaderDescriptor vertexShaderDesc = {};
+    vertexShaderDesc.sType = GFX_STRUCTURE_TYPE_SHADER_DESCRIPTOR;
+    vertexShaderDesc.pNext = NULL;
     vertexShaderDesc.sourceType = vertexSourceType;
     vertexShaderDesc.code = vertexCode;
     vertexShaderDesc.codeSize = vertexSize;
@@ -770,7 +806,9 @@ static bool createRenderShaders(ComputeApp* app)
         }
     }
 
-    GfxShaderDescriptor fragmentShaderDesc = GFX_SHADER_DESCRIPTOR_INIT;
+    GfxShaderDescriptor fragmentShaderDesc = {};
+    fragmentShaderDesc.sType = GFX_STRUCTURE_TYPE_SHADER_DESCRIPTOR;
+    fragmentShaderDesc.pNext = NULL;
     fragmentShaderDesc.sourceType = fragmentSourceType;
     fragmentShaderDesc.code = fragmentCode;
     fragmentShaderDesc.codeSize = fragmentSize;
@@ -787,7 +825,9 @@ static bool createRenderShaders(ComputeApp* app)
 
 static bool createSampler(ComputeApp* app)
 {
-    GfxSamplerDescriptor samplerDesc = GFX_SAMPLER_DESCRIPTOR_INIT;
+    GfxSamplerDescriptor samplerDesc = {};
+    samplerDesc.sType = GFX_STRUCTURE_TYPE_SAMPLER_DESCRIPTOR;
+    samplerDesc.pNext = NULL;
     samplerDesc.magFilter = GFX_FILTER_MODE_LINEAR;
     samplerDesc.minFilter = GFX_FILTER_MODE_LINEAR;
     samplerDesc.addressModeU = GFX_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -805,7 +845,9 @@ static bool createSampler(ComputeApp* app)
 static bool createRenderUniformBuffers(ComputeApp* app)
 {
     // Create render uniform buffers (one per frame in flight)
-    GfxBufferDescriptor renderUniformBufferDesc = GFX_BUFFER_DESCRIPTOR_INIT;
+    GfxBufferDescriptor renderUniformBufferDesc = {};
+    renderUniformBufferDesc.sType = GFX_STRUCTURE_TYPE_BUFFER_DESCRIPTOR;
+    renderUniformBufferDesc.pNext = NULL;
     renderUniformBufferDesc.size = sizeof(RenderUniformData);
     renderUniformBufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST;
     renderUniformBufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
@@ -853,7 +895,9 @@ static bool createRenderBindGroups(ComputeApp* app)
         },
     };
 
-    GfxBindGroupLayoutDescriptor renderLayoutDesc = GFX_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
+    GfxBindGroupLayoutDescriptor renderLayoutDesc = {};
+    renderLayoutDesc.sType = GFX_STRUCTURE_TYPE_BIND_GROUP_LAYOUT_DESCRIPTOR;
+    renderLayoutDesc.pNext = NULL;
     renderLayoutDesc.entryCount = 3;
     renderLayoutDesc.entries = renderLayoutEntries;
 
@@ -892,7 +936,9 @@ static bool createRenderBindGroups(ComputeApp* app)
             }
         };
 
-        GfxBindGroupDescriptor renderBindGroupDesc = GFX_BIND_GROUP_DESCRIPTOR_INIT;
+        GfxBindGroupDescriptor renderBindGroupDesc = {};
+        renderBindGroupDesc.sType = GFX_STRUCTURE_TYPE_BIND_GROUP_DESCRIPTOR;
+        renderBindGroupDesc.pNext = NULL;
         renderBindGroupDesc.layout = app->renderBindGroupLayout;
         renderBindGroupDesc.entryCount = 3;
         renderBindGroupDesc.entries = renderEntries;
@@ -933,7 +979,9 @@ static bool createRenderPipeline(ComputeApp* app)
         .polygonMode = GFX_POLYGON_MODE_FILL
     };
 
-    GfxRenderPipelineDescriptor pipelineDesc = GFX_RENDER_PIPELINE_DESCRIPTOR_INIT;
+    GfxRenderPipelineDescriptor pipelineDesc = {};
+    pipelineDesc.sType = GFX_STRUCTURE_TYPE_RENDER_PIPELINE_DESCRIPTOR;
+    pipelineDesc.pNext = NULL;
     pipelineDesc.renderPass = app->renderPass;
     pipelineDesc.vertex = &vertexState;
     pipelineDesc.fragment = &fragmentState;
@@ -978,10 +1026,14 @@ static bool createRenderResources(ComputeApp* app)
 }
 static bool createSyncObjects(ComputeApp* app)
 {
-    GfxSemaphoreDescriptor semaphoreDesc = GFX_SEMAPHORE_DESCRIPTOR_INIT;
+    GfxSemaphoreDescriptor semaphoreDesc = {};
+    semaphoreDesc.sType = GFX_STRUCTURE_TYPE_SEMAPHORE_DESCRIPTOR;
+    semaphoreDesc.pNext = NULL;
     semaphoreDesc.type = GFX_SEMAPHORE_TYPE_BINARY;
 
-    GfxFenceDescriptor fenceDesc = GFX_FENCE_DESCRIPTOR_INIT;
+    GfxFenceDescriptor fenceDesc = {};
+    fenceDesc.sType = GFX_STRUCTURE_TYPE_FENCE_DESCRIPTOR;
+    fenceDesc.pNext = NULL;
     fenceDesc.signaled = true;
 
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
@@ -1003,7 +1055,9 @@ static bool createSyncObjects(ComputeApp* app)
         // Create command encoder for this frame
         char label[64];
         snprintf(label, sizeof(label), "Command Encoder %d", i);
-        GfxCommandEncoderDescriptor encoderDesc = GFX_COMMAND_ENCODER_DESCRIPTOR_INIT;
+        GfxCommandEncoderDescriptor encoderDesc = {};
+        encoderDesc.sType = GFX_STRUCTURE_TYPE_COMMAND_ENCODER_DESCRIPTOR;
+        encoderDesc.pNext = NULL;
         encoderDesc.label = label;
 
         if (gfxDeviceCreateCommandEncoder(app->device, &encoderDesc, &app->commandEncoders[i]) != GFX_RESULT_SUCCESS) {
@@ -1073,7 +1127,9 @@ static void render(ComputeApp* app)
         .baseArrayLayer = 0,
         .arrayLayerCount = 1
     };
-    GfxPipelineBarrierDescriptor readToWriteBarrierDesc = GFX_PIPELINE_BARRIER_DESCRIPTOR_INIT;
+    GfxPipelineBarrierDescriptor readToWriteBarrierDesc = {};
+    readToWriteBarrierDesc.sType = GFX_STRUCTURE_TYPE_PIPELINE_BARRIER_DESCRIPTOR;
+    readToWriteBarrierDesc.pNext = NULL;
     readToWriteBarrierDesc.memoryBarriers = NULL;
     readToWriteBarrierDesc.memoryBarrierCount = 0;
     readToWriteBarrierDesc.bufferBarriers = NULL;
@@ -1118,7 +1174,9 @@ static void render(ComputeApp* app)
         .baseArrayLayer = 0,
         .arrayLayerCount = 1
     };
-    GfxPipelineBarrierDescriptor computeToReadBarrierDesc = GFX_PIPELINE_BARRIER_DESCRIPTOR_INIT;
+    GfxPipelineBarrierDescriptor computeToReadBarrierDesc = {};
+    computeToReadBarrierDesc.sType = GFX_STRUCTURE_TYPE_PIPELINE_BARRIER_DESCRIPTOR;
+    computeToReadBarrierDesc.pNext = NULL;
     computeToReadBarrierDesc.memoryBarriers = NULL;
     computeToReadBarrierDesc.memoryBarrierCount = 0;
     computeToReadBarrierDesc.bufferBarriers = NULL;
@@ -1176,7 +1234,9 @@ static void render(ComputeApp* app)
     gfxCommandEncoderEnd(encoder);
 
     // Submit
-    GfxSubmitDescriptor submitDescriptor = GFX_SUBMIT_DESCRIPTOR_INIT;
+    GfxSubmitDescriptor submitDescriptor = {};
+    submitDescriptor.sType = GFX_STRUCTURE_TYPE_SUBMIT_DESCRIPTOR;
+    submitDescriptor.pNext = NULL;
     submitDescriptor.commandEncoderCount = 1;
     submitDescriptor.commandEncoders = &encoder;
     submitDescriptor.waitSemaphoreCount = 1;
@@ -1188,7 +1248,9 @@ static void render(ComputeApp* app)
     gfxQueueSubmit(app->queue, &submitDescriptor);
 
     // Present
-    GfxPresentDescriptor presentDescriptor = GFX_PRESENT_DESCRIPTOR_INIT;
+    GfxPresentDescriptor presentDescriptor = {};
+    presentDescriptor.sType = GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR;
+    presentDescriptor.pNext = NULL;
     presentDescriptor.waitSemaphoreCount = 1;
     presentDescriptor.waitSemaphores = &app->renderFinishedSemaphores[frameIndex];
 

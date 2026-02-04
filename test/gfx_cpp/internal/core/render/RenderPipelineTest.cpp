@@ -26,11 +26,15 @@ protected:
         ASSERT_EQ(gfxCreateInstance(&instanceDesc, &instance), GFX_RESULT_SUCCESS);
 
         GfxAdapterDescriptor adapterDesc{
+            .sType = GFX_STRUCTURE_TYPE_ADAPTER_DESCRIPTOR,
+            .pNext = nullptr,
             .adapterIndex = 0
         };
         ASSERT_EQ(gfxInstanceRequestAdapter(instance, &adapterDesc, &adapter), GFX_RESULT_SUCCESS);
 
         GfxDeviceDescriptor deviceDesc{
+            .sType = GFX_STRUCTURE_TYPE_DEVICE_DESCRIPTOR,
+            .pNext = nullptr,
             .label = nullptr,
             .queueRequests = nullptr,
             .queueRequestCount = 0,
@@ -267,7 +271,7 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithFragmentShader)
             .targets = {
                 ColorTargetState{
                     .format = TextureFormat::R8G8B8A8Unorm,
-                    .writeMask = 0xF } }
+                    .writeMask = ColorWriteMask::All } }
         },
         .primitive = {
             .topology = PrimitiveTopology::TriangleList,
@@ -342,7 +346,7 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithWGSLShaders)
             .targets = {
                 ColorTargetState{
                     .format = TextureFormat::R8G8B8A8Unorm,
-                    .writeMask = 0xF } }
+                    .writeMask = ColorWriteMask::All } }
         },
         .primitive = {
             .topology = PrimitiveTopology::TriangleList,
@@ -417,7 +421,7 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithMixedShaderFormats)
             .targets = {
                 ColorTargetState{
                     .format = TextureFormat::R8G8B8A8Unorm,
-                    .writeMask = 0xF } }
+                    .writeMask = ColorWriteMask::All } }
         },
         .primitive = {
             .topology = PrimitiveTopology::TriangleList,
@@ -487,7 +491,7 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithMultisampling)
             .targets = {
                 ColorTargetState{
                     .format = TextureFormat::R8G8B8A8Unorm,
-                    .writeMask = 0xF } }
+                    .writeMask = ColorWriteMask::All } }
         },
         .primitive = {
             .topology = PrimitiveTopology::TriangleList,

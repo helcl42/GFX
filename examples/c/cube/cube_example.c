@@ -263,7 +263,9 @@ bool initializeGraphics(CubeApp* app)
 
     // Create graphics instance
     const char* instanceExtensions[] = { GFX_INSTANCE_EXTENSION_SURFACE, GFX_INSTANCE_EXTENSION_DEBUG };
-    GfxInstanceDescriptor instanceDesc = GFX_INSTANCE_DESCRIPTOR_INIT;
+    GfxInstanceDescriptor instanceDesc = {};
+    instanceDesc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    instanceDesc.pNext = NULL;
     instanceDesc.backend = GFX_BACKEND_API;
     instanceDesc.applicationName = "Cube Example (C)";
     instanceDesc.applicationVersion = 1;
@@ -276,7 +278,9 @@ bool initializeGraphics(CubeApp* app)
     }
 
     // Get adapter
-    GfxAdapterDescriptor adapterDesc = GFX_ADAPTER_DESCRIPTOR_INIT;
+    GfxAdapterDescriptor adapterDesc = {};
+    adapterDesc.sType = GFX_STRUCTURE_TYPE_ADAPTER_DESCRIPTOR;
+    adapterDesc.pNext = NULL;
     adapterDesc.adapterIndex = UINT32_MAX; // Use preference-based selection
     adapterDesc.preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE;
 
@@ -300,7 +304,9 @@ bool initializeGraphics(CubeApp* app)
         GFX_DEVICE_EXTENSION_SWAPCHAIN,
         GFX_DEVICE_EXTENSION_ANISOTROPIC_FILTERING
     };
-    GfxDeviceDescriptor deviceDesc = GFX_DEVICE_DESCRIPTOR_INIT;
+    GfxDeviceDescriptor deviceDesc = {};
+    deviceDesc.sType = GFX_STRUCTURE_TYPE_DEVICE_DESCRIPTOR;
+    deviceDesc.pNext = NULL;
     deviceDesc.label = "Main Device";
     deviceDesc.enabledExtensions = deviceExtensions;
     deviceDesc.enabledExtensionCount = 2;
@@ -334,7 +340,9 @@ bool initializeGraphics(CubeApp* app)
 
     // Create surface
     GfxPlatformWindowHandle windowHandle = getPlatformWindowHandle(app->window);
-    GfxSurfaceDescriptor surfaceDesc = GFX_SURFACE_DESCRIPTOR_INIT;
+    GfxSurfaceDescriptor surfaceDesc = {};
+    surfaceDesc.sType = GFX_STRUCTURE_TYPE_SURFACE_DESCRIPTOR;
+    surfaceDesc.pNext = NULL;
     surfaceDesc.label = "Main Surface";
     surfaceDesc.windowHandle = windowHandle;
 
@@ -348,7 +356,9 @@ bool initializeGraphics(CubeApp* app)
 
 static bool createSwapchain(CubeApp* app, uint32_t width, uint32_t height)
 {
-    GfxSwapchainDescriptor swapchainDesc = GFX_SWAPCHAIN_DESCRIPTOR_INIT;
+    GfxSwapchainDescriptor swapchainDesc = {};
+    swapchainDesc.sType = GFX_STRUCTURE_TYPE_SWAPCHAIN_DESCRIPTOR;
+    swapchainDesc.pNext = NULL;
     swapchainDesc.label = "Main Swapchain";
     swapchainDesc.surface = app->surface;
     swapchainDesc.width = (uint32_t)width;
@@ -377,7 +387,9 @@ static bool createSwapchain(CubeApp* app, uint32_t width, uint32_t height)
 static bool createTextures(CubeApp* app, uint32_t width, uint32_t height)
 {
     // Create depth texture (MSAA must match color attachment)
-    GfxTextureDescriptor depthTextureDesc = GFX_TEXTURE_DESCRIPTOR_INIT;
+    GfxTextureDescriptor depthTextureDesc = {};
+    depthTextureDesc.sType = GFX_STRUCTURE_TYPE_TEXTURE_DESCRIPTOR;
+    depthTextureDesc.pNext = NULL;
     depthTextureDesc.label = "Depth Buffer";
     depthTextureDesc.type = GFX_TEXTURE_TYPE_2D;
     depthTextureDesc.size = (GfxExtent3D){ .width = width, .height = height, .depth = 1 };
@@ -393,7 +405,9 @@ static bool createTextures(CubeApp* app, uint32_t width, uint32_t height)
     }
 
     // Create depth texture view
-    GfxTextureViewDescriptor depthViewDesc = GFX_TEXTURE_VIEW_DESCRIPTOR_INIT;
+    GfxTextureViewDescriptor depthViewDesc = {};
+    depthViewDesc.sType = GFX_STRUCTURE_TYPE_TEXTURE_VIEW_DESCRIPTOR;
+    depthViewDesc.pNext = NULL;
     depthViewDesc.label = "Depth Buffer View";
     depthViewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
     depthViewDesc.format = DEPTH_FORMAT;
@@ -408,7 +422,9 @@ static bool createTextures(CubeApp* app, uint32_t width, uint32_t height)
     }
 
     // Create MSAA color texture (is unused if MSAA_SAMPLE_COUNT == 1)
-    GfxTextureDescriptor msaaColorTextureDesc = GFX_TEXTURE_DESCRIPTOR_INIT;
+    GfxTextureDescriptor msaaColorTextureDesc = {};
+    msaaColorTextureDesc.sType = GFX_STRUCTURE_TYPE_TEXTURE_DESCRIPTOR;
+    msaaColorTextureDesc.pNext = NULL;
     msaaColorTextureDesc.label = "MSAA Color Buffer";
     msaaColorTextureDesc.type = GFX_TEXTURE_TYPE_2D;
     msaaColorTextureDesc.size = (GfxExtent3D){ .width = width, .height = height, .depth = 1 };
@@ -424,7 +440,9 @@ static bool createTextures(CubeApp* app, uint32_t width, uint32_t height)
     }
 
     // Create MSAA color texture view (is unused if MSAA_SAMPLE_COUNT == 1)
-    GfxTextureViewDescriptor msaaColorViewDesc = GFX_TEXTURE_VIEW_DESCRIPTOR_INIT;
+    GfxTextureViewDescriptor msaaColorViewDesc = {};
+    msaaColorViewDesc.sType = GFX_STRUCTURE_TYPE_TEXTURE_VIEW_DESCRIPTOR;
+    msaaColorViewDesc.pNext = NULL;
     msaaColorViewDesc.label = "MSAA Color Buffer View";
     msaaColorViewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
     msaaColorViewDesc.format = app->swapchainInfo.format;
@@ -467,7 +485,9 @@ static bool createFrameBuffers(CubeApp* app, uint32_t width, uint32_t height)
         char label[64];
         snprintf(label, sizeof(label), "Framebuffer %u", i);
 
-        GfxFramebufferDescriptor fbDesc = GFX_FRAMEBUFFER_DESCRIPTOR_INIT;
+        GfxFramebufferDescriptor fbDesc = {};
+        fbDesc.sType = GFX_STRUCTURE_TYPE_FRAMEBUFFER_DESCRIPTOR;
+        fbDesc.pNext = NULL;
         fbDesc.label = label;
         fbDesc.renderPass = app->renderPass;
         fbDesc.colorAttachments = &fbColorAttachment;
@@ -513,12 +533,16 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
 bool createSyncObjects(CubeApp* app)
 {
     // Create semaphores and fences for each frame in flight
-    GfxSemaphoreDescriptor semaphoreDesc = GFX_SEMAPHORE_DESCRIPTOR_INIT;
+    GfxSemaphoreDescriptor semaphoreDesc = {};
+    semaphoreDesc.sType = GFX_STRUCTURE_TYPE_SEMAPHORE_DESCRIPTOR;
+    semaphoreDesc.pNext = NULL;
     semaphoreDesc.label = "Semaphore";
     semaphoreDesc.type = GFX_SEMAPHORE_TYPE_BINARY;
     semaphoreDesc.initialValue = 0;
 
-    GfxFenceDescriptor fenceDesc = GFX_FENCE_DESCRIPTOR_INIT;
+    GfxFenceDescriptor fenceDesc = {};
+    fenceDesc.sType = GFX_STRUCTURE_TYPE_FENCE_DESCRIPTOR;
+    fenceDesc.pNext = NULL;
     fenceDesc.label = "Fence";
     fenceDesc.signaled = true; // Start signaled so first frame doesn't wait
 
@@ -548,7 +572,9 @@ bool createSyncObjects(CubeApp* app)
 
         // Create command encoder for this frame
         snprintf(label, sizeof(label), "Command Encoder %d", i);
-        GfxCommandEncoderDescriptor encoderDesc = GFX_COMMAND_ENCODER_DESCRIPTOR_INIT;
+        GfxCommandEncoderDescriptor encoderDesc = {};
+        encoderDesc.sType = GFX_STRUCTURE_TYPE_COMMAND_ENCODER_DESCRIPTOR;
+        encoderDesc.pNext = NULL;
         encoderDesc.label = label;
         if (gfxDeviceCreateCommandEncoder(app->device, &encoderDesc, &app->commandEncoders[i]) != GFX_RESULT_SUCCESS) {
             fprintf(stderr, "Failed to create command encoder %d\n", i);
@@ -688,7 +714,9 @@ static bool createGeometry(CubeApp* app)
     }
 
     // Create index buffer
-    GfxBufferDescriptor indexBufferDesc = GFX_BUFFER_DESCRIPTOR_INIT;
+    GfxBufferDescriptor indexBufferDesc = {};
+    indexBufferDesc.sType = GFX_STRUCTURE_TYPE_BUFFER_DESCRIPTOR;
+    indexBufferDesc.pNext = NULL;
     indexBufferDesc.label = "Cube Indices";
     indexBufferDesc.size = sizeof(indices);
     indexBufferDesc.usage = GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_COPY_DST;
@@ -720,7 +748,9 @@ static bool createUniformBuffer(CubeApp* app)
     // Need space for CUBE_COUNT cubes per frame
     size_t totalBufferSize = app->uniformAlignedSize * MAX_FRAMES_IN_FLIGHT * CUBE_COUNT;
 
-    GfxBufferDescriptor uniformBufferDesc = GFX_BUFFER_DESCRIPTOR_INIT;
+    GfxBufferDescriptor uniformBufferDesc = {};
+    uniformBufferDesc.sType = GFX_STRUCTURE_TYPE_BUFFER_DESCRIPTOR;
+    uniformBufferDesc.pNext = NULL;
     uniformBufferDesc.label = "Shared Transform Uniforms";
     uniformBufferDesc.size = totalBufferSize;
     uniformBufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST;
@@ -746,7 +776,9 @@ static bool createBindGroup(CubeApp* app)
             .minBindingSize = sizeof(UniformData) }
     };
 
-    GfxBindGroupLayoutDescriptor uniformLayoutDesc = GFX_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
+    GfxBindGroupLayoutDescriptor uniformLayoutDesc = {};
+    uniformLayoutDesc.sType = GFX_STRUCTURE_TYPE_BIND_GROUP_LAYOUT_DESCRIPTOR;
+    uniformLayoutDesc.pNext = NULL;
     uniformLayoutDesc.label = "Uniform Bind Group Layout";
     uniformLayoutDesc.entries = &uniformLayoutEntry;
     uniformLayoutDesc.entryCount = 1;
@@ -772,7 +804,9 @@ static bool createBindGroup(CubeApp* app)
                         .size = sizeof(UniformData) } }
             };
 
-            GfxBindGroupDescriptor uniformBindGroupDesc = GFX_BIND_GROUP_DESCRIPTOR_INIT;
+            GfxBindGroupDescriptor uniformBindGroupDesc = {};
+            uniformBindGroupDesc.sType = GFX_STRUCTURE_TYPE_BIND_GROUP_DESCRIPTOR;
+            uniformBindGroupDesc.pNext = NULL;
             uniformBindGroupDesc.label = label;
             uniformBindGroupDesc.layout = app->uniformBindGroupLayout;
             uniformBindGroupDesc.entries = &uniformEntry;
@@ -842,7 +876,9 @@ static bool createShaders(CubeApp* app)
     }
 
     // Create vertex shader
-    GfxShaderDescriptor vertexShaderDesc = GFX_SHADER_DESCRIPTOR_INIT;
+    GfxShaderDescriptor vertexShaderDesc = {};
+    vertexShaderDesc.sType = GFX_STRUCTURE_TYPE_SHADER_DESCRIPTOR;
+    vertexShaderDesc.pNext = NULL;
     vertexShaderDesc.label = "Cube Vertex Shader";
     vertexShaderDesc.sourceType = sourceType;
     vertexShaderDesc.code = vertexShaderCode;
@@ -857,7 +893,9 @@ static bool createShaders(CubeApp* app)
     }
 
     // Create fragment shader
-    GfxShaderDescriptor fragmentShaderDesc = GFX_SHADER_DESCRIPTOR_INIT;
+    GfxShaderDescriptor fragmentShaderDesc = {};
+    fragmentShaderDesc.sType = GFX_STRUCTURE_TYPE_SHADER_DESCRIPTOR;
+    fragmentShaderDesc.pNext = NULL;
     fragmentShaderDesc.label = "Cube Fragment Shader";
     fragmentShaderDesc.sourceType = sourceType;
     fragmentShaderDesc.code = fragmentShaderCode;
@@ -921,7 +959,9 @@ static bool createRenderPass(CubeApp* app)
         .resolveTarget = NULL
     };
 
-    GfxRenderPassDescriptor renderPassDesc = GFX_RENDER_PASS_DESCRIPTOR_INIT;
+    GfxRenderPassDescriptor renderPassDesc = {};
+    renderPassDesc.sType = GFX_STRUCTURE_TYPE_RENDER_PASS_DESCRIPTOR;
+    renderPassDesc.pNext = NULL;
     renderPassDesc.label = "Main Render Pass";
     renderPassDesc.colorAttachments = &colorAttachment;
     renderPassDesc.colorAttachmentCount = 1;
@@ -1041,9 +1081,11 @@ bool createRenderPipeline(CubeApp* app)
 
     // Create render pipeline
     // Create array with the bind group layout pointer
-    GfxBindGroupLayout bindGroupLayouts[] = { app->uniformBindGroupLayout };
+    GfxBindGroupLayout bindGroupLayouts[] = { app->uniformBindGroupLayout, app->textureBindGroupLayout };
 
-    GfxRenderPipelineDescriptor pipelineDesc = GFX_RENDER_PIPELINE_DESCRIPTOR_INIT;
+    GfxRenderPipelineDescriptor pipelineDesc = {};
+    pipelineDesc.sType = GFX_STRUCTURE_TYPE_RENDER_PIPELINE_DESCRIPTOR;
+    pipelineDesc.pNext = NULL;
     pipelineDesc.label = "Cube Render Pipeline";
     pipelineDesc.vertex = &vertexState;
     pipelineDesc.fragment = &fragmentState;
@@ -1213,7 +1255,9 @@ void render(CubeApp* app)
     gfxQueueSubmit(app->queue, &submitDescriptor);
 
     // Present with synchronization
-    GfxPresentDescriptor presentDescriptor = GFX_PRESENT_DESCRIPTOR_INIT;
+    GfxPresentDescriptor presentDescriptor = {};
+    presentDescriptor.sType = GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR;
+    presentDescriptor.pNext = NULL;
     presentDescriptor.waitSemaphores = &app->renderFinishedSemaphores[app->currentFrame];
     presentDescriptor.waitSemaphoreCount = 1;
     gfxSwapchainPresent(app->swapchain, &presentDescriptor);
@@ -1224,7 +1268,7 @@ void render(CubeApp* app)
 
 void cleanup(CubeApp* app)
 {
-    // Wait for device to finish
+    // Wait for device to finish all GPU work before cleanup
     if (app->device) {
         gfxDeviceWaitIdle(app->device);
     }

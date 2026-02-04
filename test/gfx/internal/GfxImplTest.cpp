@@ -305,6 +305,8 @@ TEST_F(GfxImplTest, CreateInstance_NullDescriptor_ReturnsError)
 TEST_F(GfxImplTest, CreateInstance_NullOutInstance_ReturnsError)
 {
     GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
     desc.backend = GFX_BACKEND_AUTO;
     ASSERT_EQ(gfxCreateInstance(&desc, nullptr), GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
@@ -314,6 +316,8 @@ TEST_F(GfxImplTest, CreateInstance_BackendNotLoaded_ReturnsError)
     gfxUnloadAllBackends();
 
     GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
     desc.backend = GFX_BACKEND_AUTO;
     GfxInstance instance;
     ASSERT_EQ(gfxCreateInstance(&desc, &instance), GFX_RESULT_ERROR_BACKEND_NOT_LOADED);
@@ -328,6 +332,8 @@ TEST_F(GfxImplTest, CreateInstance_VulkanBackend_Succeeds)
     }
 
     GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
     desc.backend = GFX_BACKEND_VULKAN;
     desc.applicationName = "GfxImplTest";
     desc.applicationVersion = 1;
@@ -353,6 +359,8 @@ TEST_F(GfxImplTest, CreateInstance_WebGPUBackend_Succeeds)
     }
 
     GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
     desc.backend = GFX_BACKEND_WEBGPU;
     desc.applicationName = "GfxImplTest";
     desc.applicationVersion = 1;
@@ -452,6 +460,8 @@ TEST_F(GfxImplTest, UnloadAllBackends_UnloadsAllBackends)
 
     // Try to create instance - should fail since all backends are unloaded
     GfxInstanceDescriptor desc = {};
+    desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
+    desc.pNext = nullptr;
     desc.backend = GFX_BACKEND_AUTO;
     GfxInstance instance;
     ASSERT_EQ(gfxCreateInstance(&desc, &instance), GFX_RESULT_ERROR_BACKEND_NOT_LOADED);
