@@ -402,6 +402,10 @@ struct RenderPassDepthStencilAttachment {
 struct RenderPassCreateInfo {
     std::vector<RenderPassColorAttachment> colorAttachments;
     std::optional<RenderPassDepthStencilAttachment> depthStencilAttachment;
+    
+    // Multiview extension (optional)
+    std::optional<uint32_t> viewMask;
+    std::vector<uint32_t> correlationMasks;
 };
 
 struct FramebufferCreateInfo {

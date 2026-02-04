@@ -936,11 +936,12 @@ void convertBindGroupDescriptor(const BindGroupDescriptor& descriptor, std::vect
     outDesc.entryCount = static_cast<uint32_t>(outEntries.size());
 }
 
-void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, std::vector<GfxRenderPassColorAttachment>& outColorAttachments, std::vector<GfxRenderPassColorAttachmentTarget>& outColorTargets, std::vector<GfxRenderPassColorAttachmentTarget>& outColorResolveTargets, GfxRenderPassDepthStencilAttachment& outDepthStencilAttachment, GfxRenderPassDepthStencilAttachmentTarget& outDepthTarget, GfxRenderPassDepthStencilAttachmentTarget& outDepthResolveTarget, GfxRenderPassDescriptor& outDesc)
+void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, std::vector<GfxRenderPassColorAttachment>& outColorAttachments, std::vector<GfxRenderPassColorAttachmentTarget>& outColorTargets, std::vector<GfxRenderPassColorAttachmentTarget>& outColorResolveTargets, GfxRenderPassDepthStencilAttachment& outDepthStencilAttachment, GfxRenderPassDepthStencilAttachmentTarget& outDepthTarget, GfxRenderPassDepthStencilAttachmentTarget& outDepthResolveTarget, GfxRenderPassMultiviewInfo& outMultiviewInfo, std::vector<uint32_t>& outCorrelationMasks, GfxRenderPassDescriptor& outDesc)
 {
     outColorAttachments.clear();
     outColorTargets.clear();
     outColorResolveTargets.clear();
+    outCorrelationMasks.clear();
 
     // Convert color attachments
     for (const auto& attachment : descriptor.colorAttachments) {
@@ -1005,11 +1006,33 @@ void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, s
 
     outDesc = {};
     outDesc.sType = GFX_STRUCTURE_TYPE_RENDER_PASS_DESCRIPTOR;
-    outDesc.pNext = NULL;
+    outDesc.pNext = nullptr;
     outDesc.label = descriptor.label.c_str();
     outDesc.colorAttachments = outColorAttachments.empty() ? nullptr : outColorAttachments.data();
     outDesc.colorAttachmentCount = static_cast<uint32_t>(outColorAttachments.size());
     outDesc.depthStencilAttachment = cDepthStencilPtr;
+
+    // Handle extension chain - convert C++ ChainedStruct to C pNext chain
+    const ChainedStruct* chainNode = descriptor.next;
+    while (chainNode) {
+        // Check for multiview extension
+        if (const auto* multiview = dynamic_cast<const RenderPassMultiviewInfo*>(chainNode)) {
+            outMultiviewInfo = {};
+            outMultiviewInfo.sType = GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_INFO;
+            outMultiviewInfo.pNext = nullptr;
+            outMultiviewInfo.viewMask = multiview->viewMask;
+            outMultiviewInfo.correlationMaskCount = static_cast<uint32_t>(multiview->correlationMasks.size());
+            
+            // Copy correlation masks to output vector
+            outCorrelationMasks = multiview->correlationMasks;
+            outMultiviewInfo.correlationMasks = outCorrelationMasks.empty() ? nullptr : outCorrelationMasks.data();
+            
+            // Link to pNext chain
+            outDesc.pNext = &outMultiviewInfo;
+        }
+        
+        chainNode = chainNode->next;
+    }
 }
 
 void convertRenderPassBeginDescriptor(const RenderPassBeginDescriptor& descriptor, GfxRenderPass renderPassHandle, GfxFramebuffer framebufferHandle, std::vector<GfxColor>& outClearValues, GfxRenderPassBeginDescriptor& outDesc)

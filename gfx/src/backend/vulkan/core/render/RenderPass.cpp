@@ -154,6 +154,21 @@ RenderPass::RenderPass(Device* device, const RenderPassCreateInfo& createInfo)
     renderPassInfo.pSubpasses = &subpass;
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
+    
+    // Add multiview support if requested
+    VkRenderPassMultiviewCreateInfo multiviewInfo{};
+    if (createInfo.viewMask.has_value()) {
+        multiviewInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO;
+        multiviewInfo.pNext = nullptr;
+        multiviewInfo.subpassCount = 1;
+        multiviewInfo.pViewMasks = &createInfo.viewMask.value();
+        multiviewInfo.dependencyCount = 0;
+        multiviewInfo.pViewOffsets = nullptr;
+        multiviewInfo.correlationMaskCount = static_cast<uint32_t>(createInfo.correlationMasks.size());
+        multiviewInfo.pCorrelationMasks = createInfo.correlationMasks.empty() ? nullptr : createInfo.correlationMasks.data();
+        
+        renderPassInfo.pNext = &multiviewInfo;
+    }
 
     VkResult result = vkCreateRenderPass(m_device->handle(), &renderPassInfo, nullptr, &m_renderPass);
     if (result != VK_SUCCESS) {

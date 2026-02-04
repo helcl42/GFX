@@ -824,6 +824,7 @@ typedef enum {
     GFX_STRUCTURE_TYPE_RENDER_PASS_BEGIN_DESCRIPTOR = 25,
     GFX_STRUCTURE_TYPE_COMPUTE_PASS_BEGIN_DESCRIPTOR = 26,
     GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR = 27,
+    GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_INFO = 28,
     GFX_STRUCTURE_TYPE_MAX_ENUM = 0x7FFFFFFF
 } GfxStructureType;
 
@@ -1004,6 +1005,26 @@ typedef struct {
     // Depth/stencil attachment (optional)
     const GfxRenderPassDepthStencilAttachment* depthStencilAttachment; // NULL if not used
 } GfxRenderPassDescriptor;
+
+// Multiview rendering extension - allows rendering to multiple views in a single render pass
+// Chain this to GfxRenderPassDescriptor.pNext to enable multiview
+// Requires GFX_DEVICE_EXTENSION_MULTIVIEW to be enabled on device
+// Example: For stereo rendering, set viewMask = 0x3 (views 0 and 1)
+typedef struct {
+    GfxStructureType sType;  // Must be GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_INFO
+    const void* pNext;
+    
+    // View mask - bit N set means view N is rendered
+    // Example: 0x3 (binary 11) = render to view 0 and view 1 (stereo)
+    // Example: 0x7 (binary 111) = render to views 0, 1, and 2
+    uint32_t viewMask;
+    
+    // Correlation masks - groups of views that can be optimized together
+    // Views in the same correlation mask share similar geometry/data
+    // Example: For stereo, both eyes correlate: correlationMasks[0] = 0x3
+    const uint32_t* correlationMasks;
+    uint32_t correlationMaskCount;
+} GfxRenderPassMultiviewInfo;
 
 // Framebuffer attachment with optional resolve target
 typedef struct {
