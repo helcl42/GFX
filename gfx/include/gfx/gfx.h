@@ -25,6 +25,332 @@
 #define GFX_VERSION GFX_MAKE_VERSION(GFX_VERSION_MAJOR, GFX_VERSION_MINOR, GFX_VERSION_PATCH)
 
 // ============================================================================
+// THREADING MODEL
+// ============================================================================
+//
+// GENERAL RULES:
+// - All GFX functions are thread-safe for operations on DIFFERENT objects
+// - Operations on the SAME object from multiple threads require external synchronization
+// - Exception: Queue submission has internal synchronization (see below)
+//
+// DETAILED GUARANTEES:
+//
+// Instance/Adapter/Device Creation (Thread-Safe):
+//   ✓ gfxCreateInstance() - Can be called from any thread
+//   ✓ gfxInstanceRequestAdapter() - Can be called concurrently for same instance
+//   ✓ gfxAdapterCreateDevice() - Can be called concurrently for same adapter
+//
+// Resource Creation (Requires External Sync on Same Device):
+//   ✗ gfxDeviceCreateBuffer(device, ...)  
+//   ✗ gfxDeviceCreateTexture(device, ...)
+//   ✗ gfxDeviceCreatePipeline(device, ...)
+//   → Multiple threads creating resources on the SAME device must synchronize externally
+//   → Different devices can be used concurrently without sync
+//
+// Command Recording (NOT Thread-Safe per Encoder):
+//   ✗ GfxCommandEncoder - Each encoder can only be used by ONE thread at a time
+//   ✗ GfxRenderPassEncoder - Each encoder can only be used by ONE thread at a time
+//   ✗ GfxComputePassEncoder - Each encoder can only be used by ONE thread at a time
+//   → Create one encoder per thread if recording commands in parallel
+//   → Example: Thread A records to encoderA, Thread B records to encoderB (OK)
+//   → Example: Thread A and B both call commands on encoderA (NOT OK - undefined behavior)
+//
+// Queue Operations (Thread-Safe):
+//   ✓ gfxQueueSubmit() - Internal synchronization, safe to call from multiple threads
+//   ✓ gfxQueueWriteBuffer() - Internal synchronization
+//   ✓ gfxQueueWriteTexture() - Internal synchronization
+//   → The implementation uses a mutex internally for queue operations
+//   → Multiple threads can submit to the same queue simultaneously
+//
+// Resource Destruction (Requires External Sync):
+//   ✗ gfxBufferDestroy(buffer)
+//   ✗ gfxTextureDestroy(texture)
+//   → Application must ensure no other thread is using the object
+//   → Application must ensure GPU has finished using the object (use fences)
+//   → Destroying an object while the GPU is using it is undefined behavior
+//
+// Synchronization Objects (Thread-Safe):
+//   ✓ gfxFenceWait() - Can be called from multiple threads on same fence
+//   ✓ gfxFenceGetStatus() - Thread-safe query
+//   ✓ gfxSemaphoreSignal() - Thread-safe for timeline semaphores
+//   ✓ gfxSemaphoreWait() - Thread-safe for timeline semaphores
+//
+// COMMON PATTERNS:
+//
+// Pattern 1: Multi-threaded resource loading
+//   Thread 1: encoder1 = createEncoder(device); // Externally synchronized
+//   Thread 2: encoder2 = createEncoder(device); // Externally synchronized
+//   Thread 1: record commands to encoder1
+//   Thread 2: record commands to encoder2
+//   Main:     submit both encoders to queue (queue handles sync internally)
+//
+// Pattern 2: Parallel command recording
+//   Main:     encoders[N] = create N encoders (with mutex on device)
+//   Threads:  Each thread records to its own encoder (no sync needed)
+//   Main:     gfxQueueSubmit(queue, encoders, N); (thread-safe)
+//
+// Pattern 3: Producer-consumer with timeline semaphores
+//   Thread A: submit work, signal semaphore value 1
+//   Thread B: wait for semaphore value 1, submit dependent work
+//   → Both threads can call gfxSemaphoreWait/Signal safely
+//
+// CALLBACKS:
+// - GfxLogCallback may be called from ANY thread, including internal library threads
+// - Log callbacks must be thread-safe if they access shared state
+// - Log callbacks should not call GFX functions (may deadlock)
+//
+// BACKEND DIFFERENCES:
+// - Vulkan: All thread-safety guarantees are honored
+// - WebGPU: Additional internal synchronization may occur (still safe to follow rules above)
+
+// ============================================================================
+// MEMORY OWNERSHIP AND LIFETIME
+// ============================================================================
+//
+// HANDLES (Opaque Pointers):
+// - All GfxXxx handles (GfxBuffer, GfxTexture, etc.) are OWNED by the application
+// - The library does NOT retain references to handles after a function returns
+// - The application MUST call gfxXxxDestroy() to free resources
+// - Calling destroy twice on the same handle is UNDEFINED BEHAVIOR
+//
+// STRINGS:
+//
+// Input Strings (Borrowed):
+//   const char* label = "MyBuffer";
+//   gfxDeviceCreateBuffer(device, &desc);
+//   → label string is COPIED internally, application can free immediately after call returns
+//   → All const char* parameters in descriptors are borrowed and copied
+//   → Lifetime requirement: Valid only during the function call
+//
+// Output Strings (Library-Owned):
+//   GfxAdapterInfo info;
+//   gfxAdapterGetInfo(adapter, &info);
+//   printf("%s", info.name); // OK
+//   → info.name is owned by the ADAPTER object
+//   → Remains valid until gfxAdapterDestroy() is called
+//   → Application MUST NOT free these strings
+//   → Application MUST copy if needed after adapter destruction
+//
+// ARRAYS IN DESCRIPTORS:
+//
+// All arrays are BORROWED during function call:
+//
+//   GfxVertexAttribute attrs[3] = {...};
+//   GfxVertexBufferLayout layout = {
+//       .attributes = attrs,
+//       .attributeCount = 3
+//   };
+//   gfxDeviceCreatePipeline(device, &pipelineDesc);
+//   // attrs can be freed or go out of scope here - array was copied
+//
+// Extension Chains (pNext):
+//   GfxSomeExtension ext = { .sType = GFX_STRUCTURE_TYPE_SOME_EXTENSION };
+//   GfxDescriptor desc = { .pNext = &ext };
+//   gfxCreateSomething(device, &desc);
+//   → Extension chain is TRAVERSED and COPIED during the call
+//   → Extension structures can be stack-allocated
+//   → Lifetime requirement: Valid only during the function call
+//
+// COMMAND ENCODERS:
+//
+//   GfxCommandEncoder encoder;
+//   gfxDeviceCreateCommandEncoder(device, &desc, &encoder);
+//   gfxCommandEncoderCopyBuffer(encoder, ...);
+//   gfxCommandEncoderEnd(encoder);
+//   gfxQueueSubmit(queue, &submitDesc); // submitDesc contains encoder
+//   → Encoder is BORROWED by gfxQueueSubmit (reads commands, doesn't store encoder)
+//   → After submit returns, you can destroy the encoder
+//   → Encoder must remain valid during the submit call
+//   → Commands are copied to internal GPU command buffer
+//
+// RESOURCE DEPENDENCIES:
+//
+// Pipelines reference other objects:
+//   GfxRenderPipeline pipeline = create with shader, renderPass, layout
+//   → Pipeline does NOT own shader/renderPass/layout
+//   → Application must keep shader/renderPass/layout alive while pipeline exists
+//   → Destroying shader before pipeline is UNDEFINED BEHAVIOR
+//
+// Bind groups reference resources:
+//   GfxBindGroup bindGroup = create with buffer/texture/sampler
+//   → Bind group does NOT own the buffer/texture/sampler
+//   → Resources must outlive the bind group
+//   → Using a bind group after destroying its resources is UNDEFINED BEHAVIOR
+//
+// Framebuffers reference textures:
+//   GfxFramebuffer framebuffer = create with texture views
+//   → Framebuffer does NOT own the texture views
+//   → Texture views must outlive the framebuffer
+//
+// GPU SYNCHRONIZATION:
+//
+//   gfxQueueSubmit(queue, &submitDesc);
+//   gfxBufferDestroy(buffer); // DANGER!
+//   → Submit is ASYNCHRONOUS - GPU may still be using buffer
+//   → Application MUST wait for GPU completion before destroying:
+//
+//   gfxQueueSubmit(queue, &submitDesc);
+//   gfxFenceWait(submitDesc.signalFence, UINT64_MAX);
+//   gfxBufferDestroy(buffer); // Now safe
+//
+// MAPPING LIFETIME:
+//
+//   void* ptr;
+//   gfxBufferMap(buffer, 0, size, &ptr);
+//   // ptr is valid until unmap
+//   memcpy(ptr, data, size);
+//   gfxBufferUnmap(buffer);
+//   // ptr is now INVALID - accessing it is undefined behavior
+//   → Only one map per buffer at a time
+//   → Destroying a mapped buffer is UNDEFINED BEHAVIOR
+//
+// SUMMARY TABLE:
+//
+// | Object Type        | Owned By      | Freed By                    | Dependencies      |
+// |--------------------|---------------|-----------------------------|--------------------|
+// | GfxInstance        | Application   | gfxInstanceDestroy()        | None              |
+// | GfxAdapter         | Instance      | gfxAdapterDestroy()         | Instance          |
+// | GfxDevice          | Adapter       | gfxDeviceDestroy()          | Adapter           |
+// | GfxBuffer          | Device        | gfxBufferDestroy()          | Device            |
+// | GfxTexture         | Device        | gfxTextureDestroy()         | Device            |
+// | GfxPipeline        | Device        | gfxPipelineDestroy()        | Device, Shader    |
+// | GfxBindGroup       | Device        | gfxBindGroupDestroy()       | Device, Resources |
+// | Descriptor strings | Application   | Application manages         | N/A               |
+// | Info strings       | Parent object | Parent's destroy function   | Parent object     |
+
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
+//
+// RETURN CODES:
+//
+// All GFX functions return GfxResult (except void functions like gfxSetLogCallback)
+// 
+// Success codes (>= 0):
+//   GFX_RESULT_SUCCESS = 0      → Operation completed successfully
+//   GFX_RESULT_TIMEOUT = 1      → Operation timed out (not necessarily an error)
+//   GFX_RESULT_NOT_READY = 2    → Resource not ready yet (poll again)
+//
+// Error codes (< 0):
+//   GFX_RESULT_ERROR_INVALID_ARGUMENT = -1        → Bad parameter
+//   GFX_RESULT_ERROR_NOT_FOUND = -2               → Resource doesn't exist
+//   GFX_RESULT_ERROR_OUT_OF_MEMORY = -3           → Allocation failed
+//   GFX_RESULT_ERROR_DEVICE_LOST = -4             → GPU crashed or disconnected
+//   GFX_RESULT_ERROR_SURFACE_LOST = -5            → Window was destroyed
+//   GFX_RESULT_ERROR_OUT_OF_DATE = -6             → Swapchain needs recreation
+//   GFX_RESULT_ERROR_BACKEND_NOT_LOADED = -7      → Backend DLL not available
+//   GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED = -8   → Feature not available
+//   GFX_RESULT_ERROR_UNKNOWN = -9                 → Internal error
+//
+// CHECKING ERRORS:
+//
+// Minimal (production):
+//   GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+//   if (result != GFX_RESULT_SUCCESS) {
+//       // Handle error
+//   }
+//
+// Detailed (debugging):
+//   GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+//   if (result != GFX_RESULT_SUCCESS) {
+//       fprintf(stderr, "Buffer creation failed: %s\n", gfxResultToString(result));
+//       return false;
+//   }
+//
+// RECOVERABLE vs FATAL:
+//
+// Recoverable errors (retry or fallback possible):
+//   GFX_RESULT_TIMEOUT              → Wait longer or skip frame
+//   GFX_RESULT_NOT_READY            → Poll again
+//   GFX_RESULT_ERROR_OUT_OF_DATE    → Recreate swapchain
+//   GFX_RESULT_ERROR_SURFACE_LOST   → Recreate surface
+//   GFX_RESULT_ERROR_OUT_OF_MEMORY  → Free resources and retry
+//
+// Fatal errors (should terminate or restart):
+//   GFX_RESULT_ERROR_DEVICE_LOST    → GPU crashed - reset device
+//   GFX_RESULT_ERROR_BACKEND_NOT_LOADED → Missing DLL - can't continue
+//   GFX_RESULT_ERROR_INVALID_ARGUMENT → Programming error - fix code
+//
+// COMMON SCENARIOS:
+//
+// 1. Initialization failure:
+//   GfxResult result = gfxCreateInstance(&desc, &instance);
+//   if (result == GFX_RESULT_ERROR_BACKEND_NOT_LOADED) {
+//       printf("Vulkan/WebGPU not available\n");
+//       return EXIT_FAILURE;
+//   }
+//
+// 2. Out of memory:
+//   GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+//   if (result == GFX_RESULT_ERROR_OUT_OF_MEMORY) {
+//       // Free some resources
+//       gfxTextureDestroy(oldTexture);
+//       // Retry with smaller buffer
+//       desc.size /= 2;
+//       result = gfxDeviceCreateBuffer(device, &desc, &buffer);
+//   }
+//
+// 3. Swapchain out of date:
+//   GfxResult result = gfxSwapchainAcquireNextImage(...);
+//   if (result == GFX_RESULT_ERROR_OUT_OF_DATE) {
+//       gfxSwapchainDestroy(swapchain);
+//       // Query new window size
+//       swapchain = gfxDeviceCreateSwapchain(device, &newDesc);
+//   }
+//
+// 4. Device lost (GPU crash):
+//   GfxResult result = gfxQueueSubmit(queue, &submitDesc);
+//   if (result == GFX_RESULT_ERROR_DEVICE_LOST) {
+//       // GPU crashed - need to recreate device
+//       cleanupAllResources();
+//       gfxDeviceDestroy(device);
+//       device = gfxAdapterCreateDevice(adapter, &deviceDesc);
+//       recreateAllResources();
+//   }
+//
+// 5. Fence timeout:
+//   GfxResult result = gfxFenceWait(fence, 1000000000); // 1 second
+//   if (result == GFX_RESULT_TIMEOUT) {
+//       printf("GPU taking longer than expected\n");
+//       result = gfxFenceWait(fence, UINT64_MAX); // Wait forever
+//   }
+//
+// VALIDATION:
+//
+// In debug builds, enable logging to catch issues early:
+//   gfxSetLogCallback(myLogFunction, userData);
+//   // Library will log warnings for:
+//   // - Invalid parameters
+//   // - Missing required fields
+//   // - Incorrect usage patterns
+//   // - Performance warnings
+//
+// BEST PRACTICES:
+//
+// 1. Always check return codes for creation functions:
+//    ✓ gfxCreateInstance, gfxDeviceCreateBuffer, etc.
+//
+// 2. Can skip checks for simple setters (but still good to check):
+//    ~ gfxRenderPassEncoderSetViewport (unlikely to fail)
+//    ~ gfxCommandEncoderEnd (only fails on programming errors)
+//
+// 3. Always check queue operations:
+//    ✓ gfxQueueSubmit (can fail due to device lost)
+//    ✓ gfxSwapchainAcquireNextImage (can be out of date)
+//
+// 4. Use macros for repetitive checking:
+//    (Example - use without backslashes in actual code)
+//    #define CHECK_RESULT(expr) do {
+//        GfxResult _r = (expr);
+//        if (_r != GFX_RESULT_SUCCESS) {
+//            fprintf(stderr, "%s failed: %s\n", #expr, gfxResultToString(_r));
+//            return false;
+//        }
+//    } while(0)
+//
+//    CHECK_RESULT(gfxDeviceCreateBuffer(device, &desc, &buffer));
+
+// ============================================================================
 // DLL Export/Import Macros for Windows
 // ============================================================================
 
