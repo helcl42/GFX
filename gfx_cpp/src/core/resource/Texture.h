@@ -16,7 +16,7 @@ public:
 
     GfxTexture getHandle() const;
 
-    TextureInfo getInfo() override;
+    TextureInfo getInfo() const override;
     void* getNativeHandle() const override;
     TextureLayout getLayout() const override;
     std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) override;

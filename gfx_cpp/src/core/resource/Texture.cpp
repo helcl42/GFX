@@ -29,7 +29,7 @@ GfxTexture TextureImpl::getHandle() const
     return m_handle;
 }
 
-TextureInfo TextureImpl::getInfo()
+TextureInfo TextureImpl::getInfo() const
 {
     return cTextureInfoToCppTextureInfo(m_info);
 }

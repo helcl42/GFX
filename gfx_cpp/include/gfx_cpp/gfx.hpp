@@ -1305,7 +1305,7 @@ class Texture {
 public:
     virtual ~Texture() = default;
 
-    virtual TextureInfo getInfo() = 0;
+    virtual TextureInfo getInfo() const = 0;
     virtual void* getNativeHandle() const = 0;
     virtual TextureLayout getLayout() const = 0;
 
