@@ -474,7 +474,10 @@ bool ComputeApp::createComputeResources()
             submitDescriptor.signalFence = initFence;
 
             queue->submit(submitDescriptor);
-            initFence->wait(UINT64_MAX);
+            auto waitResult = initFence->wait(UINT64_MAX);
+            if (!gfx::isSuccess(waitResult)) {
+                throw std::runtime_error("Failed to wait for init fence");
+            }
         }
 
         std::cout << "Compute resources created successfully" << std::endl;
@@ -799,7 +802,10 @@ void ComputeApp::render()
         size_t frameIndex = currentFrame;
 
         // Wait for previous frame
-        inFlightFences[frameIndex]->wait(UINT64_MAX);
+        auto waitResult = inFlightFences[frameIndex]->wait(UINT64_MAX);
+        if (!gfx::isSuccess(waitResult)) {
+            throw std::runtime_error("Failed to wait for frame fence");
+        }
         inFlightFences[frameIndex]->reset();
 
         // Acquire swapchain image
@@ -906,7 +912,10 @@ void ComputeApp::render()
         submitDescriptor.signalSemaphores = { renderFinishedSemaphores[frameIndex] };
         submitDescriptor.signalFence = inFlightFences[frameIndex];
 
-        queue->submit(submitDescriptor);
+        auto submitResult = queue->submit(submitDescriptor);
+        if (!gfx::isSuccess(submitResult)) {
+            throw std::runtime_error("Failed to submit compute commands");
+        }
 
         // Present
         gfx::PresentDescriptor presentDescriptor{};

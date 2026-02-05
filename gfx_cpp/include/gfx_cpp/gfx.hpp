@@ -263,6 +263,41 @@ enum class QueueFlags : uint32_t {
     SparseBinding = 0x00000008
 };
 
+// ============================================================================
+// Error Handling
+// ============================================================================
+
+/// Result enum for operations that can fail in recoverable ways.
+///
+/// **Error Handling Strategy:**
+/// - `Result` is used for operations where **recovery/retry is expected**:
+///   - `Swapchain::acquireNextImage()` - Can timeout or be out-of-date (recreate swapchain)
+///   - `Swapchain::present()` - Can be out-of-date or surface lost (recreate swapchain)
+///   - `Fence::wait()` - Can timeout (retry) or encounter device lost (handle gracefully)
+///   - `Semaphore::wait()` - Can timeout (retry) or encounter device lost (handle gracefully)
+///   - `Queue::submit()` - Can encounter device lost or out-of-memory (handle gracefully)
+///
+/// - **Exceptions** are used for programming errors and unrecoverable failures:
+///   - Invalid arguments (nullptr, invalid enum values)
+///   - Resource creation failures (out of memory during createBuffer, etc.)
+///   - Backend not loaded or feature not supported
+///
+/// **Usage Pattern:**
+/// ```cpp
+/// auto result = fence->wait(timeout);
+/// if (isSuccess(result)) {
+///     // Success - continue
+/// } else if (result == Result::Timeout) {
+///     // Timeout - retry or handle timeout
+/// } else {
+///     // Error - handle device lost, out of memory, etc.
+/// }
+/// ```
+///
+/// **Helper Functions:**
+/// - `isOk(result)` - Returns true for Success, Timeout, NotReady (non-error results)
+/// - `isError(result)` - Returns true for error codes (negative values)
+/// - `isSuccess(result)` - Returns true only for Success
 enum class Result {
     Success = 0,
     Timeout = 1,
@@ -278,6 +313,11 @@ enum class Result {
     ErrorFeatureNotSupported = -8,
     ErrorUnknown = -9
 };
+
+// Helper functions for Result
+inline bool isOk(Result result) { return static_cast<int>(result) >= 0; }
+inline bool isError(Result result) { return static_cast<int>(result) < 0; }
+inline bool isSuccess(Result result) { return result == Result::Success; }
 
 enum class LoadOp : int32_t {
     Load = 0, // Load existing contents
@@ -1382,11 +1422,11 @@ public:
     virtual ~Fence() = default;
 
     virtual FenceStatus getStatus() const = 0;
-    virtual bool wait(uint64_t timeoutNanoseconds = UINT64_MAX) = 0; // Returns true if signaled, false if timeout
+    virtual Result wait(uint64_t timeoutNanoseconds = UINT64_MAX) = 0;
     virtual void reset() = 0;
 
     // Static utility for waiting on multiple fences
-    static bool waitMultiple(const std::vector<std::shared_ptr<Fence>>& fences, bool waitAll, uint64_t timeoutNanoseconds = UINT64_MAX);
+    static Result waitMultiple(const std::vector<std::shared_ptr<Fence>>& fences, bool waitAll, uint64_t timeoutNanoseconds = UINT64_MAX);
 };
 
 class Semaphore {
@@ -1398,7 +1438,7 @@ public:
     // For timeline semaphores
     virtual uint64_t getValue() const = 0;
     virtual void signal(uint64_t value) = 0;
-    virtual bool wait(uint64_t value, uint64_t timeoutNanoseconds = UINT64_MAX) = 0;
+    virtual Result wait(uint64_t value, uint64_t timeoutNanoseconds = UINT64_MAX) = 0;
 };
 
 class QuerySet {
@@ -1413,7 +1453,7 @@ class Queue {
 public:
     virtual ~Queue() = default;
 
-    virtual void submit(const SubmitDescriptor& submitDescriptor) = 0;
+    virtual Result submit(const SubmitDescriptor& submitDescriptor) = 0;
     virtual void writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size) = 0;
     virtual void writeTexture(std::shared_ptr<Texture> texture, const Origin3D& origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const Extent3D& extent, TextureLayout finalLayout) = 0;
     virtual void waitIdle() = 0;

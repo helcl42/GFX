@@ -890,7 +890,10 @@ void CubeApp::render()
 {
     try {
         // Wait for this frame's fence to be signaled
-        inFlightFences[currentFrame]->wait(UINT64_MAX);
+        auto waitResult = inFlightFences[currentFrame]->wait(UINT64_MAX);
+        if (!gfx::isSuccess(waitResult)) {
+            throw std::runtime_error("Failed to wait for fence");
+        }
         inFlightFences[currentFrame]->reset();
 
         // Acquire next image with explicit synchronization
@@ -953,7 +956,10 @@ void CubeApp::render()
         submitDescriptor.signalSemaphores = { renderFinishedSemaphores[currentFrame] };
         submitDescriptor.signalFence = inFlightFences[currentFrame];
 
-        queue->submit(submitDescriptor);
+        auto submitResult = queue->submit(submitDescriptor);
+        if (!gfx::isSuccess(submitResult)) {
+            throw std::runtime_error("Failed to submit command buffer");
+        }
 
         // Present with explicit synchronization
         gfx::PresentDescriptor presentDescriptor{};

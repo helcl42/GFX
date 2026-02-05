@@ -40,9 +40,9 @@ void SemaphoreImpl::signal(uint64_t value)
     gfxSemaphoreSignal(m_handle, value);
 }
 
-bool SemaphoreImpl::wait(uint64_t value, uint64_t timeoutNanoseconds)
+Result SemaphoreImpl::wait(uint64_t value, uint64_t timeoutNanoseconds)
 {
-    return gfxSemaphoreWait(m_handle, value, timeoutNanoseconds) == GFX_RESULT_SUCCESS;
+    return cResultToCppResult(gfxSemaphoreWait(m_handle, value, timeoutNanoseconds));
 }
 
 } // namespace gfx

@@ -145,12 +145,12 @@ TEST_P(GfxCppSemaphoreTest, TimelineWait)
         EXPECT_EQ(semaphore->getValue(), 10);
 
         // Wait for value that's already reached - should return immediately
-        bool result = semaphore->wait(5, 1000000000); // 1 second timeout
-        EXPECT_TRUE(result);
+        auto result = semaphore->wait(5, 1000000000); // 1 second timeout
+        EXPECT_TRUE(gfx::isSuccess(result));
 
         // Wait for current value
         result = semaphore->wait(10, 1000000000);
-        EXPECT_TRUE(result);
+        EXPECT_TRUE(gfx::isSuccess(result));
     } catch (const std::exception& e) {
         GTEST_SKIP() << "Timeline semaphores not supported: " << e.what();
     }

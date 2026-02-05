@@ -1,5 +1,7 @@
 #include "Fence.h"
 
+#include "../../converter/Conversions.h"
+
 namespace gfx {
 
 FenceImpl::FenceImpl(GfxFence h)
@@ -26,9 +28,9 @@ FenceStatus FenceImpl::getStatus() const
     return signaled ? FenceStatus::Signaled : FenceStatus::Unsignaled;
 }
 
-bool FenceImpl::wait(uint64_t timeoutNanoseconds)
+Result FenceImpl::wait(uint64_t timeoutNanoseconds)
 {
-    return gfxFenceWait(m_handle, timeoutNanoseconds) == GFX_RESULT_SUCCESS;
+    return cResultToCppResult(gfxFenceWait(m_handle, timeoutNanoseconds));
 }
 
 void FenceImpl::reset()

@@ -200,8 +200,8 @@ TEST_P(SemaphoreImplTest, TimelineWait)
     }
 
     // Should succeed immediately since value is already 5
-    bool success = semaphore->wait(5, 0);
-    EXPECT_TRUE(success);
+    auto result = semaphore->wait(5, 0);
+    EXPECT_TRUE(gfx::isSuccess(result));
 }
 
 TEST_P(SemaphoreImplTest, MultipleSemaphores_IndependentHandles)

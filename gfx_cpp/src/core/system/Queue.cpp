@@ -18,7 +18,7 @@ QueueImpl::QueueImpl(GfxQueue h)
 {
 }
 
-void QueueImpl::submit(const SubmitDescriptor& submitDescriptor)
+Result QueueImpl::submit(const SubmitDescriptor& submitDescriptor)
 {
     std::vector<GfxCommandEncoder> cEncoders;
     std::vector<GfxSemaphore> cWaitSems;
@@ -27,7 +27,7 @@ void QueueImpl::submit(const SubmitDescriptor& submitDescriptor)
     GfxSubmitDescriptor cDescriptor = {};
     convertSubmitDescriptor(submitDescriptor, cDescriptor, cEncoders, cWaitSems, cSignalSems);
 
-    gfxQueueSubmit(m_handle, &cDescriptor);
+    return cResultToCppResult(gfxQueueSubmit(m_handle, &cDescriptor));
 }
 
 void QueueImpl::writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const void* data, uint64_t size)

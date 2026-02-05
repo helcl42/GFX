@@ -113,8 +113,8 @@ TEST_P(FenceImplTest, WaitOnSignaledFence)
     ASSERT_NE(fence, nullptr);
 
     // Should return immediately since fence is already signaled
-    bool success = fence->wait(0);
-    EXPECT_TRUE(success);
+    auto result = fence->wait(0);
+    EXPECT_TRUE(gfx::isSuccess(result));
 }
 
 TEST_P(FenceImplTest, ResetSignaledFence)

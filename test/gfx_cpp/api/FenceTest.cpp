@@ -116,8 +116,8 @@ TEST_P(GfxCppFenceTest, WaitOnSignaledFence)
     ASSERT_NE(fence, nullptr);
 
     // Should return immediately since fence is already signaled
-    bool result = fence->wait(0);
-    EXPECT_TRUE(result);
+    auto result = fence->wait(0);
+    EXPECT_TRUE(gfx::isSuccess(result));
 }
 
 TEST_P(GfxCppFenceTest, WaitOnUnsignaledFenceWithZeroTimeout)
@@ -131,9 +131,9 @@ TEST_P(GfxCppFenceTest, WaitOnUnsignaledFenceWithZeroTimeout)
     auto fence = device->createFence(fenceDesc);
     ASSERT_NE(fence, nullptr);
 
-    // Should return immediately with false since fence is not signaled
-    bool result = fence->wait(0);
-    EXPECT_FALSE(result);
+    // Should return with timeout since fence is not signaled
+    auto result = fence->wait(0);
+    EXPECT_EQ(result, gfx::Result::Timeout);
 }
 
 TEST_P(GfxCppFenceTest, ResetSignaledFence)

@@ -17,7 +17,7 @@ public:
     GfxFence getHandle() const;
 
     FenceStatus getStatus() const override;
-    bool wait(uint64_t timeoutNanoseconds = UINT64_MAX) override;
+    Result wait(uint64_t timeoutNanoseconds = UINT64_MAX) override;
     void reset() override;
 
 private:

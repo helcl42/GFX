@@ -19,7 +19,7 @@ public:
     SemaphoreType getType() const override;
     uint64_t getValue() const override;
     void signal(uint64_t value) override;
-    bool wait(uint64_t value, uint64_t timeoutNanoseconds = UINT64_MAX) override;
+    Result wait(uint64_t value, uint64_t timeoutNanoseconds = UINT64_MAX) override;
 
 private:
     GfxSemaphore m_handle;
