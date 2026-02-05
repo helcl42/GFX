@@ -1293,11 +1293,22 @@ public:
     template <typename T>
     void write(const std::vector<T>& data, uint64_t offset = 0)
     {
-        void* ptr = map(offset, data.size() * sizeof(T));
-        if (ptr) {
-            std::memcpy(ptr, data.data(), data.size() * sizeof(T));
-            unmap();
+        const uint64_t writeSize = data.size() * sizeof(T);
+        const uint64_t bufferSize = getInfo().size;
+        
+        if (offset + writeSize > bufferSize) {
+            throw std::runtime_error("Buffer write would exceed buffer capacity: offset=" + 
+                std::to_string(offset) + ", writeSize=" + std::to_string(writeSize) + 
+                ", bufferSize=" + std::to_string(bufferSize));
         }
+        
+        void* ptr = map(offset, writeSize);
+        if (!ptr) {
+            throw std::runtime_error("Failed to map buffer for writing");
+        }
+        
+        std::memcpy(ptr, data.data(), writeSize);
+        unmap();
     }
 };
 
