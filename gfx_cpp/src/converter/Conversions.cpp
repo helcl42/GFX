@@ -888,21 +888,21 @@ void convertBindGroupLayoutDescriptor(const BindGroupLayoutDescriptor& descripto
         outEntries[i].binding = entry.binding;
         outEntries[i].visibility = cppShaderStageToCShaderStage(entry.visibility);
 
-        if (entry.resource.index() == 0) {
+        if (std::holds_alternative<BindGroupLayoutEntry::BufferBinding>(entry.resource)) {
             outEntries[i].type = GFX_BINDING_TYPE_BUFFER;
             const auto& buffer = std::get<BindGroupLayoutEntry::BufferBinding>(entry.resource);
             outEntries[i].buffer.hasDynamicOffset = buffer.hasDynamicOffset;
             outEntries[i].buffer.minBindingSize = buffer.minBindingSize;
-        } else if (entry.resource.index() == 1) {
+        } else if (std::holds_alternative<BindGroupLayoutEntry::SamplerBinding>(entry.resource)) {
             outEntries[i].type = GFX_BINDING_TYPE_SAMPLER;
             const auto& sampler = std::get<BindGroupLayoutEntry::SamplerBinding>(entry.resource);
             outEntries[i].sampler.comparison = sampler.comparison;
-        } else if (entry.resource.index() == 2) {
+        } else if (std::holds_alternative<BindGroupLayoutEntry::TextureBinding>(entry.resource)) {
             outEntries[i].type = GFX_BINDING_TYPE_TEXTURE;
             const auto& texture = std::get<BindGroupLayoutEntry::TextureBinding>(entry.resource);
             outEntries[i].texture.multisampled = texture.multisampled;
             outEntries[i].texture.viewDimension = cppTextureViewTypeToCType(texture.viewDimension);
-        } else if (entry.resource.index() == 3) {
+        } else if (std::holds_alternative<BindGroupLayoutEntry::StorageTextureBinding>(entry.resource)) {
             outEntries[i].type = GFX_BINDING_TYPE_STORAGE_TEXTURE;
             const auto& storageTexture = std::get<BindGroupLayoutEntry::StorageTextureBinding>(entry.resource);
             outEntries[i].storageTexture.format = cppFormatToCFormat(storageTexture.format);
@@ -927,7 +927,7 @@ void convertBindGroupDescriptor(const BindGroupDescriptor& descriptor, std::vect
         const auto& entry = descriptor.entries[i];
         outEntries[i].binding = entry.binding;
 
-        if (entry.resource.index() == 0) {
+        if (std::holds_alternative<std::shared_ptr<Buffer>>(entry.resource)) {
             outEntries[i].type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER;
             auto buffer = std::get<std::shared_ptr<Buffer>>(entry.resource);
             auto bufferImpl = std::dynamic_pointer_cast<BufferImpl>(buffer);
@@ -936,14 +936,14 @@ void convertBindGroupDescriptor(const BindGroupDescriptor& descriptor, std::vect
                 outEntries[i].resource.buffer.offset = entry.offset;
                 outEntries[i].resource.buffer.size = entry.size;
             }
-        } else if (entry.resource.index() == 1) {
+        } else if (std::holds_alternative<std::shared_ptr<Sampler>>(entry.resource)) {
             outEntries[i].type = GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER;
             auto sampler = std::get<std::shared_ptr<Sampler>>(entry.resource);
             auto samplerImpl = std::dynamic_pointer_cast<SamplerImpl>(sampler);
             if (samplerImpl) {
                 outEntries[i].resource.sampler = samplerImpl->getHandle();
             }
-        } else if (entry.resource.index() == 2) {
+        } else if (std::holds_alternative<std::shared_ptr<TextureView>>(entry.resource)) {
             outEntries[i].type = GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW;
             auto textureView = std::get<std::shared_ptr<TextureView>>(entry.resource);
             auto textureViewImpl = std::dynamic_pointer_cast<TextureViewImpl>(textureView);
