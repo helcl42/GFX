@@ -51,7 +51,7 @@ TextureLayout TextureImpl::getLayout() const
     return cLayoutToCppLayout(layout);
 }
 
-std::shared_ptr<TextureView> TextureImpl::createView(const TextureViewDescriptor& descriptor)
+std::shared_ptr<TextureView> TextureImpl::createView(const TextureViewDescriptor& descriptor) const
 {
     GfxTextureViewDescriptor cDesc;
     convertTextureViewDescriptor(descriptor, cDesc);

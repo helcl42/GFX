@@ -15,9 +15,9 @@ public:
     ~SwapchainImpl() override;
 
     SwapchainInfo getInfo() const override;
-    std::shared_ptr<TextureView> getCurrentTextureView() override;
+    std::shared_ptr<TextureView> getCurrentTextureView() const override;
     Result acquireNextImage(uint64_t timeout, std::shared_ptr<Semaphore> signalSemaphore, std::shared_ptr<Fence> signalFence, uint32_t* imageIndex) override;
-    std::shared_ptr<TextureView> getTextureView(uint32_t index) override;
+    std::shared_ptr<TextureView> getTextureView(uint32_t index) const override;
     Result present(const PresentDescriptor& descriptor) override;
 
 private:

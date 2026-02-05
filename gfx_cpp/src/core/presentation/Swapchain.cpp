@@ -26,7 +26,7 @@ SwapchainInfo SwapchainImpl::getInfo() const
     return cSwapchainInfoToCppSwapchainInfo(cInfo);
 }
 
-std::shared_ptr<TextureView> SwapchainImpl::getCurrentTextureView()
+std::shared_ptr<TextureView> SwapchainImpl::getCurrentTextureView() const
 {
     GfxTextureView view = nullptr;
     GfxResult result = gfxSwapchainGetCurrentTextureView(m_handle, &view);
@@ -45,7 +45,7 @@ Result SwapchainImpl::acquireNextImage(uint64_t timeout, std::shared_ptr<Semapho
     return cResultToCppResult(result);
 }
 
-std::shared_ptr<TextureView> SwapchainImpl::getTextureView(uint32_t index)
+std::shared_ptr<TextureView> SwapchainImpl::getTextureView(uint32_t index) const
 {
     GfxTextureView view = nullptr;
     GfxResult result = gfxSwapchainGetTextureView(m_handle, index, &view);

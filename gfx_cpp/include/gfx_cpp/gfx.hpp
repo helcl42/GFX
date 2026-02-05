@@ -1254,13 +1254,13 @@ public:
     virtual SwapchainInfo getInfo() const = 0;
 
     // Get the current frame's texture view for rendering
-    virtual std::shared_ptr<TextureView> getCurrentTextureView() = 0;
+    virtual std::shared_ptr<TextureView> getCurrentTextureView() const = 0;
 
     // Present the current frame
     virtual Result acquireNextImage(uint64_t timeout, std::shared_ptr<Semaphore> signalSemaphore, std::shared_ptr<Fence> signalFence, uint32_t* imageIndex) = 0;
 
     // Get texture view for a specific swapchain image index
-    virtual std::shared_ptr<TextureView> getTextureView(uint32_t index) = 0;
+    virtual std::shared_ptr<TextureView> getTextureView(uint32_t index) const = 0;
 
     // Present with explicit synchronization
     virtual Result present(const PresentDescriptor& descriptor) = 0;
@@ -1293,8 +1293,17 @@ public:
     template <typename T>
     void write(const std::vector<T>& data, uint64_t offset = 0)
     {
+        if (data.empty()) {
+            return; // Nothing to write - valid no-op
+        }
+        
+        const auto info = getInfo();
+        if (!hasFlag(info.usage, BufferUsage::MapWrite)) {
+            throw std::runtime_error("Buffer must have MapWrite usage for write() operation");
+        }
+        
         const uint64_t writeSize = data.size() * sizeof(T);
-        const uint64_t bufferSize = getInfo().size;
+        const uint64_t bufferSize = info.size;
         
         if (offset + writeSize > bufferSize) {
             throw std::runtime_error("Buffer write would exceed buffer capacity: offset=" + 
@@ -1307,8 +1316,13 @@ public:
             throw std::runtime_error("Failed to map buffer for writing");
         }
         
+        // Use RAII pattern: unmap even if memcpy throws (though it shouldn't in practice)
+        struct ScopedUnmap {
+            Buffer* buffer;
+            ~ScopedUnmap() { buffer->unmap(); }
+        } scopedUnmap{this};
+        
         std::memcpy(ptr, data.data(), writeSize);
-        unmap();
     }
 };
 
@@ -1320,7 +1334,7 @@ public:
     virtual void* getNativeHandle() const = 0;
     virtual TextureLayout getLayout() const = 0;
 
-    virtual std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) = 0;
+    virtual std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) const = 0;
 };
 
 class TextureView {
@@ -1472,6 +1486,9 @@ public:
     template <typename T>
     void writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const std::vector<T>& data)
     {
+        if (data.empty()) {
+            return; // Nothing to write - valid no-op
+        }
         writeBuffer(buffer, offset, data.data(), data.size() * sizeof(T));
     }
 };

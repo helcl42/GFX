@@ -19,7 +19,7 @@ public:
     TextureInfo getInfo() const override;
     void* getNativeHandle() const override;
     TextureLayout getLayout() const override;
-    std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) override;
+    std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) const override;
 
 private:
     GfxTexture m_handle;
