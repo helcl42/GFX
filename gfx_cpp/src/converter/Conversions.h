@@ -123,6 +123,9 @@ GfxBlendOperation cppBlendOperationToCBlendOperation(BlendOperation op);
 // Blend factor conversions
 GfxBlendFactor cppBlendFactorToCBlendFactor(BlendFactor factor);
 
+// Color write mask conversions
+GfxColorWriteMask cppColorWriteMaskToCColorWriteMask(ColorWriteMask mask);
+
 // Primitive topology conversions
 GfxPrimitiveTopology cppPrimitiveTopologyToCPrimitiveTopology(PrimitiveTopology topology);
 

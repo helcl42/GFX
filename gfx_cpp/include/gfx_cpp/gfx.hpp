@@ -359,6 +359,52 @@ inline T operator&(T a, T b)
     return static_cast<T>(static_cast<U>(a) & static_cast<U>(b));
 }
 
+template <typename T>
+inline T operator^(T a, T b)
+{
+    using U = std::underlying_type_t<T>;
+    return static_cast<T>(static_cast<U>(a) ^ static_cast<U>(b));
+}
+
+template <typename T>
+inline T operator~(T a)
+{
+    using U = std::underlying_type_t<T>;
+    return static_cast<T>(~static_cast<U>(a));
+}
+
+template <typename T>
+inline T& operator|=(T& a, T b)
+{
+    using U = std::underlying_type_t<T>;
+    a = static_cast<T>(static_cast<U>(a) | static_cast<U>(b));
+    return a;
+}
+
+template <typename T>
+inline T& operator&=(T& a, T b)
+{
+    using U = std::underlying_type_t<T>;
+    a = static_cast<T>(static_cast<U>(a) & static_cast<U>(b));
+    return a;
+}
+
+template <typename T>
+inline T& operator^=(T& a, T b)
+{
+    using U = std::underlying_type_t<T>;
+    a = static_cast<T>(static_cast<U>(a) ^ static_cast<U>(b));
+    return a;
+}
+
+// Helper to check if flags are set
+template <typename T>
+inline bool hasFlag(T value, T flag)
+{
+    using U = std::underlying_type_t<T>;
+    return (static_cast<U>(value) & static_cast<U>(flag)) == static_cast<U>(flag);
+}
+
 struct Color {
     float r = 0.0f;
     float g = 0.0f;
@@ -728,13 +774,13 @@ struct BlendState {
 };
 
 // Color write mask flags (can be combined with bitwise OR)
-enum ColorWriteMask : uint32_t {
+enum class ColorWriteMask : uint32_t {
     None = 0x0,
     Red = 0x1,
     Green = 0x2,
     Blue = 0x4,
     Alpha = 0x8,
-    All = Red | Green | Blue | Alpha // R | G | B | A
+    All = Red | Green | Blue | Alpha
 };
 
 struct ColorTargetState {

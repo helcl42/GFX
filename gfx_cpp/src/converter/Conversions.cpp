@@ -576,6 +576,11 @@ GfxBlendFactor cppBlendFactorToCBlendFactor(BlendFactor factor)
     return static_cast<GfxBlendFactor>(factor);
 }
 
+GfxColorWriteMask cppColorWriteMaskToCColorWriteMask(ColorWriteMask mask)
+{
+    return static_cast<GfxColorWriteMask>(static_cast<uint32_t>(mask));
+}
+
 GfxPrimitiveTopology cppPrimitiveTopologyToCPrimitiveTopology(PrimitiveTopology topology)
 {
     return static_cast<GfxPrimitiveTopology>(topology);
@@ -1180,7 +1185,7 @@ void convertFragmentState(const FragmentState& input, GfxShader fragmentShaderHa
     for (const auto& target : input.targets) {
         GfxColorTargetState cTarget = {};
         cTarget.format = cppFormatToCFormat(target.format);
-        cTarget.writeMask = target.writeMask;
+        cTarget.writeMask = cppColorWriteMaskToCColorWriteMask(target.writeMask);
 
         if (target.blend.has_value()) {
             GfxBlendState cBlend = {};
