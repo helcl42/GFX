@@ -69,12 +69,6 @@ Device* Buffer::getDevice() const
 // Returns mapped pointer on success, nullptr on failure
 void* Buffer::map(uint64_t offset, uint64_t size)
 {
-    // If size is 0, map the entire buffer from offset
-    uint64_t mapSize = size;
-    if (mapSize == 0) {
-        mapSize = m_info.size - offset;
-    }
-
     // Determine map mode based on original GFX usage flags (not WebGPU usage)
     // WebGPU usage is derived from GFX usage and has MapRead/MapWrite
     WGPUMapMode mapMode = WGPUMapMode_None;
@@ -86,6 +80,20 @@ void* Buffer::map(uint64_t offset, uint64_t size)
     }
 
     if (mapMode == WGPUMapMode_None) {
+        return nullptr;
+    }
+
+    if (offset > m_info.size) {
+        return nullptr;
+    }
+
+    // If size is 0, map the entire buffer from offset
+    uint64_t mapSize = size;
+    if (mapSize == 0) {
+        mapSize = m_info.size - offset;
+    }
+
+    if(offset + mapSize > m_info.size) {
         return nullptr;
     }
 

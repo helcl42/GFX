@@ -133,10 +133,10 @@ void Queue::waitIdle()
 
 void Queue::writeBuffer(Buffer* buffer, uint64_t offset, const void* data, uint64_t size)
 {
-    void* mapped = buffer->map();
+    void* mapped = buffer->map(offset, size);
     if (mapped) {
         // Buffer is host-visible, can map directly
-        memcpy(static_cast<char*>(mapped) + offset, data, size);
+        memcpy(mapped, data, size);
         buffer->unmap();
     } else {
         // Buffer is not host-visible (device-local), use staging buffer

@@ -78,14 +78,30 @@ Buffer::~Buffer()
     }
 }
 
-void* Buffer::map()
+void* Buffer::map(uint64_t offset, uint64_t size)
 {
     if ((m_info.memoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
         return nullptr;
     }
 
+    if (offset > m_info.size) {
+        return nullptr;
+    }
+
+    uint64_t mapSize = size;
+    if (mapSize == 0) {
+        mapSize = m_info.size - offset;
+    }
+
+    if(offset + mapSize > m_info.size) {
+        return nullptr;
+    }
+
     void* data;
-    vkMapMemory(m_device->handle(), m_memory, 0, m_info.size, 0, &data);
+    VkResult result = vkMapMemory(m_device->handle(), m_memory, offset, mapSize, 0, &data);
+    if (result != VK_SUCCESS) {
+        return nullptr;
+    }
     return data;
 }
 

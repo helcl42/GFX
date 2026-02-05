@@ -195,7 +195,7 @@ TEST_F(VulkanBufferTest, MapBuffer_HostVisible_MapsSuccessfully)
 
     gfx::backend::vulkan::core::Buffer buffer(device.get(), createInfo);
 
-    void* mappedPtr = buffer.map();
+    void* mappedPtr = buffer.map(0, buffer.size());
     EXPECT_NE(mappedPtr, nullptr);
 
     buffer.unmap();
@@ -210,7 +210,7 @@ TEST_F(VulkanBufferTest, MapBuffer_WriteData_SuccessfullyWrites)
 
     gfx::backend::vulkan::core::Buffer buffer(device.get(), createInfo);
 
-    void* mappedPtr = buffer.map();
+    void* mappedPtr = buffer.map(0, buffer.size());
     ASSERT_NE(mappedPtr, nullptr);
 
     // Write test data
@@ -239,12 +239,12 @@ TEST_F(VulkanBufferTest, MapUnmapBuffer_MultipleTimes_WorksCorrectly)
     gfx::backend::vulkan::core::Buffer buffer(device.get(), createInfo);
 
     // First map/unmap
-    void* mappedPtr1 = buffer.map();
+    void* mappedPtr1 = buffer.map(0, buffer.size());
     EXPECT_NE(mappedPtr1, nullptr);
     buffer.unmap();
 
     // Second map/unmap
-    void* mappedPtr2 = buffer.map();
+    void* mappedPtr2 = buffer.map(0, buffer.size());
     EXPECT_NE(mappedPtr2, nullptr);
     buffer.unmap();
 
@@ -265,7 +265,7 @@ TEST_F(VulkanBufferTest, FlushMappedRange_NonCoherentMemory_NoThrow)
 
     gfx::backend::vulkan::core::Buffer buffer(device.get(), createInfo);
 
-    void* mappedPtr = buffer.map();
+    void* mappedPtr = buffer.map(0, buffer.size());
     ASSERT_NE(mappedPtr, nullptr);
 
     // Write some data
@@ -286,7 +286,7 @@ TEST_F(VulkanBufferTest, FlushMappedRange_CoherentMemory_IsNoOp)
 
     gfx::backend::vulkan::core::Buffer buffer(device.get(), createInfo);
 
-    void* mappedPtr = buffer.map();
+    void* mappedPtr = buffer.map(0, buffer.size());
     ASSERT_NE(mappedPtr, nullptr);
 
     // Flush on coherent memory should be a no-op (returns immediately)
@@ -307,7 +307,7 @@ TEST_F(VulkanBufferTest, InvalidateMappedRange_NonCoherentMemory_NoThrow)
     // Invalidate should not throw
     EXPECT_NO_THROW(buffer.invalidateMappedRange(0, 2048));
 
-    void* mappedPtr = buffer.map();
+    void* mappedPtr = buffer.map(0, buffer.size());
     EXPECT_NE(mappedPtr, nullptr);
 
     buffer.unmap();
@@ -322,7 +322,7 @@ TEST_F(VulkanBufferTest, FlushInvalidate_PartialRange_NoThrow)
 
     gfx::backend::vulkan::core::Buffer buffer(device.get(), createInfo);
 
-    void* mappedPtr = buffer.map();
+    void* mappedPtr = buffer.map(0, buffer.size());
     ASSERT_NE(mappedPtr, nullptr);
 
     // Flush/invalidate partial ranges

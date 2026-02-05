@@ -906,11 +906,12 @@ GfxResult Backend::bufferMap(GfxBuffer buffer, uint64_t offset, uint64_t size, v
         return validationResult;
     }
 
-    (void)offset;
-    (void)size;
-
     auto* buf = converter::toNative<core::Buffer>(buffer);
-    *outMappedPointer = buf->map();
+    void* mapped = buf->map(offset, size);
+    if (!mapped) {
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
+    *outMappedPointer = mapped;
     return GFX_RESULT_SUCCESS;
 }
 
