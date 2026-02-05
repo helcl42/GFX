@@ -11,6 +11,171 @@
 #include <variant>
 #include <vector>
 
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
+//
+// **Error Handling Strategy:**
+// - `Result` is used for operations where **recovery/retry is expected**:
+//   - `Swapchain::acquireNextImage()` - Can timeout or be out-of-date (recreate swapchain)
+//   - `Swapchain::present()` - Can be out-of-date or surface lost (recreate swapchain)
+//   - `Fence::wait()` - Can timeout (retry) or encounter device lost (handle gracefully)
+//   - `Semaphore::wait()` - Can timeout (retry) or encounter device lost (handle gracefully)
+//   - `Queue::submit()` - Can encounter device lost or out-of-memory (handle gracefully)
+//
+// - **Exceptions** are used for programming errors and unrecoverable failures:
+//   - Invalid arguments (nullptr, invalid enum values)
+//   - Resource creation failures (out of memory during createBuffer, etc.)
+//   - Backend not loaded or feature not supported
+//
+// **Usage Pattern:**
+//   auto result = fence->wait(timeout);
+//   if (isSuccess(result)) {
+//       // Success - continue
+//   } else if (result == Result::Timeout) {
+//       // Timeout - retry or handle timeout
+//   } else {
+//       // Error - handle device lost, out of memory, etc.
+//   }
+//
+// **Helper Functions:**
+// - `isOk(result)` - Returns true for Success, Timeout, NotReady (non-error results)
+// - `isError(result)` - Returns true for error codes (negative values)
+// - `isSuccess(result)` - Returns true only for Success
+
+// ============================================================================
+// MEMORY OWNERSHIP AND RESOURCE LIFETIME
+// ============================================================================
+//
+// **Smart Pointer Ownership:**
+// - All objects are managed via `std::shared_ptr<T>`
+// - The library uses shared ownership - objects stay alive as long as any shared_ptr exists
+// - Objects are automatically destroyed when the last shared_ptr is released
+// - No explicit destroy methods - use RAII and let shared_ptr handle cleanup
+//
+// **Resource Dependencies:**
+// 
+// Pipelines reference other objects:
+//   auto shader = device->createShader(desc);
+//   auto pipeline = device->createRenderPipeline(desc); // desc references shader
+//   // Pipeline keeps shader alive via internal shared_ptr
+//   shader.reset(); // OK - pipeline still holds reference
+//   // When pipeline is destroyed, shader is released
+//
+// Bind groups reference resources:
+//   auto buffer = device->createBuffer(desc);
+//   auto bindGroup = device->createBindGroup(desc); // desc references buffer
+//   // Bind group keeps buffer alive via internal shared_ptr
+//   buffer.reset(); // OK - bind group still holds reference
+//
+// Framebuffers reference texture views:
+//   auto view = texture->createView();
+//   auto framebuffer = device->createFramebuffer(desc); // desc references view
+//   // Framebuffer keeps view alive
+//   // View keeps texture alive
+//
+// **Command Encoder Lifetime:**
+//   auto encoder = device->createCommandEncoder();
+//   encoder->copyBuffer(src, dst, size);
+//   encoder->end();
+//   queue->submit({.commandEncoders = {encoder}});
+//   // submit() copies commands internally - encoder can be released immediately
+//   encoder.reset(); // Safe - commands are already copied to GPU
+//
+// **GPU Synchronization:**
+//
+// Objects can be released from CPU side, but GPU may still be using them:
+//   auto buffer = device->createBuffer(desc);
+//   queue->submit({.commandEncoders = {encoder}}); // encoder uses buffer
+//   buffer.reset(); // Safe - internal reference kept until GPU finishes
+//
+// The library automatically keeps resources alive while GPU is using them.
+// However, for performance, explicitly wait when you need certainty:
+//   auto fence = device->createFence();
+//   queue->submit({.commandEncoders = {encoder}, .signalFence = fence});
+//   fence->wait(UINT64_MAX); // Ensure GPU finished
+//   // Now safe to release and know GPU is done
+//
+// **Mapping Lifetime:**
+//   auto buffer = device->createBuffer(desc);
+//   void* ptr = buffer->map();
+//   memcpy(ptr, data, size);
+//   buffer->unmap();
+//   // ptr is now INVALID - accessing it is undefined behavior
+//   // Only one map per buffer at a time
+//
+// **String Ownership:**
+//
+// Input strings (copied by library):
+//   BufferDescriptor desc{.label = "MyBuffer"};
+//   auto buffer = device->createBuffer(desc);
+//   // label is copied - can be freed/changed immediately
+//
+// Output strings (owned by objects):
+//   auto info = adapter->getInfo();
+//   std::string name = info.name; // Copy if needed beyond adapter lifetime
+//   // info.name is only valid while adapter is alive
+//
+// **Best Practices:**
+// - Let RAII handle cleanup - don't manually reset shared_ptr unless necessary
+// - Use fences when you need deterministic cleanup timing
+// - Keep resources in scope while recording commands, release after submit
+// - Objects are thread-safe for concurrent access after creation completes
+
+// ============================================================================
+// THREAD SAFETY
+// ============================================================================
+//
+// **General Rules:**
+// - All `createXxx()` methods on `Device` are thread-safe and can be called concurrently
+// - Reading immutable properties (getInfo(), getLimits(), etc.) is thread-safe
+// - Different objects can be used concurrently from different threads
+// - Using the **same object** from multiple threads requires external synchronization
+//
+// **Queue Operations:**
+// - `Queue::submit()` - Thread-safe, can be called from multiple threads concurrently
+// - `Queue::writeBuffer()` - Thread-safe
+// - `Queue::writeTexture()` - Thread-safe
+// - `Queue::waitIdle()` - Thread-safe
+//
+// **Command Encoding:**
+// - `CommandEncoder` and its pass encoders (RenderPassEncoder, ComputePassEncoder) are **NOT thread-safe**
+// - Each command encoder must be used by only one thread at a time
+// - Multiple command encoders can be used concurrently on different threads
+//
+// **Synchronization Objects:**
+// - `Fence::wait()` - Thread-safe, multiple threads can wait on the same fence
+// - `Fence::reset()` - **NOT thread-safe**, requires external synchronization
+// - `Semaphore::wait()` - Thread-safe for timeline semaphores
+// - `Semaphore::signal()` - Thread-safe for timeline semaphores
+//
+// **Resource Access:**
+// - Resources (Buffer, Texture, etc.) can be read concurrently
+// - `Buffer::map()` / `Buffer::unmap()` - **NOT thread-safe**, requires external synchronization
+// - Modifying resources requires external synchronization or using queued operations
+//
+// **Swapchain:**
+// - `Swapchain::acquireNextImage()` - **NOT thread-safe**, must be called from one thread
+// - `Swapchain::present()` - **NOT thread-safe**, must be called from one thread
+//
+// **Best Practices:**
+// - Use one command encoder per thread for parallel command recording
+// - Use `Queue::submit()` to submit from multiple threads safely
+// - Protect swapchain operations with a mutex if accessed from multiple threads
+// - Use fences/semaphores for GPU-side synchronization, not CPU threads
+//
+// **Example - Parallel Command Recording:**
+//   // Thread 1
+//   auto encoder1 = device->createCommandEncoder();
+//   // ... record commands ...
+//
+//   // Thread 2
+//   auto encoder2 = device->createCommandEncoder();
+//   // ... record commands ...
+//
+//   // Submit from either thread (thread-safe)
+//   queue->submit({.commandEncoders = {encoder1, encoder2}});
+
 namespace gfx {
 
 // ============================================================================
@@ -263,41 +428,7 @@ enum class QueueFlags : uint32_t {
     SparseBinding = 0x00000008
 };
 
-// ============================================================================
-// Error Handling
-// ============================================================================
-
-/// Result enum for operations that can fail in recoverable ways.
-///
-/// **Error Handling Strategy:**
-/// - `Result` is used for operations where **recovery/retry is expected**:
-///   - `Swapchain::acquireNextImage()` - Can timeout or be out-of-date (recreate swapchain)
-///   - `Swapchain::present()` - Can be out-of-date or surface lost (recreate swapchain)
-///   - `Fence::wait()` - Can timeout (retry) or encounter device lost (handle gracefully)
-///   - `Semaphore::wait()` - Can timeout (retry) or encounter device lost (handle gracefully)
-///   - `Queue::submit()` - Can encounter device lost or out-of-memory (handle gracefully)
-///
-/// - **Exceptions** are used for programming errors and unrecoverable failures:
-///   - Invalid arguments (nullptr, invalid enum values)
-///   - Resource creation failures (out of memory during createBuffer, etc.)
-///   - Backend not loaded or feature not supported
-///
-/// **Usage Pattern:**
-/// ```cpp
-/// auto result = fence->wait(timeout);
-/// if (isSuccess(result)) {
-///     // Success - continue
-/// } else if (result == Result::Timeout) {
-///     // Timeout - retry or handle timeout
-/// } else {
-///     // Error - handle device lost, out of memory, etc.
-/// }
-/// ```
-///
-/// **Helper Functions:**
-/// - `isOk(result)` - Returns true for Success, Timeout, NotReady (non-error results)
-/// - `isError(result)` - Returns true for error codes (negative values)
-/// - `isSuccess(result)` - Returns true only for Success
+// Result enum for operations that can fail in recoverable ways
 enum class Result {
     Success = 0,
     Timeout = 1,
