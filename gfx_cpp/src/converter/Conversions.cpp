@@ -113,6 +113,26 @@ PresentMode cPresentModeToCppPresentMode(GfxPresentMode mode)
     return static_cast<PresentMode>(mode);
 }
 
+GfxOrigin3D cppOrigin3DToCOrigin3D(const Origin3D& origin)
+{
+    return { origin.x, origin.y, origin.z };
+}
+
+Origin3D cOrigin3DToCppOrigin3D(const GfxOrigin3D& origin)
+{
+    return { origin.x, origin.y, origin.z };
+}
+
+GfxExtent3D cppExtent3DToCExtent3D(const Extent3D& extent)
+{
+    return { extent.width, extent.height, extent.depth };
+}
+
+Extent3D cExtent3DToCppExtent3D(const GfxExtent3D& extent)
+{
+    return { extent.width, extent.height, extent.depth };
+}
+
 GfxSampleCount cppSampleCountToCCount(SampleCount sampleCount)
 {
     return static_cast<GfxSampleCount>(sampleCount);
@@ -254,7 +274,7 @@ TextureInfo cTextureInfoToCppTextureInfo(const GfxTextureInfo& cInfo)
 {
     TextureInfo info;
     info.type = cTextureTypeToCppType(cInfo.type);
-    info.size = Extent3D(cInfo.size.width, cInfo.size.height, cInfo.size.depth);
+    info.size = cExtent3DToCppExtent3D(cInfo.size);
     info.arrayLayerCount = cInfo.arrayLayerCount;
     info.mipLevelCount = cInfo.mipLevelCount;
     info.sampleCount = cSampleCountToCppCount(cInfo.sampleCount);
@@ -430,8 +450,8 @@ void convertCopyBufferToTextureDescriptor(const CopyBufferToTextureDescriptor& i
     output.source = srcImpl->getHandle();
     output.sourceOffset = input.sourceOffset;
     output.destination = dstImpl->getHandle();
-    output.origin = { input.origin.x, input.origin.y, input.origin.z };
-    output.extent = { input.extent.width, input.extent.height, input.extent.depth };
+    output.origin = cppOrigin3DToCOrigin3D(input.origin);
+    output.extent = cppExtent3DToCExtent3D(input.extent);
     output.mipLevel = input.mipLevel;
     output.finalLayout = cppLayoutToCLayout(input.finalLayout);
 }
@@ -448,11 +468,11 @@ void convertCopyTextureToBufferDescriptor(const CopyTextureToBufferDescriptor& i
     }
 
     output.source = srcImpl->getHandle();
-    output.origin = { input.origin.x, input.origin.y, input.origin.z };
+    output.origin = cppOrigin3DToCOrigin3D(input.origin);
     output.mipLevel = input.mipLevel;
     output.destination = dstImpl->getHandle();
     output.destinationOffset = input.destinationOffset;
-    output.extent = { input.extent.width, input.extent.height, input.extent.depth };
+    output.extent = cppExtent3DToCExtent3D(input.extent);
     output.finalLayout = cppLayoutToCLayout(input.finalLayout);
 }
 
@@ -468,14 +488,14 @@ void convertCopyTextureToTextureDescriptor(const CopyTextureToTextureDescriptor&
     }
 
     output.source = srcImpl->getHandle();
-    output.sourceOrigin = { input.sourceOrigin.x, input.sourceOrigin.y, input.sourceOrigin.z };
+    output.sourceOrigin = cppOrigin3DToCOrigin3D(input.sourceOrigin);
     output.sourceMipLevel = input.sourceMipLevel;
     output.sourceFinalLayout = cppLayoutToCLayout(input.sourceFinalLayout);
     output.destination = dstImpl->getHandle();
-    output.destinationOrigin = { input.destinationOrigin.x, input.destinationOrigin.y, input.destinationOrigin.z };
+    output.destinationOrigin = cppOrigin3DToCOrigin3D(input.destinationOrigin);
     output.destinationMipLevel = input.destinationMipLevel;
     output.destinationFinalLayout = cppLayoutToCLayout(input.destinationFinalLayout);
-    output.extent = { input.extent.width, input.extent.height, input.extent.depth };
+    output.extent = cppExtent3DToCExtent3D(input.extent);
 }
 
 void convertBlitTextureToTextureDescriptor(const BlitTextureToTextureDescriptor& input, GfxBlitTextureToTextureDescriptor& output)
@@ -490,13 +510,13 @@ void convertBlitTextureToTextureDescriptor(const BlitTextureToTextureDescriptor&
     }
 
     output.source = srcImpl->getHandle();
-    output.sourceOrigin = { input.sourceOrigin.x, input.sourceOrigin.y, input.sourceOrigin.z };
-    output.sourceExtent = { input.sourceExtent.width, input.sourceExtent.height, input.sourceExtent.depth };
+    output.sourceOrigin = cppOrigin3DToCOrigin3D(input.sourceOrigin);
+    output.sourceExtent = cppExtent3DToCExtent3D(input.sourceExtent);
     output.sourceMipLevel = input.sourceMipLevel;
     output.sourceFinalLayout = cppLayoutToCLayout(input.sourceFinalLayout);
     output.destination = dstImpl->getHandle();
-    output.destinationOrigin = { input.destinationOrigin.x, input.destinationOrigin.y, input.destinationOrigin.z };
-    output.destinationExtent = { input.destinationExtent.width, input.destinationExtent.height, input.destinationExtent.depth };
+    output.destinationOrigin = cppOrigin3DToCOrigin3D(input.destinationOrigin);
+    output.destinationExtent = cppExtent3DToCExtent3D(input.destinationExtent);
     output.destinationMipLevel = input.destinationMipLevel;
     output.destinationFinalLayout = cppLayoutToCLayout(input.destinationFinalLayout);
     output.filter = cppFilterModeToCFilterMode(input.filter);
@@ -753,7 +773,7 @@ void convertTextureDescriptor(const TextureDescriptor& descriptor, GfxTextureDes
     outDesc.pNext = NULL;
     outDesc.label = descriptor.label.c_str();
     outDesc.type = cppTextureTypeToCType(descriptor.type);
-    outDesc.size = { descriptor.size.width, descriptor.size.height, descriptor.size.depth };
+    outDesc.size = cppExtent3DToCExtent3D(descriptor.size);
     outDesc.arrayLayerCount = descriptor.arrayLayerCount;
     outDesc.mipLevelCount = descriptor.mipLevelCount;
     outDesc.sampleCount = cppSampleCountToCCount(descriptor.sampleCount);
@@ -769,7 +789,7 @@ void convertTextureImportDescriptor(const TextureImportDescriptor& descriptor, G
     outDesc.label = descriptor.label.c_str();
     outDesc.nativeHandle = descriptor.nativeHandle;
     outDesc.type = cppTextureTypeToCType(descriptor.type);
-    outDesc.size = { descriptor.size.width, descriptor.size.height, descriptor.size.depth };
+    outDesc.size = cppExtent3DToCExtent3D(descriptor.size);
     outDesc.arrayLayerCount = descriptor.arrayLayerCount;
     outDesc.mipLevelCount = descriptor.mipLevelCount;
     outDesc.sampleCount = cppSampleCountToCCount(descriptor.sampleCount);

@@ -45,8 +45,8 @@ void QueueImpl::writeTexture(std::shared_ptr<Texture> texture, const Origin3D& o
     if (!impl) {
         throw std::runtime_error("Invalid texture type");
     }
-    GfxOrigin3D cOrigin = { origin.x, origin.y, origin.z };
-    GfxExtent3D cExtent = { extent.width, extent.height, extent.depth };
+    GfxOrigin3D cOrigin = cppOrigin3DToCOrigin3D(origin);
+    GfxExtent3D cExtent = cppExtent3DToCExtent3D(extent);
     gfxQueueWriteTexture(m_handle, impl->getHandle(), &cOrigin, mipLevel, data, dataSize, &cExtent, cppLayoutToCLayout(finalLayout));
 }
 

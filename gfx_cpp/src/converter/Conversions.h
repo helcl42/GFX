@@ -35,6 +35,14 @@ TextureLayout cLayoutToCppLayout(GfxTextureLayout layout);
 GfxPresentMode cppPresentModeToCPresentMode(PresentMode mode);
 PresentMode cPresentModeToCppPresentMode(GfxPresentMode mode);
 
+// Origin3D conversions
+GfxOrigin3D cppOrigin3DToCOrigin3D(const Origin3D& origin);
+Origin3D cOrigin3DToCppOrigin3D(const GfxOrigin3D& origin);
+
+// Extent3D conversions
+GfxExtent3D cppExtent3DToCExtent3D(const Extent3D& extent);
+Extent3D cExtent3DToCppExtent3D(const GfxExtent3D& extent);
+
 // Sample count conversions
 GfxSampleCount cppSampleCountToCCount(SampleCount sampleCount);
 SampleCount cSampleCountToCppCount(GfxSampleCount sampleCount);
