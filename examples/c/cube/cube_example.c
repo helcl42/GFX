@@ -1166,12 +1166,12 @@ void update(CubeApp* app, float deltaTime)
 void render(CubeApp* app)
 {
     // Wait for previous frame to finish
-    gfxFenceWait(app->inFlightFences[app->currentFrame], UINT64_MAX);
+    gfxFenceWait(app->inFlightFences[app->currentFrame], GFX_TIMEOUT_INFINITE);
     gfxFenceReset(app->inFlightFences[app->currentFrame]);
 
     // Acquire next swapchain image
     uint32_t imageIndex;
-    GfxResult result = gfxSwapchainAcquireNextImage(app->swapchain, UINT64_MAX,
+    GfxResult result = gfxSwapchainAcquireNextImage(app->swapchain, GFX_TIMEOUT_INFINITE,
         app->imageAvailableSemaphores[app->currentFrame], NULL, &imageIndex);
 
     if (result != GFX_RESULT_SUCCESS) {

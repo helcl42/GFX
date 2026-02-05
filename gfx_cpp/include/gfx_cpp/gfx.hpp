@@ -179,6 +179,16 @@
 namespace gfx {
 
 // ============================================================================
+// Common Constants
+// ============================================================================
+
+// Special timeout value for infinite wait (used with Fence::wait, Semaphore::wait)
+inline constexpr uint64_t TimeoutInfinite = UINT64_MAX;
+
+// Special size value to map entire buffer from offset (used with Buffer::write)
+inline constexpr uint64_t WholeSize = 0;
+
+// ============================================================================
 // Core Enumerations
 // ============================================================================
 

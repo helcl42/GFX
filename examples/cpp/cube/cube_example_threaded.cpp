@@ -1429,11 +1429,11 @@ void CubeApp::recordResolveCommands(uint32_t imageIndex)
 
 void CubeApp::render()
 {
-    gfxFenceWait(inFlightFences[currentFrame], UINT64_MAX);
+    gfxFenceWait(inFlightFences[currentFrame], GFX_TIMEOUT_INFINITE);
     gfxFenceReset(inFlightFences[currentFrame]);
 
     uint32_t imageIndex;
-    GfxResult result = gfxSwapchainAcquireNextImage(swapchain, UINT64_MAX,
+    GfxResult result = gfxSwapchainAcquireNextImage(swapchain, GFX_TIMEOUT_INFINITE,
         imageAvailableSemaphores[currentFrame], nullptr, &imageIndex);
 
     if (result != GFX_RESULT_SUCCESS) {

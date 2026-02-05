@@ -890,7 +890,7 @@ void CubeApp::render()
 {
     try {
         // Wait for this frame's fence to be signaled
-        auto waitResult = inFlightFences[currentFrame]->wait(UINT64_MAX);
+        auto waitResult = inFlightFences[currentFrame]->wait(gfx::TimeoutInfinite);
         if (!gfx::isSuccess(waitResult)) {
             throw std::runtime_error("Failed to wait for fence");
         }
@@ -899,7 +899,7 @@ void CubeApp::render()
         // Acquire next image with explicit synchronization
         uint32_t imageIndex;
         auto result = swapchain->acquireNextImage(
-            UINT64_MAX,
+            gfx::TimeoutInfinite,
             imageAvailableSemaphores[currentFrame],
             nullptr,
             &imageIndex);

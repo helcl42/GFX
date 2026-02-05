@@ -25,6 +25,16 @@
 #define GFX_VERSION GFX_MAKE_VERSION(GFX_VERSION_MAJOR, GFX_VERSION_MINOR, GFX_VERSION_PATCH)
 
 // ============================================================================
+// Common Constants
+// ============================================================================
+
+// Special timeout value for infinite wait (used with gfxFenceWait, gfxSemaphoreWait)
+#define GFX_TIMEOUT_INFINITE UINT64_MAX
+
+// Special size value to map entire buffer from offset (used with gfxBufferMap)
+#define GFX_WHOLE_SIZE 0
+
+// ============================================================================
 // ERROR HANDLING
 // ============================================================================
 //

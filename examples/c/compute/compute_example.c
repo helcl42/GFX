@@ -1079,7 +1079,7 @@ static void render(ComputeApp* app)
     uint32_t frameIndex = app->currentFrame;
 
     // Wait for previous frame
-    gfxFenceWait(app->inFlightFences[frameIndex], UINT64_MAX);
+    gfxFenceWait(app->inFlightFences[frameIndex], GFX_TIMEOUT_INFINITE);
     gfxFenceReset(app->inFlightFences[frameIndex]);
 
     // Acquire swapchain image

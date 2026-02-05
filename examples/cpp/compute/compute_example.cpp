@@ -474,7 +474,7 @@ bool ComputeApp::createComputeResources()
             submitDescriptor.signalFence = initFence;
 
             queue->submit(submitDescriptor);
-            auto waitResult = initFence->wait(UINT64_MAX);
+            auto waitResult = initFence->wait(gfx::TimeoutInfinite);
             if (!gfx::isSuccess(waitResult)) {
                 throw std::runtime_error("Failed to wait for init fence");
             }
@@ -802,7 +802,7 @@ void ComputeApp::render()
         size_t frameIndex = currentFrame;
 
         // Wait for previous frame
-        auto waitResult = inFlightFences[frameIndex]->wait(UINT64_MAX);
+        auto waitResult = inFlightFences[frameIndex]->wait(gfx::TimeoutInfinite);
         if (!gfx::isSuccess(waitResult)) {
             throw std::runtime_error("Failed to wait for frame fence");
         }
