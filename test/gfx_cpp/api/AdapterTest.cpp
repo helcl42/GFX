@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <string>
+
 // ===========================================================================
 // Parameterized Tests - Run on both Vulkan and WebGPU backends
 // ===========================================================================
