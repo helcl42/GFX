@@ -81,7 +81,6 @@ GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapter
         gfx::common::Logger::instance().logError("Failed to request adapter: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
-    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters) const
@@ -126,7 +125,6 @@ GfxResult Backend::enumerateInstanceExtensions(uint32_t* extensionCount, const c
         extensionNames[i] = converter::instanceExtensionNameToGfx(internalExtensions[i]);
     }
     *extensionCount = static_cast<uint32_t>(internalExtensions.size());
-
     return GFX_RESULT_SUCCESS;
 }
 
@@ -538,8 +536,6 @@ GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommand
         gfx::common::Logger::instance().logError("Failed to create command encoder: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
-
-    (void)descriptor->label; // Unused for now
 }
 
 GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
@@ -559,7 +555,6 @@ GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassD
         gfx::common::Logger::instance().logError("Failed to create render pass: {}", e.what());
         return GFX_RESULT_ERROR_UNKNOWN;
     }
-    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const

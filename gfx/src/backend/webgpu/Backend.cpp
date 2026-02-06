@@ -139,7 +139,6 @@ GfxResult Backend::enumerateInstanceExtensions(uint32_t* extensionCount, const c
         extensionNames[i] = converter::instanceExtensionNameToGfx(internalExtensions[i]);
     }
     *extensionCount = static_cast<uint32_t>(internalExtensions.size());
-
     return GFX_RESULT_SUCCESS;
 }
 
@@ -245,7 +244,6 @@ GfxResult Backend::adapterEnumerateExtensions(GfxAdapter adapter, uint32_t* exte
         extensionNames[i] = converter::deviceExtensionNameToGfx(internalExtensions[i]);
     }
     *extensionCount = static_cast<uint32_t>(internalExtensions.size());
-
     return GFX_RESULT_SUCCESS;
 }
 
@@ -874,7 +872,6 @@ GfxResult Backend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentDesc
 
     auto* swapchainPtr = converter::toNative<core::Swapchain>(swapchain);
     swapchainPtr->present();
-
     return GFX_RESULT_SUCCESS;
 }
 
@@ -1526,8 +1523,7 @@ GfxResult Backend::renderPassEncoderSetViewport(GfxRenderPassEncoder renderPassE
     }
 
     auto* encoderPtr = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
-    encoderPtr->setViewport(viewport->x, viewport->y, viewport->width, viewport->height,
-        viewport->minDepth, viewport->maxDepth);
+    encoderPtr->setViewport(viewport->x, viewport->y, viewport->width, viewport->height, viewport->minDepth, viewport->maxDepth);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -1792,7 +1788,6 @@ GfxResult Backend::semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_
 
     auto* semaphorePtr = converter::toNative<core::Semaphore>(semaphore);
     bool satisfied = semaphorePtr->wait(value, timeoutNs);
-
     return satisfied ? GFX_RESULT_SUCCESS : GFX_RESULT_TIMEOUT;
 }
 
