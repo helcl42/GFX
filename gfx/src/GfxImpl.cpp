@@ -400,135 +400,41 @@ DEVICE_CREATE_FUNC(BindGroupLayout, BindGroupLayout)
 DEVICE_CREATE_FUNC(BindGroup, BindGroup)
 DEVICE_CREATE_FUNC(RenderPipeline, RenderPipeline)
 DEVICE_CREATE_FUNC(ComputePipeline, ComputePipeline)
+DEVICE_CREATE_FUNC(CommandEncoder, CommandEncoder)
+DEVICE_CREATE_FUNC(RenderPass, RenderPass)
+DEVICE_CREATE_FUNC(Framebuffer, Framebuffer)
+DEVICE_CREATE_FUNC(Swapchain, Swapchain)
 DEVICE_CREATE_FUNC(Fence, Fence)
 DEVICE_CREATE_FUNC(Semaphore, Semaphore)
 DEVICE_CREATE_FUNC(QuerySet, QuerySet)
 
-// Import functions for external resources
-GfxResult gfxDeviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer)
-{
-    if (!device || !outBuffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    auto backend = gfx::backend::BackendManager::instance().getBackend(device);
-    if (!backend) {
-        return GFX_RESULT_ERROR_NOT_FOUND;
-    }
-    GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);
-    GfxBuffer nativeBuffer = nullptr;
-    GfxResult result = backend->deviceImportBuffer(device, descriptor, &nativeBuffer);
-    if (result != GFX_RESULT_SUCCESS) {
-        return result;
-    }
-    *outBuffer = gfx::backend::BackendManager::instance().wrap(backendType, nativeBuffer);
-    return GFX_RESULT_SUCCESS;
-}
+#undef DEVICE_CREATE_FUNC
 
-GfxResult gfxDeviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture)
-{
-    if (!device || !outTexture) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    auto backend = gfx::backend::BackendManager::instance().getBackend(device);
-    if (!backend) {
-        return GFX_RESULT_ERROR_NOT_FOUND;
-    }
-    GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);
-    GfxTexture nativeTexture = nullptr;
-    GfxResult result = backend->deviceImportTexture(device, descriptor, &nativeTexture);
-    if (result != GFX_RESULT_SUCCESS) {
-        return result;
-    }
-    *outTexture = gfx::backend::BackendManager::instance().wrap(backendType, nativeTexture);
-    return GFX_RESULT_SUCCESS;
-}
-
-GfxResult gfxDeviceCreateSwapchain(GfxDevice device, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain)
-{
-    if (!device || !outSwapchain) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    if (!descriptor || !descriptor->surface) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    auto backend = gfx::backend::BackendManager::instance().getBackend(device);
-    if (!backend) {
-        return GFX_RESULT_ERROR_NOT_FOUND;
+// Macro to generate device import functions
+#define DEVICE_IMPORT_FUNC(TypeName)                                                                                                       \
+    GfxResult gfxDeviceImport##TypeName(GfxDevice device, const Gfx##TypeName##ImportDescriptor* descriptor, Gfx##TypeName* out##TypeName) \
+    {                                                                                                                                      \
+        if (!device || !descriptor || !out##TypeName) {                                                                                    \
+            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                      \
+        }                                                                                                                                  \
+        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                        \
+        if (!backend) {                                                                                                                    \
+            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                             \
+        }                                                                                                                                  \
+        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                          \
+        Gfx##TypeName native##TypeName = nullptr;                                                                                          \
+        GfxResult result = backend->deviceImport##TypeName(device, descriptor, &native##TypeName);                                         \
+        if (result != GFX_RESULT_SUCCESS) {                                                                                                \
+            return result;                                                                                                                 \
+        }                                                                                                                                  \
+        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                                     \
+        return GFX_RESULT_SUCCESS;                                                                                                         \
     }
 
-    GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);
-    GfxSwapchain nativeSwapchain = nullptr;
-    GfxResult result = backend->deviceCreateSwapchain(device, descriptor, &nativeSwapchain);
+DEVICE_IMPORT_FUNC(Buffer)
+DEVICE_IMPORT_FUNC(Texture)
 
-    if (result != GFX_RESULT_SUCCESS) {
-        return result;
-    }
-    *outSwapchain = gfx::backend::BackendManager::instance().wrap(backendType, nativeSwapchain);
-    return GFX_RESULT_SUCCESS;
-}
-
-GfxResult gfxDeviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder)
-{
-    if (!device || !outEncoder) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    auto backend = gfx::backend::BackendManager::instance().getBackend(device);
-    if (!backend) {
-        return GFX_RESULT_ERROR_NOT_FOUND;
-    }
-
-    GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);
-    GfxCommandEncoder nativeEncoder = nullptr;
-    GfxResult result = backend->deviceCreateCommandEncoder(device, descriptor, &nativeEncoder);
-    if (result != GFX_RESULT_SUCCESS) {
-        return result;
-    }
-
-    *outEncoder = gfx::backend::BackendManager::instance().wrap(backendType, nativeEncoder);
-    return GFX_RESULT_SUCCESS;
-}
-
-GfxResult gfxDeviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass)
-{
-    if (!device || !outRenderPass) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    auto backend = gfx::backend::BackendManager::instance().getBackend(device);
-    if (!backend) {
-        return GFX_RESULT_ERROR_NOT_FOUND;
-    }
-
-    GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);
-    GfxRenderPass nativeRenderPass = nullptr;
-    GfxResult result = backend->deviceCreateRenderPass(device, descriptor, &nativeRenderPass);
-    if (result != GFX_RESULT_SUCCESS) {
-        return result;
-    }
-
-    *outRenderPass = gfx::backend::BackendManager::instance().wrap(backendType, nativeRenderPass);
-    return GFX_RESULT_SUCCESS;
-}
-
-GfxResult gfxDeviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer)
-{
-    if (!device || !outFramebuffer) {
-        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
-    }
-    auto backend = gfx::backend::BackendManager::instance().getBackend(device);
-    if (!backend) {
-        return GFX_RESULT_ERROR_NOT_FOUND;
-    }
-
-    GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);
-    GfxFramebuffer nativeFramebuffer = nullptr;
-    GfxResult result = backend->deviceCreateFramebuffer(device, descriptor, &nativeFramebuffer);
-    if (result != GFX_RESULT_SUCCESS) {
-        return result;
-    }
-
-    *outFramebuffer = gfx::backend::BackendManager::instance().wrap(backendType, nativeFramebuffer);
-    return GFX_RESULT_SUCCESS;
-}
+#undef DEVICE_IMPORT_FUNC
 
 GfxResult gfxDeviceWaitIdle(GfxDevice device)
 {
@@ -599,6 +505,8 @@ DESTROY_FUNC(CommandEncoder, commandEncoder)
 DESTROY_FUNC(Fence, fence)
 DESTROY_FUNC(Semaphore, semaphore)
 DESTROY_FUNC(QuerySet, querySet)
+
+#undef DESTROY_FUNC
 
 // Surface Functions
 GfxResult gfxSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats)
