@@ -54,7 +54,7 @@
 // - No explicit destroy methods - use RAII and let shared_ptr handle cleanup
 //
 // **Resource Dependencies:**
-// 
+//
 // Pipelines reference other objects:
 //   auto shader = device->createShader(desc);
 //   auto pipeline = device->createRenderPipeline(desc); // desc references shader
@@ -803,14 +803,14 @@ using LogCallback = std::function<void(LogLevel level, const std::string& messag
 // Use dynamic_cast to determine the actual type at runtime
 struct ChainedStruct {
     const ChainedStruct* next = nullptr;
-    
+
     ChainedStruct() = default;
     virtual ~ChainedStruct() = default;
-    
+
     // Prevent copying to avoid slicing
     ChainedStruct(const ChainedStruct&) = delete;
     ChainedStruct& operator=(const ChainedStruct&) = delete;
-    
+
     // Allow moving
     ChainedStruct(ChainedStruct&&) noexcept = default;
     ChainedStruct& operator=(ChainedStruct&&) noexcept = default;
@@ -1174,7 +1174,7 @@ struct AdapterInfo {
 struct SubmitDescriptor {
     // Extension chain support (not yet passed to C API)
     const ChainedStruct* next = nullptr;
-    
+
     std::vector<std::shared_ptr<CommandEncoder>> commandEncoders;
 
     // Wait semaphores (must be signaled before execution)
@@ -1192,7 +1192,7 @@ struct SubmitDescriptor {
 struct PresentDescriptor {
     // Extension chain support (not yet passed to C API)
     const ChainedStruct* next = nullptr;
-    
+
     // Wait semaphores (must be signaled before presentation)
     std::vector<std::shared_ptr<Semaphore>> waitSemaphores;
     std::vector<uint64_t> waitValues; // For timeline semaphores, empty for binary
@@ -1265,7 +1265,7 @@ struct RenderPassMultiviewInfo : public ChainedStruct {
     // View mask - bit N indicates view N is rendered
     // Example: 0x3 = views 0 and 1 (stereo)
     uint32_t viewMask = 0;
-    
+
     // Correlation masks - views that share similar geometry
     // Example: {0x3} = views 0 and 1 correlate (both eyes see similar scene)
     std::vector<uint32_t> correlationMasks;
@@ -1437,32 +1437,30 @@ public:
         if (data.empty()) {
             return; // Nothing to write - valid no-op
         }
-        
+
         const auto info = getInfo();
         if (!hasFlag(info.usage, BufferUsage::MapWrite)) {
             throw std::runtime_error("Buffer must have MapWrite usage for write() operation");
         }
-        
+
         const uint64_t writeSize = data.size() * sizeof(T);
         const uint64_t bufferSize = info.size;
-        
+
         if (offset + writeSize > bufferSize) {
-            throw std::runtime_error("Buffer write would exceed buffer capacity: offset=" + 
-                std::to_string(offset) + ", writeSize=" + std::to_string(writeSize) + 
-                ", bufferSize=" + std::to_string(bufferSize));
+            throw std::runtime_error("Buffer write would exceed buffer capacity: offset=" + std::to_string(offset) + ", writeSize=" + std::to_string(writeSize) + ", bufferSize=" + std::to_string(bufferSize));
         }
-        
+
         void* ptr = map(offset, writeSize);
         if (!ptr) {
             throw std::runtime_error("Failed to map buffer for writing");
         }
-        
+
         // Use RAII pattern: unmap even if memcpy throws (though it shouldn't in practice)
         struct ScopedUnmap {
             Buffer* buffer;
             ~ScopedUnmap() { buffer->unmap(); }
-        } scopedUnmap{this};
-        
+        } scopedUnmap{ this };
+
         std::memcpy(ptr, data.data(), writeSize);
     }
 };
@@ -1671,6 +1669,11 @@ public:
     virtual void waitIdle() = 0;
     virtual DeviceLimits getLimits() const = 0;
     virtual bool supportsShaderFormat(ShaderSourceType format) const = 0;
+
+    // Helper to deduce access flags from texture layout
+    // Vulkan: Returns explicit access flags based on layout
+    // WebGPU: Returns AccessFlags::None (implicit synchronization)
+    virtual AccessFlags getAccessFlagsForLayout(TextureLayout layout) const = 0;
 };
 
 class Adapter {
@@ -1721,15 +1724,13 @@ namespace utils {
     uint64_t alignUp(uint64_t value, uint64_t alignment);
     uint64_t alignDown(uint64_t value, uint64_t alignment);
 
-    // Helper to deduce access flags from texture layout
-    AccessFlags getAccessFlagsForLayout(TextureLayout layout);
-
     // Get bytes per pixel for a texture format
     uint32_t getFormatBytesPerPixel(TextureFormat format);
 
     // Helper to find a specific extension type in the next chain using dynamic_cast
-    template<typename T>
-    const T* findInChain(const ChainedStruct* chain) {
+    template <typename T>
+    const T* findInChain(const ChainedStruct* chain)
+    {
         while (chain) {
             if (const T* result = dynamic_cast<const T*>(chain)) {
                 return result;

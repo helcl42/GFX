@@ -408,4 +408,10 @@ bool DeviceImpl::supportsShaderFormat(ShaderSourceType format) const
     return supported;
 }
 
+AccessFlags DeviceImpl::getAccessFlagsForLayout(TextureLayout layout) const
+{
+    GfxAccessFlags cFlags = gfxDeviceGetAccessFlagsForLayout(m_handle, cppLayoutToCLayout(layout));
+    return cAccessFlagsToCppAccessFlags(cFlags);
+}
+
 } // namespace gfx

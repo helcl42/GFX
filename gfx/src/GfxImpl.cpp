@@ -472,6 +472,20 @@ GfxResult gfxDeviceSupportsShaderFormat(GfxDevice device, GfxShaderSourceType fo
     return backend->deviceSupportsShaderFormat(device, format, outSupported);
 }
 
+// Helper function to deduce access flags from texture layout
+GfxAccessFlags gfxDeviceGetAccessFlagsForLayout(GfxDevice device, GfxTextureLayout layout)
+{
+    if (!device) {
+        return GFX_ACCESS_NONE;
+    }
+
+    auto backend = gfx::backend::BackendManager::instance().getBackend(device);
+    if (!backend) {
+        return GFX_ACCESS_NONE;
+    }
+    return backend->getAccessFlagsForLayout(layout);
+}
+
 // Macro for destroy functions
 #define DESTROY_FUNC(TypeName, typeName)                                              \
     GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
@@ -1279,19 +1293,6 @@ GfxResult gfxSemaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t time
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return backend->semaphoreWait(semaphore, value, timeoutNs);
-}
-
-// Helper function to deduce access flags from texture layout
-GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout)
-{
-    // Use Vulkan-style explicit access flags (deterministic mapping)
-    // WebGPU backends will ignore these as they use implicit synchronization
-    auto backend = gfx::backend::BackendManager::instance().getBackend(GFX_BACKEND_VULKAN);
-    if (!backend) {
-        return GFX_ACCESS_NONE;
-    }
-
-    return backend->getAccessFlagsForLayout(layout);
 }
 
 const char* gfxResultToString(GfxResult result)

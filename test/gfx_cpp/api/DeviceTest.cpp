@@ -167,7 +167,7 @@ TEST_P(GfxCppDeviceTest, CreateBuffer)
 TEST_P(GfxCppDeviceTest, SupportsShaderFormat_SPIRV)
 {
     ASSERT_NE(adapter, nullptr);
-    
+
     gfx::DeviceDescriptor desc{};
     auto device = adapter->createDevice(desc);
     ASSERT_NE(device, nullptr);
@@ -180,7 +180,7 @@ TEST_P(GfxCppDeviceTest, SupportsShaderFormat_SPIRV)
 TEST_P(GfxCppDeviceTest, SupportsShaderFormat_WGSL)
 {
     ASSERT_NE(adapter, nullptr);
-    
+
     gfx::DeviceDescriptor desc{};
     auto device = adapter->createDevice(desc);
     ASSERT_NE(device, nullptr);
@@ -191,6 +191,146 @@ TEST_P(GfxCppDeviceTest, SupportsShaderFormat_WGSL)
         EXPECT_FALSE(supported);
     } else {
         EXPECT_TRUE(supported);
+    }
+}
+
+TEST_P(GfxCppDeviceTest, GetAccessFlagsForLayoutUndefined)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    gfx::DeviceDescriptor desc{};
+    auto device = adapter->createDevice(desc);
+    ASSERT_NE(device, nullptr);
+
+    gfx::AccessFlags flags = device->getAccessFlagsForLayout(gfx::TextureLayout::Undefined);
+    EXPECT_EQ(flags, gfx::AccessFlags::None);
+}
+
+TEST_P(GfxCppDeviceTest, GetAccessFlagsForLayoutGeneral)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    gfx::DeviceDescriptor desc{};
+    auto device = adapter->createDevice(desc);
+    ASSERT_NE(device, nullptr);
+
+    gfx::AccessFlags flags = device->getAccessFlagsForLayout(gfx::TextureLayout::General);
+    if (backend == gfx::Backend::Vulkan) {
+        EXPECT_EQ(flags, gfx::AccessFlags::MemoryRead | gfx::AccessFlags::MemoryWrite);
+    } else {
+        EXPECT_EQ(flags, gfx::AccessFlags::None);
+    }
+}
+
+TEST_P(GfxCppDeviceTest, GetAccessFlagsForLayoutColorAttachment)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    gfx::DeviceDescriptor desc{};
+    auto device = adapter->createDevice(desc);
+    ASSERT_NE(device, nullptr);
+
+    gfx::AccessFlags flags = device->getAccessFlagsForLayout(gfx::TextureLayout::ColorAttachment);
+    if (backend == gfx::Backend::Vulkan) {
+        EXPECT_EQ(flags, gfx::AccessFlags::ColorAttachmentRead | gfx::AccessFlags::ColorAttachmentWrite);
+    } else {
+        EXPECT_EQ(flags, gfx::AccessFlags::None);
+    }
+}
+
+TEST_P(GfxCppDeviceTest, GetAccessFlagsForLayoutDepthStencil)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    gfx::DeviceDescriptor desc{};
+    auto device = adapter->createDevice(desc);
+    ASSERT_NE(device, nullptr);
+
+    gfx::AccessFlags flags = device->getAccessFlagsForLayout(gfx::TextureLayout::DepthStencilAttachment);
+    if (backend == gfx::Backend::Vulkan) {
+        EXPECT_EQ(flags, gfx::AccessFlags::DepthStencilAttachmentRead | gfx::AccessFlags::DepthStencilAttachmentWrite);
+    } else {
+        EXPECT_EQ(flags, gfx::AccessFlags::None);
+    }
+}
+
+TEST_P(GfxCppDeviceTest, GetAccessFlagsForLayoutDepthStencilReadOnly)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    gfx::DeviceDescriptor desc{};
+    auto device = adapter->createDevice(desc);
+    ASSERT_NE(device, nullptr);
+
+    gfx::AccessFlags flags = device->getAccessFlagsForLayout(gfx::TextureLayout::DepthStencilReadOnly);
+    if (backend == gfx::Backend::Vulkan) {
+        EXPECT_EQ(flags, gfx::AccessFlags::DepthStencilAttachmentRead);
+    } else {
+        EXPECT_EQ(flags, gfx::AccessFlags::None);
+    }
+}
+
+TEST_P(GfxCppDeviceTest, GetAccessFlagsForLayoutShaderReadOnly)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    gfx::DeviceDescriptor desc{};
+    auto device = adapter->createDevice(desc);
+    ASSERT_NE(device, nullptr);
+
+    gfx::AccessFlags flags = device->getAccessFlagsForLayout(gfx::TextureLayout::ShaderReadOnly);
+    if (backend == gfx::Backend::Vulkan) {
+        EXPECT_EQ(flags, gfx::AccessFlags::ShaderRead);
+    } else {
+        EXPECT_EQ(flags, gfx::AccessFlags::None);
+    }
+}
+
+TEST_P(GfxCppDeviceTest, GetAccessFlagsForLayoutTransferSrc)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    gfx::DeviceDescriptor desc{};
+    auto device = adapter->createDevice(desc);
+    ASSERT_NE(device, nullptr);
+
+    gfx::AccessFlags flags = device->getAccessFlagsForLayout(gfx::TextureLayout::TransferSrc);
+    if (backend == gfx::Backend::Vulkan) {
+        EXPECT_EQ(flags, gfx::AccessFlags::TransferRead);
+    } else {
+        EXPECT_EQ(flags, gfx::AccessFlags::None);
+    }
+}
+
+TEST_P(GfxCppDeviceTest, GetAccessFlagsForLayoutTransferDst)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    gfx::DeviceDescriptor desc{};
+    auto device = adapter->createDevice(desc);
+    ASSERT_NE(device, nullptr);
+
+    gfx::AccessFlags flags = device->getAccessFlagsForLayout(gfx::TextureLayout::TransferDst);
+    if (backend == gfx::Backend::Vulkan) {
+        EXPECT_EQ(flags, gfx::AccessFlags::TransferWrite);
+    } else {
+        EXPECT_EQ(flags, gfx::AccessFlags::None);
+    }
+}
+
+TEST_P(GfxCppDeviceTest, GetAccessFlagsForLayoutPresent)
+{
+    ASSERT_NE(adapter, nullptr);
+
+    gfx::DeviceDescriptor desc{};
+    auto device = adapter->createDevice(desc);
+    ASSERT_NE(device, nullptr);
+
+    gfx::AccessFlags flags = device->getAccessFlagsForLayout(gfx::TextureLayout::PresentSrc);
+    if (backend == gfx::Backend::Vulkan) {
+        EXPECT_EQ(flags, gfx::AccessFlags::MemoryRead);
+    } else {
+        EXPECT_EQ(flags, gfx::AccessFlags::None);
     }
 }
 

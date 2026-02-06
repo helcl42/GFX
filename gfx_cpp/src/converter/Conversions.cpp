@@ -404,13 +404,10 @@ void convertTextureBarrier(const TextureBarrier& input, GfxTextureBarrier& outpu
     output.srcStageMask = cppPipelineStageToCPipelineStage(input.srcStageMask);
     output.dstStageMask = cppPipelineStageToCPipelineStage(input.dstStageMask);
 
-    // Auto-deduce access masks if not explicitly set
-    output.srcAccessMask = (input.srcAccessMask == AccessFlags::None)
-        ? gfxGetAccessFlagsForLayout(output.oldLayout)
-        : cppAccessFlagsToCAccessFlags(input.srcAccessMask);
-    output.dstAccessMask = (input.dstAccessMask == AccessFlags::None)
-        ? gfxGetAccessFlagsForLayout(output.newLayout)
-        : cppAccessFlagsToCAccessFlags(input.dstAccessMask);
+    // Use explicit access masks - user must provide them or they default to NONE
+    // Note: Auto-deduction removed - requires device context (use gfx::getAccessFlagsForLayout(device, layout) if needed)
+    output.srcAccessMask = cppAccessFlagsToCAccessFlags(input.srcAccessMask);
+    output.dstAccessMask = cppAccessFlagsToCAccessFlags(input.dstAccessMask);
 
     output.baseMipLevel = input.baseMipLevel;
     output.mipLevelCount = input.mipLevelCount;
@@ -1047,15 +1044,15 @@ void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, s
             outMultiviewInfo.pNext = nullptr;
             outMultiviewInfo.viewMask = multiview->viewMask;
             outMultiviewInfo.correlationMaskCount = static_cast<uint32_t>(multiview->correlationMasks.size());
-            
+
             // Copy correlation masks to output vector
             outCorrelationMasks = multiview->correlationMasks;
             outMultiviewInfo.correlationMasks = outCorrelationMasks.empty() ? nullptr : outCorrelationMasks.data();
-            
+
             // Link to pNext chain
             outDesc.pNext = &outMultiviewInfo;
         }
-        
+
         chainNode = chainNode->next;
     }
 }

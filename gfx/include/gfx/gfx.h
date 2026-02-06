@@ -41,7 +41,7 @@
 // RETURN CODES:
 //
 // All GFX functions return GfxResult (except void functions like gfxSetLogCallback)
-// 
+//
 // Success codes (>= 0):
 //   GFX_RESULT_SUCCESS = 0      → Operation completed successfully
 //   GFX_RESULT_TIMEOUT = 1      → Operation timed out (not necessarily an error)
@@ -298,7 +298,7 @@
 //   ✓ gfxAdapterCreateDevice() - Can be called concurrently for same adapter
 //
 // Resource Creation (Requires External Sync on Same Device):
-//   ✗ gfxDeviceCreateBuffer(device, ...)  
+//   ✗ gfxDeviceCreateBuffer(device, ...)
 //   ✗ gfxDeviceCreateTexture(device, ...)
 //   ✗ gfxDeviceCreatePipeline(device, ...)
 //   → Multiple threads creating resources on the SAME device must synchronize externally
@@ -1021,14 +1021,14 @@ typedef struct {
 // Requires GFX_DEVICE_EXTENSION_MULTIVIEW to be enabled on device
 // Example: For stereo rendering, set viewMask = 0x3 (views 0 and 1)
 typedef struct {
-    GfxStructureType sType;  // Must be GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_INFO
+    GfxStructureType sType; // Must be GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_INFO
     const void* pNext;
-    
+
     // View mask - bit N set means view N is rendered
     // Example: 0x3 (binary 11) = render to view 0 and view 1 (stereo)
     // Example: 0x7 (binary 111) = render to views 0, 1, and 2
     uint32_t viewMask;
-    
+
     // Correlation masks - groups of views that can be optimized together
     // Views in the same correlation mask share similar geometry/data
     // Example: For stereo, both eyes correlate: correlationMasks[0] = 0x3
@@ -1695,6 +1695,10 @@ GFX_API GfxResult gfxDeviceCreateQuerySet(GfxDevice device, const GfxQuerySetDes
 GFX_API GfxResult gfxDeviceWaitIdle(GfxDevice device);
 GFX_API GfxResult gfxDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
 GFX_API GfxResult gfxDeviceSupportsShaderFormat(GfxDevice device, GfxShaderSourceType format, bool* outSupported);
+// Helper to deduce access flags from texture layout
+// Vulkan: Returns explicit access flags based on layout
+// WebGPU: Returns GFX_ACCESS_NONE (implicit synchronization)
+GFX_API GfxAccessFlags gfxDeviceGetAccessFlagsForLayout(GfxDevice device, GfxTextureLayout layout);
 
 // Surface functions
 GFX_API GfxResult gfxSurfaceDestroy(GfxSurface surface);
@@ -1829,11 +1833,6 @@ GFX_API void gfxSetLogCallback(GfxLogCallback callback, void* userData);
 // Returns a static string that does not need to be freed
 // Example: "GFX_RESULT_SUCCESS", "GFX_RESULT_ERROR_OUT_OF_MEMORY"
 GFX_API const char* gfxResultToString(GfxResult result);
-
-// Helper function to deduce access flags from texture layout
-// Returns appropriate access flags for the given layout (deterministic mapping)
-// Note: WebGPU backends with implicit synchronization may ignore these flags
-GFX_API GfxAccessFlags gfxGetAccessFlagsForLayout(GfxTextureLayout layout);
 
 // Alignment helper functions
 // Use these to align buffer offsets/sizes to device requirements:
