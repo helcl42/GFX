@@ -104,12 +104,12 @@ GfxResult gfxUnloadAllBackends(void)
 {
     auto& manager = gfx::backend::BackendManager::instance();
 #ifdef GFX_ENABLE_VULKAN
-    while (manager.getBackend(GFX_BACKEND_VULKAN)) {
+    if (manager.getBackend(GFX_BACKEND_VULKAN)) {
         gfxUnloadBackend(GFX_BACKEND_VULKAN);
     }
 #endif
 #ifdef GFX_ENABLE_WEBGPU
-    while (manager.getBackend(GFX_BACKEND_WEBGPU)) {
+    if (manager.getBackend(GFX_BACKEND_WEBGPU)) {
         gfxUnloadBackend(GFX_BACKEND_WEBGPU);
     }
 #endif
@@ -369,7 +369,7 @@ GfxResult gfxDeviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyIndex, 
     return GFX_RESULT_SUCCESS;
 }
 
-// Macro to generate device create functions with less code duplication
+// Macro to generate device create functions
 #define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
     GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
     {                                                                                                                                \
@@ -565,7 +565,7 @@ GfxResult gfxDeviceSupportsShaderFormat(GfxDevice device, GfxShaderSourceType fo
     return backend->deviceSupportsShaderFormat(device, format, outSupported);
 }
 
-// Macro for simple destroy functions
+// Macro for destroy functions
 #define DESTROY_FUNC(TypeName, typeName)                                              \
     GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
     {                                                                                 \
@@ -580,6 +580,7 @@ GfxResult gfxDeviceSupportsShaderFormat(GfxDevice device, GfxShaderSourceType fo
         gfx::backend::BackendManager::instance().unwrap(typeName);                    \
         return result;                                                                \
     }
+
 DESTROY_FUNC(Surface, surface)
 DESTROY_FUNC(Swapchain, swapchain)
 DESTROY_FUNC(Buffer, buffer)
@@ -970,7 +971,7 @@ GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
     if (!backend) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(encoder);
@@ -991,7 +992,7 @@ GfxResult gfxCommandEncoderBeginComputePass(GfxCommandEncoder encoder, const Gfx
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(encoder);
     if (!backend) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
     GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(encoder);
@@ -1293,7 +1294,7 @@ GfxResult gfxFenceGetStatus(GfxFence fence, bool* isSignaled)
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(fence);
     if (!backend) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return backend->fenceGetStatus(fence, isSignaled);
 }
@@ -1305,7 +1306,7 @@ GfxResult gfxFenceWait(GfxFence fence, uint64_t timeoutNs)
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(fence);
     if (!backend) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return backend->fenceWait(fence, timeoutNs);
 }
@@ -1354,7 +1355,7 @@ GfxResult gfxSemaphoreSignal(GfxSemaphore semaphore, uint64_t value)
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(semaphore);
     if (!backend) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return backend->semaphoreSignal(semaphore, value);
 }
@@ -1366,7 +1367,7 @@ GfxResult gfxSemaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t time
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(semaphore);
     if (!backend) {
-        return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
+        return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return backend->semaphoreWait(semaphore, value, timeoutNs);
 }
