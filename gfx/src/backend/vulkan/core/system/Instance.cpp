@@ -311,4 +311,9 @@ Adapter* Instance::requestAdapter(const AdapterCreateInfo& createInfo) const
     return m_adapters[0].get();
 }
 
+const std::vector<std::unique_ptr<Adapter>>& Instance::getAdapters() const
+{
+    return m_adapters;
+}
+
 } // namespace gfx::backend::vulkan::core

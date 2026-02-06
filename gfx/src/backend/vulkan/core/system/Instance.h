@@ -24,7 +24,7 @@ public:
 
     // Adapter access - returns cached adapters
     Adapter* requestAdapter(const AdapterCreateInfo& createInfo) const;
-    const std::vector<std::unique_ptr<Adapter>>& getAdapters() const { return m_adapters; }
+    const std::vector<std::unique_ptr<Adapter>>& getAdapters() const;
 
     static std::vector<const char*> enumerateSupportedExtensions();
 

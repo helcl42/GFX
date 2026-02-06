@@ -42,10 +42,15 @@ GfxResult Backend::createInstance(const GfxInstanceDescriptor* descriptor, GfxIn
         return validationResult;
     }
 
-    auto createInfo = converter::gfxDescriptorToInstanceCreateInfo(descriptor);
-    auto* instance = new core::Instance(createInfo);
-    *outInstance = converter::toGfx<GfxInstance>(instance);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto createInfo = converter::gfxDescriptorToInstanceCreateInfo(descriptor);
+        auto* instance = new core::Instance(createInfo);
+        *outInstance = converter::toGfx<GfxInstance>(instance);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create instance: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::instanceDestroy(GfxInstance instance) const
@@ -126,11 +131,16 @@ GfxResult Backend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescri
         return validationResult;
     }
 
-    auto* adapterPtr = converter::toNative<core::Adapter>(adapter);
-    auto createInfo = converter::gfxDescriptorToDeviceCreateInfo(descriptor);
-    auto* device = new core::Device(adapterPtr, createInfo);
-    *outDevice = converter::toGfx<GfxDevice>(device);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* adapterPtr = converter::toNative<core::Adapter>(adapter);
+        auto createInfo = converter::gfxDescriptorToDeviceCreateInfo(descriptor);
+        auto* device = new core::Device(adapterPtr, createInfo);
+        *outDevice = converter::toGfx<GfxDevice>(device);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create device: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const
@@ -279,11 +289,16 @@ GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescrip
     gfx::common::Logger::instance().logError("Surface creation is not available in headless builds");
     return GFX_RESULT_ERROR_FEATURE_NOT_SUPPORTED;
 #else
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxDescriptorToSurfaceCreateInfo(descriptor);
-    auto* surface = new core::Surface(dev->getAdapter(), createInfo);
-    *outSurface = converter::toGfx<GfxSurface>(surface);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToSurfaceCreateInfo(descriptor);
+        auto* surface = new core::Surface(dev->getAdapter(), createInfo);
+        *outSurface = converter::toGfx<GfxSurface>(surface);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create surface: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 #endif
 }
 
@@ -294,12 +309,17 @@ GfxResult Backend::deviceCreateSwapchain(GfxDevice device, const GfxSwapchainDes
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto* surf = converter::toNative<core::Surface>(descriptor->surface);
-    auto createInfo = converter::gfxDescriptorToSwapchainCreateInfo(descriptor);
-    auto* swapchain = new core::Swapchain(dev, surf, createInfo);
-    *outSwapchain = converter::toGfx<GfxSwapchain>(swapchain);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto* surf = converter::toNative<core::Surface>(descriptor->surface);
+        auto createInfo = converter::gfxDescriptorToSwapchainCreateInfo(descriptor);
+        auto* swapchain = new core::Swapchain(dev, surf, createInfo);
+        *outSwapchain = converter::toGfx<GfxSwapchain>(swapchain);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create swapchain: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
@@ -309,11 +329,16 @@ GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescripto
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxDescriptorToBufferCreateInfo(descriptor);
-    auto* buffer = new core::Buffer(dev, createInfo);
-    *outBuffer = converter::toGfx<GfxBuffer>(buffer);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToBufferCreateInfo(descriptor);
+        auto* buffer = new core::Buffer(dev, createInfo);
+        *outBuffer = converter::toGfx<GfxBuffer>(buffer);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create buffer: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const
@@ -323,12 +348,17 @@ GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDes
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    VkBuffer vkBuffer = reinterpret_cast<VkBuffer>(descriptor->nativeHandle);
-    auto importInfo = converter::gfxExternalDescriptorToBufferImportInfo(descriptor);
-    auto* buffer = new core::Buffer(dev, vkBuffer, importInfo);
-    *outBuffer = converter::toGfx<GfxBuffer>(buffer);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        VkBuffer vkBuffer = reinterpret_cast<VkBuffer>(descriptor->nativeHandle);
+        auto importInfo = converter::gfxExternalDescriptorToBufferImportInfo(descriptor);
+        auto* buffer = new core::Buffer(dev, vkBuffer, importInfo);
+        *outBuffer = converter::toGfx<GfxBuffer>(buffer);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to import buffer: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
@@ -338,11 +368,16 @@ GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescrip
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxDescriptorToTextureCreateInfo(descriptor);
-    auto* texture = new core::Texture(dev, createInfo);
-    *outTexture = converter::toGfx<GfxTexture>(texture);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToTextureCreateInfo(descriptor);
+        auto* texture = new core::Texture(dev, createInfo);
+        *outTexture = converter::toGfx<GfxTexture>(texture);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create texture: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const
@@ -352,13 +387,18 @@ GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportD
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    VkImage vkImage = reinterpret_cast<VkImage>(descriptor->nativeHandle);
-    auto importInfo = converter::gfxExternalDescriptorToTextureImportInfo(descriptor);
-    auto* texture = new core::Texture(dev, vkImage, importInfo);
-    texture->setLayout(converter::gfxLayoutToVkImageLayout(descriptor->currentLayout));
-    *outTexture = converter::toGfx<GfxTexture>(texture);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        VkImage vkImage = reinterpret_cast<VkImage>(descriptor->nativeHandle);
+        auto importInfo = converter::gfxExternalDescriptorToTextureImportInfo(descriptor);
+        auto* texture = new core::Texture(dev, vkImage, importInfo);
+        texture->setLayout(converter::gfxLayoutToVkImageLayout(descriptor->currentLayout));
+        *outTexture = converter::toGfx<GfxTexture>(texture);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to import texture: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
@@ -368,11 +408,16 @@ GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescrip
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxDescriptorToSamplerCreateInfo(descriptor);
-    auto* sampler = new core::Sampler(dev, createInfo);
-    *outSampler = converter::toGfx<GfxSampler>(sampler);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToSamplerCreateInfo(descriptor);
+        auto* sampler = new core::Sampler(dev, createInfo);
+        *outSampler = converter::toGfx<GfxSampler>(sampler);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create sampler: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
@@ -382,11 +427,16 @@ GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescripto
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxDescriptorToShaderCreateInfo(descriptor);
-    auto* shader = new core::Shader(dev, createInfo);
-    *outShader = converter::toGfx<GfxShader>(shader);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToShaderCreateInfo(descriptor);
+        auto* shader = new core::Shader(dev, createInfo);
+        *outShader = converter::toGfx<GfxShader>(shader);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create shader: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
@@ -396,11 +446,16 @@ GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGr
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxDescriptorToBindGroupLayoutCreateInfo(descriptor);
-    auto* layout = new core::BindGroupLayout(dev, createInfo);
-    *outLayout = converter::toGfx<GfxBindGroupLayout>(layout);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToBindGroupLayoutCreateInfo(descriptor);
+        auto* layout = new core::BindGroupLayout(dev, createInfo);
+        *outLayout = converter::toGfx<GfxBindGroupLayout>(layout);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create bind group layout: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
@@ -410,11 +465,16 @@ GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDes
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxDescriptorToBindGroupCreateInfo(descriptor);
-    auto* bindGroup = new core::BindGroup(dev, createInfo);
-    *outBindGroup = converter::toGfx<GfxBindGroup>(bindGroup);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToBindGroupCreateInfo(descriptor);
+        auto* bindGroup = new core::BindGroup(dev, createInfo);
+        *outBindGroup = converter::toGfx<GfxBindGroup>(bindGroup);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create bind group: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
@@ -424,11 +484,16 @@ GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderP
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxDescriptorToRenderPipelineCreateInfo(descriptor);
-    auto* pipeline = new core::RenderPipeline(dev, createInfo);
-    *outPipeline = converter::toGfx<GfxRenderPipeline>(pipeline);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToRenderPipelineCreateInfo(descriptor);
+        auto* pipeline = new core::RenderPipeline(dev, createInfo);
+        *outPipeline = converter::toGfx<GfxRenderPipeline>(pipeline);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create render pipeline: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
@@ -438,11 +503,16 @@ GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComput
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxDescriptorToComputePipelineCreateInfo(descriptor);
-    auto* pipeline = new core::ComputePipeline(dev, createInfo);
-    *outPipeline = converter::toGfx<GfxComputePipeline>(pipeline);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToComputePipelineCreateInfo(descriptor);
+        auto* pipeline = new core::ComputePipeline(dev, createInfo);
+        *outPipeline = converter::toGfx<GfxComputePipeline>(pipeline);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create compute pipeline: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
@@ -452,10 +522,15 @@ GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommand
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto* encoder = new core::CommandEncoder(dev);
-    *outEncoder = converter::toGfx<GfxCommandEncoder>(encoder);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto* encoder = new core::CommandEncoder(dev);
+        *outEncoder = converter::toGfx<GfxCommandEncoder>(encoder);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create command encoder: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
@@ -465,11 +540,16 @@ GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassD
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxRenderPassDescriptorToRenderPassCreateInfo(descriptor);
-    auto* renderPass = new core::RenderPass(dev, createInfo);
-    *outRenderPass = converter::toGfx<GfxRenderPass>(renderPass);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxRenderPassDescriptorToRenderPassCreateInfo(descriptor);
+        auto* renderPass = new core::RenderPass(dev, createInfo);
+        *outRenderPass = converter::toGfx<GfxRenderPass>(renderPass);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create render pass: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const
@@ -479,11 +559,16 @@ GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebuffe
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxFramebufferDescriptorToFramebufferCreateInfo(descriptor);
-    auto* framebuffer = new core::Framebuffer(dev, createInfo);
-    *outFramebuffer = converter::toGfx<GfxFramebuffer>(framebuffer);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxFramebufferDescriptorToFramebufferCreateInfo(descriptor);
+        auto* framebuffer = new core::Framebuffer(dev, createInfo);
+        *outFramebuffer = converter::toGfx<GfxFramebuffer>(framebuffer);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create framebuffer: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
@@ -493,11 +578,16 @@ GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor*
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxDescriptorToFenceCreateInfo(descriptor);
-    auto* fence = new core::Fence(dev, createInfo);
-    *outFence = converter::toGfx<GfxFence>(fence);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToFenceCreateInfo(descriptor);
+        auto* fence = new core::Fence(dev, createInfo);
+        *outFence = converter::toGfx<GfxFence>(fence);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create fence: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const
@@ -507,11 +597,16 @@ GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDes
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxDescriptorToSemaphoreCreateInfo(descriptor);
-    auto* semaphore = new core::Semaphore(dev, createInfo);
-    *outSemaphore = converter::toGfx<GfxSemaphore>(semaphore);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToSemaphoreCreateInfo(descriptor);
+        auto* semaphore = new core::Semaphore(dev, createInfo);
+        *outSemaphore = converter::toGfx<GfxSemaphore>(semaphore);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create semaphore: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const
@@ -521,11 +616,16 @@ GfxResult Backend::deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescr
         return validationResult;
     }
 
-    auto* dev = converter::toNative<core::Device>(device);
-    auto createInfo = converter::gfxDescriptorToQuerySetCreateInfo(descriptor);
-    auto* querySet = new core::QuerySet(dev, createInfo);
-    *outQuerySet = converter::toGfx<GfxQuerySet>(querySet);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* dev = converter::toNative<core::Device>(device);
+        auto createInfo = converter::gfxDescriptorToQuerySetCreateInfo(descriptor);
+        auto* querySet = new core::QuerySet(dev, createInfo);
+        *outQuerySet = converter::toGfx<GfxQuerySet>(querySet);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create query set: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 GfxResult Backend::deviceWaitIdle(GfxDevice device) const
@@ -896,11 +996,16 @@ GfxResult Backend::textureCreateView(GfxTexture texture, const GfxTextureViewDes
         return validationResult;
     }
 
-    auto* tex = converter::toNative<core::Texture>(texture);
-    auto createInfo = converter::gfxDescriptorToTextureViewCreateInfo(descriptor);
-    auto* view = new core::TextureView(tex, createInfo);
-    *outView = converter::toGfx<GfxTextureView>(view);
-    return GFX_RESULT_SUCCESS;
+    try {
+        auto* tex = converter::toNative<core::Texture>(texture);
+        auto createInfo = converter::gfxDescriptorToTextureViewCreateInfo(descriptor);
+        auto* view = new core::TextureView(tex, createInfo);
+        *outView = converter::toGfx<GfxTextureView>(view);
+        return GFX_RESULT_SUCCESS;
+    } catch (const std::exception& e) {
+        gfx::common::Logger::instance().logError("Failed to create texture view: {}", e.what());
+        return GFX_RESULT_ERROR_UNKNOWN;
+    }
 }
 
 // TextureView functions
