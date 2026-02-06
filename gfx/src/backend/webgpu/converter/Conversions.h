@@ -62,7 +62,7 @@ namespace gfx::backend::webgpu::converter {
 // Template function to convert internal C++ pointer to opaque C handle
 // Usage: toGfx<GfxDevice>(devicePtr)
 template <typename GfxHandle, typename InternalType>
-inline GfxHandle toGfx(InternalType* ptr)
+inline GfxHandle toGfx(InternalType* ptr) noexcept
 {
     return reinterpret_cast<GfxHandle>(ptr);
 }
@@ -70,7 +70,7 @@ inline GfxHandle toGfx(InternalType* ptr)
 // Template function to convert opaque C handle to internal C++ pointer
 // Usage: toNative<Device>(device)
 template <typename InternalType, typename GfxHandle>
-inline InternalType* toNative(GfxHandle handle)
+inline InternalType* toNative(GfxHandle handle) noexcept
 {
     return reinterpret_cast<InternalType*>(handle);
 }

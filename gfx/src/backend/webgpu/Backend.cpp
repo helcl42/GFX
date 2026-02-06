@@ -46,15 +46,10 @@ GfxResult Backend::createInstance(const GfxInstanceDescriptor* descriptor, GfxIn
         return validationResult;
     }
 
-    try {
-        auto createInfo = converter::gfxDescriptorToWebGPUInstanceCreateInfo(descriptor);
-        auto* instance = new core::Instance(createInfo);
-        *outInstance = converter::toGfx<GfxInstance>(instance);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create instance: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto createInfo = converter::gfxDescriptorToWebGPUInstanceCreateInfo(descriptor);
+    auto* instance = new core::Instance(createInfo);
+    *outInstance = converter::toGfx<GfxInstance>(instance);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::instanceDestroy(GfxInstance instance) const
@@ -82,17 +77,12 @@ GfxResult Backend::instanceRequestAdapter(GfxInstance instance, const GfxAdapter
         return validationResult;
     }
 
-    try {
-        auto* inst = converter::toNative<core::Instance>(instance);
-        auto createInfo = converter::gfxDescriptorToWebGPUAdapterCreateInfo(descriptor);
-        auto* adapter = inst->requestAdapter(createInfo);
+    auto* inst = converter::toNative<core::Instance>(instance);
+    auto createInfo = converter::gfxDescriptorToWebGPUAdapterCreateInfo(descriptor);
+    auto* adapter = inst->requestAdapter(createInfo);
 
-        *outAdapter = converter::toGfx<GfxAdapter>(adapter);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to request adapter: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    *outAdapter = converter::toGfx<GfxAdapter>(adapter);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::instanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount, GfxAdapter* adapters) const
@@ -150,16 +140,11 @@ GfxResult Backend::adapterCreateDevice(GfxAdapter adapter, const GfxDeviceDescri
         return validationResult;
     }
 
-    try {
-        auto* adapterPtr = converter::toNative<core::Adapter>(adapter);
-        auto createInfo = converter::gfxDescriptorToWebGPUDeviceCreateInfo(descriptor);
-        auto* device = new core::Device(adapterPtr, createInfo);
-        *outDevice = converter::toGfx<GfxDevice>(device);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create device: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* adapterPtr = converter::toNative<core::Adapter>(adapter);
+    auto createInfo = converter::gfxDescriptorToWebGPUDeviceCreateInfo(descriptor);
+    auto* device = new core::Device(adapterPtr, createInfo);
+    *outDevice = converter::toGfx<GfxDevice>(device);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::adapterGetInfo(GfxAdapter adapter, GfxAdapterInfo* outInfo) const
@@ -302,16 +287,11 @@ GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescrip
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto createInfo = converter::gfxDescriptorToWebGPUSurfaceCreateInfo(descriptor);
-        auto* surface = new core::Surface(devicePtr->getAdapter()->getInstance()->handle(), devicePtr->getAdapter()->handle(), createInfo);
-        *outSurface = converter::toGfx<GfxSurface>(surface);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create surface: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto createInfo = converter::gfxDescriptorToWebGPUSurfaceCreateInfo(descriptor);
+    auto* surface = new core::Surface(devicePtr->getAdapter()->getInstance()->handle(), devicePtr->getAdapter()->handle(), createInfo);
+    *outSurface = converter::toGfx<GfxSurface>(surface);
+    return GFX_RESULT_SUCCESS;
 #endif
 }
 
@@ -322,17 +302,12 @@ GfxResult Backend::deviceCreateSwapchain(GfxDevice device, const GfxSwapchainDes
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto* surfacePtr = converter::toNative<core::Surface>(descriptor->surface);
-        auto createInfo = converter::gfxDescriptorToWebGPUSwapchainCreateInfo(descriptor);
-        auto* swapchain = new core::Swapchain(devicePtr, surfacePtr, createInfo);
-        *outSwapchain = converter::toGfx<GfxSwapchain>(swapchain);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create swapchain: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto* surfacePtr = converter::toNative<core::Surface>(descriptor->surface);
+    auto createInfo = converter::gfxDescriptorToWebGPUSwapchainCreateInfo(descriptor);
+    auto* swapchain = new core::Swapchain(devicePtr, surfacePtr, createInfo);
+    *outSwapchain = converter::toGfx<GfxSwapchain>(swapchain);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
@@ -342,16 +317,11 @@ GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescripto
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto createInfo = converter::gfxDescriptorToWebGPUBufferCreateInfo(descriptor);
-        auto* buffer = new core::Buffer(devicePtr, createInfo);
-        *outBuffer = converter::toGfx<GfxBuffer>(buffer);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create buffer: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto createInfo = converter::gfxDescriptorToWebGPUBufferCreateInfo(descriptor);
+    auto* buffer = new core::Buffer(devicePtr, createInfo);
+    *outBuffer = converter::toGfx<GfxBuffer>(buffer);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const
@@ -361,17 +331,12 @@ GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDes
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto wgpuBuffer = reinterpret_cast<WGPUBuffer>(descriptor->nativeHandle);
-        auto importInfo = converter::gfxExternalDescriptorToWebGPUBufferImportInfo(descriptor);
-        auto* buffer = new core::Buffer(devicePtr, wgpuBuffer, importInfo);
-        *outBuffer = converter::toGfx<GfxBuffer>(buffer);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to import buffer: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto wgpuBuffer = reinterpret_cast<WGPUBuffer>(descriptor->nativeHandle);
+    auto importInfo = converter::gfxExternalDescriptorToWebGPUBufferImportInfo(descriptor);
+    auto* buffer = new core::Buffer(devicePtr, wgpuBuffer, importInfo);
+    *outBuffer = converter::toGfx<GfxBuffer>(buffer);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
@@ -381,16 +346,11 @@ GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescrip
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto createInfo = converter::gfxDescriptorToWebGPUTextureCreateInfo(descriptor);
-        auto* texture = new core::Texture(devicePtr, createInfo);
-        *outTexture = converter::toGfx<GfxTexture>(texture);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create texture: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto createInfo = converter::gfxDescriptorToWebGPUTextureCreateInfo(descriptor);
+    auto* texture = new core::Texture(devicePtr, createInfo);
+    *outTexture = converter::toGfx<GfxTexture>(texture);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const
@@ -400,17 +360,12 @@ GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportD
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto wgpuTexture = reinterpret_cast<WGPUTexture>(descriptor->nativeHandle);
-        auto importInfo = converter::gfxExternalDescriptorToWebGPUTextureImportInfo(descriptor);
-        auto* texture = new core::Texture(devicePtr, wgpuTexture, importInfo);
-        *outTexture = converter::toGfx<GfxTexture>(texture);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to import texture: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto wgpuTexture = reinterpret_cast<WGPUTexture>(descriptor->nativeHandle);
+    auto importInfo = converter::gfxExternalDescriptorToWebGPUTextureImportInfo(descriptor);
+    auto* texture = new core::Texture(devicePtr, wgpuTexture, importInfo);
+    *outTexture = converter::toGfx<GfxTexture>(texture);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
@@ -420,16 +375,11 @@ GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescrip
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto createInfo = converter::gfxDescriptorToWebGPUSamplerCreateInfo(descriptor);
-        auto* sampler = new core::Sampler(devicePtr, createInfo);
-        *outSampler = converter::toGfx<GfxSampler>(sampler);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create sampler: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto createInfo = converter::gfxDescriptorToWebGPUSamplerCreateInfo(descriptor);
+    auto* sampler = new core::Sampler(devicePtr, createInfo);
+    *outSampler = converter::toGfx<GfxSampler>(sampler);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
@@ -439,16 +389,11 @@ GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescripto
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto createInfo = converter::gfxDescriptorToWebGPUShaderCreateInfo(descriptor);
-        auto* shader = new core::Shader(devicePtr, createInfo);
-        *outShader = converter::toGfx<GfxShader>(shader);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create shader: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto createInfo = converter::gfxDescriptorToWebGPUShaderCreateInfo(descriptor);
+    auto* shader = new core::Shader(devicePtr, createInfo);
+    *outShader = converter::toGfx<GfxShader>(shader);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
@@ -458,16 +403,11 @@ GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGr
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto createInfo = converter::gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(descriptor);
-        auto* layout = new core::BindGroupLayout(devicePtr, createInfo);
-        *outLayout = converter::toGfx<GfxBindGroupLayout>(layout);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create bind group layout: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto createInfo = converter::gfxDescriptorToWebGPUBindGroupLayoutCreateInfo(descriptor);
+    auto* layout = new core::BindGroupLayout(devicePtr, createInfo);
+    *outLayout = converter::toGfx<GfxBindGroupLayout>(layout);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
@@ -477,17 +417,12 @@ GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDes
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto* layoutPtr = converter::toNative<core::BindGroupLayout>(descriptor->layout);
-        auto createInfo = converter::gfxDescriptorToWebGPUBindGroupCreateInfo(descriptor, layoutPtr->handle());
-        auto* bindGroup = new core::BindGroup(devicePtr, createInfo);
-        *outBindGroup = converter::toGfx<GfxBindGroup>(bindGroup);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create bind group: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto* layoutPtr = converter::toNative<core::BindGroupLayout>(descriptor->layout);
+    auto createInfo = converter::gfxDescriptorToWebGPUBindGroupCreateInfo(descriptor, layoutPtr->handle());
+    auto* bindGroup = new core::BindGroup(devicePtr, createInfo);
+    *outBindGroup = converter::toGfx<GfxBindGroup>(bindGroup);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
@@ -497,16 +432,11 @@ GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderP
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto createInfo = converter::gfxDescriptorToWebGPURenderPipelineCreateInfo(descriptor);
-        auto* pipeline = new core::RenderPipeline(devicePtr, createInfo);
-        *outPipeline = converter::toGfx<GfxRenderPipeline>(pipeline);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create render pipeline: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto createInfo = converter::gfxDescriptorToWebGPURenderPipelineCreateInfo(descriptor);
+    auto* pipeline = new core::RenderPipeline(devicePtr, createInfo);
+    *outPipeline = converter::toGfx<GfxRenderPipeline>(pipeline);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
@@ -516,16 +446,11 @@ GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComput
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto createInfo = converter::gfxDescriptorToWebGPUComputePipelineCreateInfo(descriptor);
-        auto* pipeline = new core::ComputePipeline(devicePtr, createInfo);
-        *outPipeline = converter::toGfx<GfxComputePipeline>(pipeline);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create compute pipeline: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto createInfo = converter::gfxDescriptorToWebGPUComputePipelineCreateInfo(descriptor);
+    auto* pipeline = new core::ComputePipeline(devicePtr, createInfo);
+    *outPipeline = converter::toGfx<GfxComputePipeline>(pipeline);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
@@ -535,16 +460,11 @@ GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassD
         return validationResult;
     }
 
-    try {
-        auto* dev = converter::toNative<core::Device>(device);
-        auto createInfo = converter::gfxRenderPassDescriptorToRenderPassCreateInfo(descriptor);
-        auto* renderPass = new core::RenderPass(dev, createInfo);
-        *outRenderPass = converter::toGfx<GfxRenderPass>(renderPass);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create render pass: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* dev = converter::toNative<core::Device>(device);
+    auto createInfo = converter::gfxRenderPassDescriptorToRenderPassCreateInfo(descriptor);
+    auto* renderPass = new core::RenderPass(dev, createInfo);
+    *outRenderPass = converter::toGfx<GfxRenderPass>(renderPass);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const
@@ -554,16 +474,11 @@ GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebuffe
         return validationResult;
     }
 
-    try {
-        auto* dev = converter::toNative<core::Device>(device);
-        auto createInfo = converter::gfxFramebufferDescriptorToFramebufferCreateInfo(descriptor);
-        auto* framebuffer = new core::Framebuffer(dev, createInfo);
-        *outFramebuffer = converter::toGfx<GfxFramebuffer>(framebuffer);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create framebuffer: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* dev = converter::toNative<core::Device>(device);
+    auto createInfo = converter::gfxFramebufferDescriptorToFramebufferCreateInfo(descriptor);
+    auto* framebuffer = new core::Framebuffer(dev, createInfo);
+    *outFramebuffer = converter::toGfx<GfxFramebuffer>(framebuffer);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
@@ -573,16 +488,11 @@ GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommand
         return validationResult;
     }
 
-    try {
-        auto* devicePtr = converter::toNative<core::Device>(device);
-        auto createInfo = converter::gfxDescriptorToWebGPUCommandEncoderCreateInfo(descriptor);
-        auto* encoder = new core::CommandEncoder(devicePtr, createInfo);
-        *outEncoder = converter::toGfx<GfxCommandEncoder>(encoder);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create command encoder: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* devicePtr = converter::toNative<core::Device>(device);
+    auto createInfo = converter::gfxDescriptorToWebGPUCommandEncoderCreateInfo(descriptor);
+    auto* encoder = new core::CommandEncoder(devicePtr, createInfo);
+    *outEncoder = converter::toGfx<GfxCommandEncoder>(encoder);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
@@ -592,14 +502,9 @@ GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor*
         return validationResult;
     }
 
-    try {
-        auto* fence = new core::Fence(descriptor->signaled);
-        *outFence = converter::toGfx<GfxFence>(fence);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create fence: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* fence = new core::Fence(descriptor->signaled);
+    *outFence = converter::toGfx<GfxFence>(fence);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const
@@ -609,15 +514,10 @@ GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDes
         return validationResult;
     }
 
-    try {
-        auto semaphoreType = converter::gfxSemaphoreTypeToWebGPUSemaphoreType(descriptor->type);
-        auto* semaphore = new core::Semaphore(semaphoreType, descriptor->initialValue);
-        *outSemaphore = converter::toGfx<GfxSemaphore>(semaphore);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create semaphore: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto semaphoreType = converter::gfxSemaphoreTypeToWebGPUSemaphoreType(descriptor->type);
+    auto* semaphore = new core::Semaphore(semaphoreType, descriptor->initialValue);
+    *outSemaphore = converter::toGfx<GfxSemaphore>(semaphore);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const
@@ -627,16 +527,11 @@ GfxResult Backend::deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescr
         return validationResult;
     }
 
-    try {
-        auto* dev = converter::toNative<core::Device>(device);
-        auto createInfo = converter::gfxDescriptorToWebGPUQuerySetCreateInfo(descriptor);
-        auto* querySet = new core::QuerySet(dev, createInfo);
-        *outQuerySet = converter::toGfx<GfxQuerySet>(querySet);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create query set: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* dev = converter::toNative<core::Device>(device);
+    auto createInfo = converter::gfxDescriptorToWebGPUQuerySetCreateInfo(descriptor);
+    auto* querySet = new core::QuerySet(dev, createInfo);
+    *outQuerySet = converter::toGfx<GfxQuerySet>(querySet);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::deviceWaitIdle(GfxDevice device) const
@@ -1020,16 +915,11 @@ GfxResult Backend::textureCreateView(GfxTexture texture, const GfxTextureViewDes
         return validationResult;
     }
 
-    try {
-        auto* texturePtr = converter::toNative<core::Texture>(texture);
-        auto createInfo = converter::gfxDescriptorToWebGPUTextureViewCreateInfo(descriptor);
-        auto* view = new core::TextureView(texturePtr, createInfo);
-        *outView = converter::toGfx<GfxTextureView>(view);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to create texture view: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* texturePtr = converter::toNative<core::Texture>(texture);
+    auto createInfo = converter::gfxDescriptorToWebGPUTextureViewCreateInfo(descriptor);
+    auto* view = new core::TextureView(texturePtr, createInfo);
+    *outView = converter::toGfx<GfxTextureView>(view);
+    return GFX_RESULT_SUCCESS;
 }
 
 // TextureView functions
@@ -1226,18 +1116,13 @@ GfxResult Backend::commandEncoderBeginRenderPass(GfxCommandEncoder commandEncode
         return validationResult;
     }
 
-    try {
-        auto* encoderPtr = converter::toNative<core::CommandEncoder>(commandEncoder);
-        auto* renderPass = converter::toNative<core::RenderPass>(beginDescriptor->renderPass);
-        auto* framebuffer = converter::toNative<core::Framebuffer>(beginDescriptor->framebuffer);
-        auto beginInfo = converter::gfxRenderPassBeginDescriptorToBeginInfo(beginDescriptor);
-        auto* renderPassEncoder = new core::RenderPassEncoder(encoderPtr, renderPass, framebuffer, beginInfo);
-        *outRenderPass = converter::toGfx<GfxRenderPassEncoder>(renderPassEncoder);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to begin render pass: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* encoderPtr = converter::toNative<core::CommandEncoder>(commandEncoder);
+    auto* renderPass = converter::toNative<core::RenderPass>(beginDescriptor->renderPass);
+    auto* framebuffer = converter::toNative<core::Framebuffer>(beginDescriptor->framebuffer);
+    auto beginInfo = converter::gfxRenderPassBeginDescriptorToBeginInfo(beginDescriptor);
+    auto* renderPassEncoder = new core::RenderPassEncoder(encoderPtr, renderPass, framebuffer, beginInfo);
+    *outRenderPass = converter::toGfx<GfxRenderPassEncoder>(renderPassEncoder);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outComputePass) const
@@ -1247,16 +1132,11 @@ GfxResult Backend::commandEncoderBeginComputePass(GfxCommandEncoder commandEncod
         return validationResult;
     }
 
-    try {
-        auto* encoderPtr = converter::toNative<core::CommandEncoder>(commandEncoder);
-        auto createInfo = converter::gfxComputePassBeginDescriptorToCreateInfo(beginDescriptor);
-        auto* computePassEncoder = new core::ComputePassEncoder(encoderPtr, createInfo);
-        *outComputePass = converter::toGfx<GfxComputePassEncoder>(computePassEncoder);
-        return GFX_RESULT_SUCCESS;
-    } catch (const std::exception& e) {
-        gfx::common::Logger::instance().logError("Failed to begin compute pass: {}", e.what());
-        return GFX_RESULT_ERROR_UNKNOWN;
-    }
+    auto* encoderPtr = converter::toNative<core::CommandEncoder>(commandEncoder);
+    auto createInfo = converter::gfxComputePassBeginDescriptorToCreateInfo(beginDescriptor);
+    auto* computePassEncoder = new core::ComputePassEncoder(encoderPtr, createInfo);
+    *outComputePass = converter::toGfx<GfxComputePassEncoder>(computePassEncoder);
+    return GFX_RESULT_SUCCESS;
 }
 
 GfxResult Backend::commandEncoderCopyBufferToBuffer(GfxCommandEncoder commandEncoder, const GfxCopyBufferToBufferDescriptor* descriptor) const
