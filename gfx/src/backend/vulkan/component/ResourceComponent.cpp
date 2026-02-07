@@ -1,9 +1,10 @@
 #include "ResourceComponent.h"
 
+#include "common/Logger.h"
+
 #include "backend/vulkan/common/Common.h"
 #include "backend/vulkan/converter/Conversions.h"
 #include "backend/vulkan/validator/Validations.h"
-#include "common/Logger.h"
 
 #include "backend/vulkan/core/resource/BindGroup.h"
 #include "backend/vulkan/core/resource/BindGroupLayout.h"

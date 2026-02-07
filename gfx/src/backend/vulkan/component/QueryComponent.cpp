@@ -1,9 +1,10 @@
 #include "QueryComponent.h"
 
+#include "common/Logger.h"
+
 #include "backend/vulkan/common/Common.h"
 #include "backend/vulkan/converter/Conversions.h"
 #include "backend/vulkan/validator/Validations.h"
-#include "common/Logger.h"
 
 #include "backend/vulkan/core/query/QuerySet.h"
 #include "backend/vulkan/core/system/Device.h"

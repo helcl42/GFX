@@ -1,9 +1,10 @@
 #include "SystemComponent.h"
 
+#include "common/Logger.h"
+
 #include "backend/vulkan/common/Common.h"
 #include "backend/vulkan/converter/Conversions.h"
 #include "backend/vulkan/validator/Validations.h"
-#include "common/Logger.h"
 
 #include "backend/vulkan/core/presentation/Surface.h"
 #include "backend/vulkan/core/system/Adapter.h"

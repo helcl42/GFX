@@ -1,9 +1,10 @@
 #include "SyncComponent.h"
 
+#include "common/Logger.h"
+
 #include "backend/vulkan/common/Common.h"
 #include "backend/vulkan/converter/Conversions.h"
 #include "backend/vulkan/validator/Validations.h"
-#include "common/Logger.h"
 
 #include "backend/vulkan/core/sync/Fence.h"
 #include "backend/vulkan/core/sync/Semaphore.h"

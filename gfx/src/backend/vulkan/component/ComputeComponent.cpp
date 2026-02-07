@@ -1,9 +1,10 @@
 #include "ComputeComponent.h"
 
+#include "common/Logger.h"
+
 #include "backend/vulkan/common/Common.h"
 #include "backend/vulkan/converter/Conversions.h"
 #include "backend/vulkan/validator/Validations.h"
-#include "common/Logger.h"
 
 #include "backend/vulkan/core/compute/ComputePipeline.h"
 #include "backend/vulkan/core/system/Device.h"

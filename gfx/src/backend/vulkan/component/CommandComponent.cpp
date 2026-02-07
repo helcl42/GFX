@@ -1,9 +1,10 @@
 #include "CommandComponent.h"
 
+#include "common/Logger.h"
+
 #include "backend/vulkan/common/Common.h"
 #include "backend/vulkan/converter/Conversions.h"
 #include "backend/vulkan/validator/Validations.h"
-#include "common/Logger.h"
 
 #include "backend/vulkan/core/command/CommandEncoder.h"
 #include "backend/vulkan/core/command/ComputePassEncoder.h"
