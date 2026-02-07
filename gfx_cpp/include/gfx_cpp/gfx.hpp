@@ -664,7 +664,7 @@ struct PlatformWindowHandle {
         uint32_t window; // xcb_window_t
     };
     struct MetalHandle {
-        void* layer; // CAMetalLayer* (optional)
+        void* layer; // CAMetalLayer*
     };
     struct EmscriptenHandle {
         const char* canvasSelector = nullptr; // CSS selector for canvas element (e.g., "#canvas")
