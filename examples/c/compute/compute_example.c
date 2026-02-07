@@ -592,7 +592,11 @@ static bool transitionComputeTexture(ComputeApp* app)
         return false;
     }
 
-    gfxCommandEncoderBegin(initEncoder);
+    if (gfxCommandEncoderBegin(initEncoder) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to begin initialization command encoder\n");
+        gfxCommandEncoderDestroy(initEncoder);
+        return false;
+    }
 
     GfxTextureBarrier initBarrier = {
         .texture = app->computeTexture,
@@ -617,9 +621,17 @@ static bool transitionComputeTexture(ComputeApp* app)
     barrierDesc.textureBarriers = &initBarrier;
     barrierDesc.textureBarrierCount = 1;
 
-    gfxCommandEncoderPipelineBarrier(initEncoder, &barrierDesc);
+    if (gfxCommandEncoderPipelineBarrier(initEncoder, &barrierDesc) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to record initialization barrier\n");
+        gfxCommandEncoderDestroy(initEncoder);
+        return false;
+    }
 
-    gfxCommandEncoderEnd(initEncoder);
+    if (gfxCommandEncoderEnd(initEncoder) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to end initialization command encoder\n");
+        gfxCommandEncoderDestroy(initEncoder);
+        return false;
+    }
 
     GfxSubmitDescriptor submitDescriptor = {};
     submitDescriptor.sType = GFX_STRUCTURE_TYPE_SUBMIT_DESCRIPTOR;
@@ -627,7 +639,11 @@ static bool transitionComputeTexture(ComputeApp* app)
     submitDescriptor.commandEncoderCount = 1;
     submitDescriptor.commandEncoders = &initEncoder;
 
-    gfxQueueSubmit(app->queue, &submitDescriptor);
+    if (gfxQueueSubmit(app->queue, &submitDescriptor) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to submit initialization commands\n");
+        gfxCommandEncoderDestroy(initEncoder);
+        return false;
+    }
     gfxDeviceWaitIdle(app->device);
 
     gfxCommandEncoderDestroy(initEncoder);
@@ -1158,7 +1174,10 @@ static void render(ComputeApp* app)
     uint32_t workGroupsY = (COMPUTE_TEXTURE_HEIGHT + 15) / 16;
     gfxComputePassEncoderDispatch(computePass, workGroupsX, workGroupsY, 1);
 
-    gfxComputePassEncoderEnd(computePass);
+    if (gfxComputePassEncoderEnd(computePass) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to end compute pass\n");
+        return;
+    }
 
     // Transition compute texture for shader read
     GfxTextureBarrier computeToReadBarrier = {
@@ -1229,9 +1248,15 @@ static void render(ComputeApp* app)
     // Draw fullscreen quad (6 vertices, no buffers needed)
     gfxRenderPassEncoderDraw(renderPass, 6, 1, 0, 0);
 
-    gfxRenderPassEncoderEnd(renderPass);
+    if (gfxRenderPassEncoderEnd(renderPass) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to end render pass\n");
+        return;
+    }
 
-    gfxCommandEncoderEnd(encoder);
+    if (gfxCommandEncoderEnd(encoder) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to end command encoder\n");
+        return;
+    }
 
     // Submit
     GfxSubmitDescriptor submitDescriptor = {};
@@ -1245,7 +1270,10 @@ static void render(ComputeApp* app)
     submitDescriptor.signalSemaphores = &app->renderFinishedSemaphores[frameIndex];
     submitDescriptor.signalFence = app->inFlightFences[frameIndex];
 
-    gfxQueueSubmit(app->queue, &submitDescriptor);
+    if (gfxQueueSubmit(app->queue, &submitDescriptor) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to submit command buffer\n");
+        return;
+    }
 
     // Present
     GfxPresentDescriptor presentDescriptor = {};
@@ -1255,6 +1283,10 @@ static void render(ComputeApp* app)
     presentDescriptor.waitSemaphores = &app->renderFinishedSemaphores[frameIndex];
 
     result = gfxSwapchainPresent(app->swapchain, &presentDescriptor);
+    if (result != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to present swapchain image\n");
+        return;
+    }
 
     app->currentFrame = (app->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }

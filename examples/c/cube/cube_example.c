@@ -728,8 +728,14 @@ static bool createGeometry(CubeApp* app)
     }
 
     // Upload vertex and index data
-    gfxQueueWriteBuffer(app->queue, app->vertexBuffer, 0, vertices, sizeof(vertices));
-    gfxQueueWriteBuffer(app->queue, app->indexBuffer, 0, indices, sizeof(indices));
+    if (gfxQueueWriteBuffer(app->queue, app->vertexBuffer, 0, vertices, sizeof(vertices)) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to write vertex data to buffer\n");
+        return false;
+    }
+    if (gfxQueueWriteBuffer(app->queue, app->indexBuffer, 0, indices, sizeof(indices)) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to write index data to buffer\n");
+        return false;
+    }
 
     return true;
 }
@@ -1180,7 +1186,10 @@ void render(CubeApp* app)
     }
 
     GfxCommandEncoder encoder = app->commandEncoders[app->currentFrame];
-    gfxCommandEncoderBegin(encoder);
+    if (gfxCommandEncoderBegin(encoder) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to begin command encoder\n");
+        return;
+    }
 
     // Begin render pass using pre-created render pass and framebuffer
     GfxColor clearColor = { 0.1f, 0.2f, 0.3f, 1.0f };
@@ -1226,6 +1235,9 @@ void render(CubeApp* app)
             GFX_INDEX_FORMAT_UINT16, 0,
             indexBufferInfo.size);
 
+        // Bind texture (shared by all cubes)
+        gfxRenderPassEncoderSetBindGroup(renderPass, 1, app->textureBindGroup, NULL, 0);
+
         // Draw CUBE_COUNT cubes at different positions
         for (int i = 0; i < CUBE_COUNT; ++i) {
             // Bind the specific cube's bind group (no dynamic offsets)
@@ -1236,11 +1248,17 @@ void render(CubeApp* app)
         }
 
         // End render pass
-        gfxRenderPassEncoderEnd(renderPass);
+        if (gfxRenderPassEncoderEnd(renderPass) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to end render pass\n");
+            return;
+        }
     }
 
     // Finish command encoding
-    gfxCommandEncoderEnd(encoder);
+    if (gfxCommandEncoderEnd(encoder) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to end command encoder\n");
+        return;
+    }
 
     // Submit commands with synchronization
     GfxSubmitDescriptor submitDescriptor = { 0 };
@@ -1252,7 +1270,10 @@ void render(CubeApp* app)
     submitDescriptor.signalSemaphoreCount = 1;
     submitDescriptor.signalFence = app->inFlightFences[app->currentFrame];
 
-    gfxQueueSubmit(app->queue, &submitDescriptor);
+    if (gfxQueueSubmit(app->queue, &submitDescriptor) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to submit command buffer to queue\n");
+        return;
+    }
 
     // Present with synchronization
     GfxPresentDescriptor presentDescriptor = {};
@@ -1260,7 +1281,10 @@ void render(CubeApp* app)
     presentDescriptor.pNext = NULL;
     presentDescriptor.waitSemaphores = &app->renderFinishedSemaphores[app->currentFrame];
     presentDescriptor.waitSemaphoreCount = 1;
-    gfxSwapchainPresent(app->swapchain, &presentDescriptor);
+    if (gfxSwapchainPresent(app->swapchain, &presentDescriptor) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to present swapchain image\n");
+        return;
+    }
 
     // Move to next frame
     app->currentFrame = (app->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
