@@ -1281,12 +1281,12 @@ struct RenderPassCreateDescriptor {
 // Framebuffer structures
 struct FramebufferColorAttachment {
     std::shared_ptr<TextureView> view;
-    std::shared_ptr<TextureView> resolveTarget; // nullptr if not used
+    std::optional<std::shared_ptr<TextureView>> resolveTarget;
 };
 
 struct FramebufferDepthStencilAttachment {
     std::shared_ptr<TextureView> view;
-    std::shared_ptr<TextureView> resolveTarget; // nullptr if not used
+    std::optional<std::shared_ptr<TextureView>> resolveTarget;
 };
 
 struct FramebufferDescriptor {

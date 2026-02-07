@@ -1119,8 +1119,8 @@ void convertFramebufferDescriptor(const FramebufferDescriptor& descriptor, GfxRe
         }
         cAttachment.view = viewImpl->getHandle();
 
-        if (attachment.resolveTarget) {
-            auto resolveImpl = std::dynamic_pointer_cast<TextureViewImpl>(attachment.resolveTarget);
+        if (attachment.resolveTarget.has_value()) {
+            auto resolveImpl = std::dynamic_pointer_cast<TextureViewImpl>(*attachment.resolveTarget);
             if (!resolveImpl) {
                 throw std::runtime_error("Invalid resolve target texture view type");
             }
@@ -1142,8 +1142,8 @@ void convertFramebufferDescriptor(const FramebufferDescriptor& descriptor, GfxRe
         }
         outDepthStencilAttachment.view = viewImpl->getHandle();
 
-        if (descriptor.depthStencilAttachment->resolveTarget) {
-            auto resolveImpl = std::dynamic_pointer_cast<TextureViewImpl>(descriptor.depthStencilAttachment->resolveTarget);
+        if (descriptor.depthStencilAttachment->resolveTarget.has_value()) {
+            auto resolveImpl = std::dynamic_pointer_cast<TextureViewImpl>(*descriptor.depthStencilAttachment->resolveTarget);
             if (!resolveImpl) {
                 throw std::runtime_error("Invalid depth/stencil resolve target texture view type");
             }
