@@ -123,8 +123,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateBasicRenderPipeline)
                 .target = {
                     .format = gfx::TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
-                    .loadOp = gfx::LoadOp::Clear,
-                    .storeOp = gfx::StoreOp::Store,
+                    .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
     auto renderPass = device->createRenderPass(rpDesc);
@@ -172,8 +171,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithFragmentShader)
                                                          .target = {
                                                              .format = gfx::TextureFormat::R8G8B8A8Unorm,
                                                              .sampleCount = gfx::SampleCount::Count1,
-                                                             .loadOp = gfx::LoadOp::Clear,
-                                                             .storeOp = gfx::StoreOp::Store,
+                                                             .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                              .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
     ASSERT_NE(renderPass, nullptr);
 
@@ -221,8 +219,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithNullVertexShader)
                                                          .target = {
                                                              .format = gfx::TextureFormat::R8G8B8A8Unorm,
                                                              .sampleCount = gfx::SampleCount::Count1,
-                                                             .loadOp = gfx::LoadOp::Clear,
-                                                             .storeOp = gfx::StoreOp::Store,
+                                                             .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                              .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
     ASSERT_NE(renderPass, nullptr);
 
@@ -256,8 +253,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithDifferentTopologies)
                                                          .target = {
                                                              .format = gfx::TextureFormat::R8G8B8A8Unorm,
                                                              .sampleCount = gfx::SampleCount::Count1,
-                                                             .loadOp = gfx::LoadOp::Clear,
-                                                             .storeOp = gfx::StoreOp::Store,
+                                                             .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                              .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
     ASSERT_NE(renderPass, nullptr);
 
@@ -303,8 +299,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithCulling)
                                                          .target = {
                                                              .format = gfx::TextureFormat::R8G8B8A8Unorm,
                                                              .sampleCount = gfx::SampleCount::Count1,
-                                                             .loadOp = gfx::LoadOp::Clear,
-                                                             .storeOp = gfx::StoreOp::Store,
+                                                             .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                              .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
     ASSERT_NE(renderPass, nullptr);
 
@@ -354,10 +349,8 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
         .target = {
             .format = gfx::TextureFormat::Depth32Float,
             .sampleCount = gfx::SampleCount::Count1,
-            .depthLoadOp = gfx::LoadOp::Clear,
-            .depthStoreOp = gfx::StoreOp::Store,
-            .stencilLoadOp = gfx::LoadOp::DontCare,
-            .stencilStoreOp = gfx::StoreOp::DontCare,
+            .depthOps = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
+            .stencilOps = { gfx::LoadOp::DontCare, gfx::StoreOp::DontCare },
             .finalLayout = gfx::TextureLayout::DepthStencilAttachment }
     };
 
@@ -367,8 +360,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
                 .target = {
                     .format = gfx::TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
-                    .loadOp = gfx::LoadOp::Clear,
-                    .storeOp = gfx::StoreOp::Store,
+                    .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } },
         .depthStencilAttachment = depthAttachment
     };
@@ -415,8 +407,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithMultipleVertexAttribute
                                                          .target = {
                                                              .format = gfx::TextureFormat::R8G8B8A8Unorm,
                                                              .sampleCount = gfx::SampleCount::Count1,
-                                                             .loadOp = gfx::LoadOp::Clear,
-                                                             .storeOp = gfx::StoreOp::Store,
+                                                             .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                              .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
     ASSERT_NE(renderPass, nullptr);
 
@@ -460,8 +451,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithSPIRVShaders)
                                                      .target = {
                                                          .format = gfx::TextureFormat::R8G8B8A8Unorm,
                                                          .sampleCount = gfx::SampleCount::Count1,
-                                                         .loadOp = gfx::LoadOp::Clear,
-                                                         .storeOp = gfx::StoreOp::Store,
+                                                         .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                          .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
     ASSERT_NE(renderPass, nullptr);
 
@@ -504,8 +494,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithBindGroupLayouts)
                                                      .target = {
                                                          .format = gfx::TextureFormat::R8G8B8A8Unorm,
                                                          .sampleCount = gfx::SampleCount::Count1,
-                                                         .loadOp = gfx::LoadOp::Clear,
-                                                         .storeOp = gfx::StoreOp::Store,
+                                                         .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                          .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
     ASSERT_NE(renderPass, nullptr);
 

@@ -752,8 +752,8 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         gfx::RenderPassColorAttachment colorAttachment{};
         colorAttachment.target.format = swapchainInfo.format;
         colorAttachment.target.sampleCount = gfx::SampleCount::Count1;
-        colorAttachment.target.loadOp = gfx::LoadOp::Clear;
-        colorAttachment.target.storeOp = gfx::StoreOp::Store;
+        colorAttachment.target.ops.load = gfx::LoadOp::Clear;
+        colorAttachment.target.ops.store = gfx::StoreOp::Store;
         colorAttachment.target.finalLayout = gfx::TextureLayout::PresentSrc;
 
         renderPassDesc.colorAttachments.push_back(colorAttachment);

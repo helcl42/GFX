@@ -413,21 +413,21 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 
         colorAttachment.target.format = swapchainInfo.format;
         colorAttachment.target.sampleCount = MSAA_SAMPLE_COUNT;
-        colorAttachment.target.loadOp = gfx::LoadOp::Clear;
-        colorAttachment.target.storeOp = gfx::StoreOp::DontCare; // MSAA buffer doesn't need to be stored
+        colorAttachment.target.ops.load = gfx::LoadOp::Clear;
+        colorAttachment.target.ops.store = gfx::StoreOp::DontCare; // MSAA buffer doesn't need to be stored
         colorAttachment.target.finalLayout = gfx::TextureLayout::ColorAttachment;
 
         if (MSAA_SAMPLE_COUNT != gfx::SampleCount::Count1) {
             // MSAA: Add resolve target
             resolveTarget.format = swapchainInfo.format;
             resolveTarget.sampleCount = gfx::SampleCount::Count1;
-            resolveTarget.loadOp = gfx::LoadOp::DontCare;
-            resolveTarget.storeOp = gfx::StoreOp::Store;
+            resolveTarget.ops.load = gfx::LoadOp::DontCare;
+            resolveTarget.ops.store = gfx::StoreOp::Store;
             resolveTarget.finalLayout = gfx::TextureLayout::PresentSrc;
             colorAttachment.resolveTarget = resolveTarget;
         } else {
             // No MSAA: Store directly
-            colorAttachment.target.storeOp = gfx::StoreOp::Store;
+            colorAttachment.target.ops.store = gfx::StoreOp::Store;
             colorAttachment.target.finalLayout = gfx::TextureLayout::PresentSrc;
         }
 
@@ -437,10 +437,10 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         gfx::RenderPassDepthStencilAttachment depthAttachment{};
         depthAttachment.target.format = DEPTH_FORMAT;
         depthAttachment.target.sampleCount = MSAA_SAMPLE_COUNT;
-        depthAttachment.target.depthLoadOp = gfx::LoadOp::Clear;
-        depthAttachment.target.depthStoreOp = gfx::StoreOp::DontCare;
-        depthAttachment.target.stencilLoadOp = gfx::LoadOp::DontCare;
-        depthAttachment.target.stencilStoreOp = gfx::StoreOp::DontCare;
+        depthAttachment.target.depthOps.load = gfx::LoadOp::Clear;
+        depthAttachment.target.depthOps.store = gfx::StoreOp::DontCare;
+        depthAttachment.target.stencilOps.load = gfx::LoadOp::DontCare;
+        depthAttachment.target.stencilOps.store = gfx::StoreOp::DontCare;
         depthAttachment.target.finalLayout = gfx::TextureLayout::DepthStencilAttachment;
 
         renderPassDesc.depthStencilAttachment = depthAttachment;

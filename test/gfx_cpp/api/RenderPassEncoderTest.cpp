@@ -52,8 +52,7 @@ TEST_P(GfxCppRenderPassEncoderTest, SetPipelineWithNullPipeline)
                 .target = {
                     .format = gfx::TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
-                    .loadOp = gfx::LoadOp::Clear,
-                    .storeOp = gfx::StoreOp::Store,
+                    .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
     auto renderPass = device->createRenderPass(rpDesc);
@@ -83,7 +82,7 @@ TEST_P(GfxCppRenderPassEncoderTest, SetBindGroupWithNullBindGroup)
     ASSERT_NE(encoder, nullptr);
 
     gfx::RenderPassCreateDescriptor rpDesc{
-        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .loadOp = gfx::LoadOp::Clear, .storeOp = gfx::StoreOp::Store, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
+        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
     auto renderPass = device->createRenderPass(rpDesc);
     ASSERT_NE(renderPass, nullptr);
@@ -105,7 +104,7 @@ TEST_P(GfxCppRenderPassEncoderTest, SetVertexBufferWithNullBuffer)
     ASSERT_NE(encoder, nullptr);
 
     gfx::RenderPassCreateDescriptor rpDesc{
-        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .loadOp = gfx::LoadOp::Clear, .storeOp = gfx::StoreOp::Store, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
+        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
     auto renderPass = device->createRenderPass(rpDesc);
 
@@ -126,7 +125,7 @@ TEST_P(GfxCppRenderPassEncoderTest, SetIndexBufferWithNullBuffer)
     ASSERT_NE(encoder, nullptr);
 
     gfx::RenderPassCreateDescriptor rpDesc{
-        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .loadOp = gfx::LoadOp::Clear, .storeOp = gfx::StoreOp::Store, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
+        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
     auto renderPass = device->createRenderPass(rpDesc);
 
@@ -147,7 +146,7 @@ TEST_P(GfxCppRenderPassEncoderTest, SetViewportValid)
     ASSERT_NE(encoder, nullptr);
 
     gfx::RenderPassCreateDescriptor rpDesc{
-        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .loadOp = gfx::LoadOp::Clear, .storeOp = gfx::StoreOp::Store, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
+        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
     auto renderPass = device->createRenderPass(rpDesc);
 
@@ -167,7 +166,7 @@ TEST_P(GfxCppRenderPassEncoderTest, SetScissorRectValid)
     ASSERT_NE(encoder, nullptr);
 
     gfx::RenderPassCreateDescriptor rpDesc{
-        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .loadOp = gfx::LoadOp::Clear, .storeOp = gfx::StoreOp::Store, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
+        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
     auto renderPass = device->createRenderPass(rpDesc);
 
@@ -187,7 +186,7 @@ TEST_P(GfxCppRenderPassEncoderTest, DrawIndirectWithNullBuffer)
     ASSERT_NE(encoder, nullptr);
 
     gfx::RenderPassCreateDescriptor rpDesc{
-        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .loadOp = gfx::LoadOp::Clear, .storeOp = gfx::StoreOp::Store, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
+        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
     auto renderPass = device->createRenderPass(rpDesc);
 
@@ -208,7 +207,7 @@ TEST_P(GfxCppRenderPassEncoderTest, DrawIndexedIndirectWithNullBuffer)
     ASSERT_NE(encoder, nullptr);
 
     gfx::RenderPassCreateDescriptor rpDesc{
-        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .loadOp = gfx::LoadOp::Clear, .storeOp = gfx::StoreOp::Store, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
+        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
     auto renderPass = device->createRenderPass(rpDesc);
 
@@ -230,7 +229,7 @@ TEST_P(GfxCppRenderPassEncoderTest, BeginRenderPassAndEnd)
 
     gfx::RenderPassCreateDescriptor rpDesc{
         .label = "Test",
-        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .loadOp = gfx::LoadOp::Clear, .storeOp = gfx::StoreOp::Store, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
+        .colorAttachments = { gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R8G8B8A8Unorm, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
     auto renderPass = device->createRenderPass(rpDesc);
 

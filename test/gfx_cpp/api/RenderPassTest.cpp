@@ -64,8 +64,7 @@ TEST_P(GfxCppRenderPassTest, CreateBasicRenderPass)
                 .target = {
                     .format = gfx::TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
-                    .loadOp = gfx::LoadOp::Clear,
-                    .storeOp = gfx::StoreOp::Store,
+                    .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
 
@@ -83,10 +82,9 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithMultipleColorAttachments)
                 .target = {
                     .format = gfx::TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
-                    .loadOp = gfx::LoadOp::Clear,
-                    .storeOp = gfx::StoreOp::Store,
+                    .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } },
-            gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R16G16B16A16Float, .sampleCount = gfx::SampleCount::Count1, .loadOp = gfx::LoadOp::Clear, .storeOp = gfx::StoreOp::Store, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
+            gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R16G16B16A16Float, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
 
     auto renderPass = device->createRenderPass(renderPassDesc);
@@ -100,10 +98,8 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDepthAttachment)
         .target = {
             .format = gfx::TextureFormat::Depth32Float,
             .sampleCount = gfx::SampleCount::Count1,
-            .depthLoadOp = gfx::LoadOp::Clear,
-            .depthStoreOp = gfx::StoreOp::Store,
-            .stencilLoadOp = gfx::LoadOp::DontCare,
-            .stencilStoreOp = gfx::StoreOp::DontCare,
+            .depthOps = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
+            .stencilOps = { gfx::LoadOp::DontCare, gfx::StoreOp::DontCare },
             .finalLayout = gfx::TextureLayout::DepthStencilAttachment }
     };
 
@@ -114,8 +110,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDepthAttachment)
                 .target = {
                     .format = gfx::TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
-                    .loadOp = gfx::LoadOp::Clear,
-                    .storeOp = gfx::StoreOp::Store,
+                    .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } },
         .depthStencilAttachment = depthAttachment
     };
@@ -131,10 +126,8 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDepthStencilAttachment)
         .target = {
             .format = gfx::TextureFormat::Depth24PlusStencil8,
             .sampleCount = gfx::SampleCount::Count1,
-            .depthLoadOp = gfx::LoadOp::Clear,
-            .depthStoreOp = gfx::StoreOp::Store,
-            .stencilLoadOp = gfx::LoadOp::Clear,
-            .stencilStoreOp = gfx::StoreOp::Store,
+            .depthOps = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
+            .stencilOps = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
             .finalLayout = gfx::TextureLayout::DepthStencilAttachment }
     };
 
@@ -145,8 +138,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDepthStencilAttachment)
                 .target = {
                     .format = gfx::TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
-                    .loadOp = gfx::LoadOp::Clear,
-                    .storeOp = gfx::StoreOp::Store,
+                    .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } },
         .depthStencilAttachment = depthStencilAttachment
     };
@@ -184,8 +176,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDontCareOps)
                 .target = {
                     .format = gfx::TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
-                    .loadOp = gfx::LoadOp::DontCare,
-                    .storeOp = gfx::StoreOp::DontCare,
+                    .ops = { gfx::LoadOp::DontCare, gfx::StoreOp::DontCare },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
 
@@ -210,8 +201,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDifferentFormats)
                     .target = {
                         .format = format,
                         .sampleCount = gfx::SampleCount::Count1,
-                        .loadOp = gfx::LoadOp::Clear,
-                        .storeOp = gfx::StoreOp::Store,
+                        .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                         .finalLayout = gfx::TextureLayout::ColorAttachment } } }
         };
 
@@ -230,8 +220,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithMultisampling)
                 .target = {
                     .format = gfx::TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count4,
-                    .loadOp = gfx::LoadOp::Clear,
-                    .storeOp = gfx::StoreOp::Store,
+                    .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
 
@@ -249,8 +238,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithEmptyLabel)
                 .target = {
                     .format = gfx::TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
-                    .loadOp = gfx::LoadOp::Clear,
-                    .storeOp = gfx::StoreOp::Store,
+                    .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
 

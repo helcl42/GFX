@@ -64,8 +64,7 @@ TEST_P(RenderPassEncoderImplTest, SetViewportAndScissor)
     RenderPassColorAttachmentTarget colorTarget{
         .format = TextureFormat::R8G8B8A8Unorm,
         .sampleCount = SampleCount::Count1,
-        .loadOp = LoadOp::Clear,
-        .storeOp = StoreOp::Store,
+        .ops = { LoadOp::Clear, StoreOp::Store },
         .finalLayout = TextureLayout::ColorAttachment
     };
 

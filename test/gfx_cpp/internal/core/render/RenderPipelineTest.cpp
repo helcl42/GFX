@@ -130,8 +130,7 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipeline)
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
                 .sampleCount = SampleCount::Count1,
-                .loadOp = LoadOp::Clear,
-                .storeOp = StoreOp::Store,
+                .ops = { LoadOp::Clear, StoreOp::Store },
                 .finalLayout = TextureLayout::ColorAttachment } }
         }
     };
@@ -181,8 +180,7 @@ TEST_P(RenderPipelineImplTest, MultipleRenderPipelines_IndependentHandles)
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
                 .sampleCount = SampleCount::Count1,
-                .loadOp = LoadOp::Clear,
-                .storeOp = StoreOp::Store,
+                .ops = { LoadOp::Clear, StoreOp::Store },
                 .finalLayout = TextureLayout::ColorAttachment } }
         }
     };
@@ -248,8 +246,7 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithFragmentShader)
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
                 .sampleCount = SampleCount::Count1,
-                .loadOp = LoadOp::Clear,
-                .storeOp = StoreOp::Store,
+                .ops = { LoadOp::Clear, StoreOp::Store },
                 .finalLayout = TextureLayout::ColorAttachment } }
         }
     };
@@ -323,8 +320,7 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithWGSLShaders)
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
                 .sampleCount = SampleCount::Count1,
-                .loadOp = LoadOp::Clear,
-                .storeOp = StoreOp::Store,
+                .ops = { LoadOp::Clear, StoreOp::Store },
                 .finalLayout = TextureLayout::ColorAttachment } }
         }
     };
@@ -398,8 +394,7 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithMixedShaderFormats)
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
                 .sampleCount = SampleCount::Count1,
-                .loadOp = LoadOp::Clear,
-                .storeOp = StoreOp::Store,
+                .ops = { LoadOp::Clear, StoreOp::Store },
                 .finalLayout = TextureLayout::ColorAttachment } }
         }
     };
@@ -468,8 +463,7 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithMultisampling)
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
                 .sampleCount = SampleCount::Count4,
-                .loadOp = LoadOp::Clear,
-                .storeOp = StoreOp::Store,
+                .ops = { LoadOp::Clear, StoreOp::Store },
                 .finalLayout = TextureLayout::ColorAttachment } }
         }
     };

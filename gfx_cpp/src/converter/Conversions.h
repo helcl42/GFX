@@ -155,6 +155,7 @@ GfxStencilOperation cppStencilOperationToCStencilOperation(StencilOperation op);
 // Load/Store op conversions
 GfxLoadOp cppLoadOpToCLoadOp(LoadOp op);
 GfxStoreOp cppStoreOpToCStoreOp(StoreOp op);
+GfxLoadStoreOps cppLoadStoreOpsToCLoadStoreOps(const LoadStoreOps& ops);
 
 // Adapter preference conversions
 GfxAdapterPreference cppAdapterPreferenceToCAdapterPreference(AdapterPreference preference);

@@ -1229,12 +1229,17 @@ struct TextureBarrier {
     uint32_t arrayLayerCount = 1;
 };
 
+// Load/store operations pair
+struct LoadStoreOps {
+    LoadOp load = LoadOp::Clear;
+    StoreOp store = StoreOp::Store;
+};
+
 // Render Pass API structures (cached, reusable render pass objects)
 struct RenderPassColorAttachmentTarget {
     TextureFormat format = TextureFormat::Undefined;
     SampleCount sampleCount = SampleCount::Count1;
-    LoadOp loadOp = LoadOp::Clear;
-    StoreOp storeOp = StoreOp::Store;
+    LoadStoreOps ops;
     TextureLayout finalLayout = TextureLayout::Undefined;
 };
 
@@ -1246,10 +1251,8 @@ struct RenderPassColorAttachment {
 struct RenderPassDepthStencilAttachmentTarget {
     TextureFormat format = TextureFormat::Undefined;
     SampleCount sampleCount = SampleCount::Count1;
-    LoadOp depthLoadOp = LoadOp::Clear;
-    StoreOp depthStoreOp = StoreOp::Store;
-    LoadOp stencilLoadOp = LoadOp::Clear;
-    StoreOp stencilStoreOp = StoreOp::Store;
+    LoadStoreOps depthOps;
+    LoadStoreOps stencilOps;
     TextureLayout finalLayout = TextureLayout::Undefined;
 };
 

@@ -66,8 +66,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithColorAttachment)
                 .target = {
                     .format = TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count1,
-                    .loadOp = LoadOp::Clear,
-                    .storeOp = StoreOp::Store,
+                    .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment } } }
     };
 
@@ -129,10 +128,9 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithMultipleColorAttachments)
                 .target = {
                     .format = TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count1,
-                    .loadOp = LoadOp::Clear,
-                    .storeOp = StoreOp::Store,
+                    .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment } },
-            RenderPassColorAttachment{ .target = { .format = TextureFormat::R16G16B16A16Float, .sampleCount = SampleCount::Count1, .loadOp = LoadOp::Clear, .storeOp = StoreOp::Store, .finalLayout = TextureLayout::ColorAttachment } } }
+            RenderPassColorAttachment{ .target = { .format = TextureFormat::R16G16B16A16Float, .sampleCount = SampleCount::Count1, .ops = { LoadOp::Clear, StoreOp::Store }, .finalLayout = TextureLayout::ColorAttachment } } }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
@@ -213,10 +211,8 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithDepthStencilAttachment)
     RenderPassDepthStencilAttachmentTarget depthStencilTarget{
         .format = TextureFormat::Depth24PlusStencil8,
         .sampleCount = SampleCount::Count1,
-        .depthLoadOp = LoadOp::Clear,
-        .depthStoreOp = StoreOp::Store,
-        .stencilLoadOp = LoadOp::Clear,
-        .stencilStoreOp = StoreOp::Store,
+        .depthOps = { LoadOp::Clear, StoreOp::Store },
+        .stencilOps = { LoadOp::Clear, StoreOp::Store },
         .finalLayout = TextureLayout::DepthStencilAttachment
     };
 
@@ -231,8 +227,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithDepthStencilAttachment)
                 .target = {
                     .format = TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count1,
-                    .loadOp = LoadOp::Clear,
-                    .storeOp = StoreOp::Store,
+                    .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment } } },
         .depthStencilAttachment = depthStencilAttachment
     };
@@ -322,8 +317,7 @@ TEST_P(FramebufferImplTest, CreateMultipleFramebuffers_IndependentHandles)
                 .target = {
                     .format = TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count1,
-                    .loadOp = LoadOp::Clear,
-                    .storeOp = StoreOp::Store,
+                    .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment } } }
     };
 

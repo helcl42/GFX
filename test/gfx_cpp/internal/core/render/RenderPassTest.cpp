@@ -66,8 +66,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithColorAttachment)
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
                 .sampleCount = SampleCount::Count1,
-                .loadOp = LoadOp::Clear,
-                .storeOp = StoreOp::Store,
+                .ops = { LoadOp::Clear, StoreOp::Store },
                 .finalLayout = TextureLayout::ColorAttachment } }
         }
     };
@@ -87,10 +86,9 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithMultipleColorAttachments)
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
                 .sampleCount = SampleCount::Count1,
-                .loadOp = LoadOp::Clear,
-                .storeOp = StoreOp::Store,
+                .ops = { LoadOp::Clear, StoreOp::Store },
                 .finalLayout = TextureLayout::ColorAttachment } },
-        RenderPassColorAttachment{ .target = { .format = TextureFormat::R16G16B16A16Float, .sampleCount = SampleCount::Count1, .loadOp = LoadOp::Load, .storeOp = StoreOp::Store, .finalLayout = TextureLayout::ColorAttachment } }
+        RenderPassColorAttachment{ .target = { .format = TextureFormat::R16G16B16A16Float, .sampleCount = SampleCount::Count1, .ops = { LoadOp::Load, StoreOp::Store }, .finalLayout = TextureLayout::ColorAttachment } }
         }
     };
 
@@ -105,10 +103,8 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithDepthStencilAttachment)
     RenderPassDepthStencilAttachmentTarget depthStencilTarget{
         .format = TextureFormat::Depth24PlusStencil8,
         .sampleCount = SampleCount::Count1,
-        .depthLoadOp = LoadOp::Clear,
-        .depthStoreOp = StoreOp::Store,
-        .stencilLoadOp = LoadOp::Clear,
-        .stencilStoreOp = StoreOp::Store,
+        .depthOps = { LoadOp::Clear, StoreOp::Store },
+        .stencilOps = { LoadOp::Clear, StoreOp::Store },
         .finalLayout = TextureLayout::DepthStencilAttachment
     };
 
@@ -124,8 +120,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithDepthStencilAttachment)
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
                 .sampleCount = SampleCount::Count1,
-                .loadOp = LoadOp::Clear,
-                .storeOp = StoreOp::Store,
+                .ops = { LoadOp::Clear, StoreOp::Store },
                 .finalLayout = TextureLayout::ColorAttachment } }
         },
         .depthStencilAttachment = depthStencilAttachment
@@ -145,8 +140,7 @@ TEST_P(RenderPassImplTest, CreateMultipleRenderPasses_IndependentHandles)
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
                 .sampleCount = SampleCount::Count1,
-                .loadOp = LoadOp::Clear,
-                .storeOp = StoreOp::Store,
+                .ops = { LoadOp::Clear, StoreOp::Store },
                 .finalLayout = TextureLayout::ColorAttachment } }
         }
     };
@@ -166,8 +160,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithMSAAAndResolve)
     RenderPassColorAttachmentTarget resolveTarget{
         .format = TextureFormat::R8G8B8A8Unorm,
         .sampleCount = SampleCount::Count1,
-        .loadOp = LoadOp::DontCare,
-        .storeOp = StoreOp::Store,
+        .ops = { LoadOp::DontCare, StoreOp::Store },
         .finalLayout = TextureLayout::ColorAttachment
     };
 
@@ -178,8 +171,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithMSAAAndResolve)
             .target = {
                 .format = TextureFormat::R8G8B8A8Unorm,
                 .sampleCount = SampleCount::Count4,
-                .loadOp = LoadOp::Clear,
-                .storeOp = StoreOp::Store,
+                .ops = { LoadOp::Clear, StoreOp::Store },
                 .finalLayout = TextureLayout::ColorAttachment },
             .resolveTarget = resolveTarget }
         }

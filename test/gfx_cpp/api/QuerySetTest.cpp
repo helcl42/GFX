@@ -445,8 +445,7 @@ TEST_P(GfxCppQuerySetTest, BeginOcclusionQueryInRenderPass)
     gfx::RenderPassColorAttachmentTarget colorTarget{
         .format = gfx::TextureFormat::R8G8B8A8Unorm,
         .sampleCount = gfx::SampleCount::Count1,
-        .loadOp = gfx::LoadOp::Clear,
-        .storeOp = gfx::StoreOp::Store,
+        .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
         .finalLayout = gfx::TextureLayout::ColorAttachment
     };
 
@@ -539,8 +538,7 @@ TEST_P(GfxCppQuerySetTest, EndOcclusionQueryInRenderPass)
     gfx::RenderPassColorAttachmentTarget colorTarget{
         .format = gfx::TextureFormat::R8G8B8A8Unorm,
         .sampleCount = gfx::SampleCount::Count1,
-        .loadOp = gfx::LoadOp::Clear,
-        .storeOp = gfx::StoreOp::Store,
+        .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
         .finalLayout = gfx::TextureLayout::ColorAttachment
     };
 

@@ -638,6 +638,14 @@ GfxStoreOp cppStoreOpToCStoreOp(StoreOp op)
     return static_cast<GfxStoreOp>(op);
 }
 
+GfxLoadStoreOps cppLoadStoreOpsToCLoadStoreOps(const LoadStoreOps& ops)
+{
+    GfxLoadStoreOps result;
+    result.loadOp = cppLoadOpToCLoadOp(ops.load);
+    result.storeOp = cppStoreOpToCStoreOp(ops.store);
+    return result;
+}
+
 GfxAdapterPreference cppAdapterPreferenceToCAdapterPreference(AdapterPreference preference)
 {
     return static_cast<GfxAdapterPreference>(preference);
@@ -972,8 +980,7 @@ void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, s
         GfxRenderPassColorAttachmentTarget cTarget = {};
         cTarget.format = cppFormatToCFormat(attachment.target.format);
         cTarget.sampleCount = cppSampleCountToCCount(attachment.target.sampleCount);
-        cTarget.ops.loadOp = cppLoadOpToCLoadOp(attachment.target.loadOp);
-        cTarget.ops.storeOp = cppStoreOpToCStoreOp(attachment.target.storeOp);
+        cTarget.ops = cppLoadStoreOpsToCLoadStoreOps(attachment.target.ops);
         cTarget.finalLayout = cppLayoutToCLayout(attachment.target.finalLayout);
         outColorTargets.push_back(cTarget);
         cAttachment.target = outColorTargets.back();
@@ -982,8 +989,7 @@ void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, s
             GfxRenderPassColorAttachmentTarget cResolveTarget = {};
             cResolveTarget.format = cppFormatToCFormat(attachment.resolveTarget->format);
             cResolveTarget.sampleCount = cppSampleCountToCCount(attachment.resolveTarget->sampleCount);
-            cResolveTarget.ops.loadOp = cppLoadOpToCLoadOp(attachment.resolveTarget->loadOp);
-            cResolveTarget.ops.storeOp = cppStoreOpToCStoreOp(attachment.resolveTarget->storeOp);
+            cResolveTarget.ops = cppLoadStoreOpsToCLoadStoreOps(attachment.resolveTarget->ops);
             cResolveTarget.finalLayout = cppLayoutToCLayout(attachment.resolveTarget->finalLayout);
             outColorResolveTargets.push_back(cResolveTarget);
             cAttachment.resolveTarget = &outColorResolveTargets.back();
@@ -1003,20 +1009,16 @@ void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, s
     if (descriptor.depthStencilAttachment.has_value()) {
         outDepthTarget.format = cppFormatToCFormat(descriptor.depthStencilAttachment->target.format);
         outDepthTarget.sampleCount = cppSampleCountToCCount(descriptor.depthStencilAttachment->target.sampleCount);
-        outDepthTarget.depthOps.loadOp = cppLoadOpToCLoadOp(descriptor.depthStencilAttachment->target.depthLoadOp);
-        outDepthTarget.depthOps.storeOp = cppStoreOpToCStoreOp(descriptor.depthStencilAttachment->target.depthStoreOp);
-        outDepthTarget.stencilOps.loadOp = cppLoadOpToCLoadOp(descriptor.depthStencilAttachment->target.stencilLoadOp);
-        outDepthTarget.stencilOps.storeOp = cppStoreOpToCStoreOp(descriptor.depthStencilAttachment->target.stencilStoreOp);
+        outDepthTarget.depthOps = cppLoadStoreOpsToCLoadStoreOps(descriptor.depthStencilAttachment->target.depthOps);
+        outDepthTarget.stencilOps = cppLoadStoreOpsToCLoadStoreOps(descriptor.depthStencilAttachment->target.stencilOps);
         outDepthTarget.finalLayout = cppLayoutToCLayout(descriptor.depthStencilAttachment->target.finalLayout);
         outDepthStencilAttachment.target = outDepthTarget;
 
         if (descriptor.depthStencilAttachment->resolveTarget.has_value()) {
             outDepthResolveTarget.format = cppFormatToCFormat(descriptor.depthStencilAttachment->resolveTarget->format);
             outDepthResolveTarget.sampleCount = cppSampleCountToCCount(descriptor.depthStencilAttachment->resolveTarget->sampleCount);
-            outDepthResolveTarget.depthOps.loadOp = cppLoadOpToCLoadOp(descriptor.depthStencilAttachment->resolveTarget->depthLoadOp);
-            outDepthResolveTarget.depthOps.storeOp = cppStoreOpToCStoreOp(descriptor.depthStencilAttachment->resolveTarget->depthStoreOp);
-            outDepthResolveTarget.stencilOps.loadOp = cppLoadOpToCLoadOp(descriptor.depthStencilAttachment->resolveTarget->stencilLoadOp);
-            outDepthResolveTarget.stencilOps.storeOp = cppStoreOpToCStoreOp(descriptor.depthStencilAttachment->resolveTarget->stencilStoreOp);
+            outDepthResolveTarget.depthOps = cppLoadStoreOpsToCLoadStoreOps(descriptor.depthStencilAttachment->resolveTarget->depthOps);
+            outDepthResolveTarget.stencilOps = cppLoadStoreOpsToCLoadStoreOps(descriptor.depthStencilAttachment->resolveTarget->stencilOps);
             outDepthResolveTarget.finalLayout = cppLayoutToCLayout(descriptor.depthStencilAttachment->resolveTarget->finalLayout);
             outDepthStencilAttachment.resolveTarget = &outDepthResolveTarget;
         } else {
