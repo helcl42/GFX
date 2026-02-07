@@ -300,10 +300,10 @@ std::shared_ptr<RenderPass> DeviceImpl::createRenderPass(const RenderPassCreateD
     GfxRenderPassDepthStencilAttachment cDepthStencilAttachment;
     GfxRenderPassDepthStencilAttachmentTarget cDepthTarget;
     GfxRenderPassDepthStencilAttachmentTarget cDepthResolveTarget;
-    GfxRenderPassMultiviewInfo cMultiviewInfo;
+    GfxRenderPassMultiviewDescriptor cMultiviewDescriptor;
     std::vector<uint32_t> cCorrelationMasks;
     GfxRenderPassDescriptor cDesc;
-    convertRenderPassDescriptor(descriptor, cColorAttachments, cColorTargets, cColorResolveTargets, cDepthStencilAttachment, cDepthTarget, cDepthResolveTarget, cMultiviewInfo, cCorrelationMasks, cDesc);
+    convertRenderPassDescriptor(descriptor, cColorAttachments, cColorTargets, cColorResolveTargets, cDepthStencilAttachment, cDepthTarget, cDepthResolveTarget, cMultiviewDescriptor, cCorrelationMasks, cDesc);
 
     GfxRenderPass renderPass = nullptr;
     GfxResult result = gfxDeviceCreateRenderPass(m_handle, &cDesc, &renderPass);

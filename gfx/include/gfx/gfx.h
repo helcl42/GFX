@@ -834,7 +834,7 @@ typedef enum {
     GFX_STRUCTURE_TYPE_RENDER_PASS_BEGIN_DESCRIPTOR = 25,
     GFX_STRUCTURE_TYPE_COMPUTE_PASS_BEGIN_DESCRIPTOR = 26,
     GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR = 27,
-    GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_INFO = 28,
+    GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_DESCRIPTOR = 28,
     GFX_STRUCTURE_TYPE_MAX_ENUM = 0x7FFFFFFF
 } GfxStructureType;
 
@@ -1021,7 +1021,7 @@ typedef struct {
 // Requires GFX_DEVICE_EXTENSION_MULTIVIEW to be enabled on device
 // Example: For stereo rendering, set viewMask = 0x3 (views 0 and 1)
 typedef struct {
-    GfxStructureType sType; // Must be GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_INFO
+    GfxStructureType sType; // Must be GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_DESCRIPTOR
     const void* pNext;
 
     // View mask - bit N set means view N is rendered
@@ -1034,7 +1034,7 @@ typedef struct {
     // Example: For stereo, both eyes correlate: correlationMasks[0] = 0x3
     const uint32_t* correlationMasks;
     uint32_t correlationMaskCount;
-} GfxRenderPassMultiviewInfo;
+} GfxRenderPassMultiviewDescriptor;
 
 // Framebuffer attachment with optional resolve target
 typedef struct {

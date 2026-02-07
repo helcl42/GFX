@@ -958,7 +958,7 @@ void convertBindGroupDescriptor(const BindGroupDescriptor& descriptor, std::vect
     outDesc.entryCount = static_cast<uint32_t>(outEntries.size());
 }
 
-void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, std::vector<GfxRenderPassColorAttachment>& outColorAttachments, std::vector<GfxRenderPassColorAttachmentTarget>& outColorTargets, std::vector<GfxRenderPassColorAttachmentTarget>& outColorResolveTargets, GfxRenderPassDepthStencilAttachment& outDepthStencilAttachment, GfxRenderPassDepthStencilAttachmentTarget& outDepthTarget, GfxRenderPassDepthStencilAttachmentTarget& outDepthResolveTarget, GfxRenderPassMultiviewInfo& outMultiviewInfo, std::vector<uint32_t>& outCorrelationMasks, GfxRenderPassDescriptor& outDesc)
+void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, std::vector<GfxRenderPassColorAttachment>& outColorAttachments, std::vector<GfxRenderPassColorAttachmentTarget>& outColorTargets, std::vector<GfxRenderPassColorAttachmentTarget>& outColorResolveTargets, GfxRenderPassDepthStencilAttachment& outDepthStencilAttachment, GfxRenderPassDepthStencilAttachmentTarget& outDepthTarget, GfxRenderPassDepthStencilAttachmentTarget& outDepthResolveTarget, GfxRenderPassMultiviewDescriptor& outMultiviewDescriptor, std::vector<uint32_t>& outCorrelationMasks, GfxRenderPassDescriptor& outDesc)
 {
     outColorAttachments.clear();
     outColorTargets.clear();
@@ -1038,19 +1038,19 @@ void convertRenderPassDescriptor(const RenderPassCreateDescriptor& descriptor, s
     const ChainedStruct* chainNode = descriptor.next;
     while (chainNode) {
         // Check for multiview extension
-        if (const auto* multiview = dynamic_cast<const RenderPassMultiviewInfo*>(chainNode)) {
-            outMultiviewInfo = {};
-            outMultiviewInfo.sType = GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_INFO;
-            outMultiviewInfo.pNext = nullptr;
-            outMultiviewInfo.viewMask = multiview->viewMask;
-            outMultiviewInfo.correlationMaskCount = static_cast<uint32_t>(multiview->correlationMasks.size());
+        if (const auto* multiview = dynamic_cast<const RenderPassMultiviewDescriptor*>(chainNode)) {
+            outMultiviewDescriptor = {};
+            outMultiviewDescriptor.sType = GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_DESCRIPTOR;
+            outMultiviewDescriptor.pNext = nullptr;
+            outMultiviewDescriptor.viewMask = multiview->viewMask;
+            outMultiviewDescriptor.correlationMaskCount = static_cast<uint32_t>(multiview->correlationMasks.size());
 
             // Copy correlation masks to output vector
             outCorrelationMasks = multiview->correlationMasks;
-            outMultiviewInfo.correlationMasks = outCorrelationMasks.empty() ? nullptr : outCorrelationMasks.data();
+            outMultiviewDescriptor.correlationMasks = outCorrelationMasks.empty() ? nullptr : outCorrelationMasks.data();
 
             // Link to pNext chain
-            outDesc.pNext = &outMultiviewInfo;
+            outDesc.pNext = &outMultiviewDescriptor;
         }
 
         chainNode = chainNode->next;

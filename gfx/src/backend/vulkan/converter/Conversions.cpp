@@ -1705,8 +1705,8 @@ core::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(const G
     // Handle multiview extension in pNext chain
     const GfxChainHeader* chainNode = static_cast<const GfxChainHeader*>(descriptor->pNext);
     while (chainNode) {
-        if (chainNode->sType == GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_INFO) {
-            const GfxRenderPassMultiviewInfo* multiview = static_cast<const GfxRenderPassMultiviewInfo*>(static_cast<const void*>(chainNode));
+        if (chainNode->sType == GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_DESCRIPTOR) {
+            const GfxRenderPassMultiviewDescriptor* multiview = static_cast<const GfxRenderPassMultiviewDescriptor*>(static_cast<const void*>(chainNode));
             createInfo.viewMask = multiview->viewMask;
             for (uint32_t i = 0; i < multiview->correlationMaskCount; ++i) {
                 createInfo.correlationMasks.push_back(multiview->correlationMasks[i]);

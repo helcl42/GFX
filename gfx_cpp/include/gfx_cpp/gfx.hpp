@@ -1261,7 +1261,7 @@ struct RenderPassDepthStencilAttachment {
 // Multiview extension - chain to RenderPassCreateDescriptor.next
 // Enables rendering to multiple views (e.g., stereo, multiview VR) in a single pass
 // Requires device extension: DEVICE_EXTENSION_MULTIVIEW
-struct RenderPassMultiviewInfo : public ChainedStruct {
+struct RenderPassMultiviewDescriptor : public ChainedStruct {
     // View mask - bit N indicates view N is rendered
     // Example: 0x3 = views 0 and 1 (stereo)
     uint32_t viewMask = 0;
