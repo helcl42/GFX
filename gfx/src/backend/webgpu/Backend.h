@@ -5,6 +5,15 @@
 
 #include "../IBackend.h"
 
+#include "component/CommandComponent.h"
+#include "component/ComputeComponent.h"
+#include "component/PresentationComponent.h"
+#include "component/QueryComponent.h"
+#include "component/RenderComponent.h"
+#include "component/ResourceComponent.h"
+#include "component/SyncComponent.h"
+#include "component/SystemComponent.h"
+
 namespace gfx::backend::webgpu {
 // WebGPU backend implementation
 class Backend : public IBackend {
@@ -169,6 +178,16 @@ public:
 
     // Helper functions
     GfxAccessFlags getAccessFlagsForLayout(GfxTextureLayout layout) const override;
+
+private:
+    component::SystemComponent m_systemComponent;
+    component::PresentationComponent m_presentationComponent;
+    component::ResourceComponent m_resourceComponent;
+    component::RenderComponent m_renderComponent;
+    component::ComputeComponent m_computeComponent;
+    component::CommandComponent m_commandComponent;
+    component::SyncComponent m_syncComponent;
+    component::QueryComponent m_queryComponent;
 };
 
 } // namespace gfx::backend::webgpu

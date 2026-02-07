@@ -338,6 +338,15 @@ if(BUILD_WEBGPU_BACKEND)
         gfx/src/backend/webgpu/Backend.cpp
         gfx/src/backend/webgpu/converter/Conversions.cpp
         gfx/src/backend/webgpu/validator/Validations.cpp
+        # Components
+        gfx/src/backend/webgpu/component/SystemComponent.cpp
+        gfx/src/backend/webgpu/component/PresentationComponent.cpp
+        gfx/src/backend/webgpu/component/ResourceComponent.cpp
+        gfx/src/backend/webgpu/component/RenderComponent.cpp
+        gfx/src/backend/webgpu/component/ComputeComponent.cpp
+        gfx/src/backend/webgpu/component/CommandComponent.cpp
+        gfx/src/backend/webgpu/component/SyncComponent.cpp
+        gfx/src/backend/webgpu/component/QueryComponent.cpp
         # System
         gfx/src/backend/webgpu/core/system/Instance.cpp
         gfx/src/backend/webgpu/core/system/Adapter.cpp
