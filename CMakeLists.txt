@@ -284,6 +284,16 @@ set(GFX_C_SOURCES
 if(BUILD_VULKAN_BACKEND)
     list(APPEND GFX_C_SOURCES 
         gfx/src/backend/vulkan/Backend.cpp
+        # Components
+        gfx/src/backend/vulkan/component/SystemComponent.cpp
+        gfx/src/backend/vulkan/component/PresentationComponent.cpp
+        gfx/src/backend/vulkan/component/ResourceComponent.cpp
+        gfx/src/backend/vulkan/component/RenderComponent.cpp
+        gfx/src/backend/vulkan/component/ComputeComponent.cpp
+        gfx/src/backend/vulkan/component/CommandComponent.cpp
+        gfx/src/backend/vulkan/component/SyncComponent.cpp
+        gfx/src/backend/vulkan/component/QueryComponent.cpp
+        # Converters and validators
         gfx/src/backend/vulkan/converter/Conversions.cpp
         gfx/src/backend/vulkan/validator/Validations.cpp
         # System

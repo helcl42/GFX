@@ -2,6 +2,14 @@
 #define GFX_BACKEND_VULKAN_H
 
 #include "../IBackend.h"
+#include "component/CommandComponent.h"
+#include "component/ComputeComponent.h"
+#include "component/PresentationComponent.h"
+#include "component/QueryComponent.h"
+#include "component/RenderComponent.h"
+#include "component/ResourceComponent.h"
+#include "component/SyncComponent.h"
+#include "component/SystemComponent.h"
 
 #include <gfx/gfx.h>
 
@@ -167,10 +175,21 @@ public:
     GfxResult semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const override;
     GfxResult semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const override;
     GfxResult semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const override;
+
     // Helper functions
     GfxAccessFlags getAccessFlagsForLayout(GfxTextureLayout layout) const override;
+
+private:
+    component::SystemComponent m_systemComponent;
+    component::PresentationComponent m_presentationComponent;
+    component::ResourceComponent m_resourceComponent;
+    component::RenderComponent m_renderComponent;
+    component::ComputeComponent m_computeComponent;
+    component::CommandComponent m_commandComponent;
+    component::SyncComponent m_syncComponent;
+    component::QueryComponent m_queryComponent;
 };
 
 } // namespace gfx::backend::vulkan
 
-#endif // GFX_VULKAN_BACKEND_H
+#endif // GFX_BACKEND_VULKAN_H
