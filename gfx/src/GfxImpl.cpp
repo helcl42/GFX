@@ -555,10 +555,6 @@ GfxResult gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo)
     }
     auto backend = gfx::backend::BackendManager::instance().getBackend(swapchain);
     if (!backend) {
-        outInfo->width = 0;
-        outInfo->height = 0;
-        outInfo->format = GFX_TEXTURE_FORMAT_UNDEFINED;
-        outInfo->imageCount = 0;
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
     return backend->swapchainGetInfo(swapchain, outInfo);
