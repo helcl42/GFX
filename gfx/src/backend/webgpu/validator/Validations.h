@@ -8,9 +8,6 @@ namespace gfx::backend::webgpu::validator {
 // Public validation interface (called by Backend)
 // ============================================================================
 
-// Combined validation functions (parameters + descriptors)
-// ============================================================================
-
 GfxResult validateCreateInstance(const GfxInstanceDescriptor* descriptor, GfxInstance* outInstance);
 GfxResult validateInstanceRequestAdapter(GfxInstance instance, const GfxAdapterDescriptor* descriptor, GfxAdapter* outAdapter);
 GfxResult validateInstanceEnumerateAdapters(GfxInstance instance, uint32_t* adapterCount);

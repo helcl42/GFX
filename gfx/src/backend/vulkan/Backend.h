@@ -44,7 +44,7 @@ public:
     // Queue functions
     GfxResult queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor) const override;
     GfxResult queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const override;
-    GfxResult queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const override;
+    GfxResult queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, const GfxExtent3D* extent, uint32_t mipLevel, const void* data, uint64_t dataSize, GfxTextureLayout finalLayout) const override;
     GfxResult queueWaitIdle(GfxQueue queue) const override;
 
     // Surface functions

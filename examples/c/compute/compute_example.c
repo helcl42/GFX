@@ -288,8 +288,8 @@ static bool createSwapchain(ComputeApp* app, uint32_t width, uint32_t height)
     printf("Surface Info:\n");
     printf("  Image Count: min %u, max %u\n", surfaceInfo.minImageCount, surfaceInfo.maxImageCount);
     printf("  Extent: min (%u, %u), max (%u, %u)\n",
-        surfaceInfo.minWidth, surfaceInfo.minHeight,
-        surfaceInfo.maxWidth, surfaceInfo.maxHeight);
+        surfaceInfo.minExtent.width, surfaceInfo.minExtent.height,
+        surfaceInfo.maxExtent.width, surfaceInfo.maxExtent.height);
 
     // Calculate frames in flight based on surface capabilities (clamp to [2, 4])
     app->framesInFlightCount = surfaceInfo.minImageCount;
@@ -321,8 +321,8 @@ static bool createSwapchain(ComputeApp* app, uint32_t width, uint32_t height)
     swapchainDesc.sType = GFX_STRUCTURE_TYPE_SWAPCHAIN_DESCRIPTOR;
     swapchainDesc.pNext = NULL;
     swapchainDesc.surface = app->surface;
-    swapchainDesc.width = width;
-    swapchainDesc.height = height;
+    swapchainDesc.extent.width = width;
+    swapchainDesc.extent.height = height;
     swapchainDesc.format = COLOR_FORMAT;
     swapchainDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     swapchainDesc.presentMode = GFX_PRESENT_MODE_FIFO;
@@ -780,8 +780,8 @@ static bool createFramebuffers(ComputeApp* app)
         fbDesc.colorAttachments = &fbColorAttachment;
         fbDesc.colorAttachmentCount = 1;
         fbDesc.depthStencilAttachment = fbDepthAttachment;
-        fbDesc.width = app->swapchainInfo.width;
-        fbDesc.height = app->swapchainInfo.height;
+        fbDesc.extent.width = app->swapchainInfo.extent.width;
+        fbDesc.extent.height = app->swapchainInfo.extent.height;
 
         if (gfxDeviceCreateFramebuffer(app->device, &fbDesc, &app->framebuffers[i]) != GFX_RESULT_SUCCESS) {
             fprintf(stderr, "Failed to create framebuffer %u\n", i);
@@ -1274,10 +1274,8 @@ static void render(ComputeApp* app)
     gfxRenderPassEncoderSetViewport(renderPass, &viewport);
 
     GfxScissorRect scissor = {
-        .x = 0,
-        .y = 0,
-        .width = app->windowWidth,
-        .height = app->windowHeight
+        .origin = { 0, 0 },
+        .extent = { app->windowWidth, app->windowHeight }
     };
     gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
 

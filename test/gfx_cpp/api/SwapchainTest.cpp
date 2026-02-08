@@ -61,8 +61,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainNullSurface)
     gfx::SwapchainDescriptor desc{
         .label = "TestSwapchain",
         .surface = nullSurface,
-        .width = 800,
-        .height = 600,
+        .extent = { 800, 600 },
         .format = gfx::TextureFormat::B8G8R8A8Unorm,
         .usage = gfx::TextureUsage::RenderAttachment,
         .presentMode = gfx::PresentMode::Fifo,
@@ -90,8 +89,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainInvalidDimensions)
     gfx::SwapchainDescriptor desc{
         .label = "TestSwapchain",
         .surface = nullSurface,
-        .width = 0,
-        .height = 600,
+        .extent = { 0, 600 },
         .format = gfx::TextureFormat::B8G8R8A8Unorm,
         .usage = gfx::TextureUsage::RenderAttachment,
         .presentMode = gfx::PresentMode::Fifo,
@@ -106,8 +104,8 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainInvalidDimensions)
     }
 
     // Zero height should be rejected
-    desc.width = 800;
-    desc.height = 0;
+    desc.extent.width = 800;
+    desc.extent.height = 0;
 
     try {
         swapchain = device->createSwapchain(desc);
@@ -117,8 +115,8 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainInvalidDimensions)
     }
 
     // Both zero should be rejected
-    desc.width = 0;
-    desc.height = 0;
+    desc.extent.width = 0;
+    desc.extent.height = 0;
 
     try {
         swapchain = device->createSwapchain(desc);
@@ -137,8 +135,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainInvalidImageCount)
     gfx::SwapchainDescriptor desc{
         .label = "TestSwapchain",
         .surface = nullSurface,
-        .width = 800,
-        .height = 600,
+        .extent = { 800, 600 },
         .format = gfx::TextureFormat::B8G8R8A8Unorm,
         .usage = gfx::TextureUsage::RenderAttachment,
         .presentMode = gfx::PresentMode::Fifo,
@@ -167,7 +164,7 @@ TEST_P(GfxCppSwapchainTest, GetInfoNullSwapchain)
     // In C++, dereferencing nullptr would crash, so we just verify nullptr checks
     std::shared_ptr<gfx::Swapchain> nullSwapchain;
     EXPECT_EQ(nullSwapchain, nullptr);
-    
+
     // The following would crash if uncommented (expected behavior):
     // auto info = nullSwapchain->getInfo();
 }
@@ -177,7 +174,7 @@ TEST_P(GfxCppSwapchainTest, AcquireNextImageNullSwapchain)
     // Test that calling methods on null swapchain pointer is handled safely
     std::shared_ptr<gfx::Swapchain> nullSwapchain;
     EXPECT_EQ(nullSwapchain, nullptr);
-    
+
     // The following would crash if uncommented (expected behavior):
     // uint32_t imageIndex = 0;
     // auto result = nullSwapchain->acquireNextImage(0, nullptr, nullptr, &imageIndex);
@@ -188,7 +185,7 @@ TEST_P(GfxCppSwapchainTest, GetTextureViewNullSwapchain)
     // Test that calling methods on null swapchain pointer is handled safely
     std::shared_ptr<gfx::Swapchain> nullSwapchain;
     EXPECT_EQ(nullSwapchain, nullptr);
-    
+
     // The following would crash if uncommented (expected behavior):
     // auto view = nullSwapchain->getTextureView(0);
 }
@@ -198,7 +195,7 @@ TEST_P(GfxCppSwapchainTest, GetCurrentTextureViewNullSwapchain)
     // Test that calling methods on null swapchain pointer is handled safely
     std::shared_ptr<gfx::Swapchain> nullSwapchain;
     EXPECT_EQ(nullSwapchain, nullptr);
-    
+
     // The following would crash if uncommented (expected behavior):
     // auto view = nullSwapchain->getCurrentTextureView();
 }
@@ -208,7 +205,7 @@ TEST_P(GfxCppSwapchainTest, PresentNullSwapchain)
     // Test that calling methods on null swapchain pointer is handled safely
     std::shared_ptr<gfx::Swapchain> nullSwapchain;
     EXPECT_EQ(nullSwapchain, nullptr);
-    
+
     // The following would crash if uncommented (expected behavior):
     // gfx::PresentDescriptor descriptor{};
     // auto result = nullSwapchain->present(descriptor);

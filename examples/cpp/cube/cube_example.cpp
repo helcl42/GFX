@@ -321,8 +321,8 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         auto surfaceInfo = surface->getInfo();
         std::cout << "Surface Info:" << std::endl;
         std::cout << "  Image Count: min " << surfaceInfo.minImageCount << ", max " << surfaceInfo.maxImageCount << std::endl;
-        std::cout << "  Extent: min (" << surfaceInfo.minWidth << ", " << surfaceInfo.minHeight << "), "
-                  << "max (" << surfaceInfo.maxWidth << ", " << surfaceInfo.maxHeight << ")" << std::endl;
+        std::cout << "  Extent: min (" << surfaceInfo.minExtent.width << ", " << surfaceInfo.minExtent.height << "), "
+                  << "max (" << surfaceInfo.maxExtent.width << ", " << surfaceInfo.maxExtent.height << ")" << std::endl;
 
         // Calculate frames in flight based on surface capabilities
         // Use min image count, but clamp to reasonable values (2-4 is typical)
@@ -339,8 +339,8 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         gfx::SwapchainDescriptor swapchainDesc{};
         swapchainDesc.label = "Main Swapchain";
         swapchainDesc.surface = surface;
-        swapchainDesc.width = width;
-        swapchainDesc.height = height;
+        swapchainDesc.extent.width = width;
+        swapchainDesc.extent.height = height;
         swapchainDesc.format = COLOR_FORMAT;
         swapchainDesc.usage = gfx::TextureUsage::RenderAttachment;
         swapchainDesc.presentMode = gfx::PresentMode::Fifo;
@@ -354,8 +354,8 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 
         // Get actual swapchain dimensions (may differ from requested)
         auto swapchainInfo = swapchain->getInfo();
-        uint32_t actualWidth = swapchainInfo.width;
-        uint32_t actualHeight = swapchainInfo.height;
+        uint32_t actualWidth = swapchainInfo.extent.width;
+        uint32_t actualHeight = swapchainInfo.extent.height;
 
         // Create depth texture with MSAA using actual swapchain dimensions
         gfx::TextureDescriptor depthTextureDesc{};
@@ -478,8 +478,8 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
             gfx::FramebufferDescriptor framebufferDesc{};
             framebufferDesc.label = "Framebuffer " + std::to_string(i);
             framebufferDesc.renderPass = renderPass;
-            framebufferDesc.width = actualWidth;
-            framebufferDesc.height = actualHeight;
+            framebufferDesc.extent.width = actualWidth;
+            framebufferDesc.extent.height = actualHeight;
 
             // Color attachment
             if (MSAA_SAMPLE_COUNT != gfx::SampleCount::Count1) {
@@ -892,7 +892,7 @@ void CubeApp::updateCube(int cubeIndex)
 
     // Create projection matrix
     auto swapchainInfo = swapchain->getInfo();
-    float aspect = (float)swapchainInfo.width / (float)swapchainInfo.height;
+    float aspect = (float)swapchainInfo.extent.width / (float)swapchainInfo.extent.height;
     matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f, adapterInfo.backend);
 
     // Upload uniform data to buffer at aligned offset
@@ -963,8 +963,8 @@ void CubeApp::render()
 
             // Set viewport and scissor to fill the entire render target
             auto swapchainInfo = swapchain->getInfo();
-            renderPassEncoder->setViewport(0.0f, 0.0f, static_cast<float>(swapchainInfo.width), static_cast<float>(swapchainInfo.height), 0.0f, 1.0f);
-            renderPassEncoder->setScissorRect(0, 0, swapchainInfo.width, swapchainInfo.height);
+            renderPassEncoder->setViewport({ 0.0f, 0.0f, static_cast<float>(swapchainInfo.extent.width), static_cast<float>(swapchainInfo.extent.height), 0.0f, 1.0f });
+            renderPassEncoder->setScissorRect({ 0, 0, swapchainInfo.extent.width, swapchainInfo.extent.height });
 
             renderPassEncoder->setVertexBuffer(0, vertexBuffer);
             renderPassEncoder->setIndexBuffer(indexBuffer, gfx::IndexFormat::Uint16);
@@ -1082,7 +1082,7 @@ bool CubeApp::mainLoopIteration()
         previousWidth = windowWidth;
         previousHeight = windowHeight;
         auto swapchainInfo = swapchain->getInfo();
-        std::cout << "Window resized: " << swapchainInfo.width << "x" << swapchainInfo.height << std::endl;
+        std::cout << "Window resized: " << swapchainInfo.extent.width << "x" << swapchainInfo.extent.height << std::endl;
         return true; // Skip rendering this frame
     }
 

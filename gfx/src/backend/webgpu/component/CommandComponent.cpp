@@ -358,7 +358,7 @@ GfxResult CommandComponent::renderPassEncoderSetScissorRect(GfxRenderPassEncoder
     }
 
     auto* encoderPtr = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
-    encoderPtr->setScissorRect(scissor->x, scissor->y, scissor->width, scissor->height);
+    encoderPtr->setScissorRect(scissor->origin.x, scissor->origin.y, scissor->extent.width, scissor->extent.height);
     return GFX_RESULT_SUCCESS;
 }
 

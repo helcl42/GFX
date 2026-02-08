@@ -46,7 +46,7 @@ namespace {
         }
 
         // Validate dimensions
-        if (descriptor->width == 0 || descriptor->height == 0) {
+        if (descriptor->extent.width == 0 || descriptor->extent.height == 0) {
             return GFX_RESULT_ERROR_INVALID_ARGUMENT;
         }
 
@@ -468,7 +468,7 @@ namespace {
         }
 
         // Validate dimensions
-        if (descriptor->width == 0 || descriptor->height == 0) {
+        if (descriptor->extent.width == 0 || descriptor->extent.height == 0) {
             return GFX_RESULT_ERROR_INVALID_ARGUMENT;
         }
 

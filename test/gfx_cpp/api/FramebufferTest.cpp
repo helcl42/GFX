@@ -80,7 +80,7 @@ TEST_P(GfxCppFramebufferTest, CreateBasicFramebuffer)
     ASSERT_NE(textureView, nullptr);
 
     // Create framebuffer
-    auto framebuffer = device->createFramebuffer({ .label = "Basic Framebuffer", .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = textureView } }, .width = 256, .height = 256 });
+    auto framebuffer = device->createFramebuffer({ .label = "Basic Framebuffer", .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = textureView } }, .extent = { 256, 256 } });
     EXPECT_NE(framebuffer, nullptr);
 }
 
@@ -101,7 +101,7 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithEmptyLabel)
     auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
     auto textureView = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
 
-    auto framebuffer = device->createFramebuffer({ .label = "", .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = textureView } }, .width = 256, .height = 256 });
+    auto framebuffer = device->createFramebuffer({ .label = "", .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = textureView } }, .extent = { 256, 256 } });
     EXPECT_NE(framebuffer, nullptr);
 }
 
@@ -140,8 +140,7 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithMultipleColorAttachments)
         .colorAttachments = {
             gfx::FramebufferColorAttachment{ .view = textureView1 },
             gfx::FramebufferColorAttachment{ .view = textureView2 } },
-        .width = 512,
-        .height = 512 });
+        .extent = { 512, 512 } });
     EXPECT_NE(framebuffer, nullptr);
 }
 
@@ -190,8 +189,7 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithDepthAttachment)
         .renderPass = renderPass,
         .colorAttachments = { gfx::FramebufferColorAttachment{ .view = colorView } },
         .depthStencilAttachment = fbDepthAttachment,
-        .width = 1024,
-        .height = 768 });
+        .extent = { 1024, 768 } });
     EXPECT_NE(framebuffer, nullptr);
 }
 
@@ -229,7 +227,7 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithDifferentSizes)
         auto textureView = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
         ASSERT_NE(textureView, nullptr);
 
-        auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = textureView } }, .width = size.width, .height = size.height });
+        auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = textureView } }, .extent = { size.width, size.height } });
         EXPECT_NE(framebuffer, nullptr);
     }
 }
@@ -241,7 +239,7 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithNullRenderPass)
     auto textureView = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
 
     EXPECT_THROW(
-        device->createFramebuffer({ .renderPass = nullptr, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = textureView } }, .width = 256, .height = 256 }),
+        device->createFramebuffer({ .renderPass = nullptr, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = textureView } }, .extent = { 256, 256 } }),
         std::exception);
 }
 

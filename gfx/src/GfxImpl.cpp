@@ -528,7 +528,7 @@ GfxResult gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset,
     return backend->queueWriteBuffer(queue, buffer, offset, data, size);
 }
 
-GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout)
+GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, const GfxExtent3D* extent, uint32_t mipLevel, const void* data, uint64_t dataSize, GfxTextureLayout finalLayout)
 {
     if (!queue) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -538,7 +538,7 @@ GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrig
         return GFX_RESULT_ERROR_NOT_FOUND;
     }
 
-    return backend->queueWriteTexture(queue, texture, origin, mipLevel, data, dataSize, extent, finalLayout);
+    return backend->queueWriteTexture(queue, texture, origin, extent, mipLevel, data, dataSize, finalLayout);
 }
 
 GfxResult gfxQueueWaitIdle(GfxQueue queue)

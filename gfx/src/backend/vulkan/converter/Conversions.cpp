@@ -624,18 +624,15 @@ GfxSurfaceInfo vkSurfaceCapabilitiesToGfxSurfaceInfo(const VkSurfaceCapabilities
     GfxSurfaceInfo info{};
     info.minImageCount = caps.minImageCount;
     info.maxImageCount = caps.maxImageCount;
-    info.minWidth = caps.minImageExtent.width;
-    info.minHeight = caps.minImageExtent.height;
-    info.maxWidth = caps.maxImageExtent.width;
-    info.maxHeight = caps.maxImageExtent.height;
+    info.minExtent = vkExtent2DToGfxExtent2D(caps.minImageExtent);
+    info.maxExtent = vkExtent2DToGfxExtent2D(caps.maxImageExtent);
     return info;
 }
 
 GfxSwapchainInfo vkSwapchainInfoToGfxSwapchainInfo(const core::SwapchainInfo& info)
 {
     GfxSwapchainInfo gfxInfo{};
-    gfxInfo.width = info.width;
-    gfxInfo.height = info.height;
+    gfxInfo.extent = { info.width, info.height };
     gfxInfo.format = vkFormatToGfxFormat(info.format);
     gfxInfo.imageCount = info.imageCount;
     gfxInfo.presentMode = vkPresentModeToGfxPresentMode(info.presentMode);
@@ -664,6 +661,21 @@ VkExtent3D gfxExtent3DToVkExtent3D(const GfxExtent3D* gfxExtent)
 VkOffset3D gfxOrigin3DToVkOffset3D(const GfxOrigin3D* gfxOrigin)
 {
     return { gfxOrigin->x, gfxOrigin->y, gfxOrigin->z };
+}
+
+GfxExtent2D vkExtent2DToGfxExtent2D(const VkExtent2D& vkExtent)
+{
+    return { vkExtent.width, vkExtent.height };
+}
+
+VkExtent2D gfxExtent2DToVkExtent2D(const GfxExtent2D& gfxExtent)
+{
+    return { gfxExtent.width, gfxExtent.height };
+}
+
+VkOffset2D gfxOrigin2DToVkOffset2D(const GfxOrigin2D& gfxOrigin)
+{
+    return { gfxOrigin.x, gfxOrigin.y };
 }
 
 GfxAccessFlags vkAccessFlagsToGfxAccessFlags(VkAccessFlags vkAccessFlags)
@@ -1105,7 +1117,9 @@ core::Viewport gfxViewportToViewport(const GfxViewport* viewport)
 
 core::ScissorRect gfxScissorRectToScissorRect(const GfxScissorRect* scissor)
 {
-    return { scissor->x, scissor->y, scissor->width, scissor->height };
+    auto origin = gfxOrigin2DToVkOffset2D(scissor->origin);
+    auto extent = gfxExtent2DToVkExtent2D(scissor->extent);
+    return { origin.x, origin.y, extent.width, extent.height };
 }
 
 core::MemoryBarrier gfxMemoryBarrierToMemoryBarrier(const GfxMemoryBarrier& barrier)
@@ -1403,8 +1417,8 @@ core::SurfaceCreateInfo gfxDescriptorToSurfaceCreateInfo(const GfxSurfaceDescrip
 core::SwapchainCreateInfo gfxDescriptorToSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor)
 {
     core::SwapchainCreateInfo createInfo{};
-    createInfo.width = descriptor->width;
-    createInfo.height = descriptor->height;
+    createInfo.width = descriptor->extent.width;
+    createInfo.height = descriptor->extent.height;
     createInfo.format = gfxFormatToVkFormat(descriptor->format);
     createInfo.presentMode = gfxPresentModeToVkPresentMode(descriptor->presentMode);
     createInfo.imageCount = descriptor->imageCount;
@@ -1771,8 +1785,8 @@ core::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(cons
         }
     }
 
-    createInfo.width = descriptor->width;
-    createInfo.height = descriptor->height;
+    createInfo.width = descriptor->extent.width;
+    createInfo.height = descriptor->extent.height;
 
     return createInfo;
 }

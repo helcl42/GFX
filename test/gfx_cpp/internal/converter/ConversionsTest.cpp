@@ -812,8 +812,7 @@ TEST(ConversionsTest, CTextureInfoToCppTextureInfo)
 TEST(ConversionsTest, CSwapchainInfoToCppSwapchainInfo)
 {
     GfxSwapchainInfo cInfo{
-        .width = 1920,
-        .height = 1080,
+        .extent = { 1920, 1080 },
         .format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM,
         .imageCount = 3,
         .presentMode = GFX_PRESENT_MODE_MAILBOX
@@ -822,8 +821,8 @@ TEST(ConversionsTest, CSwapchainInfoToCppSwapchainInfo)
     auto cppInfo = cSwapchainInfoToCppSwapchainInfo(cInfo);
 
     EXPECT_EQ(cppInfo.format, TextureFormat::B8G8R8A8Unorm);
-    EXPECT_EQ(cppInfo.width, 1920);
-    EXPECT_EQ(cppInfo.height, 1080);
+    EXPECT_EQ(cppInfo.extent.width, 1920);
+    EXPECT_EQ(cppInfo.extent.height, 1080);
     EXPECT_EQ(cppInfo.imageCount, 3);
     EXPECT_EQ(cppInfo.presentMode, PresentMode::Mailbox);
 }
@@ -1043,19 +1042,19 @@ TEST(GfxCppConversionsTest, CSurfaceInfoToCppSurfaceInfo_ConvertsCorrectly)
     GfxSurfaceInfo cInfo{};
     cInfo.minImageCount = 2;
     cInfo.maxImageCount = 3;
-    cInfo.minWidth = 1;
-    cInfo.minHeight = 1;
-    cInfo.maxWidth = 4096;
-    cInfo.maxHeight = 4096;
+    cInfo.minExtent.width = 1;
+    cInfo.minExtent.height = 1;
+    cInfo.maxExtent.width = 4096;
+    cInfo.maxExtent.height = 4096;
 
     gfx::SurfaceInfo result = gfx::cSurfaceInfoToCppSurfaceInfo(cInfo);
 
     EXPECT_EQ(result.minImageCount, 2u);
     EXPECT_EQ(result.maxImageCount, 3u);
-    EXPECT_EQ(result.minWidth, 1u);
-    EXPECT_EQ(result.minHeight, 1u);
-    EXPECT_EQ(result.maxWidth, 4096u);
-    EXPECT_EQ(result.maxHeight, 4096u);
+    EXPECT_EQ(result.minExtent.width, 1u);
+    EXPECT_EQ(result.minExtent.height, 1u);
+    EXPECT_EQ(result.maxExtent.width, 4096u);
+    EXPECT_EQ(result.maxExtent.height, 4096u);
 }
 
 TEST(GfxCppConversionsTest, CSurfaceInfoToCppSurfaceInfo_ZeroValues_ConvertsCorrectly)
@@ -1063,19 +1062,19 @@ TEST(GfxCppConversionsTest, CSurfaceInfoToCppSurfaceInfo_ZeroValues_ConvertsCorr
     GfxSurfaceInfo cInfo{};
     cInfo.minImageCount = 0;
     cInfo.maxImageCount = 0;
-    cInfo.minWidth = 0;
-    cInfo.minHeight = 0;
-    cInfo.maxWidth = 0;
-    cInfo.maxHeight = 0;
+    cInfo.minExtent.width = 0;
+    cInfo.minExtent.height = 0;
+    cInfo.maxExtent.width = 0;
+    cInfo.maxExtent.height = 0;
 
     gfx::SurfaceInfo result = gfx::cSurfaceInfoToCppSurfaceInfo(cInfo);
 
     EXPECT_EQ(result.minImageCount, 0u);
     EXPECT_EQ(result.maxImageCount, 0u);
-    EXPECT_EQ(result.minWidth, 0u);
-    EXPECT_EQ(result.minHeight, 0u);
-    EXPECT_EQ(result.maxWidth, 0u);
-    EXPECT_EQ(result.maxHeight, 0u);
+    EXPECT_EQ(result.minExtent.width, 0u);
+    EXPECT_EQ(result.minExtent.height, 0u);
+    EXPECT_EQ(result.maxExtent.width, 0u);
+    EXPECT_EQ(result.maxExtent.height, 0u);
 }
 
 // =============================================================================

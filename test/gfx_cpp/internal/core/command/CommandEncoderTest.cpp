@@ -208,8 +208,7 @@ TEST_P(CommandEncoderImplTest, BeginRenderPass)
     FramebufferDescriptor framebufferDesc{
         .renderPass = renderPass,
         .colorAttachments = { FramebufferColorAttachment{ .view = textureView } },
-        .width = 800,
-        .height = 600
+        .extent = { 800, 600 }
     };
 
     auto framebuffer = deviceWrapper.createFramebuffer(framebufferDesc);

@@ -156,7 +156,7 @@ public:
     // Queue functions
     MOCK_METHOD(GfxResult, queueSubmit, (GfxQueue, const GfxSubmitDescriptor*), (const, override));
     MOCK_METHOD(GfxResult, queueWriteBuffer, (GfxQueue, GfxBuffer, uint64_t, const void*, uint64_t), (const, override));
-    MOCK_METHOD(GfxResult, queueWriteTexture, (GfxQueue, GfxTexture, const GfxOrigin3D*, uint32_t, const void*, uint64_t, const GfxExtent3D*, GfxTextureLayout), (const, override));
+    MOCK_METHOD(GfxResult, queueWriteTexture, (GfxQueue, GfxTexture, const GfxOrigin3D*, const GfxExtent3D*, uint32_t, const void*, uint64_t, GfxTextureLayout), (const, override));
     MOCK_METHOD(GfxResult, queueWaitIdle, (GfxQueue), (const, override));
 
     // Fence functions
@@ -1240,7 +1240,7 @@ TEST_F(GfxImplTest, QueueWriteTexture_NullQueue_ReturnsError)
     uint8_t data = 0;
     GfxOrigin3D origin = {};
     GfxExtent3D extent = {};
-    ASSERT_EQ(gfxQueueWriteTexture(nullptr, texture, &origin, 0, &data, 1, &extent, GFX_TEXTURE_LAYOUT_SHADER_READ_ONLY), GFX_RESULT_ERROR_INVALID_ARGUMENT);
+    ASSERT_EQ(gfxQueueWriteTexture(nullptr, texture, &origin, &extent, 0, &data, 1, GFX_TEXTURE_LAYOUT_SHADER_READ_ONLY), GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
 
 // Command Encoder Copy Operations

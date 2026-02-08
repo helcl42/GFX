@@ -1091,8 +1091,8 @@ TEST(VulkanConversionsTest, VkSwapchainInfoToGfxSwapchainInfo_AllFields_Converts
 
     GfxSwapchainInfo result = gfx::backend::vulkan::converter::vkSwapchainInfoToGfxSwapchainInfo(vkInfo);
 
-    EXPECT_EQ(result.width, 2560u);
-    EXPECT_EQ(result.height, 1440u);
+    EXPECT_EQ(result.extent.width, 2560u);
+    EXPECT_EQ(result.extent.height, 1440u);
     EXPECT_EQ(result.format, GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB);
     EXPECT_EQ(result.imageCount, 3u);
     EXPECT_EQ(result.presentMode, GFX_PRESENT_MODE_MAILBOX);
@@ -1109,8 +1109,8 @@ TEST(VulkanConversionsTest, VkSwapchainInfoToGfxSwapchainInfo_FifoMode_ConvertsC
 
     GfxSwapchainInfo result = gfx::backend::vulkan::converter::vkSwapchainInfoToGfxSwapchainInfo(vkInfo);
 
-    EXPECT_EQ(result.width, 1920u);
-    EXPECT_EQ(result.height, 1080u);
+    EXPECT_EQ(result.extent.width, 1920u);
+    EXPECT_EQ(result.extent.height, 1080u);
     EXPECT_EQ(result.presentMode, GFX_PRESENT_MODE_FIFO);
 }
 
@@ -1179,10 +1179,10 @@ TEST(VulkanConversionsTest, VkSurfaceCapabilitiesToGfxSurfaceInfo_ConvertsCorrec
 
     EXPECT_EQ(result.minImageCount, 2u);
     EXPECT_EQ(result.maxImageCount, 3u);
-    EXPECT_EQ(result.minWidth, 1u);
-    EXPECT_EQ(result.minHeight, 1u);
-    EXPECT_EQ(result.maxWidth, 4096u);
-    EXPECT_EQ(result.maxHeight, 4096u);
+    EXPECT_EQ(result.minExtent.width, 1u);
+    EXPECT_EQ(result.minExtent.height, 1u);
+    EXPECT_EQ(result.maxExtent.width, 4096u);
+    EXPECT_EQ(result.maxExtent.height, 4096u);
 }
 
 TEST(VulkanConversionsTest, VkSurfaceCapabilitiesToGfxSurfaceInfo_LargeValues_ConvertsCorrectly)
@@ -1197,10 +1197,10 @@ TEST(VulkanConversionsTest, VkSurfaceCapabilitiesToGfxSurfaceInfo_LargeValues_Co
 
     EXPECT_EQ(result.minImageCount, 1u);
     EXPECT_EQ(result.maxImageCount, 8u);
-    EXPECT_EQ(result.minWidth, 16u);
-    EXPECT_EQ(result.minHeight, 16u);
-    EXPECT_EQ(result.maxWidth, 8192u);
-    EXPECT_EQ(result.maxHeight, 8192u);
+    EXPECT_EQ(result.minExtent.width, 16u);
+    EXPECT_EQ(result.minExtent.height, 16u);
+    EXPECT_EQ(result.maxExtent.width, 8192u);
+    EXPECT_EQ(result.maxExtent.height, 8192u);
 }
 
 } // namespace

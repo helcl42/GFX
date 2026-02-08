@@ -109,8 +109,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithColorAttachment)
         .colorAttachments = {
             FramebufferColorAttachment{
                 .view = textureView } },
-        .width = 800,
-        .height = 600
+        .extent = { 800, 600 }
     };
 
     auto framebuffer = deviceWrapper.createFramebuffer(framebufferDesc);
@@ -195,8 +194,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithMultipleColorAttachments)
         .colorAttachments = {
             FramebufferColorAttachment{ .view = textureView1 },
             FramebufferColorAttachment{ .view = textureView2 } },
-        .width = 800,
-        .height = 600
+        .extent = { 800, 600 }
     };
 
     auto framebuffer = deviceWrapper.createFramebuffer(framebufferDesc);
@@ -298,8 +296,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithDepthStencilAttachment)
         .colorAttachments = {
             FramebufferColorAttachment{ .view = colorView } },
         .depthStencilAttachment = fbDepthStencilAttachment,
-        .width = 800,
-        .height = 600
+        .extent = { 800, 600 }
     };
 
     auto framebuffer = deviceWrapper.createFramebuffer(framebufferDesc);
@@ -359,16 +356,14 @@ TEST_P(FramebufferImplTest, CreateMultipleFramebuffers_IndependentHandles)
         .renderPass = renderPass,
         .colorAttachments = {
             FramebufferColorAttachment{ .view = textureView1 } },
-        .width = 800,
-        .height = 600
+        .extent = { 800, 600 }
     };
 
     FramebufferDescriptor framebufferDesc2{
         .renderPass = renderPass,
         .colorAttachments = {
             FramebufferColorAttachment{ .view = textureView2 } },
-        .width = 800,
-        .height = 600
+        .extent = { 800, 600 }
     };
 
     auto framebuffer1 = deviceWrapper.createFramebuffer(framebufferDesc1);

@@ -47,7 +47,8 @@ void QueueImpl::writeTexture(std::shared_ptr<Texture> texture, const Origin3D& o
     }
     GfxOrigin3D cOrigin = cppOrigin3DToCOrigin3D(origin);
     GfxExtent3D cExtent = cppExtent3DToCExtent3D(extent);
-    gfxQueueWriteTexture(m_handle, impl->getHandle(), &cOrigin, mipLevel, data, dataSize, &cExtent, cppLayoutToCLayout(finalLayout));
+    GfxTextureLayout cFinalLayout = cppLayoutToCLayout(finalLayout);
+    gfxQueueWriteTexture(m_handle, impl->getHandle(), &cOrigin, &cExtent, mipLevel, data, dataSize, cFinalLayout);
 }
 
 void QueueImpl::waitIdle()

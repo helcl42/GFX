@@ -64,7 +64,7 @@ TEST_P(GfxCppRenderPassEncoderTest, SetPipelineWithNullPipeline)
     auto view = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
     ASSERT_NE(view, nullptr);
 
-    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .width = 256, .height = 256 });
+    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .extent = { 256, 256 } });
     ASSERT_NE(framebuffer, nullptr);
 
     auto renderPassEncoder = encoder->beginRenderPass({ .framebuffer = framebuffer });
@@ -89,7 +89,7 @@ TEST_P(GfxCppRenderPassEncoderTest, SetBindGroupWithNullBindGroup)
 
     auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
     auto view = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
-    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .width = 256, .height = 256 });
+    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .extent = { 256, 256 } });
 
     auto renderPassEncoder = encoder->beginRenderPass({ .framebuffer = framebuffer });
     ASSERT_NE(renderPassEncoder, nullptr);
@@ -110,7 +110,7 @@ TEST_P(GfxCppRenderPassEncoderTest, SetVertexBufferWithNullBuffer)
 
     auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
     auto view = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
-    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .width = 256, .height = 256 });
+    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .extent = { 256, 256 } });
 
     auto renderPassEncoder = encoder->beginRenderPass({ .framebuffer = framebuffer });
     ASSERT_NE(renderPassEncoder, nullptr);
@@ -131,7 +131,7 @@ TEST_P(GfxCppRenderPassEncoderTest, SetIndexBufferWithNullBuffer)
 
     auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
     auto view = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
-    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .width = 256, .height = 256 });
+    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .extent = { 256, 256 } });
 
     auto renderPassEncoder = encoder->beginRenderPass({ .framebuffer = framebuffer });
     ASSERT_NE(renderPassEncoder, nullptr);
@@ -152,12 +152,12 @@ TEST_P(GfxCppRenderPassEncoderTest, SetViewportValid)
 
     auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
     auto view = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
-    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .width = 256, .height = 256 });
+    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .extent = { 256, 256 } });
 
     auto renderPassEncoder = encoder->beginRenderPass({ .framebuffer = framebuffer });
     ASSERT_NE(renderPassEncoder, nullptr);
 
-    EXPECT_NO_THROW(renderPassEncoder->setViewport(0, 0, 256, 256));
+    EXPECT_NO_THROW(renderPassEncoder->setViewport({ 0, 0, 256, 256 }));
 }
 
 TEST_P(GfxCppRenderPassEncoderTest, SetScissorRectValid)
@@ -172,12 +172,12 @@ TEST_P(GfxCppRenderPassEncoderTest, SetScissorRectValid)
 
     auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
     auto view = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
-    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .width = 256, .height = 256 });
+    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .extent = { 256, 256 } });
 
     auto renderPassEncoder = encoder->beginRenderPass({ .framebuffer = framebuffer });
     ASSERT_NE(renderPassEncoder, nullptr);
 
-    EXPECT_NO_THROW(renderPassEncoder->setScissorRect(0, 0, 256, 256));
+    EXPECT_NO_THROW(renderPassEncoder->setScissorRect({ 0, 0, 256, 256 }));
 }
 
 TEST_P(GfxCppRenderPassEncoderTest, DrawIndirectWithNullBuffer)
@@ -192,7 +192,7 @@ TEST_P(GfxCppRenderPassEncoderTest, DrawIndirectWithNullBuffer)
 
     auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
     auto view = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
-    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .width = 256, .height = 256 });
+    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .extent = { 256, 256 } });
 
     auto renderPassEncoder = encoder->beginRenderPass({ .framebuffer = framebuffer });
     ASSERT_NE(renderPassEncoder, nullptr);
@@ -213,7 +213,7 @@ TEST_P(GfxCppRenderPassEncoderTest, DrawIndexedIndirectWithNullBuffer)
 
     auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
     auto view = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
-    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .width = 256, .height = 256 });
+    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .extent = { 256, 256 } });
 
     auto renderPassEncoder = encoder->beginRenderPass({ .framebuffer = framebuffer });
     ASSERT_NE(renderPassEncoder, nullptr);
@@ -235,7 +235,7 @@ TEST_P(GfxCppRenderPassEncoderTest, BeginRenderPassAndEnd)
 
     auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
     auto view = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
-    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .width = 256, .height = 256 });
+    auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = view } }, .extent = { 256, 256 } });
 
     auto renderPassEncoder = encoder->beginRenderPass({ .framebuffer = framebuffer });
     ASSERT_NE(renderPassEncoder, nullptr);

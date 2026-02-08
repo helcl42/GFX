@@ -911,8 +911,18 @@ typedef struct {
 typedef struct {
     uint32_t width;
     uint32_t height;
+} GfxExtent2D;
+
+typedef struct {
+    uint32_t width;
+    uint32_t height;
     uint32_t depth;
 } GfxExtent3D;
+
+typedef struct {
+    int32_t x;
+    int32_t y;
+} GfxOrigin2D;
 
 typedef struct {
     int32_t x;
@@ -930,10 +940,8 @@ typedef struct {
 } GfxViewport;
 
 typedef struct {
-    int32_t x;
-    int32_t y;
-    uint32_t width;
-    uint32_t height;
+    GfxOrigin2D origin;
+    GfxExtent2D extent;
 } GfxScissorRect;
 
 typedef struct {
@@ -1056,8 +1064,7 @@ typedef struct {
     // Depth/stencil attachment with optional resolve target (use {NULL, NULL} if not used)
     GfxFramebufferAttachment depthStencilAttachment;
 
-    uint32_t width; // Framebuffer width
-    uint32_t height; // Framebuffer height
+    GfxExtent2D extent; // Framebuffer dimensions
 } GfxFramebufferDescriptor;
 
 // Render pass begin descriptor: used to BEGIN a render pass (with clear values)
@@ -1198,16 +1205,13 @@ typedef struct {
 typedef struct {
     uint32_t minImageCount;
     uint32_t maxImageCount;
-    uint32_t minWidth;
-    uint32_t minHeight;
-    uint32_t maxWidth;
-    uint32_t maxHeight;
+    GfxExtent2D minExtent;
+    GfxExtent2D maxExtent;
 } GfxSurfaceInfo;
 
 // Swapchain information
 typedef struct {
-    uint32_t width;
-    uint32_t height;
+    GfxExtent2D extent;
     GfxTextureFormat format;
     uint32_t imageCount;
     GfxPresentMode presentMode;
@@ -1621,8 +1625,7 @@ typedef struct {
     const void* pNext;
     const char* label;
     GfxSurface surface;
-    uint32_t width;
-    uint32_t height;
+    GfxExtent2D extent;
     GfxTextureFormat format;
     GfxTextureUsageFlags usage;
     GfxPresentMode presentMode;
@@ -1695,7 +1698,7 @@ GFX_API GfxAccessFlags gfxDeviceGetAccessFlagsForLayout(GfxDevice device, GfxTex
 // Queue functions
 GFX_API GfxResult gfxQueueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor);
 GFX_API GfxResult gfxQueueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size);
-GFX_API GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout);
+GFX_API GfxResult gfxQueueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, const GfxExtent3D* extent, uint32_t mipLevel, const void* data, uint64_t dataSize, GfxTextureLayout finalLayout);
 GFX_API GfxResult gfxQueueWaitIdle(GfxQueue queue);
 
 // Surface functions

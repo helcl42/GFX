@@ -357,8 +357,8 @@ bool initializeGraphics(CubeApp* app)
     printf("Surface Info:\n");
     printf("  Image Count: min %u, max %u\n", app->surfaceInfo.minImageCount, app->surfaceInfo.maxImageCount);
     printf("  Extent: min (%u, %u), max (%u, %u)\n",
-        app->surfaceInfo.minWidth, app->surfaceInfo.minHeight,
-        app->surfaceInfo.maxWidth, app->surfaceInfo.maxHeight);
+        app->surfaceInfo.minExtent.width, app->surfaceInfo.minExtent.height,
+        app->surfaceInfo.maxExtent.width, app->surfaceInfo.maxExtent.height);
 
     // Calculate frames in flight based on surface capabilities
     // Use min image count, but clamp to reasonable values (2-3 is typical)
@@ -389,8 +389,8 @@ static bool createSwapchain(CubeApp* app, uint32_t width, uint32_t height)
     swapchainDesc.pNext = NULL;
     swapchainDesc.label = "Main Swapchain";
     swapchainDesc.surface = app->surface;
-    swapchainDesc.width = (uint32_t)width;
-    swapchainDesc.height = (uint32_t)height;
+    swapchainDesc.extent.width = width;
+    swapchainDesc.extent.height = height;
     swapchainDesc.format = COLOR_FORMAT;
     swapchainDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     swapchainDesc.presentMode = GFX_PRESENT_MODE_FIFO;
@@ -521,8 +521,8 @@ static bool createFrameBuffers(CubeApp* app, uint32_t width, uint32_t height)
         fbDesc.colorAttachments = &fbColorAttachment;
         fbDesc.colorAttachmentCount = 1;
         fbDesc.depthStencilAttachment = fbDepthAttachment;
-        fbDesc.width = width;
-        fbDesc.height = height;
+        fbDesc.extent.width = width;
+        fbDesc.extent.height = height;
 
         if (gfxDeviceCreateFramebuffer(app->device, &fbDesc, &app->framebuffers[i]) != GFX_RESULT_SUCCESS) {
             fprintf(stderr, "Failed to create framebuffer %u\n", i);
@@ -539,8 +539,8 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
         return false;
     }
 
-    uint32_t actualWidth = app->swapchainInfo.width;
-    uint32_t actualHeight = app->swapchainInfo.height;
+    uint32_t actualWidth = app->swapchainInfo.extent.width;
+    uint32_t actualHeight = app->swapchainInfo.extent.height;
 
     if (!createTextures(app, actualWidth, actualHeight)) {
         return false;
@@ -825,7 +825,7 @@ static bool createBindGroup(CubeApp* app)
 
     // Create bind groups (CUBE_COUNT cubes per frame in flight) using offsets into shared buffer
     for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
-        for (uint32_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
             char label[64];
             snprintf(label, sizeof(label), "Uniform Bind Group Frame %u Cube %d", i, cubeIdx);
 
@@ -1140,7 +1140,7 @@ bool createRenderPipeline(CubeApp* app)
     return true;
 }
 
-void updateCube(CubeApp* app, uint32_t cubeIndex)
+void updateCube(CubeApp* app, int cubeIndex)
 {
     UniformData uniforms = { 0 }; // Initialize to zero!
 
@@ -1167,7 +1167,7 @@ void updateCube(CubeApp* app, uint32_t cubeIndex)
         0.0f, 1.0f, 0.0f); // up vector
 
     // Create perspective projection matrix
-    float aspect = (float)app->swapchainInfo.width / (float)app->swapchainInfo.height;
+    float aspect = (float)app->swapchainInfo.extent.width / (float)app->swapchainInfo.extent.height;
     matrixPerspective(uniforms.projection,
         45.0f * M_PI / 180.0f, // 45 degree FOV
         aspect,
@@ -1243,8 +1243,8 @@ void render(CubeApp* app)
         gfxRenderPassEncoderSetPipeline(renderPass, app->renderPipeline);
 
         // Set viewport and scissor to fill the entire render target
-        GfxViewport viewport = { 0.0f, 0.0f, (float)app->swapchainInfo.width, (float)app->swapchainInfo.height, 0.0f, 1.0f };
-        GfxScissorRect scissor = { 0, 0, app->swapchainInfo.width, app->swapchainInfo.height };
+        GfxViewport viewport = { 0.0f, 0.0f, (float)app->swapchainInfo.extent.width, (float)app->swapchainInfo.extent.height, 0.0f, 1.0f };
+        GfxScissorRect scissor = { { 0, 0 }, { app->swapchainInfo.extent.width, app->swapchainInfo.extent.height } };
         gfxRenderPassEncoderSetViewport(renderPass, &viewport);
         gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
 

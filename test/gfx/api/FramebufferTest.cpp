@@ -137,8 +137,8 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithNullDevice)
     fbDesc.colorAttachments = &fbAttachment;
     fbDesc.colorAttachmentCount = 1;
     fbDesc.depthStencilAttachment = { nullptr, nullptr };
-    fbDesc.width = 256;
-    fbDesc.height = 256;
+    fbDesc.extent.width = 256;
+    fbDesc.extent.height = 256;
 
     GfxFramebuffer framebuffer = nullptr;
     result = gfxDeviceCreateFramebuffer(nullptr, &fbDesc, &framebuffer);
@@ -213,8 +213,8 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithNullOutput)
     fbDesc.colorAttachments = &fbAttachment;
     fbDesc.colorAttachmentCount = 1;
     fbDesc.depthStencilAttachment = { nullptr, nullptr };
-    fbDesc.width = 256;
-    fbDesc.height = 256;
+    fbDesc.extent.width = 256;
+    fbDesc.extent.height = 256;
 
     result = gfxDeviceCreateFramebuffer(device, &fbDesc, nullptr);
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
@@ -285,8 +285,8 @@ TEST_P(GfxFramebufferTest, CreateBasicFramebuffer)
     fbDesc.colorAttachments = &fbAttachment;
     fbDesc.colorAttachmentCount = 1;
     fbDesc.depthStencilAttachment = { nullptr, nullptr };
-    fbDesc.width = 256;
-    fbDesc.height = 256;
+    fbDesc.extent.width = 256;
+    fbDesc.extent.height = 256;
 
     GfxFramebuffer framebuffer = nullptr;
     result = gfxDeviceCreateFramebuffer(device, &fbDesc, &framebuffer);
@@ -395,8 +395,8 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithMultipleColorAttachments)
     fbDesc.colorAttachments = fbAttachments;
     fbDesc.colorAttachmentCount = 2;
     fbDesc.depthStencilAttachment = { nullptr, nullptr };
-    fbDesc.width = 512;
-    fbDesc.height = 512;
+    fbDesc.extent.width = 512;
+    fbDesc.extent.height = 512;
 
     GfxFramebuffer framebuffer = nullptr;
     result = gfxDeviceCreateFramebuffer(device, &fbDesc, &framebuffer);
@@ -510,8 +510,8 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithDepthAttachment)
     fbDesc.colorAttachments = &colorFbAttachment;
     fbDesc.colorAttachmentCount = 1;
     fbDesc.depthStencilAttachment = { depthView, nullptr };
-    fbDesc.width = 1024;
-    fbDesc.height = 768;
+    fbDesc.extent.width = 1024;
+    fbDesc.extent.height = 768;
 
     GfxFramebuffer framebuffer = nullptr;
     result = gfxDeviceCreateFramebuffer(device, &fbDesc, &framebuffer);
@@ -594,8 +594,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithDifferentSizes)
         fbDesc.colorAttachments = &fbAttachment;
         fbDesc.colorAttachmentCount = 1;
         fbDesc.depthStencilAttachment = { nullptr, nullptr };
-        fbDesc.width = size.width;
-        fbDesc.height = size.height;
+        fbDesc.extent = { size.width, size.height };
 
         GfxFramebuffer framebuffer = nullptr;
         result = gfxDeviceCreateFramebuffer(device, &fbDesc, &framebuffer);

@@ -355,8 +355,8 @@ TEST_P(GfxQuerySetTest, BeginOcclusionQueryWithNullQuerySet)
     framebufferDesc.renderPass = renderPass;
     framebufferDesc.colorAttachmentCount = 1;
     framebufferDesc.colorAttachments = &colorFbAttachment;
-    framebufferDesc.width = 256;
-    framebufferDesc.height = 256;
+    framebufferDesc.extent.width = 256;
+    framebufferDesc.extent.height = 256;
 
     GfxFramebuffer framebuffer = nullptr;
     ASSERT_EQ(gfxDeviceCreateFramebuffer(device, &framebufferDesc, &framebuffer), GFX_RESULT_SUCCESS);

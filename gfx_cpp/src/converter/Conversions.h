@@ -43,6 +43,12 @@ Origin3D cOrigin3DToCppOrigin3D(const GfxOrigin3D& origin);
 GfxExtent3D cppExtent3DToCExtent3D(const Extent3D& extent);
 Extent3D cExtent3DToCppExtent3D(const GfxExtent3D& extent);
 
+// Viewport conversions
+GfxViewport cppViewportToCViewport(const Viewport& viewport);
+
+// ScissorRect conversions
+GfxScissorRect cppScissorRectToCScissorRect(const ScissorRect& scissor);
+
 // Sample count conversions
 GfxSampleCount cppSampleCountToCCount(SampleCount sampleCount);
 SampleCount cSampleCountToCppCount(GfxSampleCount sampleCount);

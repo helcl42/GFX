@@ -405,8 +405,8 @@ static bool createSwapchain(CubeApp* app, uint32_t width, uint32_t height)
     swapchainDesc.pNext = NULL;
     swapchainDesc.label = "Main Swapchain";
     swapchainDesc.surface = app->surface;
-    swapchainDesc.width = (uint32_t)width;
-    swapchainDesc.height = (uint32_t)height;
+    swapchainDesc.extent.width = width;
+    swapchainDesc.extent.height = height;
     swapchainDesc.format = COLOR_FORMAT;
     swapchainDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     swapchainDesc.presentMode = GFX_PRESENT_MODE_IMMEDIATE;
@@ -537,8 +537,8 @@ static bool createFrameBuffers(CubeApp* app, uint32_t width, uint32_t height)
         fbDesc.colorAttachments = &fbColorAttachment;
         fbDesc.colorAttachmentCount = 1;
         fbDesc.depthStencilAttachment = fbDepthAttachment;
-        fbDesc.width = width;
-        fbDesc.height = height;
+        fbDesc.extent.width = width;
+        fbDesc.extent.height = height;
 
         if (gfxDeviceCreateFramebuffer(app->device, &fbDesc, &app->framebuffers[i]) != GFX_RESULT_SUCCESS) {
             fprintf(stderr, "Failed to create framebuffer %u\n", i);
@@ -556,8 +556,8 @@ bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
     }
 
     // Use actual swapchain dimensions (may differ from requested window size)
-    uint32_t swapchainWidth = app->swapchainInfo.width;
-    uint32_t swapchainHeight = app->swapchainInfo.height;
+    uint32_t swapchainWidth = app->swapchainInfo.extent.width;
+    uint32_t swapchainHeight = app->swapchainInfo.extent.height;
 
     if (!createTextures(app, swapchainWidth, swapchainHeight)) {
         return false;
@@ -1276,7 +1276,7 @@ void updateCube(CubeApp* app, int cubeIndex)
         0.0f, 1.0f, 0.0f); // up vector
 
     // Create perspective projection matrix
-    float aspect = (float)app->swapchainInfo.width / (float)app->swapchainInfo.height;
+    float aspect = (float)app->swapchainInfo.extent.width / (float)app->swapchainInfo.extent.height;
     matrixPerspective(uniforms.projection,
         45.0f * M_PI / 180.0f, // 45 degree FOV
         aspect,
@@ -1466,8 +1466,8 @@ static void recordCubeCommands(CubeApp* app, int cubeIndex, uint32_t imageIndex)
         gfxRenderPassEncoderSetPipeline(renderPass, app->renderPipeline);
 
         // Set viewport and scissor to fill the entire render target
-        GfxViewport viewport = { 0.0f, 0.0f, (float)app->swapchainInfo.width, (float)app->swapchainInfo.height, 0.0f, 1.0f };
-        GfxScissorRect scissor = { 0, 0, app->swapchainInfo.width, app->swapchainInfo.height };
+        GfxViewport viewport = { 0.0f, 0.0f, (float)app->swapchainInfo.extent.width, (float)app->swapchainInfo.extent.height, 0.0f, 1.0f };
+        GfxScissorRect scissor = { { 0, 0 }, { app->swapchainInfo.extent.width, app->swapchainInfo.extent.height } };
         gfxRenderPassEncoderSetViewport(renderPass, &viewport);
         gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
 
@@ -1607,8 +1607,8 @@ void render(CubeApp* app)
         gfxRenderPassEncoderSetPipeline(renderPass, app->renderPipeline);
 
         // Set viewport and scissor
-        GfxViewport viewport = { 0.0f, 0.0f, (float)app->swapchainInfo.width, (float)app->swapchainInfo.height, 0.0f, 1.0f };
-        GfxScissorRect scissor = { 0, 0, app->swapchainInfo.width, app->swapchainInfo.height };
+        GfxViewport viewport = { 0.0f, 0.0f, (float)app->swapchainInfo.extent.width, (float)app->swapchainInfo.extent.height, 0.0f, 1.0f };
+        GfxScissorRect scissor = { { 0, 0 }, { app->swapchainInfo.extent.width, app->swapchainInfo.extent.height } };
         gfxRenderPassEncoderSetViewport(renderPass, &viewport);
         gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
 

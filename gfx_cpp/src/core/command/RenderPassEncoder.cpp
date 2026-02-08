@@ -5,6 +5,8 @@
 #include "../resource/BindGroup.h"
 #include "../resource/Buffer.h"
 
+#include "../../converter/Conversions.h"
+
 #include <stdexcept>
 
 namespace gfx {
@@ -82,19 +84,19 @@ void RenderPassEncoderImpl::setIndexBuffer(std::shared_ptr<Buffer> buffer, Index
     }
 }
 
-void RenderPassEncoderImpl::setViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+void RenderPassEncoderImpl::setViewport(const Viewport& viewport)
 {
-    GfxViewport viewport = { x, y, width, height, minDepth, maxDepth };
-    GfxResult result = gfxRenderPassEncoderSetViewport(m_handle, &viewport);
+    GfxViewport gfxViewport = cppViewportToCViewport(viewport);
+    GfxResult result = gfxRenderPassEncoderSetViewport(m_handle, &gfxViewport);
     if (result != GFX_RESULT_SUCCESS) {
         throw std::runtime_error("Failed to set viewport");
     }
 }
 
-void RenderPassEncoderImpl::setScissorRect(int32_t x, int32_t y, uint32_t width, uint32_t height)
+void RenderPassEncoderImpl::setScissorRect(const ScissorRect& scissor)
 {
-    GfxScissorRect scissor = { x, y, width, height };
-    GfxResult result = gfxRenderPassEncoderSetScissorRect(m_handle, &scissor);
+    GfxScissorRect gfxScissor = cppScissorRectToCScissorRect(scissor);
+    GfxResult result = gfxRenderPassEncoderSetScissorRect(m_handle, &gfxScissor);
     if (result != GFX_RESULT_SUCCESS) {
         throw std::runtime_error("Failed to set scissor rect");
     }

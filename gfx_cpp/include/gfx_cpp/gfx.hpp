@@ -630,6 +630,67 @@ struct Origin3D {
     }
 };
 
+struct Extent2D {
+    uint32_t width = 0;
+    uint32_t height = 0;
+
+    Extent2D() = default;
+    Extent2D(uint32_t w, uint32_t h)
+        : width(w)
+        , height(h)
+    {
+    }
+};
+
+struct Origin2D {
+    int32_t x = 0;
+    int32_t y = 0;
+
+    Origin2D() = default;
+    Origin2D(int32_t px, int32_t py)
+        : x(px)
+        , y(py)
+    {
+    }
+};
+
+struct Viewport {
+    float x = 0.0f;
+    float y = 0.0f;
+    float width = 0.0f;
+    float height = 0.0f;
+    float minDepth = 0.0f;
+    float maxDepth = 1.0f;
+
+    Viewport() = default;
+    Viewport(float px, float py, float w, float h, float minD = 0.0f, float maxD = 1.0f)
+        : x(px)
+        , y(py)
+        , width(w)
+        , height(h)
+        , minDepth(minD)
+        , maxDepth(maxD)
+    {
+    }
+};
+
+struct ScissorRect {
+    Origin2D origin = {};
+    Extent2D extent = {};
+
+    ScissorRect() = default;
+    ScissorRect(const Origin2D& orig, const Extent2D& ext)
+        : origin(orig)
+        , extent(ext)
+    {
+    }
+    ScissorRect(int32_t x, int32_t y, uint32_t width, uint32_t height)
+        : origin(x, y)
+        , extent(width, height)
+    {
+    }
+};
+
 // ============================================================================
 // Platform Abstraction
 // ============================================================================
@@ -1109,8 +1170,7 @@ struct SwapchainDescriptor {
     const ChainedStruct* next = nullptr;
     std::string label;
     std::shared_ptr<Surface> surface;
-    uint32_t width = 0;
-    uint32_t height = 0;
+    Extent2D extent = {};
     TextureFormat format = TextureFormat::B8G8R8A8Unorm;
     TextureUsage usage = TextureUsage::RenderAttachment;
     PresentMode presentMode = PresentMode::Fifo;
@@ -1118,8 +1178,7 @@ struct SwapchainDescriptor {
 };
 
 struct SwapchainInfo {
-    uint32_t width = 0;
-    uint32_t height = 0;
+    Extent2D extent = {};
     TextureFormat format = TextureFormat::Undefined;
     PresentMode presentMode = PresentMode::Fifo;
     uint32_t imageCount = 0;
@@ -1128,10 +1187,8 @@ struct SwapchainInfo {
 struct SurfaceInfo {
     uint32_t minImageCount = 0;
     uint32_t maxImageCount = 0;
-    uint32_t minWidth = 0;
-    uint32_t minHeight = 0;
-    uint32_t maxWidth = 0;
-    uint32_t maxHeight = 0;
+    Extent2D minExtent = {};
+    Extent2D maxExtent = {};
 };
 
 struct FenceDescriptor {
@@ -1307,8 +1364,7 @@ struct FramebufferDescriptor {
     std::shared_ptr<RenderPass> renderPass;
     std::vector<FramebufferColorAttachment> colorAttachments;
     std::optional<FramebufferDepthStencilAttachment> depthStencilAttachment;
-    uint32_t width;
-    uint32_t height;
+    Extent2D extent = {};
 };
 
 // Render pass begin descriptor (runtime values)
@@ -1543,8 +1599,8 @@ public:
     virtual void setBindGroup(uint32_t index, std::shared_ptr<BindGroup> bindGroup, const uint32_t* dynamicOffsets = nullptr, uint32_t dynamicOffsetCount = 0) = 0;
     virtual void setVertexBuffer(uint32_t slot, std::shared_ptr<Buffer> buffer, uint64_t offset = 0, uint64_t size = 0) = 0;
     virtual void setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset = 0, uint64_t size = UINT64_MAX) = 0;
-    virtual void setViewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f) = 0;
-    virtual void setScissorRect(int32_t x, int32_t y, uint32_t width, uint32_t height) = 0;
+    virtual void setViewport(const Viewport& viewport) = 0;
+    virtual void setScissorRect(const ScissorRect& scissor) = 0;
 
     virtual void draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) = 0;
     virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t baseVertex = 0, uint32_t firstInstance = 0) = 0;

@@ -101,9 +101,9 @@ GfxResult Backend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t o
     return m_systemComponent.queueWriteBuffer(queue, buffer, offset, data, size);
 }
 
-GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, const GfxExtent3D* extent, uint32_t mipLevel, const void* data, uint64_t dataSize, GfxTextureLayout finalLayout) const
 {
-    return m_systemComponent.queueWriteTexture(queue, texture, origin, mipLevel, data, dataSize, extent, finalLayout);
+    return m_systemComponent.queueWriteTexture(queue, texture, origin, extent, mipLevel, data, dataSize, finalLayout);
 }
 
 GfxResult Backend::queueWaitIdle(GfxQueue queue) const

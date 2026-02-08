@@ -273,8 +273,8 @@ typedef struct GfxChainHeader {
 // Example: Multiview rendering for VR/stereo
 uint32_t mask = 0x3; // Render stereo
 
-GfxRenderPassMultiviewInfo multiview = {
-    .sType = GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_INFO,
+GfxRenderPassMultiviewDescriptor multiview = {
+    .sType = GFX_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_DESCRIPTOR,
     .pNext = NULL,
     .viewMask = mask,  
     .correlationMasks = &mask,
@@ -291,12 +291,12 @@ GfxRenderPassDescriptor rpDesc = {
 **C++ API:**
 ```cpp
 // All extensions inherit from ChainedStruct
-struct RenderPassMultiviewInfo : public gfx::ChainedStruct {
+struct RenderPassMultiviewDescriptor : public gfx::ChainedStruct {
     uint32_t viewMask = 0;
     std::vector<uint32_t> correlationMasks;
 };
 
-RenderPassMultiviewInfo multiview{};
+RenderPassMultiviewDescriptor multiview{};
 multiview.viewMask = 0x3;
 multiview.correlationMasks = {0x3};
 

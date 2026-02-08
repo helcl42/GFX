@@ -178,10 +178,10 @@ TEST_P(GfxCppSurfaceTest, GetSurfaceInfoReturnsValidStruct)
             // We can't verify exact values without a real surface, but we can check the struct is valid
             EXPECT_GE(info.minImageCount, 0u);
             EXPECT_GE(info.maxImageCount, info.minImageCount) << "maxImageCount should be >= minImageCount";
-            EXPECT_GE(info.minWidth, 0u);
-            EXPECT_GE(info.minHeight, 0u);
-            EXPECT_GE(info.maxWidth, info.minWidth) << "maxWidth should be >= minWidth";
-            EXPECT_GE(info.maxHeight, info.minHeight) << "maxHeight should be >= minHeight";
+            EXPECT_GE(info.minExtent.width, 0u);
+            EXPECT_GE(info.minExtent.height, 0u);
+            EXPECT_GE(info.maxExtent.width, info.minExtent.width) << "maxWidth should be >= minWidth";
+            EXPECT_GE(info.maxExtent.height, info.minExtent.height) << "maxHeight should be >= minHeight";
         }
     } catch (const std::exception& e) {
         // Expected - surface creation with invalid handle should fail

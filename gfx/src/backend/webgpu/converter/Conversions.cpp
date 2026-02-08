@@ -449,8 +449,8 @@ core::SurfaceCreateInfo gfxDescriptorToWebGPUSurfaceCreateInfo(const GfxSurfaceD
 core::SwapchainCreateInfo gfxDescriptorToWebGPUSwapchainCreateInfo(const GfxSwapchainDescriptor* descriptor)
 {
     core::SwapchainCreateInfo createInfo{};
-    createInfo.width = descriptor->width;
-    createInfo.height = descriptor->height;
+    createInfo.width = descriptor->extent.width;
+    createInfo.height = descriptor->extent.height;
     createInfo.format = gfxFormatToWGPUFormat(descriptor->format);
     createInfo.usage = gfxTextureUsageToWGPU(descriptor->usage);
     createInfo.presentMode = gfxPresentModeToWGPU(descriptor->presentMode);
@@ -827,18 +827,15 @@ GfxSurfaceInfo wgpuSurfaceInfoToGfxSurfaceInfo(const core::SurfaceInfo& surfaceI
     GfxSurfaceInfo info{};
     info.minImageCount = surfaceInfo.minImageCount;
     info.maxImageCount = surfaceInfo.maxImageCount;
-    info.minWidth = surfaceInfo.minWidth;
-    info.minHeight = surfaceInfo.minHeight;
-    info.maxWidth = surfaceInfo.maxWidth;
-    info.maxHeight = surfaceInfo.maxHeight;
+    info.minExtent = { surfaceInfo.minWidth, surfaceInfo.minHeight };
+    info.maxExtent = { surfaceInfo.maxWidth, surfaceInfo.maxHeight };
     return info;
 }
 
 GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const core::SwapchainInfo& info)
 {
     GfxSwapchainInfo gfxInfo{};
-    gfxInfo.width = info.width;
-    gfxInfo.height = info.height;
+    gfxInfo.extent = { info.width, info.height };
     gfxInfo.format = wgpuFormatToGfxFormat(info.format);
     gfxInfo.imageCount = info.imageCount;
     gfxInfo.presentMode = wgpuPresentModeToGfxPresentMode(info.presentMode);
@@ -1489,8 +1486,8 @@ core::FramebufferCreateInfo gfxFramebufferDescriptorToFramebufferCreateInfo(cons
         }
     }
 
-    createInfo.width = descriptor->width;
-    createInfo.height = descriptor->height;
+    createInfo.width = descriptor->extent.width;
+    createInfo.height = descriptor->extent.height;
 
     return createInfo;
 }

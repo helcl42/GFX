@@ -496,8 +496,7 @@ TEST_P(GfxCppQuerySetTest, BeginOcclusionQueryInRenderPass)
     gfx::FramebufferDescriptor framebufferDesc{
         .renderPass = renderPass,
         .colorAttachments = { colorFbAttachment },
-        .width = 256,
-        .height = 256
+        .extent = { 256, 256 }
     };
 
     auto framebuffer = device->createFramebuffer(framebufferDesc);
@@ -580,8 +579,7 @@ TEST_P(GfxCppQuerySetTest, EndOcclusionQueryInRenderPass)
     gfx::FramebufferDescriptor framebufferDesc{
         .renderPass = renderPass,
         .colorAttachments = { { .view = colorView } },
-        .width = 256,
-        .height = 256
+        .extent = { 256, 256 }
     };
 
     auto framebuffer = device->createFramebuffer(framebufferDesc);

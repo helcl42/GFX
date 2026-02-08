@@ -111,8 +111,7 @@ TEST_P(RenderPassEncoderImplTest, SetViewportAndScissor)
     FramebufferDescriptor framebufferDesc{
         .renderPass = renderPass,
         .colorAttachments = { FramebufferColorAttachment{ .view = textureView } },
-        .width = 800,
-        .height = 600
+        .extent = { 800, 600 }
     };
 
     auto framebuffer = deviceWrapper.createFramebuffer(framebufferDesc);
@@ -136,10 +135,10 @@ TEST_P(RenderPassEncoderImplTest, SetViewportAndScissor)
         ASSERT_NE(renderPassEncoder, nullptr);
 
         // Set viewport
-        renderPassEncoder->setViewport(0.0f, 0.0f, 800.0f, 600.0f, 0.0f, 1.0f);
+        renderPassEncoder->setViewport({ 0.0f, 0.0f, 800.0f, 600.0f, 0.0f, 1.0f });
 
         // Set scissor rect
-        renderPassEncoder->setScissorRect(0, 0, 800, 600);
+        renderPassEncoder->setScissorRect({ 0, 0, 800, 600 });
     } // Render pass encoder ends here (RAII)
 
     // End command encoder

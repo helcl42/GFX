@@ -320,7 +320,7 @@ GfxResult SystemComponent::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, ui
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult SystemComponent::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+GfxResult SystemComponent::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, const GfxExtent3D* extent, uint32_t mipLevel, const void* data, uint64_t dataSize, GfxTextureLayout finalLayout) const
 {
     GfxResult validationResult = validator::validateQueueWriteTexture(queue, texture, origin, extent, data);
     if (validationResult != GFX_RESULT_SUCCESS) {

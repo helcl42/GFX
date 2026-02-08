@@ -133,6 +133,26 @@ Extent3D cExtent3DToCppExtent3D(const GfxExtent3D& extent)
     return { extent.width, extent.height, extent.depth };
 }
 
+GfxViewport cppViewportToCViewport(const Viewport& viewport)
+{
+    return GfxViewport{
+        viewport.x,
+        viewport.y,
+        viewport.width,
+        viewport.height,
+        viewport.minDepth,
+        viewport.maxDepth
+    };
+}
+
+GfxScissorRect cppScissorRectToCScissorRect(const ScissorRect& scissor)
+{
+    return GfxScissorRect{
+        { scissor.origin.x, scissor.origin.y },
+        { scissor.extent.width, scissor.extent.height }
+    };
+}
+
 GfxSampleCount cppSampleCountToCCount(SampleCount sampleCount)
 {
     return static_cast<GfxSampleCount>(sampleCount);
@@ -286,8 +306,7 @@ TextureInfo cTextureInfoToCppTextureInfo(const GfxTextureInfo& cInfo)
 SwapchainInfo cSwapchainInfoToCppSwapchainInfo(const GfxSwapchainInfo& cInfo)
 {
     SwapchainInfo info;
-    info.width = cInfo.width;
-    info.height = cInfo.height;
+    info.extent = { cInfo.extent.width, cInfo.extent.height };
     info.format = cFormatToCppFormat(cInfo.format);
     info.presentMode = cPresentModeToCppPresentMode(cInfo.presentMode);
     info.imageCount = cInfo.imageCount;
@@ -299,10 +318,8 @@ SurfaceInfo cSurfaceInfoToCppSurfaceInfo(const GfxSurfaceInfo& cInfo)
     SurfaceInfo info;
     info.minImageCount = cInfo.minImageCount;
     info.maxImageCount = cInfo.maxImageCount;
-    info.minWidth = cInfo.minWidth;
-    info.minHeight = cInfo.minHeight;
-    info.maxWidth = cInfo.maxWidth;
-    info.maxHeight = cInfo.maxHeight;
+    info.minExtent = { cInfo.minExtent.width, cInfo.minExtent.height };
+    info.maxExtent = { cInfo.maxExtent.width, cInfo.maxExtent.height };
     return info;
 }
 
@@ -753,8 +770,7 @@ void convertSwapchainDescriptor(const SwapchainDescriptor& descriptor, GfxSwapch
     outDesc.pNext = NULL;
     outDesc.label = descriptor.label.c_str();
     outDesc.surface = cSurface;
-    outDesc.width = descriptor.width;
-    outDesc.height = descriptor.height;
+    outDesc.extent = { descriptor.extent.width, descriptor.extent.height };
     outDesc.format = cppFormatToCFormat(descriptor.format);
     outDesc.usage = cppTextureUsageToCUsage(descriptor.usage);
     outDesc.presentMode = cppPresentModeToCPresentMode(descriptor.presentMode);
@@ -1173,8 +1189,7 @@ void convertFramebufferDescriptor(const FramebufferDescriptor& descriptor, GfxRe
     outDesc.colorAttachments = outColorAttachments.empty() ? nullptr : outColorAttachments.data();
     outDesc.colorAttachmentCount = static_cast<uint32_t>(outColorAttachments.size());
     outDesc.depthStencilAttachment = outDepthStencilAttachment;
-    outDesc.width = descriptor.width;
-    outDesc.height = descriptor.height;
+    outDesc.extent = { descriptor.extent.width, descriptor.extent.height };
 }
 
 void convertVertexState(const VertexState& input, GfxShader vertexShaderHandle, std::vector<std::vector<GfxVertexAttribute>>& outAttributesPerBuffer, std::vector<GfxVertexBufferLayout>& outVertexBuffers, GfxVertexState& out)

@@ -741,8 +741,8 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         auto surfaceInfo = surface->getInfo();
         std::cout << "Surface Info:" << std::endl;
         std::cout << "  Image Count: min " << surfaceInfo.minImageCount << ", max " << surfaceInfo.maxImageCount << std::endl;
-        std::cout << "  Extent: min (" << surfaceInfo.minWidth << ", " << surfaceInfo.minHeight << "), "
-                  << "max (" << surfaceInfo.maxWidth << ", " << surfaceInfo.maxHeight << ")" << std::endl;
+        std::cout << "  Extent: min (" << surfaceInfo.minExtent.width << ", " << surfaceInfo.minExtent.height << "), "
+                  << "max (" << surfaceInfo.maxExtent.width << ", " << surfaceInfo.maxExtent.height << ")" << std::endl;
 
         // Calculate frames in flight based on surface capabilities
         // Use min image count, but clamp to reasonable values (2-4 is typical)
@@ -757,8 +757,8 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 
         gfx::SwapchainDescriptor swapchainDesc{};
         swapchainDesc.surface = surface;
-        swapchainDesc.width = width;
-        swapchainDesc.height = height;
+        swapchainDesc.extent.width = width;
+        swapchainDesc.extent.height = height;
         swapchainDesc.format = COLOR_FORMAT;
         swapchainDesc.usage = gfx::TextureUsage::RenderAttachment;
         swapchainDesc.presentMode = gfx::PresentMode::Fifo;
@@ -799,8 +799,7 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
             gfx::FramebufferDescriptor framebufferDesc{};
             framebufferDesc.label = "Framebuffer " + std::to_string(i);
             framebufferDesc.renderPass = renderPass;
-            framebufferDesc.width = width;
-            framebufferDesc.height = height;
+            framebufferDesc.extent = { width, height };
 
             // Color attachment
             framebufferDesc.colorAttachments.push_back({ swapchain->getTextureView(i) });
@@ -921,11 +920,11 @@ void ComputeApp::render()
             renderPassEncoder->setPipeline(renderPipeline);
             renderPassEncoder->setBindGroup(0, renderBindGroups[frameIndex]);
 
-            renderPassEncoder->setViewport(0.0f, 0.0f,
+            renderPassEncoder->setViewport({ 0.0f, 0.0f,
                 static_cast<float>(windowWidth),
                 static_cast<float>(windowHeight),
-                0.0f, 1.0f);
-            renderPassEncoder->setScissorRect(0, 0, windowWidth, windowHeight);
+                0.0f, 1.0f });
+            renderPassEncoder->setScissorRect({ 0, 0, windowWidth, windowHeight });
 
             // Draw fullscreen quad (6 vertices, no buffers needed)
             renderPassEncoder->draw(6, 1, 0, 0);
@@ -989,7 +988,7 @@ bool ComputeApp::mainLoopIteration()
         previousWidth = windowWidth;
         previousHeight = windowHeight;
         auto swapchainInfo = swapchain->getInfo();
-        std::cout << "Window resized: " << swapchainInfo.width << "x" << swapchainInfo.height << std::endl;
+        std::cout << "Window resized: " << swapchainInfo.extent.width << "x" << swapchainInfo.extent.height << std::endl;
         return true; // Skip rendering this frame
     }
 
