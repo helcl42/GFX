@@ -33,7 +33,6 @@
 #define WINDOW_HEIGHT 600
 #define COMPUTE_TEXTURE_WIDTH 800
 #define COMPUTE_TEXTURE_HEIGHT 600
-#define MAX_FRAMES_IN_FLIGHT 3
 #define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
 
 #if defined(__EMSCRIPTEN__)
@@ -94,8 +93,8 @@ typedef struct {
     GfxShader computeShader;
     GfxComputePipeline computePipeline;
     GfxBindGroupLayout computeBindGroupLayout;
-    GfxBindGroup computeBindGroup[MAX_FRAMES_IN_FLIGHT];
-    GfxBuffer computeUniformBuffer[MAX_FRAMES_IN_FLIGHT];
+    GfxBindGroup* computeBindGroup; // Dynamic
+    GfxBuffer* computeUniformBuffer; // Dynamic
 
     // Render resources (fullscreen quad)
     GfxShader vertexShader;
@@ -104,18 +103,19 @@ typedef struct {
     GfxRenderPipeline renderPipeline;
     GfxBindGroupLayout renderBindGroupLayout;
     GfxSampler sampler;
-    GfxBindGroup renderBindGroup[MAX_FRAMES_IN_FLIGHT];
-    GfxBuffer renderUniformBuffer[MAX_FRAMES_IN_FLIGHT];
-    GfxFramebuffer framebuffers[MAX_FRAMES_IN_FLIGHT];
+    GfxBindGroup* renderBindGroup; // Dynamic
+    GfxBuffer* renderUniformBuffer; // Dynamic
+    GfxFramebuffer* framebuffers; // Dynamic
 
     uint32_t windowWidth;
     uint32_t windowHeight;
+    uint32_t framesInFlightCount; // Dynamic based on surface capabilities
 
-    // Per-frame synchronization
-    GfxSemaphore imageAvailableSemaphores[MAX_FRAMES_IN_FLIGHT];
-    GfxSemaphore renderFinishedSemaphores[MAX_FRAMES_IN_FLIGHT];
-    GfxFence inFlightFences[MAX_FRAMES_IN_FLIGHT];
-    GfxCommandEncoder commandEncoders[MAX_FRAMES_IN_FLIGHT];
+    // Per-frame synchronization (dynamic arrays)
+    GfxSemaphore* imageAvailableSemaphores;
+    GfxSemaphore* renderFinishedSemaphores;
+    GfxFence* inFlightFences;
+    GfxCommandEncoder* commandEncoders;
 
     uint32_t currentFrame;
     uint32_t previousWidth;
@@ -278,6 +278,45 @@ static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
 
 static bool createSwapchain(ComputeApp* app, uint32_t width, uint32_t height)
 {
+    // Query surface capabilities to determine frame count
+    GfxSurfaceInfo surfaceInfo;
+    if (gfxSurfaceGetInfo(app->surface, &surfaceInfo) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to get surface info\n");
+        return false;
+    }
+
+    printf("Surface Info:\n");
+    printf("  Image Count: min %u, max %u\n", surfaceInfo.minImageCount, surfaceInfo.maxImageCount);
+    printf("  Extent: min (%u, %u), max (%u, %u)\n",
+        surfaceInfo.minWidth, surfaceInfo.minHeight,
+        surfaceInfo.maxWidth, surfaceInfo.maxHeight);
+
+    // Calculate frames in flight based on surface capabilities (clamp to [2, 4])
+    app->framesInFlightCount = surfaceInfo.minImageCount;
+    if (app->framesInFlightCount < 2) {
+        app->framesInFlightCount = 2;
+    }
+    if (app->framesInFlightCount > 4) {
+        app->framesInFlightCount = 4;
+    }
+    printf("Frames in flight: %u\n", app->framesInFlightCount);
+
+    // Allocate dynamic arrays
+    app->computeBindGroup = (GfxBindGroup*)calloc(app->framesInFlightCount, sizeof(GfxBindGroup));
+    app->computeUniformBuffer = (GfxBuffer*)calloc(app->framesInFlightCount, sizeof(GfxBuffer));
+    app->renderBindGroup = (GfxBindGroup*)calloc(app->framesInFlightCount, sizeof(GfxBindGroup));
+    app->renderUniformBuffer = (GfxBuffer*)calloc(app->framesInFlightCount, sizeof(GfxBuffer));
+    app->framebuffers = (GfxFramebuffer*)calloc(app->framesInFlightCount, sizeof(GfxFramebuffer));
+    app->imageAvailableSemaphores = (GfxSemaphore*)calloc(app->framesInFlightCount, sizeof(GfxSemaphore));
+    app->renderFinishedSemaphores = (GfxSemaphore*)calloc(app->framesInFlightCount, sizeof(GfxSemaphore));
+    app->inFlightFences = (GfxFence*)calloc(app->framesInFlightCount, sizeof(GfxFence));
+    app->commandEncoders = (GfxCommandEncoder*)calloc(app->framesInFlightCount, sizeof(GfxCommandEncoder));
+
+    if (!app->computeBindGroup || !app->computeUniformBuffer || !app->renderBindGroup || !app->renderUniformBuffer || !app->framebuffers || !app->imageAvailableSemaphores || !app->renderFinishedSemaphores || !app->inFlightFences || !app->commandEncoders) {
+        fprintf(stderr, "Failed to allocate dynamic arrays\n");
+        return false;
+    }
+
     GfxSwapchainDescriptor swapchainDesc = {};
     swapchainDesc.sType = GFX_STRUCTURE_TYPE_SWAPCHAIN_DESCRIPTOR;
     swapchainDesc.pNext = NULL;
@@ -287,7 +326,7 @@ static bool createSwapchain(ComputeApp* app, uint32_t width, uint32_t height)
     swapchainDesc.format = COLOR_FORMAT;
     swapchainDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     swapchainDesc.presentMode = GFX_PRESENT_MODE_FIFO;
-    swapchainDesc.imageCount = MAX_FRAMES_IN_FLIGHT;
+    swapchainDesc.imageCount = app->framesInFlightCount;
 
     if (gfxDeviceCreateSwapchain(app->device, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create swapchain\n");
@@ -474,9 +513,9 @@ static bool createComputeUniformBuffers(ComputeApp* app)
     computeUniformBufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST;
     computeUniformBufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
         if (gfxDeviceCreateBuffer(app->device, &computeUniformBufferDesc, &app->computeUniformBuffer[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create compute uniform buffer %d\n", i);
+            fprintf(stderr, "Failed to create compute uniform buffer %u\n", i);
             return false;
         }
     }
@@ -520,7 +559,7 @@ static bool createComputeBindGroup(ComputeApp* app)
     }
 
     // Create compute bind groups (one per frame in flight)
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
         GfxBindGroupEntry computeEntries[2] = {
             {
                 .binding = 0,
@@ -550,7 +589,7 @@ static bool createComputeBindGroup(ComputeApp* app)
         computeBindGroupDesc.entries = computeEntries;
 
         if (gfxDeviceCreateBindGroup(app->device, &computeBindGroupDesc, &app->computeBindGroup[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create compute bind group %d\n", i);
+            fprintf(stderr, "Failed to create compute bind group %u\n", i);
             return false;
         }
     }
@@ -712,7 +751,7 @@ static bool createRenderPass(ComputeApp* app)
 
 static bool createFramebuffers(ComputeApp* app)
 {
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
         GfxTextureView backbuffer = NULL;
         GfxResult result = gfxSwapchainGetTextureView(app->swapchain, i, &backbuffer);
         if (result != GFX_RESULT_SUCCESS || !backbuffer) {
@@ -865,9 +904,9 @@ static bool createRenderUniformBuffers(ComputeApp* app)
     renderUniformBufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST;
     renderUniformBufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
         if (gfxDeviceCreateBuffer(app->device, &renderUniformBufferDesc, &app->renderUniformBuffer[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create render uniform buffer %d\n", i);
+            fprintf(stderr, "Failed to create render uniform buffer %u\n", i);
             return false;
         }
     }
@@ -920,7 +959,7 @@ static bool createRenderBindGroups(ComputeApp* app)
     }
 
     // Create render bind groups (one per frame in flight)
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
         GfxBindGroupEntry renderEntries[3] = {
             {
                 .binding = 0,
@@ -957,7 +996,7 @@ static bool createRenderBindGroups(ComputeApp* app)
         renderBindGroupDesc.entries = renderEntries;
 
         if (gfxDeviceCreateBindGroup(app->device, &renderBindGroupDesc, &app->renderBindGroup[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create render bind group %d\n", i);
+            fprintf(stderr, "Failed to create render bind group %u\n", i);
             return false;
         }
     }
@@ -1049,7 +1088,7 @@ static bool createSyncObjects(ComputeApp* app)
     fenceDesc.pNext = NULL;
     fenceDesc.signaled = true;
 
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
         if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &app->imageAvailableSemaphores[i]) != GFX_RESULT_SUCCESS) {
             fprintf(stderr, "Failed to create image available semaphore\n");
             return false;
@@ -1067,14 +1106,14 @@ static bool createSyncObjects(ComputeApp* app)
 
         // Create command encoder for this frame
         char label[64];
-        snprintf(label, sizeof(label), "Command Encoder %d", i);
+        snprintf(label, sizeof(label), "Command Encoder %u", i);
         GfxCommandEncoderDescriptor encoderDesc = {};
         encoderDesc.sType = GFX_STRUCTURE_TYPE_COMMAND_ENCODER_DESCRIPTOR;
         encoderDesc.pNext = NULL;
         encoderDesc.label = label;
 
         if (gfxDeviceCreateCommandEncoder(app->device, &encoderDesc, &app->commandEncoders[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create command encoder %d\n", i);
+            fprintf(stderr, "Failed to create command encoder %u\n", i);
             return false;
         }
     }
@@ -1285,7 +1324,7 @@ static void render(ComputeApp* app)
         return;
     }
 
-    app->currentFrame = (app->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    app->currentFrame = (app->currentFrame + 1) % app->framesInFlightCount;
 }
 
 static void cleanup(ComputeApp* app)
@@ -1295,35 +1334,73 @@ static void cleanup(ComputeApp* app)
     }
 
     // Sync objects
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        if (app->commandEncoders[i]) {
-            gfxCommandEncoderDestroy(app->commandEncoders[i]);
+    if (app->commandEncoders) {
+        for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+            if (app->commandEncoders[i]) {
+                gfxCommandEncoderDestroy(app->commandEncoders[i]);
+            }
         }
-        if (app->imageAvailableSemaphores[i]) {
-            gfxSemaphoreDestroy(app->imageAvailableSemaphores[i]);
+        free(app->commandEncoders);
+        app->commandEncoders = NULL;
+    }
+    if (app->imageAvailableSemaphores) {
+        for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+            if (app->imageAvailableSemaphores[i]) {
+                gfxSemaphoreDestroy(app->imageAvailableSemaphores[i]);
+            }
         }
-        if (app->renderFinishedSemaphores[i]) {
-            gfxSemaphoreDestroy(app->renderFinishedSemaphores[i]);
+        free(app->imageAvailableSemaphores);
+        app->imageAvailableSemaphores = NULL;
+    }
+    if (app->renderFinishedSemaphores) {
+        for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+            if (app->renderFinishedSemaphores[i]) {
+                gfxSemaphoreDestroy(app->renderFinishedSemaphores[i]);
+            }
         }
-        if (app->inFlightFences[i]) {
-            gfxFenceDestroy(app->inFlightFences[i]);
+        free(app->renderFinishedSemaphores);
+        app->renderFinishedSemaphores = NULL;
+    }
+    if (app->inFlightFences) {
+        for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+            if (app->inFlightFences[i]) {
+                gfxFenceDestroy(app->inFlightFences[i]);
+            }
         }
+        free(app->inFlightFences);
+        app->inFlightFences = NULL;
     }
 
     // Render resources
     if (app->renderPipeline) {
         gfxRenderPipelineDestroy(app->renderPipeline);
     }
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        if (app->framebuffers[i]) {
-            gfxFramebufferDestroy(app->framebuffers[i]);
+    if (app->framebuffers) {
+        for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+            if (app->framebuffers[i]) {
+                gfxFramebufferDestroy(app->framebuffers[i]);
+            }
         }
-        if (app->renderBindGroup[i]) {
-            gfxBindGroupDestroy(app->renderBindGroup[i]);
+        free(app->framebuffers);
+        app->framebuffers = NULL;
+    }
+    if (app->renderBindGroup) {
+        for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+            if (app->renderBindGroup[i]) {
+                gfxBindGroupDestroy(app->renderBindGroup[i]);
+            }
         }
-        if (app->renderUniformBuffer[i]) {
-            gfxBufferDestroy(app->renderUniformBuffer[i]);
+        free(app->renderBindGroup);
+        app->renderBindGroup = NULL;
+    }
+    if (app->renderUniformBuffer) {
+        for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+            if (app->renderUniformBuffer[i]) {
+                gfxBufferDestroy(app->renderUniformBuffer[i]);
+            }
         }
+        free(app->renderUniformBuffer);
+        app->renderUniformBuffer = NULL;
     }
     if (app->renderPass) {
         gfxRenderPassDestroy(app->renderPass);
@@ -1345,13 +1422,23 @@ static void cleanup(ComputeApp* app)
     if (app->computePipeline) {
         gfxComputePipelineDestroy(app->computePipeline);
     }
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        if (app->computeBindGroup[i]) {
-            gfxBindGroupDestroy(app->computeBindGroup[i]);
+    if (app->computeBindGroup) {
+        for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+            if (app->computeBindGroup[i]) {
+                gfxBindGroupDestroy(app->computeBindGroup[i]);
+            }
         }
-        if (app->computeUniformBuffer[i]) {
-            gfxBufferDestroy(app->computeUniformBuffer[i]);
+        free(app->computeBindGroup);
+        app->computeBindGroup = NULL;
+    }
+    if (app->computeUniformBuffer) {
+        for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+            if (app->computeUniformBuffer[i]) {
+                gfxBufferDestroy(app->computeUniformBuffer[i]);
+            }
         }
+        free(app->computeUniformBuffer);
+        app->computeUniformBuffer = NULL;
     }
     if (app->computeBindGroupLayout) {
         gfxBindGroupLayoutDestroy(app->computeBindGroupLayout);
@@ -1392,10 +1479,12 @@ static void cleanup(ComputeApp* app)
 // Helper function to cleanup size-dependent resources
 static void cleanupSizeDependentResources(ComputeApp* app)
 {
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        if (app->framebuffers[i]) {
-            gfxFramebufferDestroy(app->framebuffers[i]);
-            app->framebuffers[i] = NULL;
+    if (app->framebuffers) {
+        for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+            if (app->framebuffers[i]) {
+                gfxFramebufferDestroy(app->framebuffers[i]);
+                app->framebuffers[i] = NULL;
+            }
         }
     }
 

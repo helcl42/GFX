@@ -31,7 +31,6 @@
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
-#define MAX_FRAMES_IN_FLIGHT 3
 #define CUBE_COUNT 3
 #define MSAA_SAMPLE_COUNT GFX_SAMPLE_COUNT_4
 #define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
@@ -91,8 +90,10 @@ typedef struct {
     GfxDevice device;
     GfxQueue queue;
     GfxSurface surface;
+    GfxSurfaceInfo surfaceInfo;
     GfxSwapchain swapchain;
     GfxSwapchainInfo swapchainInfo;
+    uint32_t framesInFlightCount;
 
     GfxBuffer vertexBuffer;
     GfxBuffer indexBuffer;
@@ -111,7 +112,7 @@ typedef struct {
     GfxTextureView msaaColorTextureView;
 
     // Framebuffers (one per swapchain image)
-    GfxFramebuffer framebuffers[MAX_FRAMES_IN_FLIGHT];
+    GfxFramebuffer* framebuffers;
 
     uint32_t windowWidth;
     uint32_t windowHeight;
@@ -119,13 +120,13 @@ typedef struct {
     // Per-frame resources (for frames in flight)
     GfxBuffer sharedUniformBuffer; // Single buffer for all frames
     size_t uniformAlignedSize; // Aligned size per frame
-    GfxBindGroup uniformBindGroups[MAX_FRAMES_IN_FLIGHT][CUBE_COUNT]; // 3 cubes per frame
-    GfxCommandEncoder commandEncoders[MAX_FRAMES_IN_FLIGHT]; // Track for deferred cleanup
+    GfxBindGroup* uniformBindGroups; // Dynamic: [framesInFlightCount * CUBE_COUNT]
+    GfxCommandEncoder* commandEncoders; // Dynamic: [framesInFlightCount]
 
     // Per-frame synchronization
-    GfxSemaphore imageAvailableSemaphores[MAX_FRAMES_IN_FLIGHT];
-    GfxSemaphore renderFinishedSemaphores[MAX_FRAMES_IN_FLIGHT];
-    GfxFence inFlightFences[MAX_FRAMES_IN_FLIGHT];
+    GfxSemaphore* imageAvailableSemaphores; // Dynamic: [framesInFlightCount]
+    GfxSemaphore* renderFinishedSemaphores; // Dynamic: [framesInFlightCount]
+    GfxFence* inFlightFences; // Dynamic: [framesInFlightCount]
     uint32_t currentFrame;
 
     // Animation state
@@ -136,7 +137,7 @@ typedef struct {
     uint32_t previousWidth;
     uint32_t previousHeight;
     float lastTime;
-    
+
     // FPS tracking
     uint32_t fpsFrameCount;
     float fpsTimeAccumulator;
@@ -348,6 +349,36 @@ bool initializeGraphics(CubeApp* app)
         return false;
     }
 
+    // Query surface capabilities and info
+    if (gfxSurfaceGetInfo(app->surface, &app->surfaceInfo) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to get surface info\n");
+        return false;
+    }
+    printf("Surface Info:\n");
+    printf("  Image Count: min %u, max %u\n", app->surfaceInfo.minImageCount, app->surfaceInfo.maxImageCount);
+    printf("  Extent: min (%u, %u), max (%u, %u)\n",
+        app->surfaceInfo.minWidth, app->surfaceInfo.minHeight,
+        app->surfaceInfo.maxWidth, app->surfaceInfo.maxHeight);
+
+    // Calculate frames in flight based on surface capabilities
+    // Use min image count, but clamp to reasonable values (2-3 is typical)
+    app->framesInFlightCount = app->surfaceInfo.minImageCount;
+    if (app->framesInFlightCount < 2) {
+        app->framesInFlightCount = 2;
+    }
+    if (app->framesInFlightCount > 4) {
+        app->framesInFlightCount = 4;
+    }
+    printf("Frames in flight: %u\n", app->framesInFlightCount);
+
+    // Allocate per-frame arrays
+    app->framebuffers = (GfxFramebuffer*)calloc(app->framesInFlightCount, sizeof(GfxFramebuffer));
+    app->uniformBindGroups = (GfxBindGroup*)calloc(app->framesInFlightCount * CUBE_COUNT, sizeof(GfxBindGroup));
+    app->commandEncoders = (GfxCommandEncoder*)calloc(app->framesInFlightCount, sizeof(GfxCommandEncoder));
+    app->imageAvailableSemaphores = (GfxSemaphore*)calloc(app->framesInFlightCount, sizeof(GfxSemaphore));
+    app->renderFinishedSemaphores = (GfxSemaphore*)calloc(app->framesInFlightCount, sizeof(GfxSemaphore));
+    app->inFlightFences = (GfxFence*)calloc(app->framesInFlightCount, sizeof(GfxFence));
+
     return true;
 }
 
@@ -363,7 +394,7 @@ static bool createSwapchain(CubeApp* app, uint32_t width, uint32_t height)
     swapchainDesc.format = COLOR_FORMAT;
     swapchainDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     swapchainDesc.presentMode = GFX_PRESENT_MODE_FIFO;
-    swapchainDesc.imageCount = MAX_FRAMES_IN_FLIGHT;
+    swapchainDesc.imageCount = app->framesInFlightCount;
 
     if (gfxDeviceCreateSwapchain(app->device, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create swapchain\n");
@@ -459,7 +490,7 @@ static bool createTextures(CubeApp* app, uint32_t width, uint32_t height)
 static bool createFrameBuffers(CubeApp* app, uint32_t width, uint32_t height)
 {
     // Create framebuffers (one per swapchain image)
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
         GfxTextureView backbuffer = NULL;
         GfxResult result = gfxSwapchainGetTextureView(app->swapchain, i, &backbuffer);
         if (result != GFX_RESULT_SUCCESS || !backbuffer) {
@@ -543,32 +574,32 @@ bool createSyncObjects(CubeApp* app)
     fenceDesc.label = "Fence";
     fenceDesc.signaled = true; // Start signaled so first frame doesn't wait
 
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
         char label[64];
 
-        snprintf(label, sizeof(label), "Image Available Semaphore %d", i);
+        snprintf(label, sizeof(label), "Image Available Semaphore %u", i);
         semaphoreDesc.label = label;
         if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &app->imageAvailableSemaphores[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create image available semaphore %d\n", i);
+            fprintf(stderr, "Failed to create image available semaphore %u\n", i);
             return false;
         }
 
-        snprintf(label, sizeof(label), "Render Finished Semaphore %d", i);
+        snprintf(label, sizeof(label), "Render Finished Semaphore %u", i);
         semaphoreDesc.label = label;
         if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &app->renderFinishedSemaphores[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create render finished semaphore %d\n", i);
+            fprintf(stderr, "Failed to create render finished semaphore %u\n", i);
             return false;
         }
 
-        snprintf(label, sizeof(label), "In Flight Fence %d", i);
+        snprintf(label, sizeof(label), "In Flight Fence %u", i);
         fenceDesc.label = label;
         if (gfxDeviceCreateFence(app->device, &fenceDesc, &app->inFlightFences[i]) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create in flight fence %d\n", i);
+            fprintf(stderr, "Failed to create in flight fence %u\n", i);
             return false;
         }
 
         // Create command encoder for this frame
-        snprintf(label, sizeof(label), "Command Encoder %d", i);
+        snprintf(label, sizeof(label), "Command Encoder %u", i);
         GfxCommandEncoderDescriptor encoderDesc = {};
         encoderDesc.sType = GFX_STRUCTURE_TYPE_COMMAND_ENCODER_DESCRIPTOR;
         encoderDesc.pNext = NULL;
@@ -587,7 +618,7 @@ bool createSyncObjects(CubeApp* app)
 void cleanupSizeDependentResources(CubeApp* app)
 {
     // Clean up framebuffers
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
         if (app->framebuffers[i]) {
             gfxFramebufferDestroy(app->framebuffers[i]);
             app->framebuffers[i] = NULL;
@@ -643,11 +674,12 @@ void cleanupRenderingResources(CubeApp* app)
         gfxBindGroupLayoutDestroy(app->uniformBindGroupLayout);
         app->uniformBindGroupLayout = NULL;
     }
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
         for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
-            if (app->uniformBindGroups[i][cubeIdx]) {
-                gfxBindGroupDestroy(app->uniformBindGroups[i][cubeIdx]);
-                app->uniformBindGroups[i][cubeIdx] = NULL;
+            int idx = i * CUBE_COUNT + cubeIdx;
+            if (app->uniformBindGroups[idx]) {
+                gfxBindGroupDestroy(app->uniformBindGroups[idx]);
+                app->uniformBindGroups[idx] = NULL;
             }
         }
     }
@@ -749,7 +781,7 @@ static bool createUniformBuffer(CubeApp* app)
     size_t uniformSize = sizeof(UniformData);
     app->uniformAlignedSize = gfxAlignUp(uniformSize, limits.minUniformBufferOffsetAlignment);
     // Need space for CUBE_COUNT cubes per frame
-    size_t totalBufferSize = app->uniformAlignedSize * MAX_FRAMES_IN_FLIGHT * CUBE_COUNT;
+    size_t totalBufferSize = app->uniformAlignedSize * app->framesInFlightCount * CUBE_COUNT;
 
     GfxBufferDescriptor uniformBufferDesc = {};
     uniformBufferDesc.sType = GFX_STRUCTURE_TYPE_BUFFER_DESCRIPTOR;
@@ -792,10 +824,10 @@ static bool createBindGroup(CubeApp* app)
     }
 
     // Create bind groups (CUBE_COUNT cubes per frame in flight) using offsets into shared buffer
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+        for (uint32_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
             char label[64];
-            snprintf(label, sizeof(label), "Uniform Bind Group Frame %d Cube %d", i, cubeIdx);
+            snprintf(label, sizeof(label), "Uniform Bind Group Frame %u Cube %d", i, cubeIdx);
 
             GfxBindGroupEntry uniformEntry = {
                 .binding = 0,
@@ -815,7 +847,8 @@ static bool createBindGroup(CubeApp* app)
             uniformBindGroupDesc.entries = &uniformEntry;
             uniformBindGroupDesc.entryCount = 1;
 
-            if (gfxDeviceCreateBindGroup(app->device, &uniformBindGroupDesc, &app->uniformBindGroups[i][cubeIdx]) != GFX_RESULT_SUCCESS) {
+            int idx = i * CUBE_COUNT + cubeIdx;
+            if (gfxDeviceCreateBindGroup(app->device, &uniformBindGroupDesc, &app->uniformBindGroups[idx]) != GFX_RESULT_SUCCESS) {
                 fprintf(stderr, "Failed to create uniform bind group %d cube %d\n", i, cubeIdx);
                 return false;
             }
@@ -1107,7 +1140,7 @@ bool createRenderPipeline(CubeApp* app)
     return true;
 }
 
-void updateCube(CubeApp* app, int cubeIndex)
+void updateCube(CubeApp* app, uint32_t cubeIndex)
 {
     UniformData uniforms = { 0 }; // Initialize to zero!
 
@@ -1145,7 +1178,9 @@ void updateCube(CubeApp* app, int cubeIndex)
     // Upload uniform data to buffer at aligned offset
     // Formula: (frame * CUBE_COUNT + cube) * alignedSize
     size_t offset = (app->currentFrame * CUBE_COUNT + cubeIndex) * app->uniformAlignedSize;
-    gfxQueueWriteBuffer(app->queue, app->sharedUniformBuffer, offset, &uniforms, sizeof(uniforms));
+    if (gfxQueueWriteBuffer(app->queue, app->sharedUniformBuffer, offset, &uniforms, sizeof(uniforms)) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to write uniform data for cube %u\n", cubeIndex);
+    }
 }
 
 void update(CubeApp* app, float deltaTime)
@@ -1238,7 +1273,8 @@ void render(CubeApp* app)
         // Draw CUBE_COUNT cubes at different positions
         for (int i = 0; i < CUBE_COUNT; ++i) {
             // Bind the specific cube's bind group (no dynamic offsets)
-            gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->uniformBindGroups[app->currentFrame][i], NULL, 0);
+            uint32_t bindGroupIdx = app->currentFrame * CUBE_COUNT + i;
+            gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->uniformBindGroups[bindGroupIdx], NULL, 0);
 
             // Draw indexed (36 indices for the cube)
             gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
@@ -1284,7 +1320,7 @@ void render(CubeApp* app)
     }
 
     // Move to next frame
-    app->currentFrame = (app->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    app->currentFrame = (app->currentFrame + 1) % app->framesInFlightCount;
 }
 
 void cleanup(CubeApp* app)
@@ -1301,7 +1337,7 @@ void cleanup(CubeApp* app)
     cleanupRenderingResources(app);
 
     // Destroy per-frame resources
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
         // Destroy synchronization objects
         if (app->imageAvailableSemaphores[i]) {
             gfxSemaphoreDestroy(app->imageAvailableSemaphores[i]);
@@ -1318,8 +1354,9 @@ void cleanup(CubeApp* app)
             gfxCommandEncoderDestroy(app->commandEncoders[i]);
         }
         for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
-            if (app->uniformBindGroups[i][cubeIdx]) {
-                gfxBindGroupDestroy(app->uniformBindGroups[i][cubeIdx]);
+            int idx = i * CUBE_COUNT + cubeIdx;
+            if (app->uniformBindGroups[idx]) {
+                gfxBindGroupDestroy(app->uniformBindGroups[idx]);
             }
         }
     }
@@ -1360,6 +1397,15 @@ void cleanup(CubeApp* app)
     if (app->depthTexture) {
         gfxTextureDestroy(app->depthTexture);
     }
+
+    // Free dynamically allocated arrays
+    free(app->framebuffers);
+    free(app->uniformBindGroups);
+    free(app->commandEncoders);
+    free(app->imageAvailableSemaphores);
+    free(app->renderFinishedSemaphores);
+    free(app->inFlightFences);
+
     if (app->swapchain) {
         gfxSwapchainDestroy(app->swapchain);
     }

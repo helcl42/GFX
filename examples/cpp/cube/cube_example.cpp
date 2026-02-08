@@ -35,7 +35,7 @@
 
 static constexpr uint32_t WINDOW_WIDTH = 800;
 static constexpr uint32_t WINDOW_HEIGHT = 600;
-static constexpr size_t MAX_FRAMES_IN_FLIGHT = 3;
+// Frame count is dynamic based on surface capabilities
 static constexpr size_t CUBE_COUNT = 3;
 static constexpr gfx::SampleCount MSAA_SAMPLE_COUNT = gfx::SampleCount::Count4;
 static constexpr gfx::TextureFormat COLOR_FORMAT = gfx::TextureFormat::B8G8R8A8UnormSrgb;
@@ -163,15 +163,16 @@ private:
     uint32_t previousHeight = WINDOW_HEIGHT;
 
     // Per-frame resources (for frames in flight)
+    size_t framesInFlightCount = 0; // Dynamic based on surface capabilities
     std::shared_ptr<gfx::Buffer> sharedUniformBuffer; // Single buffer for all frames and cubes
     size_t uniformAlignedSize = 0; // Aligned size per uniform buffer
-    std::array<std::array<std::shared_ptr<gfx::BindGroup>, CUBE_COUNT>, MAX_FRAMES_IN_FLIGHT> uniformBindGroups;
-    std::array<std::shared_ptr<gfx::CommandEncoder>, MAX_FRAMES_IN_FLIGHT> commandEncoders;
+    std::vector<std::vector<std::shared_ptr<gfx::BindGroup>>> uniformBindGroups; // Dynamic: [framesInFlightCount][CUBE_COUNT]
+    std::vector<std::shared_ptr<gfx::CommandEncoder>> commandEncoders; // Dynamic: [framesInFlightCount]
 
     // Per-frame synchronization
-    std::array<std::shared_ptr<gfx::Semaphore>, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
-    std::array<std::shared_ptr<gfx::Semaphore>, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
-    std::array<std::shared_ptr<gfx::Fence>, MAX_FRAMES_IN_FLIGHT> inFlightFences;
+    std::vector<std::shared_ptr<gfx::Semaphore>> imageAvailableSemaphores; // Dynamic: [framesInFlightCount]
+    std::vector<std::shared_ptr<gfx::Semaphore>> renderFinishedSemaphores; // Dynamic: [framesInFlightCount]
+    std::vector<std::shared_ptr<gfx::Fence>> inFlightFences; // Dynamic: [framesInFlightCount]
     size_t currentFrame = 0;
 
     // Animation state
@@ -316,16 +317,34 @@ bool CubeApp::initializeGraphics()
 bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 {
     try {
+        // Query surface capabilities to determine frame count
+        auto surfaceInfo = surface->getInfo();
+        std::cout << "Surface Info:" << std::endl;
+        std::cout << "  Image Count: min " << surfaceInfo.minImageCount << ", max " << surfaceInfo.maxImageCount << std::endl;
+        std::cout << "  Extent: min (" << surfaceInfo.minWidth << ", " << surfaceInfo.minHeight << "), "
+                  << "max (" << surfaceInfo.maxWidth << ", " << surfaceInfo.maxHeight << ")" << std::endl;
+
+        // Calculate frames in flight based on surface capabilities
+        // Use min image count, but clamp to reasonable values (2-4 is typical)
+        framesInFlightCount = surfaceInfo.minImageCount;
+        if (framesInFlightCount < 2) {
+            framesInFlightCount = 2;
+        }
+        if (framesInFlightCount > 4) {
+            framesInFlightCount = 4;
+        }
+        std::cout << "Frames in flight: " << framesInFlightCount << std::endl;
+
         // Create swapchain
         gfx::SwapchainDescriptor swapchainDesc{};
         swapchainDesc.label = "Main Swapchain";
         swapchainDesc.surface = surface;
-        swapchainDesc.width = static_cast<uint32_t>(width);
-        swapchainDesc.height = static_cast<uint32_t>(height);
+        swapchainDesc.width = width;
+        swapchainDesc.height = height;
         swapchainDesc.format = COLOR_FORMAT;
         swapchainDesc.usage = gfx::TextureUsage::RenderAttachment;
         swapchainDesc.presentMode = gfx::PresentMode::Fifo;
-        swapchainDesc.imageCount = MAX_FRAMES_IN_FLIGHT;
+        swapchainDesc.imageCount = framesInFlightCount;
 
         swapchain = device->createSwapchain(swapchainDesc);
         if (!swapchain) {
@@ -492,8 +511,14 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 bool CubeApp::createSyncObjects()
 {
     try {
+        // Resize vectors for dynamic frame count
+        imageAvailableSemaphores.resize(framesInFlightCount);
+        renderFinishedSemaphores.resize(framesInFlightCount);
+        inFlightFences.resize(framesInFlightCount);
+        commandEncoders.resize(framesInFlightCount);
+
         // Create synchronization objects for each frame in flight
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        for (size_t i = 0; i < framesInFlightCount; ++i) {
             // Create binary semaphores for image availability and render completion
             gfx::SemaphoreDescriptor semDesc{};
             semDesc.label = "Image Available Semaphore Frame " + std::to_string(i);
@@ -561,11 +586,12 @@ void CubeApp::cleanupRenderingResources()
     fragmentShader.reset();
     vertexShader.reset();
     uniformBindGroupLayout.reset();
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (size_t i = 0; i < framesInFlightCount; ++i) {
         for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
             uniformBindGroups[i][cubeIdx].reset();
         }
     }
+    uniformBindGroups.clear();
     sharedUniformBuffer.reset();
     indexBuffer.reset();
     vertexBuffer.reset();
@@ -637,7 +663,7 @@ bool CubeApp::createRenderingResources()
 
         size_t uniformSize = sizeof(UniformData);
         uniformAlignedSize = gfx::utils::alignUp(uniformSize, limits.minUniformBufferOffsetAlignment);
-        size_t totalBufferSize = uniformAlignedSize * MAX_FRAMES_IN_FLIGHT * CUBE_COUNT;
+        size_t totalBufferSize = uniformAlignedSize * framesInFlightCount * CUBE_COUNT;
 
         gfx::BufferDescriptor uniformBufferDesc{};
         uniformBufferDesc.label = "Shared Transform Uniforms";
@@ -669,8 +695,14 @@ bool CubeApp::createRenderingResources()
             return false;
         }
 
+        // Resize uniformBindGroups vector
+        uniformBindGroups.resize(framesInFlightCount);
+        for (auto& frameBindGroups : uniformBindGroups) {
+            frameBindGroups.resize(CUBE_COUNT);
+        }
+
         // Create bind groups (one per frame per cube) using offsets into shared buffer
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        for (size_t i = 0; i < framesInFlightCount; ++i) {
             for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
                 gfx::BindGroupEntry uniformEntry{};
                 uniformEntry.binding = 0;
@@ -972,7 +1004,7 @@ void CubeApp::render()
         }
 
         // Advance to next frame
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+        currentFrame = (currentFrame + 1) % framesInFlightCount;
     } catch (const std::exception& e) {
         std::cerr << "Render error: " << e.what() << std::endl;
     }
@@ -1135,7 +1167,7 @@ void CubeApp::cleanup()
     cleanupRenderingResources();
 
     // Clean up per-frame resources
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (size_t i = 0; i < framesInFlightCount; ++i) {
         commandEncoders[i].reset();
         inFlightFences[i].reset();
         renderFinishedSemaphores[i].reset();
@@ -1144,6 +1176,13 @@ void CubeApp::cleanup()
             uniformBindGroups[i][cubeIdx].reset();
         }
     }
+
+    // Clear vectors
+    commandEncoders.clear();
+    inFlightFences.clear();
+    renderFinishedSemaphores.clear();
+    imageAvailableSemaphores.clear();
+    uniformBindGroups.clear();
 
     // Destroy shared uniform buffer
     sharedUniformBuffer.reset();

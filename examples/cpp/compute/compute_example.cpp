@@ -41,7 +41,6 @@ static constexpr uint32_t WINDOW_WIDTH = 800;
 static constexpr uint32_t WINDOW_HEIGHT = 600;
 static constexpr uint32_t COMPUTE_TEXTURE_WIDTH = 800;
 static constexpr uint32_t COMPUTE_TEXTURE_HEIGHT = 600;
-static constexpr size_t MAX_FRAMES_IN_FLIGHT = 3;
 static constexpr gfx::TextureFormat COLOR_FORMAT = gfx::TextureFormat::B8G8R8A8UnormSrgb;
 
 #if defined(__EMSCRIPTEN__)
@@ -132,8 +131,8 @@ private:
     std::shared_ptr<gfx::Shader> computeShader;
     std::shared_ptr<gfx::ComputePipeline> computePipeline;
     std::shared_ptr<gfx::BindGroupLayout> computeBindGroupLayout;
-    std::array<std::shared_ptr<gfx::BindGroup>, MAX_FRAMES_IN_FLIGHT> computeBindGroups;
-    std::array<std::shared_ptr<gfx::Buffer>, MAX_FRAMES_IN_FLIGHT> computeUniformBuffers;
+    std::vector<std::shared_ptr<gfx::BindGroup>> computeBindGroups; // Dynamic
+    std::vector<std::shared_ptr<gfx::Buffer>> computeUniformBuffers; // Dynamic
 
     // Render resources (fullscreen quad)
     std::shared_ptr<gfx::Shader> vertexShader;
@@ -141,8 +140,8 @@ private:
     std::shared_ptr<gfx::RenderPipeline> renderPipeline;
     std::shared_ptr<gfx::BindGroupLayout> renderBindGroupLayout;
     std::shared_ptr<gfx::Sampler> sampler;
-    std::array<std::shared_ptr<gfx::BindGroup>, MAX_FRAMES_IN_FLIGHT> renderBindGroups;
-    std::array<std::shared_ptr<gfx::Buffer>, MAX_FRAMES_IN_FLIGHT> renderUniformBuffers;
+    std::vector<std::shared_ptr<gfx::BindGroup>> renderBindGroups; // Dynamic
+    std::vector<std::shared_ptr<gfx::Buffer>> renderUniformBuffers; // Dynamic
     std::shared_ptr<gfx::RenderPass> renderPass;
     std::vector<std::shared_ptr<gfx::Framebuffer>> framebuffers;
 
@@ -150,12 +149,13 @@ private:
     uint32_t windowHeight = WINDOW_HEIGHT;
     uint32_t previousWidth = WINDOW_WIDTH;
     uint32_t previousHeight = WINDOW_HEIGHT;
+    size_t framesInFlightCount = 0; // Dynamic based on surface capabilities
 
-    // Per-frame synchronization
-    std::array<std::shared_ptr<gfx::Semaphore>, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
-    std::array<std::shared_ptr<gfx::Semaphore>, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
-    std::array<std::shared_ptr<gfx::Fence>, MAX_FRAMES_IN_FLIGHT> inFlightFences;
-    std::array<std::shared_ptr<gfx::CommandEncoder>, MAX_FRAMES_IN_FLIGHT> commandEncoders;
+    // Per-frame synchronization (dynamic)
+    std::vector<std::shared_ptr<gfx::Semaphore>> imageAvailableSemaphores;
+    std::vector<std::shared_ptr<gfx::Semaphore>> renderFinishedSemaphores;
+    std::vector<std::shared_ptr<gfx::Fence>> inFlightFences;
+    std::vector<std::shared_ptr<gfx::CommandEncoder>> commandEncoders;
 
     size_t currentFrame = 0;
     float elapsedTime = 0.0f;
@@ -366,7 +366,8 @@ bool ComputeApp::createComputeResources()
         computeUniformBufferDesc.size = sizeof(ComputeUniformData);
         computeUniformBufferDesc.usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst;
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        computeUniformBuffers.resize(framesInFlightCount);
+        for (size_t i = 0; i < framesInFlightCount; ++i) {
             computeUniformBuffers[i] = device->createBuffer(computeUniformBufferDesc);
             if (!computeUniformBuffers[i]) {
                 std::cerr << "Failed to create compute uniform buffer " << i << std::endl;
@@ -405,7 +406,8 @@ bool ComputeApp::createComputeResources()
         }
 
         // Create compute bind groups (one per frame in flight)
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        computeBindGroups.resize(framesInFlightCount);
+        for (size_t i = 0; i < framesInFlightCount; ++i) {
             gfx::BindGroupEntry textureEntry{};
             textureEntry.binding = 0;
             textureEntry.resource = computeTextureView;
@@ -561,7 +563,8 @@ bool ComputeApp::createRenderResources()
         renderUniformBufferDesc.size = sizeof(RenderUniformData);
         renderUniformBufferDesc.usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst;
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        renderUniformBuffers.resize(framesInFlightCount);
+        for (size_t i = 0; i < framesInFlightCount; ++i) {
             renderUniformBuffers[i] = device->createBuffer(renderUniformBufferDesc);
             if (!renderUniformBuffers[i]) {
                 std::cerr << "Failed to create render uniform buffer " << i << std::endl;
@@ -607,7 +610,8 @@ bool ComputeApp::createRenderResources()
         }
 
         // Create render bind groups (one per frame in flight)
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        renderBindGroups.resize(framesInFlightCount);
+        for (size_t i = 0; i < framesInFlightCount; ++i) {
             gfx::BindGroupEntry samplerBindEntry{};
             samplerBindEntry.binding = 0;
             samplerBindEntry.resource = sampler;
@@ -687,7 +691,12 @@ bool ComputeApp::createSyncObjects()
         gfx::FenceDescriptor fenceDesc{};
         fenceDesc.signaled = true;
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        imageAvailableSemaphores.resize(framesInFlightCount);
+        renderFinishedSemaphores.resize(framesInFlightCount);
+        inFlightFences.resize(framesInFlightCount);
+        commandEncoders.resize(framesInFlightCount);
+
+        for (size_t i = 0; i < framesInFlightCount; ++i) {
             imageAvailableSemaphores[i] = device->createSemaphore(semaphoreDesc);
             if (!imageAvailableSemaphores[i]) {
                 std::cerr << "Failed to create image available semaphore " << i << std::endl;
@@ -728,6 +737,24 @@ void ComputeApp::cleanupSizeDependentResources()
 bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 {
     try {
+        // Query surface capabilities to determine frame count
+        auto surfaceInfo = surface->getInfo();
+        std::cout << "Surface Info:" << std::endl;
+        std::cout << "  Image Count: min " << surfaceInfo.minImageCount << ", max " << surfaceInfo.maxImageCount << std::endl;
+        std::cout << "  Extent: min (" << surfaceInfo.minWidth << ", " << surfaceInfo.minHeight << "), "
+                  << "max (" << surfaceInfo.maxWidth << ", " << surfaceInfo.maxHeight << ")" << std::endl;
+
+        // Calculate frames in flight based on surface capabilities
+        // Use min image count, but clamp to reasonable values (2-4 is typical)
+        framesInFlightCount = surfaceInfo.minImageCount;
+        if (framesInFlightCount < 2) {
+            framesInFlightCount = 2;
+        }
+        if (framesInFlightCount > 4) {
+            framesInFlightCount = 4;
+        }
+        std::cout << "Frames in flight: " << framesInFlightCount << std::endl;
+
         gfx::SwapchainDescriptor swapchainDesc{};
         swapchainDesc.surface = surface;
         swapchainDesc.width = width;
@@ -735,7 +762,7 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         swapchainDesc.format = COLOR_FORMAT;
         swapchainDesc.usage = gfx::TextureUsage::RenderAttachment;
         swapchainDesc.presentMode = gfx::PresentMode::Fifo;
-        swapchainDesc.imageCount = MAX_FRAMES_IN_FLIGHT;
+        swapchainDesc.imageCount = framesInFlightCount;
 
         swapchain = device->createSwapchain(swapchainDesc);
         if (!swapchain) {
@@ -924,7 +951,7 @@ void ComputeApp::render()
 
         result = swapchain->present(presentDescriptor);
 
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+        currentFrame = (currentFrame + 1) % framesInFlightCount;
     } catch (const std::exception& e) {
         std::cerr << "Render error: " << e.what() << std::endl;
     }
@@ -1039,19 +1066,25 @@ void ComputeApp::cleanup()
     }
 
     // Sync objects
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (size_t i = 0; i < framesInFlightCount; ++i) {
         commandEncoders[i].reset();
         inFlightFences[i].reset();
         renderFinishedSemaphores[i].reset();
         imageAvailableSemaphores[i].reset();
     }
+    commandEncoders.clear();
+    inFlightFences.clear();
+    renderFinishedSemaphores.clear();
+    imageAvailableSemaphores.clear();
 
     // Render resources
     renderPipeline.reset();
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (size_t i = 0; i < framesInFlightCount; ++i) {
         renderBindGroups[i].reset();
         renderUniformBuffers[i].reset();
     }
+    renderBindGroups.clear();
+    renderUniformBuffers.clear();
     renderBindGroupLayout.reset();
     sampler.reset();
     fragmentShader.reset();
@@ -1059,10 +1092,12 @@ void ComputeApp::cleanup()
 
     // Compute resources
     computePipeline.reset();
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (size_t i = 0; i < framesInFlightCount; ++i) {
         computeBindGroups[i].reset();
         computeUniformBuffers[i].reset();
     }
+    computeBindGroups.clear();
+    computeUniformBuffers.clear();
     computeBindGroupLayout.reset();
     computeShader.reset();
     computeTextureView.reset();
