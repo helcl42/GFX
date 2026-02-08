@@ -2076,12 +2076,12 @@ GfxPlatformWindowHandle gfxPlatformWindowHandleFromXlib(void* display, unsigned 
     return handle;
 }
 
-GfxPlatformWindowHandle gfxPlatformWindowHandleFromWayland(void* surface, void* display)
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromWayland(void* display, void* surface)
 {
     GfxPlatformWindowHandle handle = {};
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_WAYLAND;
-    handle.wayland.surface = surface;
     handle.wayland.display = display;
+    handle.wayland.surface = surface;
     return handle;
 }
 

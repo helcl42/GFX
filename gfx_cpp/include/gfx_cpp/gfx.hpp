@@ -656,8 +656,8 @@ struct PlatformWindowHandle {
         unsigned long window; // Window
     };
     struct WaylandHandle {
-        void* surface; // wl_surface*
         void* display; // wl_display*
+        void* surface; // wl_surface*
     };
     struct XcbHandle {
         void* connection; // xcb_connection_t*
@@ -711,12 +711,12 @@ struct PlatformWindowHandle {
         return h;
     }
 
-    static PlatformWindowHandle fromWayland(void* surface, void* display)
+    static PlatformWindowHandle fromWayland(void* display, void* surface)
     {
         PlatformWindowHandle h{};
         h.windowingSystem = WindowingSystem::Wayland;
-        h.handle.wayland.surface = surface;
         h.handle.wayland.display = display;
+        h.handle.wayland.surface = surface;
         return h;
     }
 

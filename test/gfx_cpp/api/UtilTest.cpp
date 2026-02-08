@@ -117,7 +117,7 @@ TEST(GfxCppUtilTest, PlatformWindowHandleFromWayland)
 {
     void* surface = (void*)0x1234;
     void* display = (void*)0x5678;
-    gfx::PlatformWindowHandle handle = gfx::PlatformWindowHandle::fromWayland(surface, display);
+    gfx::PlatformWindowHandle handle = gfx::PlatformWindowHandle::fromWayland(display, surface);
     EXPECT_EQ(handle.windowingSystem, gfx::WindowingSystem::Wayland);
     EXPECT_EQ(handle.handle.wayland.surface, surface);
     EXPECT_EQ(handle.handle.wayland.display, display);

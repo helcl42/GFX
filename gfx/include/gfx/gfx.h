@@ -1565,8 +1565,8 @@ typedef struct GfxXlibHandle {
 } GfxXlibHandle;
 
 typedef struct GfxWaylandHandle {
-    void* surface; // wl_surface*
     void* display; // wl_display*
+    void* surface; // wl_surface*
 } GfxWaylandHandle;
 
 typedef struct GfxXcbHandle {
@@ -1846,7 +1846,7 @@ GFX_API uint32_t gfxGetFormatBytesPerPixel(GfxTextureFormat format);
 
 // Cross-platform helpers available on all platforms
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromXlib(void* display, unsigned long window);
-GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromWayland(void* surface, void* display);
+GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromWayland(void* display, void* surface);
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromXCB(void* connection, uint32_t window);
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromWin32(void* hwnd, void* hinstance);
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromEmscripten(const char* canvasSelector);
