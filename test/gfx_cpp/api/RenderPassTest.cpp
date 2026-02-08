@@ -157,8 +157,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDifferentLoadOps)
                 .target = {
                     .format = gfx::TextureFormat::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
-                    .loadOp = gfx::LoadOp::Load, // Load existing content
-                    .storeOp = gfx::StoreOp::Store,
+                    .ops = { gfx::LoadOp::Load, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
 
