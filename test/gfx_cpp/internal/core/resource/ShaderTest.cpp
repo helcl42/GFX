@@ -90,7 +90,7 @@ TEST_P(ShaderImplTest, CreateShader)
         .entryPoint = "main"
     };
     desc.code.assign(reinterpret_cast<const uint8_t*>(minimalComputeShader),
-                     reinterpret_cast<const uint8_t*>(minimalComputeShader) + sizeof(minimalComputeShader));
+        reinterpret_cast<const uint8_t*>(minimalComputeShader) + sizeof(minimalComputeShader));
 
     auto shader = deviceWrapper.createShader(desc);
     ASSERT_NE(shader, nullptr);
@@ -105,7 +105,7 @@ TEST_P(ShaderImplTest, CreateShaderWithCustomEntryPoint)
         .entryPoint = "main" // Entry point is "main" in the shader
     };
     desc.code.assign(reinterpret_cast<const uint8_t*>(minimalComputeShader),
-                     reinterpret_cast<const uint8_t*>(minimalComputeShader) + sizeof(minimalComputeShader));
+        reinterpret_cast<const uint8_t*>(minimalComputeShader) + sizeof(minimalComputeShader));
 
     auto shader = deviceWrapper.createShader(desc);
     ASSERT_NE(shader, nullptr);
@@ -120,7 +120,7 @@ TEST_P(ShaderImplTest, MultipleShaders_IndependentHandles)
         .entryPoint = "main"
     };
     desc.code.assign(reinterpret_cast<const uint8_t*>(minimalComputeShader),
-                     reinterpret_cast<const uint8_t*>(minimalComputeShader) + sizeof(minimalComputeShader));
+        reinterpret_cast<const uint8_t*>(minimalComputeShader) + sizeof(minimalComputeShader));
 
     auto shader1 = deviceWrapper.createShader(desc);
     auto shader2 = deviceWrapper.createShader(desc);
@@ -140,7 +140,7 @@ TEST_P(ShaderImplTest, CreateWGSLShader)
     };
     const char* wgslCode = minimalWGSLShader;
     desc.code.assign(reinterpret_cast<const uint8_t*>(wgslCode),
-                     reinterpret_cast<const uint8_t*>(wgslCode) + strlen(wgslCode));
+        reinterpret_cast<const uint8_t*>(wgslCode) + strlen(wgslCode));
 
     auto shader = deviceWrapper.createShader(desc);
     ASSERT_NE(shader, nullptr);
@@ -156,7 +156,7 @@ TEST_P(ShaderImplTest, MixedShaderTypes_IndependentHandles)
         .entryPoint = "main"
     };
     spirvDesc.code.assign(reinterpret_cast<const uint8_t*>(minimalComputeShader),
-                          reinterpret_cast<const uint8_t*>(minimalComputeShader) + sizeof(minimalComputeShader));
+        reinterpret_cast<const uint8_t*>(minimalComputeShader) + sizeof(minimalComputeShader));
 
     auto spirvShader = deviceWrapper.createShader(spirvDesc);
     ASSERT_NE(spirvShader, nullptr);
@@ -168,7 +168,7 @@ TEST_P(ShaderImplTest, MixedShaderTypes_IndependentHandles)
     };
     const char* wgslCode = minimalWGSLShader;
     wgslDesc.code.assign(reinterpret_cast<const uint8_t*>(wgslCode),
-                         reinterpret_cast<const uint8_t*>(wgslCode) + strlen(wgslCode));
+        reinterpret_cast<const uint8_t*>(wgslCode) + strlen(wgslCode));
 
     auto wgslShader = deviceWrapper.createShader(wgslDesc);
     ASSERT_NE(wgslShader, nullptr);

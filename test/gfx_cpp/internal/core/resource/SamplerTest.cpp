@@ -78,7 +78,7 @@ TEST_P(SamplerImplTest, CreateSampler)
 
     auto sampler = deviceWrapper.createSampler(desc);
     ASSERT_NE(sampler, nullptr);
-    
+
     // Verify we can get the handle
     auto* samplerImpl = dynamic_cast<SamplerImpl*>(sampler.get());
     ASSERT_NE(samplerImpl, nullptr);
@@ -150,7 +150,7 @@ TEST_P(SamplerImplTest, MultipleSamplers_IndependentHandles)
     ASSERT_NE(sampler1, nullptr);
     ASSERT_NE(sampler2, nullptr);
     EXPECT_NE(sampler1.get(), sampler2.get());
-    
+
     // Verify handles are different
     auto* impl1 = dynamic_cast<SamplerImpl*>(sampler1.get());
     auto* impl2 = dynamic_cast<SamplerImpl*>(sampler2.get());

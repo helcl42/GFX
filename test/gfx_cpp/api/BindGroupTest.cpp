@@ -55,8 +55,7 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithUniformBuffer)
         .visibility = gfx::ShaderStage::Vertex | gfx::ShaderStage::Fragment,
         .resource = gfx::BindGroupLayoutEntry::BufferBinding{
             .hasDynamicOffset = false,
-            .minBindingSize = 0
-        }
+            .minBindingSize = 0 }
     };
 
     gfx::BindGroupLayoutDescriptor layoutDesc{
@@ -102,8 +101,7 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithSampler)
         .binding = 0,
         .visibility = gfx::ShaderStage::Fragment,
         .resource = gfx::BindGroupLayoutEntry::SamplerBinding{
-            .comparison = false
-        }
+            .comparison = false }
     };
 
     gfx::BindGroupLayoutDescriptor layoutDesc{
@@ -151,8 +149,7 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithTextureView)
         .visibility = gfx::ShaderStage::Fragment,
         .resource = gfx::BindGroupLayoutEntry::TextureBinding{
             .multisampled = false,
-            .viewDimension = gfx::TextureViewType::View2D
-        }
+            .viewDimension = gfx::TextureViewType::View2D }
     };
 
     gfx::BindGroupLayoutDescriptor layoutDesc{
@@ -214,8 +211,7 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithStorageBuffer)
         .visibility = gfx::ShaderStage::Compute,
         .resource = gfx::BindGroupLayoutEntry::BufferBinding{
             .hasDynamicOffset = false,
-            .minBindingSize = 1024
-        }
+            .minBindingSize = 1024 }
     };
 
     gfx::BindGroupLayoutDescriptor layoutDesc{
@@ -265,18 +261,14 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithMultipleEntries)
         .visibility = gfx::ShaderStage::Vertex,
         .resource = gfx::BindGroupLayoutEntry::BufferBinding{
             .hasDynamicOffset = false,
-            .minBindingSize = 0
-        }
-    });
+            .minBindingSize = 0 } });
 
     // Binding 1: Sampler
     layoutEntries.push_back(gfx::BindGroupLayoutEntry{
         .binding = 1,
         .visibility = gfx::ShaderStage::Fragment,
         .resource = gfx::BindGroupLayoutEntry::SamplerBinding{
-            .comparison = false
-        }
-    });
+            .comparison = false } });
 
     // Binding 2: Texture
     layoutEntries.push_back(gfx::BindGroupLayoutEntry{
@@ -284,9 +276,7 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithMultipleEntries)
         .visibility = gfx::ShaderStage::Fragment,
         .resource = gfx::BindGroupLayoutEntry::TextureBinding{
             .multisampled = false,
-            .viewDimension = gfx::TextureViewType::View2D
-        }
-    });
+            .viewDimension = gfx::TextureViewType::View2D } });
 
     gfx::BindGroupLayoutDescriptor layoutDesc{
         .entries = layoutEntries
@@ -345,18 +335,15 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithMultipleEntries)
         .binding = 0,
         .resource = buffer,
         .offset = 0,
-        .size = 256
-    });
+        .size = 256 });
 
     entries.push_back(gfx::BindGroupEntry{
         .binding = 1,
-        .resource = sampler
-    });
+        .resource = sampler });
 
     entries.push_back(gfx::BindGroupEntry{
         .binding = 2,
-        .resource = textureView
-    });
+        .resource = textureView });
 
     gfx::BindGroupDescriptor bindGroupDesc{
         .layout = layout,
@@ -377,8 +364,7 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithBufferOffset)
         .visibility = gfx::ShaderStage::Vertex,
         .resource = gfx::BindGroupLayoutEntry::BufferBinding{
             .hasDynamicOffset = false,
-            .minBindingSize = 256
-        }
+            .minBindingSize = 256 }
     };
 
     gfx::BindGroupLayoutDescriptor layoutDesc{
@@ -425,8 +411,7 @@ TEST_P(GfxCppBindGroupTest, CreateMultipleBindGroupsWithSameLayout)
         .visibility = gfx::ShaderStage::Vertex,
         .resource = gfx::BindGroupLayoutEntry::BufferBinding{
             .hasDynamicOffset = false,
-            .minBindingSize = 0
-        }
+            .minBindingSize = 0 }
     };
 
     gfx::BindGroupLayoutDescriptor layoutDesc{

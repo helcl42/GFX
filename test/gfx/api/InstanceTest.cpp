@@ -446,7 +446,8 @@ TEST(GfxInstanceTestNonParam, InvalidArguments)
     GfxInstanceDescriptor desc = {};
     desc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
     desc.pNext = nullptr;
-    desc.backend = static_cast<GfxBackend>(GFX_BACKEND_VULKAN);;
+    desc.backend = static_cast<GfxBackend>(GFX_BACKEND_VULKAN);
+    ;
     desc.enabledExtensions = extensions;
     desc.enabledExtensionCount = 1;
 

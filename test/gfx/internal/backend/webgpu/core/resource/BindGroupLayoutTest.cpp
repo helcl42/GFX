@@ -103,7 +103,7 @@ TEST_F(WebGPUBindGroupLayoutTest, CreateBindGroupLayout_WithSampler)
 TEST_F(WebGPUBindGroupLayoutTest, CreateBindGroupLayout_WithMultipleEntries)
 {
     gfx::backend::webgpu::core::BindGroupLayoutCreateInfo createInfo{};
-    
+
     gfx::backend::webgpu::core::BindGroupLayoutEntry entry0{};
     entry0.binding = 0;
     entry0.visibility = WGPUShaderStage_Vertex;

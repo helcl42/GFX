@@ -39,7 +39,7 @@ TEST_F(WebGPUFramebufferTest, CreateFramebuffer_WithColorAttachment)
     // Create texture
     gfx::backend::webgpu::core::TextureCreateInfo texInfo{};
     texInfo.format = WGPUTextureFormat_RGBA8Unorm;
-    texInfo.size = {800, 600, 1};
+    texInfo.size = { 800, 600, 1 };
     texInfo.usage = WGPUTextureUsage_RenderAttachment;
     texInfo.dimension = WGPUTextureDimension_2D;
     texInfo.mipLevelCount = 1;
@@ -74,7 +74,7 @@ TEST_F(WebGPUFramebufferTest, GetDevice_ReturnsCorrectDevice)
 {
     gfx::backend::webgpu::core::TextureCreateInfo texInfo{};
     texInfo.format = WGPUTextureFormat_BGRA8Unorm;
-    texInfo.size = {1024, 768, 1};
+    texInfo.size = { 1024, 768, 1 };
     texInfo.usage = WGPUTextureUsage_RenderAttachment;
     texInfo.dimension = WGPUTextureDimension_2D;
     texInfo.mipLevelCount = 1;
@@ -105,7 +105,7 @@ TEST_F(WebGPUFramebufferTest, Destructor_CleansUpResources)
 {
     gfx::backend::webgpu::core::TextureCreateInfo texInfo{};
     texInfo.format = WGPUTextureFormat_RGBA8Unorm;
-    texInfo.size = {640, 480, 1};
+    texInfo.size = { 640, 480, 1 };
     texInfo.usage = WGPUTextureUsage_RenderAttachment;
     texInfo.dimension = WGPUTextureDimension_2D;
     texInfo.mipLevelCount = 1;

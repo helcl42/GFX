@@ -1,7 +1,6 @@
 #include <backend/vulkan/converter/Conversions.h>
 #include <backend/vulkan/core/CoreTypes.h>
 
-
 #include <gtest/gtest.h>
 
 // Test Vulkan conversion functions
@@ -1172,8 +1171,8 @@ TEST(VulkanConversionsTest, VkSurfaceCapabilitiesToGfxSurfaceInfo_ConvertsCorrec
     VkSurfaceCapabilitiesKHR vkCaps{};
     vkCaps.minImageCount = 2;
     vkCaps.maxImageCount = 3;
-    vkCaps.minImageExtent = {1, 1};
-    vkCaps.maxImageExtent = {4096, 4096};
+    vkCaps.minImageExtent = { 1, 1 };
+    vkCaps.maxImageExtent = { 4096, 4096 };
 
     GfxSurfaceInfo result = gfx::backend::vulkan::converter::vkSurfaceCapabilitiesToGfxSurfaceInfo(vkCaps);
 
@@ -1190,8 +1189,8 @@ TEST(VulkanConversionsTest, VkSurfaceCapabilitiesToGfxSurfaceInfo_LargeValues_Co
     VkSurfaceCapabilitiesKHR vkCaps{};
     vkCaps.minImageCount = 1;
     vkCaps.maxImageCount = 8;
-    vkCaps.minImageExtent = {16, 16};
-    vkCaps.maxImageExtent = {8192, 8192};
+    vkCaps.minImageExtent = { 16, 16 };
+    vkCaps.maxImageExtent = { 8192, 8192 };
 
     GfxSurfaceInfo result = gfx::backend::vulkan::converter::vkSurfaceCapabilitiesToGfxSurfaceInfo(vkCaps);
 

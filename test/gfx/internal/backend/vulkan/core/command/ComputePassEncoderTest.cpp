@@ -71,7 +71,6 @@ TEST_F(VulkanComputePassEncoderTest, CreateComputePassEncoder_CreatesSuccessfull
     EXPECT_NE(encoder->handle(), VK_NULL_HANDLE);
     EXPECT_EQ(encoder->device(), device.get());
     EXPECT_EQ(encoder->commandEncoder(), commandEncoder.get());
-    
 
     commandEncoder->end();
 }

@@ -10,7 +10,8 @@ protected:
     GfxAdapter adapter = nullptr;
     GfxDevice device = nullptr;
 
-    void SetUp() override {
+    void SetUp() override
+    {
         GfxBackend backend = GetParam();
 
         GfxResult result = gfxLoadBackend(backend);
@@ -46,7 +47,8 @@ protected:
         ASSERT_NE(device, nullptr);
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         if (device != nullptr) {
             gfxDeviceDestroy(device);
         }
@@ -57,10 +59,11 @@ protected:
     }
 
     // Helper to create a basic 2D texture
-    GfxTexture createBasicTexture() {
+    GfxTexture createBasicTexture()
+    {
         GfxTextureDescriptor desc = {};
         desc.type = GFX_TEXTURE_TYPE_2D;
-        desc.size = {256, 256, 1};
+        desc.size = { 256, 256, 1 };
         desc.arrayLayerCount = 1;
         desc.mipLevelCount = 1;
         desc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -74,7 +77,8 @@ protected:
     }
 };
 
-TEST_P(GfxTextureViewTest, CreateDestroy2DView) {
+TEST_P(GfxTextureViewTest, CreateDestroy2DView)
+{
     GfxTexture texture = createBasicTexture();
     ASSERT_NE(texture, nullptr);
 
@@ -98,7 +102,8 @@ TEST_P(GfxTextureViewTest, CreateDestroy2DView) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateViewWithNullDescriptor) {
+TEST_P(GfxTextureViewTest, CreateViewWithNullDescriptor)
+{
     GfxTexture texture = createBasicTexture();
     ASSERT_NE(texture, nullptr);
 
@@ -110,7 +115,8 @@ TEST_P(GfxTextureViewTest, CreateViewWithNullDescriptor) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateViewInvalidArguments) {
+TEST_P(GfxTextureViewTest, CreateViewInvalidArguments)
+{
     GfxTexture texture = createBasicTexture();
     ASSERT_NE(texture, nullptr);
 
@@ -134,10 +140,11 @@ TEST_P(GfxTextureViewTest, CreateViewInvalidArguments) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateView1D) {
+TEST_P(GfxTextureViewTest, CreateView1D)
+{
     GfxTextureDescriptor desc = {};
     desc.type = GFX_TEXTURE_TYPE_1D;
-    desc.size = {512, 1, 1};
+    desc.size = { 512, 1, 1 };
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -165,10 +172,11 @@ TEST_P(GfxTextureViewTest, CreateView1D) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateView3D) {
+TEST_P(GfxTextureViewTest, CreateView3D)
+{
     GfxTextureDescriptor desc = {};
     desc.type = GFX_TEXTURE_TYPE_3D;
-    desc.size = {64, 64, 64};
+    desc.size = { 64, 64, 64 };
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -196,10 +204,11 @@ TEST_P(GfxTextureViewTest, CreateView3D) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateViewCube) {
+TEST_P(GfxTextureViewTest, CreateViewCube)
+{
     GfxTextureDescriptor desc = {};
     desc.type = GFX_TEXTURE_TYPE_CUBE;
-    desc.size = {256, 256, 1};
+    desc.size = { 256, 256, 1 };
     desc.arrayLayerCount = 6; // Cube requires 6 layers
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -227,10 +236,11 @@ TEST_P(GfxTextureViewTest, CreateViewCube) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateView1DArray) {
+TEST_P(GfxTextureViewTest, CreateView1DArray)
+{
     GfxTextureDescriptor desc = {};
     desc.type = GFX_TEXTURE_TYPE_1D;
-    desc.size = {512, 1, 1};
+    desc.size = { 512, 1, 1 };
     desc.arrayLayerCount = 4;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -258,10 +268,11 @@ TEST_P(GfxTextureViewTest, CreateView1DArray) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateView2DArray) {
+TEST_P(GfxTextureViewTest, CreateView2DArray)
+{
     GfxTextureDescriptor desc = {};
     desc.type = GFX_TEXTURE_TYPE_2D;
-    desc.size = {256, 256, 1};
+    desc.size = { 256, 256, 1 };
     desc.arrayLayerCount = 8;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -289,10 +300,11 @@ TEST_P(GfxTextureViewTest, CreateView2DArray) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateViewCubeArray) {
+TEST_P(GfxTextureViewTest, CreateViewCubeArray)
+{
     GfxTextureDescriptor desc = {};
     desc.type = GFX_TEXTURE_TYPE_CUBE;
-    desc.size = {256, 256, 1};
+    desc.size = { 256, 256, 1 };
     desc.arrayLayerCount = 12; // 2 cubes = 12 layers
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -320,10 +332,11 @@ TEST_P(GfxTextureViewTest, CreateViewCubeArray) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateViewSpecificMipLevel) {
+TEST_P(GfxTextureViewTest, CreateViewSpecificMipLevel)
+{
     GfxTextureDescriptor desc = {};
     desc.type = GFX_TEXTURE_TYPE_2D;
-    desc.size = {512, 512, 1};
+    desc.size = { 512, 512, 1 };
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 9; // log2(512) + 1
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -352,10 +365,11 @@ TEST_P(GfxTextureViewTest, CreateViewSpecificMipLevel) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateViewMipLevelRange) {
+TEST_P(GfxTextureViewTest, CreateViewMipLevelRange)
+{
     GfxTextureDescriptor desc = {};
     desc.type = GFX_TEXTURE_TYPE_2D;
-    desc.size = {512, 512, 1};
+    desc.size = { 512, 512, 1 };
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 9;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -384,10 +398,11 @@ TEST_P(GfxTextureViewTest, CreateViewMipLevelRange) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateViewSpecificArrayLayer) {
+TEST_P(GfxTextureViewTest, CreateViewSpecificArrayLayer)
+{
     GfxTextureDescriptor desc = {};
     desc.type = GFX_TEXTURE_TYPE_2D;
-    desc.size = {256, 256, 1};
+    desc.size = { 256, 256, 1 };
     desc.arrayLayerCount = 8;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -416,10 +431,11 @@ TEST_P(GfxTextureViewTest, CreateViewSpecificArrayLayer) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateViewArrayLayerRange) {
+TEST_P(GfxTextureViewTest, CreateViewArrayLayerRange)
+{
     GfxTextureDescriptor desc = {};
     desc.type = GFX_TEXTURE_TYPE_2D;
-    desc.size = {256, 256, 1};
+    desc.size = { 256, 256, 1 };
     desc.arrayLayerCount = 10;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -448,7 +464,8 @@ TEST_P(GfxTextureViewTest, CreateViewArrayLayerRange) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateMultipleViewsOfSameTexture) {
+TEST_P(GfxTextureViewTest, CreateMultipleViewsOfSameTexture)
+{
     GfxTexture texture = createBasicTexture();
     ASSERT_NE(texture, nullptr);
 
@@ -479,10 +496,11 @@ TEST_P(GfxTextureViewTest, CreateMultipleViewsOfSameTexture) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateViewForDepthTexture) {
+TEST_P(GfxTextureViewTest, CreateViewForDepthTexture)
+{
     GfxTextureDescriptor desc = {};
     desc.type = GFX_TEXTURE_TYPE_2D;
-    desc.size = {512, 512, 1};
+    desc.size = { 512, 512, 1 };
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -510,10 +528,11 @@ TEST_P(GfxTextureViewTest, CreateViewForDepthTexture) {
     gfxTextureDestroy(texture);
 }
 
-TEST_P(GfxTextureViewTest, CreateView2DFromSingleCubeFace) {
+TEST_P(GfxTextureViewTest, CreateView2DFromSingleCubeFace)
+{
     GfxTextureDescriptor desc = {};
     desc.type = GFX_TEXTURE_TYPE_CUBE;
-    desc.size = {256, 256, 1};
+    desc.size = { 256, 256, 1 };
     desc.arrayLayerCount = 6;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;

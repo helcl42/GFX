@@ -2,7 +2,6 @@
 #include <backend/vulkan/core/system/Instance.h>
 #include <backend/vulkan/core/util/Utils.h>
 
-
 #include <gtest/gtest.h>
 
 // Test Vulkan core utility functions

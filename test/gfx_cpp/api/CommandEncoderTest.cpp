@@ -251,21 +251,17 @@ TEST_P(GfxCppCommandEncoderTest, MultipleCopyOperations)
     auto encoder = device->createCommandEncoder({});
 
     // Record multiple copy operations
-    encoder->copyBufferToBuffer({
-        .source = buffer1,
+    encoder->copyBufferToBuffer({ .source = buffer1,
         .sourceOffset = 0,
         .destination = buffer2,
         .destinationOffset = 0,
-        .size = 128
-    });
+        .size = 128 });
 
-    encoder->copyBufferToBuffer({
-        .source = buffer2,
+    encoder->copyBufferToBuffer({ .source = buffer2,
         .sourceOffset = 0,
         .destination = buffer3,
         .destinationOffset = 0,
-        .size = 128
-    });
+        .size = 128 });
 
     encoder->end();
 }

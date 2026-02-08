@@ -59,7 +59,7 @@ TEST_F(WebGPUBindGroupTest, CreateBindGroup_WithUniformBuffer)
     // Create bind group
     gfx::backend::webgpu::core::BindGroupCreateInfo createInfo{};
     createInfo.layout = layout->handle();
-    
+
     gfx::backend::webgpu::core::BindGroupEntry entry{};
     entry.binding = 0;
     entry.buffer = buffer->handle();
@@ -94,7 +94,7 @@ TEST_F(WebGPUBindGroupTest, Handle_ReturnsValidWGPUBindGroup)
     // Create bind group
     gfx::backend::webgpu::core::BindGroupCreateInfo createInfo{};
     createInfo.layout = layout->handle();
-    
+
     gfx::backend::webgpu::core::BindGroupEntry entry{};
     entry.binding = 0;
     entry.buffer = buffer->handle();
@@ -112,7 +112,7 @@ TEST_F(WebGPUBindGroupTest, CreateBindGroup_WithTextureAndSampler)
 {
     // Create layout
     gfx::backend::webgpu::core::BindGroupLayoutCreateInfo layoutInfo{};
-    
+
     gfx::backend::webgpu::core::BindGroupLayoutEntry textureEntry{};
     textureEntry.binding = 0;
     textureEntry.visibility = WGPUShaderStage_Fragment;
@@ -132,7 +132,7 @@ TEST_F(WebGPUBindGroupTest, CreateBindGroup_WithTextureAndSampler)
     // Create texture
     gfx::backend::webgpu::core::TextureCreateInfo texInfo{};
     texInfo.format = WGPUTextureFormat_RGBA8Unorm;
-    texInfo.size = {256, 256, 1};
+    texInfo.size = { 256, 256, 1 };
     texInfo.usage = WGPUTextureUsage_TextureBinding;
     texInfo.dimension = WGPUTextureDimension_2D;
     texInfo.mipLevelCount = 1;
@@ -163,7 +163,7 @@ TEST_F(WebGPUBindGroupTest, CreateBindGroup_WithTextureAndSampler)
     // Create bind group
     gfx::backend::webgpu::core::BindGroupCreateInfo createInfo{};
     createInfo.layout = layout->handle();
-    
+
     gfx::backend::webgpu::core::BindGroupEntry texEntry{};
     texEntry.binding = 0;
     texEntry.textureView = textureView->handle();
@@ -201,7 +201,7 @@ TEST_F(WebGPUBindGroupTest, Destructor_CleansUpResources)
     {
         gfx::backend::webgpu::core::BindGroupCreateInfo createInfo{};
         createInfo.layout = layout->handle();
-        
+
         gfx::backend::webgpu::core::BindGroupEntry entry{};
         entry.binding = 0;
         entry.buffer = buffer->handle();

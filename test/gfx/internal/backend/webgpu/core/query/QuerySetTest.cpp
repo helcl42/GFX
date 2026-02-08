@@ -97,7 +97,7 @@ TEST_F(WebGPUQuerySetTest, MultipleQuerySets_CanCoexist)
     EXPECT_NE(querySet1->handle(), nullptr);
     EXPECT_NE(querySet2->handle(), nullptr);
     EXPECT_NE(querySet1->handle(), querySet2->handle());
-    
+
     EXPECT_EQ(querySet1->getType(), WGPUQueryType_Occlusion);
     EXPECT_EQ(querySet2->getType(), WGPUQueryType_Timestamp);
 }

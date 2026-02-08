@@ -93,7 +93,7 @@ void* Buffer::map(uint64_t offset, uint64_t size)
         mapSize = m_info.size - offset;
     }
 
-    if(offset + mapSize > m_info.size) {
+    if (offset + mapSize > m_info.size) {
         return nullptr;
     }
 

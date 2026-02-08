@@ -920,10 +920,7 @@ void ComputeApp::render()
             renderPassEncoder->setPipeline(renderPipeline);
             renderPassEncoder->setBindGroup(0, renderBindGroups[frameIndex]);
 
-            renderPassEncoder->setViewport({ 0.0f, 0.0f,
-                static_cast<float>(windowWidth),
-                static_cast<float>(windowHeight),
-                0.0f, 1.0f });
+            renderPassEncoder->setViewport({ 0.0f, 0.0f, static_cast<float>(windowWidth), static_cast<float>(windowHeight), 0.0f, 1.0f });
             renderPassEncoder->setScissorRect({ 0, 0, windowWidth, windowHeight });
 
             // Draw fullscreen quad (6 vertices, no buffers needed)

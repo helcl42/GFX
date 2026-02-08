@@ -8,12 +8,14 @@
 
 namespace {
 
-TEST(GfxConstantTest, LibraryVersion) {
+TEST(GfxConstantTest, LibraryVersion)
+{
     // Just verify we can link against the library
     EXPECT_TRUE(true);
 }
 
-TEST(GfxConstantTest, ResultEnumValues) {
+TEST(GfxConstantTest, ResultEnumValues)
+{
     // Verify enum values are correct
     EXPECT_EQ(GFX_RESULT_SUCCESS, 0);
     EXPECT_EQ(GFX_RESULT_TIMEOUT, 1);
@@ -21,14 +23,16 @@ TEST(GfxConstantTest, ResultEnumValues) {
     EXPECT_LT(GFX_RESULT_ERROR_INVALID_ARGUMENT, 0);
 }
 
-TEST(GfxConstantTest, BackendEnumValues) {
+TEST(GfxConstantTest, BackendEnumValues)
+{
     // Verify backend enum values
     EXPECT_EQ(GFX_BACKEND_VULKAN, 0);
     EXPECT_EQ(GFX_BACKEND_WEBGPU, 1);
     EXPECT_EQ(GFX_BACKEND_AUTO, 2);
 }
 
-TEST(GfxConstantTest, AdapterTypeEnumValues) {
+TEST(GfxConstantTest, AdapterTypeEnumValues)
+{
     // Verify adapter type enum values
     EXPECT_EQ(GFX_ADAPTER_TYPE_DISCRETE_GPU, 0);
     EXPECT_EQ(GFX_ADAPTER_TYPE_INTEGRATED_GPU, 1);
@@ -36,7 +40,8 @@ TEST(GfxConstantTest, AdapterTypeEnumValues) {
     EXPECT_EQ(GFX_ADAPTER_TYPE_UNKNOWN, 3);
 }
 
-TEST(GfxConstantTest, TextureFormatEnumValues) {
+TEST(GfxConstantTest, TextureFormatEnumValues)
+{
     // Verify texture format enum values
     EXPECT_EQ(GFX_TEXTURE_FORMAT_UNDEFINED, 0);
     EXPECT_EQ(GFX_TEXTURE_FORMAT_R8_UNORM, 1);
@@ -44,7 +49,8 @@ TEST(GfxConstantTest, TextureFormatEnumValues) {
     EXPECT_EQ(GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM, 5);
 }
 
-TEST(GfxConstantTest, BufferUsageFlagValues) {
+TEST(GfxConstantTest, BufferUsageFlagValues)
+{
     // Verify buffer usage flags are bitmasks
     EXPECT_EQ(GFX_BUFFER_USAGE_NONE, 0);
     EXPECT_EQ(GFX_BUFFER_USAGE_MAP_READ, 1 << 0);
@@ -53,7 +59,8 @@ TEST(GfxConstantTest, BufferUsageFlagValues) {
     EXPECT_EQ(GFX_BUFFER_USAGE_UNIFORM, 1 << 6);
 }
 
-TEST(GfxConstantTest, TextureUsageFlagValues) {
+TEST(GfxConstantTest, TextureUsageFlagValues)
+{
     // Verify texture usage flags are bitmasks
     EXPECT_EQ(GFX_TEXTURE_USAGE_NONE, 0);
     EXPECT_EQ(GFX_TEXTURE_USAGE_COPY_SRC, 1 << 0);
@@ -62,7 +69,8 @@ TEST(GfxConstantTest, TextureUsageFlagValues) {
     EXPECT_EQ(GFX_TEXTURE_USAGE_RENDER_ATTACHMENT, 1 << 4);
 }
 
-TEST(GfxConstantTest, ShaderStageFlags) {
+TEST(GfxConstantTest, ShaderStageFlags)
+{
     // Verify shader stage flags are bitmasks
     EXPECT_EQ(GFX_SHADER_STAGE_NONE, 0);
     EXPECT_EQ(GFX_SHADER_STAGE_VERTEX, 1 << 0);
@@ -70,7 +78,8 @@ TEST(GfxConstantTest, ShaderStageFlags) {
     EXPECT_EQ(GFX_SHADER_STAGE_COMPUTE, 1 << 2);
 }
 
-TEST(GfxConstantTest, QueueFlags) {
+TEST(GfxConstantTest, QueueFlags)
+{
     // Verify queue flags are bitmasks
     EXPECT_EQ(GFX_QUEUE_FLAG_NONE, 0);
     EXPECT_EQ(GFX_QUEUE_FLAG_GRAPHICS, 1 << 0);
@@ -78,21 +87,24 @@ TEST(GfxConstantTest, QueueFlags) {
     EXPECT_EQ(GFX_QUEUE_FLAG_TRANSFER, 1 << 2);
 }
 
-TEST(GfxConstantTest, PrimitiveTopologyValues) {
+TEST(GfxConstantTest, PrimitiveTopologyValues)
+{
     // Verify primitive topology values
     EXPECT_EQ(GFX_PRIMITIVE_TOPOLOGY_POINT_LIST, 0);
     EXPECT_EQ(GFX_PRIMITIVE_TOPOLOGY_LINE_LIST, 1);
     EXPECT_EQ(GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 3);
 }
 
-TEST(GfxConstantTest, IndexFormatValues) {
+TEST(GfxConstantTest, IndexFormatValues)
+{
     // Verify index format values
     EXPECT_EQ(GFX_INDEX_FORMAT_UNDEFINED, 0);
     EXPECT_EQ(GFX_INDEX_FORMAT_UINT16, 1);
     EXPECT_EQ(GFX_INDEX_FORMAT_UINT32, 2);
 }
 
-TEST(GfxConstantTest, SampleCountValues) {
+TEST(GfxConstantTest, SampleCountValues)
+{
     // Verify sample count values
     EXPECT_EQ(GFX_SAMPLE_COUNT_1, 1);
     EXPECT_EQ(GFX_SAMPLE_COUNT_2, 2);
@@ -100,7 +112,8 @@ TEST(GfxConstantTest, SampleCountValues) {
     EXPECT_EQ(GFX_SAMPLE_COUNT_8, 8);
 }
 
-TEST(GfxConstantTest, CompareFunctionValues) {
+TEST(GfxConstantTest, CompareFunctionValues)
+{
     // Verify compare function values
     EXPECT_EQ(GFX_COMPARE_FUNCTION_UNDEFINED, 0);
     EXPECT_EQ(GFX_COMPARE_FUNCTION_NEVER, 1);
@@ -108,7 +121,8 @@ TEST(GfxConstantTest, CompareFunctionValues) {
     EXPECT_EQ(GFX_COMPARE_FUNCTION_ALWAYS, 8);
 }
 
-TEST(GfxConstantTest, LoadStoreOpValues) {
+TEST(GfxConstantTest, LoadStoreOpValues)
+{
     // Verify load/store operation values
     EXPECT_EQ(GFX_LOAD_OP_LOAD, 0);
     EXPECT_EQ(GFX_LOAD_OP_CLEAR, 1);
@@ -117,7 +131,8 @@ TEST(GfxConstantTest, LoadStoreOpValues) {
     EXPECT_EQ(GFX_STORE_OP_DONT_CARE, 1);
 }
 
-TEST(GfxConstantTest, PresentModeValues) {
+TEST(GfxConstantTest, PresentModeValues)
+{
     // Verify present mode values
     EXPECT_EQ(GFX_PRESENT_MODE_IMMEDIATE, 0);
     EXPECT_EQ(GFX_PRESENT_MODE_FIFO, 1);
@@ -125,7 +140,8 @@ TEST(GfxConstantTest, PresentModeValues) {
     EXPECT_EQ(GFX_PRESENT_MODE_MAILBOX, 3);
 }
 
-TEST(GfxConstantTest, CullModeValues) {
+TEST(GfxConstantTest, CullModeValues)
+{
     // Verify cull mode values
     EXPECT_EQ(GFX_CULL_MODE_NONE, 0);
     EXPECT_EQ(GFX_CULL_MODE_FRONT, 1);
@@ -133,13 +149,15 @@ TEST(GfxConstantTest, CullModeValues) {
     EXPECT_EQ(GFX_CULL_MODE_FRONT_AND_BACK, 3);
 }
 
-TEST(GfxConstantTest, FrontFaceValues) {
+TEST(GfxConstantTest, FrontFaceValues)
+{
     // Verify front face values
     EXPECT_EQ(GFX_FRONT_FACE_COUNTER_CLOCKWISE, 0);
     EXPECT_EQ(GFX_FRONT_FACE_CLOCKWISE, 1);
 }
 
-TEST(GfxConstantTest, BlendOperationValues) {
+TEST(GfxConstantTest, BlendOperationValues)
+{
     // Verify blend operation values
     EXPECT_EQ(GFX_BLEND_OPERATION_ADD, 0);
     EXPECT_EQ(GFX_BLEND_OPERATION_SUBTRACT, 1);
@@ -148,7 +166,8 @@ TEST(GfxConstantTest, BlendOperationValues) {
     EXPECT_EQ(GFX_BLEND_OPERATION_MAX, 4);
 }
 
-TEST(GfxConstantTest, BlendFactorValues) {
+TEST(GfxConstantTest, BlendFactorValues)
+{
     // Verify blend factor values
     EXPECT_EQ(GFX_BLEND_FACTOR_ZERO, 0);
     EXPECT_EQ(GFX_BLEND_FACTOR_ONE, 1);
@@ -156,7 +175,8 @@ TEST(GfxConstantTest, BlendFactorValues) {
     EXPECT_EQ(GFX_BLEND_FACTOR_DST_ALPHA, 8);
 }
 
-TEST(GfxConstantTest, ColorWriteMaskValues) {
+TEST(GfxConstantTest, ColorWriteMaskValues)
+{
     // Verify color write mask flags
     EXPECT_EQ(GFX_COLOR_WRITE_MASK_NONE, 0x0);
     EXPECT_EQ(GFX_COLOR_WRITE_MASK_RED, 0x1);
@@ -166,7 +186,8 @@ TEST(GfxConstantTest, ColorWriteMaskValues) {
     EXPECT_EQ(GFX_COLOR_WRITE_MASK_ALL, 0xF);
 }
 
-TEST(GfxConstantTest, TextureTypeValues) {
+TEST(GfxConstantTest, TextureTypeValues)
+{
     // Verify texture type values
     EXPECT_EQ(GFX_TEXTURE_TYPE_1D, 0);
     EXPECT_EQ(GFX_TEXTURE_TYPE_2D, 1);
@@ -174,27 +195,31 @@ TEST(GfxConstantTest, TextureTypeValues) {
     EXPECT_EQ(GFX_TEXTURE_TYPE_CUBE, 3);
 }
 
-TEST(GfxConstantTest, FilterModeValues) {
+TEST(GfxConstantTest, FilterModeValues)
+{
     // Verify filter mode values
     EXPECT_EQ(GFX_FILTER_MODE_NEAREST, 0);
     EXPECT_EQ(GFX_FILTER_MODE_LINEAR, 1);
 }
 
-TEST(GfxConstantTest, AddressModeValues) {
+TEST(GfxConstantTest, AddressModeValues)
+{
     // Verify address mode values
     EXPECT_EQ(GFX_ADDRESS_MODE_REPEAT, 0);
     EXPECT_EQ(GFX_ADDRESS_MODE_MIRROR_REPEAT, 1);
     EXPECT_EQ(GFX_ADDRESS_MODE_CLAMP_TO_EDGE, 2);
 }
 
-TEST(GfxConstantTest, PolygonModeValues) {
+TEST(GfxConstantTest, PolygonModeValues)
+{
     // Verify polygon mode values
     EXPECT_EQ(GFX_POLYGON_MODE_FILL, 0);
     EXPECT_EQ(GFX_POLYGON_MODE_LINE, 1);
     EXPECT_EQ(GFX_POLYGON_MODE_POINT, 2);
 }
 
-TEST(GfxConstantTest, TextureLayoutValues) {
+TEST(GfxConstantTest, TextureLayoutValues)
+{
     // Verify texture layout values
     EXPECT_EQ(GFX_TEXTURE_LAYOUT_UNDEFINED, 0);
     EXPECT_EQ(GFX_TEXTURE_LAYOUT_GENERAL, 1);
@@ -203,13 +228,15 @@ TEST(GfxConstantTest, TextureLayoutValues) {
     EXPECT_EQ(GFX_TEXTURE_LAYOUT_PRESENT_SRC, 8);
 }
 
-TEST(GfxConstantTest, ShaderSourceTypeValues) {
+TEST(GfxConstantTest, ShaderSourceTypeValues)
+{
     // Verify shader source type values
     EXPECT_EQ(GFX_SHADER_SOURCE_WGSL, 0);
     EXPECT_EQ(GFX_SHADER_SOURCE_SPIRV, 1);
 }
 
-TEST(GfxConstantTest, AdapterPreferenceValues) {
+TEST(GfxConstantTest, AdapterPreferenceValues)
+{
     // Verify adapter preference values
     EXPECT_EQ(GFX_ADAPTER_PREFERENCE_UNDEFINED, 0);
     EXPECT_EQ(GFX_ADAPTER_PREFERENCE_LOW_POWER, 1);

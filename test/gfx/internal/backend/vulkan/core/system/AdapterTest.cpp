@@ -1,7 +1,6 @@
 #include <backend/vulkan/core/system/Adapter.h>
 #include <backend/vulkan/core/system/Instance.h>
 
-
 #include <gtest/gtest.h>
 
 // Test Vulkan core Adapter class

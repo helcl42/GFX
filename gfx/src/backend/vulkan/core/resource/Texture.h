@@ -40,7 +40,7 @@ public:
 private:
     // Internal layout transition with explicit old layout (for mipmap generation)
     void transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount);
-    
+
     static TextureInfo createTextureInfo(const TextureCreateInfo& info);
     static TextureInfo createTextureInfo(const TextureImportInfo& info);
 

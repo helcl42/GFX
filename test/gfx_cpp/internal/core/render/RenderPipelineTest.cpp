@@ -126,13 +126,12 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipeline)
     // Create render pass using DeviceImpl
     RenderPassCreateDescriptor renderPassDesc{
         .colorAttachments = {
-        RenderPassColorAttachment{
-            .target = {
-                .format = TextureFormat::R8G8B8A8Unorm,
-                .sampleCount = SampleCount::Count1,
-                .ops = { LoadOp::Clear, StoreOp::Store },
-                .finalLayout = TextureLayout::ColorAttachment } }
-        }
+            RenderPassColorAttachment{
+                .target = {
+                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .sampleCount = SampleCount::Count1,
+                    .ops = { LoadOp::Clear, StoreOp::Store },
+                    .finalLayout = TextureLayout::ColorAttachment } } }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
@@ -144,13 +143,8 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipeline)
         .vertex = {
             .module = shader,
             .entryPoint = "main",
-            .buffers = {}
-        },
-        .primitive = {
-            .topology = PrimitiveTopology::TriangleList,
-            .frontFace = FrontFace::CounterClockwise,
-            .cullMode = CullMode::None
-        },
+            .buffers = {} },
+        .primitive = { .topology = PrimitiveTopology::TriangleList, .frontFace = FrontFace::CounterClockwise, .cullMode = CullMode::None },
         .sampleCount = SampleCount::Count1
     };
 
@@ -176,13 +170,12 @@ TEST_P(RenderPipelineImplTest, MultipleRenderPipelines_IndependentHandles)
     // Create render pass
     RenderPassCreateDescriptor renderPassDesc{
         .colorAttachments = {
-        RenderPassColorAttachment{
-            .target = {
-                .format = TextureFormat::R8G8B8A8Unorm,
-                .sampleCount = SampleCount::Count1,
-                .ops = { LoadOp::Clear, StoreOp::Store },
-                .finalLayout = TextureLayout::ColorAttachment } }
-        }
+            RenderPassColorAttachment{
+                .target = {
+                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .sampleCount = SampleCount::Count1,
+                    .ops = { LoadOp::Clear, StoreOp::Store },
+                    .finalLayout = TextureLayout::ColorAttachment } } }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
@@ -194,13 +187,8 @@ TEST_P(RenderPipelineImplTest, MultipleRenderPipelines_IndependentHandles)
         .vertex = {
             .module = shader,
             .entryPoint = "main",
-            .buffers = {}
-        },
-        .primitive = {
-            .topology = PrimitiveTopology::TriangleList,
-            .frontFace = FrontFace::CounterClockwise,
-            .cullMode = CullMode::None
-        },
+            .buffers = {} },
+        .primitive = { .topology = PrimitiveTopology::TriangleList, .frontFace = FrontFace::CounterClockwise, .cullMode = CullMode::None },
         .sampleCount = SampleCount::Count1
     };
 
@@ -242,13 +230,12 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithFragmentShader)
     // Create render pass
     RenderPassCreateDescriptor renderPassDesc{
         .colorAttachments = {
-        RenderPassColorAttachment{
-            .target = {
-                .format = TextureFormat::R8G8B8A8Unorm,
-                .sampleCount = SampleCount::Count1,
-                .ops = { LoadOp::Clear, StoreOp::Store },
-                .finalLayout = TextureLayout::ColorAttachment } }
-        }
+            RenderPassColorAttachment{
+                .target = {
+                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .sampleCount = SampleCount::Count1,
+                    .ops = { LoadOp::Clear, StoreOp::Store },
+                    .finalLayout = TextureLayout::ColorAttachment } } }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
@@ -260,21 +247,9 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithFragmentShader)
         .vertex = {
             .module = vertexShader,
             .entryPoint = "main",
-            .buffers = {}
-        },
-        .fragment = FragmentState{
-            .module = fragmentShader,
-            .entryPoint = "main",
-            .targets = {
-                ColorTargetState{
-                    .format = TextureFormat::R8G8B8A8Unorm,
-                    .writeMask = ColorWriteMask::All } }
-        },
-        .primitive = {
-            .topology = PrimitiveTopology::TriangleList,
-            .frontFace = FrontFace::CounterClockwise,
-            .cullMode = CullMode::None
-        },
+            .buffers = {} },
+        .fragment = FragmentState{ .module = fragmentShader, .entryPoint = "main", .targets = { ColorTargetState{ .format = TextureFormat::R8G8B8A8Unorm, .writeMask = ColorWriteMask::All } } },
+        .primitive = { .topology = PrimitiveTopology::TriangleList, .frontFace = FrontFace::CounterClockwise, .cullMode = CullMode::None },
         .sampleCount = SampleCount::Count1
     };
 
@@ -316,13 +291,12 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithWGSLShaders)
     // Create render pass
     RenderPassCreateDescriptor renderPassDesc{
         .colorAttachments = {
-        RenderPassColorAttachment{
-            .target = {
-                .format = TextureFormat::R8G8B8A8Unorm,
-                .sampleCount = SampleCount::Count1,
-                .ops = { LoadOp::Clear, StoreOp::Store },
-                .finalLayout = TextureLayout::ColorAttachment } }
-        }
+            RenderPassColorAttachment{
+                .target = {
+                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .sampleCount = SampleCount::Count1,
+                    .ops = { LoadOp::Clear, StoreOp::Store },
+                    .finalLayout = TextureLayout::ColorAttachment } } }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
@@ -334,21 +308,9 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithWGSLShaders)
         .vertex = {
             .module = vertexShader,
             .entryPoint = "main",
-            .buffers = {}
-        },
-        .fragment = FragmentState{
-            .module = fragmentShader,
-            .entryPoint = "main",
-            .targets = {
-                ColorTargetState{
-                    .format = TextureFormat::R8G8B8A8Unorm,
-                    .writeMask = ColorWriteMask::All } }
-        },
-        .primitive = {
-            .topology = PrimitiveTopology::TriangleList,
-            .frontFace = FrontFace::CounterClockwise,
-            .cullMode = CullMode::None
-        },
+            .buffers = {} },
+        .fragment = FragmentState{ .module = fragmentShader, .entryPoint = "main", .targets = { ColorTargetState{ .format = TextureFormat::R8G8B8A8Unorm, .writeMask = ColorWriteMask::All } } },
+        .primitive = { .topology = PrimitiveTopology::TriangleList, .frontFace = FrontFace::CounterClockwise, .cullMode = CullMode::None },
         .sampleCount = SampleCount::Count1
     };
 
@@ -390,13 +352,12 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithMixedShaderFormats)
     // Create render pass
     RenderPassCreateDescriptor renderPassDesc{
         .colorAttachments = {
-        RenderPassColorAttachment{
-            .target = {
-                .format = TextureFormat::R8G8B8A8Unorm,
-                .sampleCount = SampleCount::Count1,
-                .ops = { LoadOp::Clear, StoreOp::Store },
-                .finalLayout = TextureLayout::ColorAttachment } }
-        }
+            RenderPassColorAttachment{
+                .target = {
+                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .sampleCount = SampleCount::Count1,
+                    .ops = { LoadOp::Clear, StoreOp::Store },
+                    .finalLayout = TextureLayout::ColorAttachment } } }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
@@ -408,21 +369,9 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithMixedShaderFormats)
         .vertex = {
             .module = vertexShader,
             .entryPoint = "main",
-            .buffers = {}
-        },
-        .fragment = FragmentState{
-            .module = fragmentShader,
-            .entryPoint = "main",
-            .targets = {
-                ColorTargetState{
-                    .format = TextureFormat::R8G8B8A8Unorm,
-                    .writeMask = ColorWriteMask::All } }
-        },
-        .primitive = {
-            .topology = PrimitiveTopology::TriangleList,
-            .frontFace = FrontFace::CounterClockwise,
-            .cullMode = CullMode::None
-        },
+            .buffers = {} },
+        .fragment = FragmentState{ .module = fragmentShader, .entryPoint = "main", .targets = { ColorTargetState{ .format = TextureFormat::R8G8B8A8Unorm, .writeMask = ColorWriteMask::All } } },
+        .primitive = { .topology = PrimitiveTopology::TriangleList, .frontFace = FrontFace::CounterClockwise, .cullMode = CullMode::None },
         .sampleCount = SampleCount::Count1
     };
 
@@ -459,13 +408,12 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithMultisampling)
     // Create render pass with MSAA x4
     RenderPassCreateDescriptor renderPassDesc{
         .colorAttachments = {
-        RenderPassColorAttachment{
-            .target = {
-                .format = TextureFormat::R8G8B8A8Unorm,
-                .sampleCount = SampleCount::Count4,
-                .ops = { LoadOp::Clear, StoreOp::Store },
-                .finalLayout = TextureLayout::ColorAttachment } }
-        }
+            RenderPassColorAttachment{
+                .target = {
+                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .sampleCount = SampleCount::Count4,
+                    .ops = { LoadOp::Clear, StoreOp::Store },
+                    .finalLayout = TextureLayout::ColorAttachment } } }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
@@ -477,21 +425,9 @@ TEST_P(RenderPipelineImplTest, CreateRenderPipelineWithMultisampling)
         .vertex = {
             .module = vertexShader,
             .entryPoint = "main",
-            .buffers = {}
-        },
-        .fragment = FragmentState{
-            .module = fragmentShader,
-            .entryPoint = "main",
-            .targets = {
-                ColorTargetState{
-                    .format = TextureFormat::R8G8B8A8Unorm,
-                    .writeMask = ColorWriteMask::All } }
-        },
-        .primitive = {
-            .topology = PrimitiveTopology::TriangleList,
-            .frontFace = FrontFace::CounterClockwise,
-            .cullMode = CullMode::None
-        },
+            .buffers = {} },
+        .fragment = FragmentState{ .module = fragmentShader, .entryPoint = "main", .targets = { ColorTargetState{ .format = TextureFormat::R8G8B8A8Unorm, .writeMask = ColorWriteMask::All } } },
+        .primitive = { .topology = PrimitiveTopology::TriangleList, .frontFace = FrontFace::CounterClockwise, .cullMode = CullMode::None },
         .sampleCount = SampleCount::Count4
     };
 

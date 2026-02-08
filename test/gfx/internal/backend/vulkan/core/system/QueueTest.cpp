@@ -3,7 +3,6 @@
 #include <backend/vulkan/core/system/Instance.h>
 #include <backend/vulkan/core/system/Queue.h>
 
-
 #include <gtest/gtest.h>
 
 // Test Vulkan core Queue class

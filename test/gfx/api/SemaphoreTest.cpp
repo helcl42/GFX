@@ -50,13 +50,13 @@ protected:
         deviceDesc.sType = GFX_STRUCTURE_TYPE_DEVICE_DESCRIPTOR;
         deviceDesc.pNext = nullptr;
         deviceDesc.label = "Test Device";
-        
+
         // Check if timeline semaphore extension is supported
         uint32_t extensionCount = 0;
         gfxAdapterEnumerateExtensions(adapter, &extensionCount, nullptr);
         std::vector<const char*> supportedExtensions(extensionCount);
         gfxAdapterEnumerateExtensions(adapter, &extensionCount, supportedExtensions.data());
-        
+
         bool timelineSemaphoreSupported = false;
         for (uint32_t i = 0; i < extensionCount; i++) {
             if (strcmp(supportedExtensions[i], GFX_DEVICE_EXTENSION_TIMELINE_SEMAPHORE) == 0) {
@@ -64,7 +64,7 @@ protected:
                 break;
             }
         }
-        
+
         // Enable timeline semaphore extension if supported
         const char* deviceExtensions[] = { GFX_DEVICE_EXTENSION_TIMELINE_SEMAPHORE };
         if (timelineSemaphoreSupported) {

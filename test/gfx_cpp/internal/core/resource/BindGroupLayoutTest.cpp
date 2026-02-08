@@ -70,12 +70,11 @@ TEST_P(BindGroupLayoutImplTest, CreateBindGroupLayout)
         .visibility = ShaderStage::Compute,
         .resource = BindGroupLayoutEntry::BufferBinding{
             .hasDynamicOffset = false,
-            .minBindingSize = 0
-        }
+            .minBindingSize = 0 }
     };
 
     BindGroupLayoutDescriptor desc{
-        .entries = {entry}
+        .entries = { entry }
     };
 
     auto layout = deviceWrapper.createBindGroupLayout(desc);
@@ -89,13 +88,13 @@ TEST_P(BindGroupLayoutImplTest, CreateBindGroupLayoutWithMultipleBindings)
     BindGroupLayoutEntry bufferEntry{
         .binding = 0,
         .visibility = ShaderStage::Compute,
-        .resource = BindGroupLayoutEntry::BufferBinding{.hasDynamicOffset = false, .minBindingSize = 0}
+        .resource = BindGroupLayoutEntry::BufferBinding{ .hasDynamicOffset = false, .minBindingSize = 0 }
     };
 
     BindGroupLayoutEntry samplerEntry{
         .binding = 1,
         .visibility = ShaderStage::Fragment,
-        .resource = BindGroupLayoutEntry::SamplerBinding{.comparison = false}
+        .resource = BindGroupLayoutEntry::SamplerBinding{ .comparison = false }
     };
 
     BindGroupLayoutEntry textureEntry{
@@ -103,12 +102,11 @@ TEST_P(BindGroupLayoutImplTest, CreateBindGroupLayoutWithMultipleBindings)
         .visibility = ShaderStage::Fragment,
         .resource = BindGroupLayoutEntry::TextureBinding{
             .multisampled = false,
-            .viewDimension = TextureViewType::View2D
-        }
+            .viewDimension = TextureViewType::View2D }
     };
 
     BindGroupLayoutDescriptor desc{
-        .entries = {bufferEntry, samplerEntry, textureEntry}
+        .entries = { bufferEntry, samplerEntry, textureEntry }
     };
 
     auto layout = deviceWrapper.createBindGroupLayout(desc);
@@ -124,12 +122,11 @@ TEST_P(BindGroupLayoutImplTest, CreateBindGroupLayoutWithStorageBuffer)
         .visibility = ShaderStage::Compute,
         .resource = BindGroupLayoutEntry::BufferBinding{
             .hasDynamicOffset = false,
-            .minBindingSize = 256
-        }
+            .minBindingSize = 256 }
     };
 
     BindGroupLayoutDescriptor desc{
-        .entries = {entry}
+        .entries = { entry }
     };
 
     auto layout = deviceWrapper.createBindGroupLayout(desc);
@@ -145,12 +142,11 @@ TEST_P(BindGroupLayoutImplTest, CreateBindGroupLayoutWithDynamicOffset)
         .visibility = ShaderStage::Compute,
         .resource = BindGroupLayoutEntry::BufferBinding{
             .hasDynamicOffset = true,
-            .minBindingSize = 256
-        }
+            .minBindingSize = 256 }
     };
 
     BindGroupLayoutDescriptor desc{
-        .entries = {entry}
+        .entries = { entry }
     };
 
     auto layout = deviceWrapper.createBindGroupLayout(desc);
@@ -167,12 +163,11 @@ TEST_P(BindGroupLayoutImplTest, CreateBindGroupLayoutWithStorageTexture)
         .resource = BindGroupLayoutEntry::StorageTextureBinding{
             .format = TextureFormat::R8G8B8A8Unorm,
             .writeOnly = false,
-            .viewDimension = TextureViewType::View2D
-        }
+            .viewDimension = TextureViewType::View2D }
     };
 
     BindGroupLayoutDescriptor desc{
-        .entries = {entry}
+        .entries = { entry }
     };
 
     auto layout = deviceWrapper.createBindGroupLayout(desc);
@@ -188,12 +183,11 @@ TEST_P(BindGroupLayoutImplTest, MultipleLayouts_IndependentHandles)
         .visibility = ShaderStage::Compute,
         .resource = BindGroupLayoutEntry::BufferBinding{
             .hasDynamicOffset = false,
-            .minBindingSize = 0
-        }
+            .minBindingSize = 0 }
     };
 
     BindGroupLayoutDescriptor desc{
-        .entries = {entry}
+        .entries = { entry }
     };
 
     auto layout1 = deviceWrapper.createBindGroupLayout(desc);

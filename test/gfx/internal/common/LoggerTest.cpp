@@ -13,7 +13,6 @@
 // Test Fixture with Captured Logs
 // ============================================================================
 
-
 namespace {
 
 struct LogEntry {

@@ -234,20 +234,18 @@ TEST_P(BindGroupImplTest, CreateBindGroupWithMultipleBindings)
         .visibility = ShaderStage::Compute,
         .resource = BindGroupLayoutEntry::BufferBinding{
             .hasDynamicOffset = false,
-            .minBindingSize = 0
-        }
+            .minBindingSize = 0 }
     };
 
     BindGroupLayoutEntry samplerLayoutEntry{
         .binding = 1,
         .visibility = ShaderStage::Compute,
         .resource = BindGroupLayoutEntry::SamplerBinding{
-            .comparison = false
-        }
+            .comparison = false }
     };
 
     BindGroupLayoutDescriptor layoutDesc{
-        .entries = {bufferLayoutEntry, samplerLayoutEntry}
+        .entries = { bufferLayoutEntry, samplerLayoutEntry }
     };
 
     auto layout = deviceWrapper.createBindGroupLayout(layoutDesc);
@@ -295,7 +293,7 @@ TEST_P(BindGroupImplTest, CreateBindGroupWithMultipleBindings)
 
     BindGroupDescriptor bindGroupDesc{
         .layout = layout,
-        .entries = {bufferEntry, samplerEntry}
+        .entries = { bufferEntry, samplerEntry }
     };
 
     auto bindGroup = deviceWrapper.createBindGroup(bindGroupDesc);
@@ -312,12 +310,11 @@ TEST_P(BindGroupImplTest, MultipleBindGroups_IndependentHandles)
         .visibility = ShaderStage::Compute,
         .resource = BindGroupLayoutEntry::BufferBinding{
             .hasDynamicOffset = false,
-            .minBindingSize = 0
-        }
+            .minBindingSize = 0 }
     };
 
     BindGroupLayoutDescriptor layoutDesc{
-        .entries = {layoutEntry}
+        .entries = { layoutEntry }
     };
 
     auto layout = deviceWrapper.createBindGroupLayout(layoutDesc);
@@ -343,7 +340,7 @@ TEST_P(BindGroupImplTest, MultipleBindGroups_IndependentHandles)
 
     BindGroupDescriptor bindGroupDesc{
         .layout = layout,
-        .entries = {entry}
+        .entries = { entry }
     };
 
     auto bindGroup1 = deviceWrapper.createBindGroup(bindGroupDesc);

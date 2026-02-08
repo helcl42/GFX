@@ -148,14 +148,13 @@ TEST_P(ComputePipelineImplTest, CreateComputePipelineWithBindGroupLayouts)
     // Create bind group layout
     BindGroupLayoutDescriptor layoutDesc{
         .entries = {
-        BindGroupLayoutEntry{
-            .binding = 0,
-            .visibility = ShaderStage::Compute,
-            .resource = BindGroupLayoutEntry::BufferBinding{
+            BindGroupLayoutEntry{
+                .binding = 0,
+                .visibility = ShaderStage::Compute,
+                .resource = BindGroupLayoutEntry::BufferBinding{
 
-                .hasDynamicOffset = false,
-                .minBindingSize = 0 } }
-        }
+                    .hasDynamicOffset = false,
+                    .minBindingSize = 0 } } }
     };
 
     auto bindGroupLayout = deviceWrapper.createBindGroupLayout(layoutDesc);
@@ -190,13 +189,12 @@ TEST_P(ComputePipelineImplTest, CreateComputePipelineWithMultipleBindGroupLayout
     // Create first bind group layout
     BindGroupLayoutDescriptor layoutDesc1{
         .entries = {
-        BindGroupLayoutEntry{
-            .binding = 0,
-            .visibility = ShaderStage::Compute,
-            .resource = BindGroupLayoutEntry::BufferBinding{
-                .hasDynamicOffset = false,
-                .minBindingSize = 0 } }
-        }
+            BindGroupLayoutEntry{
+                .binding = 0,
+                .visibility = ShaderStage::Compute,
+                .resource = BindGroupLayoutEntry::BufferBinding{
+                    .hasDynamicOffset = false,
+                    .minBindingSize = 0 } } }
     };
 
     auto bindGroupLayout1 = deviceWrapper.createBindGroupLayout(layoutDesc1);
@@ -205,13 +203,12 @@ TEST_P(ComputePipelineImplTest, CreateComputePipelineWithMultipleBindGroupLayout
     // Create second bind group layout
     BindGroupLayoutDescriptor layoutDesc2{
         .entries = {
-        BindGroupLayoutEntry{
-            .binding = 0,
-            .visibility = ShaderStage::Compute,
-            .resource = BindGroupLayoutEntry::BufferBinding{
-                .hasDynamicOffset = false,
-                .minBindingSize = 0 } }
-        }
+            BindGroupLayoutEntry{
+                .binding = 0,
+                .visibility = ShaderStage::Compute,
+                .resource = BindGroupLayoutEntry::BufferBinding{
+                    .hasDynamicOffset = false,
+                    .minBindingSize = 0 } } }
     };
 
     auto bindGroupLayout2 = deviceWrapper.createBindGroupLayout(layoutDesc2);

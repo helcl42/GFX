@@ -8,7 +8,6 @@
 #include <backend/vulkan/core/system/Device.h>
 #include <backend/vulkan/core/system/Instance.h>
 
-
 #include <gtest/gtest.h>
 
 // Test Vulkan core BindGroup class
