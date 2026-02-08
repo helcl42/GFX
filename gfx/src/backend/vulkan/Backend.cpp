@@ -75,96 +75,6 @@ GfxResult Backend::deviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyI
     return m_systemComponent.deviceGetQueueByIndex(device, queueFamilyIndex, queueIndex, outQueue);
 }
 
-GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
-{
-    return m_presentationComponent.deviceCreateSurface(device, descriptor, outSurface);
-}
-
-GfxResult Backend::deviceCreateSwapchain(GfxDevice device, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
-{
-    return m_presentationComponent.deviceCreateSwapchain(device, descriptor, outSwapchain);
-}
-
-GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
-{
-    return m_resourceComponent.deviceCreateBuffer(device, descriptor, outBuffer);
-}
-
-GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const
-{
-    return m_resourceComponent.deviceImportBuffer(device, descriptor, outBuffer);
-}
-
-GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
-{
-    return m_resourceComponent.deviceCreateTexture(device, descriptor, outTexture);
-}
-
-GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const
-{
-    return m_resourceComponent.deviceImportTexture(device, descriptor, outTexture);
-}
-
-GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
-{
-    return m_resourceComponent.deviceCreateSampler(device, descriptor, outSampler);
-}
-
-GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
-{
-    return m_resourceComponent.deviceCreateShader(device, descriptor, outShader);
-}
-
-GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
-{
-    return m_resourceComponent.deviceCreateBindGroupLayout(device, descriptor, outLayout);
-}
-
-GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
-{
-    return m_resourceComponent.deviceCreateBindGroup(device, descriptor, outBindGroup);
-}
-
-GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
-{
-    return m_renderComponent.deviceCreateRenderPipeline(device, descriptor, outPipeline);
-}
-
-GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
-{
-    return m_computeComponent.deviceCreateComputePipeline(device, descriptor, outPipeline);
-}
-
-GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
-{
-    return m_commandComponent.deviceCreateCommandEncoder(device, descriptor, outEncoder);
-}
-
-GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
-{
-    return m_renderComponent.deviceCreateRenderPass(device, descriptor, outRenderPass);
-}
-
-GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const
-{
-    return m_renderComponent.deviceCreateFramebuffer(device, descriptor, outFramebuffer);
-}
-
-GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
-{
-    return m_syncComponent.deviceCreateFence(device, descriptor, outFence);
-}
-
-GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const
-{
-    return m_syncComponent.deviceCreateSemaphore(device, descriptor, outSemaphore);
-}
-
-GfxResult Backend::deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const
-{
-    return m_queryComponent.deviceCreateQuerySet(device, descriptor, outQuerySet);
-}
-
 GfxResult Backend::deviceWaitIdle(GfxDevice device) const
 {
     return m_systemComponent.deviceWaitIdle(device);
@@ -180,7 +90,32 @@ GfxResult Backend::deviceSupportsShaderFormat(GfxDevice device, GfxShaderSourceT
     return m_systemComponent.deviceSupportsShaderFormat(device, format, outSupported);
 }
 
+// Queue functions
+GfxResult Backend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor) const
+{
+    return m_systemComponent.queueSubmit(queue, submitDescriptor);
+}
+
+GfxResult Backend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
+{
+    return m_systemComponent.queueWriteBuffer(queue, buffer, offset, data, size);
+}
+
+GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
+{
+    return m_systemComponent.queueWriteTexture(queue, texture, origin, mipLevel, data, dataSize, extent, finalLayout);
+}
+
+GfxResult Backend::queueWaitIdle(GfxQueue queue) const
+{
+    return m_systemComponent.queueWaitIdle(queue);
+}
+
 // Surface functions
+GfxResult Backend::deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const
+{
+    return m_presentationComponent.deviceCreateSurface(device, descriptor, outSurface);
+}
 GfxResult Backend::surfaceDestroy(GfxSurface surface) const
 {
     return m_presentationComponent.surfaceDestroy(surface);
@@ -202,6 +137,11 @@ GfxResult Backend::surfaceEnumerateSupportedPresentModes(GfxSurface surface, uin
 }
 
 // Swapchain functions
+GfxResult Backend::deviceCreateSwapchain(GfxDevice device, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const
+{
+    return m_presentationComponent.deviceCreateSwapchain(device, descriptor, outSwapchain);
+}
+
 GfxResult Backend::swapchainDestroy(GfxSwapchain swapchain) const
 {
     return m_presentationComponent.swapchainDestroy(swapchain);
@@ -233,6 +173,16 @@ GfxResult Backend::swapchainPresent(GfxSwapchain swapchain, const GfxPresentDesc
 }
 
 // Buffer functions
+GfxResult Backend::deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const
+{
+    return m_resourceComponent.deviceCreateBuffer(device, descriptor, outBuffer);
+}
+
+GfxResult Backend::deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const
+{
+    return m_resourceComponent.deviceImportBuffer(device, descriptor, outBuffer);
+}
+
 GfxResult Backend::bufferDestroy(GfxBuffer buffer) const
 {
     return m_resourceComponent.bufferDestroy(buffer);
@@ -269,6 +219,16 @@ GfxResult Backend::bufferInvalidateMappedRange(GfxBuffer buffer, uint64_t offset
 }
 
 // Texture functions
+GfxResult Backend::deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const
+{
+    return m_resourceComponent.deviceCreateTexture(device, descriptor, outTexture);
+}
+
+GfxResult Backend::deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const
+{
+    return m_resourceComponent.deviceImportTexture(device, descriptor, outTexture);
+}
+
 GfxResult Backend::textureDestroy(GfxTexture texture) const
 {
     return m_resourceComponent.textureDestroy(texture);
@@ -301,81 +261,110 @@ GfxResult Backend::textureViewDestroy(GfxTextureView textureView) const
 }
 
 // Sampler functions
+GfxResult Backend::deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const
+{
+    return m_resourceComponent.deviceCreateSampler(device, descriptor, outSampler);
+}
+
 GfxResult Backend::samplerDestroy(GfxSampler sampler) const
 {
     return m_resourceComponent.samplerDestroy(sampler);
 }
 
 // Shader functions
+GfxResult Backend::deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const
+{
+    return m_resourceComponent.deviceCreateShader(device, descriptor, outShader);
+}
+
 GfxResult Backend::shaderDestroy(GfxShader shader) const
 {
     return m_resourceComponent.shaderDestroy(shader);
 }
 
 // BindGroupLayout functions
+GfxResult Backend::deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const
+{
+    return m_resourceComponent.deviceCreateBindGroupLayout(device, descriptor, outLayout);
+}
+
 GfxResult Backend::bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const
 {
     return m_resourceComponent.bindGroupLayoutDestroy(bindGroupLayout);
 }
 
 // BindGroup functions
+GfxResult Backend::deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const
+{
+    return m_resourceComponent.deviceCreateBindGroup(device, descriptor, outBindGroup);
+}
+
 GfxResult Backend::bindGroupDestroy(GfxBindGroup bindGroup) const
 {
     return m_resourceComponent.bindGroupDestroy(bindGroup);
 }
 
 // RenderPipeline functions
+GfxResult Backend::deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const
+{
+    return m_renderComponent.deviceCreateRenderPipeline(device, descriptor, outPipeline);
+}
+
 GfxResult Backend::renderPipelineDestroy(GfxRenderPipeline renderPipeline) const
 {
     return m_renderComponent.renderPipelineDestroy(renderPipeline);
 }
 
 // ComputePipeline functions
+GfxResult Backend::deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const
+{
+    return m_computeComponent.deviceCreateComputePipeline(device, descriptor, outPipeline);
+}
+
 GfxResult Backend::computePipelineDestroy(GfxComputePipeline computePipeline) const
 {
     return m_computeComponent.computePipelineDestroy(computePipeline);
 }
 
 // RenderPass functions
+GfxResult Backend::deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const
+{
+    return m_renderComponent.deviceCreateRenderPass(device, descriptor, outRenderPass);
+}
+
 GfxResult Backend::renderPassDestroy(GfxRenderPass renderPass) const
 {
     return m_renderComponent.renderPassDestroy(renderPass);
 }
 
 // Framebuffer functions
+GfxResult Backend::deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const
+{
+    return m_renderComponent.deviceCreateFramebuffer(device, descriptor, outFramebuffer);
+}
+
 GfxResult Backend::framebufferDestroy(GfxFramebuffer framebuffer) const
 {
     return m_renderComponent.framebufferDestroy(framebuffer);
 }
 
 // QuerySet functions
+GfxResult Backend::deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const
+{
+    return m_queryComponent.deviceCreateQuerySet(device, descriptor, outQuerySet);
+}
+
 GfxResult Backend::querySetDestroy(GfxQuerySet querySet) const
 {
     return m_queryComponent.querySetDestroy(querySet);
 }
 
-// Queue functions
-GfxResult Backend::queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor) const
-{
-    return m_systemComponent.queueSubmit(queue, submitDescriptor);
-}
-
-GfxResult Backend::queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const
-{
-    return m_systemComponent.queueWriteBuffer(queue, buffer, offset, data, size);
-}
-
-GfxResult Backend::queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const
-{
-    return m_systemComponent.queueWriteTexture(queue, texture, origin, mipLevel, data, dataSize, extent, finalLayout);
-}
-
-GfxResult Backend::queueWaitIdle(GfxQueue queue) const
-{
-    return m_systemComponent.queueWaitIdle(queue);
-}
-
 // CommandEncoder functions
+GfxResult Backend::deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const
+{
+    return m_commandComponent.deviceCreateCommandEncoder(device, descriptor, outEncoder);
+}
+
 GfxResult Backend::commandEncoderDestroy(GfxCommandEncoder commandEncoder) const
 {
     return m_commandComponent.commandEncoderDestroy(commandEncoder);
@@ -544,6 +533,11 @@ GfxResult Backend::computePassEncoderEnd(GfxComputePassEncoder computePassEncode
 }
 
 // Fence functions
+GfxResult Backend::deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const
+{
+    return m_syncComponent.deviceCreateFence(device, descriptor, outFence);
+}
+
 GfxResult Backend::fenceDestroy(GfxFence fence) const
 {
     return m_syncComponent.fenceDestroy(fence);
@@ -565,6 +559,11 @@ GfxResult Backend::fenceReset(GfxFence fence) const
 }
 
 // Semaphore functions
+GfxResult Backend::deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const
+{
+    return m_syncComponent.deviceCreateSemaphore(device, descriptor, outSemaphore);
+}
+
 GfxResult Backend::semaphoreDestroy(GfxSemaphore semaphore) const
 {
     return m_syncComponent.semaphoreDestroy(semaphore);

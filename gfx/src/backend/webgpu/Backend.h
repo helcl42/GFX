@@ -37,35 +37,25 @@ public:
     GfxResult deviceDestroy(GfxDevice device) const override;
     GfxResult deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const override;
     GfxResult deviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, GfxQueue* outQueue) const override;
-    GfxResult deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const override;
-    GfxResult deviceCreateSwapchain(GfxDevice device, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const override;
-    GfxResult deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const override;
-    GfxResult deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const override;
-    GfxResult deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const override;
-    GfxResult deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const override;
-    GfxResult deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const override;
-    GfxResult deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const override;
-    GfxResult deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const override;
-    GfxResult deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const override;
-    GfxResult deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const override;
-    GfxResult deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const override;
-    GfxResult deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const override;
-    GfxResult deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const override;
-    GfxResult deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const override;
-    GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const override;
-    GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const override;
-    GfxResult deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const override;
     GfxResult deviceWaitIdle(GfxDevice device) const override;
     GfxResult deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const override;
     GfxResult deviceSupportsShaderFormat(GfxDevice device, GfxShaderSourceType format, bool* outSupported) const override;
 
+    // Queue functions
+    GfxResult queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor) const override;
+    GfxResult queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const override;
+    GfxResult queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const override;
+    GfxResult queueWaitIdle(GfxQueue queue) const override;
+
     // Surface functions
+    GfxResult deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const override;
     GfxResult surfaceDestroy(GfxSurface surface) const override;
     GfxResult surfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo) const override;
     GfxResult surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const override;
     GfxResult surfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes) const override;
 
     // Swapchain functions
+    GfxResult deviceCreateSwapchain(GfxDevice device, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const override;
     GfxResult swapchainDestroy(GfxSwapchain swapchain) const override;
     GfxResult swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const override;
     GfxResult swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const override;
@@ -74,6 +64,8 @@ public:
     GfxResult swapchainPresent(GfxSwapchain swapchain, const GfxPresentDescriptor* presentDescriptor) const override;
 
     // Buffer functions
+    GfxResult deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const override;
+    GfxResult deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const override;
     GfxResult bufferDestroy(GfxBuffer buffer) const override;
     GfxResult bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const override;
     GfxResult bufferGetNativeHandle(GfxBuffer buffer, void** outHandle) const override;
@@ -83,6 +75,8 @@ public:
     GfxResult bufferInvalidateMappedRange(GfxBuffer buffer, uint64_t offset, uint64_t size) const override;
 
     // Texture functions
+    GfxResult deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const override;
+    GfxResult deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const override;
     GfxResult textureDestroy(GfxTexture texture) const override;
     GfxResult textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const override;
     GfxResult textureGetNativeHandle(GfxTexture texture, void** outHandle) const override;
@@ -93,39 +87,39 @@ public:
     GfxResult textureViewDestroy(GfxTextureView textureView) const override;
 
     // Sampler functions
+    GfxResult deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const override;
     GfxResult samplerDestroy(GfxSampler sampler) const override;
 
     // Shader functions
+    GfxResult deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const override;
     GfxResult shaderDestroy(GfxShader shader) const override;
 
     // BindGroupLayout functions
+    GfxResult deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const override;
     GfxResult bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const override;
 
     // BindGroup functions
+    GfxResult deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const override;
     GfxResult bindGroupDestroy(GfxBindGroup bindGroup) const override;
 
     // RenderPipeline functions
+    GfxResult deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const override;
     GfxResult renderPipelineDestroy(GfxRenderPipeline renderPipeline) const override;
 
     // ComputePipeline functions
+    GfxResult deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const override;
     GfxResult computePipelineDestroy(GfxComputePipeline computePipeline) const override;
 
     // RenderPass functions
+    GfxResult deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const override;
     GfxResult renderPassDestroy(GfxRenderPass renderPass) const override;
 
     // Framebuffer functions
+    GfxResult deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const override;
     GfxResult framebufferDestroy(GfxFramebuffer framebuffer) const override;
 
-    // QuerySet functions
-    GfxResult querySetDestroy(GfxQuerySet querySet) const override;
-
-    // Queue functions
-    GfxResult queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor) const override;
-    GfxResult queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const override;
-    GfxResult queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const override;
-    GfxResult queueWaitIdle(GfxQueue queue) const override;
-
     // CommandEncoder functions
+    GfxResult deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const override;
     GfxResult commandEncoderDestroy(GfxCommandEncoder commandEncoder) const override;
     GfxResult commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder, const GfxRenderPassBeginDescriptor* beginDescriptor, GfxRenderPassEncoder* outRenderPass) const override;
     GfxResult commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outComputePass) const override;
@@ -165,17 +159,23 @@ public:
     GfxResult computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const override;
 
     // Fence functions
+    GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const override;
     GfxResult fenceDestroy(GfxFence fence) const override;
     GfxResult fenceGetStatus(GfxFence fence, bool* isSignaled) const override;
     GfxResult fenceWait(GfxFence fence, uint64_t timeoutNs) const override;
     GfxResult fenceReset(GfxFence fence) const override;
 
     // Semaphore functions
+    GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const override;
     GfxResult semaphoreDestroy(GfxSemaphore semaphore) const override;
     GfxResult semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType) const override;
     GfxResult semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const override;
     GfxResult semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const override;
     GfxResult semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const override;
+
+    // QuerySet functions
+    GfxResult deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const override;
+    GfxResult querySetDestroy(GfxQuerySet querySet) const override;
 
     // Helper functions
     GfxAccessFlags getAccessFlagsForLayout(GfxTextureLayout layout) const override;

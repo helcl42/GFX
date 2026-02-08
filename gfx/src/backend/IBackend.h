@@ -28,35 +28,25 @@ public:
     virtual GfxResult deviceDestroy(GfxDevice device) const = 0;
     virtual GfxResult deviceGetQueue(GfxDevice device, GfxQueue* outQueue) const = 0;
     virtual GfxResult deviceGetQueueByIndex(GfxDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, GfxQueue* outQueue) const = 0;
-    virtual GfxResult deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const = 0;
-    virtual GfxResult deviceCreateSwapchain(GfxDevice device, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const = 0;
-    virtual GfxResult deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const = 0;
-    virtual GfxResult deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const = 0;
-    virtual GfxResult deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const = 0;
-    virtual GfxResult deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const = 0;
-    virtual GfxResult deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const = 0;
-    virtual GfxResult deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const = 0;
-    virtual GfxResult deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const = 0;
-    virtual GfxResult deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const = 0;
-    virtual GfxResult deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const = 0;
-    virtual GfxResult deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const = 0;
-    virtual GfxResult deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const = 0;
-    virtual GfxResult deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const = 0;
-    virtual GfxResult deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const = 0;
-    virtual GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const = 0;
-    virtual GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const = 0;
-    virtual GfxResult deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const = 0;
     virtual GfxResult deviceWaitIdle(GfxDevice device) const = 0;
     virtual GfxResult deviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits) const = 0;
     virtual GfxResult deviceSupportsShaderFormat(GfxDevice device, GfxShaderSourceType format, bool* outSupported) const = 0;
 
+    // Queue functions
+    virtual GfxResult queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor) const = 0;
+    virtual GfxResult queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const = 0;
+    virtual GfxResult queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const = 0;
+    virtual GfxResult queueWaitIdle(GfxQueue queue) const = 0;
+
     // Surface functions
+    virtual GfxResult deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const = 0;
     virtual GfxResult surfaceDestroy(GfxSurface surface) const = 0;
     virtual GfxResult surfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo) const = 0;
     virtual GfxResult surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const = 0;
     virtual GfxResult surfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes) const = 0;
 
     // Swapchain functions
+    virtual GfxResult deviceCreateSwapchain(GfxDevice device, const GfxSwapchainDescriptor* descriptor, GfxSwapchain* outSwapchain) const = 0;
     virtual GfxResult swapchainDestroy(GfxSwapchain swapchain) const = 0;
     virtual GfxResult swapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo) const = 0;
     virtual GfxResult swapchainAcquireNextImage(GfxSwapchain swapchain, uint64_t timeoutNs, GfxSemaphore imageAvailableSemaphore, GfxFence fence, uint32_t* outImageIndex) const = 0;
@@ -65,6 +55,8 @@ public:
     virtual GfxResult swapchainPresent(GfxSwapchain swapchain, const GfxPresentDescriptor* presentDescriptor) const = 0;
 
     // Buffer functions
+    virtual GfxResult deviceCreateBuffer(GfxDevice device, const GfxBufferDescriptor* descriptor, GfxBuffer* outBuffer) const = 0;
+    virtual GfxResult deviceImportBuffer(GfxDevice device, const GfxBufferImportDescriptor* descriptor, GfxBuffer* outBuffer) const = 0;
     virtual GfxResult bufferDestroy(GfxBuffer buffer) const = 0;
     virtual GfxResult bufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo) const = 0;
     virtual GfxResult bufferGetNativeHandle(GfxBuffer buffer, void** outHandle) const = 0;
@@ -74,6 +66,8 @@ public:
     virtual GfxResult bufferInvalidateMappedRange(GfxBuffer buffer, uint64_t offset, uint64_t size) const = 0;
 
     // Texture functions
+    virtual GfxResult deviceCreateTexture(GfxDevice device, const GfxTextureDescriptor* descriptor, GfxTexture* outTexture) const = 0;
+    virtual GfxResult deviceImportTexture(GfxDevice device, const GfxTextureImportDescriptor* descriptor, GfxTexture* outTexture) const = 0;
     virtual GfxResult textureDestroy(GfxTexture texture) const = 0;
     virtual GfxResult textureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo) const = 0;
     virtual GfxResult textureGetNativeHandle(GfxTexture texture, void** outHandle) const = 0;
@@ -84,39 +78,39 @@ public:
     virtual GfxResult textureViewDestroy(GfxTextureView textureView) const = 0;
 
     // Sampler functions
+    virtual GfxResult deviceCreateSampler(GfxDevice device, const GfxSamplerDescriptor* descriptor, GfxSampler* outSampler) const = 0;
     virtual GfxResult samplerDestroy(GfxSampler sampler) const = 0;
 
     // Shader functions
+    virtual GfxResult deviceCreateShader(GfxDevice device, const GfxShaderDescriptor* descriptor, GfxShader* outShader) const = 0;
     virtual GfxResult shaderDestroy(GfxShader shader) const = 0;
 
     // BindGroupLayout functions
+    virtual GfxResult deviceCreateBindGroupLayout(GfxDevice device, const GfxBindGroupLayoutDescriptor* descriptor, GfxBindGroupLayout* outLayout) const = 0;
     virtual GfxResult bindGroupLayoutDestroy(GfxBindGroupLayout bindGroupLayout) const = 0;
 
     // BindGroup functions
+    virtual GfxResult deviceCreateBindGroup(GfxDevice device, const GfxBindGroupDescriptor* descriptor, GfxBindGroup* outBindGroup) const = 0;
     virtual GfxResult bindGroupDestroy(GfxBindGroup bindGroup) const = 0;
 
     // RenderPipeline functions
+    virtual GfxResult deviceCreateRenderPipeline(GfxDevice device, const GfxRenderPipelineDescriptor* descriptor, GfxRenderPipeline* outPipeline) const = 0;
     virtual GfxResult renderPipelineDestroy(GfxRenderPipeline renderPipeline) const = 0;
 
     // ComputePipeline functions
+    virtual GfxResult deviceCreateComputePipeline(GfxDevice device, const GfxComputePipelineDescriptor* descriptor, GfxComputePipeline* outPipeline) const = 0;
     virtual GfxResult computePipelineDestroy(GfxComputePipeline computePipeline) const = 0;
 
     // RenderPass functions
+    virtual GfxResult deviceCreateRenderPass(GfxDevice device, const GfxRenderPassDescriptor* descriptor, GfxRenderPass* outRenderPass) const = 0;
     virtual GfxResult renderPassDestroy(GfxRenderPass renderPass) const = 0;
 
     // Framebuffer functions
+    virtual GfxResult deviceCreateFramebuffer(GfxDevice device, const GfxFramebufferDescriptor* descriptor, GfxFramebuffer* outFramebuffer) const = 0;
     virtual GfxResult framebufferDestroy(GfxFramebuffer framebuffer) const = 0;
 
-    // QuerySet functions
-    virtual GfxResult querySetDestroy(GfxQuerySet querySet) const = 0;
-
-    // Queue functions
-    virtual GfxResult queueSubmit(GfxQueue queue, const GfxSubmitDescriptor* submitDescriptor) const = 0;
-    virtual GfxResult queueWriteBuffer(GfxQueue queue, GfxBuffer buffer, uint64_t offset, const void* data, uint64_t size) const = 0;
-    virtual GfxResult queueWriteTexture(GfxQueue queue, GfxTexture texture, const GfxOrigin3D* origin, uint32_t mipLevel, const void* data, uint64_t dataSize, const GfxExtent3D* extent, GfxTextureLayout finalLayout) const = 0;
-    virtual GfxResult queueWaitIdle(GfxQueue queue) const = 0;
-
     // CommandEncoder functions
+    virtual GfxResult deviceCreateCommandEncoder(GfxDevice device, const GfxCommandEncoderDescriptor* descriptor, GfxCommandEncoder* outEncoder) const = 0;
     virtual GfxResult commandEncoderDestroy(GfxCommandEncoder commandEncoder) const = 0;
     virtual GfxResult commandEncoderBeginRenderPass(GfxCommandEncoder commandEncoder, const GfxRenderPassBeginDescriptor* beginDescriptor, GfxRenderPassEncoder* outRenderPass) const = 0;
     virtual GfxResult commandEncoderBeginComputePass(GfxCommandEncoder commandEncoder, const GfxComputePassBeginDescriptor* beginDescriptor, GfxComputePassEncoder* outComputePass) const = 0;
@@ -144,9 +138,9 @@ public:
     virtual GfxResult renderPassEncoderDrawIndexed(GfxRenderPassEncoder renderPassEncoder, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t baseVertex, uint32_t firstInstance) const = 0;
     virtual GfxResult renderPassEncoderDrawIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset) const = 0;
     virtual GfxResult renderPassEncoderDrawIndexedIndirect(GfxRenderPassEncoder renderPassEncoder, GfxBuffer indirectBuffer, uint64_t indirectOffset) const = 0;
-    virtual GfxResult renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const = 0;
     virtual GfxResult renderPassEncoderBeginOcclusionQuery(GfxRenderPassEncoder renderPassEncoder, GfxQuerySet querySet, uint32_t queryIndex) const = 0;
     virtual GfxResult renderPassEncoderEndOcclusionQuery(GfxRenderPassEncoder renderPassEncoder) const = 0;
+    virtual GfxResult renderPassEncoderEnd(GfxRenderPassEncoder renderPassEncoder) const = 0;
 
     // ComputePassEncoder functions
     virtual GfxResult computePassEncoderSetPipeline(GfxComputePassEncoder computePassEncoder, GfxComputePipeline pipeline) const = 0;
@@ -156,17 +150,23 @@ public:
     virtual GfxResult computePassEncoderEnd(GfxComputePassEncoder computePassEncoder) const = 0;
 
     // Fence functions
+    virtual GfxResult deviceCreateFence(GfxDevice device, const GfxFenceDescriptor* descriptor, GfxFence* outFence) const = 0;
     virtual GfxResult fenceDestroy(GfxFence fence) const = 0;
     virtual GfxResult fenceGetStatus(GfxFence fence, bool* isSignaled) const = 0;
     virtual GfxResult fenceWait(GfxFence fence, uint64_t timeoutNs) const = 0;
     virtual GfxResult fenceReset(GfxFence fence) const = 0;
 
     // Semaphore functions
+    virtual GfxResult deviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore) const = 0;
     virtual GfxResult semaphoreDestroy(GfxSemaphore semaphore) const = 0;
     virtual GfxResult semaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType) const = 0;
     virtual GfxResult semaphoreSignal(GfxSemaphore semaphore, uint64_t value) const = 0;
     virtual GfxResult semaphoreWait(GfxSemaphore semaphore, uint64_t value, uint64_t timeoutNs) const = 0;
     virtual GfxResult semaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue) const = 0;
+
+    // QuerySet functions
+    virtual GfxResult deviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet) const = 0;
+    virtual GfxResult querySetDestroy(GfxQuerySet querySet) const = 0;
 
     // Helper functions
     virtual GfxAccessFlags getAccessFlagsForLayout(GfxTextureLayout layout) const = 0;
