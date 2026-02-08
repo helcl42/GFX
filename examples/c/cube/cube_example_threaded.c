@@ -8,6 +8,7 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
 #define GLFW_EXPOSE_NATIVE_X11
+#define GLFW_EXPOSE_NATIVE_WAYLAND
 #elif defined(__APPLE__)
 #define GLFW_EXPOSE_NATIVE_COCOA
 #endif
@@ -282,18 +283,14 @@ GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
     GfxPlatformWindowHandle handle = { 0 };
 #if defined(__EMSCRIPTEN__)
     handle = gfxPlatformWindowHandleFromEmscripten("#canvas");
-
 #elif defined(_WIN32)
     handle = gfxPlatformWindowHandleFromWin32(glfwGetWin32Window(window), GetModuleHandle(NULL));
-
 #elif defined(__linux__)
-    // Force using Xlib instead of XCB to avoid driver hang
-    handle = gfxPlatformWindowHandleFromXlib(glfwGetX11Display(), glfwGetX11Window(window));
-
+    // handle = gfxPlatformWindowHandleFromXlib(glfwGetX11Display(), glfwGetX11Window(window));
+    handle = gfxPlatformWindowHandleFromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
 #elif defined(__APPLE__)
     handle = gfxPlatformWindowHandleFromMetal(glfwGetMetalLayer(window));
 #endif
-
     return handle;
 }
 
@@ -322,7 +319,6 @@ bool initializeGraphics(CubeApp* app)
     instanceDesc.enabledExtensions = instanceExtensions;
     instanceDesc.enabledExtensionCount = 2;
 
-
     if (gfxCreateInstance(&instanceDesc, &app->instance) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create graphics instance\n");
         return false;
@@ -334,7 +330,6 @@ bool initializeGraphics(CubeApp* app)
     adapterDesc.pNext = NULL;
     adapterDesc.adapterIndex = UINT32_MAX;
     adapterDesc.preference = GFX_ADAPTER_PREFERENCE_HIGH_PERFORMANCE;
-
 
     if (gfxInstanceRequestAdapter(app->instance, &adapterDesc, &app->adapter) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to get graphics adapter\n");
@@ -359,7 +354,6 @@ bool initializeGraphics(CubeApp* app)
     deviceDesc.label = "Main Device";
     deviceDesc.enabledExtensions = deviceExtensions;
     deviceDesc.enabledExtensionCount = 1;
-
 
     if (gfxAdapterCreateDevice(app->adapter, &deviceDesc, &app->device) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create device\n");
@@ -396,7 +390,6 @@ bool initializeGraphics(CubeApp* app)
     surfaceDesc.label = "Main Surface";
     surfaceDesc.windowHandle = windowHandle;
 
-
     if (gfxDeviceCreateSurface(app->device, &surfaceDesc, &app->surface) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create surface\n");
         return false;
@@ -418,7 +411,6 @@ static bool createSwapchain(CubeApp* app, uint32_t width, uint32_t height)
     swapchainDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     swapchainDesc.presentMode = GFX_PRESENT_MODE_IMMEDIATE;
     swapchainDesc.imageCount = MAX_FRAMES_IN_FLIGHT;
-
 
     if (gfxDeviceCreateSwapchain(app->device, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create swapchain\n");
@@ -451,7 +443,6 @@ static bool createTextures(CubeApp* app, uint32_t width, uint32_t height)
     depthTextureDesc.format = DEPTH_FORMAT;
     depthTextureDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
-
     if (gfxDeviceCreateTexture(app->device, &depthTextureDesc, &app->depthTexture) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create depth texture\n");
         return false;
@@ -468,7 +459,6 @@ static bool createTextures(CubeApp* app, uint32_t width, uint32_t height)
     depthViewDesc.mipLevelCount = 1;
     depthViewDesc.baseArrayLayer = 0;
     depthViewDesc.arrayLayerCount = 1;
-
 
     if (gfxTextureCreateView(app->depthTexture, &depthViewDesc, &app->depthTextureView) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create depth texture view\n");
@@ -488,7 +478,6 @@ static bool createTextures(CubeApp* app, uint32_t width, uint32_t height)
     msaaColorTextureDesc.format = app->swapchainInfo.format;
     msaaColorTextureDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
-
     if (gfxDeviceCreateTexture(app->device, &msaaColorTextureDesc, &app->msaaColorTexture) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create MSAA color texture\n");
         return false;
@@ -505,7 +494,6 @@ static bool createTextures(CubeApp* app, uint32_t width, uint32_t height)
     msaaColorViewDesc.mipLevelCount = 1;
     msaaColorViewDesc.baseArrayLayer = 0;
     msaaColorViewDesc.arrayLayerCount = 1;
-
 
     if (gfxTextureCreateView(app->msaaColorTexture, &msaaColorViewDesc, &app->msaaColorTextureView) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create MSAA color texture view\n");
@@ -552,7 +540,6 @@ static bool createFrameBuffers(CubeApp* app, uint32_t width, uint32_t height)
         fbDesc.width = width;
         fbDesc.height = height;
 
-
         if (gfxDeviceCreateFramebuffer(app->device, &fbDesc, &app->framebuffers[i]) != GFX_RESULT_SUCCESS) {
             fprintf(stderr, "Failed to create framebuffer %u\n", i);
             return false;
@@ -597,13 +584,11 @@ bool createSyncObjects(CubeApp* app)
     semaphoreDesc.type = GFX_SEMAPHORE_TYPE_BINARY;
     semaphoreDesc.initialValue = 0;
 
-
     GfxFenceDescriptor fenceDesc = {};
     fenceDesc.sType = GFX_STRUCTURE_TYPE_FENCE_DESCRIPTOR;
     fenceDesc.pNext = NULL;
     fenceDesc.label = "Fence";
     fenceDesc.signaled = true; // Start signaled so first frame doesn't wait
-
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         char label[64];
@@ -813,7 +798,6 @@ static bool createGeometry(CubeApp* app)
     vertexBufferDesc.usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST;
     vertexBufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
-
     if (gfxDeviceCreateBuffer(app->device, &vertexBufferDesc, &app->vertexBuffer) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create vertex buffer\n");
         return false;
@@ -827,7 +811,6 @@ static bool createGeometry(CubeApp* app)
     indexBufferDesc.size = sizeof(indices);
     indexBufferDesc.usage = GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_COPY_DST;
     indexBufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
-
 
     if (gfxDeviceCreateBuffer(app->device, &indexBufferDesc, &app->indexBuffer) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create index buffer\n");
@@ -863,7 +846,6 @@ static bool createUniformBuffer(CubeApp* app)
     uniformBufferDesc.usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST;
     uniformBufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
 
-
     if (gfxDeviceCreateBuffer(app->device, &uniformBufferDesc, &app->sharedUniformBuffer) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create shared uniform buffer\n");
         return false;
@@ -890,7 +872,6 @@ static bool createBindGroup(CubeApp* app)
     uniformLayoutDesc.label = "Uniform Bind Group Layout";
     uniformLayoutDesc.entries = &uniformLayoutEntry;
     uniformLayoutDesc.entryCount = 1;
-
 
     if (gfxDeviceCreateBindGroupLayout(app->device, &uniformLayoutDesc, &app->uniformBindGroupLayout) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create uniform bind group layout\n");
@@ -920,7 +901,6 @@ static bool createBindGroup(CubeApp* app)
             uniformBindGroupDesc.layout = app->uniformBindGroupLayout;
             uniformBindGroupDesc.entries = &uniformEntry;
             uniformBindGroupDesc.entryCount = 1;
-
 
             if (gfxDeviceCreateBindGroup(app->device, &uniformBindGroupDesc, &app->uniformBindGroups[i][cubeIdx]) != GFX_RESULT_SUCCESS) {
                 fprintf(stderr, "Failed to create uniform bind group %d cube %d\n", i, cubeIdx);
@@ -976,7 +956,6 @@ static bool createShaders(CubeApp* app)
     vertexShaderDesc.codeSize = vertexShaderSize;
     vertexShaderDesc.entryPoint = "main";
 
-
     if (gfxDeviceCreateShader(app->device, &vertexShaderDesc, &app->vertexShader) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create vertex shader\n");
         free(vertexShaderCode);
@@ -993,7 +972,6 @@ static bool createShaders(CubeApp* app)
     fragmentShaderDesc.code = fragmentShaderCode;
     fragmentShaderDesc.codeSize = fragmentShaderSize;
     fragmentShaderDesc.entryPoint = "main";
-
 
     if (gfxDeviceCreateShader(app->device, &fragmentShaderDesc, &app->fragmentShader) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create fragment shader\n");
@@ -1085,7 +1063,6 @@ static bool createRenderPass(CubeApp* app)
     clearPassDesc.colorAttachmentCount = 1;
     clearPassDesc.depthStencilAttachment = &depthAttachment;
 
-
     if (gfxDeviceCreateRenderPass(app->device, &clearPassDesc, &app->clearRenderPass) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create clear render pass\n");
         return false;
@@ -1100,7 +1077,6 @@ static bool createRenderPass(CubeApp* app)
     renderPassDesc.colorAttachments = &colorAttachment;
     renderPassDesc.colorAttachmentCount = 1;
     renderPassDesc.depthStencilAttachment = &depthAttachment;
-
 
     if (gfxDeviceCreateRenderPass(app->device, &renderPassDesc, &app->renderPass) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create render pass\n");
@@ -1136,7 +1112,6 @@ static bool createRenderPass(CubeApp* app)
     resolvePassDesc.colorAttachments = &resolveColorAttachment;
     resolvePassDesc.colorAttachmentCount = 1;
     resolvePassDesc.depthStencilAttachment = &resolveDepthAttachment; // Include depth for framebuffer compatibility
-
 
     if (gfxDeviceCreateRenderPass(app->device, &resolvePassDesc, &app->resolveRenderPass) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create resolve render pass\n");
@@ -1265,7 +1240,6 @@ bool createRenderPipeline(CubeApp* app)
     pipelineDesc.renderPass = app->renderPass;
     pipelineDesc.bindGroupLayouts = bindGroupLayouts;
     pipelineDesc.bindGroupLayoutCount = 1;
-
 
     if (gfxDeviceCreateRenderPipeline(app->device, &pipelineDesc, &app->renderPipeline) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create render pipeline\n");
@@ -2084,24 +2058,24 @@ static bool mainLoopIteration(CubeApp* app)
     if (deltaTime > 0.0f) {
         app->fpsFrameCount++;
         app->fpsTimeAccumulator += deltaTime;
-        
+
         if (deltaTime < app->fpsFrameTimeMin) {
             app->fpsFrameTimeMin = deltaTime;
         }
         if (deltaTime > app->fpsFrameTimeMax) {
             app->fpsFrameTimeMax = deltaTime;
         }
-        
+
         // Log FPS every second
         if (app->fpsTimeAccumulator >= 1.0f) {
             float avgFPS = (float)app->fpsFrameCount / app->fpsTimeAccumulator;
             float avgFrameTime = (app->fpsTimeAccumulator / (float)app->fpsFrameCount) * 1000.0f;
             float minFPS = 1.0f / app->fpsFrameTimeMax;
             float maxFPS = 1.0f / app->fpsFrameTimeMin;
-            printf("FPS - Avg: %.1f, Min: %.1f, Max: %.1f | Frame Time - Avg: %.2f ms, Min: %.2f ms, Max: %.2f ms\n", 
-                   avgFPS, minFPS, maxFPS,
-                   avgFrameTime, app->fpsFrameTimeMin * 1000.0f, app->fpsFrameTimeMax * 1000.0f);
-            
+            printf("FPS - Avg: %.1f, Min: %.1f, Max: %.1f | Frame Time - Avg: %.2f ms, Min: %.2f ms, Max: %.2f ms\n",
+                avgFPS, minFPS, maxFPS,
+                avgFrameTime, app->fpsFrameTimeMin * 1000.0f, app->fpsFrameTimeMax * 1000.0f);
+
             // Reset for next second
             app->fpsFrameCount = 0;
             app->fpsTimeAccumulator = 0.0f;

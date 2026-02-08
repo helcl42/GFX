@@ -10,6 +10,7 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
 #define GLFW_EXPOSE_NATIVE_X11
+#define GLFW_EXPOSE_NATIVE_WAYLAND
 #elif defined(__APPLE__)
 #define GLFW_EXPOSE_NATIVE_COCOA
 #endif
@@ -233,18 +234,14 @@ GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
     GfxPlatformWindowHandle handle = { 0 };
 #if defined(__EMSCRIPTEN__)
     handle = gfxPlatformWindowHandleFromEmscripten("#canvas");
-
 #elif defined(_WIN32)
     handle = gfxPlatformWindowHandleFromWin32(glfwGetWin32Window(window), GetModuleHandle(NULL));
-
 #elif defined(__linux__)
-    // Force using Xlib instead of XCB to avoid driver hang
-    handle = gfxPlatformWindowHandleFromXlib(glfwGetX11Display(), glfwGetX11Window(window));
-
+    // handle = gfxPlatformWindowHandleFromXlib(glfwGetX11Display(), glfwGetX11Window(window));
+    handle = gfxPlatformWindowHandleFromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
 #elif defined(__APPLE__)
     handle = gfxPlatformWindowHandleFromMetal(glfwGetMetalLayer(window));
 #endif
-
     return handle;
 }
 

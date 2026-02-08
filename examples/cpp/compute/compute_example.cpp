@@ -10,6 +10,7 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
 #define GLFW_EXPOSE_NATIVE_X11
+#define GLFW_EXPOSE_NATIVE_WAYLAND
 #elif defined(__APPLE__)
 #define GLFW_EXPOSE_NATIVE_COCOA
 #endif
@@ -1088,23 +1089,18 @@ gfx::PlatformWindowHandle ComputeApp::extractNativeHandle()
 
 #if defined(__EMSCRIPTEN__)
     handle = gfx::PlatformWindowHandle::fromEmscripten("#canvas");
-
 #elif defined(_WIN32)
-    // Windows: Get HWND and HINSTANCE
     handle = gfx::PlatformWindowHandle::fromWin32(glfwGetWin32Window(window), GetModuleHandle(nullptr));
     std::cout << "Extracted Win32 handle: HWND=" << handle.handle.win32.hwnd << ", HINSTANCE=" << handle.handle.win32.hinstance << std::endl;
-
 #elif defined(__linux__)
-    // Linux: Get X11 Window and Display (assuming X11, not Wayland)
-    handle = gfx::PlatformWindowHandle::fromXlib(glfwGetX11Display(), glfwGetX11Window(window));
-    std::cout << "Extracted X11 handle: Window=" << handle.handle.xlib.window << ", Display=" << handle.handle.xlib.display << std::endl;
-
+    // handle = gfx::PlatformWindowHandle::fromXlib(glfwGetX11Display(), glfwGetX11Window(window));
+    // std::cout << "Extracted X11 handle: Window=" << handle.handle.xlib.window << ", Display=" << handle.handle.xlib.display << std::endl;
+    handle = gfx::PlatformWindowHandle::fromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
+    std::cout << "Extracted Wayland handle: Surface=" << handle.handle.wayland.surface << ", Display=" << handle.handle.wayland.display << std::endl;
 #elif defined(__APPLE__)
-    // macOS: Get NSWindow
     handle = gfx::PlatformWindowHandle::fromMetal(glfwGetMetalLayer(window));
     std::cout << "Extracted Metal handle: Layer=" << handle.handle.metal.layer << std::endl;
 #endif
-
     return handle;
 }
 
