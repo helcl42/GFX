@@ -36,174 +36,6 @@ if(BUILD_EXAMPLES AND NOT BUILD_FOR_WEB)
     find_package(glfw3 REQUIRED)
 endif()
 
-# Vulkan
-if(BUILD_VULKAN_BACKEND AND NOT BUILD_FOR_WEB)
-    # Don't use find_package(Vulkan) - we'll use Dawn's bundled Vulkan headers
-    # Just find the Vulkan loader library and glslc compiler
-    
-    # Find Vulkan loader library manually
-    find_library(Vulkan_LIBRARY
-        NAMES vulkan vulkan-1
-        HINTS
-            ENV VULKAN_SDK
-        PATH_SUFFIXES lib
-    )
-    
-    if(NOT Vulkan_LIBRARY)
-        message(FATAL_ERROR "Vulkan loader library not found. Please install Vulkan SDK.")
-    endif()
-    
-    # Find glslc shader compiler (comes with Vulkan SDK)
-    find_program(GLSLC_EXECUTABLE
-        NAMES glslc
-        HINTS
-            ENV VULKAN_SDK
-        PATH_SUFFIXES bin
-    )
-    
-    if(GLSLC_EXECUTABLE)
-        message(STATUS "Found glslc: ${GLSLC_EXECUTABLE}")
-    else()
-        message(WARNING "glslc not found - shaders will not be compiled automatically")
-    endif()
-endif()
-
-# Function to compile GLSL shaders to SPIR-V
-function(compile_shader target shader_source)
-    if(NOT GLSLC_EXECUTABLE)
-        message(WARNING "Cannot compile shader ${shader_source} - glslc not found")
-        return()
-    endif()
-    
-    get_filename_component(shader_name ${shader_source} NAME)
-    set(shader_output "${CMAKE_CURRENT_BINARY_DIR}/${shader_name}.spv")
-    
-    add_custom_command(
-        OUTPUT ${shader_output}
-        COMMAND ${GLSLC_EXECUTABLE} ${shader_source} -o ${shader_output}
-        DEPENDS ${shader_source}
-        COMMENT "Compiling shader: ${shader_name} -> ${shader_name}.spv"
-        VERBATIM
-    )
-    
-    # Add the output to the target's dependencies
-    target_sources(${target} PRIVATE ${shader_output})
-endfunction()
-
-# Function to compile WGSL shaders to SPIR-V using tint
-function(compile_wgsl_shader target shader_source)
-    if(NOT BUILD_WEBGPU_BACKEND)
-        message(WARNING "Cannot compile WGSL shader ${shader_source} - WebGPU backend not enabled")
-        return()
-    endif()
-    
-    get_filename_component(shader_name ${shader_source} NAME_WE)
-    get_filename_component(shader_ext ${shader_source} EXT)
-    # Remove .wgsl extension and add .spv
-    string(REGEX REPLACE "\\.wgsl$" "" shader_base "${shader_name}${shader_ext}")
-    set(shader_output "${CMAKE_CURRENT_BINARY_DIR}/${shader_base}.spv")
-    
-    add_custom_command(
-        OUTPUT ${shader_output}
-        COMMAND $<TARGET_FILE:tint_cmd_tint_cmd> ${shader_source} -o ${shader_output} --format spirv --entry-point main
-        DEPENDS ${shader_source} tint_cmd_tint_cmd
-        COMMENT "Compiling WGSL shader: ${shader_name}${shader_ext} -> ${shader_base}.spv"
-        VERBATIM
-    )
-    
-    # Add the output to the target's dependencies
-    target_sources(${target} PRIVATE ${shader_output})
-endfunction()
-
-# WebGPU (Dawn)
-if(BUILD_WEBGPU_BACKEND)
-    # Check for Dawn in multiple locations (submodule, environment, or custom path)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/dawn/CMakeLists.txt")
-        set(DAWN_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/dawn")
-        message(STATUS "Using Dawn from submodule: ${DAWN_ROOT}")
-    elseif(DEFINED ENV{DAWN_ROOT} AND EXISTS "$ENV{DAWN_ROOT}/CMakeLists.txt")
-        set(DAWN_ROOT "$ENV{DAWN_ROOT}")
-        message(STATUS "Using Dawn from environment variable: ${DAWN_ROOT}")
-    elseif(DEFINED DAWN_ROOT AND EXISTS "${DAWN_ROOT}/CMakeLists.txt")
-        message(STATUS "Using Dawn from CMake variable: ${DAWN_ROOT}")
-    else()
-        message(FATAL_ERROR "Dawn not found. Please either:\n"
-                            "  1. Initialize submodule: git submodule update --init\n"
-                            "  2. Set DAWN_ROOT environment variable\n"
-                            "  3. Pass -DDAWN_ROOT=/path/to/dawn to CMake")
-    endif()
-    
-    if(EXISTS "${DAWN_ROOT}/CMakeLists.txt")
-        message(STATUS "Adding Dawn from: ${DAWN_ROOT}")
-        
-        # Save our BUILD_SHARED_LIBS setting
-        set(GFXWRAPPER_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
-        
-        # Dawn build options - Dawn requires BUILD_SHARED_LIBS=OFF
-        set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-        set(DAWN_FETCH_DEPENDENCIES ON CACHE BOOL "" FORCE)
-        set(DAWN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
-        set(DAWN_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
-        
-        # Enable SPIR-V support in Tint (required for native WebGPU)
-        if(NOT BUILD_FOR_WEB)
-            set(TINT_BUILD_SPV_READER ON CACHE BOOL "Enable SPIR-V reader for WebGPU backend" FORCE)
-            set(TINT_BUILD_SPV_WRITER ON CACHE BOOL "Enable SPIR-V writer for WebGPU backend" FORCE)
-        endif()
-        
-        # Platform-specific Dawn options
-        if(BUILD_FOR_WEB)
-            set(DAWN_USE_X11 OFF CACHE BOOL "" FORCE)
-            set(DAWN_ENABLE_VULKAN OFF CACHE BOOL "" FORCE)
-            set(DAWN_ENABLE_METAL OFF CACHE BOOL "" FORCE)
-            set(DAWN_ENABLE_D3D11 OFF CACHE BOOL "" FORCE)
-        else()
-            set(DAWN_USE_X11 ON CACHE BOOL "" FORCE)
-            set(DAWN_ENABLE_VULKAN ON CACHE BOOL "" FORCE)  # Enable Vulkan for native rendering
-            set(DAWN_ENABLE_METAL OFF CACHE BOOL "" FORCE)
-            set(DAWN_ENABLE_D3D11 OFF CACHE BOOL "" FORCE)
-        endif()
-        set(DAWN_ENABLE_D3D12 OFF CACHE BOOL "" FORCE)
-        set(TINT_BUILD_CMD_TOOLS ON CACHE BOOL "" FORCE)  # Build tint command-line tool
-        
-        add_subdirectory(${DAWN_ROOT} ${CMAKE_BINARY_DIR}/dawn EXCLUDE_FROM_ALL)
-        
-        # Restore our BUILD_SHARED_LIBS setting
-        set(BUILD_SHARED_LIBS ${GFXWRAPPER_BUILD_SHARED_LIBS} CACHE BOOL "" FORCE)
-        
-        set(WEBGPU_INCLUDE_DIR "${DAWN_ROOT}/include")
-        set(WEBGPU_FOUND TRUE)
-        message(STATUS "WebGPU enabled via Dawn subdirectory")
-        message(STATUS "WebGPU include dir: ${WEBGPU_INCLUDE_DIR}")
-    else()
-        message(WARNING "Dawn directory not found at ${DAWN_ROOT} - WebGPU backend will be disabled")
-        set(BUILD_WEBGPU_BACKEND OFF)
-    endif()
-endif()
-
-# Google Test
-if(BUILD_TESTS)
-    if(BUILD_WEBGPU_BACKEND AND WEBGPU_FOUND)
-        # Use GoogleTest from Dawn's third_party directory
-        set(GTEST_INCLUDE_DIR "${DAWN_ROOT}/third_party/googletest/googletest/include")
-        set(GMOCK_INCLUDE_DIR "${DAWN_ROOT}/third_party/googletest/googlemock/include")
-        message(STATUS "Using GoogleTest from Dawn: ${GTEST_INCLUDE_DIR}")
-    else()
-        # Fetch GoogleTest if Dawn is not available
-        include(FetchContent)
-        FetchContent_Declare(
-            googletest
-            GIT_REPOSITORY https://github.com/google/googletest.git
-            GIT_TAG v1.14.0
-        )
-        # For Windows: Prevent overriding the parent project's compiler/linker settings
-        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-        FetchContent_MakeAvailable(googletest)
-    endif()
-    enable_testing()
-    include(GoogleTest)
-endif()
-
 # Platform-specific libraries
 if(BUILD_HEADLESS)
     # Headless builds don't need windowing libraries
@@ -268,6 +100,185 @@ elseif(UNIX)
     endif()
 else()
     message(ERROR "Unknown configuration.")
+endif()
+
+# Vulkan
+if(BUILD_VULKAN_BACKEND AND NOT BUILD_FOR_WEB)
+    # Don't use find_package(Vulkan) - we'll use Dawn's bundled Vulkan headers
+    # Just find the Vulkan loader library and glslc compiler
+    
+    # Find Vulkan loader library manually
+    find_library(Vulkan_LIBRARY
+        NAMES vulkan vulkan-1
+        HINTS
+            ENV VULKAN_SDK
+        PATH_SUFFIXES lib
+    )
+    
+    if(NOT Vulkan_LIBRARY)
+        message(FATAL_ERROR "Vulkan loader library not found. Please install Vulkan SDK.")
+    endif()
+    
+    # Find glslc shader compiler (comes with Vulkan SDK)
+    find_program(GLSLC_EXECUTABLE
+        NAMES glslc
+        HINTS
+            ENV VULKAN_SDK
+        PATH_SUFFIXES bin
+    )
+    
+    if(GLSLC_EXECUTABLE)
+        message(STATUS "Found glslc: ${GLSLC_EXECUTABLE}")
+    else()
+        message(WARNING "glslc not found - shaders will not be compiled automatically")
+    endif()
+endif()
+
+# WebGPU (Dawn)
+if(BUILD_WEBGPU_BACKEND)
+    # Check for Dawn in multiple locations (submodule, environment, or custom path)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/dawn/CMakeLists.txt")
+        set(DAWN_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/dawn")
+        message(STATUS "Using Dawn from submodule: ${DAWN_ROOT}")
+    elseif(DEFINED ENV{DAWN_ROOT} AND EXISTS "$ENV{DAWN_ROOT}/CMakeLists.txt")
+        set(DAWN_ROOT "$ENV{DAWN_ROOT}")
+        message(STATUS "Using Dawn from environment variable: ${DAWN_ROOT}")
+    elseif(DEFINED DAWN_ROOT AND EXISTS "${DAWN_ROOT}/CMakeLists.txt")
+        message(STATUS "Using Dawn from CMake variable: ${DAWN_ROOT}")
+    else()
+        message(FATAL_ERROR "Dawn not found. Please either:\n"
+                            "  1. Initialize submodule: git submodule update --init\n"
+                            "  2. Set DAWN_ROOT environment variable\n"
+                            "  3. Pass -DDAWN_ROOT=/path/to/dawn to CMake")
+    endif()
+    
+    if(EXISTS "${DAWN_ROOT}/CMakeLists.txt")
+        message(STATUS "Adding Dawn from: ${DAWN_ROOT}")
+        
+        # Save our BUILD_SHARED_LIBS setting
+        set(GFXWRAPPER_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+        
+        # Dawn build options - Dawn requires BUILD_SHARED_LIBS=OFF
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+        set(DAWN_FETCH_DEPENDENCIES ON CACHE BOOL "" FORCE)
+        set(DAWN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+        set(DAWN_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+        
+        # Enable SPIR-V support in Tint (required for native WebGPU)
+        if(NOT BUILD_FOR_WEB)
+            set(TINT_BUILD_SPV_READER ON CACHE BOOL "Enable SPIR-V reader for WebGPU backend" FORCE)
+            set(TINT_BUILD_SPV_WRITER ON CACHE BOOL "Enable SPIR-V writer for WebGPU backend" FORCE)
+        endif()
+        
+        # Platform-specific Dawn options
+        if(BUILD_FOR_WEB)
+            set(DAWN_ENABLE_VULKAN OFF CACHE BOOL "" FORCE)
+            set(DAWN_USE_X11 OFF CACHE BOOL "" FORCE)
+            set(DAWN_USE_WAYLAND OFF CACHE BOOL "" FORCE)
+            set(DAWN_ENABLE_METAL OFF CACHE BOOL "" FORCE)
+            set(DAWN_ENABLE_D3D11 OFF CACHE BOOL "" FORCE)
+            set(DAWN_ENABLE_D3D12 OFF CACHE BOOL "" FORCE)
+        else()
+            set(DAWN_ENABLE_VULKAN ON CACHE BOOL "" FORCE)  # Enable Vulkan for native rendering
+            if(GFX_HAS_X11 OR GFX_HAS_XCB OR GFX_HAS_WAYLAND)
+                set(DAWN_USE_X11 ON CACHE BOOL "" FORCE)
+            endif()
+            if(GFX_HAS_WAYLAND)
+                set(DAWN_USE_WAYLAND ON CACHE BOOL "" FORCE)
+            endif()
+            if(GFX_HAS_COCOA OR GFX_HAS_UIKIT)
+                set(DAWN_ENABLE_METAL ON CACHE BOOL "" FORCE)
+            endif()
+            if(GFX_HAS_WIN32)
+                set(DAWN_ENABLE_D3D11 ON CACHE BOOL "" FORCE)
+                set(DAWN_ENABLE_D3D12 ON CACHE BOOL "" FORCE)
+            endif()
+        endif()
+        set(TINT_BUILD_CMD_TOOLS ON CACHE BOOL "" FORCE)  # Build tint command-line tool
+        
+        add_subdirectory(${DAWN_ROOT} ${CMAKE_BINARY_DIR}/dawn EXCLUDE_FROM_ALL)
+        
+        # Restore our BUILD_SHARED_LIBS setting
+        set(BUILD_SHARED_LIBS ${GFXWRAPPER_BUILD_SHARED_LIBS} CACHE BOOL "" FORCE)
+        
+        set(WEBGPU_INCLUDE_DIR "${DAWN_ROOT}/include")
+        set(WEBGPU_FOUND TRUE)
+        message(STATUS "WebGPU enabled via Dawn subdirectory")
+        message(STATUS "WebGPU include dir: ${WEBGPU_INCLUDE_DIR}")
+    else()
+        message(WARNING "Dawn directory not found at ${DAWN_ROOT} - WebGPU backend will be disabled")
+        set(BUILD_WEBGPU_BACKEND OFF)
+    endif()
+endif()
+
+# Function to compile GLSL shaders to SPIR-V
+function(compile_shader target shader_source)
+    if(NOT GLSLC_EXECUTABLE)
+        message(WARNING "Cannot compile shader ${shader_source} - glslc not found")
+        return()
+    endif()
+    
+    get_filename_component(shader_name ${shader_source} NAME)
+    set(shader_output "${CMAKE_CURRENT_BINARY_DIR}/${shader_name}.spv")
+    
+    add_custom_command(
+        OUTPUT ${shader_output}
+        COMMAND ${GLSLC_EXECUTABLE} ${shader_source} -o ${shader_output}
+        DEPENDS ${shader_source}
+        COMMENT "Compiling shader: ${shader_name} -> ${shader_name}.spv"
+        VERBATIM
+    )
+    
+    # Add the output to the target's dependencies
+    target_sources(${target} PRIVATE ${shader_output})
+endfunction()
+
+# Function to compile WGSL shaders to SPIR-V using tint
+function(compile_wgsl_shader target shader_source)
+    if(NOT BUILD_WEBGPU_BACKEND)
+        message(WARNING "Cannot compile WGSL shader ${shader_source} - WebGPU backend not enabled")
+        return()
+    endif()
+    
+    get_filename_component(shader_name ${shader_source} NAME_WE)
+    get_filename_component(shader_ext ${shader_source} EXT)
+    # Remove .wgsl extension and add .spv
+    string(REGEX REPLACE "\\.wgsl$" "" shader_base "${shader_name}${shader_ext}")
+    set(shader_output "${CMAKE_CURRENT_BINARY_DIR}/${shader_base}.spv")
+    
+    add_custom_command(
+        OUTPUT ${shader_output}
+        COMMAND $<TARGET_FILE:tint_cmd_tint_cmd> ${shader_source} -o ${shader_output} --format spirv --entry-point main
+        DEPENDS ${shader_source} tint_cmd_tint_cmd
+        COMMENT "Compiling WGSL shader: ${shader_name}${shader_ext} -> ${shader_base}.spv"
+        VERBATIM
+    )
+    
+    # Add the output to the target's dependencies
+    target_sources(${target} PRIVATE ${shader_output})
+endfunction()
+
+# Google Test
+if(BUILD_TESTS)
+    if(BUILD_WEBGPU_BACKEND AND WEBGPU_FOUND)
+        # Use GoogleTest from Dawn's third_party directory
+        set(GTEST_INCLUDE_DIR "${DAWN_ROOT}/third_party/googletest/googletest/include")
+        set(GMOCK_INCLUDE_DIR "${DAWN_ROOT}/third_party/googletest/googlemock/include")
+        message(STATUS "Using GoogleTest from Dawn: ${GTEST_INCLUDE_DIR}")
+    else()
+        # Fetch GoogleTest if Dawn is not available
+        include(FetchContent)
+        FetchContent_Declare(
+            googletest
+            GIT_REPOSITORY https://github.com/google/googletest.git
+            GIT_TAG v1.14.0
+        )
+        # For Windows: Prevent overriding the parent project's compiler/linker settings
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+        FetchContent_MakeAvailable(googletest)
+    endif()
+    enable_testing()
+    include(GoogleTest)
 endif()
 
 # C API Library (implemented in C++)
