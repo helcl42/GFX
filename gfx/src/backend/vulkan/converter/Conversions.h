@@ -113,6 +113,7 @@ VkImageViewType gfxTextureViewTypeToVkImageViewType(GfxTextureViewType type);
 VkSampleCountFlagBits sampleCountToVkSampleCount(GfxSampleCount sampleCount);
 GfxSampleCount vkSampleCountToGfxSampleCount(VkSampleCountFlagBits vkSampleCount);
 GfxTextureInfo vkTextureInfoToGfxTextureInfo(const core::TextureInfo& info);
+GfxSurfaceInfo vkSurfaceCapabilitiesToGfxSurfaceInfo(const VkSurfaceCapabilitiesKHR& caps);
 GfxSwapchainInfo vkSwapchainInfoToGfxSwapchainInfo(const core::SwapchainInfo& info);
 GfxBufferInfo vkBufferToGfxBufferInfo(const core::BufferInfo& info);
 GfxExtent3D vkExtent3DToGfxExtent3D(const VkExtent3D& vkExtent);

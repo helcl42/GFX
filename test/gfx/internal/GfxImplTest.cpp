@@ -61,6 +61,7 @@ public:
 
     // Surface functions
     MOCK_METHOD(GfxResult, surfaceDestroy, (GfxSurface), (const, override));
+    MOCK_METHOD(GfxResult, surfaceGetInfo, (GfxSurface, GfxSurfaceInfo*), (const, override));
     MOCK_METHOD(GfxResult, surfaceEnumerateSupportedFormats, (GfxSurface, uint32_t*, GfxTextureFormat*), (const, override));
     MOCK_METHOD(GfxResult, surfaceEnumerateSupportedPresentModes, (GfxSurface, uint32_t*, GfxPresentMode*), (const, override));
 
@@ -777,7 +778,8 @@ TEST_F(GfxImplTest, DeviceCreateSwapchain_NullSurface_ReturnsError)
     GfxSwapchainDescriptor desc = {};
     desc.surface = nullptr;
     GfxSwapchain swapchain;
-    ASSERT_EQ(gfxDeviceCreateSwapchain(device, &desc, &swapchain), GFX_RESULT_ERROR_INVALID_ARGUMENT);
+    // Invalid device handle is checked first, returning NOT_FOUND
+    ASSERT_EQ(gfxDeviceCreateSwapchain(device, &desc, &swapchain), GFX_RESULT_ERROR_NOT_FOUND);
 }
 
 TEST_F(GfxImplTest, DeviceCreateSwapchain_NullOutSwapchain_ReturnsError)

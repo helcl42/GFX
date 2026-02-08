@@ -11,6 +11,7 @@ namespace core {
     struct AdapterInfo;
     struct BufferInfo;
     struct TextureInfo;
+    struct SurfaceInfo;
     struct SwapchainInfo;
     struct QueueFamilyProperties;
 
@@ -146,6 +147,7 @@ core::SubmitInfo gfxDescriptorToWebGPUSubmitInfo(const GfxSubmitDescriptor* desc
 GfxBufferUsageFlags webgpuBufferUsageToGfxBufferUsage(WGPUBufferUsage usage);
 GfxSemaphoreType webgpuSemaphoreTypeToGfxSemaphoreType(core::SemaphoreType type);
 GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const core::TextureInfo& info);
+GfxSurfaceInfo wgpuSurfaceInfoToGfxSurfaceInfo(const core::SurfaceInfo& info);
 GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const core::SwapchainInfo& info);
 GfxBufferInfo wgpuBufferToGfxBufferInfo(const core::BufferInfo& info);
 

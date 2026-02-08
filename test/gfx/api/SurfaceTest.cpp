@@ -153,6 +153,25 @@ TEST_P(GfxSurfaceTest, GetQueueFamilySurfaceSupportInvalidArguments)
     EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
 }
 
+TEST_P(GfxSurfaceTest, GetSurfaceInfoInvalidArguments)
+{
+    // Create a dummy surface pointer (won't be valid, but testing argument validation)
+    GfxSurface dummySurface = (GfxSurface)0x1;
+    GfxSurfaceInfo info = {};
+
+    // NULL surface
+    GfxResult result = gfxSurfaceGetInfo(NULL, &info);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
+
+    // NULL output pointer
+    result = gfxSurfaceGetInfo(dummySurface, NULL);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
+
+    // Both NULL
+    result = gfxSurfaceGetInfo(NULL, NULL);
+    EXPECT_EQ(result, GFX_RESULT_ERROR_INVALID_ARGUMENT);
+}
+
 // Note: Creating actual surfaces requires real window handles from X11/Wayland/etc.
 // These tests verify API contracts and argument validation without requiring a display server
 

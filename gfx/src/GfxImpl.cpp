@@ -561,6 +561,18 @@ DEVICE_CREATE_FUNC(Surface, Surface)
 
 DESTROY_FUNC(Surface, surface)
 
+GfxResult gfxSurfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo)
+{
+    if (!surface || !outInfo) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    auto backend = gfx::backend::BackendManager::instance().getBackend(surface);
+    if (!backend) {
+        return GFX_RESULT_ERROR_NOT_FOUND;
+    }
+    return backend->surfaceGetInfo(surface, outInfo);
+}
+
 GfxResult gfxSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats)
 {
     if (!surface || !formatCount) {

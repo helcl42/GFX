@@ -17,7 +17,7 @@ Swapchain::Swapchain(Device* device, Surface* surface, const SwapchainCreateInfo
     , m_info(createSwapchainInfo(createInfo))
 {
     // Get surface capabilities
-    WGPUSurfaceCapabilities capabilities = surface->getCapabilities();
+    const WGPUSurfaceCapabilities& capabilities = surface->getCapabilities();
 
     // Choose format
     WGPUTextureFormat selectedFormat = WGPUTextureFormat_Undefined;
@@ -76,9 +76,6 @@ Swapchain::Swapchain(Device* device, Surface* surface, const SwapchainCreateInfo
     config.alphaMode = WGPUCompositeAlphaMode_Auto;
 
     wgpuSurfaceConfigure(m_surface, &config);
-
-    // Free capabilities using the proper WebGPU function
-    wgpuSurfaceCapabilitiesFreeMembers(capabilities);
 }
 
 Swapchain::~Swapchain()

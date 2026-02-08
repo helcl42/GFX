@@ -87,7 +87,7 @@ TEST_P(GfxCppSurfaceTest, GetSupportedFormatsNullSurface)
     // In C++, dereferencing nullptr would crash, so we just verify nullptr checks
     std::shared_ptr<gfx::Surface> nullSurface;
     EXPECT_EQ(nullSurface, nullptr);
-    
+
     // The following would crash if uncommented (expected behavior):
     // auto formats = nullSurface->getSupportedFormats();
 }
@@ -98,7 +98,7 @@ TEST_P(GfxCppSurfaceTest, GetSupportedPresentModesNullSurface)
     // In C++, dereferencing nullptr would crash, so we just verify nullptr checks
     std::shared_ptr<gfx::Surface> nullSurface;
     EXPECT_EQ(nullSurface, nullptr);
-    
+
     // The following would crash if uncommented (expected behavior):
     // auto modes = nullSurface->getSupportedPresentModes();
 }
@@ -106,10 +106,10 @@ TEST_P(GfxCppSurfaceTest, GetSupportedPresentModesNullSurface)
 TEST_P(GfxCppSurfaceTest, GetQueueFamilySurfaceSupportNullAdapter)
 {
     ASSERT_NE(adapter, nullptr);
-    
+
     // Test with null surface - using raw pointer for the test
     gfx::Surface* nullSurface = nullptr;
-    
+
     // This should throw or handle gracefully
     try {
         bool supported = adapter->getQueueFamilySurfaceSupport(0, nullSurface);
@@ -125,18 +125,18 @@ TEST_P(GfxCppSurfaceTest, GetQueueFamilySurfaceSupportInvalidSurface)
 {
     ASSERT_NE(adapter, nullptr);
     ASSERT_NE(device, nullptr);
-    
+
     // Create a surface with invalid handle to test validation
     auto invalidHandle = gfx::PlatformWindowHandle::fromXlib(nullptr, 0);
-    
+
     gfx::SurfaceDescriptor desc{
         .label = "TestSurface",
         .windowHandle = invalidHandle
     };
-    
+
     try {
         auto testSurface = device->createSurface(desc);
-        
+
         if (testSurface) {
             // If surface was created despite invalid handle, test queue support
             // This tests that the API handles invalid surfaces gracefully
@@ -147,6 +147,41 @@ TEST_P(GfxCppSurfaceTest, GetQueueFamilySurfaceSupportInvalidSurface)
             } catch (const std::exception& e) {
                 SUCCEED() << "Correctly rejected invalid surface: " << e.what();
             }
+        }
+    } catch (const std::exception& e) {
+        // Expected - surface creation with invalid handle should fail
+        SUCCEED() << "Correctly failed to create invalid surface: " << e.what();
+    }
+}
+
+TEST_P(GfxCppSurfaceTest, GetSurfaceInfoReturnsValidStruct)
+{
+    ASSERT_NE(adapter, nullptr);
+    ASSERT_NE(device, nullptr);
+
+    // Create a surface with invalid handle (we're testing the API contract, not actual functionality)
+    auto invalidHandle = gfx::PlatformWindowHandle::fromXlib(nullptr, 0);
+
+    gfx::SurfaceDescriptor desc{
+        .label = "TestSurface",
+        .windowHandle = invalidHandle
+    };
+
+    try {
+        auto testSurface = device->createSurface(desc);
+
+        if (testSurface) {
+            // Test that getInfo returns a struct with reasonable values
+            gfx::SurfaceInfo info = testSurface->getInfo();
+
+            // Verify struct has been populated (values should be non-negative)
+            // We can't verify exact values without a real surface, but we can check the struct is valid
+            EXPECT_GE(info.minImageCount, 0u);
+            EXPECT_GE(info.maxImageCount, info.minImageCount) << "maxImageCount should be >= minImageCount";
+            EXPECT_GE(info.minWidth, 0u);
+            EXPECT_GE(info.minHeight, 0u);
+            EXPECT_GE(info.maxWidth, info.minWidth) << "maxWidth should be >= minWidth";
+            EXPECT_GE(info.maxHeight, info.minHeight) << "maxHeight should be >= minHeight";
         }
     } catch (const std::exception& e) {
         // Expected - surface creation with invalid handle should fail

@@ -43,6 +43,7 @@ GfxResult validateDeviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescri
 GfxResult validateRenderPassEncoderBeginOcclusionQuery(GfxRenderPassEncoder renderPassEncoder, GfxQuerySet querySet);
 GfxResult validateRenderPassEncoderEndOcclusionQuery(GfxRenderPassEncoder renderPassEncoder);
 GfxResult validateDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
+GfxResult validateSurfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo);
 GfxResult validateSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount);
 GfxResult validateSurfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount);
 GfxResult validateSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo);

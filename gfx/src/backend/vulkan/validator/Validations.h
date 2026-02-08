@@ -41,6 +41,7 @@ GfxResult validateDeviceCreateFence(GfxDevice device, const GfxFenceDescriptor* 
 GfxResult validateDeviceCreateSemaphore(GfxDevice device, const GfxSemaphoreDescriptor* descriptor, GfxSemaphore* outSemaphore);
 GfxResult validateDeviceCreateQuerySet(GfxDevice device, const GfxQuerySetDescriptor* descriptor, GfxQuerySet* outQuerySet);
 GfxResult validateDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits);
+GfxResult validateSurfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo);
 GfxResult validateSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount);
 GfxResult validateSurfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount);
 GfxResult validateSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo);

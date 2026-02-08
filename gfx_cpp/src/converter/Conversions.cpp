@@ -294,6 +294,18 @@ SwapchainInfo cSwapchainInfoToCppSwapchainInfo(const GfxSwapchainInfo& cInfo)
     return info;
 }
 
+SurfaceInfo cSurfaceInfoToCppSurfaceInfo(const GfxSurfaceInfo& cInfo)
+{
+    SurfaceInfo info;
+    info.minImageCount = cInfo.minImageCount;
+    info.maxImageCount = cInfo.maxImageCount;
+    info.minWidth = cInfo.minWidth;
+    info.minHeight = cInfo.minHeight;
+    info.maxWidth = cInfo.maxWidth;
+    info.maxHeight = cInfo.maxHeight;
+    return info;
+}
+
 GfxAddressMode cppAddressModeToCAddressMode(AddressMode mode)
 {
     return static_cast<GfxAddressMode>(mode);

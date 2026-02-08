@@ -174,10 +174,14 @@ Surface::Surface(WGPUInstance instance, WGPUAdapter adapter, const SurfaceCreate
     default:
         throw std::runtime_error("Unsupported windowing system for WebGPU surface creation");
     }
+
+    wgpuSurfaceGetCapabilities(m_surface, m_adapter, &m_capabilities);
 }
 
 Surface::~Surface()
 {
+    wgpuSurfaceCapabilitiesFreeMembers(m_capabilities);
+
     if (m_surface) {
         wgpuSurfaceRelease(m_surface);
     }
@@ -193,13 +197,24 @@ WGPUSurface Surface::handle() const
     return m_surface;
 }
 
-// Query surface capabilities and return them
-// Caller is responsible for calling wgpuSurfaceCapabilitiesFreeMembers
-WGPUSurfaceCapabilities Surface::getCapabilities() const
+const WGPUSurfaceCapabilities& Surface::getCapabilities() const
 {
-    WGPUSurfaceCapabilities capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
-    wgpuSurfaceGetCapabilities(m_surface, m_adapter, &capabilities);
-    return capabilities;
+    return m_capabilities;
+}
+
+SurfaceInfo Surface::getInfo() const
+{
+    SurfaceInfo info{};
+    // WebGPU doesn't provide image count limits, use reasonable defaults
+    info.minImageCount = 3;
+    info.maxImageCount = 4;
+    // WebGPU doesn't provide explicit size limits, use reasonable defaults
+    // Most implementations support at least 8192x8192
+    info.minWidth = 1;
+    info.minHeight = 1;
+    info.maxWidth = 8192;
+    info.maxHeight = 8192;
+    return info;
 }
 
 } // namespace gfx::backend::webgpu::core

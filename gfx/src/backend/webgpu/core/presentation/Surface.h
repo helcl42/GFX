@@ -17,13 +17,14 @@ public:
     WGPUAdapter adapter() const;
     WGPUSurface handle() const;
 
-    // Query surface capabilities and return them
-    // Caller is responsible for calling wgpuSurfaceCapabilitiesFreeMembers
-    WGPUSurfaceCapabilities getCapabilities() const;
+    const WGPUSurfaceCapabilities& getCapabilities() const;
+
+    SurfaceInfo getInfo() const;
 
 private:
     WGPUAdapter m_adapter = nullptr;
     WGPUSurface m_surface = nullptr;
+    WGPUSurfaceCapabilities m_capabilities = WGPU_SURFACE_CAPABILITIES_INIT;
 };
 
 } // namespace gfx::backend::webgpu::core

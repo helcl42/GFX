@@ -1194,6 +1194,16 @@ typedef struct {
     GfxMemoryPropertyFlags memoryProperties;
 } GfxBufferInfo;
 
+// Surface information
+typedef struct {
+    uint32_t minImageCount;
+    uint32_t maxImageCount;
+    uint32_t minWidth;
+    uint32_t minHeight;
+    uint32_t maxWidth;
+    uint32_t maxHeight;
+} GfxSurfaceInfo;
+
 // Swapchain information
 typedef struct {
     uint32_t width;
@@ -1691,6 +1701,7 @@ GFX_API GfxResult gfxQueueWaitIdle(GfxQueue queue);
 // Surface functions
 GFX_API GfxResult gfxDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface);
 GFX_API GfxResult gfxSurfaceDestroy(GfxSurface surface);
+GFX_API GfxResult gfxSurfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo);
 // Vulkan-style enumeration: call with formats=NULL to get count, then call again with allocated array
 GFX_API GfxResult gfxSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats);
 // Vulkan-style enumeration: call with presentModes=NULL to get count, then call again with allocated array

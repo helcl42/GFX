@@ -98,6 +98,15 @@ struct TextureInfo {
     WGPUTextureUsage usage;
 };
 
+struct SurfaceInfo {
+    uint32_t minImageCount;
+    uint32_t maxImageCount;
+    uint32_t minWidth;
+    uint32_t minHeight;
+    uint32_t maxWidth;
+    uint32_t maxHeight;
+};
+
 struct SwapchainInfo {
     uint32_t width;
     uint32_t height;

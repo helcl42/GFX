@@ -61,6 +61,7 @@ public:
 
     // Surface functions
     GfxResult surfaceDestroy(GfxSurface surface) const override;
+    GfxResult surfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo) const override;
     GfxResult surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const override;
     GfxResult surfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes) const override;
 

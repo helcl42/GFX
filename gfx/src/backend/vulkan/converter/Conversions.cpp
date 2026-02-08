@@ -619,6 +619,18 @@ GfxTextureInfo vkTextureInfoToGfxTextureInfo(const core::TextureInfo& info)
     return gfxInfo;
 }
 
+GfxSurfaceInfo vkSurfaceCapabilitiesToGfxSurfaceInfo(const VkSurfaceCapabilitiesKHR& caps)
+{
+    GfxSurfaceInfo info{};
+    info.minImageCount = caps.minImageCount;
+    info.maxImageCount = caps.maxImageCount;
+    info.minWidth = caps.minImageExtent.width;
+    info.minHeight = caps.minImageExtent.height;
+    info.maxWidth = caps.maxImageExtent.width;
+    info.maxHeight = caps.maxImageExtent.height;
+    return info;
+}
+
 GfxSwapchainInfo vkSwapchainInfoToGfxSwapchainInfo(const core::SwapchainInfo& info)
 {
     GfxSwapchainInfo gfxInfo{};
@@ -1701,7 +1713,7 @@ core::RenderPassCreateInfo gfxRenderPassDescriptorToRenderPassCreateInfo(const G
 
         createInfo.depthStencilAttachment = depthStencilAttachment;
     }
-    
+
     // Handle multiview extension in pNext chain
     const GfxChainHeader* chainNode = static_cast<const GfxChainHeader*>(descriptor->pNext);
     while (chainNode) {

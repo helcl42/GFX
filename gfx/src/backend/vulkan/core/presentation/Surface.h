@@ -23,6 +23,8 @@ public:
     std::vector<VkSurfaceFormatKHR> getSupportedFormats() const;
     std::vector<VkPresentModeKHR> getSupportedPresentModes() const;
 
+    VkSurfaceCapabilitiesKHR getCapabilities() const;
+
 private:
     Adapter* m_adapter = nullptr;
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;

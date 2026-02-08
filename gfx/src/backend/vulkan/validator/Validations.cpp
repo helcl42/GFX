@@ -901,6 +901,14 @@ GfxResult validateDeviceGetLimits(GfxDevice device, GfxDeviceLimits* outLimits)
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult validateSurfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo)
+{
+    if (!surface || !outInfo) {
+        return GFX_RESULT_ERROR_INVALID_ARGUMENT;
+    }
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult validateSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount)
 {
     if (!surface || !formatCount) {

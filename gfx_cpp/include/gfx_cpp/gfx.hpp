@@ -1125,6 +1125,15 @@ struct SwapchainInfo {
     uint32_t imageCount = 0;
 };
 
+struct SurfaceInfo {
+    uint32_t minImageCount = 0;
+    uint32_t maxImageCount = 0;
+    uint32_t minWidth = 0;
+    uint32_t minHeight = 0;
+    uint32_t maxWidth = 0;
+    uint32_t maxHeight = 0;
+};
+
 struct FenceDescriptor {
     const ChainedStruct* next = nullptr;
     std::string label;
@@ -1385,6 +1394,8 @@ struct PipelineBarrierDescriptor {
 class Surface {
 public:
     virtual ~Surface() = default;
+
+    virtual SurfaceInfo getInfo() const = 0;
 
     // Get supported formats and present modes for this surface
     virtual std::vector<TextureFormat> getSupportedFormats() const = 0;

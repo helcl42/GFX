@@ -186,6 +186,11 @@ GfxResult Backend::surfaceDestroy(GfxSurface surface) const
     return m_presentationComponent.surfaceDestroy(surface);
 }
 
+GfxResult Backend::surfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo) const
+{
+    return m_presentationComponent.surfaceGetInfo(surface, outInfo);
+}
+
 GfxResult Backend::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const
 {
     return m_presentationComponent.surfaceEnumerateSupportedFormats(surface, formatCount, formats);

@@ -81,6 +81,9 @@ BufferInfo cBufferInfoToCppBufferInfo(const GfxBufferInfo& info);
 // Texture info conversions
 TextureInfo cTextureInfoToCppTextureInfo(const GfxTextureInfo& info);
 
+// Surface info conversions
+SurfaceInfo cSurfaceInfoToCppSurfaceInfo(const GfxSurfaceInfo& info);
+
 // Swapchain info conversions
 SwapchainInfo cSwapchainInfoToCppSwapchainInfo(const GfxSwapchainInfo& info);
 

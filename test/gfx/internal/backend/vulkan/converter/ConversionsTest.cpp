@@ -1163,4 +1163,44 @@ TEST(VulkanConversionsTest, VkBufferToGfxBufferInfo_StorageBuffer_ConvertsCorrec
     EXPECT_TRUE(result.memoryProperties & GFX_MEMORY_PROPERTY_DEVICE_LOCAL);
 }
 
+// ============================================================================
+// Surface Info Conversion Tests
+// ============================================================================
+
+TEST(VulkanConversionsTest, VkSurfaceCapabilitiesToGfxSurfaceInfo_ConvertsCorrectly)
+{
+    VkSurfaceCapabilitiesKHR vkCaps{};
+    vkCaps.minImageCount = 2;
+    vkCaps.maxImageCount = 3;
+    vkCaps.minImageExtent = {1, 1};
+    vkCaps.maxImageExtent = {4096, 4096};
+
+    GfxSurfaceInfo result = gfx::backend::vulkan::converter::vkSurfaceCapabilitiesToGfxSurfaceInfo(vkCaps);
+
+    EXPECT_EQ(result.minImageCount, 2u);
+    EXPECT_EQ(result.maxImageCount, 3u);
+    EXPECT_EQ(result.minWidth, 1u);
+    EXPECT_EQ(result.minHeight, 1u);
+    EXPECT_EQ(result.maxWidth, 4096u);
+    EXPECT_EQ(result.maxHeight, 4096u);
+}
+
+TEST(VulkanConversionsTest, VkSurfaceCapabilitiesToGfxSurfaceInfo_LargeValues_ConvertsCorrectly)
+{
+    VkSurfaceCapabilitiesKHR vkCaps{};
+    vkCaps.minImageCount = 1;
+    vkCaps.maxImageCount = 8;
+    vkCaps.minImageExtent = {16, 16};
+    vkCaps.maxImageExtent = {8192, 8192};
+
+    GfxSurfaceInfo result = gfx::backend::vulkan::converter::vkSurfaceCapabilitiesToGfxSurfaceInfo(vkCaps);
+
+    EXPECT_EQ(result.minImageCount, 1u);
+    EXPECT_EQ(result.maxImageCount, 8u);
+    EXPECT_EQ(result.minWidth, 16u);
+    EXPECT_EQ(result.minHeight, 16u);
+    EXPECT_EQ(result.maxWidth, 8192u);
+    EXPECT_EQ(result.maxHeight, 8192u);
+}
+
 } // namespace

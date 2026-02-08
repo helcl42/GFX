@@ -221,4 +221,11 @@ std::vector<VkPresentModeKHR> Surface::getSupportedPresentModes() const
     return presentModes;
 }
 
+VkSurfaceCapabilitiesKHR Surface::getCapabilities() const
+{
+    VkSurfaceCapabilitiesKHR capabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_adapter->handle(), m_surface, &capabilities);
+    return capabilities;
+}
+
 } // namespace gfx::backend::vulkan::core

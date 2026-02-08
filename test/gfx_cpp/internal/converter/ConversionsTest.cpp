@@ -712,12 +712,13 @@ TEST(ConversionsTest, CppHandleToCHandle_Xlib)
 #ifdef GFX_HAS_WAYLAND
 TEST(ConversionsTest, CppHandleToCHandle_Wayland)
 {
+    // fromWayland takes (display, surface) - display first
     PlatformWindowHandle cppHandle = PlatformWindowHandle::fromWayland((void*)0x1234, (void*)0x5678);
     GfxPlatformWindowHandle cHandle = cppHandleToCHandle(cppHandle);
 
     EXPECT_EQ(cHandle.windowingSystem, GFX_WINDOWING_SYSTEM_WAYLAND);
-    EXPECT_EQ(cHandle.wayland.surface, (void*)0x1234);
-    EXPECT_EQ(cHandle.wayland.display, (void*)0x5678);
+    EXPECT_EQ(cHandle.wayland.display, (void*)0x1234);
+    EXPECT_EQ(cHandle.wayland.surface, (void*)0x5678);
 }
 #endif // GFX_HAS_WAYLAND
 
@@ -1031,6 +1032,50 @@ TEST(ConversionsTest, ConvertDepthStencilState)
     EXPECT_EQ(cState.depthWriteEnabled, true);
     EXPECT_EQ(cState.depthCompare, GFX_COMPARE_FUNCTION_LESS);
     EXPECT_EQ(cState.stencilReadMask, 0xFF);
+}
+
+// =============================================================================
+// Surface Info Conversion Tests
+// =============================================================================
+
+TEST(GfxCppConversionsTest, CSurfaceInfoToCppSurfaceInfo_ConvertsCorrectly)
+{
+    GfxSurfaceInfo cInfo{};
+    cInfo.minImageCount = 2;
+    cInfo.maxImageCount = 3;
+    cInfo.minWidth = 1;
+    cInfo.minHeight = 1;
+    cInfo.maxWidth = 4096;
+    cInfo.maxHeight = 4096;
+
+    gfx::SurfaceInfo result = gfx::cSurfaceInfoToCppSurfaceInfo(cInfo);
+
+    EXPECT_EQ(result.minImageCount, 2u);
+    EXPECT_EQ(result.maxImageCount, 3u);
+    EXPECT_EQ(result.minWidth, 1u);
+    EXPECT_EQ(result.minHeight, 1u);
+    EXPECT_EQ(result.maxWidth, 4096u);
+    EXPECT_EQ(result.maxHeight, 4096u);
+}
+
+TEST(GfxCppConversionsTest, CSurfaceInfoToCppSurfaceInfo_ZeroValues_ConvertsCorrectly)
+{
+    GfxSurfaceInfo cInfo{};
+    cInfo.minImageCount = 0;
+    cInfo.maxImageCount = 0;
+    cInfo.minWidth = 0;
+    cInfo.minHeight = 0;
+    cInfo.maxWidth = 0;
+    cInfo.maxHeight = 0;
+
+    gfx::SurfaceInfo result = gfx::cSurfaceInfoToCppSurfaceInfo(cInfo);
+
+    EXPECT_EQ(result.minImageCount, 0u);
+    EXPECT_EQ(result.maxImageCount, 0u);
+    EXPECT_EQ(result.minWidth, 0u);
+    EXPECT_EQ(result.minHeight, 0u);
+    EXPECT_EQ(result.maxWidth, 0u);
+    EXPECT_EQ(result.maxHeight, 0u);
 }
 
 // =============================================================================

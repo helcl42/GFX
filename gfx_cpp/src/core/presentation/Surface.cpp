@@ -21,6 +21,13 @@ GfxSurface SurfaceImpl::getHandle() const
     return m_handle;
 }
 
+SurfaceInfo SurfaceImpl::getInfo() const
+{
+    GfxSurfaceInfo cInfo = {};
+    gfxSurfaceGetInfo(m_handle, &cInfo);
+    return cSurfaceInfoToCppSurfaceInfo(cInfo);
+}
+
 std::vector<TextureFormat> SurfaceImpl::getSupportedFormats() const
 {
     // First call: query count

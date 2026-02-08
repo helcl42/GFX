@@ -822,6 +822,18 @@ GfxTextureInfo wgpuTextureInfoToGfxTextureInfo(const core::TextureInfo& info)
     return gfxInfo;
 }
 
+GfxSurfaceInfo wgpuSurfaceInfoToGfxSurfaceInfo(const core::SurfaceInfo& surfaceInfo)
+{
+    GfxSurfaceInfo info{};
+    info.minImageCount = surfaceInfo.minImageCount;
+    info.maxImageCount = surfaceInfo.maxImageCount;
+    info.minWidth = surfaceInfo.minWidth;
+    info.minHeight = surfaceInfo.minHeight;
+    info.maxWidth = surfaceInfo.maxWidth;
+    info.maxHeight = surfaceInfo.maxHeight;
+    return info;
+}
+
 GfxSwapchainInfo wgpuSwapchainInfoToGfxSwapchainInfo(const core::SwapchainInfo& info)
 {
     GfxSwapchainInfo gfxInfo{};

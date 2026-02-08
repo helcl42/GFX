@@ -58,6 +58,18 @@ GfxResult PresentationComponent::surfaceDestroy(GfxSurface surface) const
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult PresentationComponent::surfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo) const
+{
+    GfxResult validationResult = validator::validateSurfaceGetInfo(surface, outInfo);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
+    auto* surf = converter::toNative<core::Surface>(surface);
+    *outInfo = converter::wgpuSurfaceInfoToGfxSurfaceInfo(surf->getInfo());
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult PresentationComponent::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const
 {
     GfxResult validationResult = validator::validateSurfaceEnumerateSupportedFormats(surface, formatCount);
@@ -68,12 +80,11 @@ GfxResult PresentationComponent::surfaceEnumerateSupportedFormats(GfxSurface sur
     auto* surf = converter::toNative<core::Surface>(surface);
 
     // Query surface capabilities
-    WGPUSurfaceCapabilities capabilities = surf->getCapabilities();
+    const WGPUSurfaceCapabilities& capabilities = surf->getCapabilities();
 
     uint32_t count = static_cast<uint32_t>(capabilities.formatCount);
 
     if (count == 0) {
-        wgpuSurfaceCapabilitiesFreeMembers(capabilities);
         *formatCount = 0;
         return GFX_RESULT_SUCCESS;
     }
@@ -86,7 +97,6 @@ GfxResult PresentationComponent::surfaceEnumerateSupportedFormats(GfxSurface sur
         }
     }
 
-    wgpuSurfaceCapabilitiesFreeMembers(capabilities);
     *formatCount = count;
     return GFX_RESULT_SUCCESS;
 }
@@ -101,12 +111,11 @@ GfxResult PresentationComponent::surfaceEnumerateSupportedPresentModes(GfxSurfac
     auto* surf = converter::toNative<core::Surface>(surface);
 
     // Query surface capabilities
-    WGPUSurfaceCapabilities capabilities = surf->getCapabilities();
+    const WGPUSurfaceCapabilities& capabilities = surf->getCapabilities();
 
     uint32_t count = static_cast<uint32_t>(capabilities.presentModeCount);
 
     if (count == 0) {
-        wgpuSurfaceCapabilitiesFreeMembers(capabilities);
         *presentModeCount = 0;
         return GFX_RESULT_SUCCESS;
     }
@@ -119,7 +128,6 @@ GfxResult PresentationComponent::surfaceEnumerateSupportedPresentModes(GfxSurfac
         }
     }
 
-    wgpuSurfaceCapabilitiesFreeMembers(capabilities);
     *presentModeCount = count;
     return GFX_RESULT_SUCCESS;
 }

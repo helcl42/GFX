@@ -56,6 +56,18 @@ GfxResult PresentationComponent::surfaceDestroy(GfxSurface surface) const
     return GFX_RESULT_SUCCESS;
 }
 
+GfxResult PresentationComponent::surfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo) const
+{
+    GfxResult validationResult = validator::validateSurfaceGetInfo(surface, outInfo);
+    if (validationResult != GFX_RESULT_SUCCESS) {
+        return validationResult;
+    }
+
+    auto* surf = converter::toNative<core::Surface>(surface);
+    *outInfo = converter::vkSurfaceCapabilitiesToGfxSurfaceInfo(surf->getCapabilities());
+    return GFX_RESULT_SUCCESS;
+}
+
 GfxResult PresentationComponent::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const
 {
     GfxResult validationResult = validator::validateSurfaceEnumerateSupportedFormats(surface, formatCount);
