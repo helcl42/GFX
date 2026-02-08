@@ -1569,8 +1569,8 @@ typedef enum {
 
 // Common platform window handle struct with union for all windowing systems
 typedef struct GfxWin32Handle {
-    void* hwnd; // HWND - Window handle
     void* hinstance; // HINSTANCE - Application instance
+    void* hwnd; // HWND - Window handle
 } GfxWin32Handle;
 
 typedef struct GfxXlibHandle {
@@ -1862,7 +1862,7 @@ GFX_API uint32_t gfxGetFormatBytesPerPixel(GfxTextureFormat format);
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromXlib(void* display, unsigned long window);
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromWayland(void* display, void* surface);
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromXCB(void* connection, uint32_t window);
-GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromWin32(void* hwnd, void* hinstance);
+GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromWin32(void* hinstance, void* hwnd);
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromEmscripten(const char* canvasSelector);
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromAndroid(void* window);
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromMetal(void* layer);

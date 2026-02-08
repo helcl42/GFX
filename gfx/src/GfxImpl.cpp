@@ -1476,12 +1476,12 @@ GfxPlatformWindowHandle gfxPlatformWindowHandleFromXCB(void* connection, uint32_
     return handle;
 }
 
-GfxPlatformWindowHandle gfxPlatformWindowHandleFromWin32(void* hwnd, void* hinstance)
+GfxPlatformWindowHandle gfxPlatformWindowHandleFromWin32(void* hinstance, void* hwnd)
 {
     GfxPlatformWindowHandle handle = {};
     handle.windowingSystem = GFX_WINDOWING_SYSTEM_WIN32;
-    handle.win32.hwnd = hwnd;
     handle.win32.hinstance = hinstance;
+    handle.win32.hwnd = hwnd;
     return handle;
 }
 

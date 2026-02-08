@@ -143,12 +143,12 @@ TEST(GfxUtilTest, PlatformWindowHandleFromXCB)
 
 TEST(GfxUtilTest, PlatformWindowHandleFromWin32)
 {
-    void* hwnd = (void*)0x1234;
     void* hinstance = (void*)0x5678;
-    GfxPlatformWindowHandle handle = gfxPlatformWindowHandleFromWin32(hwnd, hinstance);
+    void* hwnd = (void*)0x1234;
+    GfxPlatformWindowHandle handle = gfxPlatformWindowHandleFromWin32(hinstance, hwnd);
     EXPECT_EQ(handle.windowingSystem, GFX_WINDOWING_SYSTEM_WIN32);
-    EXPECT_EQ(handle.win32.hwnd, hwnd);
     EXPECT_EQ(handle.win32.hinstance, hinstance);
+    EXPECT_EQ(handle.win32.hwnd, hwnd);
 }
 
 TEST(GfxUtilTest, PlatformWindowHandleFromEmscripten)

@@ -709,8 +709,8 @@ enum class WindowingSystem {
 // Common platform window handle struct with union for all windowing systems
 struct PlatformWindowHandle {
     struct Win32Handle {
-        void* hwnd = nullptr; // HWND - Window handle
         void* hinstance; // HINSTANCE - Application instance
+        void* hwnd = nullptr; // HWND - Window handle
     };
     struct XlibHandle {
         void* display; // Display*

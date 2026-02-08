@@ -284,7 +284,7 @@ GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
 #if defined(__EMSCRIPTEN__)
     handle = gfxPlatformWindowHandleFromEmscripten("#canvas");
 #elif defined(_WIN32)
-    handle = gfxPlatformWindowHandleFromWin32(glfwGetWin32Window(window), GetModuleHandle(NULL));
+    handle = gfxPlatformWindowHandleFromWin32(GetModuleHandle(NULL), glfwGetWin32Window(window));
 #elif defined(__linux__)
     // handle = gfxPlatformWindowHandleFromXlib(glfwGetX11Display(), glfwGetX11Window(window));
     handle = gfxPlatformWindowHandleFromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
