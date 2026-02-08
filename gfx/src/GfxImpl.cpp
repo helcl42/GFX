@@ -5,7 +5,67 @@
 
 #include <gfx/gfx.h>
 
-#include <vector>
+// ============================================================================
+// Common Macros for Boilerplate Code
+// ============================================================================
+
+// Macro to generate device create functions
+#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
+    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
+    {                                                                                                                                \
+        if (!device || !descriptor || !out##TypeName) {                                                                              \
+            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
+        }                                                                                                                            \
+        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
+        if (!backend) {                                                                                                              \
+            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
+        }                                                                                                                            \
+        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
+        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
+        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
+        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
+            return result;                                                                                                           \
+        }                                                                                                                            \
+        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
+        return GFX_RESULT_SUCCESS;                                                                                                   \
+    }
+
+// Macro for destroy functions
+#define DESTROY_FUNC(TypeName, typeName)                                              \
+    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
+    {                                                                                 \
+        if (!typeName) {                                                              \
+            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
+        }                                                                             \
+        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
+        if (!backend) {                                                               \
+            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
+        }                                                                             \
+        GfxResult result = backend->typeName##Destroy(typeName);                      \
+        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
+        return result;                                                                \
+    }
+
+// Macro to generate device import functions
+#define DEVICE_IMPORT_FUNC(TypeName)                                                                                                       \
+    GfxResult gfxDeviceImport##TypeName(GfxDevice device, const Gfx##TypeName##ImportDescriptor* descriptor, Gfx##TypeName* out##TypeName) \
+    {                                                                                                                                      \
+        if (!device || !descriptor || !out##TypeName) {                                                                                    \
+            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                      \
+        }                                                                                                                                  \
+        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                        \
+        if (!backend) {                                                                                                                    \
+            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                             \
+        }                                                                                                                                  \
+        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                          \
+        Gfx##TypeName native##TypeName = nullptr;                                                                                          \
+        GfxResult result = backend->deviceImport##TypeName(device, descriptor, &native##TypeName);                                         \
+        if (result != GFX_RESULT_SUCCESS) {                                                                                                \
+            return result;                                                                                                                 \
+        }                                                                                                                                  \
+        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                                     \
+        return GFX_RESULT_SUCCESS;                                                                                                         \
+    }
 
 // ============================================================================
 // C API Implementation
@@ -497,50 +557,9 @@ GfxResult gfxQueueWaitIdle(GfxQueue queue)
 // Surface Functions
 // ============================================================================
 
-// Macro to generate device create functions
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(Surface, Surface)
 
-#undef DEVICE_CREATE_FUNC
-
-// Macro for destroy functions
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(Surface, surface)
-
-#undef DESTROY_FUNC
 
 GfxResult gfxSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats)
 {
@@ -570,48 +589,9 @@ GfxResult gfxSurfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t*
 // Swapchain Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(Swapchain, Swapchain)
 
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(Swapchain, swapchain)
-
-#undef DESTROY_FUNC
 
 GfxResult gfxSwapchainGetInfo(GfxSwapchain swapchain, GfxSwapchainInfo* outInfo)
 {
@@ -685,73 +665,11 @@ GfxResult gfxSwapchainPresent(GfxSwapchain swapchain, const GfxPresentDescriptor
 // Buffer Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(Buffer, Buffer)
-
-#undef DEVICE_CREATE_FUNC
-
-// Macro to generate device import functions
-#define DEVICE_IMPORT_FUNC(TypeName)                                                                                                       \
-    GfxResult gfxDeviceImport##TypeName(GfxDevice device, const Gfx##TypeName##ImportDescriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                      \
-        if (!device || !descriptor || !out##TypeName) {                                                                                    \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                      \
-        }                                                                                                                                  \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                        \
-        if (!backend) {                                                                                                                    \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                             \
-        }                                                                                                                                  \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                          \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                          \
-        GfxResult result = backend->deviceImport##TypeName(device, descriptor, &native##TypeName);                                         \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                                \
-            return result;                                                                                                                 \
-        }                                                                                                                                  \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                                     \
-        return GFX_RESULT_SUCCESS;                                                                                                         \
-    }
-
-DEVICE_IMPORT_FUNC(Buffer)
-
-#undef DEVICE_IMPORT_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
 
 DESTROY_FUNC(Buffer, buffer)
 
-#undef DESTROY_FUNC
+DEVICE_IMPORT_FUNC(Buffer)
 
 GfxResult gfxBufferGetInfo(GfxBuffer buffer, GfxBufferInfo* outInfo)
 {
@@ -829,72 +747,11 @@ GfxResult gfxBufferInvalidateMappedRange(GfxBuffer buffer, uint64_t offset, uint
 // Texture Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(Texture, Texture)
-
-#undef DEVICE_CREATE_FUNC
-
-#define DEVICE_IMPORT_FUNC(TypeName)                                                                                                       \
-    GfxResult gfxDeviceImport##TypeName(GfxDevice device, const Gfx##TypeName##ImportDescriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                      \
-        if (!device || !descriptor || !out##TypeName) {                                                                                    \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                      \
-        }                                                                                                                                  \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                        \
-        if (!backend) {                                                                                                                    \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                             \
-        }                                                                                                                                  \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                          \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                          \
-        GfxResult result = backend->deviceImport##TypeName(device, descriptor, &native##TypeName);                                         \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                                \
-            return result;                                                                                                                 \
-        }                                                                                                                                  \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                                     \
-        return GFX_RESULT_SUCCESS;                                                                                                         \
-    }
-
-DEVICE_IMPORT_FUNC(Texture)
-
-#undef DEVICE_IMPORT_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
 
 DESTROY_FUNC(Texture, texture)
 
-#undef DESTROY_FUNC
+DEVICE_IMPORT_FUNC(Texture)
 
 GfxResult gfxTextureGetInfo(GfxTexture texture, GfxTextureInfo* outInfo)
 {
@@ -932,6 +789,10 @@ GfxResult gfxTextureGetLayout(GfxTexture texture, GfxTextureLayout* outLayout)
     return backend->textureGetLayout(texture, outLayout);
 }
 
+// ============================================================================
+// TextureView Functions
+// ============================================================================
+
 GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescriptor* descriptor, GfxTextureView* outView)
 {
     if (!texture || !outView) {
@@ -953,455 +814,81 @@ GfxResult gfxTextureCreateView(GfxTexture texture, const GfxTextureViewDescripto
     return GFX_RESULT_SUCCESS;
 }
 
-// ============================================================================
-// TextureView Functions
-// ============================================================================
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(TextureView, textureView)
-
-#undef DESTROY_FUNC
 
 // ============================================================================
 // Sampler Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(Sampler, Sampler)
 
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(Sampler, sampler)
-
-#undef DESTROY_FUNC
 
 // ============================================================================
 // Shader Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(Shader, Shader)
 
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(Shader, shader)
-
-#undef DESTROY_FUNC
 
 // ============================================================================
 // BindGroupLayout Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(BindGroupLayout, BindGroupLayout)
 
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(BindGroupLayout, bindGroupLayout)
-
-#undef DESTROY_FUNC
 
 // ============================================================================
 // BindGroup Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(BindGroup, BindGroup)
 
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(BindGroup, bindGroup)
-
-#undef DESTROY_FUNC
 
 // ============================================================================
 // RenderPipeline Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(RenderPipeline, RenderPipeline)
 
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(RenderPipeline, renderPipeline)
-
-#undef DESTROY_FUNC
 
 // ============================================================================
 // ComputePipeline Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(ComputePipeline, ComputePipeline)
 
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(ComputePipeline, computePipeline)
-
-#undef DESTROY_FUNC
 
 // ============================================================================
 // RenderPass Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(RenderPass, RenderPass)
 
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(RenderPass, renderPass)
-
-#undef DESTROY_FUNC
 
 // ============================================================================
 // Framebuffer Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(Framebuffer, Framebuffer)
 
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(Framebuffer, framebuffer)
-
-#undef DESTROY_FUNC
 
 // ============================================================================
 // CommandEncoder Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(CommandEncoder, CommandEncoder)
-
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
 
 DESTROY_FUNC(CommandEncoder, commandEncoder)
 
-#undef DESTROY_FUNC
-
-GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder,
-    const GfxRenderPassBeginDescriptor* beginDescriptor,
-    GfxRenderPassEncoder* outEncoder)
+GfxResult gfxCommandEncoderBeginRenderPass(GfxCommandEncoder encoder, const GfxRenderPassBeginDescriptor* beginDescriptor, GfxRenderPassEncoder* outEncoder)
 {
     if (!encoder || !outEncoder) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1817,48 +1304,9 @@ GfxResult gfxComputePassEncoderEnd(GfxComputePassEncoder encoder)
 // Fence Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(Fence, Fence)
 
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(Fence, fence)
-
-#undef DESTROY_FUNC
 
 GfxResult gfxFenceGetStatus(GfxFence fence, bool* isSignaled)
 {
@@ -1900,48 +1348,9 @@ GfxResult gfxFenceReset(GfxFence fence)
 // Semaphore Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(Semaphore, Semaphore)
 
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(Semaphore, semaphore)
-
-#undef DESTROY_FUNC
 
 GfxResult gfxSemaphoreGetType(GfxSemaphore semaphore, GfxSemaphoreType* outType)
 {
@@ -1995,48 +1404,9 @@ GfxResult gfxSemaphoreGetValue(GfxSemaphore semaphore, uint64_t* outValue)
 // QuerySet Functions
 // ============================================================================
 
-#define DEVICE_CREATE_FUNC(TypeName, funcName)                                                                                       \
-    GfxResult gfxDeviceCreate##funcName(GfxDevice device, const Gfx##funcName##Descriptor* descriptor, Gfx##TypeName* out##TypeName) \
-    {                                                                                                                                \
-        if (!device || !descriptor || !out##TypeName) {                                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                                                                \
-        }                                                                                                                            \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(device);                                                  \
-        if (!backend) {                                                                                                              \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                                                                       \
-        }                                                                                                                            \
-        GfxBackend backendType = gfx::backend::BackendManager::instance().getBackendType(device);                                    \
-        Gfx##TypeName native##TypeName = nullptr;                                                                                    \
-        GfxResult result = backend->deviceCreate##funcName(device, descriptor, &native##TypeName);                                   \
-        if (result != GFX_RESULT_SUCCESS) {                                                                                          \
-            return result;                                                                                                           \
-        }                                                                                                                            \
-        *out##TypeName = gfx::backend::BackendManager::instance().wrap(backendType, native##TypeName);                               \
-        return GFX_RESULT_SUCCESS;                                                                                                   \
-    }
-
 DEVICE_CREATE_FUNC(QuerySet, QuerySet)
 
-#undef DEVICE_CREATE_FUNC
-
-#define DESTROY_FUNC(TypeName, typeName)                                              \
-    GfxResult gfx##TypeName##Destroy(Gfx##TypeName typeName)                          \
-    {                                                                                 \
-        if (!typeName) {                                                              \
-            return GFX_RESULT_ERROR_INVALID_ARGUMENT;                                 \
-        }                                                                             \
-        auto backend = gfx::backend::BackendManager::instance().getBackend(typeName); \
-        if (!backend) {                                                               \
-            return GFX_RESULT_ERROR_NOT_FOUND;                                        \
-        }                                                                             \
-        GfxResult result = backend->typeName##Destroy(typeName);                      \
-        gfx::backend::BackendManager::instance().unwrap(typeName);                    \
-        return result;                                                                \
-    }
-
 DESTROY_FUNC(QuerySet, querySet)
-
-#undef DESTROY_FUNC
 
 // ============================================================================
 // Utility Functions
