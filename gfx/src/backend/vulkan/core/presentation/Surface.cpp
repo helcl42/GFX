@@ -38,7 +38,7 @@ namespace {
 
         VkAndroidSurfaceCreateInfoKHR vkCreateInfo{};
         vkCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
-        vkCreateInfo.window = windowHandle.handle.android.window;
+        vkCreateInfo.window = static_cast<ANativeWindow*>(windowHandle.handle.android.window);
 
         VkSurfaceKHR surface;
         if (vkCreateAndroidSurfaceKHR(instance, &vkCreateInfo, nullptr, &surface) != VK_SUCCESS) {
