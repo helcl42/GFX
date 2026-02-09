@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(GfxWrapper VERSION 1.0.0 LANGUAGES C CXX)
+project(Gfx VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
@@ -156,7 +156,7 @@ if(BUILD_WEBGPU_BACKEND)
         message(STATUS "Adding Dawn from: ${DAWN_ROOT}")
         
         # Save our BUILD_SHARED_LIBS setting
-        set(GFXWRAPPER_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+        set(GFX_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
         
         # Dawn build options - Dawn requires BUILD_SHARED_LIBS=OFF
         set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
@@ -199,7 +199,7 @@ if(BUILD_WEBGPU_BACKEND)
         add_subdirectory(${DAWN_ROOT} ${CMAKE_BINARY_DIR}/dawn EXCLUDE_FROM_ALL)
         
         # Restore our BUILD_SHARED_LIBS setting
-        set(BUILD_SHARED_LIBS ${GFXWRAPPER_BUILD_SHARED_LIBS} CACHE BOOL "" FORCE)
+        set(BUILD_SHARED_LIBS ${GFX_BUILD_SHARED_LIBS} CACHE BOOL "" FORCE)
         
         set(WEBGPU_INCLUDE_DIR "${DAWN_ROOT}/include")
         set(WEBGPU_FOUND TRUE)
@@ -1020,7 +1020,7 @@ endif()
 
 # Print configuration summary
 message(STATUS "")
-message(STATUS "GfxWrapper Configuration Summary:")
+message(STATUS "Gfx Configuration Summary:")
 message(STATUS "  Library type: ${BUILD_SHARED_LIBS}")
 if(BUILD_SHARED_LIBS)
     message(STATUS "  Building SHARED libraries")

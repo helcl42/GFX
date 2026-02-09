@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "=== Building GfxWrapper for WebAssembly ==="
+echo "=== Building Gfx for WebAssembly ==="
 echo ""
 
 # Check if emcmake is available

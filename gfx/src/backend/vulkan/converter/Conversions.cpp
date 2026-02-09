@@ -1298,7 +1298,7 @@ core::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInstanceDesc
     core::InstanceCreateInfo createInfo{};
 
     if (descriptor) {
-        createInfo.applicationName = descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
+        createInfo.applicationName = descriptor->applicationName ? descriptor->applicationName : "Gfx Application";
         createInfo.applicationVersion = descriptor->applicationVersion;
 
         // Convert enabled extensions from const char** to std::vector<std::string>
@@ -1309,7 +1309,7 @@ core::InstanceCreateInfo gfxDescriptorToInstanceCreateInfo(const GfxInstanceDesc
             }
         }
     } else {
-        createInfo.applicationName = "GfxWrapper Application";
+        createInfo.applicationName = "Gfx Application";
         createInfo.applicationVersion = 1;
     }
 

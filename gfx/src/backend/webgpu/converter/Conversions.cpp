@@ -226,7 +226,7 @@ core::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstan
     core::InstanceCreateInfo createInfo{};
 
     if (descriptor) {
-        createInfo.applicationName = descriptor->applicationName ? descriptor->applicationName : "GfxWrapper Application";
+        createInfo.applicationName = descriptor->applicationName ? descriptor->applicationName : "Gfx Application";
         createInfo.applicationVersion = descriptor->applicationVersion;
 
         // Convert enabled extensions from const char** to std::vector<std::string>
@@ -237,7 +237,7 @@ core::InstanceCreateInfo gfxDescriptorToWebGPUInstanceCreateInfo(const GfxInstan
             }
         }
     } else {
-        createInfo.applicationName = "GfxWrapper Application";
+        createInfo.applicationName = "Gfx Application";
         createInfo.applicationVersion = 1;
     }
 

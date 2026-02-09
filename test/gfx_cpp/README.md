@@ -1,4 +1,4 @@
-# GfxWrapper C++ API Tests
+# Gfx C++ API Tests
 
 Tests for the C++ API using Google Test, organized into separate test targets.
 
