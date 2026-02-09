@@ -733,8 +733,8 @@ bool CubeApp::createRenderingResources()
         if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
             shaderSourceType = gfx::ShaderSourceType::SPIRV;
             std::cout << "Loading SPIR-V shaders..." << std::endl;
-            auto vertexSpirv = loadBinaryFile("cube.vert.spv");
-            auto fragmentSpirv = loadBinaryFile("cube.frag.spv");
+            auto vertexSpirv = loadBinaryFile("shaders/cube.vert.spv");
+            auto fragmentSpirv = loadBinaryFile("shaders/cube.frag.spv");
             if (vertexSpirv.empty() || fragmentSpirv.empty()) {
                 std::cerr << "Failed to load SPIR-V shader files" << std::endl;
                 return false;

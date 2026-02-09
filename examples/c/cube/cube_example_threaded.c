@@ -936,8 +936,8 @@ static bool createShaders(CubeApp* app)
         sourceType = GFX_SHADER_SOURCE_SPIRV;
         // Load SPIR-V shaders for Vulkan
         printf("Loading SPIR-V shaders...\n");
-        vertexShaderCode = loadBinaryFile("cube.vert.spv", &vertexShaderSize);
-        fragmentShaderCode = loadBinaryFile("cube.frag.spv", &fragmentShaderSize);
+        vertexShaderCode = loadBinaryFile("shaders/cube.vert.spv", &vertexShaderSize);
+        fragmentShaderCode = loadBinaryFile("shaders/cube.frag.spv", &fragmentShaderSize);
         if (!vertexShaderCode || !fragmentShaderCode) {
             fprintf(stderr, "Failed to load SPIR-V shaders\n");
             return false;

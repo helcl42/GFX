@@ -332,7 +332,7 @@ bool ComputeApp::createComputeResources()
         if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
             shaderSourceType = gfx::ShaderSourceType::SPIRV;
             std::cout << "Loading SPIR-V compute shader..." << std::endl;
-            computeShaderCode = loadBinaryFile("generate.comp.spv");
+            computeShaderCode = loadBinaryFile("shaders/generate.comp.spv");
         } else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
             shaderSourceType = gfx::ShaderSourceType::WGSL;
             std::cout << "Loading WGSL compute shader..." << std::endl;
@@ -501,8 +501,8 @@ bool ComputeApp::createRenderResources()
         if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
             shaderSourceType = gfx::ShaderSourceType::SPIRV;
             std::cout << "Loading SPIR-V shaders..." << std::endl;
-            vertexShaderCode = loadBinaryFile("fullscreen.vert.spv");
-            fragmentShaderCode = loadBinaryFile("postprocess.frag.spv");
+            vertexShaderCode = loadBinaryFile("shaders/fullscreen.vert.spv");
+            fragmentShaderCode = loadBinaryFile("shaders/postprocess.frag.spv");
         } else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
             shaderSourceType = gfx::ShaderSourceType::WGSL;
             std::cout << "Loading WGSL shaders..." << std::endl;

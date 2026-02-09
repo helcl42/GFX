@@ -17,6 +17,9 @@
 #include <GLFW/glfw3native.h>
 #endif
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include <float.h>
 #include <math.h>
 #include <stdbool.h>
@@ -72,6 +75,7 @@ static void logCallback(GfxLogLevel level, const char* message, void* userData)
 typedef struct {
     float position[3];
     float color[3];
+    float texCoord[2];
 } Vertex;
 
 // Uniform buffer structure for transformations
@@ -102,6 +106,8 @@ typedef struct {
     GfxRenderPass renderPass;
     GfxRenderPipeline renderPipeline;
     GfxBindGroupLayout uniformBindGroupLayout;
+    GfxBindGroupLayout textureBindGroupLayout;
+    GfxBindGroup textureBindGroup;
 
     // Depth buffer
     GfxTexture depthTexture;
@@ -118,7 +124,10 @@ typedef struct {
     uint32_t windowHeight;
 
     // Per-frame resources (for frames in flight)
-    GfxBuffer sharedUniformBuffer; // Single buffer for all frames
+    GfxBuffer sharedUniformBuffer;
+    GfxTexture cubeTexture;
+    GfxTextureView cubeTextureView;
+    GfxSampler cubeSampler; // Single buffer for all frames
     size_t uniformAlignedSize; // Aligned size per frame
     GfxBindGroup* uniformBindGroups; // Dynamic: [framesInFlightCount * CUBE_COUNT]
     GfxCommandEncoder* commandEncoders; // Dynamic: [framesInFlightCount]
@@ -128,6 +137,12 @@ typedef struct {
     GfxSemaphore* renderFinishedSemaphores; // Dynamic: [framesInFlightCount]
     GfxFence* inFlightFences; // Dynamic: [framesInFlightCount]
     uint32_t currentFrame;
+
+    // Async texture upload resources
+    GfxBuffer textureStagingBuffer;
+    GfxCommandEncoder textureUploadEncoder;
+    GfxFence textureUploadFence;
+    bool textureUploadComplete;
 
     // Animation state
     float rotationAngleX;
@@ -150,6 +165,8 @@ static bool initWindow(CubeApp* app);
 static bool initializeGraphics(CubeApp* app);
 static bool createSyncObjects(CubeApp* app);
 static bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height);
+static bool createRenderPass(CubeApp* app);
+static bool loadTexture(CubeApp* app);
 static void cleanupSizeDependentResources(CubeApp* app);
 static bool createRenderingResources(CubeApp* app);
 static void cleanupRenderingResources(CubeApp* app);
@@ -670,6 +687,26 @@ void cleanupRenderingResources(CubeApp* app)
         gfxShaderDestroy(app->vertexShader);
         app->vertexShader = NULL;
     }
+    if (app->textureBindGroup) {
+        gfxBindGroupDestroy(app->textureBindGroup);
+        app->textureBindGroup = NULL;
+    }
+    if (app->textureBindGroupLayout) {
+        gfxBindGroupLayoutDestroy(app->textureBindGroupLayout);
+        app->textureBindGroupLayout = NULL;
+    }
+    if (app->cubeSampler) {
+        gfxSamplerDestroy(app->cubeSampler);
+        app->cubeSampler = NULL;
+    }
+    if (app->cubeTextureView) {
+        gfxTextureViewDestroy(app->cubeTextureView);
+        app->cubeTextureView = NULL;
+    }
+    if (app->cubeTexture) {
+        gfxTextureDestroy(app->cubeTexture);
+        app->cubeTexture = NULL;
+    }
     if (app->uniformBindGroupLayout) {
         gfxBindGroupLayoutDestroy(app->uniformBindGroupLayout);
         app->uniformBindGroupLayout = NULL;
@@ -699,36 +736,59 @@ void cleanupRenderingResources(CubeApp* app)
 
 static bool createGeometry(CubeApp* app)
 {
-    // Create cube vertices (8 vertices for a cube)
+    // Create cube vertices (24 vertices - 4 per face for proper UV mapping)
     Vertex vertices[] = {
-        // Front face
-        { { -1.0f, -1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } }, // 0: Bottom-left
-        { { 1.0f, -1.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } }, // 1: Bottom-right
-        { { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 1.0f } }, // 2: Top-right
-        { { -1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } }, // 3: Top-left
+        // Front face (Z+)
+        { { -1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 0
+        { { 1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 1
+        { { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 2
+        { { -1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // 3
 
-        // Back face
-        { { -1.0f, -1.0f, -1.0f }, { 1.0f, 0.0f, 1.0f } }, // 4: Bottom-left
-        { { 1.0f, -1.0f, -1.0f }, { 0.0f, 1.0f, 1.0f } }, // 5: Bottom-right
-        { { 1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f } }, // 6: Top-right
-        { { -1.0f, 1.0f, -1.0f }, { 0.5f, 0.5f, 0.5f } } // 7: Top-left
+        // Back face (Z-)
+        { { 1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 4
+        { { -1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 5
+        { { -1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 6
+        { { 1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // 7
+
+        // Left face (X-)
+        { { -1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 8
+        { { -1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 9
+        { { -1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 10
+        { { -1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // 11
+
+        // Right face (X+)
+        { { 1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 12
+        { { 1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 13
+        { { 1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 14
+        { { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // 15
+
+        // Top face (Y+)
+        { { -1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 16
+        { { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 17
+        { { 1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 18
+        { { -1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // 19
+
+        // Bottom face (Y-)
+        { { -1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 20
+        { { 1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 21
+        { { 1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 22
+        { { -1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } } // 23
     };
 
     // Create cube indices (36 indices for 12 triangles)
-    // All faces wound clockwise when viewed from outside
     uint16_t indices[] = {
-        // Front face (Z+) - vertices 0,1,2,3
+        // Front face (Z+)
         0, 1, 2, 2, 3, 0,
-        // Back face (Z-) - vertices 4,5,6,7 - FIXED
-        5, 4, 7, 7, 6, 5,
-        // Left face (X-) - vertices 4,0,3,7
-        4, 0, 3, 3, 7, 4,
-        // Right face (X+) - vertices 1,5,6,2
-        1, 5, 6, 6, 2, 1,
-        // Top face (Y+) - vertices 3,2,6,7
-        3, 2, 6, 6, 7, 3,
-        // Bottom face (Y-) - vertices 4,5,1,0
-        4, 5, 1, 1, 0, 4
+        // Back face (Z-)
+        4, 5, 6, 6, 7, 4,
+        // Left face (X-)
+        8, 9, 10, 10, 11, 8,
+        // Right face (X+)
+        12, 13, 14, 14, 15, 12,
+        // Top face (Y+)
+        16, 17, 18, 18, 19, 16,
+        // Bottom face (Y-)
+        20, 21, 22, 22, 23, 20
     };
     GfxBufferDescriptor vertexBufferDesc = {
         .label = "Cube Vertices",
@@ -855,6 +915,53 @@ static bool createBindGroup(CubeApp* app)
         }
     }
 
+    // Create texture bind group layout
+    GfxBindGroupLayoutEntry textureLayoutEntries[] = {
+        { .binding = 0,
+            .visibility = GFX_SHADER_STAGE_FRAGMENT,
+            .type = GFX_BINDING_TYPE_TEXTURE,
+            .texture = {
+                .sampleType = GFX_TEXTURE_SAMPLE_TYPE_FLOAT,
+                .viewDimension = GFX_TEXTURE_VIEW_TYPE_2D } },
+        { .binding = 1, .visibility = GFX_SHADER_STAGE_FRAGMENT, .type = GFX_BINDING_TYPE_SAMPLER, .sampler = {
+                                                                                                       // No type field needed for sampler binding
+                                                                                                   } }
+    };
+
+    GfxBindGroupLayoutDescriptor textureLayoutDesc = {
+        .label = "Texture Bind Group Layout",
+        .entries = textureLayoutEntries,
+        .entryCount = 2
+    };
+
+    if (gfxDeviceCreateBindGroupLayout(app->device, &textureLayoutDesc, &app->textureBindGroupLayout) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create texture bind group layout\n");
+        return false;
+    }
+
+    // Create texture bind group
+    GfxBindGroupEntry textureEntries[] = {
+        { .binding = 0,
+            .type = GFX_BIND_GROUP_ENTRY_TYPE_TEXTURE_VIEW,
+            .resource = { .textureView = app->cubeTextureView } },
+        { .binding = 1,
+            .type = GFX_BIND_GROUP_ENTRY_TYPE_SAMPLER,
+            .resource = { .sampler = app->cubeSampler } }
+    };
+
+    GfxBindGroupDescriptor textureBindGroupDesc = {};
+    textureBindGroupDesc.sType = GFX_STRUCTURE_TYPE_BIND_GROUP_DESCRIPTOR;
+    textureBindGroupDesc.pNext = NULL;
+    textureBindGroupDesc.label = "Texture Bind Group";
+    textureBindGroupDesc.layout = app->textureBindGroupLayout;
+    textureBindGroupDesc.entries = textureEntries;
+    textureBindGroupDesc.entryCount = 2;
+
+    if (gfxDeviceCreateBindGroup(app->device, &textureBindGroupDesc, &app->textureBindGroup) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create texture bind group\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -873,8 +980,8 @@ static bool createShaders(CubeApp* app)
     if (gfxDeviceSupportsShaderFormat(app->device, GFX_SHADER_SOURCE_SPIRV, &formatSupported) == GFX_RESULT_SUCCESS && formatSupported) {
         sourceType = GFX_SHADER_SOURCE_SPIRV;
         printf("Loading SPIR-V shaders...\n");
-        vertexShaderCode = loadBinaryFile("cube_textured.vert.spv", &vertexShaderSize);
-        fragmentShaderCode = loadBinaryFile("cube_textured.frag.spv", &fragmentShaderSize);
+        vertexShaderCode = loadBinaryFile("shaders/cube_textured.vert.spv", &vertexShaderSize);
+        fragmentShaderCode = loadBinaryFile("shaders/cube_textured.frag.spv", &fragmentShaderSize);
         if (vertexShaderCode && fragmentShaderCode) {
             printf("Successfully loaded SPIR-V shaders (vertex: %zu bytes, fragment: %zu bytes)\n",
                 vertexShaderSize, fragmentShaderSize);
@@ -1019,6 +1126,10 @@ bool createRenderingResources(CubeApp* app)
         return false;
     }
 
+    if (!loadTexture(app)) {
+        return false;
+    }
+
     if (!createUniformBuffer(app)) {
         return false;
     }
@@ -1028,10 +1139,6 @@ bool createRenderingResources(CubeApp* app)
     }
 
     if (!createShaders(app)) {
-        return false;
-    }
-
-    if (!createRenderPass(app)) {
         return false;
     }
 
@@ -1051,7 +1158,10 @@ bool createRenderPipeline(CubeApp* app)
             .shaderLocation = 0 },
         { .format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT,
             .offset = offsetof(Vertex, color),
-            .shaderLocation = 1 }
+            .shaderLocation = 1 },
+        { .format = GFX_TEXTURE_FORMAT_R32G32_FLOAT,
+            .offset = offsetof(Vertex, texCoord),
+            .shaderLocation = 2 }
     };
 
     // Define vertex buffer layout
@@ -1130,7 +1240,7 @@ bool createRenderPipeline(CubeApp* app)
     pipelineDesc.sampleCount = MSAA_SAMPLE_COUNT;
     pipelineDesc.renderPass = app->renderPass;
     pipelineDesc.bindGroupLayouts = bindGroupLayouts;
-    pipelineDesc.bindGroupLayoutCount = 1;
+    pipelineDesc.bindGroupLayoutCount = 2;
 
     if (gfxDeviceCreateRenderPipeline(app->device, &pipelineDesc, &app->renderPipeline) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create render pipeline\n");
@@ -1203,6 +1313,27 @@ void update(CubeApp* app, float deltaTime)
 
 void render(CubeApp* app)
 {
+    // Check if async texture upload is complete
+    if (!app->textureUploadComplete) {
+        bool isReady;
+        gfxFenceGetStatus(app->textureUploadFence, &isReady);
+        if (isReady) {
+            printf("Texture upload completed asynchronously!\n");
+            app->textureUploadComplete = true;
+
+            // Clean up resources now that upload is done
+            gfxBufferDestroy(app->textureStagingBuffer);
+            app->textureStagingBuffer = NULL;
+
+            // Safe to destroy encoder now that GPU is done with it
+            gfxCommandEncoderDestroy(app->textureUploadEncoder);
+            app->textureUploadEncoder = NULL;
+        } else {
+            // Texture not ready yet - render clear color only
+            printf("Waiting for async texture upload...\n");
+        }
+    }
+
     // Wait for previous frame to finish
     gfxFenceWait(app->inFlightFences[app->currentFrame], GFX_TIMEOUT_INFINITE);
     gfxFenceReset(app->inFlightFences[app->currentFrame]);
@@ -1248,36 +1379,39 @@ void render(CubeApp* app)
         gfxRenderPassEncoderSetViewport(renderPass, &viewport);
         gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
 
-        // Set vertex buffer
-        GfxBufferInfo vertexBufferInfo;
-        if (gfxBufferGetInfo(app->vertexBuffer, &vertexBufferInfo) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to get vertex buffer info\n");
-            return;
-        }
-        gfxRenderPassEncoderSetVertexBuffer(renderPass, 0, app->vertexBuffer, 0,
-            vertexBufferInfo.size);
+        // Only draw if texture is loaded
+        if (app->textureUploadComplete) {
+            // Set vertex buffer
+            GfxBufferInfo vertexBufferInfo;
+            if (gfxBufferGetInfo(app->vertexBuffer, &vertexBufferInfo) != GFX_RESULT_SUCCESS) {
+                fprintf(stderr, "Failed to get vertex buffer info\n");
+                return;
+            }
+            gfxRenderPassEncoderSetVertexBuffer(renderPass, 0, app->vertexBuffer, 0,
+                vertexBufferInfo.size);
 
-        // Set index buffer
-        GfxBufferInfo indexBufferInfo;
-        if (gfxBufferGetInfo(app->indexBuffer, &indexBufferInfo) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to get index buffer info\n");
-            return;
-        }
-        gfxRenderPassEncoderSetIndexBuffer(renderPass, app->indexBuffer,
-            GFX_INDEX_FORMAT_UINT16, 0,
-            indexBufferInfo.size);
+            // Set index buffer
+            GfxBufferInfo indexBufferInfo;
+            if (gfxBufferGetInfo(app->indexBuffer, &indexBufferInfo) != GFX_RESULT_SUCCESS) {
+                fprintf(stderr, "Failed to get index buffer info\n");
+                return;
+            }
+            gfxRenderPassEncoderSetIndexBuffer(renderPass, app->indexBuffer,
+                GFX_INDEX_FORMAT_UINT16, 0,
+                indexBufferInfo.size);
 
-        // Bind texture (shared by all cubes)
-        gfxRenderPassEncoderSetBindGroup(renderPass, 1, app->textureBindGroup, NULL, 0);
+            // Bind texture (shared by all cubes)
+            gfxRenderPassEncoderSetBindGroup(renderPass, 1, app->textureBindGroup, NULL, 0);
 
-        // Draw CUBE_COUNT cubes at different positions
-        for (int i = 0; i < CUBE_COUNT; ++i) {
-            // Bind the specific cube's bind group (no dynamic offsets)
-            uint32_t bindGroupIdx = app->currentFrame * CUBE_COUNT + i;
-            gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->uniformBindGroups[bindGroupIdx], NULL, 0);
+            // Draw CUBE_COUNT cubes at different positions
+            for (int i = 0; i < CUBE_COUNT; ++i) {
+                // Bind the specific cube's bind group (no dynamic offsets)
+                uint32_t bindGroupIdx = app->currentFrame * CUBE_COUNT + i;
+                gfxRenderPassEncoderSetBindGroup(renderPass, 0, app->uniformBindGroups[bindGroupIdx], NULL, 0);
 
-            // Draw indexed (36 indices for the cube)
-            gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
+                // Draw indexed (36 indices for the cube)
+                gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
+            }
         }
 
         // End render pass
@@ -1328,6 +1462,29 @@ void cleanup(CubeApp* app)
     // Wait for device to finish all GPU work before cleanup
     if (app->device) {
         gfxDeviceWaitIdle(app->device);
+    }
+
+    // If async texture upload hasn't completed yet, clean it up now
+    if (!app->textureUploadComplete && app->textureUploadFence) {
+        printf("Waiting for texture upload to complete before cleanup...\n");
+        gfxFenceWait(app->textureUploadFence, GFX_TIMEOUT_INFINITE);
+
+        if (app->textureStagingBuffer) {
+            gfxBufferDestroy(app->textureStagingBuffer);
+            app->textureStagingBuffer = NULL;
+        }
+        if (app->textureUploadEncoder) {
+            gfxCommandEncoderDestroy(app->textureUploadEncoder);
+            app->textureUploadEncoder = NULL;
+        }
+        app->textureUploadComplete = true;
+    }
+
+    // Wait for all in-flight frames to complete
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+        if (app->inFlightFences[i]) {
+            gfxFenceWait(app->inFlightFences[i], GFX_TIMEOUT_INFINITE);
+        }
     }
 
     // Clean up size-dependent resources
@@ -1396,6 +1553,19 @@ void cleanup(CubeApp* app)
     }
     if (app->depthTexture) {
         gfxTextureDestroy(app->depthTexture);
+    }
+
+    // Clean up async texture upload resources
+    if (app->textureUploadFence) {
+        gfxFenceDestroy(app->textureUploadFence);
+    }
+    // Staging buffer and encoder are cleaned up after upload completes in render()
+    // but if app exits before completion, clean them here
+    if (app->textureStagingBuffer) {
+        gfxBufferDestroy(app->textureStagingBuffer);
+    }
+    if (app->textureUploadEncoder) {
+        gfxCommandEncoderDestroy(app->textureUploadEncoder);
     }
 
     // Free dynamically allocated arrays
@@ -1819,4 +1989,182 @@ int main(void)
 #endif
 
     return 0;
+}
+
+static bool loadTexture(CubeApp* app)
+{
+    const char* texturePath = "textures/vulkan.png";
+
+    // Load image with stb_image
+    int width, height, channels;
+    stbi_set_flip_vertically_on_load(1);
+    unsigned char* pixels = stbi_load(texturePath, &width, &height, &channels, STBI_rgb_alpha);
+
+    if (!pixels) {
+        fprintf(stderr, "Failed to load texture: %s\n", texturePath);
+        return false;
+    }
+
+    // Calculate mip levels (log2(max(width, height)) + 1)
+    uint32_t maxDim = width > height ? width : height;
+    uint32_t mipLevels = 1;
+    while (maxDim > 1) {
+        maxDim >>= 1;
+        mipLevels++;
+    }
+
+    printf("Creating texture with %u mip levels (%dx%d) - ASYNC UPLOAD\n", mipLevels, width, height);
+
+    // Create texture with mipmaps
+    GfxTextureDescriptor textureDesc = {};
+    textureDesc.sType = GFX_STRUCTURE_TYPE_TEXTURE_DESCRIPTOR;
+    textureDesc.pNext = NULL;
+    textureDesc.label = "Cube Texture";
+    textureDesc.type = GFX_TEXTURE_TYPE_2D;
+    textureDesc.size = (GfxExtent3D){ (uint32_t)width, (uint32_t)height, 1 };
+    textureDesc.arrayLayerCount = 1;
+    textureDesc.mipLevelCount = mipLevels;
+    textureDesc.sampleCount = GFX_SAMPLE_COUNT_1;
+    textureDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB;
+    textureDesc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_COPY_SRC | GFX_TEXTURE_USAGE_COPY_DST | GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
+
+    if (gfxDeviceCreateTexture(app->device, &textureDesc, &app->cubeTexture) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create texture\n");
+        stbi_image_free(pixels);
+        return false;
+    }
+
+    // Create staging buffer for async upload
+    uint64_t dataSize = (uint64_t)width * height * 4;
+    GfxBufferDescriptor stagingDesc = {};
+    stagingDesc.sType = GFX_STRUCTURE_TYPE_BUFFER_DESCRIPTOR;
+    stagingDesc.pNext = NULL;
+    stagingDesc.label = "Texture Staging Buffer";
+    stagingDesc.size = dataSize;
+    stagingDesc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
+    stagingDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
+
+    if (gfxDeviceCreateBuffer(app->device, &stagingDesc, &app->textureStagingBuffer) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create staging buffer\n");
+        stbi_image_free(pixels);
+        return false;
+    }
+
+    // Map and copy texture data to staging buffer
+    void* mappedData;
+    if (gfxBufferMap(app->textureStagingBuffer, 0, GFX_WHOLE_SIZE, &mappedData) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to map staging buffer\n");
+        stbi_image_free(pixels);
+        return false;
+    }
+
+    memcpy(mappedData, pixels, dataSize);
+    gfxBufferUnmap(app->textureStagingBuffer);
+    stbi_image_free(pixels);
+
+    // Create command encoder for async upload
+    GfxCommandEncoderDescriptor encoderDesc = {};
+    encoderDesc.sType = GFX_STRUCTURE_TYPE_COMMAND_ENCODER_DESCRIPTOR;
+    encoderDesc.pNext = NULL;
+    encoderDesc.label = "Texture Upload Encoder";
+    if (gfxDeviceCreateCommandEncoder(app->device, &encoderDesc, &app->textureUploadEncoder) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create command encoder for texture upload\n");
+        return false;
+    }
+
+    if (gfxCommandEncoderBegin(app->textureUploadEncoder) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to begin texture upload command encoder\n");
+        return false;
+    }
+
+    // Copy from staging buffer to texture
+    GfxCopyBufferToTextureDescriptor copyDesc = {
+        .source = app->textureStagingBuffer,
+        .sourceOffset = 0,
+        .destination = app->cubeTexture,
+        .origin = { 0, 0, 0 },
+        .extent = { (uint32_t)width, (uint32_t)height, 1 },
+        .mipLevel = 0,
+        .finalLayout = GFX_TEXTURE_LAYOUT_SHADER_READ_ONLY
+    };
+    if (gfxCommandEncoderCopyBufferToTexture(app->textureUploadEncoder, &copyDesc) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to copy buffer to texture\n");
+        return false;
+    }
+
+    // Generate mipmaps in the same command buffer
+    if (gfxCommandEncoderGenerateMipmaps(app->textureUploadEncoder, app->cubeTexture) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to generate mipmaps\n");
+        return false;
+    }
+
+    if (gfxCommandEncoderEnd(app->textureUploadEncoder) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to end texture upload command encoder\n");
+        return false;
+    }
+
+    // Create fence for tracking upload completion
+    GfxFenceDescriptor fenceDesc = {};
+    fenceDesc.sType = GFX_STRUCTURE_TYPE_FENCE_DESCRIPTOR;
+    fenceDesc.pNext = NULL;
+    fenceDesc.label = "Texture Upload Fence";
+    fenceDesc.signaled = false;
+    if (gfxDeviceCreateFence(app->device, &fenceDesc, &app->textureUploadFence) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create upload fence\n");
+        gfxCommandEncoderDestroy(app->textureUploadEncoder);
+        return false;
+    }
+
+    // Submit upload commands with fence
+    GfxSubmitDescriptor submitDesc = {
+        .commandEncoders = &app->textureUploadEncoder,
+        .commandEncoderCount = 1,
+        .signalFence = app->textureUploadFence
+    };
+    if (gfxQueueSubmit(app->queue, &submitDesc) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to submit texture upload commands\n");
+        return false;
+    }
+
+    // Texture upload is now happening asynchronously
+    // The render loop will check app->textureUploadFence status
+    // and clean up resources when complete
+    printf("Texture upload submitted asynchronously...\n");
+
+    // Create texture view with all mip levels
+    GfxTextureViewDescriptor viewDesc = {};
+    viewDesc.sType = GFX_STRUCTURE_TYPE_TEXTURE_VIEW_DESCRIPTOR;
+    viewDesc.pNext = NULL;
+    viewDesc.label = "Cube Texture View";
+    viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
+    viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB;
+    viewDesc.baseMipLevel = 0;
+    viewDesc.mipLevelCount = mipLevels;
+    viewDesc.baseArrayLayer = 0;
+    viewDesc.arrayLayerCount = 1;
+
+    if (gfxTextureCreateView(app->cubeTexture, &viewDesc, &app->cubeTextureView) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create texture view\n");
+        return false;
+    }
+
+    // Create sampler with mipmap filtering
+    GfxSamplerDescriptor samplerDesc = {};
+    samplerDesc.sType = GFX_STRUCTURE_TYPE_SAMPLER_DESCRIPTOR;
+    samplerDesc.pNext = NULL;
+    samplerDesc.label = "Cube Sampler";
+    samplerDesc.magFilter = GFX_FILTER_MODE_LINEAR;
+    samplerDesc.minFilter = GFX_FILTER_MODE_LINEAR;
+    samplerDesc.mipmapFilter = GFX_FILTER_MODE_LINEAR;
+    samplerDesc.addressModeU = GFX_ADDRESS_MODE_REPEAT;
+    samplerDesc.addressModeV = GFX_ADDRESS_MODE_REPEAT;
+    samplerDesc.addressModeW = GFX_ADDRESS_MODE_REPEAT;
+    samplerDesc.maxAnisotropy = 1;
+
+    if (gfxDeviceCreateSampler(app->device, &samplerDesc, &app->cubeSampler) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create sampler\n");
+        return false;
+    }
+
+    return true;
 }

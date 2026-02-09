@@ -11,12 +11,14 @@ struct Uniforms {
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) color: vec3<f32>,
+    @location(2) texCoord: vec2<f32>,
 }
 
 // Vertex output / Fragment input
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) fragColor: vec3<f32>,
+    @location(1) texCoord: vec2<f32>,
 }
 
 @vertex
@@ -28,8 +30,9 @@ fn main(input: VertexInput) -> VertexOutput {
     let viewPos = uniforms.view * worldPos;
     output.position = uniforms.projection * viewPos;
     
-    // Pass color to fragment shader
+    // Pass color and texture coordinates to fragment shader
     output.fragColor = input.color;
+    output.texCoord = input.texCoord;
     
     return output;
 }

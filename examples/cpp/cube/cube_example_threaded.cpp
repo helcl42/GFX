@@ -1062,8 +1062,8 @@ bool CubeApp::createShaders()
     } else {
         sourceType = GFX_SHADER_SOURCE_SPIRV;
         std::cout << "Loading SPIR-V shaders...\n";
-        vertexShaderCode = loadBinaryFile("cube.vert.spv", &vertexShaderSize);
-        fragmentShaderCode = loadBinaryFile("cube.frag.spv", &fragmentShaderSize);
+        vertexShaderCode = loadBinaryFile("shaders/cube.vert.spv", &vertexShaderSize);
+        fragmentShaderCode = loadBinaryFile("shaders/cube.frag.spv", &fragmentShaderSize);
         if (!vertexShaderCode || !fragmentShaderCode) {
             std::cerr << "Failed to load SPIR-V shaders\n";
             return false;

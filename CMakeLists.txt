@@ -28,14 +28,6 @@ option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
 option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
 option(BUILD_HEADLESS "Build without windowing system support (no surface creation)" OFF)
 
-# Find required packages
-find_package(PkgConfig REQUIRED)
-
-# GLFW for examples
-if(BUILD_EXAMPLES AND NOT BUILD_FOR_WEB)
-    find_package(glfw3 REQUIRED)
-endif()
-
 # Platform-specific libraries
 if(BUILD_HEADLESS)
     # Headless builds don't need windowing libraries
@@ -73,8 +65,13 @@ elseif(APPLE)
 elseif(UNIX)
     # Try to find available windowing systems (all optional)
     find_package(X11)
-    pkg_check_modules(XCB xcb)
-    pkg_check_modules(WAYLAND_CLIENT wayland-client)
+    
+    # Only use pkg-config if available (for XCB and Wayland detection)
+    find_package(PkgConfig QUIET)
+    if(PKG_CONFIG_FOUND)
+        pkg_check_modules(XCB xcb)
+        pkg_check_modules(WAYLAND_CLIENT wayland-client)
+    endif()
     
     # Build list of platform libraries based on what's available
     set(PLATFORM_LIBS "")
@@ -196,7 +193,23 @@ if(BUILD_WEBGPU_BACKEND)
         endif()
         set(TINT_BUILD_CMD_TOOLS ON CACHE BOOL "" FORCE)  # Build tint command-line tool
         
+        # Suppress warnings from third-party code (Dawn and its dependencies)
+        set(GFX_SAVED_C_FLAGS "${CMAKE_C_FLAGS}")
+        set(GFX_SAVED_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        if(NOT MSVC)
+            # Suppress all warnings including compiler flag warnings
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w -Wno-unused-command-line-argument")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -Wno-unused-command-line-argument")
+        else()
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W0")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W0")
+        endif()
+        
         add_subdirectory(${DAWN_ROOT} ${CMAKE_BINARY_DIR}/dawn EXCLUDE_FROM_ALL)
+        
+        # Restore warning flags for our code
+        set(CMAKE_C_FLAGS "${GFX_SAVED_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${GFX_SAVED_CXX_FLAGS}")
         
         # Restore our BUILD_SHARED_LIBS setting
         set(BUILD_SHARED_LIBS ${GFX_BUILD_SHARED_LIBS} CACHE BOOL "" FORCE)
@@ -210,53 +223,6 @@ if(BUILD_WEBGPU_BACKEND)
         set(BUILD_WEBGPU_BACKEND OFF)
     endif()
 endif()
-
-# Function to compile GLSL shaders to SPIR-V
-function(compile_shader target shader_source)
-    if(NOT GLSLC_EXECUTABLE)
-        message(WARNING "Cannot compile shader ${shader_source} - glslc not found")
-        return()
-    endif()
-    
-    get_filename_component(shader_name ${shader_source} NAME)
-    set(shader_output "${CMAKE_CURRENT_BINARY_DIR}/${shader_name}.spv")
-    
-    add_custom_command(
-        OUTPUT ${shader_output}
-        COMMAND ${GLSLC_EXECUTABLE} ${shader_source} -o ${shader_output}
-        DEPENDS ${shader_source}
-        COMMENT "Compiling shader: ${shader_name} -> ${shader_name}.spv"
-        VERBATIM
-    )
-    
-    # Add the output to the target's dependencies
-    target_sources(${target} PRIVATE ${shader_output})
-endfunction()
-
-# Function to compile WGSL shaders to SPIR-V using tint
-function(compile_wgsl_shader target shader_source)
-    if(NOT BUILD_WEBGPU_BACKEND)
-        message(WARNING "Cannot compile WGSL shader ${shader_source} - WebGPU backend not enabled")
-        return()
-    endif()
-    
-    get_filename_component(shader_name ${shader_source} NAME_WE)
-    get_filename_component(shader_ext ${shader_source} EXT)
-    # Remove .wgsl extension and add .spv
-    string(REGEX REPLACE "\\.wgsl$" "" shader_base "${shader_name}${shader_ext}")
-    set(shader_output "${CMAKE_CURRENT_BINARY_DIR}/${shader_base}.spv")
-    
-    add_custom_command(
-        OUTPUT ${shader_output}
-        COMMAND $<TARGET_FILE:tint_cmd_tint_cmd> ${shader_source} -o ${shader_output} --format spirv --entry-point main
-        DEPENDS ${shader_source} tint_cmd_tint_cmd
-        COMMENT "Compiling WGSL shader: ${shader_name}${shader_ext} -> ${shader_base}.spv"
-        VERBATIM
-    )
-    
-    # Add the output to the target's dependencies
-    target_sources(${target} PRIVATE ${shader_output})
-endfunction()
 
 # Google Test
 if(BUILD_TESTS)
@@ -695,301 +661,7 @@ endif()
 
 # Examples
 if(BUILD_EXAMPLES)
-    if(BUILD_HEADLESS)
-        message(STATUS "Skipping windowed examples in headless build")
-        # Note: Compute-only examples could be built in headless mode if needed
-    elseif(BUILD_FOR_WEB)
-        # Web Cube Example (Emscripten)
-        add_executable(cube_example_web examples/c/cube/cube_example.c)
-        target_link_libraries(cube_example_web gfx)
-        
-        # Emscripten-specific flags for web example
-        target_compile_options(cube_example_web PRIVATE -DEMSCRIPTEN -sDISABLE_EXCEPTION_CATCHING=0)
-        target_link_options(cube_example_web PRIVATE
-            --use-port=emdawnwebgpu
-            -sUSE_GLFW=3
-            -sASYNCIFY=1
-            -sALLOW_MEMORY_GROWTH=1
-            -sASSERTIONS=2
-            -sSTACK_OVERFLOW_CHECK=2
-            -sSAFE_HEAP=1
-            -sDISABLE_EXCEPTION_CATCHING=0
-            -sEXPORTED_RUNTIME_METHODS=requestFullscreen
-            --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders@shaders
-            --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/textures@../examples/c/cube/textures
-            -g
-            -O0
-            --shell-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/web/shell.html
-        )
-        
-        # Set output to create HTML, JS, and WASM
-        set_target_properties(cube_example_web PROPERTIES
-            SUFFIX ".html"
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/web"
-        )
-        
-        message(STATUS "Web example will be built to: ${CMAKE_CURRENT_BINARY_DIR}/web/cube_example_web.html")
-        
-        # Web Compute Example (Emscripten)
-        add_executable(compute_example_web examples/c/compute/compute_example.c)
-        target_link_libraries(compute_example_web gfx)
-        
-        # Emscripten-specific flags for web compute example
-        target_compile_options(compute_example_web PRIVATE -DEMSCRIPTEN -sDISABLE_EXCEPTION_CATCHING=0)
-        target_link_options(compute_example_web PRIVATE
-            --use-port=emdawnwebgpu
-            -sUSE_GLFW=3
-            -sASYNCIFY=1
-            -sALLOW_MEMORY_GROWTH=1
-            -sASSERTIONS=2
-            -sSTACK_OVERFLOW_CHECK=2
-            -sSAFE_HEAP=1
-            -sDISABLE_EXCEPTION_CATCHING=0
-            -sEXPORTED_RUNTIME_METHODS=requestFullscreen
-            --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders@shaders
-            -g
-            -O0
-            --shell-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/web/shell.html
-        )
-        
-        # Set output to create HTML, JS, and WASM
-        set_target_properties(compute_example_web PROPERTIES
-            SUFFIX ".html"
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/web"
-        )
-        
-        message(STATUS "Web example will be built to: ${CMAKE_CURRENT_BINARY_DIR}/web/compute_example_web.html")
-        
-        # Web C++ Cube Example (Emscripten)
-        if(BUILD_CPP_WRAPPER)
-            add_executable(cube_example_cpp_web examples/cpp/cube/cube_example.cpp)
-            target_link_libraries(cube_example_cpp_web gfx_cpp)
-        
-        # Emscripten-specific flags for web C++ cube example
-        target_compile_options(cube_example_cpp_web PRIVATE -DEMSCRIPTEN -sDISABLE_EXCEPTION_CATCHING=0)
-        target_link_options(cube_example_cpp_web PRIVATE
-            --use-port=emdawnwebgpu
-            -sUSE_GLFW=3
-            -sASYNCIFY=1
-            -sALLOW_MEMORY_GROWTH=1
-            -sASSERTIONS=2
-            -sSTACK_OVERFLOW_CHECK=2
-            -sSAFE_HEAP=1
-            -sDISABLE_EXCEPTION_CATCHING=0
-            -sEXPORTED_RUNTIME_METHODS=requestFullscreen
-            --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/cpp/cube/shaders@shaders
-            -g
-            -O0
-            --shell-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/web/shell.html
-        )
-        
-        # Set output to create HTML, JS, and WASM
-        set_target_properties(cube_example_cpp_web PROPERTIES
-            SUFFIX ".html"
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/web"
-        )
-        
-        message(STATUS "Web C++ cube example will be built to: ${CMAKE_CURRENT_BINARY_DIR}/web/cube_example_cpp_web.html")
-        endif()  # BUILD_CPP_WRAPPER
-        
-        # Web C++ Compute Example (Emscripten)
-        if(BUILD_CPP_WRAPPER)
-            add_executable(compute_example_cpp_web examples/cpp/compute/compute_example.cpp)
-            target_link_libraries(compute_example_cpp_web gfx_cpp)
-            
-            # Emscripten-specific flags for web C++ compute example
-            target_compile_options(compute_example_cpp_web PRIVATE -DEMSCRIPTEN -sDISABLE_EXCEPTION_CATCHING=0)
-            target_link_options(compute_example_cpp_web PRIVATE
-                --use-port=emdawnwebgpu
-                -sUSE_GLFW=3
-                -sASYNCIFY=1
-                -sALLOW_MEMORY_GROWTH=1
-                -sASSERTIONS=0
-                -sDISABLE_EXCEPTION_CATCHING=0
-                -sEXPORTED_RUNTIME_METHODS=requestFullscreen
-                --preload-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders@shaders
-                -g
-                -O0
-                --shell-file=${CMAKE_CURRENT_SOURCE_DIR}/examples/web/shell.html
-            )
-            
-            # Set output to create HTML, JS, and WASM
-            set_target_properties(compute_example_cpp_web PROPERTIES
-                SUFFIX ".html"
-                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/web"
-            )
-            
-            message(STATUS "Web C++ compute example will be built to: ${CMAKE_CURRENT_BINARY_DIR}/web/compute_example_cpp_web.html")
-        endif()  # BUILD_CPP_WRAPPER
-        
-    else()
-        # Native C Cube Example
-        add_executable(cube_example_c examples/c/cube/cube_example.c)
-        target_link_libraries(cube_example_c gfx glfw m)  # Add math library
-        if(ENABLE_ASAN AND NOT MSVC)
-            target_link_options(cube_example_c PRIVATE -fsanitize=address)
-        endif()
-        
-        # Compile WGSL shaders to SPIR-V for C example
-        compile_wgsl_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl)
-        compile_wgsl_shader(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl)
-        
-        # Copy WGSL shaders and compiled SPIR-V to build directory
-        add_custom_command(TARGET cube_example_c POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.wgsl
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_BINARY_DIR}/cube.vert.spv
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.spv
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_BINARY_DIR}/cube.frag.spv
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.spv
-            COMMENT "Copying WGSL and SPIR-V shaders"
-        )
-        
-        # Native C Threaded Cube Example (uses pthreads)
-        add_executable(cube_example_c_threaded examples/c/cube/cube_example_threaded.c)
-        target_link_libraries(cube_example_c_threaded gfx glfw m pthread)  # Add pthread library
-        if(ENABLE_ASAN AND NOT MSVC)
-            target_link_options(cube_example_c_threaded PRIVATE -fsanitize=address)
-        endif()
-        
-        # Compile WGSL shaders to SPIR-V for threaded C example
-        compile_wgsl_shader(cube_example_c_threaded ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl)
-        compile_wgsl_shader(cube_example_c_threaded ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl)
-        
-        # Copy WGSL shaders and compiled SPIR-V for threaded example
-        add_custom_command(TARGET cube_example_c_threaded POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.wgsl
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_BINARY_DIR}/cube.vert.spv
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.spv
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_BINARY_DIR}/cube.frag.spv
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.spv
-            COMMENT "Copying WGSL and SPIR-V shaders for threaded example"
-        )
-    
-        # Threaded C++ Cube Example (uses C API with C++ language features)
-        add_executable(cube_example_cpp_threaded examples/cpp/cube/cube_example_threaded.cpp)
-        target_link_libraries(cube_example_cpp_threaded gfx glfw pthread)
-        if(ENABLE_ASAN AND NOT MSVC)
-            target_link_options(cube_example_cpp_threaded PRIVATE -fsanitize=address)
-        endif()
-        
-        # Share shaders with cube_example_c_threaded (same cube shaders)
-        add_dependencies(cube_example_cpp_threaded cube_example_c_threaded)
-        
-        add_custom_command(TARGET cube_example_cpp_threaded POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.vert.wgsl
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.wgsl
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/cube/shaders/cube.frag.wgsl
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_BINARY_DIR}/cube.vert.spv
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.spv
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_BINARY_DIR}/cube.frag.spv
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.spv
-            COMMENT "Copying WGSL and SPIR-V shaders for C++ threaded example"
-        )
-    endif()  # BUILD_FOR_WEB
-    
-    # C++ and Compute examples only for native builds (for now)
-    if(NOT BUILD_FOR_WEB)
-        # C++ Cube Example (uses C++ wrapper)
-        if(BUILD_CPP_WRAPPER)
-            add_executable(cube_example_cpp examples/cpp/cube/cube_example.cpp)
-            target_link_libraries(cube_example_cpp gfx_cpp glfw)
-            if(ENABLE_ASAN AND NOT MSVC)
-                target_link_options(cube_example_cpp PRIVATE -fsanitize=address)
-            endif()
-            
-            # Compile WGSL shaders to SPIR-V for C++ wrapper example (uses its own simpler shaders)
-            compile_wgsl_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/cpp/cube/shaders/cube.vert.wgsl)
-            compile_wgsl_shader(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/examples/cpp/cube/shaders/cube.frag.wgsl)
-            
-            # Copy WGSL shaders and compiled SPIR-V
-            add_custom_command(TARGET cube_example_cpp POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${CMAKE_CURRENT_SOURCE_DIR}/examples/cpp/cube/shaders/cube.vert.wgsl
-                    ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.wgsl
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${CMAKE_CURRENT_SOURCE_DIR}/examples/cpp/cube/shaders/cube.frag.wgsl
-                    ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.wgsl
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${CMAKE_CURRENT_BINARY_DIR}/cube.vert.spv
-                    ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.vert.spv
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${CMAKE_CURRENT_BINARY_DIR}/cube.frag.spv
-                    ${CMAKE_CURRENT_BINARY_DIR}/shaders/cube.frag.spv
-                COMMENT "Copying WGSL and SPIR-V shaders for C++ wrapper example"
-            )
-        endif()  # BUILD_CPP_WRAPPER
-    
-        # C Compute Example
-        add_executable(compute_example_c examples/c/compute/compute_example.c)
-        target_link_libraries(compute_example_c gfx glfw m)
-        if(ENABLE_ASAN AND NOT MSVC)
-            target_link_options(compute_example_c PRIVATE -fsanitize=address)
-        endif()
-        
-        # Compile WGSL shaders to SPIR-V for compute example
-        compile_wgsl_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/generate.comp.wgsl)
-        compile_wgsl_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/fullscreen.vert.wgsl)
-        compile_wgsl_shader(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/postprocess.frag.wgsl)
-        
-        # Copy WGSL shaders and compiled SPIR-V to build directory
-        add_custom_command(TARGET compute_example_c POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/shaders
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/generate.comp.wgsl
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/generate.comp.wgsl
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/fullscreen.vert.wgsl
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/fullscreen.vert.wgsl
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_SOURCE_DIR}/examples/c/compute/shaders/postprocess.frag.wgsl
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/postprocess.frag.wgsl
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_BINARY_DIR}/generate.comp.spv
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/generate.comp.spv
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_BINARY_DIR}/fullscreen.vert.spv
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/fullscreen.vert.spv
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_BINARY_DIR}/postprocess.frag.spv
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders/postprocess.frag.spv
-            COMMENT "Copying WGSL and SPIR-V shaders"
-        )
-    
-        # C++ Compute Example
-        if(BUILD_CPP_WRAPPER)
-            add_executable(compute_example_cpp examples/cpp/compute/compute_example.cpp)
-            target_link_libraries(compute_example_cpp gfx_cpp glfw)
-            if(ENABLE_ASAN AND NOT MSVC)
-                target_link_options(compute_example_cpp PRIVATE -fsanitize=address)
-            endif()
-                
-            # C++ compute example uses the same compiled shaders as C example
-            add_dependencies(compute_example_cpp compute_example_c)
-        endif()  # BUILD_CPP_WRAPPER
-    endif()  # NOT BUILD_FOR_WEB
+    add_subdirectory(examples)
 endif()  # BUILD_EXAMPLES
 
 # Add tests

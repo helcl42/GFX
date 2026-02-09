@@ -467,7 +467,7 @@ static bool createComputeShaders(ComputeApp* app)
     if (gfxDeviceSupportsShaderFormat(app->device, GFX_SHADER_SOURCE_SPIRV, &formatSupported) == GFX_RESULT_SUCCESS && formatSupported) {
         sourceType = GFX_SHADER_SOURCE_SPIRV;
         printf("Loading SPIR-V shader: generate.comp.spv\n");
-        computeCode = loadBinaryFile("generate.comp.spv", &computeSize);
+        computeCode = loadBinaryFile("shaders/generate.comp.spv", &computeSize);
         if (!computeCode) {
             fprintf(stderr, "Failed to load SPIR-V compute shader\n");
             return false;
@@ -803,7 +803,7 @@ static bool createRenderShaders(ComputeApp* app)
     // Try SPIR-V first
     if (gfxDeviceSupportsShaderFormat(app->device, GFX_SHADER_SOURCE_SPIRV, &formatSupported) == GFX_RESULT_SUCCESS && formatSupported) {
         vertexSourceType = GFX_SHADER_SOURCE_SPIRV;
-        vertexCode = loadBinaryFile("fullscreen.vert.spv", &vertexSize);
+        vertexCode = loadBinaryFile("shaders/fullscreen.vert.spv", &vertexSize);
         if (!vertexCode) {
             fprintf(stderr, "Failed to load SPIR-V vertex shader\n");
             return false;
@@ -844,7 +844,7 @@ static bool createRenderShaders(ComputeApp* app)
     // Use same format as vertex shader (already queried above)
     if (vertexSourceType == GFX_SHADER_SOURCE_SPIRV) {
         fragmentSourceType = GFX_SHADER_SOURCE_SPIRV;
-        fragmentCode = loadBinaryFile("postprocess.frag.spv", &fragmentSize);
+        fragmentCode = loadBinaryFile("shaders/postprocess.frag.spv", &fragmentSize);
         if (!fragmentCode) {
             fprintf(stderr, "Failed to load SPIR-V fragment shader\n");
             return false;
