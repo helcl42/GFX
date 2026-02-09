@@ -1,0 +1,66 @@
+# iOS build workflow for GFX graphics library
+name: iOS Build
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [OS64, SIMULATORARM64]
+        build_type: [Release]
+        include:
+          - platform: OS64
+            cmake_platform: "OS64"
+            arch_name: "device-arm64"
+          - platform: SIMULATORARM64
+            cmake_platform: "SIMULATORARM64"
+            arch_name: "simulator-arm64"
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Ninja
+      run: brew install ninja
+
+    - name: Configure CMake
+      run: >
+        cmake -B build_ios_${{ matrix.arch_name }}
+        -G Ninja
+        -DCMAKE_SYSTEM_NAME=iOS
+        -DCMAKE_OSX_ARCHITECTURES=arm64
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+        -DCMAKE_IOS_INSTALL_COMBINED=YES
+        -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DBUILD_WEBGPU_BACKEND=ON
+        -DBUILD_VULKAN_BACKEND=ON
+        -DBUILD_EXAMPLES=OFF
+        -DBUILD_TESTS=OFF
+        -DBUILD_CPP_WRAPPER=ON
+
+    - name: Build
+      run: cmake --build build_ios_${{ matrix.arch_name }} --config ${{ matrix.build_type }} -j 2
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-${{ matrix.arch_name }}-${{ matrix.build_type }}-libraries
+        path: |
+          build_ios_${{ matrix.arch_name }}/libgfx.a
+          build_ios_${{ matrix.arch_name }}/libgfx_cpp.a
+        retention-days: 7

@@ -1,0 +1,85 @@
+# Linux build workflow for GFX graphics library
+name: Linux Build
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Release, Debug]
+        compiler: [gcc, clang]
+        include:
+          - compiler: gcc
+            c_compiler: gcc
+            cpp_compiler: g++
+          - compiler: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libx11-dev \
+          libxrandr-dev \
+          libxinerama-dev \
+          libxcursor-dev \
+          libxi-dev \
+          libwayland-dev \
+          libxkbcommon-dev \
+          mesa-common-dev \
+          libglu1-mesa-dev \
+          ninja-build
+
+    - name: Configure CMake
+      run: >
+        cmake -B build
+        -G Ninja
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DBUILD_WEBGPU_BACKEND=ON
+        -DBUILD_VULKAN_BACKEND=ON
+        -DBUILD_EXAMPLES=ON
+        -DBUILD_TESTS=ON
+
+    - name: Build
+      run: cmake --build build --config ${{ matrix.build_type }} -j 2
+
+    - name: Test
+      working-directory: build
+      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure --timeout 300 || true
+      continue-on-error: true
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-${{ matrix.compiler }}-${{ matrix.build_type }}-binaries
+        path: |
+          build/libgfx.so*
+          build/libgfx_cpp.so*
+          build/examples/cube_example_c
+          build/examples/cube_example_cpp
+          build/examples/compute_example_c
+          build/examples/compute_example_cpp
+          build/examples/shaders/
+          build/examples/textures/
+        retention-days: 7

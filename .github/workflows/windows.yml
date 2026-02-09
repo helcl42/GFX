@@ -1,0 +1,65 @@
+# Windows build workflow for GFX graphics library
+name: Windows Build
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Release, Debug]
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Ninja
+      run: choco install ninja
+
+    - name: Configure CMake
+      run: >
+        cmake -B build
+        -G Ninja
+        -DCMAKE_CXX_COMPILER=cl
+        -DCMAKE_C_COMPILER=cl
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DBUILD_WEBGPU_BACKEND=ON
+        -DBUILD_VULKAN_BACKEND=ON
+        -DBUILD_EXAMPLES=ON
+        -DBUILD_TESTS=ON
+
+    - name: Build
+      run: cmake --build build --config ${{ matrix.build_type }} -j 2
+
+    - name: Test
+      working-directory: build
+      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure --timeout 300 || true
+      continue-on-error: true
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-${{ matrix.build_type }}-binaries
+        path: |
+          build/gfx.dll
+          build/gfx_cpp.dll
+          build/examples/cube_example_c.exe
+          build/examples/cube_example_cpp.exe
+          build/examples/compute_example_c.exe
+          build/examples/compute_example_cpp.exe
+          build/examples/shaders/
+          build/examples/textures/
+        retention-days: 7

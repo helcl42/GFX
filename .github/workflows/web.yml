@@ -1,0 +1,62 @@
+# WebAssembly build workflow for GFX graphics library
+name: Web Build
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Setup Emscripten
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: 'latest'
+
+    - name: Configure CMake
+      run: |
+        emcmake cmake -B build_web \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_WEBGPU_BACKEND=ON \
+          -DBUILD_VULKAN_BACKEND=OFF \
+          -DBUILD_EXAMPLES=ON \
+          -DBUILD_TESTS=OFF
+
+    - name: Build
+      run: cmake --build build_web -j 2
+
+    - name: Upload web artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: web-examples
+        path: |
+          build_web/examples/web/cube_example_web.html
+          build_web/examples/web/cube_example_web.js
+          build_web/examples/web/cube_example_web.wasm
+          build_web/examples/web/cube_example_web.data
+          build_web/examples/web/cube_example_cpp_web.html
+          build_web/examples/web/cube_example_cpp_web.js
+          build_web/examples/web/cube_example_cpp_web.wasm
+          build_web/examples/web/cube_example_cpp_web.data
+          build_web/examples/web/compute_example_web.html
+          build_web/examples/web/compute_example_web.js
+          build_web/examples/web/compute_example_web.wasm
+          build_web/examples/web/compute_example_web.data
+          build_web/examples/web/compute_example_cpp_web.html
+          build_web/examples/web/compute_example_cpp_web.js
+          build_web/examples/web/compute_example_cpp_web.wasm
+          build_web/examples/web/compute_example_cpp_web.data
+        retention-days: 7

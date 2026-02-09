@@ -1,0 +1,63 @@
+# Android build workflow for GFX graphics library
+name: Android Build
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a]
+        build_type: [Release]
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Setup Android NDK
+      uses: nttld/setup-ndk@v1
+      with:
+        ndk-version: r26d
+        add-to-path: true
+
+    - name: Install Ninja
+      run: sudo apt-get install -y ninja-build
+
+    - name: Configure CMake
+      run: >
+        cmake -B build_android_${{ matrix.abi }}
+        -G Ninja
+        -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake
+        -DANDROID_ABI=${{ matrix.abi }}
+        -DANDROID_PLATFORM=android-24
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DBUILD_WEBGPU_BACKEND=ON
+        -DBUILD_VULKAN_BACKEND=ON
+        -DBUILD_EXAMPLES=OFF
+        -DBUILD_TESTS=OFF
+        -DBUILD_CPP_WRAPPER=ON
+
+    - name: Build
+      run: cmake --build build_android_${{ matrix.abi }} --config ${{ matrix.build_type }} -j 2
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-${{ matrix.abi }}-${{ matrix.build_type }}-libraries
+        path: |
+          build_android_${{ matrix.abi }}/libgfx.so
+          build_android_${{ matrix.abi }}/libgfx_cpp.so
+        retention-days: 7
