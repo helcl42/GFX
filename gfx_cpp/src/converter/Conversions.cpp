@@ -1335,4 +1335,64 @@ void convertComputePipelineDescriptor(const ComputePipelineDescriptor& descripto
     out.bindGroupLayoutCount = static_cast<uint32_t>(outBindGroupLayouts.size());
 }
 
+PlatformWindowHandle cPlatformWindowHandleWin32ToCpp(const GfxPlatformWindowHandle& cHandle)
+{
+    PlatformWindowHandle cppHandle = {};
+    cppHandle.windowingSystem = WindowingSystem::Win32;
+    cppHandle.handle.win32.hinstance = cHandle.win32.hinstance;
+    cppHandle.handle.win32.hwnd = cHandle.win32.hwnd;
+    return cppHandle;
+}
+
+PlatformWindowHandle cPlatformWindowHandleXlibToCpp(const GfxPlatformWindowHandle& cHandle)
+{
+    PlatformWindowHandle cppHandle = {};
+    cppHandle.windowingSystem = WindowingSystem::Xlib;
+    cppHandle.handle.xlib.display = cHandle.xlib.display;
+    cppHandle.handle.xlib.window = cHandle.xlib.window;
+    return cppHandle;
+}
+
+PlatformWindowHandle cPlatformWindowHandleWaylandToCpp(const GfxPlatformWindowHandle& cHandle)
+{
+    PlatformWindowHandle cppHandle = {};
+    cppHandle.windowingSystem = WindowingSystem::Wayland;
+    cppHandle.handle.wayland.display = cHandle.wayland.display;
+    cppHandle.handle.wayland.surface = cHandle.wayland.surface;
+    return cppHandle;
+}
+
+PlatformWindowHandle cPlatformWindowHandleXCBToCpp(const GfxPlatformWindowHandle& cHandle)
+{
+    PlatformWindowHandle cppHandle = {};
+    cppHandle.windowingSystem = WindowingSystem::XCB;
+    cppHandle.handle.xcb.connection = cHandle.xcb.connection;
+    cppHandle.handle.xcb.window = cHandle.xcb.window;
+    return cppHandle;
+}
+
+PlatformWindowHandle cPlatformWindowHandleMetalToCpp(const GfxPlatformWindowHandle& cHandle)
+{
+    PlatformWindowHandle cppHandle = {};
+    cppHandle.windowingSystem = WindowingSystem::Metal;
+    cppHandle.handle.metal.layer = cHandle.metal.layer;
+    return cppHandle;
+}
+
+PlatformWindowHandle cPlatformWindowHandleEmscriptenToCpp(const GfxPlatformWindowHandle& cHandle)
+{
+    PlatformWindowHandle cppHandle = {};
+    cppHandle.windowingSystem = WindowingSystem::Emscripten;
+    cppHandle.handle.emscripten.canvasSelector = cHandle.emscripten.canvasSelector;
+    return cppHandle;
+}
+
+PlatformWindowHandle cPlatformWindowHandleAndroidToCpp(const GfxPlatformWindowHandle& cHandle)
+{
+    PlatformWindowHandle cppHandle = {};
+    cppHandle.windowingSystem = WindowingSystem::Android;
+    cppHandle.handle.android.window = cHandle.android.window;
+    return cppHandle;
+}
+
 } // namespace gfx

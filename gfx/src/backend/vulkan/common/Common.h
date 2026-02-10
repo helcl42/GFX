@@ -4,6 +4,7 @@
 #ifndef GFX_HEADLESS_BUILD
 #ifdef GFX_HAS_WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
+#define NOMINMAX
 #include <windows.h>
 #endif
 
@@ -19,11 +20,13 @@
 
 #ifdef GFX_HAS_WAYLAND
 #define VK_USE_PLATFORM_WAYLAND_KHR
+#define VK_USE_PLATFORM_METAL_KHR
 #include <wayland-client.h>
 #endif
 
 #ifdef GFX_HAS_COCOA
 #define VK_USE_PLATFORM_MACOS_MVK
+#define VK_USE_PLATFORM_METAL_KHR
 // Metal layer type needed for MoltenVK
 #ifdef __OBJC__
 #import <Cocoa/Cocoa.h>
@@ -51,6 +54,10 @@ typedef void CAMetalLayer;
 #endif // GFX_HEADLESS_BUILD
 
 #include <vulkan/vulkan.h>
+
+#if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
+#include <vulkan/vulkan_metal.h>
+#endif
 
 // Undefine X11 macros that conflict with gtest
 #ifdef None

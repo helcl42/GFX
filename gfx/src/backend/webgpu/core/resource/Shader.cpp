@@ -14,7 +14,7 @@ Shader::Shader(Device* device, const ShaderCreateInfo& createInfo)
     if (createInfo.sourceType == ShaderSourceType::SPIRV) {
         // Use SPIR-V (Dawn extension)
         WGPUShaderSourceSPIRV spirvDesc = WGPU_SHADER_SOURCE_SPIRV_INIT;
-        spirvDesc.codeSize = createInfo.codeSize / 4; // Size in uint32_t words
+        spirvDesc.codeSize = static_cast<uint32_t>(createInfo.codeSize / 4); // Size in uint32_t words
         spirvDesc.code = static_cast<const uint32_t*>(createInfo.code);
         desc.nextInChain = &spirvDesc.chain;
 

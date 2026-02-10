@@ -258,7 +258,7 @@ GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
     // handle = gfxPlatformWindowHandleFromXlib(glfwGetX11Display(), glfwGetX11Window(window));
     handle = gfxPlatformWindowHandleFromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
 #elif defined(__APPLE__)
-    handle = gfxPlatformWindowHandleFromMetal(glfwGetMetalLayer(window));
+    handle = gfxPlatformWindowHandleFromMetal(glfwGetCocoaWindow(window));
 #endif
     return handle;
 }

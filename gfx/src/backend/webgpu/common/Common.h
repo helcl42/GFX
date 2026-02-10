@@ -7,6 +7,7 @@
 #include <emscripten.h>
 #endif
 #ifdef GFX_HAS_WIN32
+#define NOMINMAX
 #include <windows.h>
 #endif
 #ifdef GFX_HAS_X11

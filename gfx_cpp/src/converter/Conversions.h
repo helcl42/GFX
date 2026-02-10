@@ -221,6 +221,15 @@ void convertDepthStencilState(const DepthStencilState& input, GfxDepthStencilSta
 void convertRenderPipelineDescriptor(const RenderPipelineDescriptor& descriptor, GfxRenderPass renderPassHandle, const GfxVertexState& vertexState, const std::optional<GfxFragmentState>& fragmentState, const GfxPrimitiveState& primitiveState, const std::optional<GfxDepthStencilState>& depthStencilState, std::vector<GfxBindGroupLayout>& outBindGroupLayouts, GfxRenderPipelineDescriptor& out);
 void convertComputePipelineDescriptor(const ComputePipelineDescriptor& descriptor, GfxShader computeShaderHandle, std::vector<GfxBindGroupLayout>& outBindGroupLayouts, GfxComputePipelineDescriptor& out);
 
+// Window handle conversions
+PlatformWindowHandle cPlatformWindowHandleWin32ToCpp(const GfxPlatformWindowHandle& cHandle);
+PlatformWindowHandle cPlatformWindowHandleXlibToCpp(const GfxPlatformWindowHandle& cHandle);
+PlatformWindowHandle cPlatformWindowHandleWaylandToCpp(const GfxPlatformWindowHandle& cHandle);
+PlatformWindowHandle cPlatformWindowHandleXCBToCpp(const GfxPlatformWindowHandle& cHandle);
+PlatformWindowHandle cPlatformWindowHandleMetalToCpp(const GfxPlatformWindowHandle& cHandle);
+PlatformWindowHandle cPlatformWindowHandleEmscriptenToCpp(const GfxPlatformWindowHandle& cHandle);
+PlatformWindowHandle cPlatformWindowHandleAndroidToCpp(const GfxPlatformWindowHandle& cHandle);
+
 } // namespace gfx
 
 #endif // GFX_CPP_CONVERSIONS_H

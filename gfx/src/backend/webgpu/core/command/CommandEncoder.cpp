@@ -6,6 +6,8 @@
 #include "../util/Blit.h"
 #include "../util/Utils.h"
 
+#include <stdexcept>
+
 namespace gfx::backend::webgpu::core {
 
 CommandEncoder::CommandEncoder(Device* device, const CommandEncoderCreateInfo& createInfo)

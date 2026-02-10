@@ -46,22 +46,20 @@ elseif(ANDROID)
 elseif(WIN32)
     set(PLATFORM_LIBS user32 gdi32)
     set(GFX_HAS_WIN32 ON)
+elseif(IOS)
+    # iOS-specific frameworks
+    find_library(UIKIT_LIBRARY UIKit)
+    find_library(FOUNDATION_LIBRARY Foundation)
+    find_library(QUARTZCORE_LIBRARY QuartzCore)
+    set(PLATFORM_LIBS ${UIKIT_LIBRARY} ${FOUNDATION_LIBRARY} ${QUARTZCORE_LIBRARY})
+    set(GFX_HAS_UIKIT ON)
 elseif(APPLE)
-    if(IOS)
-        # iOS-specific frameworks
-        find_library(UIKIT_LIBRARY UIKit)
-        find_library(FOUNDATION_LIBRARY Foundation)
-        find_library(QUARTZCORE_LIBRARY QuartzCore)
-        set(PLATFORM_LIBS ${UIKIT_LIBRARY} ${FOUNDATION_LIBRARY} ${QUARTZCORE_LIBRARY})
-        set(GFX_HAS_UIKIT ON)
-    else()
-        # macOS-specific frameworks
-        find_library(COCOA_LIBRARY Cocoa)
-        find_library(IOKIT_LIBRARY IOKit)
-        find_library(COREVIDEO_LIBRARY CoreVideo)
-        set(PLATFORM_LIBS ${COCOA_LIBRARY} ${IOKIT_LIBRARY} ${COREVIDEO_LIBRARY})
-        set(GFX_HAS_COCOA ON)
-    endif()
+    # macOS-specific frameworks
+    find_library(COCOA_LIBRARY Cocoa)
+    find_library(IOKIT_LIBRARY IOKit)
+    find_library(COREVIDEO_LIBRARY CoreVideo)
+    set(PLATFORM_LIBS ${COCOA_LIBRARY} ${IOKIT_LIBRARY} ${COREVIDEO_LIBRARY})
+    set(GFX_HAS_COCOA ON)
 elseif(UNIX)
     # Try to find available windowing systems (all optional)
     find_package(X11)
@@ -105,12 +103,30 @@ if(BUILD_VULKAN_BACKEND AND NOT BUILD_FOR_WEB)
     # Just find the Vulkan loader library and glslc compiler
     
     # Find Vulkan loader library manually
-    find_library(Vulkan_LIBRARY
-        NAMES vulkan vulkan-1
-        HINTS
-            ENV VULKAN_SDK
-        PATH_SUFFIXES lib
-    )
+    if(IOS)
+        # iOS SDK path structure: $ENV{VULKAN_SDK}/iOS/lib
+        find_library(Vulkan_LIBRARY
+            NAMES MoltenVK
+            HINTS
+                ENV VULKAN_SDK
+            PATH_SUFFIXES iOS/lib iOS/static
+        )
+    elseif(APPLE)
+        # macOS SDK path structure: $ENV{VULKAN_SDK}/macOS/lib
+        find_library(Vulkan_LIBRARY
+            NAMES MoltenVK vulkan
+            HINTS
+                ENV VULKAN_SDK
+            PATH_SUFFIXES macOS/lib lib
+        )
+    else()
+        find_library(Vulkan_LIBRARY
+            NAMES vulkan vulkan-1
+            HINTS
+                ENV VULKAN_SDK
+            PATH_SUFFIXES lib
+        )
+    endif()
     
     if(NOT Vulkan_LIBRARY)
         message(FATAL_ERROR "Vulkan loader library not found. Please install Vulkan SDK.")
@@ -160,6 +176,7 @@ if(BUILD_WEBGPU_BACKEND)
         set(DAWN_FETCH_DEPENDENCIES ON CACHE BOOL "" FORCE)
         set(DAWN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
         set(DAWN_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+        set(DAWN_USE_GLFW OFF CACHE BOOL "" FORCE)
         
         # Enable SPIR-V support in Tint (required for native WebGPU)
         if(NOT BUILD_FOR_WEB)

@@ -731,6 +731,11 @@ bool ComputeApp::createSyncObjects()
 
 void ComputeApp::cleanupSizeDependentResources()
 {
+    // Clean up render pass and framebuffers (these depend on window size)
+    framebuffers.clear();
+    renderPass.reset();
+    
+    // Clean up swapchain (depends on window size)
     swapchain.reset();
 }
 
@@ -1062,10 +1067,16 @@ void ComputeApp::cleanup()
     }
 
     // Sync objects
-    for (size_t i = 0; i < framesInFlightCount; ++i) {
+    for (size_t i = 0; i < commandEncoders.size(); ++i) {
         commandEncoders[i].reset();
+    }
+    for (size_t i = 0; i < inFlightFences.size(); ++i) {
         inFlightFences[i].reset();
+    }
+    for (size_t i = 0; i < renderFinishedSemaphores.size(); ++i) {
         renderFinishedSemaphores[i].reset();
+    }
+    for (size_t i = 0; i < imageAvailableSemaphores.size(); ++i) {
         imageAvailableSemaphores[i].reset();
     }
     commandEncoders.clear();
@@ -1075,8 +1086,10 @@ void ComputeApp::cleanup()
 
     // Render resources
     renderPipeline.reset();
-    for (size_t i = 0; i < framesInFlightCount; ++i) {
+    for (size_t i = 0; i < renderBindGroups.size(); ++i) {
         renderBindGroups[i].reset();
+    }
+    for (size_t i = 0; i < renderUniformBuffers.size(); ++i) {
         renderUniformBuffers[i].reset();
     }
     renderBindGroups.clear();
@@ -1085,11 +1098,15 @@ void ComputeApp::cleanup()
     sampler.reset();
     fragmentShader.reset();
     vertexShader.reset();
+    framebuffers.clear();
+    renderPass.reset();
 
     // Compute resources
     computePipeline.reset();
-    for (size_t i = 0; i < framesInFlightCount; ++i) {
+    for (size_t i = 0; i < computeBindGroups.size(); ++i) {
         computeBindGroups[i].reset();
+    }
+    for (size_t i = 0; i < computeUniformBuffers.size(); ++i) {
         computeUniformBuffers[i].reset();
     }
     computeBindGroups.clear();
@@ -1129,7 +1146,7 @@ gfx::PlatformWindowHandle ComputeApp::extractNativeHandle()
     handle = gfx::PlatformWindowHandle::fromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
     std::cout << "Extracted Wayland handle: Surface=" << handle.handle.wayland.surface << ", Display=" << handle.handle.wayland.display << std::endl;
 #elif defined(__APPLE__)
-    handle = gfx::PlatformWindowHandle::fromMetal(glfwGetMetalLayer(window));
+    handle = gfx::PlatformWindowHandle::fromMetal(glfwGetCocoaWindow(window));
     std::cout << "Extracted Metal handle: Layer=" << handle.handle.metal.layer << std::endl;
 #endif
     return handle;

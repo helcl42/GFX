@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_VULKAN_VALIDATIONS_H
+#define GFX_VULKAN_VALIDATIONS_H
 
 #include "gfx/gfx.h"
 
@@ -124,3 +125,5 @@ GfxResult validateSemaphoreSignal(GfxSemaphore semaphore);
 GfxResult validateSemaphoreWait(GfxSemaphore semaphore);
 
 } // namespace gfx::backend::vulkan::validator
+
+#endif // GFX_VULKAN_VALIDATIONS_H

@@ -1025,7 +1025,7 @@ gfx::PlatformWindowHandle CubeApp::extractNativeHandle()
     handle = gfx::PlatformWindowHandle::fromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
     std::cout << "Extracted Wayland handle: Surface=" << handle.handle.wayland.surface << ", Display=" << handle.handle.wayland.display << std::endl;
 #elif defined(__APPLE__)
-    handle = gfx::PlatformWindowHandle::fromMetal(glfwGetMetalLayer(window));
+    handle = gfx::PlatformWindowHandle::fromMetal(glfwGetCocoaWindow(window));
     std::cout << "Extracted Metal handle: Layer=" << handle.handle.metal.layer << std::endl;
 #endif
     return handle;
@@ -1166,13 +1166,23 @@ void CubeApp::cleanup()
     // Clean up rendering resources
     cleanupRenderingResources();
 
-    // Clean up per-frame resources
-    for (size_t i = 0; i < framesInFlightCount; ++i) {
+    // Clean up per-frame resources (safely check sizes)
+    for (size_t i = 0; i < commandEncoders.size(); ++i) {
         commandEncoders[i].reset();
+    }
+    for (size_t i = 0; i < inFlightFences.size(); ++i) {
         inFlightFences[i].reset();
+    }
+    for (size_t i = 0; i < renderFinishedSemaphores.size(); ++i) {
         renderFinishedSemaphores[i].reset();
+    }
+    for (size_t i = 0; i < imageAvailableSemaphores.size(); ++i) {
         imageAvailableSemaphores[i].reset();
-        for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+    }
+    
+    // Clean up bind groups (safely check both dimensions)
+    for (size_t i = 0; i < uniformBindGroups.size(); ++i) {
+        for (size_t cubeIdx = 0; cubeIdx < uniformBindGroups[i].size(); ++cubeIdx) {
             uniformBindGroups[i][cubeIdx].reset();
         }
     }

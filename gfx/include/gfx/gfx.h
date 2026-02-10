@@ -1865,7 +1865,7 @@ GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromXCB(void* connection,
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromWin32(void* hinstance, void* hwnd);
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromEmscripten(const char* canvasSelector);
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromAndroid(void* window);
-GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromMetal(void* layer);
+GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromMetal(void* window);
 
 #ifdef __cplusplus
 }

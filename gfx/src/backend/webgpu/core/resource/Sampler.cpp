@@ -19,7 +19,7 @@ Sampler::Sampler(Device* device, const SamplerCreateInfo& createInfo)
     desc.mipmapFilter = createInfo.mipmapFilter;
     desc.lodMinClamp = createInfo.lodMinClamp;
     desc.lodMaxClamp = createInfo.lodMaxClamp;
-    desc.maxAnisotropy = std::max<uint16_t>(1, createInfo.maxAnisotropy);
+    desc.maxAnisotropy = static_cast<uint16_t>(std::max(1u, createInfo.maxAnisotropy));
     desc.compare = createInfo.compareFunction;
 
     m_sampler = wgpuDeviceCreateSampler(m_device->handle(), &desc);

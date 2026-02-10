@@ -14,7 +14,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type: [Release, Debug]
+        # build_type: [Release, Debug]
+        build_type: [Debug]
+    env:
+      VULKAN_SDK: C:\VulkanSDK\
 
     steps:
     - uses: actions/checkout@v4
@@ -28,6 +31,26 @@ jobs:
 
     - name: Install Ninja
       run: choco install ninja
+
+    - name: Download and Install Vulkan SDK
+      run: |
+        $ver = (Invoke-WebRequest -Uri "https://vulkan.lunarg.com/sdk/latest.json" | ConvertFrom-Json).windows
+        echo "VULKAN_SDK_VERSION=$ver" >> $GITHUB_ENV
+        echo "Downloading Vulkan SDK version $ver..."
+        Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ver/windows/vulkansdk-windows-X64-$ver.exe" -OutFile VulkanSDK.exe
+        echo "Installing Vulkan SDK..."
+        .\VulkanSDK.exe --root C:\VulkanSDK --accept-licenses --default-answer --confirm-command install
+        echo "Vulkan SDK installed successfully."
+
+    - name: Debug Vulkan SDK Environment Variables
+      run: |
+        Write-Output "VULKAN_SDK: $env:VULKAN_SDK"
+        Write-Output "PATH: $env:PATH"
+        Write-Output "VK_ICD_FILENAMES: $env:VK_ICD_FILENAMES"
+        Write-Output "VK_LAYER_PATH: $env:VK_LAYER_PATH"
+
+    - name: Setup MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
 
     - name: Configure CMake
       run: >

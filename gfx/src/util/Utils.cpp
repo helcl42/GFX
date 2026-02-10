@@ -1,5 +1,10 @@
 #include "util/Utils.h"
 
+#ifdef GFX_HAS_COCOA
+#include <objc/message.h>
+#include <objc/runtime.h>
+#endif
+
 namespace gfx::util {
 
 uint64_t alignUp(uint64_t value, uint64_t alignment)
@@ -88,6 +93,46 @@ const char* resultToString(GfxResult result)
     default:
         return "GFX_RESULT_UNKNOWN";
     }
+}
+
+void* getMetalLayerFromCocoaWindow(void* cocoaWindow)
+{
+#if defined(GFX_HAS_COCOA)
+    // Cast the input parameter directly
+    id nsWindow = (id)cocoaWindow;
+
+    if (!nsWindow) {
+        return nullptr;
+    }
+
+    // 1. Get contentView: [nsWindow contentView]
+    auto getContentView = (id (*)(id, SEL))objc_msgSend;
+    id nsView = getContentView(nsWindow, sel_getUid("contentView"));
+
+    if (!nsView) {
+        return nullptr;
+    }
+
+    // 2. Ensure it's layer-backed: [nsView setWantsLayer:YES]
+    auto setWantsLayer = (void (*)(id, SEL, bool))objc_msgSend;
+    setWantsLayer(nsView, sel_getUid("setWantsLayer:"), true);
+
+    // 3. Get the existing layer: [nsView layer]
+    // This layer is already managed by the view and connected to the view hierarchy
+    auto getLayer = (id (*)(id, SEL))objc_msgSend;
+    id metalLayer = getLayer(nsView, sel_getUid("layer"));
+
+    if (!metalLayer) {
+        return nullptr;
+    }
+
+    // 4. Configure it as a Metal layer by setting class if needed
+    // But typically the layer is already suitable for Metal rendering
+    return (void*)metalLayer;
+#else
+    (void)cocoaWindow;
+    return nullptr;
+#endif
 }
 
 } // namespace gfx::util

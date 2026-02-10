@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GFX_UTIL_UTILS_H
+#define GFX_UTIL_UTILS_H
 
 #include <gfx/gfx.h>
 
@@ -14,4 +15,8 @@ uint32_t getFormatBytesPerPixel(GfxTextureFormat format);
 // Result to string conversion
 const char* resultToString(GfxResult result);
 
+void* getMetalLayerFromCocoaWindow(void* cocoaWindow);
+
 } // namespace gfx::util
+
+#endif // GFX_UTIL_UTILS_H

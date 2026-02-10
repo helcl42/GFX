@@ -124,4 +124,46 @@ std::tuple<uint32_t, uint32_t, uint32_t> getVersion()
     return std::make_tuple(major, minor, patch);
 }
 
+PlatformWindowHandle PlatformWindowHandle::fromWin32(void* hinstance, void* hwnd)
+{
+    GfxPlatformWindowHandle handle = gfxPlatformWindowHandleFromWin32(hinstance, hwnd);
+    return cPlatformWindowHandleWin32ToCpp(handle);
+}
+
+PlatformWindowHandle PlatformWindowHandle::fromXlib(void* display, unsigned long window)
+{
+    GfxPlatformWindowHandle handle = gfxPlatformWindowHandleFromXlib(display, window);
+    return cPlatformWindowHandleXlibToCpp(handle);
+}
+
+PlatformWindowHandle PlatformWindowHandle::fromWayland(void* display, void* surface)
+{
+    GfxPlatformWindowHandle handle = gfxPlatformWindowHandleFromWayland(display, surface);
+    return cPlatformWindowHandleWaylandToCpp(handle);
+}
+
+PlatformWindowHandle PlatformWindowHandle::fromXCB(void* connection, uint32_t window)
+{
+    GfxPlatformWindowHandle handle = gfxPlatformWindowHandleFromXCB(connection, window);
+    return cPlatformWindowHandleXCBToCpp(handle);
+}
+
+PlatformWindowHandle PlatformWindowHandle::fromMetal(void* window)
+{
+    GfxPlatformWindowHandle handle = gfxPlatformWindowHandleFromMetal(window);
+    return cPlatformWindowHandleMetalToCpp(handle);
+}
+
+PlatformWindowHandle PlatformWindowHandle::fromEmscripten(const char* canvasSelector)
+{
+    GfxPlatformWindowHandle handle = gfxPlatformWindowHandleFromEmscripten(canvasSelector);
+    return cPlatformWindowHandleEmscriptenToCpp(handle);
+}
+
+PlatformWindowHandle PlatformWindowHandle::fromAndroid(void* window)
+{
+    GfxPlatformWindowHandle handle = gfxPlatformWindowHandleFromAndroid(window);
+    return cPlatformWindowHandleAndroidToCpp(handle);
+}
+
 } // namespace gfx

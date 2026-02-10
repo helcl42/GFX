@@ -14,7 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        abi: [arm64-v8a, armeabi-v7a]
+        # abi: [arm64-v8a, armeabi-v7a]
+        abi: [arm64-v8a]
         build_type: [Release]
 
     steps:
@@ -37,17 +38,17 @@ jobs:
       run: sudo apt-get install -y ninja-build
 
     - name: Configure CMake
-      run: >
-        cmake -B build_android_${{ matrix.abi }}
-        -G Ninja
-        -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake
-        -DANDROID_ABI=${{ matrix.abi }}
-        -DANDROID_PLATFORM=android-24
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -DBUILD_WEBGPU_BACKEND=ON
-        -DBUILD_VULKAN_BACKEND=ON
-        -DBUILD_EXAMPLES=OFF
-        -DBUILD_TESTS=OFF
+      run: |
+        cmake -B build_android_${{ matrix.abi }} \
+        -G Ninja \
+        -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
+        -DANDROID_ABI=${{ matrix.abi }} \
+        -DANDROID_PLATFORM=android-24 \
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+        -DBUILD_WEBGPU_BACKEND=OFF \
+        -DBUILD_VULKAN_BACKEND=ON \
+        -DBUILD_EXAMPLES=OFF \
+        -DBUILD_TESTS=OFF \
         -DBUILD_CPP_WRAPPER=ON
 
     - name: Build

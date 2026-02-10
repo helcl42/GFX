@@ -19,8 +19,8 @@ namespace {
 
         VkWin32SurfaceCreateInfoKHR vkCreateInfo{};
         vkCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        vkCreateInfo.hwnd = windowHandle.handle.win32.hwnd;
-        vkCreateInfo.hinstance = windowHandle.handle.win32.hinstance;
+        vkCreateInfo.hinstance = static_cast<HINSTANCE>(windowHandle.handle.win32.hinstance);
+        vkCreateInfo.hwnd = static_cast<HWND>(windowHandle.handle.win32.hwnd);
 
         VkSurfaceKHR surface;
         if (vkCreateWin32SurfaceKHR(instance, &vkCreateInfo, nullptr, &surface) != VK_SUCCESS) {
@@ -107,13 +107,13 @@ namespace {
 #if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
     static VkSurfaceKHR createSurfaceMetal(VkInstance instance, const PlatformWindowHandle& windowHandle)
     {
-        if (!windowHandle.handle.metalLayer) {
+        if (!windowHandle.handle.metal.layer) {
             throw std::runtime_error("Invalid Metal layer handle");
         }
 
         VkMetalSurfaceCreateInfoEXT metalCreateInfo{};
         metalCreateInfo.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
-        metalCreateInfo.pLayer = windowHandle.handle.metalLayer;
+        metalCreateInfo.pLayer = windowHandle.handle.metal.layer;
 
         VkSurfaceKHR surface;
         if (vkCreateMetalSurfaceEXT(instance, &metalCreateInfo, nullptr, &surface) != VK_SUCCESS) {

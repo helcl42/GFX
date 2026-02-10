@@ -7,6 +7,8 @@
 #include "../system/Adapter.h"
 #include "../system/Device.h"
 
+#include <stdexcept>
+
 namespace gfx::backend::vulkan::core {
 
 Swapchain::Swapchain(Device* device, Surface* surface, const SwapchainCreateInfo& createInfo)

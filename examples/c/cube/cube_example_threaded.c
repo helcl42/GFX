@@ -1,3 +1,5 @@
+#if defined(GFX_HAS_XCB) || defined(GFX_HAS_WAYLAND) || defined(GFX_HAS_X11)
+
 #include <gfx/gfx.h>
 
 #define GLFW_INCLUDE_NONE
@@ -289,7 +291,7 @@ GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
     // handle = gfxPlatformWindowHandleFromXlib(glfwGetX11Display(), glfwGetX11Window(window));
     handle = gfxPlatformWindowHandleFromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
 #elif defined(__APPLE__)
-    handle = gfxPlatformWindowHandleFromMetal(glfwGetMetalLayer(window));
+    handle = gfxPlatformWindowHandleFromMetal(glfwGetCocoaWindow(window));
 #endif
     return handle;
 }
@@ -2184,3 +2186,12 @@ int main(void)
 
     return 0;
 }
+
+#else
+#include <stdio.h>
+int main(void)
+{
+    printf("Thid example is not supported on this platform.\n");
+    return 0;
+}
+#endif

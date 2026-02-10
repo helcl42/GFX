@@ -12,6 +12,7 @@
 #include "backend/vulkan/core/system/Instance.h"
 #include "backend/vulkan/core/system/Queue.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <vector>
 

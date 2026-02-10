@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <variant>
@@ -754,65 +755,13 @@ struct PlatformWindowHandle {
     WindowHandleUnion handle{};
 
     // Factory methods for each windowing system
-    static PlatformWindowHandle fromWin32(void* hwnd, void* hinstance = nullptr)
-    {
-        PlatformWindowHandle h{};
-        h.windowingSystem = WindowingSystem::Win32;
-        h.handle.win32.hwnd = hwnd;
-        h.handle.win32.hinstance = hinstance;
-        return h;
-    }
-
-    static PlatformWindowHandle fromXlib(void* display, unsigned long window)
-    {
-        PlatformWindowHandle h{};
-        h.windowingSystem = WindowingSystem::Xlib;
-        h.handle.xlib.display = display;
-        h.handle.xlib.window = window;
-        return h;
-    }
-
-    static PlatformWindowHandle fromWayland(void* display, void* surface)
-    {
-        PlatformWindowHandle h{};
-        h.windowingSystem = WindowingSystem::Wayland;
-        h.handle.wayland.display = display;
-        h.handle.wayland.surface = surface;
-        return h;
-    }
-
-    static PlatformWindowHandle fromXCB(void* connection, uint32_t window)
-    {
-        PlatformWindowHandle h{};
-        h.windowingSystem = WindowingSystem::XCB;
-        h.handle.xcb.connection = connection;
-        h.handle.xcb.window = window;
-        return h;
-    }
-
-    static PlatformWindowHandle fromMetal(void* layer)
-    {
-        PlatformWindowHandle h{};
-        h.windowingSystem = WindowingSystem::Metal;
-        h.handle.metal.layer = layer;
-        return h;
-    }
-
-    static PlatformWindowHandle fromEmscripten(const char* canvasSelector)
-    {
-        PlatformWindowHandle h{};
-        h.windowingSystem = WindowingSystem::Emscripten;
-        h.handle.emscripten.canvasSelector = canvasSelector;
-        return h;
-    }
-
-    static PlatformWindowHandle fromAndroid(void* window)
-    {
-        PlatformWindowHandle h{};
-        h.windowingSystem = WindowingSystem::Android;
-        h.handle.android.window = window;
-        return h;
-    }
+    static PlatformWindowHandle fromWin32(void* hinstance, void* hwnd);
+    static PlatformWindowHandle fromXlib(void* display, unsigned long window);
+    static PlatformWindowHandle fromWayland(void* display, void* surface);
+    static PlatformWindowHandle fromXCB(void* connection, uint32_t window);
+    static PlatformWindowHandle fromMetal(void* window);
+    static PlatformWindowHandle fromEmscripten(const char* canvasSelector);
+    static PlatformWindowHandle fromAndroid(void* window);
 };
 
 // ============================================================================

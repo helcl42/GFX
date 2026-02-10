@@ -99,12 +99,12 @@ namespace {
 #if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
     WGPUSurface createSurfaceMetal(WGPUInstance instance, const PlatformWindowHandle& windowHandle)
     {
-        if (!windowHandle.handle.metalLayer) {
+        if (!windowHandle.handle.metal.layer) {
             throw std::runtime_error("Invalid Metal layer handle");
         }
 
         WGPUSurfaceSourceMetalLayer source = WGPU_SURFACE_SOURCE_METAL_LAYER_INIT;
-        source.layer = windowHandle.handle.metalLayer;
+        source.layer = windowHandle.handle.metal.layer;
 
         WGPUSurfaceDescriptor surfaceDesc = WGPU_SURFACE_DESCRIPTOR_INIT;
         surfaceDesc.label = toStringView("Metal Surface");
@@ -162,7 +162,7 @@ Surface::Surface(WGPUInstance instance, WGPUAdapter adapter, const SurfaceCreate
         break;
 #endif
 #if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
-    case PlatformWindowHandle::Platform::Cocoa:
+    case PlatformWindowHandle::Platform::Metal:
         m_surface = createSurfaceMetal(instance, createInfo.windowHandle);
         break;
 #endif
