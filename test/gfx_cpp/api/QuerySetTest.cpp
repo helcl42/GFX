@@ -490,7 +490,7 @@ TEST_P(GfxCppQuerySetTest, BeginOcclusionQueryInRenderPass)
     // Create framebuffer
     gfx::FramebufferColorAttachment colorFbAttachment{
         .view = colorView,
-        .resolveTarget = nullptr
+        .resolveTarget = std::nullopt
     };
 
     gfx::FramebufferDescriptor framebufferDesc{

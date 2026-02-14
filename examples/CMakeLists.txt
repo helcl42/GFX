@@ -349,7 +349,7 @@ else()
 
     # C Compute Example
     add_executable(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/c/compute/compute_example.c)
-    target_link_libraries(compute_example_c gfx glfw m)
+    target_link_libraries(compute_example_c gfx glfw)
     if(ENABLE_ASAN AND NOT MSVC)
         target_link_options(compute_example_c PRIVATE -fsanitize=address)
     endif()

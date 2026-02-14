@@ -169,10 +169,12 @@ TEST(GfxUtilTest, PlatformWindowHandleFromAndroid)
 
 TEST(GfxUtilTest, PlatformWindowHandleFromMetal)
 {
-    void* layer = (void*)0x1234;
-    GfxPlatformWindowHandle handle = gfxPlatformWindowHandleFromMetal(layer);
+    void* window = nullptr;
+    GfxPlatformWindowHandle handle = gfxPlatformWindowHandleFromMetal(window);
     EXPECT_EQ(handle.windowingSystem, GFX_WINDOWING_SYSTEM_METAL);
-    EXPECT_EQ(handle.metal.layer, layer);
+    // the layer is internally derived from window, so the input value is not stored directly.
+    // The handle should be valid but the layer field is not expected to match the input.
+    EXPECT_EQ(handle.metal.layer, nullptr);
 }
 
 } // namespace

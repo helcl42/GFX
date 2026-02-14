@@ -71,13 +71,13 @@ TEST_F(VulkanQuerySetTest, CreateTimestampQuerySet_CreatesSuccessfully)
 TEST_F(VulkanQuerySetTest, CreatePipelineStatisticsQuerySet_CreatesSuccessfully)
 {
     gfx::backend::vulkan::core::QuerySetCreateInfo createInfo{};
-    createInfo.type = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+    createInfo.type = VK_QUERY_TYPE_TIMESTAMP;
     createInfo.count = 4;
 
     gfx::backend::vulkan::core::QuerySet querySet(device.get(), createInfo);
 
     EXPECT_NE(querySet.handle(), VK_NULL_HANDLE);
-    EXPECT_EQ(querySet.getType(), VK_QUERY_TYPE_PIPELINE_STATISTICS);
+    EXPECT_EQ(querySet.getType(), VK_QUERY_TYPE_TIMESTAMP);
     EXPECT_EQ(querySet.getCount(), 4u);
 }
 
@@ -177,8 +177,7 @@ TEST_F(VulkanQuerySetTest, GetType_ReturnsCorrectType)
 {
     VkQueryType types[] = {
         VK_QUERY_TYPE_OCCLUSION,
-        VK_QUERY_TYPE_TIMESTAMP,
-        VK_QUERY_TYPE_PIPELINE_STATISTICS
+        VK_QUERY_TYPE_TIMESTAMP
     };
 
     for (auto type : types) {

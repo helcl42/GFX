@@ -185,10 +185,8 @@ void matrixMultiply(float* result, const float* a, const float* b);
 void matrixRotateX(float* matrix, float angle);
 void matrixRotateY(float* matrix, float angle);
 void matrixRotateZ(float* matrix, float angle);
-void matrixPerspective(float* matrix, float fov, float aspect, float near, float far, GfxBackend backend);
-void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ,
-    float centerX, float centerY, float centerZ,
-    float upX, float upY, float upZ);
+void matrixPerspective(float* matrix, float fov, float aspect, float nearPlane, float farPlane, GfxBackend backend);
+void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ);
 bool vectorNormalize(float* x, float* y, float* z);
 
 // GLFW callbacks
@@ -1657,7 +1655,7 @@ void matrixRotateZ(float* matrix, float angle)
     matrix[5] = c;
 }
 
-void matrixPerspective(float* matrix, float fov, float aspect, float near, float far, GfxBackend backend)
+void matrixPerspective(float* matrix, float fov, float aspect, float nearPlane, float farPlane, GfxBackend backend)
 {
     memset(matrix, 0, 16 * sizeof(float));
 
@@ -1669,14 +1667,12 @@ void matrixPerspective(float* matrix, float fov, float aspect, float near, float
     } else {
         matrix[5] = f;
     }
-    matrix[10] = (far + near) / (near - far);
+    matrix[10] = (farPlane + nearPlane) / (nearPlane - farPlane);
     matrix[11] = -1.0f;
-    matrix[14] = (2.0f * far * near) / (near - far);
+    matrix[14] = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
 }
 
-void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ,
-    float centerX, float centerY, float centerZ,
-    float upX, float upY, float upZ)
+void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ)
 {
     // Calculate forward vector
     float fx = centerX - eyeX;

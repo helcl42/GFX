@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <set>
 #include <stdexcept>
 #include <vector>
 
@@ -61,6 +62,16 @@ namespace {
         } else {
             return "Unknown";
         }
+    }
+
+    bool isExtensionEnabled(const std::vector<const char*>& enabledExtensions, const char* extension)
+    {
+        for (const auto& enabledExt : enabledExtensions) {
+            if (strcmp(enabledExt, extension) == 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     bool isExtensionEnabled(const std::vector<std::string>& enabledExtensions, const char* extension)
@@ -378,7 +389,9 @@ std::vector<const char*> Instance::enumerateSupportedExtensions()
             });
 
         if (isAvailable) {
-            supportedExtensions.push_back(mapping.internalName);
+            if (!isExtensionEnabled(supportedExtensions, mapping.internalName)) {
+                supportedExtensions.push_back(mapping.internalName);
+            }
         }
     }
 

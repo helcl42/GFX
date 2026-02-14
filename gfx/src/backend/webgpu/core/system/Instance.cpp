@@ -5,6 +5,7 @@
 #include "common/Logger.h"
 
 #include <algorithm>
+#include <stdexcept>
 
 namespace gfx::backend::webgpu::core {
 
@@ -144,7 +145,7 @@ Adapter* Instance::requestAdapter(const AdapterCreateInfo& createInfo) const
     // If specific adapter index requested, return that adapter
     if (createInfo.adapterIndex != UINT32_MAX) {
         if (createInfo.adapterIndex >= m_adapters.size()) {
-            throw std::out_of_range("Adapter index out of range");
+            throw std::runtime_error("Adapter index out of range");
         }
         return m_adapters[createInfo.adapterIndex].get();
     }

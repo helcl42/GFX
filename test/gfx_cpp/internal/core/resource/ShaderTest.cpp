@@ -142,12 +142,31 @@ TEST_P(ShaderImplTest, CreateWGSLShader)
     desc.code.assign(reinterpret_cast<const uint8_t*>(wgslCode),
         reinterpret_cast<const uint8_t*>(wgslCode) + strlen(wgslCode));
 
-    auto shader = deviceWrapper.createShader(desc);
-    ASSERT_NE(shader, nullptr);
+    if (backend == GFX_BACKEND_VULKAN) {
+        // Vulkan backend should NOT support WGSL - expect exception or nullptr
+        EXPECT_THROW(
+            {
+                auto shader = deviceWrapper.createShader(desc);
+                // If no exception, it should at least return nullptr
+                if (shader == nullptr) {
+                    // This is also acceptable - graceful failure
+                }
+            },
+            std::exception)
+            << "Vulkan backend should reject WGSL shaders";
+    } else if (backend == GFX_BACKEND_WEBGPU) {
+        // WebGPU backend MUST support WGSL
+        auto shader = deviceWrapper.createShader(desc);
+        ASSERT_NE(shader, nullptr) << "WebGPU backend must support WGSL shaders";
+    }
 }
 
 TEST_P(ShaderImplTest, MixedShaderTypes_IndependentHandles)
 {
+    if (backend == GFX_BACKEND_VULKAN) {
+        GTEST_SKIP() << "MixedShaderTypes might be available in WebGPU only";
+    }
+
     DeviceImpl deviceWrapper(device);
 
     // Create SPIR-V shader

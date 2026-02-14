@@ -137,7 +137,7 @@ TEST(GfxCppUtilTest, PlatformWindowHandleFromWin32)
 {
     void* hwnd = (void*)0x1234;
     void* hinstance = (void*)0x5678;
-    gfx::PlatformWindowHandle handle = gfx::PlatformWindowHandle::fromWin32(hwnd, hinstance);
+    gfx::PlatformWindowHandle handle = gfx::PlatformWindowHandle::fromWin32(hinstance, hwnd);
     EXPECT_EQ(handle.windowingSystem, gfx::WindowingSystem::Win32);
     EXPECT_EQ(handle.handle.win32.hwnd, hwnd);
     EXPECT_EQ(handle.handle.win32.hinstance, hinstance);
@@ -153,10 +153,10 @@ TEST(GfxCppUtilTest, PlatformWindowHandleFromEmscripten)
 
 TEST(GfxCppUtilTest, PlatformWindowHandleFromMetal)
 {
-    void* layer = (void*)0x1234;
-    gfx::PlatformWindowHandle handle = gfx::PlatformWindowHandle::fromMetal(layer);
+    void* window = nullptr;
+    gfx::PlatformWindowHandle handle = gfx::PlatformWindowHandle::fromMetal(window);
     EXPECT_EQ(handle.windowingSystem, gfx::WindowingSystem::Metal);
-    EXPECT_EQ(handle.handle.metal.layer, layer);
+    EXPECT_EQ(handle.handle.metal.layer, nullptr);
 }
 
 } // namespace

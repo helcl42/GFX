@@ -45,7 +45,7 @@ static constexpr gfx::TextureFormat DEPTH_FORMAT = gfx::TextureFormat::Depth32Fl
 static constexpr gfx::Backend BACKEND_API = gfx::Backend::WebGPU;
 #else
 // here we can choose between VULKAN, WEBGPU
-static constexpr gfx::Backend BACKEND_API = gfx::Backend::Vulkan;
+static constexpr gfx::Backend BACKEND_API = gfx::Backend::WebGPU;
 #endif
 
 // Log callback function
@@ -1179,7 +1179,7 @@ void CubeApp::cleanup()
     for (size_t i = 0; i < imageAvailableSemaphores.size(); ++i) {
         imageAvailableSemaphores[i].reset();
     }
-    
+
     // Clean up bind groups (safely check both dimensions)
     for (size_t i = 0; i < uniformBindGroups.size(); ++i) {
         for (size_t cubeIdx = 0; cubeIdx < uniformBindGroups[i].size(); ++cubeIdx) {
@@ -1254,10 +1254,7 @@ void CubeApp::matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, flo
     matrix[3][2] = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
 }
 
-void CubeApp::matrixLookAt(std::array<std::array<float, 4>, 4>& matrix,
-    float eyeX, float eyeY, float eyeZ,
-    float centerX, float centerY, float centerZ,
-    float upX, float upY, float upZ)
+void CubeApp::matrixLookAt(std::array<std::array<float, 4>, 4>& matrix, float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ)
 {
     // Calculate forward vector
     float fx = centerX - eyeX;
