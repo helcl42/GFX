@@ -8,6 +8,66 @@
 
 namespace gfx::backend::webgpu::core {
 
+namespace {
+    std::vector<WGPUAdapter> discoverAdapters(WGPUInstance instance)
+    {
+        std::vector<WGPUAdapter> adapters;
+
+        // WebGPU doesn't have a true enumerate API, so we request with different preferences
+        // and deduplicate based on adapter handle
+        const WGPUPowerPreference preferences[] = {
+            WGPUPowerPreference_HighPerformance,
+            WGPUPowerPreference_LowPower,
+            WGPUPowerPreference_Undefined
+        };
+
+        for (auto preference : preferences) {
+            for (auto forceFallback : { WGPU_FALSE, WGPU_TRUE }) {
+                WGPURequestAdapterOptions options = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
+                options.powerPreference = preference;
+                options.forceFallbackAdapter = forceFallback;
+
+                WGPUAdapter adapter = nullptr;
+                bool completed = false;
+
+                WGPURequestAdapterCallbackInfo callbackInfo = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
+                callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
+                callbackInfo.callback = [](WGPURequestAdapterStatus status, WGPUAdapter adapterResult, WGPUStringView message, void* userdata1, void* userdata2) {
+                    auto* adapterPtr = static_cast<WGPUAdapter*>(userdata1);
+                    auto* completedPtr = static_cast<bool*>(userdata2);
+
+                    if (status == WGPURequestAdapterStatus_Success && adapterResult) {
+                        *adapterPtr = adapterResult;
+                    }
+                    *completedPtr = true;
+                    (void)message;
+                };
+                callbackInfo.userdata1 = &adapter;
+                callbackInfo.userdata2 = &completed;
+
+                WGPUFuture future = wgpuInstanceRequestAdapter(instance, &options, callbackInfo);
+                WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
+                waitInfo.future = future;
+                wgpuInstanceWaitAny(instance, 1, &waitInfo, UINT64_MAX);
+
+                if (completed && adapter) {
+                    // Check if we already have this adapter (deduplicate)
+                    auto isDuplicate = std::any_of(adapters.begin(), adapters.end(),
+                        [adapter](WGPUAdapter existing) { return existing == adapter; });
+
+                    if (!isDuplicate) {
+                        adapters.push_back(adapter);
+                    } else {
+                        wgpuAdapterRelease(adapter); // Release duplicate
+                    }
+                }
+            }
+        }
+
+        return adapters;
+    }
+} // namespace
+
 Instance::Instance(const InstanceCreateInfo& createInfo)
 {
     (void)createInfo; // Descriptor not used in current implementation
@@ -41,62 +101,11 @@ Instance::Instance(const InstanceCreateInfo& createInfo)
     wgpuDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&instanceTogglesDesc);
 #endif
     m_instance = wgpuCreateInstance(&wgpuDesc);
-
-    // Enumerate and cache adapters by trying different power preferences and fallback
-    // WebGPU doesn't have a true enumerate API, so we request with different preferences
-    // and deduplicate based on adapter handle
-    std::vector<WGPUAdapter> discoveredAdapters;
-
-    const WGPUPowerPreference preferences[] = {
-        WGPUPowerPreference_HighPerformance,
-        WGPUPowerPreference_LowPower,
-        WGPUPowerPreference_Undefined
-    };
-
-    for (auto preference : preferences) {
-        for (auto forceFallback : { WGPU_FALSE, WGPU_TRUE }) {
-            WGPURequestAdapterOptions options = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
-            options.powerPreference = preference;
-            options.forceFallbackAdapter = forceFallback;
-
-            WGPUAdapter adapter = nullptr;
-            bool completed = false;
-
-            WGPURequestAdapterCallbackInfo callbackInfo = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
-            callbackInfo.mode = WGPUCallbackMode_WaitAnyOnly;
-            callbackInfo.callback = [](WGPURequestAdapterStatus status, WGPUAdapter adapterResult, WGPUStringView message, void* userdata1, void* userdata2) {
-                auto* adapterPtr = static_cast<WGPUAdapter*>(userdata1);
-                auto* completedPtr = static_cast<bool*>(userdata2);
-
-                if (status == WGPURequestAdapterStatus_Success && adapterResult) {
-                    *adapterPtr = adapterResult;
-                }
-                *completedPtr = true;
-                (void)message;
-            };
-            callbackInfo.userdata1 = &adapter;
-            callbackInfo.userdata2 = &completed;
-
-            WGPUFuture future = wgpuInstanceRequestAdapter(m_instance, &options, callbackInfo);
-            WGPUFutureWaitInfo waitInfo = WGPU_FUTURE_WAIT_INFO_INIT;
-            waitInfo.future = future;
-            wgpuInstanceWaitAny(m_instance, 1, &waitInfo, UINT64_MAX);
-
-            if (completed && adapter) {
-                // Check if we already have this adapter (deduplicate)
-                auto isDuplicate = std::any_of(discoveredAdapters.begin(), discoveredAdapters.end(),
-                    [adapter](WGPUAdapter existing) { return existing == adapter; });
-
-                if (isDuplicate) {
-                    wgpuAdapterRelease(adapter); // Release duplicate
-                } else {
-                    discoveredAdapters.push_back(adapter);
-                }
-            }
-        }
+    if (!m_instance) {
+        throw std::runtime_error("Failed to create WebGPU instance");
     }
 
-    // Convert to wrapped adapters
+    std::vector<WGPUAdapter> discoveredAdapters = discoverAdapters(m_instance);
     for (auto adapter : discoveredAdapters) {
         m_adapters.push_back(std::make_unique<Adapter>(adapter, this));
     }
