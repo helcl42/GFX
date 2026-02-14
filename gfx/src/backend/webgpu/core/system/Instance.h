@@ -28,7 +28,7 @@ public:
 
 private:
     WGPUInstance m_instance = nullptr;
-    mutable std::vector<std::unique_ptr<Adapter>> m_adapters;
+    std::vector<std::unique_ptr<Adapter>> m_adapters;
 };
 
 } // namespace gfx::backend::webgpu::core
