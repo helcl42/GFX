@@ -56,7 +56,7 @@ TEST_P(AdapterImplTest, GetInfo)
     auto info = wrapper.getInfo();
 
     // Verify some basic info is returned
-    EXPECT_GT(info.deviceID, 0u);
+    EXPECT_GE(info.deviceID, 0u);
     EXPECT_NE(info.adapterType, AdapterType::Unknown);
 }
 

@@ -43,7 +43,7 @@
 #define GFX_BACKEND_API GFX_BACKEND_WEBGPU
 #else
 // here we can choose between VULKAN, WEBGPU
-#define GFX_BACKEND_API GFX_BACKEND_WEBGPU
+#define GFX_BACKEND_API GFX_BACKEND_VULKAN
 #endif
 
 // Log callback function

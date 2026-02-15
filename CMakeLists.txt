@@ -104,13 +104,46 @@ if(BUILD_VULKAN_BACKEND AND NOT BUILD_FOR_WEB)
     
     # Find Vulkan loader library manually
     if(IOS)
-        # iOS SDK path structure: $ENV{VULKAN_SDK}/iOS/lib
-        find_library(Vulkan_LIBRARY
-            NAMES MoltenVK
-            HINTS
-                ENV VULKAN_SDK
-            PATH_SUFFIXES iOS/lib iOS/static
-        )
+        # For iOS simulator, determine the correct architecture
+        # Check the actual SDK path, not just the name, since CMAKE_OSX_SYSROOT can be inconsistent
+        string(TOLOWER "${CMAKE_OSX_SYSROOT}" SYSROOT_LOWER)
+        if(SYSROOT_LOWER MATCHES "simulator" OR CMAKE_OSX_SYSROOT MATCHES "Simulator")
+            set(IOS_ARCH "ios-arm64_x86_64-simulator")
+        else()
+            set(IOS_ARCH "ios-arm64")
+        endif()
+        
+        message(STATUS "iOS build detected, architecture: ${IOS_ARCH}")
+        message(STATUS "CMAKE_OSX_SYSROOT: ${CMAKE_OSX_SYSROOT}")
+        message(STATUS "VULKAN_SDK: $ENV{VULKAN_SDK}")
+        
+        # Try to find the MoltenVK static library in the xcframework
+        # VULKAN_SDK typically points to macOS subdirectory already
+        set(MOLTENVK_XCFRAMEWORK_PATH "$ENV{VULKAN_SDK}/lib/MoltenVK.xcframework/${IOS_ARCH}/libMoltenVK.a")
+        message(STATUS "Checking for MoltenVK at: ${MOLTENVK_XCFRAMEWORK_PATH}")
+        if(EXISTS "${MOLTENVK_XCFRAMEWORK_PATH}")
+            set(Vulkan_LIBRARY "${MOLTENVK_XCFRAMEWORK_PATH}")
+            message(STATUS "Found MoltenVK at: ${Vulkan_LIBRARY}")
+        else()
+            # Try alternative paths
+            find_library(Vulkan_LIBRARY
+                NAMES MoltenVK libMoltenVK.a
+                HINTS
+                    "$ENV{VULKAN_SDK}/macOS/lib/MoltenVK.xcframework/${IOS_ARCH}"
+                    "$ENV{VULKAN_SDK}/iOS/lib/MoltenVK.xcframework/${IOS_ARCH}/MoltenVK.framework"
+                    "$ENV{VULKAN_SDK}/iOS/lib"
+                NO_DEFAULT_PATH
+            )
+            
+            if(NOT Vulkan_LIBRARY)
+                # Fallback to standard paths
+                find_library(Vulkan_LIBRARY
+                    NAMES MoltenVK
+                    HINTS ENV VULKAN_SDK
+                    PATH_SUFFIXES iOS/lib iOS/static
+                )
+            endif()
+        endif()
     elseif(APPLE)
         # macOS SDK path structure: $ENV{VULKAN_SDK}/macOS/lib
         find_library(Vulkan_LIBRARY
@@ -404,6 +437,16 @@ target_include_directories(gfx
 if(BUILD_VULKAN_BACKEND)
     target_link_libraries(gfx PUBLIC ${Vulkan_LIBRARY})
     target_compile_definitions(gfx PUBLIC GFX_ENABLE_VULKAN=1)
+    
+    # For iOS, MoltenVK requires additional frameworks
+    if(IOS)
+        target_link_libraries(gfx PUBLIC
+            "-framework Metal"
+            "-framework IOSurface"
+            "-framework CoreGraphics"
+        )
+    endif()
+    
     # Use Dawn's bundled Vulkan headers if WebGPU backend is enabled to avoid version conflicts
     if(BUILD_WEBGPU_BACKEND AND TARGET Vulkan::Headers)
         target_link_libraries(gfx PUBLIC Vulkan::Headers)
@@ -413,6 +456,17 @@ if(BUILD_VULKAN_BACKEND)
             HINTS ENV VULKAN_SDK
             PATH_SUFFIXES include
         )
+        message(STATUS "SYSTEM_VULKAN_INCLUDE_DIR search result: ${SYSTEM_VULKAN_INCLUDE_DIR}")
+        
+        if(NOT SYSTEM_VULKAN_INCLUDE_DIR AND IOS)
+            # For iOS, explicitly check in VULKAN_SDK/include
+            set(IOS_VULKAN_INCLUDE "$ENV{VULKAN_SDK}/include")
+            if(EXISTS "${IOS_VULKAN_INCLUDE}/vulkan/vulkan.h")
+                set(SYSTEM_VULKAN_INCLUDE_DIR "${IOS_VULKAN_INCLUDE}")
+                message(STATUS "Found iOS Vulkan headers at: ${SYSTEM_VULKAN_INCLUDE_DIR}")
+            endif()
+        endif()
+        
         if(SYSTEM_VULKAN_INCLUDE_DIR)
             target_include_directories(gfx PUBLIC ${SYSTEM_VULKAN_INCLUDE_DIR})
         else()

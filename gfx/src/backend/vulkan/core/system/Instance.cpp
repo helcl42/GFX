@@ -130,7 +130,6 @@ Instance::Instance(const InstanceCreateInfo& createInfo)
 #endif
 #if defined(GFX_HAS_COCOA) || defined(GFX_HAS_UIKIT)
         extensions.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
-        extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 #endif
     }
 #endif // GFX_HEADLESS_BUILD

@@ -14,13 +14,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # build_type: [Release, Debug]
-        platform: [macos-15]
-        build_type: [Debug]
+        build_type: [Debug, Release]
+        sdk: [iphoneos, iphonesimulator]
         include:
-          - os: macos-15
-            c_compiler: clang
-            cpp_compiler: clang++
+          - sdk: iphoneos
+            sdk_name: device
+          - sdk: iphonesimulator
+            sdk_name: simulator
     env:
       VULKAN_VERSION: 1.3.290.0
 
@@ -44,20 +44,18 @@ jobs:
         hdiutil attach vulkansdk.dmg
         sudo /Volumes/vulkansdk-macos-$VULKAN_VERSION/InstallVulkan.app/Contents/MacOS/InstallVulkan --root $GITHUB_WORKSPACE/vulkansdk-macos-$VULKAN_VERSION --accept-licenses --default-answer --confirm-command install
         hdiutil detach /Volumes/vulkansdk-macos-$VULKAN_VERSION
-        echo "VULKAN_SDK_PATH=$GITHUB_WORKSPACE/vulkansdk-macos-$VULKAN_VERSION" >> $GITHUB_ENV
-        echo "VULKAN_SDK=$GITHUB_WORKSPACE/vulkansdk-macos-$VULKAN_VERSION" >> $GITHUB_ENV
+        echo "VULKAN_SDK=$GITHUB_WORKSPACE/vulkansdk-macos-$VULKAN_VERSION/macOS" >> $GITHUB_ENV
         echo $GITHUB_ENV
+        ls -la $GITHUB_WORKSPACE/vulkansdk-macos-$VULKAN_VERSION/macOS/lib/
 
     - name: Configure CMake
       run: |
-        cmake -B build \
+        cmake -B build_${{ matrix.sdk }} \
         -G Ninja \
         -DCMAKE_SYSTEM_NAME=iOS \
         -DCMAKE_OSX_ARCHITECTURES=arm64 \
-        -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
-        -DCMAKE_IOS_INSTALL_COMBINED=YES \
-        -DCMAKE_OSX_SYSROOT=iphonesimulator \
-        -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=16.3 \
+        -DCMAKE_OSX_SYSROOT=${{ matrix.sdk }} \
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
         -DBUILD_WEBGPU_BACKEND=OFF \
         -DBUILD_VULKAN_BACKEND=ON \
@@ -66,13 +64,12 @@ jobs:
         -DBUILD_CPP_WRAPPER=ON
 
     - name: Build
-      run: cmake --build build --config ${{ matrix.build_type }} -j 2
+      run: cmake --build build_${{ matrix.sdk }} --config ${{ matrix.build_type }} -j 2
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ios-arm64-${{ matrix.build_type }}-libraries
+        name: ios-${{ matrix.sdk_name }}-${{ matrix.build_type }}-libraries
         path: |
-          build_ios_arm64/libgfx.a
-          build_ios_arm64/libgfx_cpp.a
+          build_${{ matrix.sdk }}/libgfx*.dylib
         retention-days: 7

@@ -117,17 +117,35 @@ void* getMetalLayerFromCocoaWindow(void* cocoaWindow)
     auto setWantsLayer = (void (*)(id, SEL, bool))objc_msgSend;
     setWantsLayer(nsView, sel_getUid("setWantsLayer:"), true);
 
-    // 3. Get the existing layer: [nsView layer]
-    // This layer is already managed by the view and connected to the view hierarchy
-    auto getLayer = (id (*)(id, SEL))objc_msgSend;
-    id metalLayer = getLayer(nsView, sel_getUid("layer"));
-
+    // 3. Create a CAMetalLayer explicitly
+    // Note: Simply calling [nsView layer] after setWantsLayer:YES creates an NSViewBackingLayer,
+    // which is NOT a CAMetalLayer. MoltenVK requires a proper CAMetalLayer.
+    Class caMetalLayerClass = objc_getClass("CAMetalLayer");
+    if (!caMetalLayerClass) {
+        return nullptr;
+    }
+    
+    // Create new CAMetalLayer: [CAMetalLayer layer]
+    auto layerMethod = (id (*)(id, SEL))objc_msgSend;
+    id metalLayer = layerMethod((id)caMetalLayerClass, sel_getUid("layer"));
+    
     if (!metalLayer) {
         return nullptr;
     }
-
-    // 4. Configure it as a Metal layer by setting class if needed
-    // But typically the layer is already suitable for Metal rendering
+    
+    // 4. Set this as the view's layer: [nsView setLayer:metalLayer]
+    auto setLayer = (void (*)(id, SEL, id))objc_msgSend;
+    setLayer(nsView, sel_getUid("setLayer:"), metalLayer);
+    
+    // 5. Get the backing scale factor and set contentsScale for retina support
+    // [nsWindow backingScaleFactor]
+    auto getBackingScaleFactor = (double (*)(id, SEL))objc_msgSend;
+    double scaleFactor = getBackingScaleFactor(nsWindow, sel_getUid("backingScaleFactor"));
+    
+    // [metalLayer setContentsScale:scaleFactor]
+    auto setContentsScale = (void (*)(id, SEL, double))objc_msgSend;
+    setContentsScale(metalLayer, sel_getUid("setContentsScale:"), scaleFactor);
+    
     return (void*)metalLayer;
 #else
     (void)cocoaWindow;
