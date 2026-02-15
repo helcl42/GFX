@@ -52,6 +52,17 @@ jobs:
           vulkan-validationlayers \
           mesa-vulkan-drivers \
           ninja-build
+        echo "=== Verifying lavapipe installation ==="
+        echo "Contents of /usr/share/vulkan/icd.d/:"
+        ls -la /usr/share/vulkan/icd.d/ || echo "Directory not found"
+        echo "Searching for lavapipe files:"
+        find /usr -name "*lavapipe*" 2>/dev/null || true
+        find /usr -name "*lvp*icd*" 2>/dev/null || true
+        echo "Checking if ICD file exists and is readable:"
+        test -f /usr/share/vulkan/icd.d/lvp_icd.x86_64.json && echo "File exists" || echo "File does not exist"
+        test -r /usr/share/vulkan/icd.d/lvp_icd.x86_64.json && echo "File is readable" || echo "File is not readable"
+        echo "File contents:"
+        cat /usr/share/vulkan/icd.d/lvp_icd.x86_64.json 2>&1 || echo "Cannot read file"
 
     - name: Configure CMake
       run: |
@@ -66,13 +77,21 @@ jobs:
         -DBUILD_TESTS=ON
 
     - name: Build
-      run: cmake --build build --config ${{ matrix.build_type }} -j 2
+      run: cmake --build build --config ${{ matrix.build_type }}
+
+    - name: Verify lavapipe installation
+      run: |
+        echo "Checking for lavapipe ICD..."
+        ls -la /usr/share/vulkan/icd.d/ || true
+        ls -la /usr/lib/x86_64-linux-gnu/ | grep lavapipe || true
+        echo "VK_ICD_FILENAMES will be set to: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json"
 
     - name: Test
       working-directory: build
       env:
         VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
-      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure --timeout 300 || true
+        VK_LOADER_DEBUG: all
+      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure --timeout 300
       continue-on-error: true
 
     - name: Upload artifacts

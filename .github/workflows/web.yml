@@ -36,7 +36,7 @@ jobs:
           -DBUILD_TESTS=OFF
 
     - name: Build
-      run: cmake --build build_web -j 2
+      run: cmake --build build_web
 
     - name: Upload web artifacts
       uses: actions/upload-artifact@v4

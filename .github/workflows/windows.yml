@@ -14,8 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # build_type: [Release, Debug]
-        build_type: [Debug]
+        build_type: [Release, Debug]
     env:
       VULKAN_SDK: C:\VulkanSDK\
 
@@ -65,7 +64,7 @@ jobs:
         -DBUILD_TESTS=ON
 
     - name: Build
-      run: cmake --build build --config ${{ matrix.build_type }} -j 2
+      run: cmake --build build --config ${{ matrix.build_type }} -j 1
 
     - name: Test
       working-directory: build

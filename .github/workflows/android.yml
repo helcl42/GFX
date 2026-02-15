@@ -52,7 +52,7 @@ jobs:
         -DBUILD_CPP_WRAPPER=ON
 
     - name: Build
-      run: cmake --build build_android_${{ matrix.abi }} --config ${{ matrix.build_type }} -j 2
+      run: cmake --build build_android_${{ matrix.abi }} --config ${{ matrix.build_type }}
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4

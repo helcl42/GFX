@@ -630,9 +630,8 @@ if(BUILD_CPP_WRAPPER)
     )
     target_link_libraries(gfx_cpp PUBLIC gfx)  # Link to C API library
 
-    # Link Vulkan if available
+    # Link Vulkan if available - only headers, not the library (already in gfx)
     if(BUILD_VULKAN_BACKEND)
-        target_link_libraries(gfx_cpp PUBLIC ${Vulkan_LIBRARY})
         target_compile_definitions(gfx_cpp PUBLIC GFX_ENABLE_VULKAN=1)
         # Use Dawn's bundled Vulkan headers if WebGPU backend is enabled to avoid version conflicts
         if(BUILD_WEBGPU_BACKEND AND TARGET Vulkan::Headers)

@@ -64,7 +64,7 @@ jobs:
         -DBUILD_CPP_WRAPPER=ON
 
     - name: Build
-      run: cmake --build build_${{ matrix.sdk }} --config ${{ matrix.build_type }} -j 2
+      run: cmake --build build_${{ matrix.sdk }} --config ${{ matrix.build_type }}
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
