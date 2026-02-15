@@ -40,6 +40,12 @@ const char* deviceExtensionNameToGfx(const char* internalName)
     if (std::strcmp(internalName, core::extensions::TIMELINE_SEMAPHORE) == 0) {
         return GFX_DEVICE_EXTENSION_TIMELINE_SEMAPHORE;
     }
+    if (std::strcmp(internalName, core::extensions::MULTIVIEW) == 0) {
+        return GFX_DEVICE_EXTENSION_MULTIVIEW;
+    }
+    if (std::strcmp(internalName, core::extensions::ANISOTROPIC_FILTERING) == 0) {
+        return GFX_DEVICE_EXTENSION_ANISOTROPIC_FILTERING;
+    }
     // Unknown extension - return as-is
     return internalName;
 }
