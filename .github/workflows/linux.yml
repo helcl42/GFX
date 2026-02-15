@@ -50,6 +50,7 @@ jobs:
           libglu1-mesa-dev \
           libvulkan-dev \
           vulkan-validationlayers \
+          mesa-vulkan-drivers \
           ninja-build
 
     - name: Configure CMake
@@ -69,6 +70,8 @@ jobs:
 
     - name: Test
       working-directory: build
+      env:
+        VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
       run: ctest --build-config ${{ matrix.build_type }} --output-on-failure --timeout 300 || true
       continue-on-error: true
 
