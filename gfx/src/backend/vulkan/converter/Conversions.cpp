@@ -78,16 +78,16 @@ GfxQueueFlags vkQueueFlagsToGfx(VkQueueFlags vkFlags)
     GfxQueueFlags flags = GFX_QUEUE_FLAG_NONE;
 
     if (vkFlags & VK_QUEUE_GRAPHICS_BIT) {
-        flags = static_cast<GfxQueueFlags>(flags | GFX_QUEUE_FLAG_GRAPHICS);
+        flags = GFX_FLAGS(flags | GFX_QUEUE_FLAG_GRAPHICS);
     }
     if (vkFlags & VK_QUEUE_COMPUTE_BIT) {
-        flags = static_cast<GfxQueueFlags>(flags | GFX_QUEUE_FLAG_COMPUTE);
+        flags = GFX_FLAGS(flags | GFX_QUEUE_FLAG_COMPUTE);
     }
     if (vkFlags & VK_QUEUE_TRANSFER_BIT) {
-        flags = static_cast<GfxQueueFlags>(flags | GFX_QUEUE_FLAG_TRANSFER);
+        flags = GFX_FLAGS(flags | GFX_QUEUE_FLAG_TRANSFER);
     }
     if (vkFlags & VK_QUEUE_SPARSE_BINDING_BIT) {
-        flags = static_cast<GfxQueueFlags>(flags | GFX_QUEUE_FLAG_SPARSE_BINDING);
+        flags = GFX_FLAGS(flags | GFX_QUEUE_FLAG_SPARSE_BINDING);
     }
 
     return flags;
@@ -689,55 +689,55 @@ GfxAccessFlags vkAccessFlagsToGfxAccessFlags(VkAccessFlags vkAccessFlags)
     GfxAccessFlags flags = GFX_ACCESS_NONE;
 
     if (vkAccessFlags & VK_ACCESS_INDIRECT_COMMAND_READ_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_INDIRECT_COMMAND_READ);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_INDIRECT_COMMAND_READ);
     }
     if (vkAccessFlags & VK_ACCESS_INDEX_READ_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_INDEX_READ);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_INDEX_READ);
     }
     if (vkAccessFlags & VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_VERTEX_ATTRIBUTE_READ);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_VERTEX_ATTRIBUTE_READ);
     }
     if (vkAccessFlags & VK_ACCESS_UNIFORM_READ_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_UNIFORM_READ);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_UNIFORM_READ);
     }
     if (vkAccessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_INPUT_ATTACHMENT_READ);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_INPUT_ATTACHMENT_READ);
     }
     if (vkAccessFlags & VK_ACCESS_SHADER_READ_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_SHADER_READ);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_SHADER_READ);
     }
     if (vkAccessFlags & VK_ACCESS_SHADER_WRITE_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_SHADER_WRITE);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_SHADER_WRITE);
     }
     if (vkAccessFlags & VK_ACCESS_COLOR_ATTACHMENT_READ_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_COLOR_ATTACHMENT_READ);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_COLOR_ATTACHMENT_READ);
     }
     if (vkAccessFlags & VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_COLOR_ATTACHMENT_WRITE);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_COLOR_ATTACHMENT_WRITE);
     }
     if (vkAccessFlags & VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ);
     }
     if (vkAccessFlags & VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE);
     }
     if (vkAccessFlags & VK_ACCESS_TRANSFER_READ_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_TRANSFER_READ);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_TRANSFER_READ);
     }
     if (vkAccessFlags & VK_ACCESS_TRANSFER_WRITE_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_TRANSFER_WRITE);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_TRANSFER_WRITE);
     }
     if (vkAccessFlags & VK_ACCESS_HOST_READ_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_READ);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_MEMORY_READ);
     }
     if (vkAccessFlags & VK_ACCESS_HOST_WRITE_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_WRITE);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_MEMORY_WRITE);
     }
     if (vkAccessFlags & VK_ACCESS_MEMORY_READ_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_READ);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_MEMORY_READ);
     }
     if (vkAccessFlags & VK_ACCESS_MEMORY_WRITE_BIT) {
-        flags = static_cast<GfxAccessFlags>(flags | GFX_ACCESS_MEMORY_WRITE);
+        flags = GFX_FLAGS(flags | GFX_ACCESS_MEMORY_WRITE);
     }
 
     return flags;
