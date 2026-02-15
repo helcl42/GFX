@@ -25,6 +25,18 @@
 #define GFX_VERSION GFX_MAKE_VERSION(GFX_VERSION_MAJOR, GFX_VERSION_MINOR, GFX_VERSION_PATCH)
 
 // ============================================================================
+// Flag Combination Helpers
+// ============================================================================
+// Helper macros to combine flag bits safely in both C and C++ (avoids MSVC narrowing warnings)
+// Usage: GfxBufferUsageFlags usage = GFX_FLAGS(GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST);
+
+#ifdef __cplusplus
+    #define GFX_FLAGS(flags) static_cast<uint32_t>(flags)
+#else
+    #define GFX_FLAGS(flags) (flags)
+#endif
+
+// ============================================================================
 // Common Constants
 // ============================================================================
 

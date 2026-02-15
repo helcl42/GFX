@@ -224,8 +224,8 @@ TEST_P(GfxQuerySetTest, ResolveQuerySetWithNullEncoder)
 
     GfxBufferDescriptor bufferDesc = {};
     bufferDesc.size = 8 * sizeof(uint64_t);
-    bufferDesc.usage = GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST;
-    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
+    bufferDesc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST);
+    bufferDesc.memoryProperties = GFX_FLAGS(GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT);
 
     GfxBuffer buffer = nullptr;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &bufferDesc, &buffer), GFX_RESULT_SUCCESS);
@@ -247,8 +247,8 @@ TEST_P(GfxQuerySetTest, ResolveQuerySetWithNullQuerySet)
 
     GfxBufferDescriptor bufferDesc = {};
     bufferDesc.size = 8 * sizeof(uint64_t);
-    bufferDesc.usage = GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST;
-    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
+    bufferDesc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST);
+    bufferDesc.memoryProperties = GFX_FLAGS(GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT);
 
     GfxBuffer buffer = nullptr;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &bufferDesc, &buffer), GFX_RESULT_SUCCESS);
@@ -431,8 +431,8 @@ TEST_P(GfxQuerySetTest, ResolveQuerySetOperation)
 
     GfxBufferDescriptor bufferDesc = {};
     bufferDesc.size = 2 * sizeof(uint64_t);
-    bufferDesc.usage = GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST;
-    bufferDesc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
+    bufferDesc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST);
+    bufferDesc.memoryProperties = GFX_FLAGS(GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT);
 
     GfxBuffer buffer = nullptr;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &bufferDesc, &buffer), GFX_RESULT_SUCCESS);

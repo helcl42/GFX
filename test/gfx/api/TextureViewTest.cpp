@@ -341,7 +341,7 @@ TEST_P(GfxTextureViewTest, CreateViewSpecificMipLevel)
     desc.mipLevelCount = 9; // log2(512) + 1
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
     desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
-    desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_COPY_DST;
+    desc.usage = GFX_FLAGS(GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_COPY_DST);
 
     GfxTexture texture = nullptr;
     GfxResult result = gfxDeviceCreateTexture(device, &desc, &texture);
@@ -374,7 +374,7 @@ TEST_P(GfxTextureViewTest, CreateViewMipLevelRange)
     desc.mipLevelCount = 9;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
     desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
-    desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_COPY_DST;
+    desc.usage = GFX_FLAGS(GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_COPY_DST);
 
     GfxTexture texture = nullptr;
     GfxResult result = gfxDeviceCreateTexture(device, &desc, &texture);
@@ -505,7 +505,7 @@ TEST_P(GfxTextureViewTest, CreateViewForDepthTexture)
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
     desc.format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
-    desc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT | GFX_TEXTURE_USAGE_TEXTURE_BINDING;
+    desc.usage = GFX_FLAGS(GFX_TEXTURE_USAGE_RENDER_ATTACHMENT | GFX_TEXTURE_USAGE_TEXTURE_BINDING);
 
     GfxTexture texture = nullptr;
     GfxResult result = gfxDeviceCreateTexture(device, &desc, &texture);

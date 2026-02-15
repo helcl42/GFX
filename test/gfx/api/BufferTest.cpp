@@ -80,7 +80,7 @@ TEST_P(GfxBufferTest, CreateDestroyBuffer)
     GfxBufferDescriptor desc = {};
     desc.label = "Test Buffer";
     desc.size = 1024;
-    desc.usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST);
     desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
     GfxBuffer buffer = NULL;
@@ -146,8 +146,8 @@ TEST_P(GfxBufferTest, GetBufferInfo)
     GfxBufferDescriptor desc = {};
     desc.label = "Test Buffer";
     desc.size = 2048;
-    desc.usage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST | GFX_BUFFER_USAGE_MAP_READ;
-    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST | GFX_BUFFER_USAGE_MAP_READ);
+    desc.memoryProperties = GFX_FLAGS(GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT);
 
     GfxBuffer buffer = NULL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, &buffer), GFX_RESULT_SUCCESS);
@@ -168,8 +168,8 @@ TEST_P(GfxBufferTest, MapUnmapBuffer)
     GfxBufferDescriptor desc = {};
     desc.label = "Mappable Buffer";
     desc.size = 256;
-    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
-    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC);
+    desc.memoryProperties = GFX_FLAGS(GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT);
 
     GfxBuffer buffer = NULL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, &buffer), GFX_RESULT_SUCCESS);
@@ -197,8 +197,8 @@ TEST_P(GfxBufferTest, MapBufferInvalidArguments)
 {
     GfxBufferDescriptor desc = {};
     desc.size = 256;
-    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
-    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC);
+    desc.memoryProperties = GFX_FLAGS(GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT);
 
     GfxBuffer buffer = NULL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, &buffer), GFX_RESULT_SUCCESS);
@@ -221,8 +221,8 @@ TEST_P(GfxBufferTest, WriteBufferViaQueue)
     GfxBufferDescriptor desc = {};
     desc.label = "Queue Write Buffer";
     desc.size = 128;
-    desc.usage = GFX_BUFFER_USAGE_COPY_DST | GFX_BUFFER_USAGE_UNIFORM;
-    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_COPY_DST | GFX_BUFFER_USAGE_UNIFORM);
+    desc.memoryProperties = GFX_FLAGS(GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT);
 
     GfxBuffer buffer = NULL;
     ASSERT_EQ(gfxDeviceCreateBuffer(device, &desc, &buffer), GFX_RESULT_SUCCESS);
@@ -248,7 +248,7 @@ TEST_P(GfxBufferTest, CreateMultipleBuffers)
     for (int i = 0; i < bufferCount; ++i) {
         GfxBufferDescriptor desc = {};
         desc.size = 512 * (i + 1);
-        desc.usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST;
+        desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST);
         desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
         GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffers[i]);
@@ -268,8 +268,8 @@ TEST_P(GfxBufferTest, CreateBufferWithAllUsageFlags)
     GfxBufferDescriptor desc = {};
     desc.label = "All Usage Buffer";
     desc.size = 4096;
-    desc.usage = GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST | GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_INDIRECT;
-    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST | GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_INDIRECT);
+    desc.memoryProperties = GFX_FLAGS(GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT);
 
     GfxBuffer buffer = NULL;
     GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
@@ -337,7 +337,7 @@ TEST_P(GfxBufferTest, ImportBufferFromNativeHandle)
     GfxBufferDescriptor createDesc = {};
     createDesc.label = "Source Buffer";
     createDesc.size = 1024;
-    createDesc.usage = GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST;
+    createDesc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST);
     createDesc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
     GfxBuffer sourceBuffer = nullptr;
@@ -394,7 +394,7 @@ TEST_P(GfxBufferTest, FlushMappedRange)
     GfxBufferDescriptor desc = {};
     desc.label = "Flush Test Buffer";
     desc.size = 1024;
-    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_SRC;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_SRC);
     desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE; // Non-coherent
 
     GfxBuffer buffer = nullptr;
@@ -435,7 +435,7 @@ TEST_P(GfxBufferTest, InvalidateMappedRange)
     GfxBufferDescriptor desc = {};
     desc.label = "Invalidate Test Buffer";
     desc.size = 1024;
-    desc.usage = GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_COPY_DST;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_COPY_DST);
     desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE; // Non-coherent for testing
 
     GfxBuffer buffer = nullptr;
@@ -474,7 +474,7 @@ TEST_P(GfxBufferTest, FlushInvalidateCombined)
     GfxBufferDescriptor desc = {};
     desc.label = "Flush+Invalidate Test Buffer";
     desc.size = 2048;
-    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_COPY_SRC | GFX_BUFFER_USAGE_COPY_DST);
     desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE; // Non-coherent for testing
 
     GfxBuffer buffer = nullptr;
@@ -511,7 +511,7 @@ TEST_P(GfxBufferTest, CreateBufferWithDeviceLocalOnly)
     GfxBufferDescriptor desc = {};
     desc.label = "Device Local Buffer";
     desc.size = 1024;
-    desc.usage = GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_COPY_DST;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_COPY_DST);
     desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL;
 
     GfxBuffer buffer = nullptr;
@@ -533,8 +533,8 @@ TEST_P(GfxBufferTest, CreateBufferWithHostVisibleAndHostCoherent)
     GfxBufferDescriptor desc = {};
     desc.label = "Host Visible Coherent Buffer";
     desc.size = 512;
-    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
-    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC);
+    desc.memoryProperties = GFX_FLAGS(GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT);
 
     GfxBuffer buffer = nullptr;
     GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
@@ -555,8 +555,8 @@ TEST_P(GfxBufferTest, CreateBufferWithHostVisibleAndHostCached)
     GfxBufferDescriptor desc = {};
     desc.label = "Host Visible Cached Buffer";
     desc.size = 512;
-    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
-    desc.memoryProperties = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_CACHED;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC);
+    desc.memoryProperties = GFX_FLAGS(GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_CACHED);
 
     GfxBuffer buffer = nullptr;
     GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
@@ -577,8 +577,8 @@ TEST_P(GfxBufferTest, CreateBufferWithAllMemoryProperties)
     GfxBufferDescriptor desc = {};
     desc.label = "All Memory Properties Buffer";
     desc.size = 1024;
-    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
-    desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL | GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT | GFX_MEMORY_PROPERTY_HOST_CACHED;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC);
+    desc.memoryProperties = GFX_FLAGS(GFX_MEMORY_PROPERTY_DEVICE_LOCAL | GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT | GFX_MEMORY_PROPERTY_HOST_CACHED);
 
     GfxBuffer buffer = nullptr;
     GfxResult result = gfxDeviceCreateBuffer(device, &desc, &buffer);
@@ -635,7 +635,7 @@ TEST_P(GfxBufferTest, CreateBufferWithMapReadRequiresHostVisible)
     GfxBufferDescriptor desc = {};
     desc.label = "MapRead Without HostVisible Buffer";
     desc.size = 512;
-    desc.usage = GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_COPY_DST;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_MAP_READ | GFX_BUFFER_USAGE_COPY_DST);
     desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL; // Invalid: MapRead requires HostVisible
 
     GfxBuffer buffer = nullptr;
@@ -648,7 +648,7 @@ TEST_P(GfxBufferTest, CreateBufferWithMapWriteRequiresHostVisible)
     GfxBufferDescriptor desc = {};
     desc.label = "MapWrite Without HostVisible Buffer";
     desc.size = 512;
-    desc.usage = GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC;
+    desc.usage = GFX_FLAGS(GFX_BUFFER_USAGE_MAP_WRITE | GFX_BUFFER_USAGE_COPY_SRC);
     desc.memoryProperties = GFX_MEMORY_PROPERTY_DEVICE_LOCAL; // Invalid: MapWrite requires HostVisible
 
     GfxBuffer buffer = nullptr;

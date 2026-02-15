@@ -637,7 +637,7 @@ TEST(ConversionsTest, CppShaderStageToCShaderStage_CombinedFlags)
     auto combined = static_cast<ShaderStage>(
         static_cast<uint32_t>(ShaderStage::Vertex) | static_cast<uint32_t>(ShaderStage::Fragment));
     auto cStage = cppShaderStageToCShaderStage(combined);
-    EXPECT_EQ(cStage, static_cast<GfxShaderStageFlags>(GFX_SHADER_STAGE_VERTEX | GFX_SHADER_STAGE_FRAGMENT));
+    EXPECT_EQ(cStage, GFX_FLAGS(GFX_SHADER_STAGE_VERTEX | GFX_SHADER_STAGE_FRAGMENT));
 }
 
 // =============================================================================
@@ -741,7 +741,7 @@ TEST(ConversionsTest, CppHandleToCHandle_XCB)
 TEST(ConversionsTest, CQueueFamilyPropertiesToCppQueueFamilyProperties)
 {
     GfxQueueFamilyProperties cProps{
-        .flags = GFX_QUEUE_FLAG_GRAPHICS | GFX_QUEUE_FLAG_COMPUTE,
+        .flags = GFX_FLAGS(GFX_QUEUE_FLAG_GRAPHICS | GFX_QUEUE_FLAG_COMPUTE),
         .queueCount = 4
     };
 
@@ -777,7 +777,7 @@ TEST(ConversionsTest, CBufferInfoToCppBufferInfo)
 {
     GfxBufferInfo cInfo{
         .size = 4096,
-        .usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST
+        .usage = GFX_FLAGS(GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST)
     };
 
     auto cppInfo = cBufferInfoToCppBufferInfo(cInfo);

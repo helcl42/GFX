@@ -85,7 +85,7 @@ TEST(VulkanConversionsTest, GfxBufferUsageToVkBufferUsage_MultipleFlags_Combines
 
 TEST(VulkanConversionsTest, VkBufferUsageToGfxBufferUsage_RoundTrip_Preserves)
 {
-    GfxBufferUsageFlags original = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_UNIFORM;
+    GfxBufferUsageFlags original = GFX_FLAGS(GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_UNIFORM);
     VkBufferUsageFlags vk = gfx::backend::vulkan::converter::gfxBufferUsageToVkBufferUsage(original);
     GfxBufferUsageFlags result = gfx::backend::vulkan::converter::vkBufferUsageToGfxBufferUsage(vk);
 
@@ -285,7 +285,7 @@ TEST(VulkanConversionsTest, GfxMemoryPropertyToVkMemoryProperty_MultipleFlags_Co
 
 TEST(VulkanConversionsTest, VkMemoryPropertyToGfxMemoryProperty_RoundTrip_Preserves)
 {
-    GfxMemoryPropertyFlags original = GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT;
+    GfxMemoryPropertyFlags original = GFX_FLAGS(GFX_MEMORY_PROPERTY_HOST_VISIBLE | GFX_MEMORY_PROPERTY_HOST_COHERENT);
     VkMemoryPropertyFlags vk = gfx::backend::vulkan::converter::gfxMemoryPropertyToVkMemoryProperty(original);
     GfxMemoryPropertyFlags result = gfx::backend::vulkan::converter::vkMemoryPropertyToGfxMemoryProperty(vk);
 
@@ -1118,7 +1118,7 @@ TEST(VulkanConversionsTest, VkBufferToGfxBufferInfo_AllFields_ConvertsCorrectly)
     gfx::backend::vulkan::core::BufferInfo vkInfo{};
     vkInfo.size = 1024 * 1024; // 1MB
     vkInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    vkInfo.originalUsage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST;
+    vkInfo.originalUsage = GFX_FLAGS(GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST);
     vkInfo.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
     GfxBufferInfo result = gfx::backend::vulkan::converter::vkBufferToGfxBufferInfo(vkInfo);
@@ -1134,7 +1134,7 @@ TEST(VulkanConversionsTest, VkBufferToGfxBufferInfo_UniformBuffer_ConvertsCorrec
     gfx::backend::vulkan::core::BufferInfo vkInfo{};
     vkInfo.size = 256;
     vkInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    vkInfo.originalUsage = GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST;
+    vkInfo.originalUsage = GFX_FLAGS(GFX_BUFFER_USAGE_UNIFORM | GFX_BUFFER_USAGE_COPY_DST);
     vkInfo.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     GfxBufferInfo result = gfx::backend::vulkan::converter::vkBufferToGfxBufferInfo(vkInfo);
@@ -1151,7 +1151,7 @@ TEST(VulkanConversionsTest, VkBufferToGfxBufferInfo_StorageBuffer_ConvertsCorrec
     gfx::backend::vulkan::core::BufferInfo vkInfo{};
     vkInfo.size = 4096;
     vkInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    vkInfo.originalUsage = GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_COPY_SRC;
+    vkInfo.originalUsage = GFX_FLAGS(GFX_BUFFER_USAGE_STORAGE | GFX_BUFFER_USAGE_COPY_SRC);
     vkInfo.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
     GfxBufferInfo result = gfx::backend::vulkan::converter::vkBufferToGfxBufferInfo(vkInfo);

@@ -224,7 +224,7 @@ if(BUILD_FOR_WEB)
 else()
     # Native C Cube Example
     add_executable(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/c/cube/cube_example.c)
-    target_link_libraries(cube_example_c gfx glfw stb_image m)  # Add stb_image
+    target_link_libraries(cube_example_c gfx glfw stb_image)  # Add stb_image
     if(ENABLE_ASAN AND NOT MSVC)
         target_link_options(cube_example_c PRIVATE -fsanitize=address)
     endif()
@@ -257,9 +257,12 @@ else()
     
     # Native C Threaded Cube Example (uses pthreads)
     add_executable(cube_example_c_threaded ${CMAKE_CURRENT_SOURCE_DIR}/c/cube/cube_example_threaded.c)
-    target_link_libraries(cube_example_c_threaded gfx glfw stb_image m pthread)  # Add stb_image
-    if(ENABLE_ASAN AND NOT MSVC)
-        target_link_options(cube_example_c_threaded PRIVATE -fsanitize=address)
+    target_link_libraries(cube_example_c_threaded gfx glfw stb_image)
+    if(NOT MSVC)
+        target_link_libraries(cube_example_c_threaded pthread)
+        if(ENABLE_ASAN)
+            target_link_options(cube_example_c_threaded PRIVATE -fsanitize=address)
+        endif()
     endif()
     
     # Compile WGSL shaders to SPIR-V for threaded C example
@@ -290,9 +293,12 @@ else()
 
     # Threaded C++ Cube Example (uses C API with C++ language features)
     add_executable(cube_example_cpp_threaded ${CMAKE_CURRENT_SOURCE_DIR}/cpp/cube/cube_example_threaded.cpp)
-    target_link_libraries(cube_example_cpp_threaded gfx glfw stb_image pthread)
-    if(ENABLE_ASAN AND NOT MSVC)
-        target_link_options(cube_example_cpp_threaded PRIVATE -fsanitize=address)
+    target_link_libraries(cube_example_cpp_threaded gfx glfw stb_image)
+    if(NOT MSVC)
+        target_link_libraries(cube_example_cpp_threaded pthread)
+        if(ENABLE_ASAN)
+            target_link_options(cube_example_cpp_threaded PRIVATE -fsanitize=address)
+        endif()
     endif()
     
     # Compile WGSL shaders to SPIR-V for C++ threaded example

@@ -88,7 +88,7 @@ TEST(WebGPUConversionsTest, GfxBufferUsageToWGPU_MultipleFlags_CombinesCorrectly
 
 TEST(WebGPUConversionsTest, WebGPUBufferUsageToGfxBufferUsage_RoundTrip_Preserves)
 {
-    GfxBufferUsageFlags original = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_UNIFORM;
+    GfxBufferUsageFlags original = GFX_FLAGS(GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_UNIFORM);
     WGPUBufferUsage wgpu = gfx::backend::webgpu::converter::gfxBufferUsageToWGPU(original);
     GfxBufferUsageFlags result = gfx::backend::webgpu::converter::webgpuBufferUsageToGfxBufferUsage(wgpu);
 
@@ -584,7 +584,7 @@ TEST(WebGPUConversionsTest, FormatConversion_AllCommonFormats_RoundTrip)
 
 TEST(WebGPUConversionsTest, TextureUsageConversion_CombinedFlags_RoundTrip)
 {
-    GfxTextureUsageFlags usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_RENDER_ATTACHMENT | GFX_TEXTURE_USAGE_STORAGE_BINDING;
+    GfxTextureUsageFlags usage = GFX_FLAGS(GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_RENDER_ATTACHMENT | GFX_TEXTURE_USAGE_STORAGE_BINDING);
 
     WGPUTextureUsage wgpu = gfx::backend::webgpu::converter::gfxTextureUsageToWGPU(usage);
     GfxTextureUsageFlags result = gfx::backend::webgpu::converter::wgpuTextureUsageToGfxTextureUsage(wgpu);
@@ -596,7 +596,7 @@ TEST(WebGPUConversionsTest, TextureUsageConversion_CombinedFlags_RoundTrip)
 
 TEST(WebGPUConversionsTest, BufferUsageConversion_CombinedFlags_RoundTrip)
 {
-    GfxBufferUsageFlags usage = GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_COPY_SRC;
+    GfxBufferUsageFlags usage = GFX_FLAGS(GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_INDEX | GFX_BUFFER_USAGE_COPY_SRC);
 
     WGPUBufferUsage wgpu = gfx::backend::webgpu::converter::gfxBufferUsageToWGPU(usage);
     GfxBufferUsageFlags result = gfx::backend::webgpu::converter::webgpuBufferUsageToGfxBufferUsage(wgpu);
