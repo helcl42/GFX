@@ -89,7 +89,7 @@ jobs:
     - name: Test
       working-directory: build
       env:
-        VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+        VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.json
         VK_LOADER_DEBUG: all
       run: ctest --build-config ${{ matrix.build_type }} --output-on-failure --timeout 300
       continue-on-error: true

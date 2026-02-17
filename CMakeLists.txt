@@ -616,6 +616,7 @@ if(BUILD_CPP_WRAPPER)
         set_target_properties(gfx_cpp PROPERTIES
             VERSION ${PROJECT_VERSION}
             SOVERSION ${PROJECT_VERSION_MAJOR}
+            WINDOWS_EXPORT_ALL_SYMBOLS ON # TODO - Automatically export all symbols on Windows without needing __declspec(dllexport)
         )
     else()
         add_library(gfx_cpp STATIC ${GFX_CPP_SOURCES})
