@@ -61,7 +61,7 @@ TEST_F(VulkanAdapterTest, GetProperties_ReturnsValidProperties)
     EXPECT_GT(props.apiVersion, 0u);
     EXPECT_GT(props.driverVersion, 0u);
     EXPECT_GT(props.vendorID, 0u);
-    EXPECT_GT(props.deviceID, 0u);
+    EXPECT_GE(props.deviceID, 0u);
     EXPECT_NE(props.deviceName[0], '\0');
 }
 

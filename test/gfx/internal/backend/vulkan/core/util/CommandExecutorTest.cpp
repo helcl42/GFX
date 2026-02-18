@@ -188,6 +188,24 @@ TEST_F(CommandExecutorTest, Execute_ActualBufferFill_Succeeds)
     VkResult result = vkCreateBuffer(device->handle(), &bufferInfo, nullptr, &buffer);
     ASSERT_EQ(result, VK_SUCCESS);
 
+    // Get memory requirements
+    VkMemoryRequirements memReqs;
+    vkGetBufferMemoryRequirements(device->handle(), buffer, &memReqs);
+
+    // Allocate memory
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memReqs.size;
+    allocInfo.memoryTypeIndex = 0; // Use first available memory type
+
+    VkDeviceMemory memory = VK_NULL_HANDLE;
+    result = vkAllocateMemory(device->handle(), &allocInfo, nullptr, &memory);
+    ASSERT_EQ(result, VK_SUCCESS);
+
+    // Bind memory to buffer
+    result = vkBindBufferMemory(device->handle(), buffer, memory, 0);
+    ASSERT_EQ(result, VK_SUCCESS);
+
     // Execute a fill command
     ASSERT_NO_THROW({
         executor.execute([buffer](VkCommandBuffer cmd) {
@@ -197,6 +215,7 @@ TEST_F(CommandExecutorTest, Execute_ActualBufferFill_Succeeds)
 
     // Cleanup
     vkDestroyBuffer(device->handle(), buffer, nullptr);
+    vkFreeMemory(device->handle(), memory, nullptr);
 }
 
 TEST_F(CommandExecutorTest, Execute_MultipleBufferOperations_Succeeds)
@@ -215,6 +234,28 @@ TEST_F(CommandExecutorTest, Execute_MultipleBufferOperations_Succeeds)
     vkCreateBuffer(device->handle(), &bufferInfo, nullptr, &buffer1);
     vkCreateBuffer(device->handle(), &bufferInfo, nullptr, &buffer2);
 
+    // Allocate memory for buffer1
+    VkMemoryRequirements memReqs1;
+    vkGetBufferMemoryRequirements(device->handle(), buffer1, &memReqs1);
+    VkMemoryAllocateInfo allocInfo1{};
+    allocInfo1.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo1.allocationSize = memReqs1.size;
+    allocInfo1.memoryTypeIndex = 0;
+    VkDeviceMemory memory1 = VK_NULL_HANDLE;
+    vkAllocateMemory(device->handle(), &allocInfo1, nullptr, &memory1);
+    vkBindBufferMemory(device->handle(), buffer1, memory1, 0);
+
+    // Allocate memory for buffer2
+    VkMemoryRequirements memReqs2;
+    vkGetBufferMemoryRequirements(device->handle(), buffer2, &memReqs2);
+    VkMemoryAllocateInfo allocInfo2{};
+    allocInfo2.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo2.allocationSize = memReqs2.size;
+    allocInfo2.memoryTypeIndex = 0;
+    VkDeviceMemory memory2 = VK_NULL_HANDLE;
+    vkAllocateMemory(device->handle(), &allocInfo2, nullptr, &memory2);
+    vkBindBufferMemory(device->handle(), buffer2, memory2, 0);
+
     // Execute multiple operations
     executor.execute([buffer1](VkCommandBuffer cmd) {
         vkCmdFillBuffer(cmd, buffer1, 0, 256, 0x12345678);
@@ -229,6 +270,8 @@ TEST_F(CommandExecutorTest, Execute_MultipleBufferOperations_Succeeds)
     // Cleanup
     vkDestroyBuffer(device->handle(), buffer1, nullptr);
     vkDestroyBuffer(device->handle(), buffer2, nullptr);
+    vkFreeMemory(device->handle(), memory1, nullptr);
+    vkFreeMemory(device->handle(), memory2, nullptr);
 }
 
 } // anonymous namespace
