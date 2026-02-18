@@ -64,7 +64,9 @@ jobs:
         -DBUILD_TESTS=ON
 
     - name: Build
-      run: cmake --build build --config ${{ matrix.build_type }} -j 1
+      run: |
+        $env:PATH += ";$PWD\build"
+        cmake --build build --config ${{ matrix.build_type }} -j 1
 
     - name: Test
       working-directory: build
