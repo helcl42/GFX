@@ -455,6 +455,12 @@ bool CubeApp::initializeGraphics()
     // Set up logging callback
     gfxSetLogCallback(logCallback, nullptr);
 
+    auto result = gfxLoadBackend(GFX_BACKEND_API);
+    if (result != GFX_RESULT_SUCCESS) {
+        std::cerr << "Failed to load graphics backend: " << gfxResultToString(result) << std::endl;
+        return false;
+    }
+
     std::cout << "Loading graphics backend...\n";
     if (gfxLoadBackend(GFX_BACKEND_API) != GFX_RESULT_SUCCESS) {
         std::cerr << "Failed to load graphics backend\n";

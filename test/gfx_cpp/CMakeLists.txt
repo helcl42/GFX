@@ -38,7 +38,9 @@ target_link_libraries(gfx_cpp_api_test
 )
 
 if(NOT ENABLE_ASAN)
-    gtest_discover_tests(gfx_cpp_api_test)
+    gtest_discover_tests(gfx_cpp_api_test
+        DISCOVER_MODE_PRE_TEST
+    )
 endif()
 
 # =============================================================================
@@ -83,5 +85,7 @@ target_link_libraries(gfx_cpp_internal_test
 )
 
 if(NOT ENABLE_ASAN)
-    gtest_discover_tests(gfx_cpp_internal_test)
+    gtest_discover_tests(gfx_cpp_internal_test
+        DISCOVER_MODE_PRE_TEST
+    )
 endif()

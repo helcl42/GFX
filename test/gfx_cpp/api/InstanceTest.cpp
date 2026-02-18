@@ -16,9 +16,24 @@ protected:
     void SetUp() override
     {
         backend = GetParam();
+
+        auto result = gfx::loadBackend(backend);
+        if (!gfx::isSuccess(result)) {
+            GTEST_SKIP() << "Backend not available: " << static_cast<int32_t>(result);
+        }
+        backendLoaded = true;
+    }
+
+    void TearDown() override
+    {
+        // Instance will be automatically destroyed when shared_ptr goes out of scope
+        if (backendLoaded) {
+            gfx::unloadBackend(backend);
+        }
     }
 
     gfx::Backend backend;
+    bool backendLoaded = false;
 };
 
 TEST_P(GfxCppInstanceTest, CreateDestroy)

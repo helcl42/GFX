@@ -78,6 +78,19 @@ std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor)
     return std::make_shared<InstanceImpl>(instance);
 }
 
+Result loadBackend(Backend backend)
+{
+    GfxBackend cBackend = cppBackendToCBackend(backend);
+    GfxResult result = gfxLoadBackend(cBackend);
+    return cResultToCppResult(result);
+}
+
+void unloadBackend(Backend backend)
+{
+    GfxBackend cBackend = cppBackendToCBackend(backend);
+    gfxUnloadBackend(cBackend);
+}
+
 std::vector<std::string> enumerateInstanceExtensions(Backend backend)
 {
     GfxBackend cBackend = cppBackendToCBackend(backend);

@@ -159,4 +159,155 @@ TEST(GfxCppUtilTest, PlatformWindowHandleFromMetal)
     EXPECT_EQ(handle.handle.metal.layer, nullptr);
 }
 
+// ============================================================================
+// Result to String Conversion Tests
+// ============================================================================
+
+TEST(GfxCppUtilTest, ResultToStringSuccess)
+{
+    const char* str = gfx::utils::resultToString(gfx::Result::Success);
+    EXPECT_STREQ(str, "Result::Success");
+}
+
+TEST(GfxCppUtilTest, ResultToStringTimeout)
+{
+    const char* str = gfx::utils::resultToString(gfx::Result::Timeout);
+    EXPECT_STREQ(str, "Result::Timeout");
+}
+
+TEST(GfxCppUtilTest, ResultToStringNotReady)
+{
+    const char* str = gfx::utils::resultToString(gfx::Result::NotReady);
+    EXPECT_STREQ(str, "Result::NotReady");
+}
+
+TEST(GfxCppUtilTest, ResultToStringErrorInvalidArgument)
+{
+    const char* str = gfx::utils::resultToString(gfx::Result::ErrorInvalidArgument);
+    EXPECT_STREQ(str, "Result::ErrorInvalidArgument");
+}
+
+TEST(GfxCppUtilTest, ResultToStringErrorNotFound)
+{
+    const char* str = gfx::utils::resultToString(gfx::Result::ErrorNotFound);
+    EXPECT_STREQ(str, "Result::ErrorNotFound");
+}
+
+TEST(GfxCppUtilTest, ResultToStringErrorOutOfMemory)
+{
+    const char* str = gfx::utils::resultToString(gfx::Result::ErrorOutOfMemory);
+    EXPECT_STREQ(str, "Result::ErrorOutOfMemory");
+}
+
+TEST(GfxCppUtilTest, ResultToStringErrorDeviceLost)
+{
+    const char* str = gfx::utils::resultToString(gfx::Result::ErrorDeviceLost);
+    EXPECT_STREQ(str, "Result::ErrorDeviceLost");
+}
+
+TEST(GfxCppUtilTest, ResultToStringErrorSurfaceLost)
+{
+    const char* str = gfx::utils::resultToString(gfx::Result::ErrorSurfaceLost);
+    EXPECT_STREQ(str, "Result::ErrorSurfaceLost");
+}
+
+TEST(GfxCppUtilTest, ResultToStringErrorOutOfDate)
+{
+    const char* str = gfx::utils::resultToString(gfx::Result::ErrorOutOfDate);
+    EXPECT_STREQ(str, "Result::ErrorOutOfDate");
+}
+
+TEST(GfxCppUtilTest, ResultToStringErrorBackendNotLoaded)
+{
+    const char* str = gfx::utils::resultToString(gfx::Result::ErrorBackendNotLoaded);
+    EXPECT_STREQ(str, "Result::ErrorBackendNotLoaded");
+}
+
+TEST(GfxCppUtilTest, ResultToStringErrorFeatureNotSupported)
+{
+    const char* str = gfx::utils::resultToString(gfx::Result::ErrorFeatureNotSupported);
+    EXPECT_STREQ(str, "Result::ErrorFeatureNotSupported");
+}
+
+TEST(GfxCppUtilTest, ResultToStringErrorUnknown)
+{
+    const char* str = gfx::utils::resultToString(gfx::Result::ErrorUnknown);
+    EXPECT_STREQ(str, "Result::ErrorUnknown");
+}
+
+// Test for unknown/invalid result values
+TEST(GfxCppUtilTest, ResultToStringUnknownValue)
+{
+    // Cast an invalid value to Result
+    const char* str = gfx::utils::resultToString(static_cast<gfx::Result>(999));
+    EXPECT_STREQ(str, "Result::Unknown");
+}
+
+TEST(GfxCppUtilTest, ResultToStringAllValuesNonNull)
+{
+    // Verify all Result values produce non-null strings
+    std::vector<gfx::Result> results = {
+        gfx::Result::Success,
+        gfx::Result::Timeout,
+        gfx::Result::NotReady,
+        gfx::Result::ErrorInvalidArgument,
+        gfx::Result::ErrorNotFound,
+        gfx::Result::ErrorOutOfMemory,
+        gfx::Result::ErrorDeviceLost,
+        gfx::Result::ErrorSurfaceLost,
+        gfx::Result::ErrorOutOfDate,
+        gfx::Result::ErrorBackendNotLoaded,
+        gfx::Result::ErrorFeatureNotSupported,
+        gfx::Result::ErrorUnknown
+    };
+
+    for (gfx::Result result : results) {
+        const char* str = gfx::utils::resultToString(result);
+        EXPECT_NE(str, nullptr);
+        EXPECT_GT(std::strlen(str), 0); // Non-empty string
+    }
+}
+
+TEST(GfxCppUtilTest, ResultToStringConsistent)
+{
+    // Verify that calling the function multiple times returns the same string
+    const char* str1 = gfx::utils::resultToString(gfx::Result::ErrorOutOfMemory);
+    const char* str2 = gfx::utils::resultToString(gfx::Result::ErrorOutOfMemory);
+    EXPECT_STREQ(str1, str2);
+    // They should point to the same static string
+    EXPECT_EQ(str1, str2);
+}
+
+TEST(GfxCppUtilTest, ResultToStringErrorCodesAreNegative)
+{
+    // Verify that error Result values are negative
+    EXPECT_LT(static_cast<int>(gfx::Result::ErrorInvalidArgument), 0);
+    EXPECT_LT(static_cast<int>(gfx::Result::ErrorNotFound), 0);
+    EXPECT_LT(static_cast<int>(gfx::Result::ErrorOutOfMemory), 0);
+    EXPECT_LT(static_cast<int>(gfx::Result::ErrorDeviceLost), 0);
+    EXPECT_LT(static_cast<int>(gfx::Result::ErrorSurfaceLost), 0);
+    EXPECT_LT(static_cast<int>(gfx::Result::ErrorOutOfDate), 0);
+    EXPECT_LT(static_cast<int>(gfx::Result::ErrorBackendNotLoaded), 0);
+    EXPECT_LT(static_cast<int>(gfx::Result::ErrorFeatureNotSupported), 0);
+    EXPECT_LT(static_cast<int>(gfx::Result::ErrorUnknown), 0);
+}
+
+TEST(GfxCppUtilTest, ResultToStringSuccessCodesAreNonNegative)
+{
+    // Verify that success Result values are non-negative
+    EXPECT_GE(static_cast<int>(gfx::Result::Success), 0);
+    EXPECT_GE(static_cast<int>(gfx::Result::Timeout), 0);
+    EXPECT_GE(static_cast<int>(gfx::Result::NotReady), 0);
+}
+
+TEST(GfxCppUtilTest, ResultToStringWithIsSuccess)
+{
+    // Demonstrate combined usage with success checking
+    gfx::Result result = gfx::Result::Success;
+    if (gfx::isSuccess(result)) {
+        std::string msg = gfx::utils::resultToString(result);
+        EXPECT_STREQ(msg.c_str(), "Result::Success");
+    }
+}
+
 } // namespace

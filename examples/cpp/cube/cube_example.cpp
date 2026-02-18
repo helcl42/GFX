@@ -250,6 +250,12 @@ bool CubeApp::initializeGraphics()
     // Set up logging callback
     gfx::setLogCallback(logCallback);
 
+    auto result = gfx::loadBackend(BACKEND_API);
+    if (!gfx::isSuccess(result)) {
+        std::cerr << "Failed to load graphics backend: " << static_cast<int32_t>(result) << std::endl;
+        return false;
+    }
+
     try {
         gfx::InstanceDescriptor instanceDesc{};
         instanceDesc.applicationName = "Rotating Cube Example (C++)";
@@ -1224,6 +1230,8 @@ void CubeApp::cleanup()
         window = nullptr;
     }
     glfwTerminate();
+
+    gfx::unloadBackend(BACKEND_API);
 }
 
 // Matrix math utility functions

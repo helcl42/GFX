@@ -1726,6 +1726,16 @@ public:
 std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor = {});
 
 // ============================================================================
+// Backend Management Functions
+// ============================================================================
+
+// Load a graphics backend - must be called before createInstance() if using a specific backend
+Result loadBackend(Backend backend);
+
+// Unload a graphics backend - should only be called when no resources from that backend are in use
+void unloadBackend(Backend backend);
+
+// ============================================================================
 // Utility Functions
 // ============================================================================
 
@@ -1745,6 +1755,10 @@ namespace utils {
 
     // Get bytes per pixel for a texture format
     uint32_t getFormatBytesPerPixel(TextureFormat format);
+
+    // Convert Result enum to human-readable string
+    // Returns a static string (e.g., "Result::Success", "Result::ErrorOutOfMemory")
+    const char* resultToString(Result result);
 
     // Helper to find a specific extension type in the next chain using dynamic_cast
     template <typename T>

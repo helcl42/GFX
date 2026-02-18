@@ -16,4 +16,36 @@ TEST(GfxCppBackendTest, GetVersion)
     EXPECT_EQ(patch, 0u);
 }
 
+TEST(GfxCppBackendTest, LoadBackendVulkan)
+{
+    auto result = gfx::loadBackend(gfx::Backend::Vulkan);
+    EXPECT_TRUE(gfx::isSuccess(result)) << "Failed to load Vulkan backend: " << static_cast<int32_t>(result);
+
+    result = gfx::loadBackend(gfx::Backend::Vulkan);
+    EXPECT_TRUE(gfx::isSuccess(result)) << "Loading Vulkan backend twice should succeed: " << static_cast<int32_t>(result);
+
+    gfx::unloadBackend(gfx::Backend::Vulkan);
+}
+
+TEST(GfxCppBackendTest, LoadBackendAuto)
+{
+    auto result = gfx::loadBackend(gfx::Backend::Auto);
+    EXPECT_TRUE(gfx::isSuccess(result)) << "Failed to load Auto backend: " << static_cast<int32_t>(result);
+
+    gfx::unloadBackend(gfx::Backend::Auto);
+}
+
+TEST(GfxCppBackendTest, LoadUnloadMultipleTimes)
+{
+    auto result = gfx::loadBackend(gfx::Backend::Vulkan);
+    EXPECT_TRUE(gfx::isSuccess(result));
+
+    gfx::unloadBackend(gfx::Backend::Vulkan);
+
+    result = gfx::loadBackend(gfx::Backend::Vulkan);
+    EXPECT_TRUE(gfx::isSuccess(result));
+
+    gfx::unloadBackend(gfx::Backend::Vulkan);
+}
+
 } // namespace

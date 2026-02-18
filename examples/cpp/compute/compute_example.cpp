@@ -224,11 +224,17 @@ bool ComputeApp::initializeGraphics()
     // Set up logging callback
     gfx::setLogCallback(logCallback);
 
+    auto result = gfx::loadBackend(BACKEND_API);
+    if (!gfx::isSuccess(result)) {
+        std::cerr << "Failed to load graphics backend: " << static_cast<int32_t>(result) << std::endl;
+        return false;
+    }
+
     try {
         gfx::InstanceDescriptor instanceDesc{};
         instanceDesc.applicationName = "Compute & Postprocess Example (C++)";
         instanceDesc.applicationVersion = 1;
-        instanceDesc.backend = gfx::Backend::WebGPU;
+        instanceDesc.backend = BACKEND_API;
         instanceDesc.enabledExtensions = { gfx::INSTANCE_EXTENSION_SURFACE, gfx::INSTANCE_EXTENSION_DEBUG };
 
         instance = gfx::createInstance(instanceDesc);
@@ -734,7 +740,7 @@ void ComputeApp::cleanupSizeDependentResources()
     // Clean up render pass and framebuffers (these depend on window size)
     framebuffers.clear();
     renderPass.reset();
-    
+
     // Clean up swapchain (depends on window size)
     swapchain.reset();
 }
@@ -1129,6 +1135,8 @@ void ComputeApp::cleanup()
         window = nullptr;
     }
     glfwTerminate();
+
+    gfx::unloadBackend(BACKEND_API);
 }
 
 gfx::PlatformWindowHandle ComputeApp::extractNativeHandle()
