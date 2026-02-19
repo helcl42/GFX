@@ -1607,9 +1607,6 @@ public:
     virtual FenceStatus getStatus() const = 0;
     virtual Result wait(uint64_t timeoutNanoseconds = UINT64_MAX) = 0;
     virtual void reset() = 0;
-
-    // Static utility for waiting on multiple fences
-    static Result waitMultiple(const std::vector<std::shared_ptr<Fence>>& fences, bool waitAll, uint64_t timeoutNanoseconds = UINT64_MAX);
 };
 
 class Semaphore {
