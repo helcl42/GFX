@@ -68,8 +68,37 @@ jobs:
         $env:PATH += ";$PWD\build"
         cmake --build build --config ${{ matrix.build_type }} -j 1
 
+    - name: Debug - Find Dawn DLLs
+      run: |
+        echo "Searching for webgpu_dawn.dll..."
+        Get-ChildItem -Path "${{ github.workspace }}\build" -Filter "webgpu_dawn.dll" -Recurse -ErrorAction SilentlyContinue | ForEach-Object { echo $_.FullName }
+        echo "Searching for gfx.dll..."
+        Get-ChildItem -Path "${{ github.workspace }}\build" -Filter "gfx.dll" -Recurse -ErrorAction SilentlyContinue | ForEach-Object { echo $_.FullName }
+        echo "Checking test executable dependencies..."
+        if (Test-Path "${{ github.workspace }}\build\test\gfx\gfx_api_test.exe") {
+          dumpbin /DEPENDENTS "${{ github.workspace }}\build\test\gfx\gfx_api_test.exe"
+        }
+        echo "Checking gfx.dll dependencies..."
+        if (Test-Path "${{ github.workspace }}\build\gfx.dll") {
+          dumpbin /DEPENDENTS "${{ github.workspace }}\build\gfx.dll"
+        }
+
+    - name: Add Dawn and Vulkan DLLs to PATH
+      run: |
+        $buildDir = "${{ github.workspace }}\build"
+        echo "Adding build directory to PATH: $buildDir"
+        echo "$buildDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        $dawnDir = "$buildDir\dawn"
+        echo "Adding Dawn directory to PATH: $dawnDir"
+        echo "$dawnDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        $vulkanBin = "C:\VulkanSDK\Bin"
+        echo "Adding Vulkan SDK Bin to PATH: $vulkanBin"
+        echo "$vulkanBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
     - name: Test
       working-directory: build
+      env:
+        PATH: "${{ github.workspace }}\\build;${{ github.workspace }}\\build\\dawn;C:\\VulkanSDK\\Bin;${{ env.PATH }}"
       run: ctest --build-config ${{ matrix.build_type }} --output-on-failure --timeout 300 || true
       continue-on-error: true
 
