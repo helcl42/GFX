@@ -55,7 +55,7 @@ add_executable(gfx_internal_test
 )
 
 target_link_libraries(gfx_internal_test
-    gfx
+    gfx_objects
     GTest::gtest_main
     GTest::gmock
 )
@@ -104,7 +104,7 @@ if(BUILD_VULKAN_BACKEND AND NOT BUILD_FOR_WEB)
     )
 
     target_link_libraries(gfx_internal_vulkan_test
-        gfx
+        gfx_objects
         GTest::gtest_main
         GTest::gmock
     )
