@@ -737,6 +737,74 @@ endif()  # BUILD_EXAMPLES
 
 # Add tests
 if(BUILD_TESTS AND NOT BUILD_FOR_WEB)
+    # Create object library for internal tests to access private symbols
+    add_library(gfx_objects OBJECT ${GFX_C_SOURCES})
+    
+    target_include_directories(gfx_objects 
+        PUBLIC 
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/gfx/include>
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/gfx/src
+    )
+    
+    # Apply same configuration as main gfx library
+    if(BUILD_VULKAN_BACKEND)
+        target_link_libraries(gfx_objects PUBLIC ${Vulkan_LIBRARY})
+        target_compile_definitions(gfx_objects PUBLIC GFX_ENABLE_VULKAN=1)
+        if(BUILD_WEBGPU_BACKEND AND TARGET Vulkan::Headers)
+            target_link_libraries(gfx_objects PUBLIC Vulkan::Headers)
+        elseif(SYSTEM_VULKAN_INCLUDE_DIR)
+            target_include_directories(gfx_objects PUBLIC ${SYSTEM_VULKAN_INCLUDE_DIR})
+        endif()
+    endif()
+    
+    if(BUILD_WEBGPU_BACKEND)
+        # For native builds, link to webgpu_dawn
+        target_link_libraries(gfx_objects PUBLIC webgpu_dawn)
+        target_include_directories(gfx_objects PUBLIC 
+            ${CMAKE_BINARY_DIR}/dawn/gen/include
+            ${WEBGPU_INCLUDE_DIR}
+        )
+        target_include_directories(gfx_objects PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/include)
+        target_compile_definitions(gfx_objects PUBLIC GFX_ENABLE_WEBGPU=1)
+        
+        if(TARGET webgpu_headers_gen)
+            add_dependencies(gfx_objects webgpu_headers_gen)
+        endif()
+        if(TARGET emdawnwebgpu_headers_gen)
+            add_dependencies(gfx_objects emdawnwebgpu_headers_gen)
+        endif()
+    endif()
+    
+    if(BUILD_HEADLESS)
+        target_compile_definitions(gfx_objects PUBLIC GFX_HEADLESS_BUILD=1)
+    endif()
+    
+    if(GFX_HAS_WIN32)
+        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_WIN32=1)
+    endif()
+    if(GFX_HAS_ANDROID)
+        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_ANDROID=1)
+    endif()
+    if(GFX_HAS_COCOA)
+        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_COCOA=1)
+    endif()
+    if(GFX_HAS_UIKIT)
+        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_UIKIT=1)
+    endif()
+    if(GFX_HAS_X11)
+        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_X11=1)
+    endif()
+    if(GFX_HAS_XCB)
+        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_XCB=1)
+    endif()
+    if(GFX_HAS_WAYLAND)
+        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_WAYLAND=1)
+    endif()
+    if(GFX_HAS_EMSCRIPTEN)
+        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_EMSCRIPTEN=1)
+    endif()
+    
     add_subdirectory(test/gfx)
     if(BUILD_CPP_WRAPPER)
         add_subdirectory(test/gfx_cpp)

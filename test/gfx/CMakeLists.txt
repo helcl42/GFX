@@ -156,7 +156,7 @@ if(BUILD_WEBGPU_BACKEND)
     )
 
     target_link_libraries(gfx_internal_webgpu_test
-        gfx
+        gfx_objects
         GTest::gtest_main
         GTest::gmock
     )
