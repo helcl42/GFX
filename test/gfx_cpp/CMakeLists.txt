@@ -37,6 +37,35 @@ target_link_libraries(gfx_cpp_api_test
     GTest::gtest_main
 )
 
+# Copy DLLs to test directory on Windows for easy execution
+if(WIN32 AND BUILD_SHARED_LIBS)
+    add_custom_command(TARGET gfx_cpp_api_test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:gfx>
+        $<TARGET_FILE_DIR:gfx_cpp_api_test>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:gfx_cpp>
+        $<TARGET_FILE_DIR:gfx_cpp_api_test>
+    )
+
+    # Copy d3dcompiler_47.dll for WebGPU shader compilation if WebGPU backend is enabled
+    if(BUILD_WEBGPU_BACKEND)
+        find_file(D3DCOMPILER_DLL_CPP d3dcompiler_47.dll
+            PATHS
+                "$ENV{WindowsSdkDir}/Redist/D3D/${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}/x64"
+                "C:/Windows/System32"
+                "C:/Windows/SysWOW64"
+        )
+        if(D3DCOMPILER_DLL_CPP)
+            add_custom_command(TARGET gfx_cpp_api_test POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${D3DCOMPILER_DLL_CPP}
+                $<TARGET_FILE_DIR:gfx_cpp_api_test>
+            )
+        endif()
+    endif()
+endif()
+
 if(NOT ENABLE_ASAN)
     gtest_discover_tests(gfx_cpp_api_test
         DISCOVER_MODE_PRE_TEST

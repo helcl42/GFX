@@ -38,6 +38,15 @@ target_link_libraries(gfx_api_test
     GTest::gmock
 )
 
+# Copy DLL to test directory on Windows for easy execution
+if(WIN32 AND BUILD_SHARED_LIBS)
+    add_custom_command(TARGET gfx_api_test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:gfx>
+        $<TARGET_FILE_DIR:gfx_api_test>
+    )
+endif()
+
 if(NOT ENABLE_ASAN)
     gtest_discover_tests(gfx_api_test
         DISCOVER_MODE_PRE_TEST
@@ -164,6 +173,24 @@ if(BUILD_WEBGPU_BACKEND)
     target_include_directories(gfx_internal_webgpu_test PRIVATE
         ${CMAKE_SOURCE_DIR}/gfx/src
     )
+
+    if(WIN32 AND BUILD_SHARED_LIBS)
+       # Copy d3dcompiler_47.dll for WebGPU shader compilation (usually in Windows SDK)
+        find_file(D3DCOMPILER_DLL d3dcompiler_47.dll
+            PATHS
+                "$ENV{WindowsSdkDir}/Redist/D3D/${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}/x64"
+                "$ENV{WindowsSdkDir}/Redist/D3D/${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}/x86"
+                "C:/Windows/System32"
+                "C:/Windows/SysWOW64"
+        )
+        if(D3DCOMPILER_DLL)
+            add_custom_command(TARGET gfx_internal_webgpu_test POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${D3DCOMPILER_DLL}
+                $<TARGET_FILE_DIR:gfx_internal_webgpu_test>
+            )
+        endif()
+    endif()
 
     if(NOT ENABLE_ASAN)
         gtest_discover_tests(gfx_internal_webgpu_test

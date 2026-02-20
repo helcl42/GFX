@@ -423,6 +423,8 @@ if(BUILD_SHARED_LIBS)
     target_compile_definitions(gfx PRIVATE GFX_BUILDING_DLL)
 else()
     add_library(gfx STATIC ${GFX_C_SOURCES})
+    # Define GFX_STATIC when building static library so header uses no import/export decorations
+    target_compile_definitions(gfx PUBLIC GFX_STATIC=1)
 endif()
 
 target_include_directories(gfx 
