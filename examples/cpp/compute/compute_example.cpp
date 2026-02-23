@@ -1146,7 +1146,7 @@ gfx::PlatformWindowHandle ComputeApp::extractNativeHandle()
 #if defined(__EMSCRIPTEN__)
     handle = gfx::PlatformWindowHandle::fromEmscripten("#canvas");
 #elif defined(_WIN32)
-    handle = gfx::PlatformWindowHandle::fromWin32(glfwGetWin32Window(window), GetModuleHandle(nullptr));
+    handle = gfx::PlatformWindowHandle::fromWin32(GetModuleHandle(nullptr), glfwGetWin32Window(window));
     std::cout << "Extracted Win32 handle: HWND=" << handle.handle.win32.hwnd << ", HINSTANCE=" << handle.handle.win32.hinstance << std::endl;
 #elif defined(__linux__)
     // handle = gfx::PlatformWindowHandle::fromXlib(glfwGetX11Display(), glfwGetX11Window(window));

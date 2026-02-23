@@ -972,8 +972,8 @@ void CubeApp::render()
             renderPassEncoder->setViewport({ 0.0f, 0.0f, static_cast<float>(swapchainInfo.extent.width), static_cast<float>(swapchainInfo.extent.height), 0.0f, 1.0f });
             renderPassEncoder->setScissorRect({ 0, 0, swapchainInfo.extent.width, swapchainInfo.extent.height });
 
-            renderPassEncoder->setVertexBuffer(0, vertexBuffer);
-            renderPassEncoder->setIndexBuffer(indexBuffer, gfx::IndexFormat::Uint16);
+            renderPassEncoder->setVertexBuffer(0, vertexBuffer, 0, vertexBuffer->getInfo().size);
+            renderPassEncoder->setIndexBuffer(indexBuffer, gfx::IndexFormat::Uint16, 0, indexBuffer->getInfo().size);
 
             // Draw CUBE_COUNT cubes at different positions
             for (int i = 0; i < CUBE_COUNT; ++i) {
@@ -1023,7 +1023,7 @@ gfx::PlatformWindowHandle CubeApp::extractNativeHandle()
     handle = gfx::PlatformWindowHandle::fromEmscripten("#canvas");
 #elif defined(_WIN32)
     // Windows: Get HWND and HINSTANCE
-    handle = gfx::PlatformWindowHandle::fromWin32(glfwGetWin32Window(window), GetModuleHandle(nullptr));
+    handle = gfx::PlatformWindowHandle::fromWin32(GetModuleHandle(nullptr), glfwGetWin32Window(window));
     std::cout << "Extracted Win32 handle: HWND=" << handle.handle.win32.hwnd << ", HINSTANCE=" << handle.handle.win32.hinstance << std::endl;
 #elif defined(__linux__)
     // handle = gfx::PlatformWindowHandle::fromXlib(glfwGetX11Display(), glfwGetX11Window(window));
