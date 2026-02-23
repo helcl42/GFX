@@ -177,6 +177,35 @@
 //   // Submit from either thread (thread-safe)
 //   queue->submit({.commandEncoders = {encoder1, encoder2}});
 
+// ============================================================================
+// DLL Export/Import Macros for Windows
+// ============================================================================
+
+#if defined(_WIN32) || defined(__CYGWIN__)
+#ifdef GFX_CPP_BUILDING_DLL
+// Building the DLL - export symbols
+#ifdef __GNUC__
+#define GFX_CPP_API __attribute__((dllexport))
+#else
+#define GFX_CPP_API __declspec(dllexport)
+#endif
+#else
+// Using the DLL - import symbols
+#ifdef __GNUC__
+#define GFX_CPP_API __attribute__((dllimport))
+#else
+#define GFX_CPP_API __declspec(dllimport)
+#endif
+#endif
+#else
+// Non-Windows platforms - use visibility attributes for shared libraries
+#if defined(__GNUC__) && __GNUC__ >= 4
+#define GFX_CPP_API __attribute__((visibility("default")))
+#else
+#define GFX_CPP_API
+#endif
+#endif
+
 namespace gfx {
 
 // ============================================================================
@@ -755,13 +784,13 @@ struct PlatformWindowHandle {
     WindowHandleUnion handle{};
 
     // Factory methods for each windowing system
-    static PlatformWindowHandle fromWin32(void* hinstance, void* hwnd);
-    static PlatformWindowHandle fromXlib(void* display, unsigned long window);
-    static PlatformWindowHandle fromWayland(void* display, void* surface);
-    static PlatformWindowHandle fromXCB(void* connection, uint32_t window);
-    static PlatformWindowHandle fromMetal(void* window);
-    static PlatformWindowHandle fromEmscripten(const char* canvasSelector);
-    static PlatformWindowHandle fromAndroid(void* window);
+    static GFX_CPP_API PlatformWindowHandle fromWin32(void* hinstance, void* hwnd);
+    static GFX_CPP_API PlatformWindowHandle fromXlib(void* display, unsigned long window);
+    static GFX_CPP_API PlatformWindowHandle fromWayland(void* display, void* surface);
+    static GFX_CPP_API PlatformWindowHandle fromXCB(void* connection, uint32_t window);
+    static GFX_CPP_API PlatformWindowHandle fromMetal(void* window);
+    static GFX_CPP_API PlatformWindowHandle fromEmscripten(const char* canvasSelector);
+    static GFX_CPP_API PlatformWindowHandle fromAndroid(void* window);
 };
 
 // ============================================================================
@@ -1396,33 +1425,23 @@ struct PipelineBarrierDescriptor {
 // Surface and Swapchain Classes
 // ============================================================================
 
-class Surface {
+class GFX_CPP_API Surface {
 public:
     virtual ~Surface() = default;
 
     virtual SurfaceInfo getInfo() const = 0;
-
-    // Get supported formats and present modes for this surface
     virtual std::vector<TextureFormat> getSupportedFormats() const = 0;
     virtual std::vector<PresentMode> getSupportedPresentModes() const = 0;
 };
 
-class Swapchain {
+class GFX_CPP_API Swapchain {
 public:
     virtual ~Swapchain() = default;
 
     virtual SwapchainInfo getInfo() const = 0;
-
-    // Get the current frame's texture view for rendering
     virtual std::shared_ptr<TextureView> getCurrentTextureView() const = 0;
-
-    // Present the current frame
     virtual Result acquireNextImage(uint64_t timeout, std::shared_ptr<Semaphore> signalSemaphore, std::shared_ptr<Fence> signalFence, uint32_t* imageIndex) = 0;
-
-    // Get texture view for a specific swapchain image index
     virtual std::shared_ptr<TextureView> getTextureView(uint32_t index) const = 0;
-
-    // Present with explicit synchronization
     virtual Result present(const PresentDescriptor& descriptor) = 0;
 };
 
@@ -1430,20 +1449,17 @@ public:
 // Resource Classes
 // ============================================================================
 
-class Buffer {
+class GFX_CPP_API Buffer {
 public:
     virtual ~Buffer() = default;
 
     virtual BufferInfo getInfo() const = 0;
     virtual void* getNativeHandle() const = 0;
-
-    // Mapping functions
     virtual void* map(uint64_t offset = 0, uint64_t size = 0) = 0;
     virtual void unmap() = 0;
     virtual void flushMappedRange(uint64_t offset, uint64_t size) = 0;
     virtual void invalidateMappedRange(uint64_t offset, uint64_t size) = 0;
 
-    // Convenience functions
     template <typename T>
     T* map(uint64_t offset = 0)
     {
@@ -1484,63 +1500,62 @@ public:
     }
 };
 
-class Texture {
+class GFX_CPP_API Texture {
 public:
     virtual ~Texture() = default;
 
     virtual TextureInfo getInfo() const = 0;
     virtual void* getNativeHandle() const = 0;
     virtual TextureLayout getLayout() const = 0;
-
     virtual std::shared_ptr<TextureView> createView(const TextureViewDescriptor& descriptor = {}) const = 0;
 };
 
-class TextureView {
+class GFX_CPP_API TextureView {
 public:
     virtual ~TextureView() = default;
 };
 
-class Sampler {
+class GFX_CPP_API Sampler {
 public:
     virtual ~Sampler() = default;
 };
 
-class Shader {
+class GFX_CPP_API Shader {
 public:
     virtual ~Shader() = default;
 };
 
-class BindGroupLayout {
+class GFX_CPP_API BindGroupLayout {
 public:
     virtual ~BindGroupLayout() = default;
 };
 
-class BindGroup {
+class GFX_CPP_API BindGroup {
 public:
     virtual ~BindGroup() = default;
 };
 
-class RenderPipeline {
+class GFX_CPP_API RenderPipeline {
 public:
     virtual ~RenderPipeline() = default;
 };
 
-class ComputePipeline {
+class GFX_CPP_API ComputePipeline {
 public:
     virtual ~ComputePipeline() = default;
 };
 
-class RenderPass {
+class GFX_CPP_API RenderPass {
 public:
     virtual ~RenderPass() = default;
 };
 
-class Framebuffer {
+class GFX_CPP_API Framebuffer {
 public:
     virtual ~Framebuffer() = default;
 };
 
-class RenderPassEncoder {
+class GFX_CPP_API RenderPassEncoder {
 public:
     virtual ~RenderPassEncoder() = default;
 
@@ -1550,17 +1565,15 @@ public:
     virtual void setIndexBuffer(std::shared_ptr<Buffer> buffer, IndexFormat format, uint64_t offset = 0, uint64_t size = UINT64_MAX) = 0;
     virtual void setViewport(const Viewport& viewport) = 0;
     virtual void setScissorRect(const ScissorRect& scissor) = 0;
-
     virtual void draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) = 0;
     virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t baseVertex = 0, uint32_t firstInstance = 0) = 0;
     virtual void drawIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset) = 0;
     virtual void drawIndexedIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset) = 0;
-
     virtual void beginOcclusionQuery(std::shared_ptr<QuerySet> querySet, uint32_t queryIndex) = 0;
     virtual void endOcclusionQuery() = 0;
 };
 
-class ComputePassEncoder {
+class GFX_CPP_API ComputePassEncoder {
 public:
     virtual ~ComputePassEncoder() = default;
 
@@ -1570,28 +1583,22 @@ public:
     virtual void dispatchIndirect(std::shared_ptr<Buffer> indirectBuffer, uint64_t indirectOffset) = 0;
 };
 
-class CommandEncoder {
+class GFX_CPP_API CommandEncoder {
 public:
     virtual ~CommandEncoder() = default;
 
     virtual std::shared_ptr<RenderPassEncoder> beginRenderPass(const RenderPassBeginDescriptor& descriptor) = 0;
-
     virtual std::shared_ptr<ComputePassEncoder> beginComputePass(const ComputePassBeginDescriptor& descriptor) = 0;
-
     virtual void copyBufferToBuffer(const CopyBufferToBufferDescriptor& descriptor) = 0;
     virtual void copyBufferToTexture(const CopyBufferToTextureDescriptor& descriptor) = 0;
     virtual void copyTextureToBuffer(const CopyTextureToBufferDescriptor& descriptor) = 0;
     virtual void copyTextureToTexture(const CopyTextureToTextureDescriptor& descriptor) = 0;
     virtual void blitTextureToTexture(const BlitTextureToTextureDescriptor& descriptor) = 0;
-
     virtual void pipelineBarrier(const PipelineBarrierDescriptor& descriptor) = 0;
-
     virtual void generateMipmaps(std::shared_ptr<Texture> texture) = 0;
     virtual void generateMipmapsRange(std::shared_ptr<Texture> texture, uint32_t baseMipLevel, uint32_t levelCount) = 0;
-
     virtual void writeTimestamp(std::shared_ptr<QuerySet> querySet, uint32_t queryIndex) = 0;
     virtual void resolveQuerySet(std::shared_ptr<QuerySet> querySet, uint32_t firstQuery, uint32_t queryCount, std::shared_ptr<Buffer> destinationBuffer, uint64_t destinationOffset) = 0;
-
     virtual void end() = 0;
     virtual void begin() = 0;
 };
@@ -1600,7 +1607,7 @@ public:
 // Synchronization Classes
 // ============================================================================
 
-class Fence {
+class GFX_CPP_API Fence {
 public:
     virtual ~Fence() = default;
 
@@ -1609,19 +1616,17 @@ public:
     virtual void reset() = 0;
 };
 
-class Semaphore {
+class GFX_CPP_API Semaphore {
 public:
     virtual ~Semaphore() = default;
 
     virtual SemaphoreType getType() const = 0;
-
-    // For timeline semaphores
     virtual uint64_t getValue() const = 0;
     virtual void signal(uint64_t value) = 0;
     virtual Result wait(uint64_t value, uint64_t timeoutNanoseconds = UINT64_MAX) = 0;
 };
 
-class QuerySet {
+class GFX_CPP_API QuerySet {
 public:
     virtual ~QuerySet() = default;
 
@@ -1629,7 +1634,7 @@ public:
     virtual uint32_t getCount() const = 0;
 };
 
-class Queue {
+class GFX_CPP_API Queue {
 public:
     virtual ~Queue() = default;
 
@@ -1642,73 +1647,55 @@ public:
     void writeBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset, const std::vector<T>& data)
     {
         if (data.empty()) {
-            return; // Nothing to write - valid no-op
+            return;
         }
         writeBuffer(buffer, offset, data.data(), data.size() * sizeof(T));
     }
 };
 
-class Device {
+class GFX_CPP_API Device {
 public:
     virtual ~Device() = default;
 
     virtual std::shared_ptr<Queue> getQueue() = 0;
     virtual std::shared_ptr<Queue> getQueueByIndex(uint32_t queueFamilyIndex, uint32_t queueIndex) = 0;
-
-    // Generic surface creation - works with any windowing system
     virtual std::shared_ptr<Surface> createSurface(const SurfaceDescriptor& descriptor) = 0;
     virtual std::shared_ptr<Swapchain> createSwapchain(const SwapchainDescriptor& descriptor) = 0;
-
     virtual std::shared_ptr<Buffer> createBuffer(const BufferDescriptor& descriptor) = 0;
     virtual std::shared_ptr<Buffer> importBuffer(const BufferImportDescriptor& descriptor) = 0;
     virtual std::shared_ptr<Texture> createTexture(const TextureDescriptor& descriptor) = 0;
     virtual std::shared_ptr<Texture> importTexture(const TextureImportDescriptor& descriptor) = 0;
     virtual std::shared_ptr<Sampler> createSampler(const SamplerDescriptor& descriptor = {}) = 0;
     virtual std::shared_ptr<Shader> createShader(const ShaderDescriptor& descriptor) = 0;
-
     virtual std::shared_ptr<BindGroupLayout> createBindGroupLayout(const BindGroupLayoutDescriptor& descriptor) = 0;
     virtual std::shared_ptr<BindGroup> createBindGroup(const BindGroupDescriptor& descriptor) = 0;
-
     virtual std::shared_ptr<RenderPipeline> createRenderPipeline(const RenderPipelineDescriptor& descriptor) = 0;
     virtual std::shared_ptr<ComputePipeline> createComputePipeline(const ComputePipelineDescriptor& descriptor) = 0;
-
     virtual std::shared_ptr<RenderPass> createRenderPass(const RenderPassCreateDescriptor& descriptor) = 0;
     virtual std::shared_ptr<Framebuffer> createFramebuffer(const FramebufferDescriptor& descriptor) = 0;
-
     virtual std::shared_ptr<CommandEncoder> createCommandEncoder(const CommandEncoderDescriptor& descriptor = {}) = 0;
-
-    // Synchronization objects
     virtual std::shared_ptr<Fence> createFence(const FenceDescriptor& descriptor = {}) = 0;
     virtual std::shared_ptr<Semaphore> createSemaphore(const SemaphoreDescriptor& descriptor = {}) = 0;
     virtual std::shared_ptr<QuerySet> createQuerySet(const QuerySetDescriptor& descriptor) = 0;
-
     virtual void waitIdle() = 0;
     virtual DeviceLimits getLimits() const = 0;
     virtual bool supportsShaderFormat(ShaderSourceType format) const = 0;
-
-    // Helper to deduce access flags from texture layout
-    // Vulkan: Returns explicit access flags based on layout
-    // WebGPU: Returns AccessFlags::None (implicit synchronization)
     virtual AccessFlags getAccessFlagsForLayout(TextureLayout layout) const = 0;
 };
 
-class Adapter {
+class GFX_CPP_API Adapter {
 public:
     virtual ~Adapter() = default;
 
     virtual std::shared_ptr<Device> createDevice(const DeviceDescriptor& descriptor = {}) = 0;
     virtual AdapterInfo getInfo() const = 0;
     virtual DeviceLimits getLimits() const = 0;
-
-    // Queue family enumeration
     virtual std::vector<QueueFamilyProperties> enumerateQueueFamilies() const = 0;
     virtual bool getQueueFamilySurfaceSupport(uint32_t queueFamilyIndex, Surface* surface) const = 0;
-
-    // Device extension enumeration
     virtual std::vector<std::string> enumerateExtensions() const = 0;
 };
 
-class Instance {
+class GFX_CPP_API Instance {
 public:
     virtual ~Instance() = default;
 
@@ -1720,44 +1707,29 @@ public:
 // Factory Functions
 // ============================================================================
 
-std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor = {});
+GFX_CPP_API std::shared_ptr<Instance> createInstance(const InstanceDescriptor& descriptor = {});
 
 // ============================================================================
 // Backend Management Functions
 // ============================================================================
 
-// Load a graphics backend - must be called before createInstance() if using a specific backend
-Result loadBackend(Backend backend);
-
-// Unload a graphics backend - should only be called when no resources from that backend are in use
-void unloadBackend(Backend backend);
+GFX_CPP_API Result loadBackend(Backend backend);
+GFX_CPP_API void unloadBackend(Backend backend);
 
 // ============================================================================
 // Utility Functions
 // ============================================================================
 
-// Enumerate available instance extensions for a backend
-std::vector<std::string> enumerateInstanceExtensions(Backend backend);
-
-// Set global log callback for all logging output
-void setLogCallback(LogCallback callback);
-
-// Get runtime library version - returns major, minor, patch
-std::tuple<uint32_t, uint32_t, uint32_t> getVersion();
+GFX_CPP_API std::vector<std::string> enumerateInstanceExtensions(Backend backend);
+GFX_CPP_API void setLogCallback(LogCallback callback);
+GFX_CPP_API std::tuple<uint32_t, uint32_t, uint32_t> getVersion();
 
 namespace utils {
-    // Alignment helpers - align buffer offsets/sizes to device requirements
-    uint64_t alignUp(uint64_t value, uint64_t alignment);
-    uint64_t alignDown(uint64_t value, uint64_t alignment);
+    GFX_CPP_API uint64_t alignUp(uint64_t value, uint64_t alignment);
+    GFX_CPP_API uint64_t alignDown(uint64_t value, uint64_t alignment);
+    GFX_CPP_API uint32_t getFormatBytesPerPixel(TextureFormat format);
+    GFX_CPP_API const char* resultToString(Result result);
 
-    // Get bytes per pixel for a texture format
-    uint32_t getFormatBytesPerPixel(TextureFormat format);
-
-    // Convert Result enum to human-readable string
-    // Returns a static string (e.g., "Result::Success", "Result::ErrorOutOfMemory")
-    const char* resultToString(Result result);
-
-    // Helper to find a specific extension type in the next chain using dynamic_cast
     template <typename T>
     const T* findInChain(const ChainedStruct* chain)
     {
