@@ -420,7 +420,7 @@ if(BUILD_SHARED_LIBS)
         SOVERSION ${PROJECT_VERSION_MAJOR}
     )
     # Define GFX_BUILDING_DLL when building the shared library
-    target_compile_definitions(gfx PRIVATE GFX_BUILDING_DLL)
+    target_compile_definitions(gfx PUBLIC GFX_BUILDING_DLL)  # Changed from PRIVATE to PUBLIC
 else()
     add_library(gfx STATIC ${GFX_C_SOURCES})
     # Define GFX_STATIC when building static library so header uses no import/export decorations
@@ -618,10 +618,14 @@ if(BUILD_CPP_WRAPPER)
         set_target_properties(gfx_cpp PROPERTIES
             VERSION ${PROJECT_VERSION}
             SOVERSION ${PROJECT_VERSION_MAJOR}
-            WINDOWS_EXPORT_ALL_SYMBOLS ON # TODO - Automatically export all symbols on Windows without needing __declspec(dllexport)
+            # CXX_VISIBILITY_PRESET hidden
+            # VISIBILITY_INLINES_HIDDEN ON
         )
+        target_compile_definitions(gfx_cpp PUBLIC GFX_CPP_BUILDING_DLL)  # Changed from PRIVATE to PUBLIC
     else()
         add_library(gfx_cpp STATIC ${GFX_CPP_SOURCES})
+        # Define GFX_CPP_STATIC when building static library
+        target_compile_definitions(gfx_cpp PUBLIC GFX_CPP_STATIC=1)
     endif()
 
     target_include_directories(gfx_cpp 
@@ -739,72 +743,119 @@ endif()  # BUILD_EXAMPLES
 
 # Add tests
 if(BUILD_TESTS AND NOT BUILD_FOR_WEB)
-    # Create object library for internal tests to access private symbols
-    add_library(gfx_objects OBJECT ${GFX_C_SOURCES})
-    
-    target_include_directories(gfx_objects 
-        PUBLIC 
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/gfx/include>
-        PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/gfx/src
-    )
-    
-    # Apply same configuration as main gfx library
-    if(BUILD_VULKAN_BACKEND)
-        target_link_libraries(gfx_objects PUBLIC ${Vulkan_LIBRARY})
-        target_compile_definitions(gfx_objects PUBLIC GFX_ENABLE_VULKAN=1)
-        if(BUILD_WEBGPU_BACKEND AND TARGET Vulkan::Headers)
-            target_link_libraries(gfx_objects PUBLIC Vulkan::Headers)
-        elseif(SYSTEM_VULKAN_INCLUDE_DIR)
-            target_include_directories(gfx_objects PUBLIC ${SYSTEM_VULKAN_INCLUDE_DIR})
-        endif()
-    endif()
-    
-    if(BUILD_WEBGPU_BACKEND)
-        # For native builds, link to webgpu_dawn
-        target_link_libraries(gfx_objects PUBLIC webgpu_dawn)
-        target_include_directories(gfx_objects PUBLIC 
-            ${CMAKE_BINARY_DIR}/dawn/gen/include
-            ${WEBGPU_INCLUDE_DIR}
-        )
-        target_include_directories(gfx_objects PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/include)
-        target_compile_definitions(gfx_objects PUBLIC GFX_ENABLE_WEBGPU=1)
+    # ========================================================================
+    # CREATE OBJECT LIBRARY FOR gfx INTERNAL TESTS (when shared library)
+    # ========================================================================
+    if(BUILD_SHARED_LIBS)
+        add_library(gfx_objects OBJECT ${GFX_C_SOURCES})
         
-        if(TARGET webgpu_headers_gen)
-            add_dependencies(gfx_objects webgpu_headers_gen)
+        target_include_directories(gfx_objects 
+            PUBLIC 
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/gfx/include>
+            PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/gfx/src
+        )
+        
+        # Apply same configuration as main gfx library
+        if(BUILD_VULKAN_BACKEND)
+            target_link_libraries(gfx_objects PUBLIC ${Vulkan_LIBRARY})
+            target_compile_definitions(gfx_objects PUBLIC GFX_ENABLE_VULKAN=1)
+            if(BUILD_WEBGPU_BACKEND AND TARGET Vulkan::Headers)
+                target_link_libraries(gfx_objects PUBLIC Vulkan::Headers)
+            elseif(SYSTEM_VULKAN_INCLUDE_DIR)
+                target_include_directories(gfx_objects PUBLIC ${SYSTEM_VULKAN_INCLUDE_DIR})
+            endif()
         endif()
-        if(TARGET emdawnwebgpu_headers_gen)
-            add_dependencies(gfx_objects emdawnwebgpu_headers_gen)
+        
+        if(BUILD_WEBGPU_BACKEND)
+            # For native builds, link to webgpu_dawn
+            target_link_libraries(gfx_objects PUBLIC webgpu_dawn)
+            target_include_directories(gfx_objects PUBLIC 
+                ${CMAKE_BINARY_DIR}/dawn/gen/include
+                ${WEBGPU_INCLUDE_DIR}
+            )
+            target_include_directories(gfx_objects PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/include)
+            target_compile_definitions(gfx_objects PUBLIC GFX_ENABLE_WEBGPU=1)
+            
+            if(TARGET webgpu_headers_gen)
+                add_dependencies(gfx_objects webgpu_headers_gen)
+            endif()
+            if(TARGET emdawnwebgpu_headers_gen)
+                add_dependencies(gfx_objects emdawnwebgpu_headers_gen)
+            endif()
+        endif()
+        
+        if(BUILD_HEADLESS)
+            target_compile_definitions(gfx_objects PUBLIC GFX_HEADLESS_BUILD=1)
+        endif()
+        
+        if(GFX_HAS_WIN32)
+            target_compile_definitions(gfx_objects PUBLIC GFX_HAS_WIN32=1)
+        endif()
+        if(GFX_HAS_ANDROID)
+            target_compile_definitions(gfx_objects PUBLIC GFX_HAS_ANDROID=1)
+        endif()
+        if(GFX_HAS_COCOA)
+            target_compile_definitions(gfx_objects PUBLIC GFX_HAS_COCOA=1)
+        endif()
+        if(GFX_HAS_UIKIT)
+            target_compile_definitions(gfx_objects PUBLIC GFX_HAS_UIKIT=1)
+        endif()
+        if(GFX_HAS_X11)
+            target_compile_definitions(gfx_objects PUBLIC GFX_HAS_X11=1)
+        endif()
+        if(GFX_HAS_XCB)
+            target_compile_definitions(gfx_objects PUBLIC GFX_HAS_XCB=1)
+        endif()
+        if(GFX_HAS_WAYLAND)
+            target_compile_definitions(gfx_objects PUBLIC GFX_HAS_WAYLAND=1)
+        endif()
+        if(GFX_HAS_EMSCRIPTEN)
+            target_compile_definitions(gfx_objects PUBLIC GFX_HAS_EMSCRIPTEN=1)
         endif()
     endif()
     
-    if(BUILD_HEADLESS)
-        target_compile_definitions(gfx_objects PUBLIC GFX_HEADLESS_BUILD=1)
-    endif()
-    
-    if(GFX_HAS_WIN32)
-        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_WIN32=1)
-    endif()
-    if(GFX_HAS_ANDROID)
-        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_ANDROID=1)
-    endif()
-    if(GFX_HAS_COCOA)
-        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_COCOA=1)
-    endif()
-    if(GFX_HAS_UIKIT)
-        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_UIKIT=1)
-    endif()
-    if(GFX_HAS_X11)
-        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_X11=1)
-    endif()
-    if(GFX_HAS_XCB)
-        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_XCB=1)
-    endif()
-    if(GFX_HAS_WAYLAND)
-        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_WAYLAND=1)
-    endif()
-    if(GFX_HAS_EMSCRIPTEN)
-        target_compile_definitions(gfx_objects PUBLIC GFX_HAS_EMSCRIPTEN=1)
+    # ========================================================================
+    # CREATE OBJECT LIBRARY FOR gfx_cpp INTERNAL TESTS (when shared library)
+    # ========================================================================
+    if(BUILD_CPP_WRAPPER AND BUILD_SHARED_LIBS)
+        add_library(gfx_cpp_objects OBJECT ${GFX_CPP_SOURCES})
+        
+        target_include_directories(gfx_cpp_objects 
+            PUBLIC 
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/gfx_cpp/include>
+            PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/gfx_cpp/src
+        )
+        
+        # Apply same configuration as main gfx_cpp library
+        target_compile_definitions(gfx_cpp_objects PRIVATE GFX_CPP_BUILDING_DLL)
+        target_link_libraries(gfx_cpp_objects PUBLIC gfx)
+        
+        if(BUILD_VULKAN_BACKEND)
+            target_compile_definitions(gfx_cpp_objects PUBLIC GFX_ENABLE_VULKAN=1)
+            if(BUILD_WEBGPU_BACKEND AND TARGET Vulkan::Headers)
+                target_link_libraries(gfx_cpp_objects PUBLIC Vulkan::Headers)
+            endif()
+        endif()
+        
+        if(BUILD_WEBGPU_BACKEND)
+            target_link_libraries(gfx_cpp_objects PUBLIC webgpu_dawn)
+            target_include_directories(gfx_cpp_objects PUBLIC 
+                ${CMAKE_BINARY_DIR}/dawn/gen/include
+                ${WEBGPU_INCLUDE_DIR}
+            )
+            target_compile_definitions(gfx_cpp_objects PUBLIC GFX_ENABLE_WEBGPU=1)
+            
+            if(TARGET webgpu_headers_gen)
+                add_dependencies(gfx_cpp_objects webgpu_headers_gen)
+            endif()
+            if(TARGET emdawnwebgpu_headers_gen)
+                add_dependencies(gfx_cpp_objects emdawnwebgpu_headers_gen)
+            endif()
+        endif()
+        
+        target_link_libraries(gfx_cpp_objects PUBLIC ${PLATFORM_LIBS})
     endif()
     
     add_subdirectory(test/gfx)

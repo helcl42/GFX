@@ -108,10 +108,19 @@ target_include_directories(gfx_cpp_internal_test PRIVATE
     ${CMAKE_SOURCE_DIR}/gfx_cpp/src
 )
 
-target_link_libraries(gfx_cpp_internal_test
-    gfx_cpp
-    GTest::gtest_main
-)
+# Link to object library for internal tests (if shared library) or directly to gfx_cpp (if static)
+if(BUILD_SHARED_LIBS)
+    target_link_libraries(gfx_cpp_internal_test
+        gfx_cpp_objects  # Use object library for access to private symbols
+        gfx
+        GTest::gtest_main
+    )
+else()
+    target_link_libraries(gfx_cpp_internal_test
+        gfx_cpp          # Use static library directly
+        GTest::gtest_main
+    )
+endif()
 
 if(NOT ENABLE_ASAN)
     gtest_discover_tests(gfx_cpp_internal_test

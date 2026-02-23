@@ -63,11 +63,20 @@ add_executable(gfx_internal_test
     internal/common/LoggerTest.cpp
 )
 
-target_link_libraries(gfx_internal_test
-    gfx_objects
-    GTest::gtest_main
-    GTest::gmock
-)
+# Link to object library for internal tests (if shared library) or directly to gfx (if static)
+if(BUILD_SHARED_LIBS)
+    target_link_libraries(gfx_internal_test
+        gfx_objects
+        GTest::gtest_main
+        GTest::gmock
+    )
+else()
+    target_link_libraries(gfx_internal_test
+        gfx
+        GTest::gtest_main
+        GTest::gmock
+    )
+endif()
 
 target_include_directories(gfx_internal_test PRIVATE
     ${CMAKE_SOURCE_DIR}/gfx/src
@@ -112,11 +121,20 @@ if(BUILD_VULKAN_BACKEND AND NOT BUILD_FOR_WEB)
         internal/backend/vulkan/core/command/RenderPassEncoderTest.cpp
     )
 
-    target_link_libraries(gfx_internal_vulkan_test
-        gfx_objects
-        GTest::gtest_main
-        GTest::gmock
-    )
+    # Link to object library for internal tests (if shared library) or directly to gfx (if static)
+    if(BUILD_SHARED_LIBS)
+        target_link_libraries(gfx_internal_vulkan_test
+            gfx_objects
+            GTest::gtest_main
+            GTest::gmock
+        )
+    else()
+        target_link_libraries(gfx_internal_vulkan_test
+            gfx
+            GTest::gtest_main
+            GTest::gmock
+        )
+    endif()
 
     target_include_directories(gfx_internal_vulkan_test PRIVATE
         ${CMAKE_SOURCE_DIR}/gfx/src
@@ -164,11 +182,20 @@ if(BUILD_WEBGPU_BACKEND)
         internal/backend/webgpu/converter/ConversionsTest.cpp
     )
 
-    target_link_libraries(gfx_internal_webgpu_test
-        gfx_objects
-        GTest::gtest_main
-        GTest::gmock
-    )
+    # Link to object library for internal tests (if shared library) or directly to gfx (if static)
+    if(BUILD_SHARED_LIBS)
+        target_link_libraries(gfx_internal_webgpu_test
+            gfx_objects
+            GTest::gtest_main
+            GTest::gmock
+        )
+    else()
+        target_link_libraries(gfx_internal_webgpu_test
+            gfx
+            GTest::gtest_main
+            GTest::gmock
+        )
+    endif()
 
     target_include_directories(gfx_internal_webgpu_test PRIVATE
         ${CMAKE_SOURCE_DIR}/gfx/src
