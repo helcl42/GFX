@@ -12,8 +12,8 @@
 // MAJOR version: Incompatible API changes
 // MINOR version: Added functionality (backwards compatible)
 // PATCH version: Bug fixes (backwards compatible)
-#define GFX_VERSION_MAJOR 1
-#define GFX_VERSION_MINOR 0
+#define GFX_VERSION_MAJOR 0
+#define GFX_VERSION_MINOR 9
 #define GFX_VERSION_PATCH 0
 
 // Helper macro to create version number for comparison (Vulkan-style bit packing)
