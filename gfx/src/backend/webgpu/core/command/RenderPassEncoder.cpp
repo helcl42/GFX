@@ -3,9 +3,12 @@
 #include "../command/CommandEncoder.h"
 #include "../render/Framebuffer.h"
 #include "../render/RenderPass.h"
+#include "../resource/Buffer.h"
 #include "../resource/Texture.h"
 #include "../resource/TextureView.h"
 #include "../util/Utils.h"
+
+#include "../../../../common/Logger.h"
 
 #include <stdexcept>
 
@@ -98,14 +101,16 @@ void RenderPassEncoder::setBindGroup(uint32_t index, WGPUBindGroup bindGroup, co
     wgpuRenderPassEncoderSetBindGroup(m_encoder, index, bindGroup, dynamicOffsetCount, dynamicOffsets);
 }
 
-void RenderPassEncoder::setVertexBuffer(uint32_t slot, WGPUBuffer buffer, uint64_t offset, uint64_t size)
+void RenderPassEncoder::setVertexBuffer(uint32_t slot, Buffer* buffer, uint64_t offset, uint64_t size)
 {
-    wgpuRenderPassEncoderSetVertexBuffer(m_encoder, slot, buffer, offset, size);
+    uint64_t actualSize = (size == 0) ? (buffer->getInfo().size - offset) : size;
+    wgpuRenderPassEncoderSetVertexBuffer(m_encoder, slot, buffer->handle(), offset, actualSize);
 }
 
-void RenderPassEncoder::setIndexBuffer(WGPUBuffer buffer, WGPUIndexFormat format, uint64_t offset, uint64_t size)
+void RenderPassEncoder::setIndexBuffer(Buffer* buffer, WGPUIndexFormat format, uint64_t offset, uint64_t size)
 {
-    wgpuRenderPassEncoderSetIndexBuffer(m_encoder, buffer, format, offset, size);
+    uint64_t actualSize = (size == 0) ? (buffer->getInfo().size - offset) : size;
+    wgpuRenderPassEncoderSetIndexBuffer(m_encoder, buffer->handle(), format, offset, actualSize);
 }
 
 void RenderPassEncoder::setViewport(float x, float y, float width, float height, float minDepth, float maxDepth)

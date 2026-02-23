@@ -320,7 +320,7 @@ GfxResult CommandComponent::renderPassEncoderSetVertexBuffer(GfxRenderPassEncode
     auto* encoderPtr = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     auto* bufferPtr = converter::toNative<core::Buffer>(buffer);
 
-    encoderPtr->setVertexBuffer(slot, bufferPtr->handle(), offset, size);
+    encoderPtr->setVertexBuffer(slot, bufferPtr, offset, size);
     return GFX_RESULT_SUCCESS;
 }
 
@@ -334,7 +334,7 @@ GfxResult CommandComponent::renderPassEncoderSetIndexBuffer(GfxRenderPassEncoder
     auto* encoderPtr = converter::toNative<core::RenderPassEncoder>(renderPassEncoder);
     auto* bufferPtr = converter::toNative<core::Buffer>(buffer);
 
-    encoderPtr->setIndexBuffer(bufferPtr->handle(), converter::gfxIndexFormatToWGPU(format), offset, size);
+    encoderPtr->setIndexBuffer(bufferPtr, converter::gfxIndexFormatToWGPU(format), offset, size);
     return GFX_RESULT_SUCCESS;
 }
 

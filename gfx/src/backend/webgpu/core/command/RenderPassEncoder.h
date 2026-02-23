@@ -5,6 +5,7 @@
 
 namespace gfx::backend::webgpu::core {
 
+class Buffer;
 class CommandEncoder;
 class RenderPass;
 class Framebuffer;
@@ -20,8 +21,8 @@ public:
 
     void setPipeline(WGPURenderPipeline pipeline);
     void setBindGroup(uint32_t index, WGPUBindGroup bindGroup, const uint32_t* dynamicOffsets, uint32_t dynamicOffsetCount);
-    void setVertexBuffer(uint32_t slot, WGPUBuffer buffer, uint64_t offset, uint64_t size);
-    void setIndexBuffer(WGPUBuffer buffer, WGPUIndexFormat format, uint64_t offset, uint64_t size);
+    void setVertexBuffer(uint32_t slot, Buffer* buffer, uint64_t offset, uint64_t size);
+    void setIndexBuffer(Buffer* buffer, WGPUIndexFormat format, uint64_t offset, uint64_t size);
 
     void setViewport(float x, float y, float width, float height, float minDepth, float maxDepth);
     void setScissorRect(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
