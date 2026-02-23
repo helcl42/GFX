@@ -412,7 +412,7 @@ Adapter* Instance::requestAdapter(const AdapterCreateInfo& createInfo) const
     }
 
     // Map preference to Vulkan device type
-    VkPhysicalDeviceType preferredType;
+    VkPhysicalDeviceType preferredType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
     bool allowFallback = true;
 
     switch (createInfo.devicePreference) {
