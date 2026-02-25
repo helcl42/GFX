@@ -1,8 +1,4 @@
-#include <gfx_cpp/gfx.hpp>
-
-#include <gfx/gfx.h>
-
-#include <gtest/gtest.h>
+#include "common/CommonTest.h"
 
 // Test the implementation functions in gfx_cpp/src/GfxImpl.cpp
 // These are the factory functions and utilities that bridge C++ wrapper to C API
@@ -124,7 +120,7 @@ TEST(GfxImplTest, CreateInstance_WebGPUBackend_Succeeds)
 }
 #endif
 
-TEST(GfxImplTest, CreateInstance_WithExtensions_Succeeds)
+TEST(GfxImplTest, CreateInstance_VulkanWithExtensions_Succeeds)
 {
 #ifdef GFX_ENABLE_VULKAN
     gfx::InstanceDescriptor desc{

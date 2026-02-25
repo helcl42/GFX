@@ -1,6 +1,4 @@
-#include <gfx/gfx.h>
-
-#include <gtest/gtest.h>
+#include "CommonTest.h"
 
 #include <cstring>
 

@@ -4,6 +4,7 @@
 # Public API Tests - Always built, backend-agnostic
 # =============================================================================
 add_executable(gfx_api_test
+    api/CommonTest.h
     api/ConstantTest.cpp
     api/BackendTest.cpp
     api/InstanceTest.cpp

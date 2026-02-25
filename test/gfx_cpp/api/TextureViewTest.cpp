@@ -1,6 +1,4 @@
-#include <gfx_cpp/gfx.hpp>
-
-#include <gtest/gtest.h>
+#include "CommonTest.h"
 
 namespace {
 
@@ -453,11 +451,9 @@ TEST_P(GfxCppTextureViewTest, CreateView2DFromSingleCubeFace)
 // ===========================================================================
 
 INSTANTIATE_TEST_SUITE_P(
-    GfxCppTextureViewTests,
+    AllBackends,
     GfxCppTextureViewTest,
-    ::testing::Values(gfx::Backend::Vulkan, gfx::Backend::WebGPU),
-    [](const ::testing::TestParamInfo<gfx::Backend>& info) {
-        return info.param == gfx::Backend::Vulkan ? "Vulkan" : "WebGPU";
-    });
+    testing::ValuesIn(getActiveBackends()),
+    convertTestParamToString);
 
 } // namespace

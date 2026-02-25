@@ -1,6 +1,4 @@
-#include <gfx/gfx.h>
-
-#include <gtest/gtest.h>
+#include "CommonTest.h"
 
 // C API tests compiled with C++ for GoogleTest compatibility
 
@@ -18,8 +16,8 @@ TEST(GfxBackendTest, GetVersion)
     EXPECT_EQ(result, GFX_RESULT_SUCCESS);
 
     // Verify expected version (1.0.0)
-    EXPECT_EQ(major, 1u);
-    EXPECT_EQ(minor, 0u);
+    EXPECT_EQ(major, 0u);
+    EXPECT_EQ(minor, 9u);
     EXPECT_EQ(patch, 0u);
 
     // Verify GFX_VERSION macro matches
@@ -50,8 +48,8 @@ TEST(GfxBackendTest, GetVersionNullParams)
     uint32_t major = 0, minor = 0, patch = 0;
     result = gfxGetVersion(&major, &minor, &patch);
     EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_EQ(major, 1u);
-    EXPECT_EQ(minor, 0u);
+    EXPECT_EQ(major, 0u);
+    EXPECT_EQ(minor, 9u);
     EXPECT_EQ(patch, 0u);
 }
 

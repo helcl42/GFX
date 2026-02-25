@@ -1,6 +1,4 @@
-#include <gfx_cpp/gfx.hpp>
-
-#include <gtest/gtest.h>
+#include "CommonTest.h"
 
 #include <vector>
 
@@ -507,9 +505,7 @@ TEST_P(GfxCppTextureTest, ImportTextureFromNativeHandle)
 INSTANTIATE_TEST_SUITE_P(
     AllBackends,
     GfxCppTextureTest,
-    testing::Values(gfx::Backend::Vulkan, gfx::Backend::WebGPU),
-    [](const testing::TestParamInfo<gfx::Backend>& info) {
-        return info.param == gfx::Backend::Vulkan ? "Vulkan" : "WebGPU";
-    });
+    testing::ValuesIn(getActiveBackends()),
+    convertTestParamToString);
 
 } // namespace

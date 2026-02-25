@@ -1,11 +1,7 @@
+#include "../../common/CommonTest.h"
+
 #include <core/sync/Fence.h>
 #include <core/system/Device.h>
-
-#include <gfx/gfx.h>
-
-#include <gfx_cpp/gfx.hpp>
-
-#include <gtest/gtest.h>
 
 namespace gfx {
 
@@ -155,15 +151,14 @@ TEST_P(FenceImplTest, MultipleFences_IndependentHandles)
     EXPECT_NE(fence1, fence2);
 }
 
-#if defined(GFX_ENABLE_VULKAN) && defined(GFX_ENABLE_WEBGPU)
-INSTANTIATE_TEST_SUITE_P(AllBackends, FenceImplTest,
-    ::testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU));
-#elif defined(GFX_ENABLE_VULKAN)
-INSTANTIATE_TEST_SUITE_P(VulkanOnly, FenceImplTest,
-    ::testing::Values(GFX_BACKEND_VULKAN));
-#elif defined(GFX_ENABLE_WEBGPU)
-INSTANTIATE_TEST_SUITE_P(WebGPUOnly, FenceImplTest,
-    ::testing::Values(GFX_BACKEND_WEBGPU));
-#endif
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
+INSTANTIATE_TEST_SUITE_P(
+    AllBackends,
+    FenceImplTest,
+    testing::ValuesIn(getActiveBackends()),
+    convertTestParamToString);
 
 } // namespace gfx

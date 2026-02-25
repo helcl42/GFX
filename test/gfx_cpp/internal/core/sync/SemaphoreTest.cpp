@@ -1,11 +1,7 @@
+#include "../../common/CommonTest.h"
+
 #include <core/sync/Semaphore.h>
 #include <core/system/Device.h>
-
-#include <gfx/gfx.h>
-
-#include <gfx_cpp/gfx.hpp>
-
-#include <gtest/gtest.h>
 
 #include <cstring>
 #include <vector>
@@ -220,15 +216,14 @@ TEST_P(SemaphoreImplTest, MultipleSemaphores_IndependentHandles)
     EXPECT_NE(semaphore1, semaphore2);
 }
 
-#if defined(GFX_ENABLE_VULKAN) && defined(GFX_ENABLE_WEBGPU)
-INSTANTIATE_TEST_SUITE_P(AllBackends, SemaphoreImplTest,
-    ::testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU));
-#elif defined(GFX_ENABLE_VULKAN)
-INSTANTIATE_TEST_SUITE_P(VulkanOnly, SemaphoreImplTest,
-    ::testing::Values(GFX_BACKEND_VULKAN));
-#elif defined(GFX_ENABLE_WEBGPU)
-INSTANTIATE_TEST_SUITE_P(WebGPUOnly, SemaphoreImplTest,
-    ::testing::Values(GFX_BACKEND_WEBGPU));
-#endif
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
+INSTANTIATE_TEST_SUITE_P(
+    AllBackends,
+    SemaphoreImplTest,
+    testing::ValuesIn(getActiveBackends()),
+    convertTestParamToString);
 
 } // namespace gfx

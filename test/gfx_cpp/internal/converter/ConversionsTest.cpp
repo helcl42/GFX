@@ -1,10 +1,7 @@
+
+#include "../common/CommonTest.h"
+
 #include <converter/Conversions.h>
-
-#include <gfx/gfx.h>
-
-#include <gfx_cpp/gfx.hpp>
-
-#include <gtest/gtest.h>
 
 namespace gfx {
 

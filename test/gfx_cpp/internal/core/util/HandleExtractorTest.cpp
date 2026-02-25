@@ -1,12 +1,8 @@
+#include "../../common/CommonTest.h"
+
 #include <core/sync/Fence.h>
 #include <core/sync/Semaphore.h>
 #include <core/util/HandleExtractor.h>
-
-#include <gfx/gfx.h>
-
-#include <gfx_cpp/gfx.hpp>
-
-#include <gtest/gtest.h>
 
 namespace gfx {
 

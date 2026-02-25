@@ -1,10 +1,6 @@
+#include "../../common/CommonTest.h"
+
 #include <core/system/Adapter.h>
-
-#include <gfx/gfx.h>
-
-#include <gfx_cpp/gfx.hpp>
-
-#include <gtest/gtest.h>
 
 namespace gfx {
 
@@ -107,16 +103,14 @@ TEST_P(AdapterImplTest, CreateDevice)
     EXPECT_NE(device, nullptr);
 }
 
-// Instantiate tests for available backends
-#if defined(GFX_ENABLE_VULKAN) && defined(GFX_ENABLE_WEBGPU)
-INSTANTIATE_TEST_SUITE_P(AllBackends, AdapterImplTest,
-    ::testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU));
-#elif defined(GFX_ENABLE_VULKAN)
-INSTANTIATE_TEST_SUITE_P(VulkanOnly, AdapterImplTest,
-    ::testing::Values(GFX_BACKEND_VULKAN));
-#elif defined(GFX_ENABLE_WEBGPU)
-INSTANTIATE_TEST_SUITE_P(WebGPUOnly, AdapterImplTest,
-    ::testing::Values(GFX_BACKEND_WEBGPU));
-#endif
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
+INSTANTIATE_TEST_SUITE_P(
+    AllBackends,
+    AdapterImplTest,
+    testing::ValuesIn(getActiveBackends()),
+    convertTestParamToString);
 
 } // namespace gfx

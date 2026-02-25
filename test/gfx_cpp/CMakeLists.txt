@@ -4,6 +4,7 @@
 # Public API Tests - Always built, backend-agnostic
 # =============================================================================
 add_executable(gfx_cpp_api_test
+    api/CommonTest.h
     api/AdapterTest.cpp
     api/BackendTest.cpp
     api/BindGroupLayoutTest.cpp
@@ -76,6 +77,7 @@ endif()
 # Internal Tests - Always built
 # =============================================================================
 add_executable(gfx_cpp_internal_test
+    internal/common/CommonTest.h
     internal/GfxImplTest.cpp
     internal/converter/ConversionsTest.cpp
     internal/core/util/HandleExtractorTest.cpp

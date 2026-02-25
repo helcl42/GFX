@@ -1,6 +1,4 @@
-#include <gfx_cpp/gfx.hpp>
-
-#include <gtest/gtest.h>
+#include "CommonTest.h"
 
 // Basic sanity test
 

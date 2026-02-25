@@ -1,11 +1,7 @@
+#include "../../common/CommonTest.h"
+
 #include <core/query/QuerySet.h>
 #include <core/system/Device.h>
-
-#include <gfx/gfx.h>
-
-#include <gfx_cpp/gfx.hpp>
-
-#include <gtest/gtest.h>
 
 namespace gfx {
 
@@ -102,15 +98,14 @@ TEST_P(QuerySetImplTest, MultipleQuerySets_IndependentHandles)
     EXPECT_NE(querySet1, querySet2);
 }
 
-#if defined(GFX_ENABLE_VULKAN) && defined(GFX_ENABLE_WEBGPU)
-INSTANTIATE_TEST_SUITE_P(AllBackends, QuerySetImplTest,
-    ::testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU));
-#elif defined(GFX_ENABLE_VULKAN)
-INSTANTIATE_TEST_SUITE_P(VulkanOnly, QuerySetImplTest,
-    ::testing::Values(GFX_BACKEND_VULKAN));
-#elif defined(GFX_ENABLE_WEBGPU)
-INSTANTIATE_TEST_SUITE_P(WebGPUOnly, QuerySetImplTest,
-    ::testing::Values(GFX_BACKEND_WEBGPU));
-#endif
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
+INSTANTIATE_TEST_SUITE_P(
+    AllBackends,
+    QuerySetImplTest,
+    testing::ValuesIn(getActiveBackends()),
+    convertTestParamToString);
 
 } // namespace gfx

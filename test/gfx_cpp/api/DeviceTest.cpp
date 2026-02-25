@@ -1,6 +1,4 @@
-#include <gfx_cpp/gfx.hpp>
-
-#include <gtest/gtest.h>
+#include "CommonTest.h"
 
 // ===========================================================================
 // Parameterized Tests - Run on both Vulkan and WebGPU backends
@@ -334,12 +332,14 @@ TEST_P(GfxCppDeviceTest, GetAccessFlagsForLayoutPresent)
     }
 }
 
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
 INSTANTIATE_TEST_SUITE_P(
     AllBackends,
     GfxCppDeviceTest,
-    testing::Values(gfx::Backend::Vulkan, gfx::Backend::WebGPU),
-    [](const testing::TestParamInfo<gfx::Backend>& info) {
-        return info.param == gfx::Backend::Vulkan ? "Vulkan" : "WebGPU";
-    });
+    testing::ValuesIn(getActiveBackends()),
+    convertTestParamToString);
 
 } // namespace

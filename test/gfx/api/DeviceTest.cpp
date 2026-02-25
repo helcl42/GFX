@@ -1,6 +1,4 @@
-#include <gfx/gfx.h>
-
-#include <gtest/gtest.h>
+#include "CommonTest.h"
 
 // C API tests compiled with C++ for GoogleTest compatibility
 
@@ -234,13 +232,23 @@ TEST_P(GfxDeviceTest, MultipleDevices)
 // Test Instantiation
 // ===========================================================================
 
+inline std::vector<GfxBackend> GetActiveBackends()
+{
+    return {
+#if defined(GFX_ENABLE_VULKAN)
+        GFX_BACKEND_VULKAN,
+#endif
+#if defined(GFX_ENABLE_WEBGPU)
+        GFX_BACKEND_WEBGPU,
+#endif
+    };
+}
+
 INSTANTIATE_TEST_SUITE_P(
     AllBackends,
     GfxDeviceTest,
-    testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU),
-    [](const testing::TestParamInfo<GfxBackend>& info) {
-        return info.param == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU";
-    });
+    testing::ValuesIn(getActiveBackends()),
+    convertTestParamToString);
 
 // ===========================================================================
 // Non-Parameterized Tests - Backend-independent functionality

@@ -1,6 +1,4 @@
-#include <gfx/gfx.h>
-
-#include <gtest/gtest.h>
+#include "CommonTest.h"
 
 #include <cstring>
 
@@ -461,9 +459,7 @@ TEST_P(GfxQuerySetTest, ResolveQuerySetOperation)
 INSTANTIATE_TEST_SUITE_P(
     AllBackends,
     GfxQuerySetTest,
-    testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU),
-    [](const testing::TestParamInfo<GfxBackend>& info) {
-        return info.param == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU";
-    });
+    testing::ValuesIn(getActiveBackends()),
+    convertTestParamToString);
 
 } // namespace

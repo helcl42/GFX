@@ -1,6 +1,4 @@
-#include <gfx_cpp/gfx.hpp>
-
-#include <gtest/gtest.h>
+#include "CommonTest.h"
 
 #include <memory>
 
@@ -197,9 +195,7 @@ TEST_P(GfxCppFenceTest, CreateWithEmptyLabel)
 INSTANTIATE_TEST_SUITE_P(
     AllBackends,
     GfxCppFenceTest,
-    testing::Values(gfx::Backend::Vulkan, gfx::Backend::WebGPU),
-    [](const testing::TestParamInfo<gfx::Backend>& info) {
-        return info.param == gfx::Backend::Vulkan ? "Vulkan" : "WebGPU";
-    });
+    testing::ValuesIn(getActiveBackends()),
+    convertTestParamToString);
 
 } // namespace

@@ -1,11 +1,7 @@
+#include "../../common/CommonTest.h"
+
 #include <core/presentation/Swapchain.h>
 #include <core/system/Device.h>
-
-#include <gfx/gfx.h>
-
-#include <gfx_cpp/gfx.hpp>
-
-#include <gtest/gtest.h>
 
 namespace gfx {
 
@@ -29,15 +25,14 @@ TEST_P(SwapchainImplTest, PlaceholderTest)
     // This test is skipped - see SetUp()
 }
 
-#if defined(GFX_ENABLE_VULKAN) && defined(GFX_ENABLE_WEBGPU)
-INSTANTIATE_TEST_SUITE_P(AllBackends, SwapchainImplTest,
-    ::testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU));
-#elif defined(GFX_ENABLE_VULKAN)
-INSTANTIATE_TEST_SUITE_P(VulkanBackend, SwapchainImplTest,
-    ::testing::Values(GFX_BACKEND_VULKAN));
-#elif defined(GFX_ENABLE_WEBGPU)
-INSTANTIATE_TEST_SUITE_P(WebGPUBackend, SwapchainImplTest,
-    ::testing::Values(GFX_BACKEND_WEBGPU));
-#endif
+// ===========================================================================
+// Test Instantiation
+// ===========================================================================
+
+INSTANTIATE_TEST_SUITE_P(
+    AllBackends,
+    SwapchainImplTest,
+    testing::ValuesIn(getActiveBackends()),
+    convertTestParamToString);
 
 } // namespace gfx

@@ -1,7 +1,6 @@
-#include <gfx/gfx.h>
+#include "CommonTest.h"
 
 #include <cstring>
-#include <gtest/gtest.h>
 
 // C API tests compiled with C++ for GoogleTest compatibility
 
@@ -289,8 +288,7 @@ TEST_P(GfxQueueTest, WriteBufferWithOffset)
 INSTANTIATE_TEST_SUITE_P(
     AllBackends,
     GfxQueueTest,
-    testing::Values(GFX_BACKEND_VULKAN, GFX_BACKEND_WEBGPU),
-    [](const testing::TestParamInfo<GfxBackend>& info) {
-        return info.param == GFX_BACKEND_VULKAN ? "Vulkan" : "WebGPU";
-    });
+    testing::ValuesIn(getActiveBackends()),
+    convertTestParamToString);
+
 } // namespace
