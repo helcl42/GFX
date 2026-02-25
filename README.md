@@ -14,36 +14,55 @@ A graphics library providing a low-level Vulkan-like API that works "identically
 - **Thread-Safe**: Device and queue operations are thread-safe for multi-threaded rendering
 - **Backend Agnostic**: Write once, run on Vulkan/WebGPU natively or in web(Emscripten) without code changes
 
+## Platform Support
+
+| Platform      | Vulkan | WebGPU | Status | Notes                        |
+|---------------|--------|--------|--------|------------------------------|
+| Linux x64     | ✅     | ✅     | [![Linux Build](https://github.com/helcl42/GFX/actions/workflows/linux.yml/badge.svg)](https://github.com/helcl42/GFX/actions/workflows/linux.yml)       | X11/Wayland support          |
+| Windows x64   | ✅     | ✅     | [![Windows Build](https://github.com/helcl42/GFX/actions/workflows/windows.yml/badge.svg)](https://github.com/helcl42/GFX/actions/workflows/windows.yml)       |                              |
+| macOS         | ✅     | ✅     | [![macOS Build](https://github.com/helcl42/GFX/actions/workflows/macos.yml/badge.svg)](https://github.com/helcl42/GFX/actions/workflows/macos.yml)       | Vulkan via MoltenVK          |
+| iOS           | ✅     | ✅     | [![iOS Build](https://github.com/helcl42/GFX/actions/workflows/ios.yml/badge.svg)](https://github.com/helcl42/GFX/actions/workflows/ios.yml)       |                              |
+| Android       | ✅     | ✅     | [![Android Build](https://github.com/helcl42/GFX/actions/workflows/android.yml/badge.svg)](https://github.com/helcl42/GFX/actions/workflows/android.yml)        |                              |
+| WebAssembly   | ❌     | ✅     | [![Web Build](https://github.com/helcl42/GFX/actions/workflows/web.yml/badge.svg)](https://github.com/helcl42/GFX/actions/workflows/web.yml)       | WebGPU only (via Emscripten) |
+
 ## Project Structure
 
 ```
 gfx/
 ├── README.md
 ├── CMakeLists.txt
+├── cmake/                          # CMake configuration and utilities
 ├── gfx/                            # C API library
 │   ├── include/gfx/
-│   │   └── gfx.h                   # Public C API header
+│   │   └── gfx.h                   # Public C API header (2000+ lines)
 │   └── src/
-│       ├── GfxImpl.cpp             # API implementation and dispatcher
-│       └── backend/
-│           ├── vulkan/             # Vulkan backend implementation
-│           └── webgpu/             # WebGPU/Dawn backend implementation
+│       ├── backend/
+│       │   ├── vulkan/             # Vulkan backend implementation
+│       │   └── webgpu/             # WebGPU/Dawn backend implementation
+│       └── common/                 # Common utilities and helpers
 ├── gfx_cpp/                        # C++ API library (wraps C API)
 │   ├── include/gfx_cpp/
-│   │   └── gfx.hpp                 # Public C++ API header
+│   │   └── gfx.hpp                 # Public C++ API header (1500+ lines)
 │   └── src/
 │       ├── core/                   # C++ implementation classes
 │       └── converter/              # C++ to C descriptor conversion
 ├── examples/                       # Example applications
 │   ├── c/                          # C API examples
-│   │   ├── cube/                   # Rotating 3D cube
-│   │   └── compute/                # Compute shader example
-│   ├── cpp/                        # C++ API examples
+│   │   ├── cube/                   # Rotating 3D cube with textures
+│   │   └── compute/                # GPU compute shader example
+│   ├── cpp/                        # C++ API examples (same as C but idiomatic)
 │   └── web/                        # HTML templates for web builds
 ├── test/                           # Unit tests (Google Test)
 │   ├── gfx/                        # C API tests
+│   │   ├── api/                    # Public API tests
+│   │   └── internal/               # Backend implementation tests
 │   └── gfx_cpp/                    # C++ API tests
+│       ├── api/                    # C++ wrapper API tests
+│       └── internal/               # Converter and utility tests
 ├── scripts/                        # Build and utility scripts
+│   ├── build_web.sh                # Emscripten build script
+│   ├── https_server.py             # HTTPS development server
+│   └── setup_https.sh              # Certificate generation
 ├── third_party/
 │   └── dawn/                       # Dawn WebGPU implementation (via CMake FetchContent)
 ├── build/                          # Native build output (gitignored)
@@ -52,24 +71,10 @@ gfx/
 
 ## Requirements
 
-### Build Dependencies
-- **CMake** 3.16 or later
-- **C/C++ Compiler**: C11 and C++17 compatible
-  - GCC 7+, Clang 6+, MSVC 2019+, or Emscripten 3.1+
-- **Python** 3.6+ (for Dawn build system)
-- **Git** (for fetching Dawn via CMake FetchContent)
-
-### Platform Libraries
-- **GLFW** 3.3+ (for windowing in examples)
-- **Vulkan SDK** 1.1+ (optional, for Vulkan backend)
-  - Download from [vulkan.lunarg.com](https://vulkan.lunarg.com)
-
-### Runtime Dependencies
-The library automatically uses whichever backend is available:
-- **Vulkan Backend**: Requires Vulkan SDK and compatible GPU drivers
-- **WebGPU Backend**: Uses Dawn (git submodule at `third_party/dawn/`)
-
-**First Build Note:** Dawn's dependencies (~2GB) are automatically fetched during the first CMake build. This takes 10-15 minutes but only happens once.
+### Dependencies
+- **Vulkan** 1.1+
+- **Dawn** WebGPU implementation 
+- **GLFW** 3.3+ (for examples only)
 
 ## Building
 
@@ -365,19 +370,6 @@ try {
 
 C++ exceptions map to C error codes internally.
 
-## Platform Support
-
-| Platform      | Vulkan | WebGPU | Notes                          |
-|---------------|--------|--------|--------------------------------|
-| Windows x64   | ✅     | ✅     | WebGPU via Dawn                |
-| macOS         | ✅     | ✅     | Vulkan via MoltenVK            |
-| Linux x64     | ✅     | ✅     | X11/Wayland support            |
-| WebAssembly   | ❌     | ✅     | WebGPU only (via Emscripten)   |
-
-**Backend Availability:**
-- **Vulkan**: Requires Vulkan SDK 1.1+ and compatible drivers
-- **WebGPU**: Uses Dawn (automatically downloaded during build)
-
 ## Examples
 
 The library includes complete working examples demonstrating various features:
@@ -485,7 +477,7 @@ SOFTWARE.
 
 ### Getting Help
 
+- **Validation**: Enable validation layers for detailed diagnostics
 - **Documentation**: Check inline comments in [gfx.h](gfx/include/gfx/gfx.h) and [gfx.hpp](gfx_cpp/include/gfx_cpp/gfx.hpp)
 - **Examples**: Review `examples/` directory for complete reference implementations
 - **Issues**: Report bugs or request features on GitHub
-- **Validation**: Enable validation layers for detailed diagnostics
