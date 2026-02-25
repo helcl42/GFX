@@ -63,8 +63,7 @@ jobs:
 
     - name: Test
       working-directory: build
-      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure --timeout 300 || true
-      continue-on-error: true
+      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure --timeout 300 -R "gfx_cpp|gfx"
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4

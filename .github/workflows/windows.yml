@@ -71,8 +71,7 @@ jobs:
       run: |
         echo "Running tests (excluding Vulkan tests - no GPU driver available on CI)..."
         echo "Vulkan is tested on Linux (lavapipe) and macOS (MoltenVK)"
-        ctest --build-config ${{ matrix.build_type }} --output-on-failure --timeout 300 -E "Vulkan" || true
-      continue-on-error: true
+        ctest --build-config ${{ matrix.build_type }} --output-on-failure --timeout 300 -R "gfx_cpp|gfx" -E "Vulkan"
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
