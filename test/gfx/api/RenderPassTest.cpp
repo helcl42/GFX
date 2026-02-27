@@ -79,7 +79,7 @@ protected:
 TEST_P(GfxRenderPassTest, CreateRenderPassWithNullDevice)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -110,7 +110,7 @@ TEST_P(GfxRenderPassTest, CreateRenderPassWithNullDescriptor)
 TEST_P(GfxRenderPassTest, CreateRenderPassWithNullOutput)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -132,7 +132,7 @@ TEST_P(GfxRenderPassTest, CreateRenderPassWithNullOutput)
 TEST_P(GfxRenderPassTest, CreateBasicRenderPass)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -160,13 +160,13 @@ TEST_P(GfxRenderPassTest, CreateRenderPassWithMultipleColorAttachments)
 {
     GfxRenderPassColorAttachmentTarget colorTargets[2] = {};
 
-    colorTargets[0].format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTargets[0].format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTargets[0].sampleCount = GFX_SAMPLE_COUNT_1;
     colorTargets[0].ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTargets[0].ops.storeOp = GFX_STORE_OP_STORE;
     colorTargets[0].finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT;
 
-    colorTargets[1].format = GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT;
+    colorTargets[1].format = GFX_FORMAT_R16G16B16A16_FLOAT;
     colorTargets[1].sampleCount = GFX_SAMPLE_COUNT_1;
     colorTargets[1].ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTargets[1].ops.storeOp = GFX_STORE_OP_STORE;
@@ -195,7 +195,7 @@ TEST_P(GfxRenderPassTest, CreateRenderPassWithMultipleColorAttachments)
 TEST_P(GfxRenderPassTest, CreateRenderPassWithDepthAttachment)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -206,7 +206,7 @@ TEST_P(GfxRenderPassTest, CreateRenderPassWithDepthAttachment)
     colorAttachment.resolveTarget = nullptr;
 
     GfxRenderPassDepthStencilAttachmentTarget depthTarget = {};
-    depthTarget.format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
+    depthTarget.format = GFX_FORMAT_DEPTH32_FLOAT;
     depthTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     depthTarget.depthOps.loadOp = GFX_LOAD_OP_CLEAR;
     depthTarget.depthOps.storeOp = GFX_STORE_OP_STORE;
@@ -236,7 +236,7 @@ TEST_P(GfxRenderPassTest, CreateRenderPassWithDepthAttachment)
 TEST_P(GfxRenderPassTest, CreateRenderPassWithDepthStencilAttachment)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -247,7 +247,7 @@ TEST_P(GfxRenderPassTest, CreateRenderPassWithDepthStencilAttachment)
     colorAttachment.resolveTarget = nullptr;
 
     GfxRenderPassDepthStencilAttachmentTarget depthStencilTarget = {};
-    depthStencilTarget.format = GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8;
+    depthStencilTarget.format = GFX_FORMAT_DEPTH24_PLUS_STENCIL8;
     depthStencilTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     depthStencilTarget.depthOps.loadOp = GFX_LOAD_OP_CLEAR;
     depthStencilTarget.depthOps.storeOp = GFX_STORE_OP_STORE;
@@ -277,7 +277,7 @@ TEST_P(GfxRenderPassTest, CreateRenderPassWithDepthStencilAttachment)
 TEST_P(GfxRenderPassTest, CreateRenderPassWithDifferentLoadOps)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_LOAD; // Load existing content
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -304,7 +304,7 @@ TEST_P(GfxRenderPassTest, CreateRenderPassWithDifferentLoadOps)
 TEST_P(GfxRenderPassTest, CreateRenderPassWithDontCareOps)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_DONT_CARE;
     colorTarget.ops.storeOp = GFX_STORE_OP_DONT_CARE;
@@ -330,14 +330,14 @@ TEST_P(GfxRenderPassTest, CreateRenderPassWithDontCareOps)
 // Test: Create RenderPass with different texture formats
 TEST_P(GfxRenderPassTest, CreateRenderPassWithDifferentFormats)
 {
-    GfxTextureFormat formats[] = {
-        GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM,
-        GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM,
-        GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT,
-        GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT
+    GfxFormat formats[] = {
+        GFX_FORMAT_R8G8B8A8_UNORM,
+        GFX_FORMAT_B8G8R8A8_UNORM,
+        GFX_FORMAT_R16G16B16A16_FLOAT,
+        GFX_FORMAT_R32G32B32A32_FLOAT
     };
 
-    for (GfxTextureFormat format : formats) {
+    for (GfxFormat format : formats) {
         GfxRenderPassColorAttachmentTarget colorTarget = {};
         colorTarget.format = format;
         colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
@@ -368,7 +368,7 @@ TEST_P(GfxRenderPassTest, CreateRenderPassWithDifferentFormats)
 TEST_P(GfxRenderPassTest, CreateRenderPassWithMultisampling)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_4;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;

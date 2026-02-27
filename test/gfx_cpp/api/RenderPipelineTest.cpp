@@ -119,7 +119,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateBasicRenderPipeline)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
@@ -151,7 +151,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateBasicRenderPipeline)
                     .arrayStride = 12,
                     .attributes = {
                         gfx::VertexAttribute{
-                            .format = gfx::TextureFormat::R32G32B32Float,
+                            .format = gfx::Format::R32G32B32Float,
                             .offset = 0,
                             .shaderLocation = 0 } } } } },
         .primitive = { .topology = gfx::PrimitiveTopology::TriangleList, .cullMode = gfx::CullMode::None }
@@ -167,7 +167,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithFragmentShader)
     auto renderPass = device->createRenderPass({ .colorAttachments = {
                                                      gfx::RenderPassColorAttachment{
                                                          .target = {
-                                                             .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                                                             .format = gfx::Format::R8G8B8A8Unorm,
                                                              .sampleCount = gfx::SampleCount::Count1,
                                                              .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                              .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
@@ -201,10 +201,10 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithFragmentShader)
                     .arrayStride = 12,
                     .attributes = {
                         gfx::VertexAttribute{
-                            .format = gfx::TextureFormat::R32G32B32Float,
+                            .format = gfx::Format::R32G32B32Float,
                             .offset = 0,
                             .shaderLocation = 0 } } } } },
-        .fragment = gfx::FragmentState{ .module = fragmentShader, .entryPoint = "main", .targets = { gfx::ColorTargetState{ .format = gfx::TextureFormat::R8G8B8A8Unorm, .writeMask = gfx::ColorWriteMask::All } } },
+        .fragment = gfx::FragmentState{ .module = fragmentShader, .entryPoint = "main", .targets = { gfx::ColorTargetState{ .format = gfx::Format::R8G8B8A8Unorm, .writeMask = gfx::ColorWriteMask::All } } },
         .primitive = { .topology = gfx::PrimitiveTopology::TriangleList } });
 
     EXPECT_NE(pipeline, nullptr);
@@ -215,7 +215,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithNullVertexShader)
     auto renderPass = device->createRenderPass({ .colorAttachments = {
                                                      gfx::RenderPassColorAttachment{
                                                          .target = {
-                                                             .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                                                             .format = gfx::Format::R8G8B8A8Unorm,
                                                              .sampleCount = gfx::SampleCount::Count1,
                                                              .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                              .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
@@ -249,7 +249,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithDifferentTopologies)
     auto renderPass = device->createRenderPass({ .colorAttachments = {
                                                      gfx::RenderPassColorAttachment{
                                                          .target = {
-                                                             .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                                                             .format = gfx::Format::R8G8B8A8Unorm,
                                                              .sampleCount = gfx::SampleCount::Count1,
                                                              .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                              .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
@@ -281,7 +281,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithDifferentTopologies)
                         .arrayStride = 12,
                         .attributes = {
                             gfx::VertexAttribute{
-                                .format = gfx::TextureFormat::R32G32B32Float,
+                                .format = gfx::Format::R32G32B32Float,
                                 .offset = 0,
                                 .shaderLocation = 0 } } } } },
             .primitive = { .topology = topology } });
@@ -295,7 +295,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithCulling)
     auto renderPass = device->createRenderPass({ .colorAttachments = {
                                                      gfx::RenderPassColorAttachment{
                                                          .target = {
-                                                             .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                                                             .format = gfx::Format::R8G8B8A8Unorm,
                                                              .sampleCount = gfx::SampleCount::Count1,
                                                              .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                              .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
@@ -318,7 +318,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithCulling)
                     .arrayStride = 12,
                     .attributes = {
                         gfx::VertexAttribute{
-                            .format = gfx::TextureFormat::R32G32B32Float,
+                            .format = gfx::Format::R32G32B32Float,
                             .offset = 0,
                             .shaderLocation = 0 } } } } },
         .primitive = { .topology = gfx::PrimitiveTopology::TriangleList, .cullMode = gfx::CullMode::Back } });
@@ -334,7 +334,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithCulling)
                     .arrayStride = 12,
                     .attributes = {
                         gfx::VertexAttribute{
-                            .format = gfx::TextureFormat::R32G32B32Float,
+                            .format = gfx::Format::R32G32B32Float,
                             .offset = 0,
                             .shaderLocation = 0 } } } } },
         .primitive = { .topology = gfx::PrimitiveTopology::TriangleList, .cullMode = gfx::CullMode::Front } });
@@ -345,7 +345,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
 {
     gfx::RenderPassDepthStencilAttachment depthAttachment{
         .target = {
-            .format = gfx::TextureFormat::Depth32Float,
+            .format = gfx::Format::Depth32Float,
             .sampleCount = gfx::SampleCount::Count1,
             .depthOps = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
             .stencilOps = { gfx::LoadOp::DontCare, gfx::StoreOp::DontCare },
@@ -356,7 +356,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } },
@@ -383,13 +383,13 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
                     .arrayStride = 12,
                     .attributes = {
                         gfx::VertexAttribute{
-                            .format = gfx::TextureFormat::R32G32B32Float,
+                            .format = gfx::Format::R32G32B32Float,
                             .offset = 0,
                             .shaderLocation = 0 } } } } },
         .primitive = { .topology = gfx::PrimitiveTopology::TriangleList }
     };
     pipelineDesc.depthStencil = gfx::DepthStencilState{
-        .format = gfx::TextureFormat::Depth32Float,
+        .format = gfx::Format::Depth32Float,
         .depthWriteEnabled = true,
         .depthCompare = gfx::CompareFunction::Less
     };
@@ -403,7 +403,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithMultipleVertexAttribute
     auto renderPass = device->createRenderPass({ .colorAttachments = {
                                                      gfx::RenderPassColorAttachment{
                                                          .target = {
-                                                             .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                                                             .format = gfx::Format::R8G8B8A8Unorm,
                                                              .sampleCount = gfx::SampleCount::Count1,
                                                              .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                              .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
@@ -426,15 +426,15 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithMultipleVertexAttribute
                     .arrayStride = 32, // position (12) + normal (12) + texcoord (8)
                     .attributes = {
                         gfx::VertexAttribute{
-                            .format = gfx::TextureFormat::R32G32B32Float,
+                            .format = gfx::Format::R32G32B32Float,
                             .offset = 0,
                             .shaderLocation = 0 }, // position
                         gfx::VertexAttribute{
-                            .format = gfx::TextureFormat::R32G32B32Float,
+                            .format = gfx::Format::R32G32B32Float,
                             .offset = 12,
                             .shaderLocation = 1 }, // normal
                         gfx::VertexAttribute{
-                            .format = gfx::TextureFormat::R32G32Float,
+                            .format = gfx::Format::R32G32Float,
                             .offset = 24,
                             .shaderLocation = 2 } // texcoord
                     } } } },
@@ -447,7 +447,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithSPIRVShaders)
 {
     auto renderPass = device->createRenderPass({ .colorAttachments = { gfx::RenderPassColorAttachment{
                                                      .target = {
-                                                         .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                                                         .format = gfx::Format::R8G8B8A8Unorm,
                                                          .sampleCount = gfx::SampleCount::Count1,
                                                          .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                          .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
@@ -477,10 +477,10 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithSPIRVShaders)
                     .arrayStride = 12,
                     .attributes = {
                         gfx::VertexAttribute{
-                            .format = gfx::TextureFormat::R32G32B32Float,
+                            .format = gfx::Format::R32G32B32Float,
                             .offset = 0,
                             .shaderLocation = 0 } } } } },
-        .fragment = gfx::FragmentState{ .module = fragmentShader, .entryPoint = "main", .targets = { gfx::ColorTargetState{ .format = gfx::TextureFormat::R8G8B8A8Unorm, .writeMask = gfx::ColorWriteMask::All } } },
+        .fragment = gfx::FragmentState{ .module = fragmentShader, .entryPoint = "main", .targets = { gfx::ColorTargetState{ .format = gfx::Format::R8G8B8A8Unorm, .writeMask = gfx::ColorWriteMask::All } } },
         .primitive = { .topology = gfx::PrimitiveTopology::TriangleList } });
 
     EXPECT_NE(pipeline, nullptr);
@@ -490,7 +490,7 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithBindGroupLayouts)
 {
     auto renderPass = device->createRenderPass({ .colorAttachments = { gfx::RenderPassColorAttachment{
                                                      .target = {
-                                                         .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                                                         .format = gfx::Format::R8G8B8A8Unorm,
                                                          .sampleCount = gfx::SampleCount::Count1,
                                                          .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                                                          .finalLayout = gfx::TextureLayout::ColorAttachment } } } });
@@ -533,10 +533,10 @@ TEST_P(GfxCppRenderPipelineTest, CreateRenderPipelineWithBindGroupLayouts)
                     .arrayStride = 12,
                     .attributes = {
                         gfx::VertexAttribute{
-                            .format = gfx::TextureFormat::R32G32B32Float,
+                            .format = gfx::Format::R32G32B32Float,
                             .offset = 0,
                             .shaderLocation = 0 } } } } },
-        .fragment = gfx::FragmentState{ .module = fragmentShader, .entryPoint = "main", .targets = { gfx::ColorTargetState{ .format = gfx::TextureFormat::R8G8B8A8Unorm, .writeMask = gfx::ColorWriteMask::All } } },
+        .fragment = gfx::FragmentState{ .module = fragmentShader, .entryPoint = "main", .targets = { gfx::ColorTargetState{ .format = gfx::Format::R8G8B8A8Unorm, .writeMask = gfx::ColorWriteMask::All } } },
         .primitive = { .topology = gfx::PrimitiveTopology::TriangleList, .frontFace = gfx::FrontFace::CounterClockwise, .cullMode = gfx::CullMode::None },
         .bindGroupLayouts = { bindGroupLayout } });
 

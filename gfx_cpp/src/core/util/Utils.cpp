@@ -14,7 +14,7 @@ uint64_t alignDown(uint64_t value, uint64_t alignment)
     return gfxAlignDown(value, alignment);
 }
 
-uint32_t getFormatBytesPerPixel(TextureFormat format)
+uint32_t getFormatBytesPerPixel(Format format)
 {
     return gfxGetFormatBytesPerPixel(cppFormatToCFormat(format));
 }

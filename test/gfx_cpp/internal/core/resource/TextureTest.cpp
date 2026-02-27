@@ -64,7 +64,7 @@ TEST_P(TextureImplTest, CreateTexture)
         .size = { 256, 256, 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding
     };
 
@@ -74,7 +74,7 @@ TEST_P(TextureImplTest, CreateTexture)
     auto info = texture->getInfo();
     EXPECT_EQ(info.size.width, 256);
     EXPECT_EQ(info.size.height, 256);
-    EXPECT_EQ(info.format, TextureFormat::R8G8B8A8Unorm);
+    EXPECT_EQ(info.format, Format::R8G8B8A8Unorm);
 }
 
 TEST_P(TextureImplTest, CreateTextureWithMipLevels)
@@ -86,7 +86,7 @@ TEST_P(TextureImplTest, CreateTextureWithMipLevels)
         .size = { 512, 512, 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 4,
-        .format = TextureFormat::R32Float,
+        .format = Format::R32Float,
         .usage = TextureUsage::RenderAttachment
     };
 
@@ -97,7 +97,7 @@ TEST_P(TextureImplTest, CreateTextureWithMipLevels)
     EXPECT_EQ(info.size.width, 512);
     EXPECT_EQ(info.size.height, 512);
     EXPECT_EQ(info.mipLevelCount, 4);
-    EXPECT_EQ(info.format, TextureFormat::R32Float);
+    EXPECT_EQ(info.format, Format::R32Float);
 }
 
 TEST_P(TextureImplTest, MultipleTextures_IndependentHandles)
@@ -109,7 +109,7 @@ TEST_P(TextureImplTest, MultipleTextures_IndependentHandles)
         .size = { 128, 128, 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding
     };
 
@@ -118,7 +118,7 @@ TEST_P(TextureImplTest, MultipleTextures_IndependentHandles)
         .size = { 256, 256, 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
-        .format = TextureFormat::R16G16B16A16Float,
+        .format = Format::R16G16B16A16Float,
         .usage = TextureUsage::RenderAttachment
     };
 
@@ -142,7 +142,7 @@ TEST_P(TextureImplTest, GetNativeHandle)
         .size = { 64, 64, 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding
     };
 
@@ -162,7 +162,7 @@ TEST_P(TextureImplTest, GetLayout)
         .size = { 128, 128, 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding
     };
 
@@ -184,7 +184,7 @@ TEST_P(TextureImplTest, ImportTexture)
         .size = { 256, 256, 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding
     };
 
@@ -202,7 +202,7 @@ TEST_P(TextureImplTest, ImportTexture)
         .size = { 256, 256, 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding
     };
 
@@ -213,7 +213,7 @@ TEST_P(TextureImplTest, ImportTexture)
     auto info = importedTexture->getInfo();
     EXPECT_EQ(info.size.width, 256);
     EXPECT_EQ(info.size.height, 256);
-    EXPECT_EQ(info.format, TextureFormat::R8G8B8A8Unorm);
+    EXPECT_EQ(info.format, Format::R8G8B8A8Unorm);
 }
 
 // ===========================================================================

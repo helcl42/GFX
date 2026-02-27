@@ -314,7 +314,7 @@ TEST_P(GfxCppCommandEncoderTest, CopyBufferToTexture)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::CopyDst
     };
     auto texture = device->createTexture(textureDesc);
@@ -349,7 +349,7 @@ TEST_P(GfxCppCommandEncoderTest, CopyTextureToBuffer)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::CopySrc
     };
     auto texture = device->createTexture(textureDesc);
@@ -393,7 +393,7 @@ TEST_P(GfxCppCommandEncoderTest, CopyTextureToTexture)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::CopySrc
     };
     auto srcTexture = device->createTexture(srcTextureDesc);
@@ -406,7 +406,7 @@ TEST_P(GfxCppCommandEncoderTest, CopyTextureToTexture)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::CopyDst
     };
     auto dstTexture = device->createTexture(dstTextureDesc);
@@ -442,7 +442,7 @@ TEST_P(GfxCppCommandEncoderTest, BlitTextureToTexture)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding
     };
     auto srcTexture = device->createTexture(srcTextureDesc);
@@ -455,7 +455,7 @@ TEST_P(GfxCppCommandEncoderTest, BlitTextureToTexture)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::RenderAttachment
     };
     auto dstTexture = device->createTexture(dstTextureDesc);
@@ -493,7 +493,7 @@ TEST_P(GfxCppCommandEncoderTest, GenerateMipmaps)
         .arrayLayerCount = 1,
         .mipLevelCount = 9,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding | gfx::TextureUsage::RenderAttachment
     };
     auto texture = device->createTexture(textureDesc);
@@ -519,7 +519,7 @@ TEST_P(GfxCppCommandEncoderTest, GenerateMipmapsRange)
         .arrayLayerCount = 1,
         .mipLevelCount = 9,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding | gfx::TextureUsage::RenderAttachment
     };
     auto texture = device->createTexture(textureDesc);

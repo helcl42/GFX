@@ -126,7 +126,7 @@ GfxResult Backend::surfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo) c
     return m_presentationComponent.surfaceGetInfo(surface, outInfo);
 }
 
-GfxResult Backend::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const
+GfxResult Backend::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxFormat* formats) const
 {
     return m_presentationComponent.surfaceEnumerateSupportedFormats(surface, formatCount, formats);
 }

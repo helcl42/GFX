@@ -66,7 +66,7 @@ TEST_P(GfxTextureTest, CreateDestroyTexture)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_FLAGS(GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_COPY_DST);
 
     GfxTexture texture = nullptr;
@@ -94,7 +94,7 @@ TEST_P(GfxTextureTest, CreateTextureInvalidArguments)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
 
     result = gfxDeviceCreateTexture(device, &desc, nullptr);
@@ -109,7 +109,7 @@ TEST_P(GfxTextureTest, CreateTextureZeroSize)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
 
     GfxTexture texture = nullptr;
@@ -126,7 +126,7 @@ TEST_P(GfxTextureTest, CreateTextureNoUsage)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_NONE; // Invalid: no usage
 
     GfxTexture texture = nullptr;
@@ -144,7 +144,7 @@ TEST_P(GfxTextureTest, GetTextureInfo)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
 
     GfxTexture texture = nullptr;
@@ -158,7 +158,7 @@ TEST_P(GfxTextureTest, GetTextureInfo)
     EXPECT_EQ(info.size.width, 512u);
     EXPECT_EQ(info.size.height, 256u);
     EXPECT_EQ(info.size.depth, 1u);
-    EXPECT_EQ(info.format, GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM);
+    EXPECT_EQ(info.format, GFX_FORMAT_R8G8B8A8_UNORM);
     EXPECT_EQ(info.usage, GFX_TEXTURE_USAGE_TEXTURE_BINDING);
 
     gfxTextureDestroy(texture);
@@ -173,7 +173,7 @@ TEST_P(GfxTextureTest, CreateTextureView)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
 
     GfxTexture texture = nullptr;
@@ -183,7 +183,7 @@ TEST_P(GfxTextureTest, CreateTextureView)
     GfxTextureViewDescriptor viewDesc = {};
     viewDesc.label = "TestTextureView";
     viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-    viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    viewDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -206,7 +206,7 @@ TEST_P(GfxTextureTest, CreateTextureViewInvalidArguments)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
 
     GfxTexture texture = nullptr;
@@ -216,7 +216,7 @@ TEST_P(GfxTextureTest, CreateTextureViewInvalidArguments)
     // Null output pointer should fail
     GfxTextureViewDescriptor viewDesc = {};
     viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-    viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    viewDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -236,7 +236,7 @@ TEST_P(GfxTextureTest, CreateTexture1D)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
 
     GfxTexture texture = nullptr;
@@ -260,7 +260,7 @@ TEST_P(GfxTextureTest, CreateTexture3D)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
 
     GfxTexture texture = nullptr;
@@ -285,7 +285,7 @@ TEST_P(GfxTextureTest, CreateTextureCube)
     desc.arrayLayerCount = 6; // Cube must have 6 layers
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
 
     GfxTexture texture = nullptr;
@@ -311,7 +311,7 @@ TEST_P(GfxTextureTest, CreateTextureWithMipmaps)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 9; // log2(512) + 1
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_FLAGS(GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_COPY_DST);
 
     GfxTexture texture = nullptr;
@@ -335,7 +335,7 @@ TEST_P(GfxTextureTest, CreateTextureArray)
     desc.arrayLayerCount = 8;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
 
     GfxTexture texture = nullptr;
@@ -363,7 +363,7 @@ TEST_P(GfxTextureTest, CreateMultipleTextures)
         desc.arrayLayerCount = 1;
         desc.mipLevelCount = 1;
         desc.sampleCount = GFX_SAMPLE_COUNT_1;
-        desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+        desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
         desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
 
         GfxResult result = gfxDeviceCreateTexture(device, &desc, &textures[i]);
@@ -386,7 +386,7 @@ TEST_P(GfxTextureTest, CreateTextureWithAllUsageFlags)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_FLAGS(GFX_TEXTURE_USAGE_COPY_SRC | GFX_TEXTURE_USAGE_COPY_DST | GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_STORAGE_BINDING | GFX_TEXTURE_USAGE_RENDER_ATTACHMENT);
 
     GfxTexture texture = nullptr;
@@ -410,7 +410,7 @@ TEST_P(GfxTextureTest, CreateDepthTexture)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
+    desc.format = GFX_FORMAT_DEPTH32_FLOAT;
     desc.usage = GFX_FLAGS(GFX_TEXTURE_USAGE_RENDER_ATTACHMENT | GFX_TEXTURE_USAGE_TEXTURE_BINDING);
 
     GfxTexture texture = nullptr;
@@ -421,7 +421,7 @@ TEST_P(GfxTextureTest, CreateDepthTexture)
     GfxTextureInfo info = {};
     result = gfxTextureGetInfo(texture, &info);
     EXPECT_EQ(result, GFX_RESULT_SUCCESS);
-    EXPECT_EQ(info.format, GFX_TEXTURE_FORMAT_DEPTH32_FLOAT);
+    EXPECT_EQ(info.format, GFX_FORMAT_DEPTH32_FLOAT);
 
     gfxTextureDestroy(texture);
 }
@@ -435,7 +435,7 @@ TEST_P(GfxTextureTest, ImportTextureInvalidArguments)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
     desc.currentLayout = GFX_TEXTURE_LAYOUT_UNDEFINED;
 
@@ -466,7 +466,7 @@ TEST_P(GfxTextureTest, ImportTextureZeroSize)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
     desc.currentLayout = GFX_TEXTURE_LAYOUT_UNDEFINED;
 
@@ -484,7 +484,7 @@ TEST_P(GfxTextureTest, ImportTextureNoUsage)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = GFX_SAMPLE_COUNT_1;
-    desc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    desc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_NONE; // Invalid: no usage
     desc.currentLayout = GFX_TEXTURE_LAYOUT_UNDEFINED;
 
@@ -503,7 +503,7 @@ TEST_P(GfxTextureTest, ImportTextureFromNativeHandle)
     createDesc.arrayLayerCount = 1;
     createDesc.mipLevelCount = 1;
     createDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-    createDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    createDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     createDesc.usage = GFX_FLAGS(GFX_TEXTURE_USAGE_COPY_SRC | GFX_TEXTURE_USAGE_COPY_DST);
 
     GfxTexture sourceTexture = nullptr;

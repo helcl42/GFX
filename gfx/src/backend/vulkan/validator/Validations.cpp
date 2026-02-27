@@ -56,7 +56,7 @@ namespace {
         }
 
         // Validate format
-        if (descriptor->format == GFX_TEXTURE_FORMAT_UNDEFINED) {
+        if (descriptor->format == GFX_FORMAT_UNDEFINED) {
             return GFX_RESULT_ERROR_INVALID_ARGUMENT;
         }
 
@@ -198,7 +198,7 @@ namespace {
         }
 
         // Validate format
-        if (descriptor->format == GFX_TEXTURE_FORMAT_UNDEFINED) {
+        if (descriptor->format == GFX_FORMAT_UNDEFINED) {
             return GFX_RESULT_ERROR_INVALID_ARGUMENT;
         }
 
@@ -357,7 +357,7 @@ namespace {
         }
 
         // Validate format
-        if (descriptor->format == GFX_TEXTURE_FORMAT_UNDEFINED) {
+        if (descriptor->format == GFX_FORMAT_UNDEFINED) {
             return GFX_RESULT_ERROR_INVALID_ARGUMENT;
         }
 

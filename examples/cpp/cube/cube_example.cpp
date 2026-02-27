@@ -38,8 +38,8 @@ static constexpr uint32_t WINDOW_HEIGHT = 600;
 // Frame count is dynamic based on surface capabilities
 static constexpr size_t CUBE_COUNT = 3;
 static constexpr gfx::SampleCount MSAA_SAMPLE_COUNT = gfx::SampleCount::Count4;
-static constexpr gfx::TextureFormat COLOR_FORMAT = gfx::TextureFormat::B8G8R8A8UnormSrgb;
-static constexpr gfx::TextureFormat DEPTH_FORMAT = gfx::TextureFormat::Depth32Float;
+static constexpr gfx::Format COLOR_FORMAT = gfx::Format::B8G8R8A8UnormSrgb;
+static constexpr gfx::Format DEPTH_FORMAT = gfx::Format::Depth32Float;
 
 #if defined(__EMSCRIPTEN__)
 static constexpr gfx::Backend BACKEND_API = gfx::Backend::WebGPU;
@@ -808,10 +808,10 @@ bool CubeApp::createRenderPipeline()
     try {
         // Define vertex buffer layout
         std::vector<gfx::VertexAttribute> attributes = {
-            { .format = gfx::TextureFormat::R32G32B32Float,
+            { .format = gfx::Format::R32G32B32Float,
                 .offset = offsetof(Vertex, position),
                 .shaderLocation = 0 },
-            { .format = gfx::TextureFormat::R32G32B32Float,
+            { .format = gfx::Format::R32G32B32Float,
                 .offset = offsetof(Vertex, color),
                 .shaderLocation = 1 }
         };
@@ -845,7 +845,7 @@ bool CubeApp::createRenderPipeline()
 
         // Depth/stencil state - enable depth testing
         gfx::DepthStencilState depthStencilState{};
-        depthStencilState.format = gfx::TextureFormat::Depth32Float;
+        depthStencilState.format = gfx::Format::Depth32Float;
         depthStencilState.depthWriteEnabled = true;
         depthStencilState.depthCompare = gfx::CompareFunction::Less;
 

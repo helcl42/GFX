@@ -83,14 +83,14 @@ AdapterInfo cAdapterInfoToCppAdapterInfo(const GfxAdapterInfo& cInfo)
     return info;
 }
 
-GfxTextureFormat cppFormatToCFormat(TextureFormat format)
+GfxFormat cppFormatToCFormat(Format format)
 {
-    return static_cast<GfxTextureFormat>(format);
+    return static_cast<GfxFormat>(format);
 }
 
-TextureFormat cFormatToCppFormat(GfxTextureFormat format)
+Format cFormatToCppFormat(GfxFormat format)
 {
-    return static_cast<TextureFormat>(format);
+    return static_cast<Format>(format);
 }
 
 GfxTextureLayout cppLayoutToCLayout(TextureLayout layout)

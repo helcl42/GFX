@@ -156,7 +156,7 @@ TEST_P(CommandEncoderImplTest, BeginRenderPass)
 
     // Create render pass
     RenderPassColorAttachmentTarget colorTarget{
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .sampleCount = SampleCount::Count1,
         .ops = { LoadOp::Clear, StoreOp::Store },
         .finalLayout = TextureLayout::ColorAttachment
@@ -181,7 +181,7 @@ TEST_P(CommandEncoderImplTest, BeginRenderPass)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::RenderAttachment
     };
 
@@ -191,7 +191,7 @@ TEST_P(CommandEncoderImplTest, BeginRenderPass)
     // Create texture view
     TextureViewDescriptor viewDesc{
         .viewType = TextureViewType::View2D,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,

@@ -65,42 +65,42 @@ TEST(GfxUtilTest, AlignDownLargeValues)
 // Format helper tests
 TEST(GfxUtilTest, GetFormatBytesPerPixel8Bit)
 {
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_R8_UNORM), 1);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_R8_UNORM), 1);
 }
 
 TEST(GfxUtilTest, GetFormatBytesPerPixel16Bit)
 {
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_R8G8_UNORM), 2);
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_R16_FLOAT), 2);
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_R16G16_FLOAT), 4);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_R8G8_UNORM), 2);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_R16_FLOAT), 2);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_R16G16_FLOAT), 4);
 }
 
 TEST(GfxUtilTest, GetFormatBytesPerPixel32Bit)
 {
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_R32_FLOAT), 4);
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM), 4);
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB), 4);
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM), 4);
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB), 4);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_R32_FLOAT), 4);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_R8G8B8A8_UNORM), 4);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_R8G8B8A8_UNORM_SRGB), 4);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_B8G8R8A8_UNORM), 4);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_B8G8R8A8_UNORM_SRGB), 4);
 }
 
 TEST(GfxUtilTest, GetFormatBytesPerPixel64Bit)
 {
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT), 8);
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_R32G32_FLOAT), 8);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_R16G16B16A16_FLOAT), 8);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_R32G32_FLOAT), 8);
 }
 
 TEST(GfxUtilTest, GetFormatBytesPerPixel128Bit)
 {
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_R32G32B32_FLOAT), 12);
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT), 16);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_R32G32B32_FLOAT), 12);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_R32G32B32A32_FLOAT), 16);
 }
 
 TEST(GfxUtilTest, GetFormatBytesPerPixelDepthStencil)
 {
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_DEPTH16_UNORM), 2);
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_DEPTH32_FLOAT), 4);
-    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8), 4);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_DEPTH16_UNORM), 2);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_DEPTH32_FLOAT), 4);
+    EXPECT_EQ(gfxGetFormatBytesPerPixel(GFX_FORMAT_DEPTH24_PLUS_STENCIL8), 4);
 }
 
 // ===========================================================================

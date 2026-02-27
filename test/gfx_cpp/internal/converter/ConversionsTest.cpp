@@ -113,14 +113,14 @@ TEST(ConversionsTest, CAdapterTypeToCppAdapterType_Unknown)
 
 TEST(ConversionsTest, TextureFormatRoundTrip)
 {
-    std::vector<TextureFormat> formats = {
-        TextureFormat::R8G8B8A8Unorm,
-        TextureFormat::R8G8B8A8UnormSrgb,
-        TextureFormat::B8G8R8A8Unorm,
-        TextureFormat::R32Float,
-        TextureFormat::R32G32B32A32Float,
-        TextureFormat::Depth24Plus,
-        TextureFormat::Depth32Float,
+    std::vector<Format> formats = {
+        Format::R8G8B8A8Unorm,
+        Format::R8G8B8A8UnormSrgb,
+        Format::B8G8R8A8Unorm,
+        Format::R32Float,
+        Format::R32G32B32A32Float,
+        Format::Depth24Plus,
+        Format::Depth32Float,
     };
 
     for (const auto& format : formats) {
@@ -792,14 +792,14 @@ TEST(ConversionsTest, CTextureInfoToCppTextureInfo)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = GFX_SAMPLE_COUNT_1,
-        .format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM,
+        .format = GFX_FORMAT_R8G8B8A8_UNORM,
         .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT
     };
 
     auto cppInfo = cTextureInfoToCppTextureInfo(cInfo);
 
     EXPECT_EQ(cppInfo.type, TextureType::Texture2D);
-    EXPECT_EQ(cppInfo.format, TextureFormat::R8G8B8A8Unorm);
+    EXPECT_EQ(cppInfo.format, Format::R8G8B8A8Unorm);
     EXPECT_EQ(cppInfo.size.width, 512);
     EXPECT_EQ(cppInfo.size.height, 512);
     EXPECT_EQ(cppInfo.mipLevelCount, 1);
@@ -810,14 +810,14 @@ TEST(ConversionsTest, CSwapchainInfoToCppSwapchainInfo)
 {
     GfxSwapchainInfo cInfo{
         .extent = { 1920, 1080 },
-        .format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM,
+        .format = GFX_FORMAT_B8G8R8A8_UNORM,
         .imageCount = 3,
         .presentMode = GFX_PRESENT_MODE_MAILBOX
     };
 
     auto cppInfo = cSwapchainInfoToCppSwapchainInfo(cInfo);
 
-    EXPECT_EQ(cppInfo.format, TextureFormat::B8G8R8A8Unorm);
+    EXPECT_EQ(cppInfo.format, Format::B8G8R8A8Unorm);
     EXPECT_EQ(cppInfo.extent.width, 1920);
     EXPECT_EQ(cppInfo.extent.height, 1080);
     EXPECT_EQ(cppInfo.imageCount, 3);
@@ -927,7 +927,7 @@ TEST(ConversionsTest, ConvertTextureDescriptor)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding | TextureUsage::CopyDst
     };
 
@@ -937,7 +937,7 @@ TEST(ConversionsTest, ConvertTextureDescriptor)
     EXPECT_EQ(cDesc.type, GFX_TEXTURE_TYPE_2D);
     EXPECT_EQ(cDesc.size.width, 256);
     EXPECT_EQ(cDesc.size.height, 256);
-    EXPECT_EQ(cDesc.format, GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM);
+    EXPECT_EQ(cDesc.format, GFX_FORMAT_R8G8B8A8_UNORM);
     EXPECT_EQ(cDesc.usage, GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_COPY_DST);
     EXPECT_STREQ(cDesc.label, "TestTexture");
 }
@@ -946,7 +946,7 @@ TEST(ConversionsTest, ConvertTextureViewDescriptor)
 {
     TextureViewDescriptor cppDesc{
         .viewType = TextureViewType::View2D,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -957,7 +957,7 @@ TEST(ConversionsTest, ConvertTextureViewDescriptor)
     convertTextureViewDescriptor(cppDesc, cDesc);
 
     EXPECT_EQ(cDesc.viewType, GFX_TEXTURE_VIEW_TYPE_2D);
-    EXPECT_EQ(cDesc.format, GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM);
+    EXPECT_EQ(cDesc.format, GFX_FORMAT_R8G8B8A8_UNORM);
     EXPECT_EQ(cDesc.baseMipLevel, 0);
     EXPECT_EQ(cDesc.mipLevelCount, 1);
 }

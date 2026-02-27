@@ -45,7 +45,7 @@ protected:
         desc.arrayLayerCount = 1;
         desc.mipLevelCount = 1;
         desc.sampleCount = gfx::SampleCount::Count1;
-        desc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+        desc.format = gfx::Format::R8G8B8A8Unorm;
         desc.usage = gfx::TextureUsage::TextureBinding;
 
         return device->createTexture(desc);
@@ -64,7 +64,7 @@ TEST_P(GfxCppTextureViewTest, CreateDestroy2DView)
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.label = "Test2DView";
     viewDesc.viewType = gfx::TextureViewType::View2D;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -91,7 +91,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewInvalidArguments)
 
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::View2D;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -110,7 +110,7 @@ TEST_P(GfxCppTextureViewTest, CreateView1D)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = gfx::SampleCount::Count1;
-    desc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    desc.format = gfx::Format::R8G8B8A8Unorm;
     desc.usage = gfx::TextureUsage::TextureBinding;
 
     auto texture = device->createTexture(desc);
@@ -118,7 +118,7 @@ TEST_P(GfxCppTextureViewTest, CreateView1D)
 
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::View1D;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -136,7 +136,7 @@ TEST_P(GfxCppTextureViewTest, CreateView3D)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = gfx::SampleCount::Count1;
-    desc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    desc.format = gfx::Format::R8G8B8A8Unorm;
     desc.usage = gfx::TextureUsage::TextureBinding;
 
     auto texture = device->createTexture(desc);
@@ -144,7 +144,7 @@ TEST_P(GfxCppTextureViewTest, CreateView3D)
 
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::View3D;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -162,7 +162,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewCube)
     desc.arrayLayerCount = 6; // Cube requires 6 layers
     desc.mipLevelCount = 1;
     desc.sampleCount = gfx::SampleCount::Count1;
-    desc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    desc.format = gfx::Format::R8G8B8A8Unorm;
     desc.usage = gfx::TextureUsage::TextureBinding;
 
     auto texture = device->createTexture(desc);
@@ -170,7 +170,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewCube)
 
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::ViewCube;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -188,7 +188,7 @@ TEST_P(GfxCppTextureViewTest, CreateView1DArray)
     desc.arrayLayerCount = 4;
     desc.mipLevelCount = 1;
     desc.sampleCount = gfx::SampleCount::Count1;
-    desc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    desc.format = gfx::Format::R8G8B8A8Unorm;
     desc.usage = gfx::TextureUsage::TextureBinding;
 
     auto texture = device->createTexture(desc);
@@ -196,7 +196,7 @@ TEST_P(GfxCppTextureViewTest, CreateView1DArray)
 
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::View1DArray;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -214,7 +214,7 @@ TEST_P(GfxCppTextureViewTest, CreateView2DArray)
     desc.arrayLayerCount = 8;
     desc.mipLevelCount = 1;
     desc.sampleCount = gfx::SampleCount::Count1;
-    desc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    desc.format = gfx::Format::R8G8B8A8Unorm;
     desc.usage = gfx::TextureUsage::TextureBinding;
 
     auto texture = device->createTexture(desc);
@@ -222,7 +222,7 @@ TEST_P(GfxCppTextureViewTest, CreateView2DArray)
 
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::View2DArray;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -240,7 +240,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewCubeArray)
     desc.arrayLayerCount = 12; // 2 cubes = 12 layers
     desc.mipLevelCount = 1;
     desc.sampleCount = gfx::SampleCount::Count1;
-    desc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    desc.format = gfx::Format::R8G8B8A8Unorm;
     desc.usage = gfx::TextureUsage::TextureBinding;
 
     auto texture = device->createTexture(desc);
@@ -248,7 +248,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewCubeArray)
 
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::ViewCubeArray;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -266,7 +266,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewSpecificMipLevel)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 9; // log2(512) + 1
     desc.sampleCount = gfx::SampleCount::Count1;
-    desc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    desc.format = gfx::Format::R8G8B8A8Unorm;
     desc.usage = gfx::TextureUsage::TextureBinding | gfx::TextureUsage::CopyDst;
 
     auto texture = device->createTexture(desc);
@@ -275,7 +275,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewSpecificMipLevel)
     // Create view for mip level 3 only
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::View2D;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 3;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -293,7 +293,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewMipLevelRange)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 9;
     desc.sampleCount = gfx::SampleCount::Count1;
-    desc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    desc.format = gfx::Format::R8G8B8A8Unorm;
     desc.usage = gfx::TextureUsage::TextureBinding | gfx::TextureUsage::CopyDst;
 
     auto texture = device->createTexture(desc);
@@ -302,7 +302,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewMipLevelRange)
     // Create view for mip levels 2-5
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::View2D;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 2;
     viewDesc.mipLevelCount = 4; // levels 2, 3, 4, 5
     viewDesc.baseArrayLayer = 0;
@@ -320,7 +320,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewSpecificArrayLayer)
     desc.arrayLayerCount = 8;
     desc.mipLevelCount = 1;
     desc.sampleCount = gfx::SampleCount::Count1;
-    desc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    desc.format = gfx::Format::R8G8B8A8Unorm;
     desc.usage = gfx::TextureUsage::TextureBinding;
 
     auto texture = device->createTexture(desc);
@@ -329,7 +329,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewSpecificArrayLayer)
     // Create 2D view of layer 3
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::View2D;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 3;
@@ -347,7 +347,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewArrayLayerRange)
     desc.arrayLayerCount = 10;
     desc.mipLevelCount = 1;
     desc.sampleCount = gfx::SampleCount::Count1;
-    desc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    desc.format = gfx::Format::R8G8B8A8Unorm;
     desc.usage = gfx::TextureUsage::TextureBinding;
 
     auto texture = device->createTexture(desc);
@@ -356,7 +356,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewArrayLayerRange)
     // Create 2D array view of layers 3-6
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::View2DArray;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 3;
@@ -376,7 +376,7 @@ TEST_P(GfxCppTextureViewTest, CreateMultipleViewsOfSameTexture)
 
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::View2D;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -401,7 +401,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewForDepthTexture)
     desc.arrayLayerCount = 1;
     desc.mipLevelCount = 1;
     desc.sampleCount = gfx::SampleCount::Count1;
-    desc.format = gfx::TextureFormat::Depth32Float;
+    desc.format = gfx::Format::Depth32Float;
     desc.usage = gfx::TextureUsage::RenderAttachment | gfx::TextureUsage::TextureBinding;
 
     auto texture = device->createTexture(desc);
@@ -409,7 +409,7 @@ TEST_P(GfxCppTextureViewTest, CreateViewForDepthTexture)
 
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::View2D;
-    viewDesc.format = gfx::TextureFormat::Depth32Float;
+    viewDesc.format = gfx::Format::Depth32Float;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -427,7 +427,7 @@ TEST_P(GfxCppTextureViewTest, CreateView2DFromSingleCubeFace)
     desc.arrayLayerCount = 6;
     desc.mipLevelCount = 1;
     desc.sampleCount = gfx::SampleCount::Count1;
-    desc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    desc.format = gfx::Format::R8G8B8A8Unorm;
     desc.usage = gfx::TextureUsage::TextureBinding;
 
     auto texture = device->createTexture(desc);
@@ -436,7 +436,7 @@ TEST_P(GfxCppTextureViewTest, CreateView2DFromSingleCubeFace)
     // Create a 2D view of face 2 (one face of the cube)
     gfx::TextureViewDescriptor viewDesc{};
     viewDesc.viewType = gfx::TextureViewType::View2D;
-    viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+    viewDesc.format = gfx::Format::R8G8B8A8Unorm;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 2;

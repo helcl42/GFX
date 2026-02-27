@@ -36,8 +36,8 @@
 #define WINDOW_HEIGHT 600
 #define CUBE_COUNT 3
 #define MSAA_SAMPLE_COUNT GFX_SAMPLE_COUNT_4
-#define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
-#define DEPTH_FORMAT GFX_TEXTURE_FORMAT_DEPTH32_FLOAT
+#define COLOR_FORMAT GFX_FORMAT_B8G8R8A8_UNORM_SRGB
+#define DEPTH_FORMAT GFX_FORMAT_DEPTH32_FLOAT
 
 #if defined(__EMSCRIPTEN__)
 #define GFX_BACKEND_API GFX_BACKEND_WEBGPU
@@ -1295,13 +1295,13 @@ static bool createRenderPipeline(CubeApp* app)
 {
     // Define vertex attributes
     GfxVertexAttribute attributes[] = {
-        { .format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT,
+        { .format = GFX_FORMAT_R32G32B32_FLOAT,
             .offset = offsetof(Vertex, position),
             .shaderLocation = 0 },
-        { .format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT,
+        { .format = GFX_FORMAT_R32G32B32_FLOAT,
             .offset = offsetof(Vertex, color),
             .shaderLocation = 1 },
-        { .format = GFX_TEXTURE_FORMAT_R32G32_FLOAT,
+        { .format = GFX_FORMAT_R32G32_FLOAT,
             .offset = offsetof(Vertex, texCoord),
             .shaderLocation = 2 }
     };
@@ -1867,7 +1867,7 @@ static bool loadTexture(CubeApp* app)
     textureDesc.arrayLayerCount = 1;
     textureDesc.mipLevelCount = mipLevels;
     textureDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-    textureDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB;
+    textureDesc.format = GFX_FORMAT_R8G8B8A8_UNORM_SRGB;
     textureDesc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING | GFX_TEXTURE_USAGE_COPY_SRC | GFX_TEXTURE_USAGE_COPY_DST | GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
     if (gfxDeviceCreateTexture(app->device, &textureDesc, &app->cubeTexture) != GFX_RESULT_SUCCESS) {
@@ -1979,7 +1979,7 @@ static bool loadTexture(CubeApp* app)
     viewDesc.pNext = NULL;
     viewDesc.label = "Cube Texture View";
     viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-    viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB;
+    viewDesc.format = GFX_FORMAT_R8G8B8A8_UNORM_SRGB;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = mipLevels;
     viewDesc.baseArrayLayer = 0;

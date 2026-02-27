@@ -31,9 +31,9 @@
 // Usage: GfxBufferUsageFlags usage = GFX_FLAGS(GFX_BUFFER_USAGE_VERTEX | GFX_BUFFER_USAGE_COPY_DST);
 
 #ifdef __cplusplus
-    #define GFX_FLAGS(flags) static_cast<uint32_t>(flags)
+#define GFX_FLAGS(flags) static_cast<uint32_t>(flags)
 #else
-    #define GFX_FLAGS(flags) (flags)
+#define GFX_FLAGS(flags) (flags)
 #endif
 
 // ============================================================================
@@ -492,28 +492,28 @@ typedef enum {
 } GfxVertexStepMode;
 
 typedef enum {
-    GFX_TEXTURE_FORMAT_UNDEFINED = 0,
-    GFX_TEXTURE_FORMAT_R8_UNORM = 1,
-    GFX_TEXTURE_FORMAT_R8G8_UNORM = 2,
-    GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM = 3,
-    GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB = 4,
-    GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM = 5,
-    GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB = 6,
-    GFX_TEXTURE_FORMAT_R16_FLOAT = 7,
-    GFX_TEXTURE_FORMAT_R16G16_FLOAT = 8,
-    GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT = 9,
-    GFX_TEXTURE_FORMAT_R32_FLOAT = 10,
-    GFX_TEXTURE_FORMAT_R32G32_FLOAT = 11,
-    GFX_TEXTURE_FORMAT_R32G32B32_FLOAT = 12,
-    GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT = 13,
-    GFX_TEXTURE_FORMAT_DEPTH16_UNORM = 14,
-    GFX_TEXTURE_FORMAT_DEPTH24_PLUS = 15,
-    GFX_TEXTURE_FORMAT_DEPTH32_FLOAT = 16,
-    GFX_TEXTURE_FORMAT_STENCIL8 = 17,
-    GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8 = 18,
-    GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8 = 19,
-    GFX_TEXTURE_FORMAT_MAX_ENUM = 0x7FFFFFFF
-} GfxTextureFormat;
+    GFX_FORMAT_UNDEFINED = 0,
+    GFX_FORMAT_R8_UNORM = 1,
+    GFX_FORMAT_R8G8_UNORM = 2,
+    GFX_FORMAT_R8G8B8A8_UNORM = 3,
+    GFX_FORMAT_R8G8B8A8_UNORM_SRGB = 4,
+    GFX_FORMAT_B8G8R8A8_UNORM = 5,
+    GFX_FORMAT_B8G8R8A8_UNORM_SRGB = 6,
+    GFX_FORMAT_R16_FLOAT = 7,
+    GFX_FORMAT_R16G16_FLOAT = 8,
+    GFX_FORMAT_R16G16B16A16_FLOAT = 9,
+    GFX_FORMAT_R32_FLOAT = 10,
+    GFX_FORMAT_R32G32_FLOAT = 11,
+    GFX_FORMAT_R32G32B32_FLOAT = 12,
+    GFX_FORMAT_R32G32B32A32_FLOAT = 13,
+    GFX_FORMAT_DEPTH16_UNORM = 14,
+    GFX_FORMAT_DEPTH24_PLUS = 15,
+    GFX_FORMAT_DEPTH32_FLOAT = 16,
+    GFX_FORMAT_STENCIL8 = 17,
+    GFX_FORMAT_DEPTH24_PLUS_STENCIL8 = 18,
+    GFX_FORMAT_DEPTH32_FLOAT_STENCIL8 = 19,
+    GFX_FORMAT_MAX_ENUM = 0x7FFFFFFF
+} GfxFormat;
 
 typedef enum {
     GFX_TEXTURE_TYPE_1D = 0,
@@ -995,7 +995,7 @@ typedef struct {
 
 // Color attachment target for render pass (main or resolve)
 typedef struct {
-    GfxTextureFormat format;
+    GfxFormat format;
     GfxSampleCount sampleCount;
     GfxLoadStoreOps ops;
     GfxTextureLayout finalLayout;
@@ -1009,7 +1009,7 @@ typedef struct {
 
 // Depth/stencil attachment target for render pass (main or resolve)
 typedef struct {
-    GfxTextureFormat format;
+    GfxFormat format;
     GfxSampleCount sampleCount;
     GfxLoadStoreOps depthOps;
     GfxLoadStoreOps stencilOps;
@@ -1202,7 +1202,7 @@ typedef struct {
     uint32_t arrayLayerCount;
     uint32_t mipLevelCount;
     GfxSampleCount sampleCount;
-    GfxTextureFormat format;
+    GfxFormat format;
     GfxTextureUsageFlags usage;
 } GfxTextureInfo;
 
@@ -1224,7 +1224,7 @@ typedef struct {
 // Swapchain information
 typedef struct {
     GfxExtent2D extent;
-    GfxTextureFormat format;
+    GfxFormat format;
     uint32_t imageCount;
     GfxPresentMode presentMode;
 } GfxSwapchainInfo;
@@ -1292,7 +1292,7 @@ typedef struct {
     uint32_t arrayLayerCount;
     uint32_t mipLevelCount;
     GfxSampleCount sampleCount;
-    GfxTextureFormat format;
+    GfxFormat format;
     GfxTextureUsageFlags usage;
 } GfxTextureDescriptor;
 
@@ -1306,7 +1306,7 @@ typedef struct {
     uint32_t arrayLayerCount;
     uint32_t mipLevelCount;
     GfxSampleCount sampleCount;
-    GfxTextureFormat format;
+    GfxFormat format;
     GfxTextureUsageFlags usage;
     GfxTextureLayout currentLayout; // Current layout of the imported texture
 } GfxTextureImportDescriptor;
@@ -1316,7 +1316,7 @@ typedef struct {
     const void* pNext;
     const char* label;
     GfxTextureViewType viewType;
-    GfxTextureFormat format;
+    GfxFormat format;
     uint32_t baseMipLevel;
     uint32_t mipLevelCount;
     uint32_t baseArrayLayer;
@@ -1361,13 +1361,13 @@ typedef struct {
 } GfxBlendState;
 
 typedef struct {
-    GfxTextureFormat format;
+    GfxFormat format;
     const GfxBlendState* blend; // NULL if not used
     GfxColorWriteMask writeMask; // Combination of GfxColorWriteMask flags
 } GfxColorTargetState;
 
 typedef struct {
-    GfxTextureFormat format;
+    GfxFormat format;
     uint64_t offset;
     uint32_t shaderLocation;
 } GfxVertexAttribute;
@@ -1409,7 +1409,7 @@ typedef struct {
 } GfxStencilFaceState;
 
 typedef struct {
-    GfxTextureFormat format;
+    GfxFormat format;
     bool depthWriteEnabled;
     GfxCompareFunction depthCompare;
     GfxStencilFaceState stencilFront;
@@ -1469,7 +1469,7 @@ typedef struct {
     } texture;
 
     struct {
-        GfxTextureFormat format;
+        GfxFormat format;
         GfxTextureViewType viewDimension;
         bool writeOnly;
     } storageTexture;
@@ -1638,7 +1638,7 @@ typedef struct {
     const char* label;
     GfxSurface surface;
     GfxExtent2D extent;
-    GfxTextureFormat format;
+    GfxFormat format;
     GfxTextureUsageFlags usage;
     GfxPresentMode presentMode;
     uint32_t imageCount;
@@ -1718,7 +1718,7 @@ GFX_API GfxResult gfxDeviceCreateSurface(GfxDevice device, const GfxSurfaceDescr
 GFX_API GfxResult gfxSurfaceDestroy(GfxSurface surface);
 GFX_API GfxResult gfxSurfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo);
 // Vulkan-style enumeration: call with formats=NULL to get count, then call again with allocated array
-GFX_API GfxResult gfxSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats);
+GFX_API GfxResult gfxSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxFormat* formats);
 // Vulkan-style enumeration: call with presentModes=NULL to get count, then call again with allocated array
 GFX_API GfxResult gfxSurfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes);
 
@@ -1868,7 +1868,7 @@ GFX_API uint64_t gfxAlignDown(uint64_t value, uint64_t alignment);
 
 // Format helper functions
 // Get the size in bytes of a single pixel/texel for a given format
-GFX_API uint32_t gfxGetFormatBytesPerPixel(GfxTextureFormat format);
+GFX_API uint32_t gfxGetFormatBytesPerPixel(GfxFormat format);
 
 // Cross-platform helpers available on all platforms
 GFX_API GfxPlatformWindowHandle gfxPlatformWindowHandleFromXlib(void* display, unsigned long window);

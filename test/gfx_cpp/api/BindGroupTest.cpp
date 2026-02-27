@@ -164,7 +164,7 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithTextureView)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding
     };
 
@@ -174,7 +174,7 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithTextureView)
     // Create texture view
     gfx::TextureViewDescriptor viewDesc{
         .viewType = gfx::TextureViewType::View2D,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -309,7 +309,7 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithMultipleEntries)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding
     };
     auto texture = device->createTexture(textureDesc);
@@ -317,7 +317,7 @@ TEST_P(GfxCppBindGroupTest, CreateBindGroupWithMultipleEntries)
 
     gfx::TextureViewDescriptor viewDesc{
         .viewType = gfx::TextureViewType::View2D,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,

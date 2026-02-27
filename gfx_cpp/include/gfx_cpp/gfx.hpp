@@ -286,7 +286,7 @@ enum class VertexStepMode : int32_t {
     Instance = 1
 };
 
-enum class TextureFormat : int32_t {
+enum class Format : int32_t {
     Undefined = 0,
     R8Unorm = 1,
     R8G8Unorm = 2,
@@ -918,7 +918,7 @@ struct TextureInfo {
     uint32_t arrayLayerCount = 1;
     uint32_t mipLevelCount = 1;
     SampleCount sampleCount = SampleCount::Count1;
-    TextureFormat format = TextureFormat::Undefined;
+    Format format = Format::Undefined;
     TextureUsage usage = TextureUsage::None;
 };
 
@@ -930,7 +930,7 @@ struct TextureDescriptor {
     uint32_t arrayLayerCount = 1;
     uint32_t mipLevelCount = 1;
     SampleCount sampleCount = SampleCount::Count1;
-    TextureFormat format = TextureFormat::Undefined;
+    Format format = Format::Undefined;
     TextureUsage usage = TextureUsage::None;
 };
 
@@ -943,7 +943,7 @@ struct TextureImportDescriptor {
     uint32_t arrayLayerCount = 1;
     uint32_t mipLevelCount = 1;
     SampleCount sampleCount = SampleCount::Count1;
-    TextureFormat format = TextureFormat::Undefined;
+    Format format = Format::Undefined;
     TextureUsage usage = TextureUsage::None;
     TextureLayout currentLayout = TextureLayout::Undefined; // Current layout of the imported texture
 };
@@ -952,7 +952,7 @@ struct TextureViewDescriptor {
     const ChainedStruct* next = nullptr;
     std::string label;
     TextureViewType viewType = TextureViewType::View2D;
-    TextureFormat format = TextureFormat::Undefined;
+    Format format = Format::Undefined;
     uint32_t baseMipLevel = 0;
     uint32_t mipLevelCount = 1;
     uint32_t baseArrayLayer = 0;
@@ -1004,13 +1004,13 @@ enum class ColorWriteMask : uint32_t {
 };
 
 struct ColorTargetState {
-    TextureFormat format = TextureFormat::Undefined;
+    Format format = Format::Undefined;
     std::optional<BlendState> blend;
     ColorWriteMask writeMask = ColorWriteMask::All;
 };
 
 struct VertexAttribute {
-    TextureFormat format = TextureFormat::Undefined;
+    Format format = Format::Undefined;
     uint64_t offset = 0;
     uint32_t shaderLocation = 0;
 };
@@ -1049,7 +1049,7 @@ struct StencilFaceState {
 };
 
 struct DepthStencilState {
-    TextureFormat format = TextureFormat::Depth32Float;
+    Format format = Format::Depth32Float;
     bool depthWriteEnabled = true;
     CompareFunction depthCompare = CompareFunction::Less;
     StencilFaceState stencilFront;
@@ -1101,7 +1101,7 @@ struct BindGroupLayoutEntry {
     };
 
     struct StorageTextureBinding {
-        TextureFormat format = TextureFormat::Undefined;
+        Format format = Format::Undefined;
         bool writeOnly = true;
         TextureViewType viewDimension = TextureViewType::View2D;
     };
@@ -1149,7 +1149,7 @@ struct SwapchainDescriptor {
     std::string label;
     std::shared_ptr<Surface> surface;
     Extent2D extent = {};
-    TextureFormat format = TextureFormat::B8G8R8A8Unorm;
+    Format format = Format::B8G8R8A8Unorm;
     TextureUsage usage = TextureUsage::RenderAttachment;
     PresentMode presentMode = PresentMode::Fifo;
     uint32_t imageCount = 2; // Double buffering by default
@@ -1157,7 +1157,7 @@ struct SwapchainDescriptor {
 
 struct SwapchainInfo {
     Extent2D extent = {};
-    TextureFormat format = TextureFormat::Undefined;
+    Format format = Format::Undefined;
     PresentMode presentMode = PresentMode::Fifo;
     uint32_t imageCount = 0;
 };
@@ -1281,7 +1281,7 @@ struct LoadStoreOps {
 
 // Render Pass API structures (cached, reusable render pass objects)
 struct RenderPassColorAttachmentTarget {
-    TextureFormat format = TextureFormat::Undefined;
+    Format format = Format::Undefined;
     SampleCount sampleCount = SampleCount::Count1;
     LoadStoreOps ops;
     TextureLayout finalLayout = TextureLayout::Undefined;
@@ -1293,7 +1293,7 @@ struct RenderPassColorAttachment {
 };
 
 struct RenderPassDepthStencilAttachmentTarget {
-    TextureFormat format = TextureFormat::Undefined;
+    Format format = Format::Undefined;
     SampleCount sampleCount = SampleCount::Count1;
     LoadStoreOps depthOps;
     LoadStoreOps stencilOps;
@@ -1430,7 +1430,7 @@ public:
     virtual ~Surface() = default;
 
     virtual SurfaceInfo getInfo() const = 0;
-    virtual std::vector<TextureFormat> getSupportedFormats() const = 0;
+    virtual std::vector<Format> getSupportedFormats() const = 0;
     virtual std::vector<PresentMode> getSupportedPresentModes() const = 0;
 };
 
@@ -1727,7 +1727,7 @@ GFX_CPP_API std::tuple<uint32_t, uint32_t, uint32_t> getVersion();
 namespace utils {
     GFX_CPP_API uint64_t alignUp(uint64_t value, uint64_t alignment);
     GFX_CPP_API uint64_t alignDown(uint64_t value, uint64_t alignment);
-    GFX_CPP_API uint32_t getFormatBytesPerPixel(TextureFormat format);
+    GFX_CPP_API uint32_t getFormatBytesPerPixel(Format format);
     GFX_CPP_API const char* resultToString(Result result);
 
     template <typename T>

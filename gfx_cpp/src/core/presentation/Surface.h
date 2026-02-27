@@ -19,7 +19,7 @@ public:
 
     SurfaceInfo getInfo() const override;
 
-    std::vector<TextureFormat> getSupportedFormats() const override;
+    std::vector<Format> getSupportedFormats() const override;
     std::vector<PresentMode> getSupportedPresentModes() const override;
 
 private:

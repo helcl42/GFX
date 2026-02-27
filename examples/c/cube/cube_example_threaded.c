@@ -35,8 +35,8 @@
 #define MAX_FRAMES_IN_FLIGHT 3
 #define CUBE_COUNT 12
 #define MSAA_SAMPLE_COUNT GFX_SAMPLE_COUNT_4
-#define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
-#define DEPTH_FORMAT GFX_TEXTURE_FORMAT_DEPTH32_FLOAT
+#define COLOR_FORMAT GFX_FORMAT_B8G8R8A8_UNORM_SRGB
+#define DEPTH_FORMAT GFX_FORMAT_DEPTH32_FLOAT
 
 #if defined(__EMSCRIPTEN__)
 #define GFX_BACKEND_API GFX_BACKEND_WEBGPU
@@ -1157,10 +1157,10 @@ bool createRenderPipeline(CubeApp* app)
 {
     // Define vertex attributes
     GfxVertexAttribute attributes[] = {
-        { .format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT,
+        { .format = GFX_FORMAT_R32G32B32_FLOAT,
             .offset = offsetof(Vertex, position),
             .shaderLocation = 0 },
-        { .format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT,
+        { .format = GFX_FORMAT_R32G32B32_FLOAT,
             .offset = offsetof(Vertex, color),
             .shaderLocation = 1 }
     };

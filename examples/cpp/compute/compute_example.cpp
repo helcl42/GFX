@@ -41,7 +41,7 @@ static constexpr uint32_t WINDOW_WIDTH = 800;
 static constexpr uint32_t WINDOW_HEIGHT = 600;
 static constexpr uint32_t COMPUTE_TEXTURE_WIDTH = 800;
 static constexpr uint32_t COMPUTE_TEXTURE_HEIGHT = 600;
-static constexpr gfx::TextureFormat COLOR_FORMAT = gfx::TextureFormat::B8G8R8A8UnormSrgb;
+static constexpr gfx::Format COLOR_FORMAT = gfx::Format::B8G8R8A8UnormSrgb;
 
 #if defined(__EMSCRIPTEN__)
 static constexpr gfx::Backend BACKEND_API = gfx::Backend::WebGPU;
@@ -307,7 +307,7 @@ bool ComputeApp::createComputeResources()
         gfx::TextureDescriptor textureDesc{};
         textureDesc.type = gfx::TextureType::Texture2D;
         textureDesc.size = { COMPUTE_TEXTURE_WIDTH, COMPUTE_TEXTURE_HEIGHT, 1 };
-        textureDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+        textureDesc.format = gfx::Format::R8G8B8A8Unorm;
         textureDesc.usage = gfx::TextureUsage::StorageBinding | gfx::TextureUsage::TextureBinding;
         textureDesc.mipLevelCount = 1;
         textureDesc.sampleCount = gfx::SampleCount::Count1;
@@ -319,7 +319,7 @@ bool ComputeApp::createComputeResources()
         }
 
         gfx::TextureViewDescriptor viewDesc{};
-        viewDesc.format = gfx::TextureFormat::R8G8B8A8Unorm;
+        viewDesc.format = gfx::Format::R8G8B8A8Unorm;
         viewDesc.viewType = gfx::TextureViewType::View2D;
         viewDesc.baseMipLevel = 0;
         viewDesc.mipLevelCount = 1;
@@ -386,7 +386,7 @@ bool ComputeApp::createComputeResources()
             .binding = 0,
             .visibility = gfx::ShaderStage::Compute,
             .resource = gfx::BindGroupLayoutEntry::StorageTextureBinding{
-                .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                .format = gfx::Format::R8G8B8A8Unorm,
                 .writeOnly = true,
                 .viewDimension = gfx::TextureViewType::View2D,
             }

@@ -9,7 +9,7 @@ namespace gfx::utils {
 
 uint64_t alignUp(uint64_t value, uint64_t alignment);
 uint64_t alignDown(uint64_t value, uint64_t alignment);
-uint32_t getFormatBytesPerPixel(TextureFormat format);
+uint32_t getFormatBytesPerPixel(Format format);
 const char* resultToString(Result result);
 
 } // namespace gfx::utils

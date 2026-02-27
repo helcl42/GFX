@@ -60,7 +60,7 @@ TEST_P(GfxCppTextureTest, CreateDestroyTexture)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding | gfx::TextureUsage::CopyDst
     };
 
@@ -79,7 +79,7 @@ TEST_P(GfxCppTextureTest, CreateTextureZeroSize)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding
     };
 
@@ -102,7 +102,7 @@ TEST_P(GfxCppTextureTest, CreateTextureNoUsage)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::None // Invalid: no usage
     };
 
@@ -125,7 +125,7 @@ TEST_P(GfxCppTextureTest, GetTextureInfo)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding
     };
 
@@ -137,7 +137,7 @@ TEST_P(GfxCppTextureTest, GetTextureInfo)
     EXPECT_EQ(info.size.width, 512u);
     EXPECT_EQ(info.size.height, 256u);
     EXPECT_EQ(info.size.depth, 1u);
-    EXPECT_EQ(info.format, gfx::TextureFormat::R8G8B8A8Unorm);
+    EXPECT_EQ(info.format, gfx::Format::R8G8B8A8Unorm);
     EXPECT_TRUE(static_cast<bool>(info.usage & gfx::TextureUsage::TextureBinding));
 }
 
@@ -152,7 +152,7 @@ TEST_P(GfxCppTextureTest, CreateTextureView)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding
     };
 
@@ -162,7 +162,7 @@ TEST_P(GfxCppTextureTest, CreateTextureView)
     gfx::TextureViewDescriptor viewDesc{
         .label = "TestTextureView",
         .viewType = gfx::TextureViewType::View2D,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -183,7 +183,7 @@ TEST_P(GfxCppTextureTest, CreateTexture1D)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding
     };
 
@@ -204,7 +204,7 @@ TEST_P(GfxCppTextureTest, CreateTexture3D)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding
     };
 
@@ -226,7 +226,7 @@ TEST_P(GfxCppTextureTest, CreateTextureCube)
         .arrayLayerCount = 6, // Cube must have 6 layers
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding
     };
 
@@ -249,7 +249,7 @@ TEST_P(GfxCppTextureTest, CreateTextureWithMipmaps)
         .arrayLayerCount = 1,
         .mipLevelCount = 9, // log2(512) + 1
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding | gfx::TextureUsage::CopyDst
     };
 
@@ -270,7 +270,7 @@ TEST_P(GfxCppTextureTest, CreateTextureArray)
         .arrayLayerCount = 8,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding
     };
 
@@ -295,7 +295,7 @@ TEST_P(GfxCppTextureTest, CreateMultipleTextures)
             .arrayLayerCount = 1,
             .mipLevelCount = 1,
             .sampleCount = gfx::SampleCount::Count1,
-            .format = gfx::TextureFormat::R8G8B8A8Unorm,
+            .format = gfx::Format::R8G8B8A8Unorm,
             .usage = gfx::TextureUsage::TextureBinding
         };
 
@@ -318,7 +318,7 @@ TEST_P(GfxCppTextureTest, CreateTextureWithAllUsageFlags)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::CopySrc | gfx::TextureUsage::CopyDst | gfx::TextureUsage::TextureBinding | gfx::TextureUsage::StorageBinding | gfx::TextureUsage::RenderAttachment
     };
 
@@ -339,7 +339,7 @@ TEST_P(GfxCppTextureTest, CreateDepthTexture)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::Depth32Float,
+        .format = gfx::Format::Depth32Float,
         .usage = gfx::TextureUsage::RenderAttachment | gfx::TextureUsage::TextureBinding
     };
 
@@ -347,7 +347,7 @@ TEST_P(GfxCppTextureTest, CreateDepthTexture)
     ASSERT_NE(texture, nullptr);
 
     auto info = texture->getInfo();
-    EXPECT_EQ(info.format, gfx::TextureFormat::Depth32Float);
+    EXPECT_EQ(info.format, gfx::Format::Depth32Float);
 }
 
 TEST_P(GfxCppTextureTest, GetNativeHandle)
@@ -360,7 +360,7 @@ TEST_P(GfxCppTextureTest, GetNativeHandle)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding
     };
 
@@ -385,7 +385,7 @@ TEST_P(GfxCppTextureTest, ImportTextureInvalidArguments)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding,
         .currentLayout = gfx::TextureLayout::Undefined
     };
@@ -407,7 +407,7 @@ TEST_P(GfxCppTextureTest, ImportTextureZeroSize)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::TextureBinding,
         .currentLayout = gfx::TextureLayout::Undefined
     };
@@ -427,7 +427,7 @@ TEST_P(GfxCppTextureTest, ImportTextureNoUsage)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::None, // Invalid: no usage
         .currentLayout = gfx::TextureLayout::Undefined
     };
@@ -448,7 +448,7 @@ TEST_P(GfxCppTextureTest, ImportTextureFromNativeHandle)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::CopySrc | gfx::TextureUsage::CopyDst
     };
 

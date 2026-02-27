@@ -863,91 +863,91 @@ WGPUStringView gfxStringView(const char* str)
     return WGPUStringView{ str, WGPU_STRLEN };
 }
 
-WGPUTextureFormat gfxFormatToWGPUFormat(GfxTextureFormat format)
+WGPUTextureFormat gfxFormatToWGPUFormat(GfxFormat format)
 {
     switch (format) {
-    case GFX_TEXTURE_FORMAT_R8_UNORM:
+    case GFX_FORMAT_R8_UNORM:
         return WGPUTextureFormat_R8Unorm;
-    case GFX_TEXTURE_FORMAT_R8G8_UNORM:
+    case GFX_FORMAT_R8G8_UNORM:
         return WGPUTextureFormat_RG8Unorm;
-    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM:
+    case GFX_FORMAT_R8G8B8A8_UNORM:
         return WGPUTextureFormat_RGBA8Unorm;
-    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB:
+    case GFX_FORMAT_R8G8B8A8_UNORM_SRGB:
         return WGPUTextureFormat_RGBA8UnormSrgb;
-    case GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM:
+    case GFX_FORMAT_B8G8R8A8_UNORM:
         return WGPUTextureFormat_BGRA8Unorm;
-    case GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB:
+    case GFX_FORMAT_B8G8R8A8_UNORM_SRGB:
         return WGPUTextureFormat_BGRA8UnormSrgb;
-    case GFX_TEXTURE_FORMAT_R16_FLOAT:
+    case GFX_FORMAT_R16_FLOAT:
         return WGPUTextureFormat_R16Float;
-    case GFX_TEXTURE_FORMAT_R16G16_FLOAT:
+    case GFX_FORMAT_R16G16_FLOAT:
         return WGPUTextureFormat_RG16Float;
-    case GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT:
+    case GFX_FORMAT_R16G16B16A16_FLOAT:
         return WGPUTextureFormat_RGBA16Float;
-    case GFX_TEXTURE_FORMAT_R32_FLOAT:
+    case GFX_FORMAT_R32_FLOAT:
         return WGPUTextureFormat_R32Float;
-    case GFX_TEXTURE_FORMAT_R32G32_FLOAT:
+    case GFX_FORMAT_R32G32_FLOAT:
         return WGPUTextureFormat_RG32Float;
-    case GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT:
+    case GFX_FORMAT_R32G32B32A32_FLOAT:
         return WGPUTextureFormat_RGBA32Float;
-    case GFX_TEXTURE_FORMAT_DEPTH16_UNORM:
+    case GFX_FORMAT_DEPTH16_UNORM:
         return WGPUTextureFormat_Depth16Unorm;
-    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS:
+    case GFX_FORMAT_DEPTH24_PLUS:
         return WGPUTextureFormat_Depth24Plus;
-    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT:
+    case GFX_FORMAT_DEPTH32_FLOAT:
         return WGPUTextureFormat_Depth32Float;
-    case GFX_TEXTURE_FORMAT_STENCIL8:
+    case GFX_FORMAT_STENCIL8:
         return WGPUTextureFormat_Stencil8;
-    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8:
+    case GFX_FORMAT_DEPTH24_PLUS_STENCIL8:
         return WGPUTextureFormat_Depth24PlusStencil8;
-    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8:
+    case GFX_FORMAT_DEPTH32_FLOAT_STENCIL8:
         return WGPUTextureFormat_Depth32FloatStencil8;
     default:
         return WGPUTextureFormat_Undefined;
     }
 }
 
-GfxTextureFormat wgpuFormatToGfxFormat(WGPUTextureFormat format)
+GfxFormat wgpuFormatToGfxFormat(WGPUTextureFormat format)
 {
     switch (format) {
     case WGPUTextureFormat_R8Unorm:
-        return GFX_TEXTURE_FORMAT_R8_UNORM;
+        return GFX_FORMAT_R8_UNORM;
     case WGPUTextureFormat_RG8Unorm:
-        return GFX_TEXTURE_FORMAT_R8G8_UNORM;
+        return GFX_FORMAT_R8G8_UNORM;
     case WGPUTextureFormat_RGBA8Unorm:
-        return GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+        return GFX_FORMAT_R8G8B8A8_UNORM;
     case WGPUTextureFormat_RGBA8UnormSrgb:
-        return GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB;
+        return GFX_FORMAT_R8G8B8A8_UNORM_SRGB;
     case WGPUTextureFormat_BGRA8Unorm:
-        return GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
+        return GFX_FORMAT_B8G8R8A8_UNORM;
     case WGPUTextureFormat_BGRA8UnormSrgb:
-        return GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB;
+        return GFX_FORMAT_B8G8R8A8_UNORM_SRGB;
     case WGPUTextureFormat_R16Float:
-        return GFX_TEXTURE_FORMAT_R16_FLOAT;
+        return GFX_FORMAT_R16_FLOAT;
     case WGPUTextureFormat_RG16Float:
-        return GFX_TEXTURE_FORMAT_R16G16_FLOAT;
+        return GFX_FORMAT_R16G16_FLOAT;
     case WGPUTextureFormat_RGBA16Float:
-        return GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT;
+        return GFX_FORMAT_R16G16B16A16_FLOAT;
     case WGPUTextureFormat_R32Float:
-        return GFX_TEXTURE_FORMAT_R32_FLOAT;
+        return GFX_FORMAT_R32_FLOAT;
     case WGPUTextureFormat_RG32Float:
-        return GFX_TEXTURE_FORMAT_R32G32_FLOAT;
+        return GFX_FORMAT_R32G32_FLOAT;
     case WGPUTextureFormat_RGBA32Float:
-        return GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT;
+        return GFX_FORMAT_R32G32B32A32_FLOAT;
     case WGPUTextureFormat_Depth16Unorm:
-        return GFX_TEXTURE_FORMAT_DEPTH16_UNORM;
+        return GFX_FORMAT_DEPTH16_UNORM;
     case WGPUTextureFormat_Depth24Plus:
-        return GFX_TEXTURE_FORMAT_DEPTH24_PLUS;
+        return GFX_FORMAT_DEPTH24_PLUS;
     case WGPUTextureFormat_Depth32Float:
-        return GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
+        return GFX_FORMAT_DEPTH32_FLOAT;
     case WGPUTextureFormat_Stencil8:
-        return GFX_TEXTURE_FORMAT_STENCIL8;
+        return GFX_FORMAT_STENCIL8;
     case WGPUTextureFormat_Depth24PlusStencil8:
-        return GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8;
+        return GFX_FORMAT_DEPTH24_PLUS_STENCIL8;
     case WGPUTextureFormat_Depth32FloatStencil8:
-        return GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8;
+        return GFX_FORMAT_DEPTH32_FLOAT_STENCIL8;
     default:
-        return GFX_TEXTURE_FORMAT_UNDEFINED;
+        return GFX_FORMAT_UNDEFINED;
     }
 }
 
@@ -1005,12 +1005,12 @@ WGPUPresentMode gfxPresentModeToWGPU(GfxPresentMode mode)
     }
 }
 
-bool formatHasStencil(GfxTextureFormat format)
+bool formatHasStencil(GfxFormat format)
 {
     switch (format) {
-    case GFX_TEXTURE_FORMAT_STENCIL8:
-    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8:
-    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8:
+    case GFX_FORMAT_STENCIL8:
+    case GFX_FORMAT_DEPTH24_PLUS_STENCIL8:
+    case GFX_FORMAT_DEPTH32_FLOAT_STENCIL8:
         return true;
     default:
         return false;
@@ -1321,24 +1321,24 @@ WGPUTextureSampleType gfxTextureSampleTypeToWGPU(GfxTextureSampleType sampleType
     }
 }
 
-WGPUVertexFormat gfxFormatToWGPUVertexFormat(GfxTextureFormat format)
+WGPUVertexFormat gfxFormatToWGPUVertexFormat(GfxFormat format)
 {
     switch (format) {
-    case GFX_TEXTURE_FORMAT_R32_FLOAT:
+    case GFX_FORMAT_R32_FLOAT:
         return WGPUVertexFormat_Float32;
-    case GFX_TEXTURE_FORMAT_R32G32_FLOAT:
+    case GFX_FORMAT_R32G32_FLOAT:
         return WGPUVertexFormat_Float32x2;
-    case GFX_TEXTURE_FORMAT_R32G32B32_FLOAT:
+    case GFX_FORMAT_R32G32B32_FLOAT:
         return WGPUVertexFormat_Float32x3;
-    case GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT:
+    case GFX_FORMAT_R32G32B32A32_FLOAT:
         return WGPUVertexFormat_Float32x4;
-    case GFX_TEXTURE_FORMAT_R16G16_FLOAT:
+    case GFX_FORMAT_R16G16_FLOAT:
         return WGPUVertexFormat_Float16x2;
-    case GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT:
+    case GFX_FORMAT_R16G16B16A16_FLOAT:
         return WGPUVertexFormat_Float16x4;
-    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM:
+    case GFX_FORMAT_R8G8B8A8_UNORM:
         return WGPUVertexFormat_Unorm8x4;
-    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB:
+    case GFX_FORMAT_R8G8B8A8_UNORM_SRGB:
         return WGPUVertexFormat_Unorm8x4;
     default:
         return static_cast<WGPUVertexFormat>(0);

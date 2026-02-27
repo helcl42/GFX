@@ -14,55 +14,55 @@ namespace {
 
 TEST(WebGPUConversionsTest, GfxFormatToWGPUFormat_CommonFormats_ConvertsCorrectly)
 {
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_TEXTURE_FORMAT_UNDEFINED), WGPUTextureFormat_Undefined);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_TEXTURE_FORMAT_R8_UNORM), WGPUTextureFormat_R8Unorm);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_TEXTURE_FORMAT_R8G8_UNORM), WGPUTextureFormat_RG8Unorm);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_FORMAT_UNDEFINED), WGPUTextureFormat_Undefined);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_FORMAT_R8_UNORM), WGPUTextureFormat_R8Unorm);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_FORMAT_R8G8_UNORM), WGPUTextureFormat_RG8Unorm);
 }
 
 TEST(WebGPUConversionsTest, GfxFormatToWGPUFormat_RGBA8Formats_ConvertsCorrectly)
 {
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM), WGPUTextureFormat_RGBA8Unorm);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB), WGPUTextureFormat_RGBA8UnormSrgb);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM), WGPUTextureFormat_BGRA8Unorm);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_FORMAT_R8G8B8A8_UNORM), WGPUTextureFormat_RGBA8Unorm);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_FORMAT_R8G8B8A8_UNORM_SRGB), WGPUTextureFormat_RGBA8UnormSrgb);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_FORMAT_B8G8R8A8_UNORM), WGPUTextureFormat_BGRA8Unorm);
 }
 
 TEST(WebGPUConversionsTest, GfxFormatToWGPUFormat_FloatFormats_ConvertsCorrectly)
 {
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_TEXTURE_FORMAT_R32_FLOAT), WGPUTextureFormat_R32Float);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_TEXTURE_FORMAT_R32G32_FLOAT), WGPUTextureFormat_RG32Float);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT), WGPUTextureFormat_RGBA32Float);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_FORMAT_R32_FLOAT), WGPUTextureFormat_R32Float);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_FORMAT_R32G32_FLOAT), WGPUTextureFormat_RG32Float);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_FORMAT_R32G32B32A32_FLOAT), WGPUTextureFormat_RGBA32Float);
 }
 
 TEST(WebGPUConversionsTest, GfxFormatToWGPUFormat_DepthFormats_ConvertsCorrectly)
 {
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_TEXTURE_FORMAT_DEPTH16_UNORM), WGPUTextureFormat_Depth16Unorm);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_TEXTURE_FORMAT_DEPTH32_FLOAT), WGPUTextureFormat_Depth32Float);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8), WGPUTextureFormat_Depth24PlusStencil8);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_FORMAT_DEPTH16_UNORM), WGPUTextureFormat_Depth16Unorm);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_FORMAT_DEPTH32_FLOAT), WGPUTextureFormat_Depth32Float);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(GFX_FORMAT_DEPTH24_PLUS_STENCIL8), WGPUTextureFormat_Depth24PlusStencil8);
 }
 
 TEST(WebGPUConversionsTest, WGPUFormatToGfxFormat_RoundTrip_Preserves)
 {
-    EXPECT_EQ(gfx::backend::webgpu::converter::wgpuFormatToGfxFormat(WGPUTextureFormat_RGBA8Unorm), GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM);
-    EXPECT_EQ(gfx::backend::webgpu::converter::wgpuFormatToGfxFormat(WGPUTextureFormat_RGBA8UnormSrgb), GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB);
-    EXPECT_EQ(gfx::backend::webgpu::converter::wgpuFormatToGfxFormat(WGPUTextureFormat_Depth32Float), GFX_TEXTURE_FORMAT_DEPTH32_FLOAT);
+    EXPECT_EQ(gfx::backend::webgpu::converter::wgpuFormatToGfxFormat(WGPUTextureFormat_RGBA8Unorm), GFX_FORMAT_R8G8B8A8_UNORM);
+    EXPECT_EQ(gfx::backend::webgpu::converter::wgpuFormatToGfxFormat(WGPUTextureFormat_RGBA8UnormSrgb), GFX_FORMAT_R8G8B8A8_UNORM_SRGB);
+    EXPECT_EQ(gfx::backend::webgpu::converter::wgpuFormatToGfxFormat(WGPUTextureFormat_Depth32Float), GFX_FORMAT_DEPTH32_FLOAT);
 }
 
 TEST(WebGPUConversionsTest, FormatHasStencil_DepthStencilFormats_ReturnsTrue)
 {
-    EXPECT_TRUE(gfx::backend::webgpu::converter::formatHasStencil(GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8));
-    EXPECT_TRUE(gfx::backend::webgpu::converter::formatHasStencil(GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8));
+    EXPECT_TRUE(gfx::backend::webgpu::converter::formatHasStencil(GFX_FORMAT_DEPTH24_PLUS_STENCIL8));
+    EXPECT_TRUE(gfx::backend::webgpu::converter::formatHasStencil(GFX_FORMAT_DEPTH32_FLOAT_STENCIL8));
 }
 
 TEST(WebGPUConversionsTest, FormatHasStencil_DepthOnlyFormats_ReturnsFalse)
 {
-    EXPECT_FALSE(gfx::backend::webgpu::converter::formatHasStencil(GFX_TEXTURE_FORMAT_DEPTH16_UNORM));
-    EXPECT_FALSE(gfx::backend::webgpu::converter::formatHasStencil(GFX_TEXTURE_FORMAT_DEPTH32_FLOAT));
+    EXPECT_FALSE(gfx::backend::webgpu::converter::formatHasStencil(GFX_FORMAT_DEPTH16_UNORM));
+    EXPECT_FALSE(gfx::backend::webgpu::converter::formatHasStencil(GFX_FORMAT_DEPTH32_FLOAT));
 }
 
 TEST(WebGPUConversionsTest, FormatHasStencil_ColorFormats_ReturnsFalse)
 {
-    EXPECT_FALSE(gfx::backend::webgpu::converter::formatHasStencil(GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM));
-    EXPECT_FALSE(gfx::backend::webgpu::converter::formatHasStencil(GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM));
+    EXPECT_FALSE(gfx::backend::webgpu::converter::formatHasStencil(GFX_FORMAT_R8G8B8A8_UNORM));
+    EXPECT_FALSE(gfx::backend::webgpu::converter::formatHasStencil(GFX_FORMAT_B8G8R8A8_UNORM));
 }
 
 // ============================================================================
@@ -442,22 +442,22 @@ TEST(WebGPUConversionsTest, GfxShaderSourceTypeToWebGPU_AllTypes_ConvertsCorrect
 
 TEST(WebGPUConversionsTest, GfxFormatToWGPUVertexFormat_NormFormats_ConvertsCorrectly)
 {
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM), WGPUVertexFormat_Unorm8x4);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB), WGPUVertexFormat_Unorm8x4);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_FORMAT_R8G8B8A8_UNORM), WGPUVertexFormat_Unorm8x4);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_FORMAT_R8G8B8A8_UNORM_SRGB), WGPUVertexFormat_Unorm8x4);
 }
 
 TEST(WebGPUConversionsTest, GfxFormatToWGPUVertexFormat_FloatFormats_ConvertsCorrectly)
 {
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_TEXTURE_FORMAT_R32_FLOAT), WGPUVertexFormat_Float32);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_TEXTURE_FORMAT_R32G32_FLOAT), WGPUVertexFormat_Float32x2);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_TEXTURE_FORMAT_R32G32B32_FLOAT), WGPUVertexFormat_Float32x3);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT), WGPUVertexFormat_Float32x4);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_FORMAT_R32_FLOAT), WGPUVertexFormat_Float32);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_FORMAT_R32G32_FLOAT), WGPUVertexFormat_Float32x2);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_FORMAT_R32G32B32_FLOAT), WGPUVertexFormat_Float32x3);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_FORMAT_R32G32B32A32_FLOAT), WGPUVertexFormat_Float32x4);
 }
 
 TEST(WebGPUConversionsTest, GfxFormatToWGPUVertexFormat_HalfFloatFormats_ConvertsCorrectly)
 {
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_TEXTURE_FORMAT_R16G16_FLOAT), WGPUVertexFormat_Float16x2);
-    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT), WGPUVertexFormat_Float16x4);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_FORMAT_R16G16_FLOAT), WGPUVertexFormat_Float16x2);
+    EXPECT_EQ(gfx::backend::webgpu::converter::gfxFormatToWGPUVertexFormat(GFX_FORMAT_R16G16B16A16_FLOAT), WGPUVertexFormat_Float16x4);
 }
 
 // ============================================================================
@@ -563,21 +563,21 @@ TEST(WebGPUConversionsTest, WGPUBlendFactorToGfx_AllFactors_ConvertsCorrectly)
 
 TEST(WebGPUConversionsTest, FormatConversion_AllCommonFormats_RoundTrip)
 {
-    GfxTextureFormat formats[] = {
-        GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM,
-        GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB,
-        GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM,
-        GFX_TEXTURE_FORMAT_R32_FLOAT,
-        GFX_TEXTURE_FORMAT_R32G32_FLOAT,
-        GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT,
-        GFX_TEXTURE_FORMAT_DEPTH16_UNORM,
-        GFX_TEXTURE_FORMAT_DEPTH32_FLOAT,
-        GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8
+    GfxFormat formats[] = {
+        GFX_FORMAT_R8G8B8A8_UNORM,
+        GFX_FORMAT_R8G8B8A8_UNORM_SRGB,
+        GFX_FORMAT_B8G8R8A8_UNORM,
+        GFX_FORMAT_R32_FLOAT,
+        GFX_FORMAT_R32G32_FLOAT,
+        GFX_FORMAT_R32G32B32A32_FLOAT,
+        GFX_FORMAT_DEPTH16_UNORM,
+        GFX_FORMAT_DEPTH32_FLOAT,
+        GFX_FORMAT_DEPTH24_PLUS_STENCIL8
     };
 
     for (auto format : formats) {
         WGPUTextureFormat wgpu = gfx::backend::webgpu::converter::gfxFormatToWGPUFormat(format);
-        GfxTextureFormat result = gfx::backend::webgpu::converter::wgpuFormatToGfxFormat(wgpu);
+        GfxFormat result = gfx::backend::webgpu::converter::wgpuFormatToGfxFormat(wgpu);
         EXPECT_EQ(result, format) << "Format round-trip failed for format " << format;
     }
 }

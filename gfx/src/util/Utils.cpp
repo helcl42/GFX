@@ -23,41 +23,41 @@ uint64_t alignDown(uint64_t value, uint64_t alignment)
     return value & ~(alignment - 1);
 }
 
-uint32_t getFormatBytesPerPixel(GfxTextureFormat format)
+uint32_t getFormatBytesPerPixel(GfxFormat format)
 {
     switch (format) {
     // 1 byte
-    case GFX_TEXTURE_FORMAT_R8_UNORM:
-    case GFX_TEXTURE_FORMAT_STENCIL8:
+    case GFX_FORMAT_R8_UNORM:
+    case GFX_FORMAT_STENCIL8:
         return 1;
     // 2 bytes
-    case GFX_TEXTURE_FORMAT_R8G8_UNORM:
-    case GFX_TEXTURE_FORMAT_R16_FLOAT:
-    case GFX_TEXTURE_FORMAT_DEPTH16_UNORM:
+    case GFX_FORMAT_R8G8_UNORM:
+    case GFX_FORMAT_R16_FLOAT:
+    case GFX_FORMAT_DEPTH16_UNORM:
         return 2;
     // 4 bytes
-    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM:
-    case GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB:
-    case GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM:
-    case GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB:
-    case GFX_TEXTURE_FORMAT_R16G16_FLOAT:
-    case GFX_TEXTURE_FORMAT_R32_FLOAT:
-    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS:
-    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT:
-    case GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8:
+    case GFX_FORMAT_R8G8B8A8_UNORM:
+    case GFX_FORMAT_R8G8B8A8_UNORM_SRGB:
+    case GFX_FORMAT_B8G8R8A8_UNORM:
+    case GFX_FORMAT_B8G8R8A8_UNORM_SRGB:
+    case GFX_FORMAT_R16G16_FLOAT:
+    case GFX_FORMAT_R32_FLOAT:
+    case GFX_FORMAT_DEPTH24_PLUS:
+    case GFX_FORMAT_DEPTH32_FLOAT:
+    case GFX_FORMAT_DEPTH24_PLUS_STENCIL8:
         return 4;
     // 8 bytes
-    case GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT:
-    case GFX_TEXTURE_FORMAT_R32G32_FLOAT:
-    case GFX_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8:
+    case GFX_FORMAT_R16G16B16A16_FLOAT:
+    case GFX_FORMAT_R32G32_FLOAT:
+    case GFX_FORMAT_DEPTH32_FLOAT_STENCIL8:
         return 8;
     // 12 bytes
-    case GFX_TEXTURE_FORMAT_R32G32B32_FLOAT:
+    case GFX_FORMAT_R32G32B32_FLOAT:
         return 12;
     // 16 bytes
-    case GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT:
+    case GFX_FORMAT_R32G32B32A32_FLOAT:
         return 16;
-    case GFX_TEXTURE_FORMAT_UNDEFINED:
+    case GFX_FORMAT_UNDEFINED:
     default:
         return 0;
     }

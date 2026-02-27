@@ -134,7 +134,7 @@ TEST_P(GfxCppBindGroupLayoutTest, CreateBindGroupLayoutWithStorageTexture)
         .binding = 0,
         .visibility = gfx::ShaderStage::Compute,
         .resource = gfx::BindGroupLayoutEntry::StorageTextureBinding{
-            .format = gfx::TextureFormat::R32G32B32A32Float,
+            .format = gfx::Format::R32G32B32A32Float,
             .writeOnly = true,
             .viewDimension = gfx::TextureViewType::View2D }
     };

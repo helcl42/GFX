@@ -88,7 +88,7 @@ TEST_P(GfxSwapchainTest, CreateSwapchainInvalidArguments)
     desc.label = "TestSwapchain";
     desc.surface = dummySurface;
     desc.extent = { 800, 600 };
-    desc.format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
+    desc.format = GFX_FORMAT_B8G8R8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     desc.presentMode = GFX_PRESENT_MODE_FIFO;
     desc.imageCount = 2;
@@ -119,7 +119,7 @@ TEST_P(GfxSwapchainTest, CreateSwapchainInvalidDimensions)
     desc.label = "TestSwapchain";
     desc.extent = { 0, 600 }; // Invalid width
     desc.surface = NULL;
-    desc.format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
+    desc.format = GFX_FORMAT_B8G8R8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     desc.presentMode = GFX_PRESENT_MODE_FIFO;
     desc.imageCount = 2;
@@ -149,7 +149,7 @@ TEST_P(GfxSwapchainTest, CreateSwapchainInvalidImageCount)
     desc.label = "TestSwapchain";
     desc.surface = NULL;
     desc.extent = { 800, 600 };
-    desc.format = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM;
+    desc.format = GFX_FORMAT_B8G8R8A8_UNORM;
     desc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
     desc.presentMode = GFX_PRESENT_MODE_FIFO;
     desc.imageCount = 0; // Invalid

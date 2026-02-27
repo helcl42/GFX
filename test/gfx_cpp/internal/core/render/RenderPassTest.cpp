@@ -60,7 +60,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithColorAttachment)
         .colorAttachments = {
             RenderPassColorAttachment{
                 .target = {
-                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .format = Format::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count1,
                     .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment } } }
@@ -79,11 +79,11 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithMultipleColorAttachments)
         .colorAttachments = {
             RenderPassColorAttachment{
                 .target = {
-                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .format = Format::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count1,
                     .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment } },
-            RenderPassColorAttachment{ .target = { .format = TextureFormat::R16G16B16A16Float, .sampleCount = SampleCount::Count1, .ops = { LoadOp::Load, StoreOp::Store }, .finalLayout = TextureLayout::ColorAttachment } } }
+            RenderPassColorAttachment{ .target = { .format = Format::R16G16B16A16Float, .sampleCount = SampleCount::Count1, .ops = { LoadOp::Load, StoreOp::Store }, .finalLayout = TextureLayout::ColorAttachment } } }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
@@ -95,7 +95,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithDepthStencilAttachment)
     DeviceImpl deviceWrapper(device);
 
     RenderPassDepthStencilAttachmentTarget depthStencilTarget{
-        .format = TextureFormat::Depth24PlusStencil8,
+        .format = Format::Depth24PlusStencil8,
         .sampleCount = SampleCount::Count1,
         .depthOps = { LoadOp::Clear, StoreOp::Store },
         .stencilOps = { LoadOp::Clear, StoreOp::Store },
@@ -112,7 +112,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithDepthStencilAttachment)
         .colorAttachments = {
             RenderPassColorAttachment{
                 .target = {
-                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .format = Format::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count1,
                     .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment } } },
@@ -131,7 +131,7 @@ TEST_P(RenderPassImplTest, CreateMultipleRenderPasses_IndependentHandles)
         .colorAttachments = {
             RenderPassColorAttachment{
                 .target = {
-                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .format = Format::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count1,
                     .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment } } }
@@ -150,7 +150,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithMSAAAndResolve)
     DeviceImpl deviceWrapper(device);
 
     RenderPassColorAttachmentTarget resolveTarget{
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .sampleCount = SampleCount::Count1,
         .ops = { LoadOp::DontCare, StoreOp::Store },
         .finalLayout = TextureLayout::ColorAttachment
@@ -161,7 +161,7 @@ TEST_P(RenderPassImplTest, CreateRenderPassWithMSAAAndResolve)
         .colorAttachments = {
             RenderPassColorAttachment{
                 .target = {
-                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .format = Format::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count4,
                     .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment },

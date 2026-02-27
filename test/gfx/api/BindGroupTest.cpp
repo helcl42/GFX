@@ -308,7 +308,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithTextureView)
     textureDesc.arrayLayerCount = 1;
     textureDesc.mipLevelCount = 1;
     textureDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-    textureDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    textureDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     textureDesc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
 
     GfxTexture texture = nullptr;
@@ -317,7 +317,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithTextureView)
     ASSERT_NE(texture, nullptr);
 
     GfxTextureViewDescriptor viewDesc = {};
-    viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    viewDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
@@ -464,7 +464,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithMultipleEntries)
     textureDesc.arrayLayerCount = 1;
     textureDesc.mipLevelCount = 1;
     textureDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-    textureDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    textureDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     textureDesc.usage = GFX_TEXTURE_USAGE_TEXTURE_BINDING;
 
     GfxTexture texture = nullptr;
@@ -472,7 +472,7 @@ TEST_P(GfxBindGroupTest, CreateBindGroupWithMultipleEntries)
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
 
     GfxTextureViewDescriptor viewDesc = {};
-    viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    viewDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;

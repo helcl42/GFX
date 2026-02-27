@@ -222,7 +222,7 @@ TEST_P(GfxBindGroupLayoutTest, CreateBindGroupLayoutWithStorageTexture)
     entry.binding = 0;
     entry.visibility = GFX_SHADER_STAGE_COMPUTE;
     entry.type = GFX_BINDING_TYPE_STORAGE_TEXTURE;
-    entry.storageTexture.format = GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT;
+    entry.storageTexture.format = GFX_FORMAT_R32G32B32A32_FLOAT;
     entry.storageTexture.viewDimension = GFX_TEXTURE_VIEW_TYPE_2D;
     entry.storageTexture.writeOnly = true;
 

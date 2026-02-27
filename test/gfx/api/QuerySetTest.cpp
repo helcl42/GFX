@@ -303,7 +303,7 @@ TEST_P(GfxQuerySetTest, BeginOcclusionQueryWithNullQuerySet)
 {
     // Create render pass
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -327,7 +327,7 @@ TEST_P(GfxQuerySetTest, BeginOcclusionQueryWithNullQuerySet)
     colorTextureDesc.arrayLayerCount = 1;
     colorTextureDesc.mipLevelCount = 1;
     colorTextureDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-    colorTextureDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTextureDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTextureDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
     GfxTexture colorTexture = nullptr;
@@ -335,7 +335,7 @@ TEST_P(GfxQuerySetTest, BeginOcclusionQueryWithNullQuerySet)
 
     GfxTextureViewDescriptor viewDesc = {};
     viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-    viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    viewDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;

@@ -24,8 +24,8 @@ AdapterType cAdapterTypeToCppAdapterType(GfxAdapterType adapterType);
 AdapterInfo cAdapterInfoToCppAdapterInfo(const GfxAdapterInfo& cInfo);
 
 // Texture format conversions
-GfxTextureFormat cppFormatToCFormat(TextureFormat format);
-TextureFormat cFormatToCppFormat(GfxTextureFormat format);
+GfxFormat cppFormatToCFormat(Format format);
+Format cFormatToCppFormat(GfxFormat format);
 
 // Texture layout conversions
 GfxTextureLayout cppLayoutToCLayout(TextureLayout layout);

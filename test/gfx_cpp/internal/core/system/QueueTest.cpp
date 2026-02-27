@@ -96,7 +96,7 @@ TEST_P(QueueImplTest, WriteTexture)
     texDesc.size = { 16, 16, 1 };
     texDesc.mipLevelCount = 1;
     texDesc.arrayLayerCount = 1;
-    texDesc.format = TextureFormat::R8G8B8A8Unorm;
+    texDesc.format = Format::R8G8B8A8Unorm;
     texDesc.usage = TextureUsage::CopyDst;
     texDesc.type = TextureType::Texture2D;
     auto texture = deviceWrapper.createTexture(texDesc);

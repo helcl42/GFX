@@ -161,8 +161,8 @@ WGPUStringView gfxStringView(const char* str);
 // Texture format conversions
 // ============================================================================
 
-WGPUTextureFormat gfxFormatToWGPUFormat(GfxTextureFormat format);
-GfxTextureFormat wgpuFormatToGfxFormat(WGPUTextureFormat format);
+WGPUTextureFormat gfxFormatToWGPUFormat(GfxFormat format);
+GfxFormat wgpuFormatToGfxFormat(WGPUTextureFormat format);
 
 // Present mode conversions
 GfxPresentMode wgpuPresentModeToGfxPresentMode(WGPUPresentMode mode);
@@ -172,7 +172,7 @@ WGPUPresentMode gfxPresentModeToWGPU(GfxPresentMode mode);
 GfxSampleCount wgpuSampleCountToGfxSampleCount(uint32_t sampleCount);
 
 // Utility functions
-bool formatHasStencil(GfxTextureFormat format);
+bool formatHasStencil(GfxFormat format);
 
 // Device limits conversion
 GfxDeviceLimits wgpuLimitsToGfxDeviceLimits(const WGPULimits& wgpuLimits);
@@ -212,7 +212,7 @@ WGPUStencilOperation gfxStencilOperationToWGPU(GfxStencilOperation op);
 WGPUTextureSampleType gfxTextureSampleTypeToWGPU(GfxTextureSampleType sampleType);
 
 // Vertex format conversions
-WGPUVertexFormat gfxFormatToWGPUVertexFormat(GfxTextureFormat format);
+WGPUVertexFormat gfxFormatToWGPUVertexFormat(GfxFormat format);
 
 // Texture dimension conversions
 WGPUTextureDimension gfxTextureTypeToWGPUTextureDimension(GfxTextureType type);

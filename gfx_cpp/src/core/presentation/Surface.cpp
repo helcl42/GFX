@@ -28,17 +28,17 @@ SurfaceInfo SurfaceImpl::getInfo() const
     return cSurfaceInfoToCppSurfaceInfo(cInfo);
 }
 
-std::vector<TextureFormat> SurfaceImpl::getSupportedFormats() const
+std::vector<Format> SurfaceImpl::getSupportedFormats() const
 {
     // First call: query count
     uint32_t count = 0;
     gfxSurfaceEnumerateSupportedFormats(m_handle, &count, nullptr);
 
     // Second call: get formats
-    std::vector<GfxTextureFormat> formats(count);
+    std::vector<GfxFormat> formats(count);
     gfxSurfaceEnumerateSupportedFormats(m_handle, &count, formats.data());
 
-    std::vector<TextureFormat> result;
+    std::vector<Format> result;
     result.reserve(count);
     for (uint32_t i = 0; i < count; ++i) {
         result.push_back(cFormatToCppFormat(formats[i]));

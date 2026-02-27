@@ -60,7 +60,7 @@ TEST_P(GfxCppRenderPassTest, CreateBasicRenderPass)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
@@ -78,11 +78,11 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithMultipleColorAttachments)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } },
-            gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R16G16B16A16Float, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
+            gfx::RenderPassColorAttachment{ .target = { .format = gfx::Format::R16G16B16A16Float, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
 
     auto renderPass = device->createRenderPass(renderPassDesc);
@@ -94,7 +94,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDepthAttachment)
 {
     gfx::RenderPassDepthStencilAttachment depthAttachment = {
         .target = {
-            .format = gfx::TextureFormat::Depth32Float,
+            .format = gfx::Format::Depth32Float,
             .sampleCount = gfx::SampleCount::Count1,
             .depthOps = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
             .stencilOps = { gfx::LoadOp::DontCare, gfx::StoreOp::DontCare },
@@ -106,7 +106,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDepthAttachment)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } },
@@ -122,7 +122,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDepthStencilAttachment)
 {
     gfx::RenderPassDepthStencilAttachment depthStencilAttachment = {
         .target = {
-            .format = gfx::TextureFormat::Depth24PlusStencil8,
+            .format = gfx::Format::Depth24PlusStencil8,
             .sampleCount = gfx::SampleCount::Count1,
             .depthOps = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
             .stencilOps = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
@@ -134,7 +134,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDepthStencilAttachment)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } },
@@ -153,7 +153,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDifferentLoadOps)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Load, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
@@ -171,7 +171,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDontCareOps)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::DontCare, gfx::StoreOp::DontCare },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
@@ -184,11 +184,11 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDontCareOps)
 // Test: Create RenderPass with different texture formats
 TEST_P(GfxCppRenderPassTest, CreateRenderPassWithDifferentFormats)
 {
-    gfx::TextureFormat formats[] = {
-        gfx::TextureFormat::R8G8B8A8Unorm,
-        gfx::TextureFormat::B8G8R8A8Unorm,
-        gfx::TextureFormat::R16G16B16A16Float,
-        gfx::TextureFormat::R32G32B32A32Float
+    gfx::Format formats[] = {
+        gfx::Format::R8G8B8A8Unorm,
+        gfx::Format::B8G8R8A8Unorm,
+        gfx::Format::R16G16B16A16Float,
+        gfx::Format::R32G32B32A32Float
     };
 
     for (auto format : formats) {
@@ -215,7 +215,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithMultisampling)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count4,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
@@ -233,7 +233,7 @@ TEST_P(GfxCppRenderPassTest, CreateRenderPassWithEmptyLabel)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }

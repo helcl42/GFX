@@ -46,8 +46,8 @@ core::ShaderSourceType gfxShaderSourceTypeToVulkanShaderSourceType(GfxShaderSour
 // Format Conversion Functions
 // ============================================================================
 
-VkFormat gfxFormatToVkFormat(GfxTextureFormat format);
-GfxTextureFormat vkFormatToGfxFormat(VkFormat format);
+VkFormat gfxFormatToVkFormat(GfxFormat format);
+GfxFormat vkFormatToGfxFormat(VkFormat format);
 VkBufferUsageFlags gfxBufferUsageToVkBufferUsage(GfxBufferUsageFlags gfxUsage);
 GfxBufferUsageFlags vkBufferUsageToGfxBufferUsage(VkBufferUsageFlags vkUsage);
 VkMemoryPropertyFlags gfxMemoryPropertyToVkMemoryProperty(GfxMemoryPropertyFlags gfxMemoryProperty);

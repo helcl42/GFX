@@ -42,7 +42,7 @@ public:
     virtual GfxResult deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const = 0;
     virtual GfxResult surfaceDestroy(GfxSurface surface) const = 0;
     virtual GfxResult surfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo) const = 0;
-    virtual GfxResult surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const = 0;
+    virtual GfxResult surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxFormat* formats) const = 0;
     virtual GfxResult surfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes) const = 0;
 
     // Swapchain functions

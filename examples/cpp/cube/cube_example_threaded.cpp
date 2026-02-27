@@ -47,8 +47,8 @@ constexpr uint32_t WINDOW_HEIGHT = 600;
 constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 3;
 constexpr uint32_t CUBE_COUNT = 12;
 constexpr GfxSampleCount MSAA_SAMPLE_COUNT = GFX_SAMPLE_COUNT_4;
-constexpr GfxTextureFormat COLOR_FORMAT = GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB;
-constexpr GfxTextureFormat DEPTH_FORMAT = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
+constexpr GfxFormat COLOR_FORMAT = GFX_FORMAT_B8G8R8A8_UNORM_SRGB;
+constexpr GfxFormat DEPTH_FORMAT = GFX_FORMAT_DEPTH32_FLOAT;
 
 #if defined(__EMSCRIPTEN__)
 constexpr GfxBackend GFX_BACKEND_API = GFX_BACKEND_WEBGPU;
@@ -1115,10 +1115,10 @@ bool CubeApp::createRenderPipeline()
 {
     // Define vertex attributes
     GfxVertexAttribute attributes[] = {
-        { .format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT,
+        { .format = GFX_FORMAT_R32G32B32_FLOAT,
             .offset = offsetof(Vertex, position),
             .shaderLocation = 0 },
-        { .format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT,
+        { .format = GFX_FORMAT_R32G32B32_FLOAT,
             .offset = offsetof(Vertex, color),
             .shaderLocation = 1 }
     };

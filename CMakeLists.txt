@@ -25,7 +25,7 @@ option(BUILD_CPP_WRAPPER "Build C++ wrapper library" ON)
 option(BUILD_VULKAN_BACKEND "Build Vulkan backend" ON)
 option(BUILD_WEBGPU_BACKEND "Build WebGPU backend" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
-option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
+option(ENABLE_ASAN "Enable Address Sanitizer" ON)
 option(BUILD_HEADLESS "Build without windowing system support (no surface creation)" OFF)
 
 # Platform-specific libraries

@@ -145,7 +145,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithNullDevice)
 {
     // Create a simple render pass for the pipeline
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -184,7 +184,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithNullDevice)
 
     // Setup vertex state
     GfxVertexAttribute vertexAttr = {};
-    vertexAttr.format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
+    vertexAttr.format = GFX_FORMAT_R32G32B32_FLOAT;
     vertexAttr.offset = 0;
     vertexAttr.shaderLocation = 0;
 
@@ -235,7 +235,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithNullDescriptor)
 TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithNullOutput)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -270,7 +270,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithNullOutput)
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
 
     GfxVertexAttribute vertexAttr = {};
-    vertexAttr.format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
+    vertexAttr.format = GFX_FORMAT_R32G32B32_FLOAT;
     vertexAttr.offset = 0;
     vertexAttr.shaderLocation = 0;
 
@@ -311,7 +311,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithNullOutput)
 TEST_P(GfxRenderPipelineTest, CreateBasicRenderPipeline)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -349,7 +349,7 @@ TEST_P(GfxRenderPipelineTest, CreateBasicRenderPipeline)
     ASSERT_NE(vertexShader, nullptr);
 
     GfxVertexAttribute vertexAttr = {};
-    vertexAttr.format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
+    vertexAttr.format = GFX_FORMAT_R32G32B32_FLOAT;
     vertexAttr.offset = 0;
     vertexAttr.shaderLocation = 0;
 
@@ -391,7 +391,7 @@ TEST_P(GfxRenderPipelineTest, CreateBasicRenderPipeline)
     ASSERT_NE(fragmentShader, nullptr);
 
     GfxColorTargetState pipelineColorTarget = {};
-    pipelineColorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    pipelineColorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     pipelineColorTarget.blend = nullptr;
     pipelineColorTarget.writeMask = 0xF; // All channels
 
@@ -424,7 +424,7 @@ TEST_P(GfxRenderPipelineTest, CreateBasicRenderPipeline)
 TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithFragmentShader)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -477,7 +477,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithFragmentShader)
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
 
     GfxVertexAttribute vertexAttr = {};
-    vertexAttr.format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
+    vertexAttr.format = GFX_FORMAT_R32G32B32_FLOAT;
     vertexAttr.offset = 0;
     vertexAttr.shaderLocation = 0;
 
@@ -494,7 +494,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithFragmentShader)
     vertexState.bufferCount = 1;
 
     GfxColorTargetState fragmentColorTarget = {};
-    fragmentColorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    fragmentColorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     fragmentColorTarget.writeMask = 0xF; // All channels
 
     GfxFragmentState fragmentState = {};
@@ -534,7 +534,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithVertexShaderOnly)
 {
     // Create a render pass with only depth attachment (no color)
     GfxRenderPassDepthStencilAttachmentTarget depthTarget = {};
-    depthTarget.format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
+    depthTarget.format = GFX_FORMAT_DEPTH32_FLOAT;
     depthTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     depthTarget.depthOps.loadOp = GFX_LOAD_OP_CLEAR;
     depthTarget.depthOps.storeOp = GFX_STORE_OP_STORE;
@@ -574,7 +574,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithVertexShaderOnly)
     ASSERT_NE(vertexShader, nullptr);
 
     GfxVertexAttribute vertexAttr = {};
-    vertexAttr.format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
+    vertexAttr.format = GFX_FORMAT_R32G32B32_FLOAT;
     vertexAttr.offset = 0;
     vertexAttr.shaderLocation = 0;
 
@@ -598,7 +598,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithVertexShaderOnly)
     primitiveState.polygonMode = GFX_POLYGON_MODE_FILL;
 
     GfxDepthStencilState depthStencilState = {};
-    depthStencilState.format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
+    depthStencilState.format = GFX_FORMAT_DEPTH32_FLOAT;
     depthStencilState.depthWriteEnabled = true;
     depthStencilState.depthCompare = GFX_COMPARE_FUNCTION_LESS;
 
@@ -625,7 +625,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithVertexShaderOnly)
 TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithDifferentTopologies)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -678,7 +678,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithDifferentTopologies)
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
 
     GfxVertexAttribute vertexAttr = {};
-    vertexAttr.format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
+    vertexAttr.format = GFX_FORMAT_R32G32B32_FLOAT;
     vertexAttr.offset = 0;
     vertexAttr.shaderLocation = 0;
 
@@ -695,7 +695,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithDifferentTopologies)
     vertexState.bufferCount = 1;
 
     GfxColorTargetState colorTargetState = {};
-    colorTargetState.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTargetState.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTargetState.blend = nullptr;
     colorTargetState.writeMask = 0xF;
 
@@ -756,7 +756,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithDifferentTopologies)
 TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithCulling)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -809,7 +809,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithCulling)
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
 
     GfxVertexAttribute vertexAttr = {};
-    vertexAttr.format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
+    vertexAttr.format = GFX_FORMAT_R32G32B32_FLOAT;
     vertexAttr.offset = 0;
     vertexAttr.shaderLocation = 0;
 
@@ -826,7 +826,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithCulling)
     vertexState.bufferCount = 1;
 
     GfxColorTargetState colorTargetState = {};
-    colorTargetState.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTargetState.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTargetState.blend = nullptr;
     colorTargetState.writeMask = 0xF;
 
@@ -867,7 +867,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithCulling)
 TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -878,7 +878,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
     colorAttachment.resolveTarget = nullptr;
 
     GfxRenderPassDepthStencilAttachmentTarget depthTarget = {};
-    depthTarget.format = GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8;
+    depthTarget.format = GFX_FORMAT_DEPTH24_PLUS_STENCIL8;
     depthTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     depthTarget.depthOps.loadOp = GFX_LOAD_OP_CLEAR;
     depthTarget.depthOps.storeOp = GFX_STORE_OP_STORE;
@@ -934,7 +934,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
 
     GfxVertexAttribute vertexAttr = {};
-    vertexAttr.format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
+    vertexAttr.format = GFX_FORMAT_R32G32B32_FLOAT;
     vertexAttr.offset = 0;
     vertexAttr.shaderLocation = 0;
 
@@ -951,7 +951,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
     vertexState.bufferCount = 1;
 
     GfxColorTargetState colorTargetState = {};
-    colorTargetState.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTargetState.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTargetState.blend = nullptr;
     colorTargetState.writeMask = 0xF;
 
@@ -969,7 +969,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
     primitiveState.polygonMode = GFX_POLYGON_MODE_FILL;
 
     GfxDepthStencilState depthStencilState = {};
-    depthStencilState.format = GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8;
+    depthStencilState.format = GFX_FORMAT_DEPTH24_PLUS_STENCIL8;
     depthStencilState.depthWriteEnabled = true;
     depthStencilState.depthCompare = GFX_COMPARE_FUNCTION_LESS;
     depthStencilState.stencilReadMask = 0xFF;
@@ -999,7 +999,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithDepthStencil)
 TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithBindGroupLayouts)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -1068,7 +1068,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithBindGroupLayouts)
     ASSERT_EQ(result, GFX_RESULT_SUCCESS);
 
     GfxVertexAttribute vertexAttr = {};
-    vertexAttr.format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
+    vertexAttr.format = GFX_FORMAT_R32G32B32_FLOAT;
     vertexAttr.offset = 0;
     vertexAttr.shaderLocation = 0;
 
@@ -1085,7 +1085,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithBindGroupLayouts)
     vertexState.bufferCount = 1;
 
     GfxColorTargetState colorTargetState = {};
-    colorTargetState.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTargetState.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTargetState.blend = nullptr;
     colorTargetState.writeMask = 0xF;
 
@@ -1128,7 +1128,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithBindGroupLayouts)
 TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithMultipleVertexAttributes)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -1183,17 +1183,17 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithMultipleVertexAttributes)
     GfxVertexAttribute vertexAttrs[3] = {};
 
     // Position attribute
-    vertexAttrs[0].format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
+    vertexAttrs[0].format = GFX_FORMAT_R32G32B32_FLOAT;
     vertexAttrs[0].offset = 0;
     vertexAttrs[0].shaderLocation = 0;
 
     // Normal attribute
-    vertexAttrs[1].format = GFX_TEXTURE_FORMAT_R32G32B32_FLOAT;
+    vertexAttrs[1].format = GFX_FORMAT_R32G32B32_FLOAT;
     vertexAttrs[1].offset = 12;
     vertexAttrs[1].shaderLocation = 1;
 
     // TexCoord attribute
-    vertexAttrs[2].format = GFX_TEXTURE_FORMAT_R32G32_FLOAT;
+    vertexAttrs[2].format = GFX_FORMAT_R32G32_FLOAT;
     vertexAttrs[2].offset = 24;
     vertexAttrs[2].shaderLocation = 2;
 
@@ -1210,7 +1210,7 @@ TEST_P(GfxRenderPipelineTest, CreateRenderPipelineWithMultipleVertexAttributes)
     vertexState.bufferCount = 1;
 
     GfxColorTargetState colorTargetState = {};
-    colorTargetState.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTargetState.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTargetState.blend = nullptr;
     colorTargetState.writeMask = 0xF;
 

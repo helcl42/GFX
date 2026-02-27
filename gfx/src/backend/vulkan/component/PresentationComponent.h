@@ -11,7 +11,7 @@ public:
     GfxResult deviceCreateSurface(GfxDevice device, const GfxSurfaceDescriptor* descriptor, GfxSurface* outSurface) const;
     GfxResult surfaceDestroy(GfxSurface surface) const;
     GfxResult surfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo) const;
-    GfxResult surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const;
+    GfxResult surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxFormat* formats) const;
     GfxResult surfaceEnumerateSupportedPresentModes(GfxSurface surface, uint32_t* presentModeCount, GfxPresentMode* presentModes) const;
 
     // Swapchain functions

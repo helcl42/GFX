@@ -33,7 +33,7 @@
 #define WINDOW_HEIGHT 600
 #define COMPUTE_TEXTURE_WIDTH 800
 #define COMPUTE_TEXTURE_HEIGHT 600
-#define COLOR_FORMAT GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB
+#define COLOR_FORMAT GFX_FORMAT_B8G8R8A8_UNORM_SRGB
 
 #if defined(__EMSCRIPTEN__)
 #define GFX_BACKEND_API GFX_BACKEND_WEBGPU
@@ -424,7 +424,7 @@ static bool createComputeTexture(ComputeApp* app)
     textureDesc.pNext = NULL;
     textureDesc.type = GFX_TEXTURE_TYPE_2D;
     textureDesc.size = (GfxExtent3D){ COMPUTE_TEXTURE_WIDTH, COMPUTE_TEXTURE_HEIGHT, 1 };
-    textureDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    textureDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     textureDesc.usage = GFX_TEXTURE_USAGE_STORAGE_BINDING | GFX_TEXTURE_USAGE_TEXTURE_BINDING;
     textureDesc.arrayLayerCount = 1;
     textureDesc.mipLevelCount = 1;
@@ -440,7 +440,7 @@ static bool createComputeTexture(ComputeApp* app)
     GfxTextureViewDescriptor viewDesc = {};
     viewDesc.sType = GFX_STRUCTURE_TYPE_TEXTURE_VIEW_DESCRIPTOR;
     viewDesc.pNext = NULL;
-    viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    viewDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
@@ -531,7 +531,7 @@ static bool createComputeBindGroup(ComputeApp* app)
             .visibility = GFX_SHADER_STAGE_COMPUTE,
             .type = GFX_BINDING_TYPE_STORAGE_TEXTURE,
             .storageTexture = {
-                .format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM,
+                .format = GFX_FORMAT_R8G8B8A8_UNORM,
                 .viewDimension = GFX_TEXTURE_VIEW_TYPE_2D,
                 .writeOnly = true,
             },

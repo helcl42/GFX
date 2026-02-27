@@ -39,10 +39,10 @@ TEST(GfxCppConstantTest, AdapterTypeEnumValues)
 TEST(GfxCppConstantTest, TextureFormatEnumValues)
 {
     // Verify texture format enum values
-    EXPECT_EQ(static_cast<int32_t>(gfx::TextureFormat::Undefined), 0);
-    EXPECT_EQ(static_cast<int32_t>(gfx::TextureFormat::R8Unorm), 1);
-    EXPECT_EQ(static_cast<int32_t>(gfx::TextureFormat::R8G8B8A8Unorm), 3);
-    EXPECT_EQ(static_cast<int32_t>(gfx::TextureFormat::B8G8R8A8Unorm), 5);
+    EXPECT_EQ(static_cast<int32_t>(gfx::Format::Undefined), 0);
+    EXPECT_EQ(static_cast<int32_t>(gfx::Format::R8Unorm), 1);
+    EXPECT_EQ(static_cast<int32_t>(gfx::Format::R8G8B8A8Unorm), 3);
+    EXPECT_EQ(static_cast<int32_t>(gfx::Format::B8G8R8A8Unorm), 5);
 }
 
 TEST(GfxCppConstantTest, BufferUsageFlagValues)

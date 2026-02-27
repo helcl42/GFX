@@ -61,7 +61,7 @@ TEST_P(GfxCppFramebufferTest, CreateBasicFramebuffer)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
@@ -70,11 +70,11 @@ TEST_P(GfxCppFramebufferTest, CreateBasicFramebuffer)
     ASSERT_NE(renderPass, nullptr);
 
     // Create texture
-    auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
+    auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::Format::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
     ASSERT_NE(texture, nullptr);
 
     // Create texture view
-    auto textureView = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
+    auto textureView = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::Format::R8G8B8A8Unorm });
     ASSERT_NE(textureView, nullptr);
 
     // Create framebuffer
@@ -89,15 +89,15 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithEmptyLabel)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
     auto renderPass = device->createRenderPass(renderPassDesc);
 
-    auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
-    auto textureView = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
+    auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::Format::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
+    auto textureView = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::Format::R8G8B8A8Unorm });
 
     auto framebuffer = device->createFramebuffer({ .label = "", .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = textureView } }, .extent = { 256, 256 } });
     EXPECT_NE(framebuffer, nullptr);
@@ -111,25 +111,25 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithMultipleColorAttachments)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } },
-            gfx::RenderPassColorAttachment{ .target = { .format = gfx::TextureFormat::R16G16B16A16Float, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
+            gfx::RenderPassColorAttachment{ .target = { .format = gfx::Format::R16G16B16A16Float, .sampleCount = gfx::SampleCount::Count1, .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store }, .finalLayout = gfx::TextureLayout::ColorAttachment } } }
     };
     auto renderPass = device->createRenderPass(renderPassDesc);
     ASSERT_NE(renderPass, nullptr);
 
     // Create first texture
-    auto texture1 = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 512, 512, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
+    auto texture1 = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 512, 512, 1 }, .format = gfx::Format::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
     ASSERT_NE(texture1, nullptr);
-    auto textureView1 = texture1->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
+    auto textureView1 = texture1->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::Format::R8G8B8A8Unorm });
     ASSERT_NE(textureView1, nullptr);
 
     // Create second texture
-    auto texture2 = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 512, 512, 1 }, .format = gfx::TextureFormat::R16G16B16A16Float, .usage = gfx::TextureUsage::RenderAttachment });
+    auto texture2 = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 512, 512, 1 }, .format = gfx::Format::R16G16B16A16Float, .usage = gfx::TextureUsage::RenderAttachment });
     ASSERT_NE(texture2, nullptr);
-    auto textureView2 = texture2->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R16G16B16A16Float });
+    auto textureView2 = texture2->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::Format::R16G16B16A16Float });
     ASSERT_NE(textureView2, nullptr);
 
     // Create framebuffer with multiple attachments
@@ -148,7 +148,7 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithDepthAttachment)
     // Create render pass with color and depth attachments
     gfx::RenderPassDepthStencilAttachment depthAttachment = {
         .target = {
-            .format = gfx::TextureFormat::Depth32Float,
+            .format = gfx::Format::Depth32Float,
             .sampleCount = gfx::SampleCount::Count1,
             .depthOps = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
             .stencilOps = { gfx::LoadOp::DontCare, gfx::StoreOp::DontCare },
@@ -159,7 +159,7 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithDepthAttachment)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } },
@@ -169,15 +169,15 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithDepthAttachment)
     ASSERT_NE(renderPass, nullptr);
 
     // Create color texture
-    auto colorTexture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 1024, 768, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
+    auto colorTexture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 1024, 768, 1 }, .format = gfx::Format::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
     ASSERT_NE(colorTexture, nullptr);
-    auto colorView = colorTexture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
+    auto colorView = colorTexture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::Format::R8G8B8A8Unorm });
     ASSERT_NE(colorView, nullptr);
 
     // Create depth texture
-    auto depthTexture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 1024, 768, 1 }, .format = gfx::TextureFormat::Depth32Float, .usage = gfx::TextureUsage::RenderAttachment });
+    auto depthTexture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 1024, 768, 1 }, .format = gfx::Format::Depth32Float, .usage = gfx::TextureUsage::RenderAttachment });
     ASSERT_NE(depthTexture, nullptr);
-    auto depthView = depthTexture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::Depth32Float });
+    auto depthView = depthTexture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::Format::Depth32Float });
     ASSERT_NE(depthView, nullptr);
 
     // Create framebuffer with depth attachment
@@ -199,7 +199,7 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithDifferentSizes)
         .colorAttachments = {
             gfx::RenderPassColorAttachment{
                 .target = {
-                    .format = gfx::TextureFormat::R8G8B8A8Unorm,
+                    .format = gfx::Format::R8G8B8A8Unorm,
                     .sampleCount = gfx::SampleCount::Count1,
                     .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
                     .finalLayout = gfx::TextureLayout::ColorAttachment } } }
@@ -219,10 +219,10 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithDifferentSizes)
     };
 
     for (auto size : sizes) {
-        auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { size.width, size.height, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
+        auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { size.width, size.height, 1 }, .format = gfx::Format::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
         ASSERT_NE(texture, nullptr);
 
-        auto textureView = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
+        auto textureView = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::Format::R8G8B8A8Unorm });
         ASSERT_NE(textureView, nullptr);
 
         auto framebuffer = device->createFramebuffer({ .renderPass = renderPass, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = textureView } }, .extent = { size.width, size.height } });
@@ -233,8 +233,8 @@ TEST_P(GfxCppFramebufferTest, CreateFramebufferWithDifferentSizes)
 // Test: Create Framebuffer with null render pass (should throw exception)
 TEST_P(GfxCppFramebufferTest, CreateFramebufferWithNullRenderPass)
 {
-    auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::TextureFormat::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
-    auto textureView = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::TextureFormat::R8G8B8A8Unorm });
+    auto texture = device->createTexture({ .type = gfx::TextureType::Texture2D, .size = { 256, 256, 1 }, .format = gfx::Format::R8G8B8A8Unorm, .usage = gfx::TextureUsage::RenderAttachment });
+    auto textureView = texture->createView({ .viewType = gfx::TextureViewType::View2D, .format = gfx::Format::R8G8B8A8Unorm });
 
     EXPECT_THROW(
         device->createFramebuffer({ .renderPass = nullptr, .colorAttachments = { gfx::FramebufferColorAttachment{ .view = textureView } }, .extent = { 256, 256 } }),

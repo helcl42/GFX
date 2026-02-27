@@ -62,7 +62,7 @@ public:
     // Surface functions
     MOCK_METHOD(GfxResult, surfaceDestroy, (GfxSurface), (const, override));
     MOCK_METHOD(GfxResult, surfaceGetInfo, (GfxSurface, GfxSurfaceInfo*), (const, override));
-    MOCK_METHOD(GfxResult, surfaceEnumerateSupportedFormats, (GfxSurface, uint32_t*, GfxTextureFormat*), (const, override));
+    MOCK_METHOD(GfxResult, surfaceEnumerateSupportedFormats, (GfxSurface, uint32_t*, GfxFormat*), (const, override));
     MOCK_METHOD(GfxResult, surfaceEnumerateSupportedPresentModes, (GfxSurface, uint32_t*, GfxPresentMode*), (const, override));
 
     // Swapchain functions

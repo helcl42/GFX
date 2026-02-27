@@ -80,7 +80,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithNullDevice)
 {
     // Create render pass
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -105,7 +105,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithNullDevice)
     texDesc.arrayLayerCount = 1;
     texDesc.mipLevelCount = 1;
     texDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-    texDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    texDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     texDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
     GfxTexture texture = nullptr;
@@ -115,7 +115,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithNullDevice)
     // Create texture view
     GfxTextureViewDescriptor viewDesc = {};
     viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-    viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    viewDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -159,7 +159,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithNullDescriptor)
 TEST_P(GfxFramebufferTest, CreateFramebufferWithNullOutput)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -183,7 +183,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithNullOutput)
     texDesc.arrayLayerCount = 1;
     texDesc.mipLevelCount = 1;
     texDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-    texDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    texDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     texDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
     GfxTexture texture = nullptr;
@@ -192,7 +192,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithNullOutput)
 
     GfxTextureViewDescriptor viewDesc = {};
     viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-    viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    viewDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -226,7 +226,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithNullOutput)
 TEST_P(GfxFramebufferTest, CreateBasicFramebuffer)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -252,7 +252,7 @@ TEST_P(GfxFramebufferTest, CreateBasicFramebuffer)
     texDesc.arrayLayerCount = 1;
     texDesc.mipLevelCount = 1;
     texDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-    texDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    texDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     texDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
     GfxTexture texture = nullptr;
@@ -262,7 +262,7 @@ TEST_P(GfxFramebufferTest, CreateBasicFramebuffer)
 
     GfxTextureViewDescriptor viewDesc = {};
     viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-    viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    viewDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
     viewDesc.baseArrayLayer = 0;
@@ -302,13 +302,13 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithMultipleColorAttachments)
 {
     GfxRenderPassColorAttachmentTarget colorTargets[2] = {};
 
-    colorTargets[0].format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTargets[0].format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTargets[0].sampleCount = GFX_SAMPLE_COUNT_1;
     colorTargets[0].ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTargets[0].ops.storeOp = GFX_STORE_OP_STORE;
     colorTargets[0].finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT;
 
-    colorTargets[1].format = GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT;
+    colorTargets[1].format = GFX_FORMAT_R16G16B16A16_FLOAT;
     colorTargets[1].sampleCount = GFX_SAMPLE_COUNT_1;
     colorTargets[1].ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTargets[1].ops.storeOp = GFX_STORE_OP_STORE;
@@ -335,7 +335,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithMultipleColorAttachments)
     texDesc1.arrayLayerCount = 1;
     texDesc1.mipLevelCount = 1;
     texDesc1.sampleCount = GFX_SAMPLE_COUNT_1;
-    texDesc1.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    texDesc1.format = GFX_FORMAT_R8G8B8A8_UNORM;
     texDesc1.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
     GfxTexture texture1 = nullptr;
@@ -348,7 +348,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithMultipleColorAttachments)
     texDesc2.arrayLayerCount = 1;
     texDesc2.mipLevelCount = 1;
     texDesc2.sampleCount = GFX_SAMPLE_COUNT_1;
-    texDesc2.format = GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT;
+    texDesc2.format = GFX_FORMAT_R16G16B16A16_FLOAT;
     texDesc2.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
     GfxTexture texture2 = nullptr;
@@ -358,7 +358,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithMultipleColorAttachments)
     // Create texture views
     GfxTextureViewDescriptor viewDesc1 = {};
     viewDesc1.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-    viewDesc1.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    viewDesc1.format = GFX_FORMAT_R8G8B8A8_UNORM;
     viewDesc1.baseMipLevel = 0;
     viewDesc1.mipLevelCount = 1;
     viewDesc1.baseArrayLayer = 0;
@@ -370,7 +370,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithMultipleColorAttachments)
 
     GfxTextureViewDescriptor viewDesc2 = {};
     viewDesc2.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-    viewDesc2.format = GFX_TEXTURE_FORMAT_R16G16B16A16_FLOAT;
+    viewDesc2.format = GFX_FORMAT_R16G16B16A16_FLOAT;
     viewDesc2.baseMipLevel = 0;
     viewDesc2.mipLevelCount = 1;
     viewDesc2.baseArrayLayer = 0;
@@ -413,7 +413,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithMultipleColorAttachments)
 TEST_P(GfxFramebufferTest, CreateFramebufferWithDepthAttachment)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -424,7 +424,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithDepthAttachment)
     colorAttachment.resolveTarget = nullptr;
 
     GfxRenderPassDepthStencilAttachmentTarget depthTarget = {};
-    depthTarget.format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
+    depthTarget.format = GFX_FORMAT_DEPTH32_FLOAT;
     depthTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     depthTarget.depthOps.loadOp = GFX_LOAD_OP_CLEAR;
     depthTarget.depthOps.storeOp = GFX_STORE_OP_STORE;
@@ -452,7 +452,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithDepthAttachment)
     colorTexDesc.arrayLayerCount = 1;
     colorTexDesc.mipLevelCount = 1;
     colorTexDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-    colorTexDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTexDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTexDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
     GfxTexture colorTexture = nullptr;
@@ -461,7 +461,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithDepthAttachment)
 
     GfxTextureViewDescriptor colorViewDesc = {};
     colorViewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-    colorViewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorViewDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorViewDesc.baseMipLevel = 0;
     colorViewDesc.mipLevelCount = 1;
     colorViewDesc.baseArrayLayer = 0;
@@ -478,7 +478,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithDepthAttachment)
     depthTexDesc.arrayLayerCount = 1;
     depthTexDesc.mipLevelCount = 1;
     depthTexDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-    depthTexDesc.format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
+    depthTexDesc.format = GFX_FORMAT_DEPTH32_FLOAT;
     depthTexDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
     GfxTexture depthTexture = nullptr;
@@ -487,7 +487,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithDepthAttachment)
 
     GfxTextureViewDescriptor depthViewDesc = {};
     depthViewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-    depthViewDesc.format = GFX_TEXTURE_FORMAT_DEPTH32_FLOAT;
+    depthViewDesc.format = GFX_FORMAT_DEPTH32_FLOAT;
     depthViewDesc.baseMipLevel = 0;
     depthViewDesc.mipLevelCount = 1;
     depthViewDesc.baseArrayLayer = 0;
@@ -528,7 +528,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithDepthAttachment)
 TEST_P(GfxFramebufferTest, CreateFramebufferWithDifferentSizes)
 {
     GfxRenderPassColorAttachmentTarget colorTarget = {};
-    colorTarget.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+    colorTarget.format = GFX_FORMAT_R8G8B8A8_UNORM;
     colorTarget.sampleCount = GFX_SAMPLE_COUNT_1;
     colorTarget.ops.loadOp = GFX_LOAD_OP_CLEAR;
     colorTarget.ops.storeOp = GFX_STORE_OP_STORE;
@@ -564,7 +564,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithDifferentSizes)
         texDesc.arrayLayerCount = 1;
         texDesc.mipLevelCount = 1;
         texDesc.sampleCount = GFX_SAMPLE_COUNT_1;
-        texDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+        texDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
         texDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
         GfxTexture texture = nullptr;
@@ -573,7 +573,7 @@ TEST_P(GfxFramebufferTest, CreateFramebufferWithDifferentSizes)
 
         GfxTextureViewDescriptor viewDesc = {};
         viewDesc.viewType = GFX_TEXTURE_VIEW_TYPE_2D;
-        viewDesc.format = GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM;
+        viewDesc.format = GFX_FORMAT_R8G8B8A8_UNORM;
         viewDesc.baseMipLevel = 0;
         viewDesc.mipLevelCount = 1;
         viewDesc.baseArrayLayer = 0;

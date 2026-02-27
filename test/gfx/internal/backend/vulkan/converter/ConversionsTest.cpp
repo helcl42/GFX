@@ -14,37 +14,37 @@ namespace {
 
 TEST(VulkanConversionsTest, GfxFormatToVkFormat_CommonFormats_ConvertsCorrectly)
 {
-    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_TEXTURE_FORMAT_UNDEFINED), VK_FORMAT_UNDEFINED);
-    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_TEXTURE_FORMAT_R8_UNORM), VK_FORMAT_R8_UNORM);
-    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_TEXTURE_FORMAT_R8G8_UNORM), VK_FORMAT_R8G8_UNORM);
+    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_FORMAT_UNDEFINED), VK_FORMAT_UNDEFINED);
+    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_FORMAT_R8_UNORM), VK_FORMAT_R8_UNORM);
+    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_FORMAT_R8G8_UNORM), VK_FORMAT_R8G8_UNORM);
 }
 
 TEST(VulkanConversionsTest, GfxFormatToVkFormat_RGBA8Formats_ConvertsCorrectly)
 {
-    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM), VK_FORMAT_R8G8B8A8_UNORM);
-    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB), VK_FORMAT_R8G8B8A8_SRGB);
-    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM), VK_FORMAT_B8G8R8A8_UNORM);
+    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_FORMAT_R8G8B8A8_UNORM), VK_FORMAT_R8G8B8A8_UNORM);
+    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_FORMAT_R8G8B8A8_UNORM_SRGB), VK_FORMAT_R8G8B8A8_SRGB);
+    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_FORMAT_B8G8R8A8_UNORM), VK_FORMAT_B8G8R8A8_UNORM);
 }
 
 TEST(VulkanConversionsTest, GfxFormatToVkFormat_FloatFormats_ConvertsCorrectly)
 {
-    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_TEXTURE_FORMAT_R32_FLOAT), VK_FORMAT_R32_SFLOAT);
-    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_TEXTURE_FORMAT_R32G32_FLOAT), VK_FORMAT_R32G32_SFLOAT);
-    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_TEXTURE_FORMAT_R32G32B32A32_FLOAT), VK_FORMAT_R32G32B32A32_SFLOAT);
+    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_FORMAT_R32_FLOAT), VK_FORMAT_R32_SFLOAT);
+    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_FORMAT_R32G32_FLOAT), VK_FORMAT_R32G32_SFLOAT);
+    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_FORMAT_R32G32B32A32_FLOAT), VK_FORMAT_R32G32B32A32_SFLOAT);
 }
 
 TEST(VulkanConversionsTest, GfxFormatToVkFormat_DepthFormats_ConvertsCorrectly)
 {
-    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_TEXTURE_FORMAT_DEPTH16_UNORM), VK_FORMAT_D16_UNORM);
-    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_TEXTURE_FORMAT_DEPTH32_FLOAT), VK_FORMAT_D32_SFLOAT);
-    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_TEXTURE_FORMAT_DEPTH24_PLUS_STENCIL8), VK_FORMAT_D24_UNORM_S8_UINT);
+    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_FORMAT_DEPTH16_UNORM), VK_FORMAT_D16_UNORM);
+    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_FORMAT_DEPTH32_FLOAT), VK_FORMAT_D32_SFLOAT);
+    EXPECT_EQ(gfx::backend::vulkan::converter::gfxFormatToVkFormat(GFX_FORMAT_DEPTH24_PLUS_STENCIL8), VK_FORMAT_D24_UNORM_S8_UINT);
 }
 
 TEST(VulkanConversionsTest, VkFormatToGfxFormat_RoundTrip_Preserves)
 {
-    EXPECT_EQ(gfx::backend::vulkan::converter::vkFormatToGfxFormat(VK_FORMAT_R8G8B8A8_UNORM), GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM);
-    EXPECT_EQ(gfx::backend::vulkan::converter::vkFormatToGfxFormat(VK_FORMAT_R8G8B8A8_SRGB), GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM_SRGB);
-    EXPECT_EQ(gfx::backend::vulkan::converter::vkFormatToGfxFormat(VK_FORMAT_D32_SFLOAT), GFX_TEXTURE_FORMAT_DEPTH32_FLOAT);
+    EXPECT_EQ(gfx::backend::vulkan::converter::vkFormatToGfxFormat(VK_FORMAT_R8G8B8A8_UNORM), GFX_FORMAT_R8G8B8A8_UNORM);
+    EXPECT_EQ(gfx::backend::vulkan::converter::vkFormatToGfxFormat(VK_FORMAT_R8G8B8A8_SRGB), GFX_FORMAT_R8G8B8A8_UNORM_SRGB);
+    EXPECT_EQ(gfx::backend::vulkan::converter::vkFormatToGfxFormat(VK_FORMAT_D32_SFLOAT), GFX_FORMAT_DEPTH32_FLOAT);
 }
 
 TEST(VulkanConversionsTest, IsDepthFormat_DepthFormats_ReturnsTrue)
@@ -1051,7 +1051,7 @@ TEST(VulkanConversionsTest, VkTextureInfoToGfxTextureInfo_AllFields_ConvertsCorr
     EXPECT_EQ(result.size.height, 1080u);
     EXPECT_EQ(result.size.depth, 1u);
     EXPECT_EQ(result.arrayLayerCount, 6u);
-    EXPECT_EQ(result.format, GFX_TEXTURE_FORMAT_R8G8B8A8_UNORM);
+    EXPECT_EQ(result.format, GFX_FORMAT_R8G8B8A8_UNORM);
     EXPECT_EQ(result.mipLevelCount, 5u);
     EXPECT_EQ(result.sampleCount, GFX_SAMPLE_COUNT_4);
     EXPECT_TRUE(result.usage & GFX_TEXTURE_USAGE_TEXTURE_BINDING);
@@ -1075,7 +1075,7 @@ TEST(VulkanConversionsTest, VkTextureInfoToGfxTextureInfo_3DTexture_ConvertsCorr
     EXPECT_EQ(result.size.width, 512u);
     EXPECT_EQ(result.size.height, 512u);
     EXPECT_EQ(result.size.depth, 256u);
-    EXPECT_EQ(result.format, GFX_TEXTURE_FORMAT_R32_FLOAT);
+    EXPECT_EQ(result.format, GFX_FORMAT_R32_FLOAT);
     EXPECT_TRUE(result.usage & GFX_TEXTURE_USAGE_STORAGE_BINDING);
 }
 
@@ -1092,7 +1092,7 @@ TEST(VulkanConversionsTest, VkSwapchainInfoToGfxSwapchainInfo_AllFields_Converts
 
     EXPECT_EQ(result.extent.width, 2560u);
     EXPECT_EQ(result.extent.height, 1440u);
-    EXPECT_EQ(result.format, GFX_TEXTURE_FORMAT_B8G8R8A8_UNORM_SRGB);
+    EXPECT_EQ(result.format, GFX_FORMAT_B8G8R8A8_UNORM_SRGB);
     EXPECT_EQ(result.imageCount, 3u);
     EXPECT_EQ(result.presentMode, GFX_PRESENT_MODE_MAILBOX);
 }

@@ -60,7 +60,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithColorAttachment)
         .colorAttachments = {
             RenderPassColorAttachment{
                 .target = {
-                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .format = Format::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count1,
                     .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment } } }
@@ -77,7 +77,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithColorAttachment)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::RenderAttachment
     };
 
@@ -88,7 +88,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithColorAttachment)
     TextureViewDescriptor viewDesc{
         .label = "Color Attachment View",
         .viewType = TextureViewType::View2D,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -121,11 +121,11 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithMultipleColorAttachments)
         .colorAttachments = {
             RenderPassColorAttachment{
                 .target = {
-                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .format = Format::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count1,
                     .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment } },
-            RenderPassColorAttachment{ .target = { .format = TextureFormat::R16G16B16A16Float, .sampleCount = SampleCount::Count1, .ops = { LoadOp::Clear, StoreOp::Store }, .finalLayout = TextureLayout::ColorAttachment } } }
+            RenderPassColorAttachment{ .target = { .format = Format::R16G16B16A16Float, .sampleCount = SampleCount::Count1, .ops = { LoadOp::Clear, StoreOp::Store }, .finalLayout = TextureLayout::ColorAttachment } } }
     };
 
     auto renderPass = deviceWrapper.createRenderPass(renderPassDesc);
@@ -138,7 +138,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithMultipleColorAttachments)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::RenderAttachment
     };
 
@@ -152,7 +152,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithMultipleColorAttachments)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R16G16B16A16Float,
+        .format = Format::R16G16B16A16Float,
         .usage = TextureUsage::RenderAttachment
     };
 
@@ -162,7 +162,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithMultipleColorAttachments)
     // Create texture views
     TextureViewDescriptor viewDesc1{
         .viewType = TextureViewType::View2D,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -174,7 +174,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithMultipleColorAttachments)
 
     TextureViewDescriptor viewDesc2{
         .viewType = TextureViewType::View2D,
-        .format = TextureFormat::R16G16B16A16Float,
+        .format = Format::R16G16B16A16Float,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -203,7 +203,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithDepthStencilAttachment)
 
     // Create render pass with depth-stencil attachment
     RenderPassDepthStencilAttachmentTarget depthStencilTarget{
-        .format = TextureFormat::Depth24PlusStencil8,
+        .format = Format::Depth24PlusStencil8,
         .sampleCount = SampleCount::Count1,
         .depthOps = { LoadOp::Clear, StoreOp::Store },
         .stencilOps = { LoadOp::Clear, StoreOp::Store },
@@ -219,7 +219,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithDepthStencilAttachment)
         .colorAttachments = {
             RenderPassColorAttachment{
                 .target = {
-                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .format = Format::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count1,
                     .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment } } },
@@ -236,7 +236,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithDepthStencilAttachment)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::RenderAttachment
     };
 
@@ -250,7 +250,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithDepthStencilAttachment)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::Depth24PlusStencil8,
+        .format = Format::Depth24PlusStencil8,
         .usage = TextureUsage::RenderAttachment
     };
 
@@ -260,7 +260,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithDepthStencilAttachment)
     // Create texture views
     TextureViewDescriptor colorViewDesc{
         .viewType = TextureViewType::View2D,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -272,7 +272,7 @@ TEST_P(FramebufferImplTest, CreateFramebufferWithDepthStencilAttachment)
 
     TextureViewDescriptor depthViewDesc{
         .viewType = TextureViewType::View2D,
-        .format = TextureFormat::Depth24PlusStencil8,
+        .format = Format::Depth24PlusStencil8,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -308,7 +308,7 @@ TEST_P(FramebufferImplTest, CreateMultipleFramebuffers_IndependentHandles)
         .colorAttachments = {
             RenderPassColorAttachment{
                 .target = {
-                    .format = TextureFormat::R8G8B8A8Unorm,
+                    .format = Format::R8G8B8A8Unorm,
                     .sampleCount = SampleCount::Count1,
                     .ops = { LoadOp::Clear, StoreOp::Store },
                     .finalLayout = TextureLayout::ColorAttachment } } }
@@ -324,7 +324,7 @@ TEST_P(FramebufferImplTest, CreateMultipleFramebuffers_IndependentHandles)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::RenderAttachment
     };
 
@@ -335,7 +335,7 @@ TEST_P(FramebufferImplTest, CreateMultipleFramebuffers_IndependentHandles)
 
     TextureViewDescriptor viewDesc{
         .viewType = TextureViewType::View2D,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,

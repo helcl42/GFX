@@ -60,7 +60,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainNullSurface)
         .label = "TestSwapchain",
         .surface = nullSurface,
         .extent = { 800, 600 },
-        .format = gfx::TextureFormat::B8G8R8A8Unorm,
+        .format = gfx::Format::B8G8R8A8Unorm,
         .usage = gfx::TextureUsage::RenderAttachment,
         .presentMode = gfx::PresentMode::Fifo,
         .imageCount = 2
@@ -88,7 +88,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainInvalidDimensions)
         .label = "TestSwapchain",
         .surface = nullSurface,
         .extent = { 0, 600 },
-        .format = gfx::TextureFormat::B8G8R8A8Unorm,
+        .format = gfx::Format::B8G8R8A8Unorm,
         .usage = gfx::TextureUsage::RenderAttachment,
         .presentMode = gfx::PresentMode::Fifo,
         .imageCount = 2
@@ -134,7 +134,7 @@ TEST_P(GfxCppSwapchainTest, CreateSwapchainInvalidImageCount)
         .label = "TestSwapchain",
         .surface = nullSurface,
         .extent = { 800, 600 },
-        .format = gfx::TextureFormat::B8G8R8A8Unorm,
+        .format = gfx::Format::B8G8R8A8Unorm,
         .usage = gfx::TextureUsage::RenderAttachment,
         .presentMode = gfx::PresentMode::Fifo,
         .imageCount = 0 // Invalid

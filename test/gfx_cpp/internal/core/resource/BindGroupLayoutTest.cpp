@@ -157,7 +157,7 @@ TEST_P(BindGroupLayoutImplTest, CreateBindGroupLayoutWithStorageTexture)
         .binding = 0,
         .visibility = ShaderStage::Compute,
         .resource = BindGroupLayoutEntry::StorageTextureBinding{
-            .format = TextureFormat::R8G8B8A8Unorm,
+            .format = Format::R8G8B8A8Unorm,
             .writeOnly = false,
             .viewDimension = TextureViewType::View2D }
     };

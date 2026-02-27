@@ -61,42 +61,42 @@ TEST(GfxCppUtilTest, AlignDownLargeValues)
 // Format helper tests
 TEST(GfxCppUtilTest, GetFormatBytesPerPixel8Bit)
 {
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::R8Unorm), 1);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::R8Unorm), 1);
 }
 
 TEST(GfxCppUtilTest, GetFormatBytesPerPixel16Bit)
 {
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::R8G8Unorm), 2);
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::R16Float), 2);
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::R16G16Float), 4);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::R8G8Unorm), 2);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::R16Float), 2);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::R16G16Float), 4);
 }
 
 TEST(GfxCppUtilTest, GetFormatBytesPerPixel32Bit)
 {
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::R32Float), 4);
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::R8G8B8A8Unorm), 4);
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::R8G8B8A8UnormSrgb), 4);
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::B8G8R8A8Unorm), 4);
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::B8G8R8A8UnormSrgb), 4);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::R32Float), 4);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::R8G8B8A8Unorm), 4);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::R8G8B8A8UnormSrgb), 4);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::B8G8R8A8Unorm), 4);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::B8G8R8A8UnormSrgb), 4);
 }
 
 TEST(GfxCppUtilTest, GetFormatBytesPerPixel64Bit)
 {
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::R16G16B16A16Float), 8);
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::R32G32Float), 8);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::R16G16B16A16Float), 8);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::R32G32Float), 8);
 }
 
 TEST(GfxCppUtilTest, GetFormatBytesPerPixel128Bit)
 {
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::R32G32B32Float), 12);
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::R32G32B32A32Float), 16);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::R32G32B32Float), 12);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::R32G32B32A32Float), 16);
 }
 
 TEST(GfxCppUtilTest, GetFormatBytesPerPixelDepthStencil)
 {
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::Depth16Unorm), 2);
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::Depth32Float), 4);
-    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::TextureFormat::Depth24PlusStencil8), 4);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::Depth16Unorm), 2);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::Depth32Float), 4);
+    EXPECT_EQ(gfx::utils::getFormatBytesPerPixel(gfx::Format::Depth24PlusStencil8), 4);
 }
 
 // Platform window handle creation tests

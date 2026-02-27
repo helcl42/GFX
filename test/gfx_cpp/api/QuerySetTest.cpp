@@ -441,7 +441,7 @@ TEST_P(GfxCppQuerySetTest, BeginOcclusionQueryInRenderPass)
 
     // Create render pass
     gfx::RenderPassColorAttachmentTarget colorTarget{
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .sampleCount = gfx::SampleCount::Count1,
         .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
         .finalLayout = gfx::TextureLayout::ColorAttachment
@@ -466,7 +466,7 @@ TEST_P(GfxCppQuerySetTest, BeginOcclusionQueryInRenderPass)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::RenderAttachment
     };
 
@@ -475,7 +475,7 @@ TEST_P(GfxCppQuerySetTest, BeginOcclusionQueryInRenderPass)
 
     gfx::TextureViewDescriptor viewDesc{
         .viewType = gfx::TextureViewType::View2D,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -533,7 +533,7 @@ TEST_P(GfxCppQuerySetTest, EndOcclusionQueryInRenderPass)
 
     // Create render pass
     gfx::RenderPassColorAttachmentTarget colorTarget{
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .sampleCount = gfx::SampleCount::Count1,
         .ops = { gfx::LoadOp::Clear, gfx::StoreOp::Store },
         .finalLayout = gfx::TextureLayout::ColorAttachment
@@ -558,7 +558,7 @@ TEST_P(GfxCppQuerySetTest, EndOcclusionQueryInRenderPass)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = gfx::SampleCount::Count1,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .usage = gfx::TextureUsage::RenderAttachment
     };
 
@@ -566,7 +566,7 @@ TEST_P(GfxCppQuerySetTest, EndOcclusionQueryInRenderPass)
     ASSERT_NE(colorTexture, nullptr);
 
     auto colorView = colorTexture->createView({ .viewType = gfx::TextureViewType::View2D,
-        .format = gfx::TextureFormat::R8G8B8A8Unorm,
+        .format = gfx::Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,

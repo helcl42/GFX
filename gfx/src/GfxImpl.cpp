@@ -573,7 +573,7 @@ GfxResult gfxSurfaceGetInfo(GfxSurface surface, GfxSurfaceInfo* outInfo)
     return backend->surfaceGetInfo(surface, outInfo);
 }
 
-GfxResult gfxSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats)
+GfxResult gfxSurfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxFormat* formats)
 {
     if (!surface || !formatCount) {
         return GFX_RESULT_ERROR_INVALID_ARGUMENT;
@@ -1444,7 +1444,7 @@ uint64_t gfxAlignDown(uint64_t value, uint64_t alignment)
     return gfx::util::alignDown(value, alignment);
 }
 
-uint32_t gfxGetFormatBytesPerPixel(GfxTextureFormat format)
+uint32_t gfxGetFormatBytesPerPixel(GfxFormat format)
 {
     return gfx::util::getFormatBytesPerPixel(format);
 }

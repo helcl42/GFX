@@ -67,7 +67,7 @@ TEST_P(TextureViewImplTest, CreateTextureView)
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding
     };
 
@@ -77,7 +77,7 @@ TEST_P(TextureViewImplTest, CreateTextureView)
     // Create texture view using C++ API
     TextureViewDescriptor viewDesc{
         .viewType = TextureViewType::View2D,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -99,7 +99,7 @@ TEST_P(TextureViewImplTest, CreateTextureViewWithMipLevel)
         .arrayLayerCount = 1,
         .mipLevelCount = 4,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding
     };
 
@@ -109,7 +109,7 @@ TEST_P(TextureViewImplTest, CreateTextureViewWithMipLevel)
     // Create texture view for a specific mip level
     TextureViewDescriptor viewDesc{
         .viewType = TextureViewType::View2D,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 2,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -131,7 +131,7 @@ TEST_P(TextureViewImplTest, CreateMultipleViews_SameTexture)
         .arrayLayerCount = 1,
         .mipLevelCount = 4,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding
     };
 
@@ -141,7 +141,7 @@ TEST_P(TextureViewImplTest, CreateMultipleViews_SameTexture)
     // Create first view
     TextureViewDescriptor viewDesc1{
         .viewType = TextureViewType::View2D,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 2,
         .baseArrayLayer = 0,
@@ -154,7 +154,7 @@ TEST_P(TextureViewImplTest, CreateMultipleViews_SameTexture)
     // Create second view
     TextureViewDescriptor viewDesc2{
         .viewType = TextureViewType::View2D,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 2,
         .mipLevelCount = 2,
         .baseArrayLayer = 0,
@@ -177,7 +177,7 @@ TEST_P(TextureViewImplTest, CreateView1DArray)
         .arrayLayerCount = 4,
         .mipLevelCount = 1,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding
     };
 
@@ -187,7 +187,7 @@ TEST_P(TextureViewImplTest, CreateView1DArray)
     // Create 1D array view
     TextureViewDescriptor viewDesc{
         .viewType = TextureViewType::View1DArray,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -209,7 +209,7 @@ TEST_P(TextureViewImplTest, CreateView2DArray)
         .arrayLayerCount = 6,
         .mipLevelCount = 1,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding
     };
 
@@ -219,7 +219,7 @@ TEST_P(TextureViewImplTest, CreateView2DArray)
     // Create 2D array view
     TextureViewDescriptor viewDesc{
         .viewType = TextureViewType::View2DArray,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
@@ -240,7 +240,7 @@ TEST_P(TextureViewImplTest, CreateCubeTextureView)
         .arrayLayerCount = 6,
         .mipLevelCount = 1,
         .sampleCount = SampleCount::Count1,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .usage = TextureUsage::TextureBinding
     };
 
@@ -250,7 +250,7 @@ TEST_P(TextureViewImplTest, CreateCubeTextureView)
     // Create cube view
     TextureViewDescriptor viewDesc{
         .viewType = TextureViewType::ViewCube,
-        .format = TextureFormat::R8G8B8A8Unorm,
+        .format = Format::R8G8B8A8Unorm,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,

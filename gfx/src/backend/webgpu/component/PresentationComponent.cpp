@@ -70,7 +70,7 @@ GfxResult PresentationComponent::surfaceGetInfo(GfxSurface surface, GfxSurfaceIn
     return GFX_RESULT_SUCCESS;
 }
 
-GfxResult PresentationComponent::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxTextureFormat* formats) const
+GfxResult PresentationComponent::surfaceEnumerateSupportedFormats(GfxSurface surface, uint32_t* formatCount, GfxFormat* formats) const
 {
     GfxResult validationResult = validator::validateSurfaceEnumerateSupportedFormats(surface, formatCount);
     if (validationResult != GFX_RESULT_SUCCESS) {
@@ -89,7 +89,7 @@ GfxResult PresentationComponent::surfaceEnumerateSupportedFormats(GfxSurface sur
         return GFX_RESULT_SUCCESS;
     }
 
-    // Convert to GfxTextureFormat
+    // Convert to GfxFormat
     if (formats) {
         uint32_t copyCount = std::min(count, *formatCount);
         for (uint32_t i = 0; i < copyCount; ++i) {

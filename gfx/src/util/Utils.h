@@ -10,7 +10,7 @@ uint64_t alignUp(uint64_t value, uint64_t alignment);
 uint64_t alignDown(uint64_t value, uint64_t alignment);
 
 // Format utilities
-uint32_t getFormatBytesPerPixel(GfxTextureFormat format);
+uint32_t getFormatBytesPerPixel(GfxFormat format);
 
 // Result to string conversion
 const char* resultToString(GfxResult result);
