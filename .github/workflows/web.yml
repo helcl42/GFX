@@ -72,9 +72,9 @@ jobs:
 
     - name: Deploy Web
       run: |
-        mkdir -p deploy
-        cp -r build_web/examples/web/* deploy/
-        # Copy the clean template from your repo to the deploy folder
+        mkdir -p public
+        cp -r build_web/examples/web/* public/
+        # Copy the clean template from your repo to the public folder
         cp web/index.html public/index.html || true
 
     - name: Upload Pages Artifact
