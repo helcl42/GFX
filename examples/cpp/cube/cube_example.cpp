@@ -85,21 +85,59 @@ struct UniformData {
     std::array<std::array<float, 4>, 4> projection; // Projection matrix
 };
 
+// Per-frame resources
+struct PerFrameResources {
+    std::shared_ptr<gfx::CommandEncoder> commandEncoder;
+    std::shared_ptr<gfx::Semaphore> imageAvailableSemaphore;
+    std::shared_ptr<gfx::Semaphore> renderFinishedSemaphore;
+    std::shared_ptr<gfx::Fence> inFlightFence;
+    std::vector<std::shared_ptr<gfx::BindGroup>> uniformBindGroups;
+};
+
+namespace util {
+std::vector<uint8_t> loadBinaryFile(const char* filepath);
+std::string loadTextFile(const char* filepath);
+} // namespace util
+
+namespace math {
+void matrixIdentity(std::array<std::array<float, 4>, 4>& matrix);
+void matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fovy, float aspect, float nearPlane, float farPlane, gfx::Backend backend);
+void matrixLookAt(std::array<std::array<float, 4>, 4>& matrix, float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ);
+void matrixRotateX(std::array<std::array<float, 4>, 4>& matrix, float angle);
+void matrixRotateY(std::array<std::array<float, 4>, 4>& matrix, float angle);
+void matrixMultiply(std::array<std::array<float, 4>, 4>& result, const std::array<std::array<float, 4>, 4>& a, const std::array<std::array<float, 4>, 4>& b);
+bool vectorNormalize(float& x, float& y, float& z);
+} // namespace math
+
 class CubeApp {
 public:
-    bool initialize();
+    CubeApp() = default;
+    ~CubeApp() = default;
+
+    bool init();
     void run();
     void cleanup();
 
 private:
-    bool initializeGLFW();
-    bool initializeGraphics();
-    bool createSyncObjects();
-    bool createRenderingResources();
-    void cleanupRenderingResources();
+    bool createWindow(uint32_t width, uint32_t height);
+    void destroyWindow();
+    bool createGraphics();
+    void destroyGraphics();
+    bool createPerFrameResources();
+    void destroyPerFrameResources();
     bool createSizeDependentResources(uint32_t width, uint32_t height);
-    void cleanupSizeDependentResources();
+    void destroySizeDependentResources();
+    bool createGeometry();
+    void destroyGeometry();
+    bool createUniformBuffer();
+    void destroyUniformBuffer();
+    bool createShaders();
+    void destroyShaders();
+    bool createRenderingResources();
+    void destroyRenderingResources();
     bool createRenderPipeline();
+    void destroyRenderPipeline();
+
     void updateCube(int cubeIndex);
     void update(float deltaTime);
     void render();
@@ -108,27 +146,14 @@ private:
 #if defined(__EMSCRIPTEN__)
     static void emscriptenMainLoop(void* userData);
 #endif
-    gfx::PlatformWindowHandle extractNativeHandle();
-    std::vector<uint8_t> loadBinaryFile(const char* filepath);
-    std::string loadTextFile(const char* filepath);
 
-    // Matrix math utilities
-    void matrixIdentity(std::array<std::array<float, 4>, 4>& matrix);
-    void matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fovy, float aspect, float nearPlane, float farPlane, gfx::Backend backend);
-    void matrixLookAt(std::array<std::array<float, 4>, 4>& matrix,
-        float eyeX, float eyeY, float eyeZ,
-        float centerX, float centerY, float centerZ,
-        float upX, float upY, float upZ);
-    void matrixRotateX(std::array<std::array<float, 4>, 4>& matrix, float angle);
-    void matrixRotateY(std::array<std::array<float, 4>, 4>& matrix, float angle);
-    void matrixMultiply(std::array<std::array<float, 4>, 4>& result,
-        const std::array<std::array<float, 4>, 4>& a,
-        const std::array<std::array<float, 4>, 4>& b);
-    bool vectorNormalize(float& x, float& y, float& z);
+    gfx::PlatformWindowHandle getPlatformWindowHandle();
 
+    static void errorCallback(int error, const char* description);
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+private:
     GLFWwindow* window = nullptr;
     std::shared_ptr<gfx::Instance> instance;
     std::shared_ptr<gfx::Adapter> adapter;
@@ -162,17 +187,11 @@ private:
     uint32_t previousWidth = WINDOW_WIDTH;
     uint32_t previousHeight = WINDOW_HEIGHT;
 
-    // Per-frame resources (for frames in flight)
-    size_t framesInFlightCount = 0; // Dynamic based on surface capabilities
-    std::shared_ptr<gfx::Buffer> sharedUniformBuffer; // Single buffer for all frames and cubes
-    size_t uniformAlignedSize = 0; // Aligned size per uniform buffer
-    std::vector<std::vector<std::shared_ptr<gfx::BindGroup>>> uniformBindGroups; // Dynamic: [framesInFlightCount][CUBE_COUNT]
-    std::vector<std::shared_ptr<gfx::CommandEncoder>> commandEncoders; // Dynamic: [framesInFlightCount]
-
-    // Per-frame synchronization
-    std::vector<std::shared_ptr<gfx::Semaphore>> imageAvailableSemaphores; // Dynamic: [framesInFlightCount]
-    std::vector<std::shared_ptr<gfx::Semaphore>> renderFinishedSemaphores; // Dynamic: [framesInFlightCount]
-    std::vector<std::shared_ptr<gfx::Fence>> inFlightFences; // Dynamic: [framesInFlightCount]
+    // Per-frame resources
+    size_t framesInFlightCount = 0;
+    std::shared_ptr<gfx::Buffer> sharedUniformBuffer;
+    size_t uniformAlignedSize = 0;
+    std::vector<PerFrameResources> frameResources;
     size_t currentFrame = 0;
 
     // Animation state
@@ -187,25 +206,37 @@ private:
     float fpsFrameTimeMax = 0.0f;
 };
 
-bool CubeApp::initialize()
+bool CubeApp::init()
 {
-    if (!initializeGLFW()) {
+    // Initialize in order of dependencies
+
+    // 1. Create window
+    if (!createWindow(windowWidth, windowHeight)) {
+        std::cerr << "Failed to create window" << std::endl;
         return false;
     }
 
-    if (!initializeGraphics()) {
+    // 2. Create graphics context (instance, adapter, device, surface)
+    if (!createGraphics()) {
+        std::cerr << "Failed to create graphics" << std::endl;
         return false;
     }
 
+    // 3. Create size-dependent resources (swapchain, framebuffers, render pass)
     if (!createSizeDependentResources(windowWidth, windowHeight)) {
+        std::cerr << "Failed to create size-dependent resources" << std::endl;
         return false;
     }
 
-    if (!createSyncObjects()) {
-        return false;
-    }
-
+    // 4. Create rendering resources (geometry, uniform buffer, shaders, pipeline)
     if (!createRenderingResources()) {
+        std::cerr << "Failed to create rendering resources" << std::endl;
+        return false;
+    }
+
+    // 5. Create per-frame resources (sync objects and bind groups - depends on uniform buffer and layouts)
+    if (!createPerFrameResources()) {
+        std::cerr << "Failed to create per-frame resources" << std::endl;
         return false;
     }
 
@@ -218,8 +249,52 @@ bool CubeApp::initialize()
     return true;
 }
 
-bool CubeApp::initializeGLFW()
+void CubeApp::run()
 {
+    // Run main loop (platform-specific)
+#if defined(__EMSCRIPTEN__)
+    // Note: emscripten_set_main_loop_arg returns immediately and never blocks
+    // Cleanup happens in emscriptenMainLoop when the loop exits
+    // Execution continues in the browser event loop
+    emscripten_set_main_loop_arg(CubeApp::emscriptenMainLoop, this, 0, 1);
+#else
+    while (mainLoopIteration()) {
+        // Loop continues until mainLoopIteration returns false
+    }
+#endif
+}
+
+void CubeApp::cleanup()
+{
+    // Wait for device to finish
+    if (device) {
+        device->waitIdle();
+    }
+
+    // Destroy resources in reverse order of creation
+    // 7. Destroy per-frame resources (includes bind groups and sync objects)
+    destroyPerFrameResources();
+
+    // 6. Destroy size-dependent resources
+    destroySizeDependentResources();
+
+    // 5. Destroy rendering resources (pipeline, shaders, uniform buffer, geometry)
+    destroyRenderingResources();
+
+    // 4. Destroy graphics resources
+    destroyGraphics();
+
+    // 3. Destroy window
+    destroyWindow();
+
+    // 2. Unload backend
+    gfx::unloadBackend(BACKEND_API);
+}
+
+bool CubeApp::createWindow(uint32_t width, uint32_t height)
+{
+    glfwSetErrorCallback(errorCallback);
+
     // Initialize GLFW
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
@@ -230,7 +305,7 @@ bool CubeApp::initializeGLFW()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // No OpenGL context
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    window = glfwCreateWindow(windowWidth, windowHeight, "Rotating Cube Example (C++ API)", nullptr, nullptr);
+    window = glfwCreateWindow(width, height, "Rotating Cube Example (C++ API)", nullptr, nullptr);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -242,10 +317,22 @@ bool CubeApp::initializeGLFW()
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
     glfwSetKeyCallback(window, keyCallback);
 
+    this->windowWidth = width;
+    this->windowHeight = height;
+
     return true;
 }
 
-bool CubeApp::initializeGraphics()
+void CubeApp::destroyWindow()
+{
+    if (window) {
+        glfwDestroyWindow(window);
+        window = nullptr;
+    }
+    glfwTerminate();
+}
+
+bool CubeApp::createGraphics()
 {
     // Set up logging callback
     gfx::setLogCallback(logCallback);
@@ -305,7 +392,7 @@ bool CubeApp::initializeGraphics()
 
         gfx::SurfaceDescriptor surfaceDesc{};
         surfaceDesc.label = "Main Surface";
-        surfaceDesc.windowHandle = extractNativeHandle();
+        surfaceDesc.windowHandle = getPlatformWindowHandle();
 
         surface = device->createSurface(surfaceDesc);
         if (!surface) {
@@ -318,6 +405,15 @@ bool CubeApp::initializeGraphics()
         std::cerr << "Failed to initialize graphics: " << e.what() << std::endl;
         return false;
     }
+}
+
+void CubeApp::destroyGraphics()
+{
+    surface.reset();
+    queue.reset();
+    device.reset();
+    adapter.reset();
+    instance.reset();
 }
 
 bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
@@ -514,31 +610,55 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
     }
 }
 
-bool CubeApp::createSyncObjects()
+void CubeApp::destroyPerFrameResources()
+{
+    // Wait for device idle before destroying resources
+    if (device) {
+        device->waitIdle();
+    }
+
+    // Clean up per-frame resources
+    for (auto& frame : frameResources) {
+        // Clean up bind groups
+        for (auto& bindGroup : frame.uniformBindGroups) {
+            bindGroup.reset();
+        }
+        frame.uniformBindGroups.clear();
+
+        // Clean up sync objects and command encoder
+        frame.commandEncoder.reset();
+        frame.inFlightFence.reset();
+        frame.renderFinishedSemaphore.reset();
+        frame.imageAvailableSemaphore.reset();
+    }
+
+    frameResources.clear();
+}
+
+bool CubeApp::createPerFrameResources()
 {
     try {
-        // Resize vectors for dynamic frame count
-        imageAvailableSemaphores.resize(framesInFlightCount);
-        renderFinishedSemaphores.resize(framesInFlightCount);
-        inFlightFences.resize(framesInFlightCount);
-        commandEncoders.resize(framesInFlightCount);
+        // Resize frameResources vector for dynamic frame count
+        frameResources.resize(framesInFlightCount);
 
-        // Create synchronization objects for each frame in flight
+        // Create per-frame resources for each frame in flight
         for (size_t i = 0; i < framesInFlightCount; ++i) {
+            auto& frame = frameResources[i];
+
             // Create binary semaphores for image availability and render completion
             gfx::SemaphoreDescriptor semDesc{};
             semDesc.label = "Image Available Semaphore Frame " + std::to_string(i);
             semDesc.type = gfx::SemaphoreType::Binary;
 
-            imageAvailableSemaphores[i] = device->createSemaphore(semDesc);
-            if (!imageAvailableSemaphores[i]) {
+            frame.imageAvailableSemaphore = device->createSemaphore(semDesc);
+            if (!frame.imageAvailableSemaphore) {
                 std::cerr << "Failed to create image available semaphore " << i << std::endl;
                 return false;
             }
 
             semDesc.label = "Render Finished Semaphore Frame " + std::to_string(i);
-            renderFinishedSemaphores[i] = device->createSemaphore(semDesc);
-            if (!renderFinishedSemaphores[i]) {
+            frame.renderFinishedSemaphore = device->createSemaphore(semDesc);
+            if (!frame.renderFinishedSemaphore) {
                 std::cerr << "Failed to create render finished semaphore " << i << std::endl;
                 return false;
             }
@@ -548,28 +668,51 @@ bool CubeApp::createSyncObjects()
             fenceDesc.label = "In Flight Fence Frame " + std::to_string(i);
             fenceDesc.signaled = true;
 
-            inFlightFences[i] = device->createFence(fenceDesc);
-            if (!inFlightFences[i]) {
+            frame.inFlightFence = device->createFence(fenceDesc);
+            if (!frame.inFlightFence) {
                 std::cerr << "Failed to create in flight fence " << i << std::endl;
                 return false;
             }
 
             // Create command encoder for this frame
-            commandEncoders[i] = device->createCommandEncoder({ .label = "Command Encoder Frame " + std::to_string(i) });
-            if (!commandEncoders[i]) {
+            frame.commandEncoder = device->createCommandEncoder({ .label = "Command Encoder Frame " + std::to_string(i) });
+            if (!frame.commandEncoder) {
                 std::cerr << "Failed to create command encoder " << i << std::endl;
                 return false;
+            }
+
+            // Resize uniformBindGroups array for this frame
+            frame.uniformBindGroups.resize(CUBE_COUNT);
+
+            // Create bind groups (one per cube) using offsets into shared buffer
+            for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+                gfx::BindGroupEntry uniformEntry{};
+                uniformEntry.binding = 0;
+                uniformEntry.resource = sharedUniformBuffer;
+                uniformEntry.offset = (i * CUBE_COUNT + cubeIdx) * uniformAlignedSize;
+                uniformEntry.size = sizeof(UniformData);
+
+                gfx::BindGroupDescriptor uniformBindGroupDesc{};
+                uniformBindGroupDesc.label = "Uniform Bind Group Frame " + std::to_string(i) + " Cube " + std::to_string(cubeIdx);
+                uniformBindGroupDesc.layout = uniformBindGroupLayout;
+                uniformBindGroupDesc.entries = { uniformEntry };
+
+                frame.uniformBindGroups[cubeIdx] = device->createBindGroup(uniformBindGroupDesc);
+                if (!frame.uniformBindGroups[cubeIdx]) {
+                    std::cerr << "Failed to create uniform bind group " << i << " cube " << cubeIdx << std::endl;
+                    return false;
+                }
             }
         }
 
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "Failed to create sync objects: " << e.what() << std::endl;
+        std::cerr << "Failed to create per-frame resources: " << e.what() << std::endl;
         return false;
     }
 }
 
-void CubeApp::cleanupSizeDependentResources()
+void CubeApp::destroySizeDependentResources()
 {
     // Clean up framebuffers and render pass
     framebuffers.clear();
@@ -585,25 +728,7 @@ void CubeApp::cleanupSizeDependentResources()
     swapchain.reset();
 }
 
-void CubeApp::cleanupRenderingResources()
-{
-    // Clean up size-independent rendering resources
-    renderPipeline.reset();
-    fragmentShader.reset();
-    vertexShader.reset();
-    uniformBindGroupLayout.reset();
-    for (size_t i = 0; i < framesInFlightCount; ++i) {
-        for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
-            uniformBindGroups[i][cubeIdx].reset();
-        }
-    }
-    uniformBindGroups.clear();
-    sharedUniformBuffer.reset();
-    indexBuffer.reset();
-    vertexBuffer.reset();
-}
-
-bool CubeApp::createRenderingResources()
+bool CubeApp::createGeometry()
 {
     try {
         // Create cube vertices (8 vertices for a cube)
@@ -664,6 +789,22 @@ bool CubeApp::createRenderingResources()
         queue->writeBuffer(vertexBuffer, 0, vertices.data(), sizeof(vertices));
         queue->writeBuffer(indexBuffer, 0, indices.data(), sizeof(indices));
 
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create geometry: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void CubeApp::destroyGeometry()
+{
+    indexBuffer.reset();
+    vertexBuffer.reset();
+}
+
+bool CubeApp::createUniformBuffer()
+{
+    try {
         // Create single large uniform buffer for all frames and cubes with proper alignment
         auto limits = device->getLimits();
 
@@ -701,34 +842,22 @@ bool CubeApp::createRenderingResources()
             return false;
         }
 
-        // Resize uniformBindGroups vector
-        uniformBindGroups.resize(framesInFlightCount);
-        for (auto& frameBindGroups : uniformBindGroups) {
-            frameBindGroups.resize(CUBE_COUNT);
-        }
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create uniform buffer: " << e.what() << std::endl;
+        return false;
+    }
+}
 
-        // Create bind groups (one per frame per cube) using offsets into shared buffer
-        for (size_t i = 0; i < framesInFlightCount; ++i) {
-            for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
-                gfx::BindGroupEntry uniformEntry{};
-                uniformEntry.binding = 0;
-                uniformEntry.resource = sharedUniformBuffer;
-                uniformEntry.offset = (i * CUBE_COUNT + cubeIdx) * uniformAlignedSize;
-                uniformEntry.size = sizeof(UniformData);
+void CubeApp::destroyUniformBuffer()
+{
+    uniformBindGroupLayout.reset();
+    sharedUniformBuffer.reset();
+}
 
-                gfx::BindGroupDescriptor uniformBindGroupDesc{};
-                uniformBindGroupDesc.label = "Uniform Bind Group Frame " + std::to_string(i) + " Cube " + std::to_string(cubeIdx);
-                uniformBindGroupDesc.layout = uniformBindGroupLayout;
-                uniformBindGroupDesc.entries = { uniformEntry };
-
-                uniformBindGroups[i][cubeIdx] = device->createBindGroup(uniformBindGroupDesc);
-                if (!uniformBindGroups[i][cubeIdx]) {
-                    std::cerr << "Failed to create uniform bind group " << i << " cube " << cubeIdx << std::endl;
-                    return false;
-                }
-            }
-        }
-
+bool CubeApp::createShaders()
+{
+    try {
         // Load shaders (WGSL for WebGPU, SPIR-V for Vulkan)
         gfx::ShaderSourceType shaderSourceType;
         std::vector<uint8_t> vertexShaderCode;
@@ -739,8 +868,8 @@ bool CubeApp::createRenderingResources()
         if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
             shaderSourceType = gfx::ShaderSourceType::SPIRV;
             std::cout << "Loading SPIR-V shaders..." << std::endl;
-            auto vertexSpirv = loadBinaryFile("shaders/cube.vert.spv");
-            auto fragmentSpirv = loadBinaryFile("shaders/cube.frag.spv");
+            auto vertexSpirv = util::loadBinaryFile("shaders/cube.vert.spv");
+            auto fragmentSpirv = util::loadBinaryFile("shaders/cube.frag.spv");
             if (vertexSpirv.empty() || fragmentSpirv.empty()) {
                 std::cerr << "Failed to load SPIR-V shader files" << std::endl;
                 return false;
@@ -752,8 +881,8 @@ bool CubeApp::createRenderingResources()
         else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
             shaderSourceType = gfx::ShaderSourceType::WGSL;
             std::cout << "Loading WGSL shaders..." << std::endl;
-            auto vertexWgsl = loadTextFile("shaders/cube.vert.wgsl");
-            auto fragmentWgsl = loadTextFile("shaders/cube.frag.wgsl");
+            auto vertexWgsl = util::loadTextFile("shaders/cube.vert.wgsl");
+            auto fragmentWgsl = util::loadTextFile("shaders/cube.frag.wgsl");
             if (vertexWgsl.empty() || fragmentWgsl.empty()) {
                 std::cerr << "Failed to load WGSL shader files" << std::endl;
                 return false;
@@ -791,16 +920,62 @@ bool CubeApp::createRenderingResources()
             return false;
         }
 
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create shaders: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void CubeApp::destroyShaders()
+{
+    fragmentShader.reset();
+    vertexShader.reset();
+}
+
+bool CubeApp::createRenderingResources()
+{
+    try {
+        // 1. Create geometry (vertex/index buffers)
+        if (!createGeometry()) {
+            return false;
+        }
+
+        // 2. Create uniform buffer and layout
+        if (!createUniformBuffer()) {
+            return false;
+        }
+
+        // 3. Create shaders
+        if (!createShaders()) {
+            return false;
+        }
+
         // Initialize animation state
         rotationAngleX = 0.0f;
         rotationAngleY = 0.0f;
 
-        // Create render pipeline
+        // 4. Create render pipeline
         return createRenderPipeline();
     } catch (const std::exception& e) {
         std::cerr << "Resource creation error: " << e.what() << std::endl;
         return false;
     }
+}
+
+void CubeApp::destroyRenderingResources()
+{
+    // 4. Destroy render pipeline
+    destroyRenderPipeline();
+
+    // 3. Destroy shaders
+    destroyShaders();
+
+    // 2. Destroy uniform buffer and layout
+    destroyUniformBuffer();
+
+    // 1. Destroy geometry
+    destroyGeometry();
 }
 
 bool CubeApp::createRenderPipeline()
@@ -872,6 +1047,11 @@ bool CubeApp::createRenderPipeline()
     }
 }
 
+void CubeApp::destroyRenderPipeline()
+{
+    renderPipeline.reset();
+}
+
 void CubeApp::updateCube(int cubeIndex)
 {
     UniformData uniforms{};
@@ -879,19 +1059,19 @@ void CubeApp::updateCube(int cubeIndex)
     // Create rotation matrices (combine X and Y rotations)
     // Each cube rotates slightly differently
     std::array<std::array<float, 4>, 4> rotX, rotY, tempModel, translation;
-    matrixRotateX(rotX, (rotationAngleX + cubeIndex * 30.0f) * M_PI / 180.0f);
-    matrixRotateY(rotY, (rotationAngleY + cubeIndex * 45.0f) * M_PI / 180.0f);
-    matrixMultiply(tempModel, rotY, rotX);
+    math::matrixIdentity(tempModel);
+    math::matrixRotateX(rotX, (rotationAngleX + cubeIndex * 30.0f) * M_PI / 180.0f);
+    math::matrixRotateY(rotY, (rotationAngleY + cubeIndex * 45.0f) * M_PI / 180.0f);
+    math::matrixMultiply(tempModel, rotY, rotX);
 
     // Position cubes side by side: left (-3, 0, 0), center (0, 0, 0), right (3, 0, 0)
-    matrixIdentity(translation);
+    math::matrixIdentity(translation);
     translation[3][0] = (cubeIndex - 1) * 3.0f; // x offset: -3, 0, 3
 
     // Apply translation after rotation
-    matrixMultiply(uniforms.model, tempModel, translation);
-
+    math::matrixMultiply(uniforms.model, tempModel, translation);
     // Create view matrix (camera positioned at 0, 0, 10 looking at origin)
-    matrixLookAt(uniforms.view,
+    math::matrixLookAt(uniforms.view,
         0.0f, 0.0f, 10.0f, // eye position - pulled back to see all 3 cubes
         0.0f, 0.0f, 0.0f, // look at point
         0.0f, 1.0f, 0.0f); // up vector
@@ -899,7 +1079,7 @@ void CubeApp::updateCube(int cubeIndex)
     // Create projection matrix
     auto swapchainInfo = swapchain->getInfo();
     float aspect = (float)swapchainInfo.extent.width / (float)swapchainInfo.extent.height;
-    matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f, adapterInfo.backend);
+    math::matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f, adapterInfo.backend);
 
     // Upload uniform data to buffer at aligned offset
     // Formula: (frame * CUBE_COUNT + cube) * alignedSize
@@ -928,18 +1108,20 @@ void CubeApp::update(float deltaTime)
 void CubeApp::render()
 {
     try {
+        auto& frame = frameResources[currentFrame];
+
         // Wait for this frame's fence to be signaled
-        auto waitResult = inFlightFences[currentFrame]->wait(gfx::TimeoutInfinite);
+        auto waitResult = frame.inFlightFence->wait(gfx::TimeoutInfinite);
         if (!gfx::isSuccess(waitResult)) {
             throw std::runtime_error("Failed to wait for fence");
         }
-        inFlightFences[currentFrame]->reset();
+        frame.inFlightFence->reset();
 
         // Acquire next image with explicit synchronization
         uint32_t imageIndex;
         auto result = swapchain->acquireNextImage(
             gfx::TimeoutInfinite,
-            imageAvailableSemaphores[currentFrame],
+            frame.imageAvailableSemaphore,
             nullptr,
             &imageIndex);
 
@@ -949,7 +1131,7 @@ void CubeApp::render()
         }
 
         // Begin command encoder for reuse
-        auto commandEncoder = commandEncoders[currentFrame];
+        auto commandEncoder = frame.commandEncoder;
         commandEncoder->begin();
 
         // Begin render pass with the new API
@@ -978,7 +1160,7 @@ void CubeApp::render()
             // Draw CUBE_COUNT cubes at different positions
             for (int i = 0; i < CUBE_COUNT; ++i) {
                 // Bind the specific cube's bind group (no dynamic offsets)
-                renderPassEncoder->setBindGroup(0, uniformBindGroups[currentFrame][i]);
+                renderPassEncoder->setBindGroup(0, frame.uniformBindGroups[i]);
 
                 // Draw indexed (36 indices for the cube)
                 renderPassEncoder->drawIndexed(36, 1, 0, 0, 0);
@@ -991,9 +1173,9 @@ void CubeApp::render()
         // Submit with explicit synchronization
         gfx::SubmitDescriptor submitDescriptor{};
         submitDescriptor.commandEncoders = { commandEncoder };
-        submitDescriptor.waitSemaphores = { imageAvailableSemaphores[currentFrame] };
-        submitDescriptor.signalSemaphores = { renderFinishedSemaphores[currentFrame] };
-        submitDescriptor.signalFence = inFlightFences[currentFrame];
+        submitDescriptor.waitSemaphores = { frame.imageAvailableSemaphore };
+        submitDescriptor.signalSemaphores = { frame.renderFinishedSemaphore };
+        submitDescriptor.signalFence = frame.inFlightFence;
 
         auto submitResult = queue->submit(submitDescriptor);
         if (!gfx::isSuccess(submitResult)) {
@@ -1002,7 +1184,7 @@ void CubeApp::render()
 
         // Present with explicit synchronization
         gfx::PresentDescriptor presentDescriptor{};
-        presentDescriptor.waitSemaphores = { renderFinishedSemaphores[currentFrame] };
+        presentDescriptor.waitSemaphores = { frame.renderFinishedSemaphore };
 
         result = swapchain->present(presentDescriptor);
         if (result != gfx::Result::Success) {
@@ -1013,46 +1195,6 @@ void CubeApp::render()
         currentFrame = (currentFrame + 1) % framesInFlightCount;
     } catch (const std::exception& e) {
         std::cerr << "Render error: " << e.what() << std::endl;
-    }
-}
-
-gfx::PlatformWindowHandle CubeApp::extractNativeHandle()
-{
-    gfx::PlatformWindowHandle handle{};
-#if defined(__EMSCRIPTEN__)
-    handle = gfx::PlatformWindowHandle::fromEmscripten("#canvas");
-#elif defined(_WIN32)
-    // Windows: Get HWND and HINSTANCE
-    handle = gfx::PlatformWindowHandle::fromWin32(GetModuleHandle(nullptr), glfwGetWin32Window(window));
-    std::cout << "Extracted Win32 handle: HWND=" << handle.handle.win32.hwnd << ", HINSTANCE=" << handle.handle.win32.hinstance << std::endl;
-#elif defined(__linux__)
-    // handle = gfx::PlatformWindowHandle::fromXlib(glfwGetX11Display(), glfwGetX11Window(window));
-    // std::cout << "Extracted X11 handle: Window=" << handle.handle.xlib.window << ", Display=" << handle.handle.xlib.display << std::endl;
-    handle = gfx::PlatformWindowHandle::fromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
-    std::cout << "Extracted Wayland handle: Surface=" << handle.handle.wayland.surface << ", Display=" << handle.handle.wayland.display << std::endl;
-#elif defined(__APPLE__)
-    handle = gfx::PlatformWindowHandle::fromMetal(glfwGetCocoaWindow(window));
-    std::cout << "Extracted Metal handle: Layer=" << handle.handle.metal.layer << std::endl;
-#endif
-    return handle;
-}
-
-void CubeApp::framebufferResizeCallback(GLFWwindow* window, int width, int height)
-{
-    auto* app = static_cast<CubeApp*>(glfwGetWindowUserPointer(window));
-    if (app) {
-        app->windowWidth = static_cast<uint32_t>(width);
-        app->windowHeight = static_cast<uint32_t>(height);
-    }
-}
-
-void CubeApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    (void)scancode;
-    (void)mods; // Suppress unused parameter warnings
-
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 }
 
@@ -1079,7 +1221,7 @@ bool CubeApp::mainLoopIteration()
         device->waitIdle();
 
         // Recreate only size-dependent resources (including swapchain)
-        cleanupSizeDependentResources();
+        destroySizeDependentResources();
         if (!createSizeDependentResources(windowWidth, windowHeight)) {
             std::cerr << "Failed to recreate size-dependent resources after resize" << std::endl;
             return false;
@@ -1144,98 +1286,119 @@ void CubeApp::emscriptenMainLoop(void* userData)
 }
 #endif
 
-void CubeApp::run()
+gfx::PlatformWindowHandle CubeApp::getPlatformWindowHandle()
 {
-    // Run main loop (platform-specific)
+    gfx::PlatformWindowHandle handle{};
 #if defined(__EMSCRIPTEN__)
-    // Note: emscripten_set_main_loop_arg returns immediately and never blocks
-    // Cleanup happens in emscriptenMainLoop when the loop exits
-    // Execution continues in the browser event loop
-    emscripten_set_main_loop_arg(CubeApp::emscriptenMainLoop, this, 0, 1);
-#else
-    while (mainLoopIteration()) {
-        // Loop continues until mainLoopIteration returns false
-    }
+    handle = gfx::PlatformWindowHandle::fromEmscripten("#canvas");
+#elif defined(_WIN32)
+    // Windows: Get HWND and HINSTANCE
+    handle = gfx::PlatformWindowHandle::fromWin32(GetModuleHandle(nullptr), glfwGetWin32Window(window));
+    std::cout << "Extracted Win32 handle: HWND=" << handle.handle.win32.hwnd << ", HINSTANCE=" << handle.handle.win32.hinstance << std::endl;
+#elif defined(__linux__)
+    // handle = gfx::PlatformWindowHandle::fromXlib(glfwGetX11Display(), glfwGetX11Window(window));
+    // std::cout << "Extracted X11 handle: Window=" << handle.handle.xlib.window << ", Display=" << handle.handle.xlib.display << std::endl;
+    handle = gfx::PlatformWindowHandle::fromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
+    std::cout << "Extracted Wayland handle: Surface=" << handle.handle.wayland.surface << ", Display=" << handle.handle.wayland.display << std::endl;
+#elif defined(__APPLE__)
+    handle = gfx::PlatformWindowHandle::fromMetal(glfwGetCocoaWindow(window));
+    std::cout << "Extracted Metal handle: Layer=" << handle.handle.metal.layer << std::endl;
 #endif
+    return handle;
 }
 
-void CubeApp::cleanup()
+void CubeApp::errorCallback(int error, const char* description)
 {
-    // Wait for device to finish
-    if (device) {
-        device->waitIdle();
-    }
-
-    // Clean up size-dependent resources
-    cleanupSizeDependentResources();
-
-    // Clean up rendering resources
-    cleanupRenderingResources();
-
-    // Clean up per-frame resources (safely check sizes)
-    for (size_t i = 0; i < commandEncoders.size(); ++i) {
-        commandEncoders[i].reset();
-    }
-    for (size_t i = 0; i < inFlightFences.size(); ++i) {
-        inFlightFences[i].reset();
-    }
-    for (size_t i = 0; i < renderFinishedSemaphores.size(); ++i) {
-        renderFinishedSemaphores[i].reset();
-    }
-    for (size_t i = 0; i < imageAvailableSemaphores.size(); ++i) {
-        imageAvailableSemaphores[i].reset();
-    }
-
-    // Clean up bind groups (safely check both dimensions)
-    for (size_t i = 0; i < uniformBindGroups.size(); ++i) {
-        for (size_t cubeIdx = 0; cubeIdx < uniformBindGroups[i].size(); ++cubeIdx) {
-            uniformBindGroups[i][cubeIdx].reset();
-        }
-    }
-
-    // Clear vectors
-    commandEncoders.clear();
-    inFlightFences.clear();
-    renderFinishedSemaphores.clear();
-    imageAvailableSemaphores.clear();
-    uniformBindGroups.clear();
-
-    // Destroy shared uniform buffer
-    sharedUniformBuffer.reset();
-
-    // C++ destructors will handle cleanup automatically
-    // But we can explicitly reset shared_ptrs if needed
-    renderPipeline.reset();
-    fragmentShader.reset();
-    vertexShader.reset();
-    uniformBindGroupLayout.reset();
-    indexBuffer.reset();
-    vertexBuffer.reset();
-    framebuffers.clear();
-    renderPass.reset();
-    msaaColorTextureView.reset();
-    msaaColorTexture.reset();
-    depthTextureView.reset();
-    depthTexture.reset();
-    swapchain.reset();
-    surface.reset();
-    queue.reset();
-    device.reset();
-    adapter.reset();
-    instance.reset();
-
-    // Destroy GLFW resources
-    if (window) {
-        glfwDestroyWindow(window);
-        window = nullptr;
-    }
-    glfwTerminate();
-
-    gfx::unloadBackend(BACKEND_API);
+    std::cerr << "GLFW Error " << error << ": " << description << std::endl;
 }
 
-// Matrix math utility functions
-void CubeApp::matrixIdentity(std::array<std::array<float, 4>, 4>& matrix)
+void CubeApp::framebufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+    auto* app = static_cast<CubeApp*>(glfwGetWindowUserPointer(window));
+    if (app) {
+        app->windowWidth = static_cast<uint32_t>(width);
+        app->windowHeight = static_cast<uint32_t>(height);
+    }
+}
+
+void CubeApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    (void)scancode;
+    (void)mods; // Suppress unused parameter warnings
+
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+}
+
+namespace util {
+std::vector<uint8_t> loadBinaryFile(const char* filepath)
+{
+    std::FILE* file = std::fopen(filepath, "rb");
+    if (!file) {
+        std::cerr << "Failed to open file: " << filepath << std::endl;
+        return {};
+    }
+
+    // Get file size
+    std::fseek(file, 0, SEEK_END);
+    long fileSize = std::ftell(file);
+    std::fseek(file, 0, SEEK_SET);
+
+    if (fileSize <= 0) {
+        std::cerr << "Invalid file size for: " << filepath << std::endl;
+        std::fclose(file);
+        return {};
+    }
+
+    // Read file into vector
+    std::vector<uint8_t> buffer(fileSize);
+    size_t bytesRead = std::fread(buffer.data(), 1, fileSize, file);
+    std::fclose(file);
+
+    if (bytesRead != static_cast<size_t>(fileSize)) {
+        std::cerr << "Failed to read complete file: " << filepath << std::endl;
+        return {};
+    }
+
+    return buffer;
+}
+
+std::string loadTextFile(const char* filepath)
+{
+    std::FILE* file = std::fopen(filepath, "r");
+    if (!file) {
+        std::cerr << "Failed to open file: " << filepath << std::endl;
+        return {};
+    }
+
+    // Get file size
+    std::fseek(file, 0, SEEK_END);
+    long fileSize = std::ftell(file);
+    std::fseek(file, 0, SEEK_SET);
+
+    if (fileSize <= 0) {
+        std::cerr << "Invalid file size for: " << filepath << std::endl;
+        std::fclose(file);
+        return {};
+    }
+
+    // Read file into string
+    std::string buffer(fileSize, '\0');
+    size_t bytesRead = std::fread(buffer.data(), 1, fileSize, file);
+    std::fclose(file);
+
+    if (bytesRead != static_cast<size_t>(fileSize)) {
+        std::cerr << "Failed to read complete file: " << filepath << std::endl;
+        return {};
+    }
+
+    return buffer;
+}
+} // namespace util
+
+namespace math {
+void matrixIdentity(std::array<std::array<float, 4>, 4>& matrix)
 {
     matrix = { { { { 1.0f, 0.0f, 0.0f, 0.0f } },
         { { 0.0f, 1.0f, 0.0f, 0.0f } },
@@ -1243,7 +1406,7 @@ void CubeApp::matrixIdentity(std::array<std::array<float, 4>, 4>& matrix)
         { { 0.0f, 0.0f, 0.0f, 1.0f } } } };
 }
 
-void CubeApp::matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fovy, float aspect, float nearPlane, float farPlane, gfx::Backend backend)
+void matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fovy, float aspect, float nearPlane, float farPlane, gfx::Backend backend)
 {
     matrix = { { { { 0.0f, 0.0f, 0.0f, 0.0f } },
         { { 0.0f, 0.0f, 0.0f, 0.0f } },
@@ -1262,7 +1425,7 @@ void CubeApp::matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, flo
     matrix[3][2] = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
 }
 
-void CubeApp::matrixLookAt(std::array<std::array<float, 4>, 4>& matrix, float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ)
+void matrixLookAt(std::array<std::array<float, 4>, 4>& matrix, float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ)
 {
     // Calculate forward vector
     float fx = centerX - eyeX;
@@ -1309,7 +1472,7 @@ void CubeApp::matrixLookAt(std::array<std::array<float, 4>, 4>& matrix, float ey
     matrix[3][3] = 1.0f;
 }
 
-void CubeApp::matrixRotateY(std::array<std::array<float, 4>, 4>& matrix, float angle)
+void matrixRotateY(std::array<std::array<float, 4>, 4>& matrix, float angle)
 {
     float c = std::cos(angle);
     float s = std::sin(angle);
@@ -1321,7 +1484,7 @@ void CubeApp::matrixRotateY(std::array<std::array<float, 4>, 4>& matrix, float a
     matrix[2][2] = c;
 }
 
-void CubeApp::matrixRotateX(std::array<std::array<float, 4>, 4>& matrix, float angle)
+void matrixRotateX(std::array<std::array<float, 4>, 4>& matrix, float angle)
 {
     float c = std::cos(angle);
     float s = std::sin(angle);
@@ -1333,9 +1496,7 @@ void CubeApp::matrixRotateX(std::array<std::array<float, 4>, 4>& matrix, float a
     matrix[2][2] = c;
 }
 
-void CubeApp::matrixMultiply(std::array<std::array<float, 4>, 4>& result,
-    const std::array<std::array<float, 4>, 4>& a,
-    const std::array<std::array<float, 4>, 4>& b)
+void matrixMultiply(std::array<std::array<float, 4>, 4>& result, const std::array<std::array<float, 4>, 4>& a, const std::array<std::array<float, 4>, 4>& b)
 {
     std::array<std::array<float, 4>, 4> temp;
     for (int i = 0; i < 4; ++i) {
@@ -1349,7 +1510,7 @@ void CubeApp::matrixMultiply(std::array<std::array<float, 4>, 4>& result,
     result = temp;
 }
 
-bool CubeApp::vectorNormalize(float& x, float& y, float& z)
+bool vectorNormalize(float& x, float& y, float& z)
 {
     const float epsilon = 1e-6f;
     float len = sqrtf(x * x + y * y + z * z);
@@ -1363,70 +1524,7 @@ bool CubeApp::vectorNormalize(float& x, float& y, float& z)
     z /= len;
     return true;
 }
-
-std::vector<uint8_t> CubeApp::loadBinaryFile(const char* filepath)
-{
-    std::FILE* file = std::fopen(filepath, "rb");
-    if (!file) {
-        std::cerr << "Failed to open file: " << filepath << std::endl;
-        return {};
-    }
-
-    // Get file size
-    std::fseek(file, 0, SEEK_END);
-    long fileSize = std::ftell(file);
-    std::fseek(file, 0, SEEK_SET);
-
-    if (fileSize <= 0) {
-        std::cerr << "Invalid file size for: " << filepath << std::endl;
-        std::fclose(file);
-        return {};
-    }
-
-    // Read file into vector
-    std::vector<uint8_t> buffer(fileSize);
-    size_t bytesRead = std::fread(buffer.data(), 1, fileSize, file);
-    std::fclose(file);
-
-    if (bytesRead != static_cast<size_t>(fileSize)) {
-        std::cerr << "Failed to read complete file: " << filepath << std::endl;
-        return {};
-    }
-
-    return buffer;
-}
-
-std::string CubeApp::loadTextFile(const char* filepath)
-{
-    std::FILE* file = std::fopen(filepath, "r");
-    if (!file) {
-        std::cerr << "Failed to open file: " << filepath << std::endl;
-        return {};
-    }
-
-    // Get file size
-    std::fseek(file, 0, SEEK_END);
-    long fileSize = std::ftell(file);
-    std::fseek(file, 0, SEEK_SET);
-
-    if (fileSize <= 0) {
-        std::cerr << "Invalid file size for: " << filepath << std::endl;
-        std::fclose(file);
-        return {};
-    }
-
-    // Read file into string
-    std::string buffer(fileSize, '\0');
-    size_t bytesRead = std::fread(buffer.data(), 1, fileSize, file);
-    std::fclose(file);
-
-    if (bytesRead != static_cast<size_t>(fileSize)) {
-        std::cerr << "Failed to read complete file: " << filepath << std::endl;
-        return {};
-    }
-
-    return buffer;
-}
+} // namespace math
 
 int main()
 {
@@ -1434,7 +1532,7 @@ int main()
 
     CubeApp app;
 
-    if (!app.initialize()) {
+    if (!app.init()) {
         app.cleanup();
         return -1;
     }

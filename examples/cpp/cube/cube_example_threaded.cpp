@@ -44,7 +44,6 @@
 // Constants
 constexpr uint32_t WINDOW_WIDTH = 800;
 constexpr uint32_t WINDOW_HEIGHT = 600;
-constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 3;
 constexpr uint32_t CUBE_COUNT = 12;
 constexpr GfxSampleCount MSAA_SAMPLE_COUNT = GFX_SAMPLE_COUNT_4;
 constexpr GfxFormat COLOR_FORMAT = GFX_FORMAT_B8G8R8A8_UNORM_SRGB;
@@ -154,44 +153,110 @@ struct Vertex {
 
 // Uniform buffer structure for transformations
 struct UniformData {
-    float model[16];
-    float view[16];
-    float projection[16];
+    std::array<std::array<float, 4>, 4> model; // Model matrix
+    std::array<std::array<float, 4>, 4> view; // View matrix
+    std::array<std::array<float, 4>, 4> projection; // Projection matrix
 };
 
-// Forward declaration
-class CubeApp;
+// Per-frame resources for threaded rendering
+struct PerFrameResources {
+    // Synchronization
+    GfxSemaphore imageAvailableSemaphore = nullptr;
+    GfxSemaphore clearFinishedSemaphore = nullptr;
+    GfxSemaphore renderFinishedSemaphore = nullptr;
+    GfxFence inFlightFence = nullptr;
 
-// Matrix math function declarations
-void matrixIdentity(float* matrix);
-void matrixMultiply(float* result, const float* a, const float* b);
-void matrixRotateX(float* matrix, float angle);
-void matrixRotateY(float* matrix, float angle);
-void matrixRotateZ(float* matrix, float angle);
-void matrixPerspective(float* matrix, float fov, float aspect, float nearPlane, float farPlane, GfxBackend backend);
-void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ);
-bool vectorNormalize(float* x, float* y, float* z);
+    // Command encoders
+    GfxCommandEncoder clearEncoder = nullptr;
+    GfxCommandEncoder resolveEncoder = nullptr;
+    std::vector<GfxCommandEncoder> cubeEncoders; // One per cube
 
-// Helper functions
-static void* loadBinaryFile(const char* filepath, size_t* outSize);
-static void* loadTextFile(const char* filepath, size_t* outSize);
-static float getCurrentTime();
+    // Bind groups
+    std::vector<GfxBindGroup> uniformBindGroups; // One per cube
+};
+
+// Utility namespace for file loading and other helpers
+namespace util {
+std::vector<uint8_t> loadBinaryFile(const char* filepath);
+std::string loadTextFile(const char* filepath);
+} // namespace util
+
+// Math namespace for matrix and vector operations
+namespace math {
+void matrixIdentity(std::array<std::array<float, 4>, 4>& matrix);
+void matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fov, float aspect, float nearPlane, float farPlane, GfxBackend backend);
+void matrixLookAt(std::array<std::array<float, 4>, 4>& matrix, float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ);
+void matrixRotateX(std::array<std::array<float, 4>, 4>& matrix, float angle);
+void matrixRotateY(std::array<std::array<float, 4>, 4>& matrix, float angle);
+void matrixMultiply(std::array<std::array<float, 4>, 4>& result, const std::array<std::array<float, 4>, 4>& a, const std::array<std::array<float, 4>, 4>& b);
+bool vectorNormalize(float& x, float& y, float& z);
+} // namespace math
 
 // Main application class
 class CubeApp {
 public:
-    CubeApp();
-    ~CubeApp();
+    CubeApp() = default;
+    ~CubeApp() = default;
 
-    bool initialize();
+    bool init();
     void run();
+    void cleanup();
 
+private:
+    bool createWindow(uint32_t width, uint32_t height);
+    void destroyWindow();
+    bool createGraphics();
+    void destroyGraphics();
+    bool createSizeDependentResources(uint32_t width, uint32_t height);
+    void destroySizeDependentResources();
+    bool createSwapchain(uint32_t width, uint32_t height);
+    void destroySwapchain();
+    bool createTextures(uint32_t width, uint32_t height);
+    void destroyTextures();
+    bool createRenderPass();
+    void destroyRenderPass();
+    bool createFramebuffers(uint32_t width, uint32_t height);
+    void destroyFramebuffers();
+    bool createGeometry();
+    void destroyGeometry();
+    bool createUniformBuffer();
+    void destroyUniformBuffer();
+    bool createShaders();
+    void destroyShaders();
+    bool createRenderingResources();
+    void destroyRenderingResources();
+    bool createRenderPipeline();
+    void destroyRenderPipeline();
+    bool createPerFrameResources();
+    void destroyPerFrameResources();
+
+    // Main loop
+    void updateCube(int cubeIndex);
+    void update(float deltaTime);
+    void recordClearCommands(uint32_t imageIndex);
+    void recordCubeCommands(int cubeIndex, uint32_t imageIndex);
+    void recordResolveCommands(uint32_t imageIndex);
+    void render();
+    float getCurrentTime();
+    bool mainLoopIteration();
+#if defined(__EMSCRIPTEN__)
+    static void emscriptenMainLoop(void* userData);
+#endif
+
+    // Platform-specific
+    GfxPlatformWindowHandle getPlatformWindowHandle();
+
+    // Window callbacks
+    static void errorCallback(int error, const char* description);
+    static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
+    static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+private:
     // Public for GLFW callbacks
     GLFWwindow* window = nullptr;
     uint32_t windowWidth = WINDOW_WIDTH;
     uint32_t windowHeight = WINDOW_HEIGHT;
 
-private:
     // Graphics resources
     GfxInstance instance = nullptr;
     GfxAdapter adapter = nullptr;
@@ -201,6 +266,8 @@ private:
     GfxSurface surface = nullptr;
     GfxSwapchain swapchain = nullptr;
     GfxSwapchainInfo swapchainInfo = {};
+    GfxSurfaceInfo surfaceInfo = {};
+    uint32_t framesInFlight = 3; // Dynamic: set based on surface capabilities
 
     GfxBuffer vertexBuffer = nullptr;
     GfxBuffer indexBuffer = nullptr;
@@ -224,18 +291,9 @@ private:
     // Uniform buffers
     GfxBuffer sharedUniformBuffer = nullptr;
     size_t uniformAlignedSize = 0;
-    std::vector<std::vector<GfxBindGroup>> uniformBindGroups; // [frame][cube]
 
-    // Command encoders
-    std::vector<GfxCommandEncoder> clearEncoders;
-    std::vector<std::vector<GfxCommandEncoder>> cubeEncoders; // [frame][cube]
-    std::vector<GfxCommandEncoder> resolveEncoders;
-
-    // Synchronization
-    std::vector<GfxSemaphore> imageAvailableSemaphores;
-    std::vector<GfxSemaphore> clearFinishedSemaphores;
-    std::vector<GfxSemaphore> renderFinishedSemaphores;
-    std::vector<GfxFence> inFlightFences;
+    // Per-frame resources
+    std::vector<PerFrameResources> frameResources;
     uint32_t currentFrame = 0;
 
     // Animation state
@@ -256,157 +314,105 @@ private:
     // Threading
     std::unique_ptr<ThreadPool> threadPool;
     std::atomic<uint32_t> currentImageIndex{ 0 };
-
-    // Initialization methods
-    bool initWindow();
-    bool initializeGraphics();
-    bool createSyncObjects();
-    bool createSwapchain(uint32_t width, uint32_t height);
-    bool createTextures(uint32_t width, uint32_t height);
-    bool createFramebuffers(uint32_t width, uint32_t height);
-    bool createRenderPass();
-    bool createSizeDependentResources(uint32_t width, uint32_t height);
-    bool createRenderingResources();
-    bool createGeometry();
-    bool createUniformBuffer();
-    bool createBindGroup();
-    bool createShaders();
-    bool createRenderPipeline();
-
-    // Cleanup methods
-    void cleanupSizeDependentResources();
-    void cleanupRenderingResources();
-
-    // Update and render
-    void update(float deltaTime);
-    void updateCube(int cubeIndex);
-    void render();
-    void recordClearCommands(uint32_t imageIndex);
-    void recordCubeCommands(int cubeIndex, uint32_t imageIndex);
-    void recordResolveCommands(uint32_t imageIndex);
-
-    // Main loop
-    bool mainLoopIteration();
-
-    // Platform-specific
-    GfxPlatformWindowHandle getPlatformWindowHandle();
 };
 
-// GLFW callbacks
-static void errorCallback(int error, const char* description)
+bool CubeApp::init()
 {
-    std::cerr << "GLFW Error " << error << ": " << description << std::endl;
-}
-
-static void framebufferSizeCallback(GLFWwindow* window, int width, int height)
-{
-    auto* app = static_cast<CubeApp*>(glfwGetWindowUserPointer(window));
-    if (app) {
-        app->windowWidth = static_cast<uint32_t>(width);
-        app->windowHeight = static_cast<uint32_t>(height);
-    }
-}
-
-static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
-}
-
-// Constructor
-CubeApp::CubeApp()
-{
-    framebuffers.resize(MAX_FRAMES_IN_FLIGHT, nullptr);
-    clearEncoders.resize(MAX_FRAMES_IN_FLIGHT, nullptr);
-    resolveEncoders.resize(MAX_FRAMES_IN_FLIGHT, nullptr);
-    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT, nullptr);
-    clearFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT, nullptr);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT, nullptr);
-    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT, nullptr);
-
-    // Resize 2D vectors
-    cubeEncoders.resize(MAX_FRAMES_IN_FLIGHT);
-    for (auto& frameEncoders : cubeEncoders) {
-        frameEncoders.resize(CUBE_COUNT, nullptr);
+    // 1. Create window
+    if (!createWindow(windowWidth, windowHeight)) {
+        return false;
     }
 
-    uniformBindGroups.resize(MAX_FRAMES_IN_FLIGHT);
-    for (auto& frameBindGroups : uniformBindGroups) {
-        frameBindGroups.resize(CUBE_COUNT, nullptr);
+    // 2. Create graphics context
+    if (!createGraphics()) {
+        return false;
     }
+
+    // 3. Create size-dependent resources
+    if (!createSizeDependentResources(windowWidth, windowHeight)) {
+        return false;
+    }
+
+    // 4. Create rendering resources (geometry, uniform buffer, shaders, pipeline)
+    if (!createRenderingResources()) {
+        return false;
+    }
+
+    // 5. Create per-frame resources (sync objects, encoders, bind groups)
+    if (!createPerFrameResources()) {
+        return false;
+    }
+
+    // Initialize thread pool if using threading
+    if constexpr (USE_THREADING) {
+        threadPool = std::make_unique<ThreadPool>(CUBE_COUNT);
+        std::cout << "Created ThreadPool with " << CUBE_COUNT << " worker threads for parallel command recording" << std::endl;
+    }
+
+    previousWidth = windowWidth;
+    previousHeight = windowHeight;
+    lastTime = getCurrentTime();
+
+    // Initialize FPS tracking
+    fpsFrameCount = 0;
+    fpsTimeAccumulator = 0.0f;
+    fpsFrameTimeMin = FLT_MAX;
+    fpsFrameTimeMax = 0.0f;
+
+    std::cout << "Application initialized successfully!" << std::endl;
+    if constexpr (USE_THREADING) {
+        std::cout << "Running with ThreadPool (" << CUBE_COUNT << " threads) for parallel command recording" << std::endl;
+    } else {
+        std::cout << "Running in single-threaded mode" << std::endl;
+    }
+    std::cout << "Press ESC to exit" << std::endl
+              << std::endl;
+
+    return true;
 }
 
-// Destructor - cleanup in reverse order of creation
-CubeApp::~CubeApp()
+void CubeApp::run()
+{
+#if defined(__EMSCRIPTEN__)
+    // Note: emscripten_set_main_loop_arg returns immediately and never blocks
+    // Cleanup happens in emscriptenMainLoop when the loop exits
+    // Execution continues in the browser event loop
+    emscripten_set_main_loop_arg(CubeApp::emscriptenMainLoop, this, 0, 1);
+#else
+    while (mainLoopIteration()) {
+        // Continue running
+    }
+#endif
+}
+
+void CubeApp::cleanup()
 {
     // Wait for device to finish
     if (device) {
         gfxDeviceWaitIdle(device);
     }
 
-    // Clean up size-dependent resources
-    cleanupSizeDependentResources();
+    // Destroy threadPool before other resources
+    threadPool.reset();
 
-    // Clean up rendering resources
-    cleanupRenderingResources();
+    // Destroy resources in reverse order of creation
+    // 5. Destroy per-frame resources
+    destroyPerFrameResources();
 
-    // Destroy per-frame resources
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        if (imageAvailableSemaphores[i])
-            gfxSemaphoreDestroy(imageAvailableSemaphores[i]);
-        if (clearFinishedSemaphores[i])
-            gfxSemaphoreDestroy(clearFinishedSemaphores[i]);
-        if (renderFinishedSemaphores[i])
-            gfxSemaphoreDestroy(renderFinishedSemaphores[i]);
-        if (inFlightFences[i])
-            gfxFenceDestroy(inFlightFences[i]);
-        if (clearEncoders[i])
-            gfxCommandEncoderDestroy(clearEncoders[i]);
-        if (resolveEncoders[i])
-            gfxCommandEncoderDestroy(resolveEncoders[i]);
+    // 4. Destroy size-dependent resources
+    destroySizeDependentResources();
 
-        for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
-            if (cubeEncoders[i][cubeIdx])
-                gfxCommandEncoderDestroy(cubeEncoders[i][cubeIdx]);
-            if (uniformBindGroups[i][cubeIdx])
-                gfxBindGroupDestroy(uniformBindGroups[i][cubeIdx]);
-        }
-    }
+    // 3. Destroy rendering resources
+    destroyRenderingResources();
 
-    if (sharedUniformBuffer)
-        gfxBufferDestroy(sharedUniformBuffer);
-    if (renderPipeline)
-        gfxRenderPipelineDestroy(renderPipeline);
-    if (fragmentShader)
-        gfxShaderDestroy(fragmentShader);
-    if (vertexShader)
-        gfxShaderDestroy(vertexShader);
-    if (uniformBindGroupLayout)
-        gfxBindGroupLayoutDestroy(uniformBindGroupLayout);
-    if (indexBuffer)
-        gfxBufferDestroy(indexBuffer);
-    if (vertexBuffer)
-        gfxBufferDestroy(vertexBuffer);
-    if (surface)
-        gfxSurfaceDestroy(surface);
-    if (device)
-        gfxDeviceDestroy(device);
-    if (instance)
-        gfxInstanceDestroy(instance);
+    // 2. Destroy graphics resources
+    destroyGraphics();
 
-    // Unload backend
-    std::cout << "Unloading graphics backend..." << std::endl;
-    gfxUnloadBackend(GFX_BACKEND_API);
-
-    // Destroy window
-    if (window) {
-        glfwDestroyWindow(window);
-    }
-    glfwTerminate();
+    // 1. Destroy window
+    destroyWindow();
 }
 
-bool CubeApp::initWindow()
+bool CubeApp::createWindow(uint32_t width, uint32_t height)
 {
     glfwSetErrorCallback(errorCallback);
 
@@ -420,7 +426,7 @@ bool CubeApp::initWindow()
 
     const char* title = USE_THREADING ? "Threaded Cube Example (C++ ThreadPool) - Parallel Command Recording" : "Cube Example (C++) - Unified Graphics API";
 
-    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, title, nullptr, nullptr);
+    window = glfwCreateWindow(width, height, title, nullptr, nullptr);
     if (!window) {
         std::cerr << "Failed to create GLFW window\n";
         glfwTerminate();
@@ -434,23 +440,16 @@ bool CubeApp::initWindow()
     return true;
 }
 
-GfxPlatformWindowHandle CubeApp::getPlatformWindowHandle()
+void CubeApp::destroyWindow()
 {
-    GfxPlatformWindowHandle handle = {}; // Use empty initializer for C++
-#if defined(__EMSCRIPTEN__)
-    handle = gfxPlatformWindowHandleFromEmscripten("#canvas");
-#elif defined(_WIN32)
-    handle = gfxPlatformWindowHandleFromWin32(GetModuleHandle(NULL), glfwGetWin32Window(window));
-#elif defined(__linux__)
-    // handle = gfxPlatformWindowHandleFromXlib(glfwGetX11Display(), glfwGetX11Window(window));
-    handle = gfxPlatformWindowHandleFromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
-#elif defined(__APPLE__)
-    handle = gfxPlatformWindowHandleFromMetal(glfwGetCocoaWindow(window));
-#endif
-    return handle;
+    if (window) {
+        glfwDestroyWindow(window);
+        window = nullptr;
+    }
+    glfwTerminate();
 }
 
-bool CubeApp::initializeGraphics()
+bool CubeApp::createGraphics()
 {
     // Set up logging callback
     gfxSetLogCallback(logCallback, nullptr);
@@ -545,7 +544,56 @@ bool CubeApp::initializeGraphics()
         return false;
     }
 
+    // Query surface capabilities to determine frames in flight
+    if (gfxSurfaceGetInfo(surface, &surfaceInfo) != GFX_RESULT_SUCCESS) {
+        std::cerr << "Failed to get surface info\n";
+        return false;
+    }
+
+    std::cout << "Surface Info:\n";
+    std::cout << std::format("  Image Count: min {}, max {}\n",
+        surfaceInfo.minImageCount, surfaceInfo.maxImageCount);
+    std::cout << std::format("  Extent: min ({}x{}), max ({}x{})\n",
+        surfaceInfo.minExtent.width, surfaceInfo.minExtent.height,
+        surfaceInfo.maxExtent.width, surfaceInfo.maxExtent.height);
+
+    // Calculate frames in flight based on surface capabilities
+    // Use min image count, but clamp to reasonable values (2-4 is typical)
+    framesInFlight = surfaceInfo.minImageCount;
+    if (framesInFlight < 2) {
+        framesInFlight = 2;
+    }
+    if (framesInFlight > 4) {
+        framesInFlight = 4;
+    }
+    std::cout << std::format("Frames in flight: {}\n", framesInFlight);
+
     return true;
+}
+
+void CubeApp::destroyGraphics()
+{
+    if (surface) {
+        gfxSurfaceDestroy(surface);
+        surface = nullptr;
+    }
+    if (queue) {
+        queue = nullptr; // Queue doesn't need explicit destruction
+    }
+    if (device) {
+        gfxDeviceDestroy(device);
+        device = nullptr;
+    }
+    if (adapter) {
+        adapter = nullptr; // Adapter doesn't need explicit destruction
+    }
+    if (instance) {
+        gfxInstanceDestroy(instance);
+        instance = nullptr;
+    }
+
+    std::cout << "Unloading graphics backend..." << std::endl;
+    gfxUnloadBackend(GFX_BACKEND_API);
 }
 
 bool CubeApp::createSwapchain(uint32_t width, uint32_t height)
@@ -557,7 +605,7 @@ bool CubeApp::createSwapchain(uint32_t width, uint32_t height)
         .format = COLOR_FORMAT,
         .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT,
         .presentMode = GFX_PRESENT_MODE_IMMEDIATE,
-        .imageCount = MAX_FRAMES_IN_FLIGHT
+        .imageCount = framesInFlight
     };
 
     if (gfxDeviceCreateSwapchain(device, &swapchainDesc, &swapchain) != GFX_RESULT_SUCCESS) {
@@ -573,6 +621,14 @@ bool CubeApp::createSwapchain(uint32_t width, uint32_t height)
     std::cout << "Swapchain created: " << swapchainInfo.extent.width << "x" << swapchainInfo.extent.height
               << ", format: " << swapchainInfo.format << std::endl;
     return true;
+}
+
+void CubeApp::destroySwapchain()
+{
+    if (swapchain) {
+        gfxSwapchainDestroy(swapchain);
+        swapchain = nullptr;
+    }
 }
 
 bool CubeApp::createTextures(uint32_t width, uint32_t height)
@@ -644,9 +700,32 @@ bool CubeApp::createTextures(uint32_t width, uint32_t height)
     return true;
 }
 
+void CubeApp::destroyTextures()
+{
+    if (msaaColorTextureView) {
+        gfxTextureViewDestroy(msaaColorTextureView);
+        msaaColorTextureView = nullptr;
+    }
+    if (msaaColorTexture) {
+        gfxTextureDestroy(msaaColorTexture);
+        msaaColorTexture = nullptr;
+    }
+    if (depthTextureView) {
+        gfxTextureViewDestroy(depthTextureView);
+        depthTextureView = nullptr;
+    }
+    if (depthTexture) {
+        gfxTextureDestroy(depthTexture);
+        depthTexture = nullptr;
+    }
+}
+
 bool CubeApp::createFramebuffers(uint32_t width, uint32_t height)
 {
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    // Resize framebuffers vector to match swapchain image count
+    framebuffers.resize(swapchainInfo.imageCount, nullptr);
+
+    for (uint32_t i = 0; i < swapchainInfo.imageCount; ++i) {
         GfxTextureView backbuffer = nullptr;
         if (gfxSwapchainGetTextureView(swapchain, i, &backbuffer) != GFX_RESULT_SUCCESS || !backbuffer) {
             std::cerr << std::format("Failed to get swapchain image view {}\n", i);
@@ -682,6 +761,16 @@ bool CubeApp::createFramebuffers(uint32_t width, uint32_t height)
     }
 
     return true;
+}
+
+void CubeApp::destroyFramebuffers()
+{
+    for (auto& fb : framebuffers) {
+        if (fb) {
+            gfxFramebufferDestroy(fb);
+            fb = nullptr;
+        }
+    }
 }
 
 bool CubeApp::createRenderPass()
@@ -800,33 +889,8 @@ bool CubeApp::createRenderPass()
     return true;
 }
 
-bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
+void CubeApp::destroyRenderPass()
 {
-    if (!createSwapchain(width, height))
-        return false;
-
-    uint32_t swapchainWidth = swapchainInfo.extent.width;
-    uint32_t swapchainHeight = swapchainInfo.extent.height;
-
-    if (!createTextures(swapchainWidth, swapchainHeight))
-        return false;
-    if (!createRenderPass())
-        return false;
-    if (!createFramebuffers(swapchainWidth, swapchainHeight))
-        return false;
-
-    return true;
-}
-
-void CubeApp::cleanupSizeDependentResources()
-{
-    for (auto& fb : framebuffers) {
-        if (fb) {
-            gfxFramebufferDestroy(fb);
-            fb = nullptr;
-        }
-    }
-
     if (resolveRenderPass) {
         gfxRenderPassDestroy(resolveRenderPass);
         resolveRenderPass = nullptr;
@@ -839,70 +903,36 @@ void CubeApp::cleanupSizeDependentResources()
         gfxRenderPassDestroy(renderPass);
         renderPass = nullptr;
     }
-
-    if (msaaColorTextureView) {
-        gfxTextureViewDestroy(msaaColorTextureView);
-        msaaColorTextureView = nullptr;
-    }
-    if (msaaColorTexture) {
-        gfxTextureDestroy(msaaColorTexture);
-        msaaColorTexture = nullptr;
-    }
-    if (depthTextureView) {
-        gfxTextureViewDestroy(depthTextureView);
-        depthTextureView = nullptr;
-    }
-    if (depthTexture) {
-        gfxTextureDestroy(depthTexture);
-        depthTexture = nullptr;
-    }
-
-    if (swapchain) {
-        gfxSwapchainDestroy(swapchain);
-        swapchain = nullptr;
-    }
 }
 
-void CubeApp::cleanupRenderingResources()
+bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 {
-    if (renderPipeline) {
-        gfxRenderPipelineDestroy(renderPipeline);
-        renderPipeline = nullptr;
-    }
-    if (fragmentShader) {
-        gfxShaderDestroy(fragmentShader);
-        fragmentShader = nullptr;
-    }
-    if (vertexShader) {
-        gfxShaderDestroy(vertexShader);
-        vertexShader = nullptr;
-    }
-    if (uniformBindGroupLayout) {
-        gfxBindGroupLayoutDestroy(uniformBindGroupLayout);
-        uniformBindGroupLayout = nullptr;
+    if (!createSwapchain(width, height)) {
+        return false;
     }
 
-    for (auto& frameBindGroups : uniformBindGroups) {
-        for (auto& bindGroup : frameBindGroups) {
-            if (bindGroup) {
-                gfxBindGroupDestroy(bindGroup);
-                bindGroup = nullptr;
-            }
-        }
+    uint32_t swapchainWidth = swapchainInfo.extent.width;
+    uint32_t swapchainHeight = swapchainInfo.extent.height;
+
+    if (!createTextures(swapchainWidth, swapchainHeight)) {
+        return false;
+    }
+    if (!createRenderPass()) {
+        return false;
+    }
+    if (!createFramebuffers(swapchainWidth, swapchainHeight)) {
+        return false;
     }
 
-    if (sharedUniformBuffer) {
-        gfxBufferDestroy(sharedUniformBuffer);
-        sharedUniformBuffer = nullptr;
-    }
-    if (indexBuffer) {
-        gfxBufferDestroy(indexBuffer);
-        indexBuffer = nullptr;
-    }
-    if (vertexBuffer) {
-        gfxBufferDestroy(vertexBuffer);
-        vertexBuffer = nullptr;
-    }
+    return true;
+}
+
+void CubeApp::destroySizeDependentResources()
+{
+    destroyFramebuffers();
+    destroyRenderPass();
+    destroyTextures();
+    destroySwapchain();
 }
 
 bool CubeApp::createGeometry()
@@ -964,6 +994,18 @@ bool CubeApp::createGeometry()
     return true;
 }
 
+void CubeApp::destroyGeometry()
+{
+    if (indexBuffer) {
+        gfxBufferDestroy(indexBuffer);
+        indexBuffer = nullptr;
+    }
+    if (vertexBuffer) {
+        gfxBufferDestroy(vertexBuffer);
+        vertexBuffer = nullptr;
+    }
+}
+
 bool CubeApp::createUniformBuffer()
 {
     GfxDeviceLimits limits;
@@ -974,7 +1016,7 @@ bool CubeApp::createUniformBuffer()
 
     size_t uniformSize = sizeof(UniformData);
     uniformAlignedSize = gfxAlignUp(uniformSize, limits.minUniformBufferOffsetAlignment);
-    size_t totalBufferSize = uniformAlignedSize * MAX_FRAMES_IN_FLIGHT * CUBE_COUNT;
+    size_t totalBufferSize = uniformAlignedSize * framesInFlight * CUBE_COUNT;
 
     GfxBufferDescriptor uniformBufferDesc = {
         .label = "Shared Transform Uniforms",
@@ -988,11 +1030,6 @@ bool CubeApp::createUniformBuffer()
         return false;
     }
 
-    return true;
-}
-
-bool CubeApp::createBindGroup()
-{
     // Create bind group layout
     GfxBindGroupLayoutEntry uniformLayoutEntry = {
         .binding = 0,
@@ -1014,101 +1051,156 @@ bool CubeApp::createBindGroup()
         return false;
     }
 
-    // Create bind groups
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
-            std::string labelStr = std::format("Uniform Bind Group Frame {} Cube {}", i, cubeIdx);
-            const char* label = labelStr.c_str();
+    return true;
+}
 
-            GfxBindGroupEntry uniformEntry = {
-                .binding = 0,
-                .type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER,
-                .resource = {
-                    .buffer = {
-                        .buffer = sharedUniformBuffer,
-                        .offset = (i * CUBE_COUNT + cubeIdx) * uniformAlignedSize,
-                        .size = sizeof(UniformData) } }
-            };
+void CubeApp::destroyUniformBuffer()
+{
+    if (uniformBindGroupLayout) {
+        gfxBindGroupLayoutDestroy(uniformBindGroupLayout);
+        uniformBindGroupLayout = nullptr;
+    }
 
-            GfxBindGroupDescriptor uniformBindGroupDesc = {
-                .label = label,
-                .layout = uniformBindGroupLayout,
-                .entries = &uniformEntry,
-                .entryCount = 1
-            };
+    if (sharedUniformBuffer) {
+        gfxBufferDestroy(sharedUniformBuffer);
+        sharedUniformBuffer = nullptr;
+    }
+}
 
-            if (gfxDeviceCreateBindGroup(device, &uniformBindGroupDesc, &uniformBindGroups[i][cubeIdx]) != GFX_RESULT_SUCCESS) {
-                std::cerr << std::format("Failed to create uniform bind group {} cube {}\n", i, cubeIdx);
-                return false;
-            }
+bool CubeApp::createShaders()
+{
+    GfxShaderSourceType sourceType;
+    if (adapterInfo.backend == GFX_BACKEND_WEBGPU) {
+        sourceType = GFX_SHADER_SOURCE_WGSL;
+        std::cout << "Loading WGSL shaders...\n";
+        auto vertexShaderData = util::loadTextFile("shaders/cube.vert.wgsl");
+        auto fragmentShaderData = util::loadTextFile("shaders/cube.frag.wgsl");
+        if (vertexShaderData.empty() || fragmentShaderData.empty()) {
+            std::cerr << "Failed to load WGSL shaders\n";
+            return false;
+        }
+
+        // Create vertex shader
+        GfxShaderDescriptor vertexShaderDesc = {
+            .label = "Cube Vertex Shader",
+            .sourceType = sourceType,
+            .code = vertexShaderData.data(),
+            .codeSize = vertexShaderData.size(),
+            .entryPoint = "main"
+        };
+
+        if (gfxDeviceCreateShader(device, &vertexShaderDesc, &vertexShader) != GFX_RESULT_SUCCESS) {
+            std::cerr << "Failed to create vertex shader\n";
+            return false;
+        }
+
+        // Create fragment shader
+        GfxShaderDescriptor fragmentShaderDesc = {
+            .label = "Cube Fragment Shader",
+            .sourceType = sourceType,
+            .code = fragmentShaderData.data(),
+            .codeSize = fragmentShaderData.size(),
+            .entryPoint = "main"
+        };
+
+        if (gfxDeviceCreateShader(device, &fragmentShaderDesc, &fragmentShader) != GFX_RESULT_SUCCESS) {
+            std::cerr << "Failed to create fragment shader\n";
+            return false;
+        }
+    } else {
+        sourceType = GFX_SHADER_SOURCE_SPIRV;
+        std::cout << "Loading SPIR-V shaders...\n";
+        auto vertexShaderData = util::loadBinaryFile("shaders/cube.vert.spv");
+        auto fragmentShaderData = util::loadBinaryFile("shaders/cube.frag.spv");
+        if (vertexShaderData.empty() || fragmentShaderData.empty()) {
+            std::cerr << "Failed to load SPIR-V shaders\n";
+            return false;
+        }
+
+        // Create vertex shader
+        GfxShaderDescriptor vertexShaderDesc = {
+            .label = "Cube Vertex Shader",
+            .sourceType = sourceType,
+            .code = vertexShaderData.data(),
+            .codeSize = vertexShaderData.size(),
+            .entryPoint = "main"
+        };
+
+        if (gfxDeviceCreateShader(device, &vertexShaderDesc, &vertexShader) != GFX_RESULT_SUCCESS) {
+            std::cerr << "Failed to create vertex shader\n";
+            return false;
+        }
+
+        // Create fragment shader
+        GfxShaderDescriptor fragmentShaderDesc = {
+            .label = "Cube Fragment Shader",
+            .sourceType = sourceType,
+            .code = fragmentShaderData.data(),
+            .codeSize = fragmentShaderData.size(),
+            .entryPoint = "main"
+        };
+
+        if (gfxDeviceCreateShader(device, &fragmentShaderDesc, &fragmentShader) != GFX_RESULT_SUCCESS) {
+            std::cerr << "Failed to create fragment shader\n";
+            return false;
         }
     }
 
     return true;
 }
 
-bool CubeApp::createShaders()
+void CubeApp::destroyShaders()
 {
-    size_t vertexShaderSize, fragmentShaderSize;
-    void* vertexShaderCode = nullptr;
-    void* fragmentShaderCode = nullptr;
-
-    GfxShaderSourceType sourceType;
-    if (adapterInfo.backend == GFX_BACKEND_WEBGPU) {
-        sourceType = GFX_SHADER_SOURCE_WGSL;
-        std::cout << "Loading WGSL shaders...\n";
-        vertexShaderCode = loadTextFile("shaders/cube.vert.wgsl", &vertexShaderSize);
-        fragmentShaderCode = loadTextFile("shaders/cube.frag.wgsl", &fragmentShaderSize);
-        if (!vertexShaderCode || !fragmentShaderCode) {
-            std::cerr << "Failed to load WGSL shaders\n";
-            return false;
-        }
-    } else {
-        sourceType = GFX_SHADER_SOURCE_SPIRV;
-        std::cout << "Loading SPIR-V shaders...\n";
-        vertexShaderCode = loadBinaryFile("shaders/cube.vert.spv", &vertexShaderSize);
-        fragmentShaderCode = loadBinaryFile("shaders/cube.frag.spv", &fragmentShaderSize);
-        if (!vertexShaderCode || !fragmentShaderCode) {
-            std::cerr << "Failed to load SPIR-V shaders\n";
-            return false;
-        }
+    if (fragmentShader) {
+        gfxShaderDestroy(fragmentShader);
+        fragmentShader = nullptr;
     }
+    if (vertexShader) {
+        gfxShaderDestroy(vertexShader);
+        vertexShader = nullptr;
+    }
+}
 
-    // Create vertex shader
-    GfxShaderDescriptor vertexShaderDesc = {
-        .label = "Cube Vertex Shader",
-        .sourceType = sourceType,
-        .code = vertexShaderCode,
-        .codeSize = vertexShaderSize,
-        .entryPoint = "main"
-    };
+bool CubeApp::createRenderingResources()
+{
+    std::cout << "[DEBUG] createRenderingResources called" << std::endl;
 
-    if (gfxDeviceCreateShader(device, &vertexShaderDesc, &vertexShader) != GFX_RESULT_SUCCESS) {
-        std::cerr << "Failed to create vertex shader\n";
-        free(vertexShaderCode);
-        free(fragmentShaderCode);
+    // 1. Create geometry (vertex/index buffers)
+    if (!createGeometry()) {
         return false;
     }
 
-    // Create fragment shader
-    GfxShaderDescriptor fragmentShaderDesc = {
-        .label = "Cube Fragment Shader",
-        .sourceType = sourceType,
-        .code = fragmentShaderCode,
-        .codeSize = fragmentShaderSize,
-        .entryPoint = "main"
-    };
-
-    if (gfxDeviceCreateShader(device, &fragmentShaderDesc, &fragmentShader) != GFX_RESULT_SUCCESS) {
-        std::cerr << "Failed to create fragment shader\n";
-        free(vertexShaderCode);
-        free(fragmentShaderCode);
+    // 2. Create uniform buffer and layout
+    if (!createUniformBuffer()) {
         return false;
     }
 
-    free(vertexShaderCode);
-    free(fragmentShaderCode);
+    // 3. Create shaders
+    if (!createShaders()) {
+        return false;
+    }
+
+    // 4. Create render pipeline
+    if (!createRenderPipeline()) {
+        return false;
+    }
+
     return true;
+}
+
+void CubeApp::destroyRenderingResources()
+{
+    // Destroy pipeline
+    destroyRenderPipeline();
+
+    // Destroy shaders
+    destroyShaders();
+
+    // Destroy uniform buffer
+    destroyUniformBuffer();
+
+    // Destroy geometry
+    destroyGeometry();
 }
 
 bool CubeApp::createRenderPipeline()
@@ -1196,8 +1288,18 @@ bool CubeApp::createRenderPipeline()
     return true;
 }
 
-bool CubeApp::createSyncObjects()
+void CubeApp::destroyRenderPipeline()
 {
+    if (renderPipeline) {
+        gfxRenderPipelineDestroy(renderPipeline);
+        renderPipeline = nullptr;
+    }
+}
+
+bool CubeApp::createPerFrameResources()
+{
+    frameResources.resize(framesInFlight);
+
     GfxSemaphoreDescriptor semaphoreDesc = {
         .label = "Semaphore",
         .type = GFX_SEMAPHORE_TYPE_BINARY,
@@ -1209,33 +1311,36 @@ bool CubeApp::createSyncObjects()
         .signaled = true
     };
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (size_t i = 0; i < framesInFlight; ++i) {
+        auto& frame = frameResources[i];
         std::string labelStr;
 
+        // Create semaphores
         labelStr = std::format("Image Available Semaphore {}", i);
         semaphoreDesc.label = labelStr.c_str();
-        if (gfxDeviceCreateSemaphore(device, &semaphoreDesc, &imageAvailableSemaphores[i]) != GFX_RESULT_SUCCESS) {
+        if (gfxDeviceCreateSemaphore(device, &semaphoreDesc, &frame.imageAvailableSemaphore) != GFX_RESULT_SUCCESS) {
             std::cerr << std::format("Failed to create image available semaphore {}\n", i);
             return false;
         }
 
         labelStr = std::format("Clear Finished Semaphore {}", i);
         semaphoreDesc.label = labelStr.c_str();
-        if (gfxDeviceCreateSemaphore(device, &semaphoreDesc, &clearFinishedSemaphores[i]) != GFX_RESULT_SUCCESS) {
+        if (gfxDeviceCreateSemaphore(device, &semaphoreDesc, &frame.clearFinishedSemaphore) != GFX_RESULT_SUCCESS) {
             std::cerr << std::format("Failed to create clear finished semaphore {}\n", i);
             return false;
         }
 
         labelStr = std::format("Render Finished Semaphore {}", i);
         semaphoreDesc.label = labelStr.c_str();
-        if (gfxDeviceCreateSemaphore(device, &semaphoreDesc, &renderFinishedSemaphores[i]) != GFX_RESULT_SUCCESS) {
+        if (gfxDeviceCreateSemaphore(device, &semaphoreDesc, &frame.renderFinishedSemaphore) != GFX_RESULT_SUCCESS) {
             std::cerr << std::format("Failed to create render finished semaphore {}\n", i);
             return false;
         }
 
+        // Create fence
         labelStr = std::format("In Flight Fence {}", i);
         fenceDesc.label = labelStr.c_str();
-        if (gfxDeviceCreateFence(device, &fenceDesc, &inFlightFences[i]) != GFX_RESULT_SUCCESS) {
+        if (gfxDeviceCreateFence(device, &fenceDesc, &frame.inFlightFence) != GFX_RESULT_SUCCESS) {
             std::cerr << std::format("Failed to create in flight fence {}\n", i);
             return false;
         }
@@ -1243,16 +1348,17 @@ bool CubeApp::createSyncObjects()
         // Create clear encoder
         labelStr = std::format("Clear Encoder Frame {}", i);
         GfxCommandEncoderDescriptor encoderDesc = { .label = labelStr.c_str() };
-        if (gfxDeviceCreateCommandEncoder(device, &encoderDesc, &clearEncoders[i]) != GFX_RESULT_SUCCESS) {
+        if (gfxDeviceCreateCommandEncoder(device, &encoderDesc, &frame.clearEncoder) != GFX_RESULT_SUCCESS) {
             std::cerr << std::format("Failed to create clear encoder {}\n", i);
             return false;
         }
 
         // Create cube encoders
+        frame.cubeEncoders.resize(CUBE_COUNT);
         for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
             labelStr = std::format("Command Encoder Frame {} Cube {}", i, cubeIdx);
             GfxCommandEncoderDescriptor encoderDesc = { .label = labelStr.c_str() };
-            if (gfxDeviceCreateCommandEncoder(device, &encoderDesc, &cubeEncoders[i][cubeIdx]) != GFX_RESULT_SUCCESS) {
+            if (gfxDeviceCreateCommandEncoder(device, &encoderDesc, &frame.cubeEncoders[cubeIdx]) != GFX_RESULT_SUCCESS) {
                 std::cerr << std::format("Failed to create command encoder {} cube {}\n", i, cubeIdx);
                 return false;
             }
@@ -1261,62 +1367,129 @@ bool CubeApp::createSyncObjects()
         // Create resolve encoder
         labelStr = std::format("Resolve Encoder Frame {}", i);
         GfxCommandEncoderDescriptor resolveEncoderDesc = { .label = labelStr.c_str() };
-        if (gfxDeviceCreateCommandEncoder(device, &resolveEncoderDesc, &resolveEncoders[i]) != GFX_RESULT_SUCCESS) {
+        if (gfxDeviceCreateCommandEncoder(device, &resolveEncoderDesc, &frame.resolveEncoder) != GFX_RESULT_SUCCESS) {
             std::cerr << std::format("Failed to create resolve encoder {}\n", i);
             return false;
+        }
+
+        // Create bind groups
+        frame.uniformBindGroups.resize(CUBE_COUNT);
+        for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+            std::string labelStr = std::format("Uniform Bind Group Frame {} Cube {}", i, cubeIdx);
+            const char* label = labelStr.c_str();
+
+            GfxBindGroupEntry uniformEntry = {
+                .binding = 0,
+                .type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER,
+                .resource = {
+                    .buffer = {
+                        .buffer = sharedUniformBuffer,
+                        .offset = (i * CUBE_COUNT + cubeIdx) * uniformAlignedSize,
+                        .size = sizeof(UniformData) } }
+            };
+
+            GfxBindGroupDescriptor uniformBindGroupDesc = {
+                .label = label,
+                .layout = uniformBindGroupLayout,
+                .entries = &uniformEntry,
+                .entryCount = 1
+            };
+
+            if (gfxDeviceCreateBindGroup(device, &uniformBindGroupDesc, &frame.uniformBindGroups[cubeIdx]) != GFX_RESULT_SUCCESS) {
+                std::cerr << std::format("Failed to create uniform bind group {} cube {}\n", i, cubeIdx);
+                return false;
+            }
         }
     }
 
     return true;
 }
 
-bool CubeApp::createRenderingResources()
+void CubeApp::destroyPerFrameResources()
 {
-    std::cout << "[DEBUG] createRenderingResources called" << std::endl;
+    // Wait for device idle
+    if (device) {
+        gfxDeviceWaitIdle(device);
+    }
 
-    if (!createGeometry())
-        return false;
-    if (!createUniformBuffer())
-        return false;
-    if (!createBindGroup())
-        return false;
-    if (!createShaders())
-        return false;
+    // Destroy per-frame resources
+    for (auto& frame : frameResources) {
+        // Destroy bind groups
+        for (auto& bindGroup : frame.uniformBindGroups) {
+            if (bindGroup) {
+                gfxBindGroupDestroy(bindGroup);
+                bindGroup = nullptr;
+            }
+        }
 
-    return true;
+        // Destroy cube encoders
+        for (auto& encoder : frame.cubeEncoders) {
+            if (encoder) {
+                gfxCommandEncoderDestroy(encoder);
+                encoder = nullptr;
+            }
+        }
+
+        // Destroy clear and resolve encoders
+        if (frame.clearEncoder) {
+            gfxCommandEncoderDestroy(frame.clearEncoder);
+            frame.clearEncoder = nullptr;
+        }
+        if (frame.resolveEncoder) {
+            gfxCommandEncoderDestroy(frame.resolveEncoder);
+            frame.resolveEncoder = nullptr;
+        }
+
+        // Destroy synchronization objects
+        if (frame.imageAvailableSemaphore) {
+            gfxSemaphoreDestroy(frame.imageAvailableSemaphore);
+            frame.imageAvailableSemaphore = nullptr;
+        }
+        if (frame.clearFinishedSemaphore) {
+            gfxSemaphoreDestroy(frame.clearFinishedSemaphore);
+            frame.clearFinishedSemaphore = nullptr;
+        }
+        if (frame.renderFinishedSemaphore) {
+            gfxSemaphoreDestroy(frame.renderFinishedSemaphore);
+            frame.renderFinishedSemaphore = nullptr;
+        }
+        if (frame.inFlightFence) {
+            gfxFenceDestroy(frame.inFlightFence);
+            frame.inFlightFence = nullptr;
+        }
+    }
+
+    frameResources.clear();
 }
 
 void CubeApp::updateCube(int cubeIndex)
 {
-    UniformData uniforms = {};
+    UniformData uniforms{};
 
-    // Create rotation matrices
-    float rotX[16], rotY[16], tempModel[16];
-    matrixRotateX(rotX, (rotationAngleX + cubeIndex * 30.0f) * M_PI / 180.0f);
-    matrixRotateY(rotY, (rotationAngleY + cubeIndex * 45.0f) * M_PI / 180.0f);
-    matrixMultiply(tempModel, rotY, rotX);
+    // Create rotation matrices (combine X and Y rotations)
+    // Each cube rotates slightly differently
+    std::array<std::array<float, 4>, 4> rotX, rotY, tempModel, translation;
+    math::matrixIdentity(tempModel);
+    math::matrixRotateX(rotX, (rotationAngleX + cubeIndex * 30.0f) * M_PI / 180.0f);
+    math::matrixRotateY(rotY, (rotationAngleY + cubeIndex * 45.0f) * M_PI / 180.0f);
+    math::matrixMultiply(tempModel, rotY, rotX);
 
-    // Position cubes
-    float translation[16];
-    matrixIdentity(translation);
-    translation[12] = -(float)CUBE_COUNT * 0.5f + (cubeIndex - 1) * 1.5f;
+    // Position cubes side by side: left (-3, 0, 0), center (0, 0, 0), right (3, 0, 0)
+    math::matrixIdentity(translation);
+    translation[3][0] = -(float)CUBE_COUNT * 0.5f + (cubeIndex - 1) * 1.5f; // x offset
 
-    matrixMultiply(uniforms.model, tempModel, translation);
+    // Apply translation after rotation
+    math::matrixMultiply(uniforms.model, tempModel, translation);
 
-    // Create view matrix
-    matrixLookAt(uniforms.view,
-        0.0f, 0.0f, 10.0f,
-        0.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f);
+    // Create view matrix (camera positioned at 0, 0, 10 looking at origin)
+    math::matrixLookAt(uniforms.view,
+        0.0f, 0.0f, 10.0f, // eye position - pulled back to see all 3 cubes
+        0.0f, 0.0f, 0.0f, // look at point
+        0.0f, 1.0f, 0.0f); // up vector
 
-    // Create perspective projection matrix
+    // Create projection matrix
     float aspect = (float)swapchainInfo.extent.width / (float)swapchainInfo.extent.height;
-    matrixPerspective(uniforms.projection,
-        45.0f * M_PI / 180.0f,
-        aspect,
-        0.1f,
-        100.0f,
-        adapterInfo.backend);
+    math::matrixPerspective(uniforms.projection, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f, adapterInfo.backend);
 
     // Upload uniform data
     size_t offset = (currentFrame * CUBE_COUNT + cubeIndex) * uniformAlignedSize;
@@ -1327,10 +1500,12 @@ void CubeApp::update(float deltaTime)
 {
     rotationAngleX += 45.0f * deltaTime;
     rotationAngleY += 30.0f * deltaTime;
-    if (rotationAngleX >= 360.0f)
+    if (rotationAngleX >= 360.0f) {
         rotationAngleX -= 360.0f;
-    if (rotationAngleY >= 360.0f)
+    }
+    if (rotationAngleY >= 360.0f) {
         rotationAngleY -= 360.0f;
+    }
 
     // Update uniforms for each cube
     for (int i = 0; i < CUBE_COUNT; ++i) {
@@ -1340,8 +1515,8 @@ void CubeApp::update(float deltaTime)
 
 void CubeApp::recordClearCommands(uint32_t imageIndex)
 {
-    GfxCommandEncoder encoder = clearEncoders[currentFrame];
-    gfxCommandEncoderBegin(encoder);
+    auto& frame = frameResources[currentFrame];
+    gfxCommandEncoderBegin(frame.clearEncoder);
 
     GfxColor clearColor = { 0.1f, 0.2f, 0.3f, 1.0f };
 
@@ -1356,16 +1531,17 @@ void CubeApp::recordClearCommands(uint32_t imageIndex)
     };
 
     GfxRenderPassEncoder renderPass;
-    if (gfxCommandEncoderBeginRenderPass(encoder, &beginDesc, &renderPass) == GFX_RESULT_SUCCESS) {
+    if (gfxCommandEncoderBeginRenderPass(frame.clearEncoder, &beginDesc, &renderPass) == GFX_RESULT_SUCCESS) {
         gfxRenderPassEncoderEnd(renderPass);
     }
 
-    gfxCommandEncoderEnd(encoder);
+    gfxCommandEncoderEnd(frame.clearEncoder);
 }
 
 void CubeApp::recordCubeCommands(int cubeIndex, uint32_t imageIndex)
 {
-    GfxCommandEncoder encoder = cubeEncoders[currentFrame][cubeIndex];
+    auto& frame = frameResources[currentFrame];
+    GfxCommandEncoder encoder = frame.cubeEncoders[cubeIndex];
     gfxCommandEncoderBegin(encoder);
 
     GfxColor clearColor = { 0.1f, 0.2f, 0.3f, 1.0f };
@@ -1399,7 +1575,7 @@ void CubeApp::recordCubeCommands(int cubeIndex, uint32_t imageIndex)
             gfxRenderPassEncoderSetIndexBuffer(renderPass, indexBuffer, GFX_INDEX_FORMAT_UINT16, 0, indexBufferInfo.size);
         }
 
-        gfxRenderPassEncoderSetBindGroup(renderPass, 0, uniformBindGroups[currentFrame][cubeIndex], nullptr, 0);
+        gfxRenderPassEncoderSetBindGroup(renderPass, 0, frame.uniformBindGroups[cubeIndex], nullptr, 0);
         gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
 
         gfxRenderPassEncoderEnd(renderPass);
@@ -1410,8 +1586,8 @@ void CubeApp::recordCubeCommands(int cubeIndex, uint32_t imageIndex)
 
 void CubeApp::recordResolveCommands(uint32_t imageIndex)
 {
-    GfxCommandEncoder encoder = resolveEncoders[currentFrame];
-    gfxCommandEncoderBegin(encoder);
+    auto& frame = frameResources[currentFrame];
+    gfxCommandEncoderBegin(frame.resolveEncoder);
 
     GfxRenderPassBeginDescriptor beginDesc = {
         .label = "Final Resolve Pass",
@@ -1424,21 +1600,23 @@ void CubeApp::recordResolveCommands(uint32_t imageIndex)
     };
 
     GfxRenderPassEncoder renderPass;
-    if (gfxCommandEncoderBeginRenderPass(encoder, &beginDesc, &renderPass) == GFX_RESULT_SUCCESS) {
+    if (gfxCommandEncoderBeginRenderPass(frame.resolveEncoder, &beginDesc, &renderPass) == GFX_RESULT_SUCCESS) {
         gfxRenderPassEncoderEnd(renderPass);
     }
 
-    gfxCommandEncoderEnd(encoder);
+    gfxCommandEncoderEnd(frame.resolveEncoder);
 }
 
 void CubeApp::render()
 {
-    gfxFenceWait(inFlightFences[currentFrame], GFX_TIMEOUT_INFINITE);
-    gfxFenceReset(inFlightFences[currentFrame]);
+    auto& frame = frameResources[currentFrame];
+
+    gfxFenceWait(frame.inFlightFence, GFX_TIMEOUT_INFINITE);
+    gfxFenceReset(frame.inFlightFence);
 
     uint32_t imageIndex;
     GfxResult result = gfxSwapchainAcquireNextImage(swapchain, GFX_TIMEOUT_INFINITE,
-        imageAvailableSemaphores[currentFrame], nullptr, &imageIndex);
+        frame.imageAvailableSemaphore, nullptr, &imageIndex);
 
     if (result != GFX_RESULT_SUCCESS) {
         std::cerr << "Failed to acquire swapchain image\n";
@@ -1466,11 +1644,11 @@ void CubeApp::render()
 
         // Submit clear encoder
         GfxSubmitDescriptor clearSubmit = {
-            .commandEncoders = &clearEncoders[currentFrame],
+            .commandEncoders = &frame.clearEncoder,
             .commandEncoderCount = 1,
-            .waitSemaphores = &imageAvailableSemaphores[currentFrame],
+            .waitSemaphores = &frame.imageAvailableSemaphore,
             .waitSemaphoreCount = 1,
-            .signalSemaphores = &clearFinishedSemaphores[currentFrame],
+            .signalSemaphores = &frame.clearFinishedSemaphore,
             .signalSemaphoreCount = 1,
             .signalFence = nullptr
         };
@@ -1479,13 +1657,13 @@ void CubeApp::render()
         // Submit cube encoders
         std::vector<GfxCommandEncoder> cubeEncoderArray(CUBE_COUNT);
         for (int i = 0; i < CUBE_COUNT; ++i) {
-            cubeEncoderArray[i] = cubeEncoders[currentFrame][i];
+            cubeEncoderArray[i] = frame.cubeEncoders[i];
         }
 
         GfxSubmitDescriptor cubesSubmit = {
             .commandEncoders = cubeEncoderArray.data(),
             .commandEncoderCount = static_cast<uint32_t>(cubeEncoderArray.size()),
-            .waitSemaphores = &clearFinishedSemaphores[currentFrame],
+            .waitSemaphores = &frame.clearFinishedSemaphore,
             .waitSemaphoreCount = 1,
             .signalSemaphores = nullptr,
             .signalSemaphoreCount = 0,
@@ -1497,18 +1675,18 @@ void CubeApp::render()
         recordResolveCommands(imageIndex);
 
         GfxSubmitDescriptor resolveSubmit = {
-            .commandEncoders = &resolveEncoders[currentFrame],
+            .commandEncoders = &frame.resolveEncoder,
             .commandEncoderCount = 1,
             .waitSemaphores = nullptr,
             .waitSemaphoreCount = 0,
-            .signalSemaphores = &renderFinishedSemaphores[currentFrame],
+            .signalSemaphores = &frame.renderFinishedSemaphore,
             .signalSemaphoreCount = 1,
-            .signalFence = inFlightFences[currentFrame]
+            .signalFence = frame.inFlightFence
         };
         gfxQueueSubmit(queue, &resolveSubmit);
     } else {
         // Non-threaded path for WebGPU
-        GfxCommandEncoder encoder = cubeEncoders[currentFrame][0];
+        GfxCommandEncoder encoder = frame.cubeEncoders[0];
         gfxCommandEncoderBegin(encoder);
 
         GfxColor clearColor = { 0.1f, 0.2f, 0.3f, 1.0f };
@@ -1542,7 +1720,7 @@ void CubeApp::render()
             }
 
             for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
-                gfxRenderPassEncoderSetBindGroup(renderPass, 0, uniformBindGroups[currentFrame][cubeIdx], nullptr, 0);
+                gfxRenderPassEncoderSetBindGroup(renderPass, 0, frame.uniformBindGroups[cubeIdx], nullptr, 0);
                 gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
             }
 
@@ -1554,11 +1732,11 @@ void CubeApp::render()
         GfxSubmitDescriptor submitDescriptor = {
             .commandEncoders = &encoder,
             .commandEncoderCount = 1,
-            .waitSemaphores = &imageAvailableSemaphores[currentFrame],
+            .waitSemaphores = &frame.imageAvailableSemaphore,
             .waitSemaphoreCount = 1,
-            .signalSemaphores = &renderFinishedSemaphores[currentFrame],
+            .signalSemaphores = &frame.renderFinishedSemaphore,
             .signalSemaphoreCount = 1,
-            .signalFence = inFlightFences[currentFrame]
+            .signalFence = frame.inFlightFence
         };
         gfxQueueSubmit(queue, &submitDescriptor);
     }
@@ -1567,11 +1745,20 @@ void CubeApp::render()
     GfxPresentDescriptor presentDescriptor = {};
     presentDescriptor.sType = GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR;
     presentDescriptor.pNext = NULL;
-    presentDescriptor.waitSemaphores = &renderFinishedSemaphores[currentFrame];
+    presentDescriptor.waitSemaphores = &frame.renderFinishedSemaphore;
     presentDescriptor.waitSemaphoreCount = 1;
     gfxSwapchainPresent(swapchain, &presentDescriptor);
 
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    currentFrame = (currentFrame + 1) % framesInFlight;
+}
+
+float CubeApp::getCurrentTime()
+{
+#if defined(__EMSCRIPTEN__)
+    return (float)emscripten_get_now() / 1000.0f;
+#else
+    return (float)glfwGetTime();
+#endif
 }
 
 bool CubeApp::mainLoopIteration()
@@ -1586,7 +1773,7 @@ bool CubeApp::mainLoopIteration()
     if (previousWidth != windowWidth || previousHeight != windowHeight) {
         gfxDeviceWaitIdle(device);
 
-        cleanupSizeDependentResources();
+        destroySizeDependentResources();
         if (!createSizeDependentResources(windowWidth, windowHeight)) {
             std::cerr << "Failed to recreate size-dependent resources after resize" << std::endl;
             return false;
@@ -1640,133 +1827,136 @@ bool CubeApp::mainLoopIteration()
     return true;
 }
 
-bool CubeApp::initialize()
+GfxPlatformWindowHandle CubeApp::getPlatformWindowHandle()
 {
-    if (!initWindow())
-        return false;
-    if (!initializeGraphics())
-        return false;
-    if (!createSizeDependentResources(windowWidth, windowHeight))
-        return false;
-    if (!createRenderingResources())
-        return false;
-    if (!createSyncObjects())
-        return false;
-    if (!createRenderPipeline())
-        return false;
+    GfxPlatformWindowHandle handle = {}; // Use empty initializer for C++
+#if defined(__EMSCRIPTEN__)
+    handle = gfxPlatformWindowHandleFromEmscripten("#canvas");
+#elif defined(_WIN32)
+    handle = gfxPlatformWindowHandleFromWin32(GetModuleHandle(NULL), glfwGetWin32Window(window));
+#elif defined(__linux__)
+    // handle = gfxPlatformWindowHandleFromXlib(glfwGetX11Display(), glfwGetX11Window(window));
+    handle = gfxPlatformWindowHandleFromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
+#elif defined(__APPLE__)
+    handle = gfxPlatformWindowHandleFromMetal(glfwGetCocoaWindow(window));
+#endif
+    return handle;
+}
 
-    // Initialize thread pool if using threading
-    if constexpr (USE_THREADING) {
-        threadPool = std::make_unique<ThreadPool>(CUBE_COUNT);
-        std::cout << "Created ThreadPool with " << CUBE_COUNT << " worker threads for parallel command recording" << std::endl;
+void CubeApp::errorCallback(int error, const char* description)
+{
+    std::cerr << "GLFW Error " << error << ": " << description << std::endl;
+}
+
+void CubeApp::framebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+    auto* app = static_cast<CubeApp*>(glfwGetWindowUserPointer(window));
+    if (app) {
+        app->windowWidth = static_cast<uint32_t>(width);
+        app->windowHeight = static_cast<uint32_t>(height);
+    }
+}
+
+void CubeApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+}
+
+namespace util {
+std::vector<uint8_t> loadBinaryFile(const char* filepath)
+{
+    std::FILE* file = std::fopen(filepath, "rb");
+    if (!file) {
+        std::cerr << "Failed to open binary file: " << filepath << std::endl;
+        return {};
     }
 
-    previousWidth = windowWidth;
-    previousHeight = windowHeight;
-    lastTime = getCurrentTime();
+    std::fseek(file, 0, SEEK_END);
+    long fileSize = std::ftell(file);
+    std::fseek(file, 0, SEEK_SET);
 
-    // Initialize FPS tracking
-    fpsFrameCount = 0;
-    fpsTimeAccumulator = 0.0f;
-    fpsFrameTimeMin = FLT_MAX;
-    fpsFrameTimeMax = 0.0f;
-
-    std::cout << "Application initialized successfully!" << std::endl;
-    if constexpr (USE_THREADING) {
-        std::cout << "Running with ThreadPool (" << CUBE_COUNT << " threads) for parallel command recording" << std::endl;
-    } else {
-        std::cout << "Running in single-threaded mode" << std::endl;
-    }
-    std::cout << "Press ESC to exit" << std::endl
-              << std::endl;
-
-    return true;
-}
-
-void CubeApp::run()
-{
-    while (mainLoopIteration()) {
-        // Continue running
+    if (fileSize <= 0) {
+        std::cerr << "Invalid file size for binary file: " << filepath << std::endl;
+        std::fclose(file);
+        return {};
     }
 
-    std::cout << "\nCleaning up resources..." << std::endl;
-}
+    std::vector<uint8_t> buffer(fileSize);
+    size_t bytesRead = std::fread(buffer.data(), 1, fileSize, file);
+    std::fclose(file);
 
-// Matrix math utility functions
-void matrixIdentity(float* matrix)
-{
-    std::memset(matrix, 0, 16 * sizeof(float));
-    matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.0f;
-}
-
-void matrixMultiply(float* result, const float* a, const float* b)
-{
-    float temp[16];
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            temp[i * 4 + j] = 0;
-            for (int k = 0; k < 4; ++k) {
-                temp[i * 4 + j] += a[i * 4 + k] * b[k * 4 + j];
-            }
-        }
+    if (bytesRead != static_cast<size_t>(fileSize)) {
+        std::cerr << "Failed to read complete binary file: " << filepath << std::endl;
+        return {};
     }
-    std::memcpy(result, temp, sizeof(float) * 16);
+
+    return buffer;
 }
 
-void matrixRotateX(float* matrix, float angle)
+std::string loadTextFile(const char* filepath)
 {
-    float c = std::cos(angle);
-    float s = std::sin(angle);
+    std::FILE* file = std::fopen(filepath, "r");
+    if (!file) {
+        std::cerr << "Failed to open text file: " << filepath << std::endl;
+        return {};
+    }
 
-    matrixIdentity(matrix);
-    matrix[5] = c;
-    matrix[6] = -s;
-    matrix[9] = s;
-    matrix[10] = c;
+    std::fseek(file, 0, SEEK_END);
+    long fileSize = std::ftell(file);
+    std::fseek(file, 0, SEEK_SET);
+
+    if (fileSize <= 0) {
+        std::cerr << "Invalid file size for text file: " << filepath << std::endl;
+        std::fclose(file);
+        return {};
+    }
+
+    std::string buffer(fileSize, '\0');
+    size_t bytesRead = std::fread(&buffer[0], 1, fileSize, file);
+    std::fclose(file);
+
+    if (bytesRead != static_cast<size_t>(fileSize)) {
+        std::cerr << "Failed to read complete text file: " << filepath << std::endl;
+        return {};
+    }
+
+    return buffer;
+}
+} // namespace util
+
+// Math namespace implementation
+namespace math {
+void matrixIdentity(std::array<std::array<float, 4>, 4>& matrix)
+{
+    matrix = { { { 1.0f, 0.0f, 0.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f, 0.0f },
+        { 0.0f, 0.0f, 1.0f, 0.0f },
+        { 0.0f, 0.0f, 0.0f, 1.0f } } };
 }
 
-void matrixRotateY(float* matrix, float angle)
+void matrixPerspective(std::array<std::array<float, 4>, 4>& matrix, float fov, float aspect, float nearPlane, float farPlane, GfxBackend backend)
 {
-    float c = std::cos(angle);
-    float s = std::sin(angle);
-
-    matrixIdentity(matrix);
-    matrix[0] = c;
-    matrix[2] = s;
-    matrix[8] = -s;
-    matrix[10] = c;
-}
-
-void matrixRotateZ(float* matrix, float angle)
-{
-    float c = std::cos(angle);
-    float s = std::sin(angle);
-
-    matrixIdentity(matrix);
-    matrix[0] = c;
-    matrix[1] = -s;
-    matrix[4] = s;
-    matrix[5] = c;
-}
-
-void matrixPerspective(float* matrix, float fov, float aspect, float nearPlane, float farPlane, GfxBackend backend)
-{
-    std::memset(matrix, 0, 16 * sizeof(float));
+    matrix = { { { 0.0f, 0.0f, 0.0f, 0.0f },
+        { 0.0f, 0.0f, 0.0f, 0.0f },
+        { 0.0f, 0.0f, 0.0f, 0.0f },
+        { 0.0f, 0.0f, 0.0f, 0.0f } } };
 
     float f = 1.0f / std::tan(fov / 2.0f);
 
-    matrix[0] = f / aspect;
+    matrix[0][0] = f / aspect;
     if (backend == GFX_BACKEND_VULKAN) {
-        matrix[5] = -f; // Invert Y for Vulkan
+        matrix[1][1] = -f; // Invert Y for Vulkan
     } else {
-        matrix[5] = f;
+        matrix[1][1] = f;
     }
-    matrix[10] = (farPlane + nearPlane) / (nearPlane - farPlane);
-    matrix[11] = -1.0f;
-    matrix[14] = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
+    matrix[2][2] = (farPlane + nearPlane) / (nearPlane - farPlane);
+    matrix[2][3] = -1.0f;
+    matrix[3][2] = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
 }
 
-void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ)
+void matrixLookAt(std::array<std::array<float, 4>, 4>& matrix, float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ)
 {
     // Calculate forward vector
     float fx = centerX - eyeX;
@@ -1774,7 +1964,7 @@ void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ, float cente
     float fz = centerZ - eyeZ;
 
     // Normalize forward vector
-    if (!vectorNormalize(&fx, &fy, &fz)) {
+    if (!vectorNormalize(fx, fy, fz)) {
         matrixIdentity(matrix);
         return;
     }
@@ -1785,7 +1975,7 @@ void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ, float cente
     float rz = fx * upY - fy * upX;
 
     // Normalize right vector
-    if (!vectorNormalize(&rx, &ry, &rz)) {
+    if (!vectorNormalize(rx, ry, rz)) {
         matrixIdentity(matrix);
         return;
     }
@@ -1796,116 +1986,77 @@ void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ, float cente
     float uz = rx * fy - ry * fx;
 
     // Build view matrix
-    matrix[0] = rx;
-    matrix[1] = ux;
-    matrix[2] = -fx;
-    matrix[3] = 0.0f;
-
-    matrix[4] = ry;
-    matrix[5] = uy;
-    matrix[6] = -fy;
-    matrix[7] = 0.0f;
-
-    matrix[8] = rz;
-    matrix[9] = uz;
-    matrix[10] = -fz;
-    matrix[11] = 0.0f;
-
-    matrix[12] = -(rx * eyeX + ry * eyeY + rz * eyeZ);
-    matrix[13] = -(ux * eyeX + uy * eyeY + uz * eyeZ);
-    matrix[14] = fx * eyeX + fy * eyeY + fz * eyeZ;
-    matrix[15] = 1.0f;
+    matrix[0][0] = rx;
+    matrix[0][1] = ux;
+    matrix[0][2] = -fx;
+    matrix[0][3] = 0.0f;
+    matrix[1][0] = ry;
+    matrix[1][1] = uy;
+    matrix[1][2] = -fy;
+    matrix[1][3] = 0.0f;
+    matrix[2][0] = rz;
+    matrix[2][1] = uz;
+    matrix[2][2] = -fz;
+    matrix[2][3] = 0.0f;
+    matrix[3][0] = -(rx * eyeX + ry * eyeY + rz * eyeZ);
+    matrix[3][1] = -(ux * eyeX + uy * eyeY + uz * eyeZ);
+    matrix[3][2] = -(-fx * eyeX + -fy * eyeY + -fz * eyeZ);
+    matrix[3][3] = 1.0f;
 }
 
-bool vectorNormalize(float* x, float* y, float* z)
+void matrixRotateY(std::array<std::array<float, 4>, 4>& matrix, float angle)
 {
-    constexpr float epsilon = 1e-6f;
-    float len = std::sqrt((*x) * (*x) + (*y) * (*y) + (*z) * (*z));
+    float c = std::cos(angle);
+    float s = std::sin(angle);
+
+    matrixIdentity(matrix);
+    matrix[0][0] = c;
+    matrix[0][2] = s;
+    matrix[2][0] = -s;
+    matrix[2][2] = c;
+}
+
+void matrixRotateX(std::array<std::array<float, 4>, 4>& matrix, float angle)
+{
+    float c = std::cos(angle);
+    float s = std::sin(angle);
+
+    matrixIdentity(matrix);
+    matrix[1][1] = c;
+    matrix[1][2] = -s;
+    matrix[2][1] = s;
+    matrix[2][2] = c;
+}
+
+void matrixMultiply(std::array<std::array<float, 4>, 4>& result, const std::array<std::array<float, 4>, 4>& a, const std::array<std::array<float, 4>, 4>& b)
+{
+    std::array<std::array<float, 4>, 4> temp;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            temp[i][j] = 0.0f;
+            for (int k = 0; k < 4; k++) {
+                temp[i][j] += a[i][k] * b[k][j];
+            }
+        }
+    }
+    result = temp;
+}
+
+bool vectorNormalize(float& x, float& y, float& z)
+{
+    const float epsilon = 1e-6f;
+    float len = sqrtf(x * x + y * y + z * z);
 
     if (len < epsilon) {
         return false;
     }
 
-    *x /= len;
-    *y /= len;
-    *z /= len;
+    x /= len;
+    y /= len;
+    z /= len;
     return true;
 }
-
-// Helper function to load binary files (SPIR-V shaders)
-static void* loadBinaryFile(const char* filepath, size_t* outSize)
-{
-    std::ifstream file(filepath, std::ios::binary | std::ios::ate);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open file: " << filepath << std::endl;
-        return nullptr;
-    }
-
-    std::streamsize fileSize = file.tellg();
-    if (fileSize <= 0) {
-        std::cerr << "Invalid file size for: " << filepath << std::endl;
-        return nullptr;
-    }
-
-    file.seekg(0, std::ios::beg);
-
-    void* buffer = malloc(fileSize);
-    if (!buffer) {
-        std::cerr << "Failed to allocate memory for file: " << filepath << std::endl;
-        return nullptr;
-    }
-
-    if (!file.read(static_cast<char*>(buffer), fileSize)) {
-        std::cerr << "Failed to read complete file: " << filepath << std::endl;
-        free(buffer);
-        return nullptr;
-    }
-
-    *outSize = static_cast<size_t>(fileSize);
-    return buffer;
-}
-
-static void* loadTextFile(const char* filepath, size_t* outSize)
-{
-    std::ifstream file(filepath, std::ios::ate);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open file: " << filepath << std::endl;
-        return nullptr;
-    }
-
-    std::streamsize fileSize = file.tellg();
-    if (fileSize <= 0) {
-        std::cerr << "Invalid file size for: " << filepath << std::endl;
-        return nullptr;
-    }
-
-    file.seekg(0, std::ios::beg);
-
-    char* buffer = static_cast<char*>(malloc(fileSize + 1));
-    if (!buffer) {
-        std::cerr << "Failed to allocate memory for file: " << filepath << std::endl;
-        return nullptr;
-    }
-
-    if (!file.read(buffer, fileSize)) {
-        std::cerr << "Failed to read complete file: " << filepath << std::endl;
-        free(buffer);
-        return nullptr;
-    }
-
-    buffer[fileSize] = '\0';
-    *outSize = static_cast<size_t>(fileSize + 1);
-    return buffer;
-}
-
-static float getCurrentTime()
-{
-#if defined(__EMSCRIPTEN__)
-    return (float)emscripten_get_now() / 1000.0f;
-#else
-    return (float)glfwGetTime();
-#endif
-}
+} // namespace math
 
 int main()
 {
@@ -1914,12 +2065,14 @@ int main()
 
     CubeApp app;
 
-    if (!app.initialize()) {
+    if (!app.init()) {
         std::cerr << "Failed to initialize application" << std::endl;
+        app.cleanup();
         return -1;
     }
 
     app.run();
+    app.cleanup();
 
     std::cout << "Example completed successfully!" << std::endl;
     return 0;

@@ -39,8 +39,8 @@
 
 static constexpr uint32_t WINDOW_WIDTH = 800;
 static constexpr uint32_t WINDOW_HEIGHT = 600;
-static constexpr uint32_t COMPUTE_TEXTURE_WIDTH = 800;
-static constexpr uint32_t COMPUTE_TEXTURE_HEIGHT = 600;
+static constexpr uint32_t COMPUTE_TEXTURE_WIDTH = 512;
+static constexpr uint32_t COMPUTE_TEXTURE_HEIGHT = 512;
 static constexpr gfx::Format COLOR_FORMAT = gfx::Format::B8G8R8A8UnormSrgb;
 
 #if defined(__EMSCRIPTEN__)
@@ -85,20 +85,56 @@ struct RenderUniformData {
     float padding[3]; // WebGPU requires 16-byte alignment for uniform buffers
 };
 
+namespace util {
+std::vector<uint8_t> loadBinaryFile(const char* filepath);
+std::string loadTextFile(const char* filepath);
+} // namespace util
+
 class ComputeApp {
 public:
-    bool initialize();
+    bool init();
     void run();
     void cleanup();
 
 private:
-    bool initializeGLFW();
-    bool initializeGraphics();
-    bool createComputeResources();
-    bool createRenderResources();
-    bool createSyncObjects();
-    void cleanupSizeDependentResources();
+    bool createWindow(uint32_t width, uint32_t height);
+    void destroyWindow();
+    bool createGraphics();
+    void destroyGraphics();
+    bool createPerFrameResources();
+    void destroyPerFrameResources();
     bool createSizeDependentResources(uint32_t width, uint32_t height);
+    void destroySizeDependentResources();
+    bool createSwapchain(uint32_t width, uint32_t height);
+    void destroySwapchain();
+    bool createRenderPass();
+    void destroyRenderPass();
+    bool createFramebuffers();
+    void destroyFramebuffers();
+
+    bool createComputeTexture();
+    void destroyComputeTexture();
+    bool createComputeShaders();
+    void destroyComputeShaders();
+    bool createComputeBindGroupLayout();
+    void destroyComputeBindGroupLayout();
+    bool createComputePipeline();
+    void destroyComputePipeline();
+    bool transitionComputeTexture();
+    bool createComputeResources();
+    void destroyComputeResources();
+
+    bool createSampler();
+    void destroySampler();
+    bool createRenderShaders();
+    void destroyRenderShaders();
+    bool createRenderBindGroupLayout();
+    void destroyRenderBindGroupLayout();
+    bool createRenderPipeline();
+    void destroyRenderPipeline();
+    bool createRenderResources();
+    void destroyRenderResources();
+
     void update(float deltaTime);
     void render();
     float getCurrentTime();
@@ -106,11 +142,9 @@ private:
 #if defined(__EMSCRIPTEN__)
     static void emscriptenMainLoop(void* userData);
 #endif
-    gfx::PlatformWindowHandle extractNativeHandle();
-    std::vector<uint8_t> loadBinaryFile(const char* filepath);
-    std::string loadTextFile(const char* filepath);
+    gfx::PlatformWindowHandle getPlatformWindowHandle();
 
-private:
+    static void errorCallback(int error, const char* description);
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
@@ -167,13 +201,17 @@ private:
     float fpsFrameTimeMax = 0.0f;
 };
 
-bool ComputeApp::initialize()
+bool ComputeApp::init()
 {
-    if (!initializeGLFW()) {
+    if (!createWindow(WINDOW_WIDTH, WINDOW_HEIGHT)) {
         return false;
     }
 
-    if (!initializeGraphics()) {
+    if (!createGraphics()) {
+        return false;
+    }
+
+    if (!createSizeDependentResources(windowWidth, windowHeight)) {
         return false;
     }
 
@@ -185,7 +223,7 @@ bool ComputeApp::initialize()
         return false;
     }
 
-    if (!createSyncObjects()) {
+    if (!createPerFrameResources()) {
         return false;
     }
 
@@ -195,8 +233,40 @@ bool ComputeApp::initialize()
     return true;
 }
 
-bool ComputeApp::initializeGLFW()
+void ComputeApp::run()
 {
+    // Run main loop (platform-specific)
+#if defined(__EMSCRIPTEN__)
+    // Note: emscripten_set_main_loop_arg returns immediately and never blocks
+    // Cleanup happens in emscriptenMainLoop when the loop exits
+    // Execution continues in the browser event loop
+    emscripten_set_main_loop_arg(ComputeApp::emscriptenMainLoop, this, 0, 1);
+#else
+    while (mainLoopIteration()) {
+        // Loop continues until mainLoopIteration returns false
+    }
+#endif
+}
+
+void ComputeApp::cleanup()
+{
+    if (device) {
+        device->waitIdle();
+    }
+
+    // Destroy in reverse order of creation
+    destroyPerFrameResources();
+    destroyRenderResources();
+    destroyComputeResources();
+    destroySizeDependentResources();
+    destroyGraphics();
+    destroyWindow();
+}
+
+bool ComputeApp::createWindow(uint32_t width, uint32_t height)
+{
+    glfwSetErrorCallback(errorCallback);
+
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return false;
@@ -219,7 +289,16 @@ bool ComputeApp::initializeGLFW()
     return true;
 }
 
-bool ComputeApp::initializeGraphics()
+void ComputeApp::destroyWindow()
+{
+    if (window) {
+        glfwDestroyWindow(window);
+        window = nullptr;
+    }
+    glfwTerminate();
+}
+
+bool ComputeApp::createGraphics()
 {
     // Set up logging callback
     gfx::setLogCallback(logCallback);
@@ -274,22 +353,13 @@ bool ComputeApp::initializeGraphics()
         queue = device->getQueue();
 
         // Create surface using native platform handles
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-
         gfx::SurfaceDescriptor surfaceDesc{};
         surfaceDesc.label = "Main Surface";
-        surfaceDesc.windowHandle = extractNativeHandle();
+        surfaceDesc.windowHandle = getPlatformWindowHandle();
 
         surface = device->createSurface(surfaceDesc);
         if (!surface) {
             std::cerr << "Failed to create surface" << std::endl;
-            return false;
-        }
-
-        createSizeDependentResources(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-        if (!swapchain) {
-            std::cerr << "Failed to create swapchain" << std::endl;
             return false;
         }
 
@@ -300,395 +370,17 @@ bool ComputeApp::initializeGraphics()
     }
 }
 
-bool ComputeApp::createComputeResources()
+void ComputeApp::destroyGraphics()
 {
-    try {
-        // Create compute output texture (storage image)
-        gfx::TextureDescriptor textureDesc{};
-        textureDesc.type = gfx::TextureType::Texture2D;
-        textureDesc.size = { COMPUTE_TEXTURE_WIDTH, COMPUTE_TEXTURE_HEIGHT, 1 };
-        textureDesc.format = gfx::Format::R8G8B8A8Unorm;
-        textureDesc.usage = gfx::TextureUsage::StorageBinding | gfx::TextureUsage::TextureBinding;
-        textureDesc.mipLevelCount = 1;
-        textureDesc.sampleCount = gfx::SampleCount::Count1;
-
-        computeTexture = device->createTexture(textureDesc);
-        if (!computeTexture) {
-            std::cerr << "Failed to create compute texture" << std::endl;
-            return false;
-        }
-
-        gfx::TextureViewDescriptor viewDesc{};
-        viewDesc.format = gfx::Format::R8G8B8A8Unorm;
-        viewDesc.viewType = gfx::TextureViewType::View2D;
-        viewDesc.baseMipLevel = 0;
-        viewDesc.mipLevelCount = 1;
-        viewDesc.baseArrayLayer = 0;
-        viewDesc.arrayLayerCount = 1;
-
-        computeTextureView = computeTexture->createView(viewDesc);
-        if (!computeTextureView) {
-            std::cerr << "Failed to create compute texture view" << std::endl;
-            return false;
-        }
-
-        gfx::ShaderSourceType shaderSourceType;
-        std::vector<uint8_t> computeShaderCode;
-
-        if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
-            shaderSourceType = gfx::ShaderSourceType::SPIRV;
-            std::cout << "Loading SPIR-V compute shader..." << std::endl;
-            computeShaderCode = loadBinaryFile("shaders/generate.comp.spv");
-        } else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
-            shaderSourceType = gfx::ShaderSourceType::WGSL;
-            std::cout << "Loading WGSL compute shader..." << std::endl;
-            auto wgsl = loadTextFile("shaders/generate.comp.wgsl");
-            computeShaderCode.assign(wgsl.begin(), wgsl.end());
-        } else {
-            std::cerr << "Error: No supported shader format found" << std::endl;
-            return false;
-        }
-
-        if (computeShaderCode.empty()) {
-            std::cerr << "Failed to load compute shader" << std::endl;
-            return false;
-        }
-
-        gfx::ShaderDescriptor computeShaderDesc{};
-        computeShaderDesc.label = "Compute Shader";
-        computeShaderDesc.sourceType = shaderSourceType;
-        computeShaderDesc.code = computeShaderCode;
-        computeShaderDesc.entryPoint = "main";
-
-        computeShader = device->createShader(computeShaderDesc);
-        if (!computeShader) {
-            std::cerr << "Failed to create compute shader" << std::endl;
-            return false;
-        }
-
-        // Create compute uniform buffers (one per frame in flight)
-        gfx::BufferDescriptor computeUniformBufferDesc{};
-        computeUniformBufferDesc.label = "Compute Uniform Buffer";
-        computeUniformBufferDesc.size = sizeof(ComputeUniformData);
-        computeUniformBufferDesc.usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst;
-
-        computeUniformBuffers.resize(framesInFlightCount);
-        for (size_t i = 0; i < framesInFlightCount; ++i) {
-            computeUniformBuffers[i] = device->createBuffer(computeUniformBufferDesc);
-            if (!computeUniformBuffers[i]) {
-                std::cerr << "Failed to create compute uniform buffer " << i << std::endl;
-                return false;
-            }
-        }
-
-        // Create compute bind group layout
-        gfx::BindGroupLayoutEntry storageTextureEntry{
-            .binding = 0,
-            .visibility = gfx::ShaderStage::Compute,
-            .resource = gfx::BindGroupLayoutEntry::StorageTextureBinding{
-                .format = gfx::Format::R8G8B8A8Unorm,
-                .writeOnly = true,
-                .viewDimension = gfx::TextureViewType::View2D,
-            }
-        };
-
-        gfx::BindGroupLayoutEntry uniformBufferEntry{
-            .binding = 1,
-            .visibility = gfx::ShaderStage::Compute,
-            .resource = gfx::BindGroupLayoutEntry::BufferBinding{
-                .hasDynamicOffset = false,
-                .minBindingSize = sizeof(ComputeUniformData),
-            }
-        };
-
-        gfx::BindGroupLayoutDescriptor computeLayoutDesc{};
-        computeLayoutDesc.label = "Compute Bind Group Layout";
-        computeLayoutDesc.entries = { storageTextureEntry, uniformBufferEntry };
-
-        computeBindGroupLayout = device->createBindGroupLayout(computeLayoutDesc);
-        if (!computeBindGroupLayout) {
-            std::cerr << "Failed to create compute bind group layout" << std::endl;
-            return false;
-        }
-
-        // Create compute bind groups (one per frame in flight)
-        computeBindGroups.resize(framesInFlightCount);
-        for (size_t i = 0; i < framesInFlightCount; ++i) {
-            gfx::BindGroupEntry textureEntry{};
-            textureEntry.binding = 0;
-            textureEntry.resource = computeTextureView;
-
-            gfx::BindGroupEntry bufferEntry{};
-            bufferEntry.binding = 1;
-            bufferEntry.resource = computeUniformBuffers[i];
-            bufferEntry.offset = 0;
-            bufferEntry.size = sizeof(ComputeUniformData);
-
-            gfx::BindGroupDescriptor computeBindGroupDesc{};
-            computeBindGroupDesc.label = "Compute Bind Group " + std::to_string(i);
-            computeBindGroupDesc.layout = computeBindGroupLayout;
-            computeBindGroupDesc.entries = { textureEntry, bufferEntry };
-
-            computeBindGroups[i] = device->createBindGroup(computeBindGroupDesc);
-            if (!computeBindGroups[i]) {
-                std::cerr << "Failed to create compute bind group " << i << std::endl;
-                return false;
-            }
-        }
-
-        // Create compute pipeline
-        gfx::ComputePipelineDescriptor computePipelineDesc{};
-        computePipelineDesc.label = "Compute Pipeline";
-        computePipelineDesc.compute = computeShader;
-        computePipelineDesc.entryPoint = "main";
-        computePipelineDesc.bindGroupLayouts = { computeBindGroupLayout };
-
-        computePipeline = device->createComputePipeline(computePipelineDesc);
-        if (!computePipeline) {
-            std::cerr << "Failed to create compute pipeline" << std::endl;
-            return false;
-        }
-
-        // Transition compute texture to SHADER_READ_ONLY layout initially
-        gfx::CommandEncoderDescriptor initEncoderDesc{};
-        initEncoderDesc.label = "Init Layout Transition";
-        auto initEncoder = device->createCommandEncoder(initEncoderDesc);
-        if (initEncoder) {
-            initEncoder->begin();
-
-            gfx::TextureBarrier initBarrier{};
-            initBarrier.texture = computeTexture;
-            initBarrier.oldLayout = gfx::TextureLayout::Undefined;
-            initBarrier.newLayout = gfx::TextureLayout::ShaderReadOnly;
-            initBarrier.srcStageMask = gfx::PipelineStage::TopOfPipe;
-            initBarrier.dstStageMask = gfx::PipelineStage::FragmentShader;
-            initBarrier.srcAccessMask = gfx::AccessFlags::None;
-            initBarrier.dstAccessMask = gfx::AccessFlags::ShaderRead;
-            initBarrier.baseMipLevel = 0;
-            initBarrier.mipLevelCount = 1;
-            initBarrier.baseArrayLayer = 0;
-            initBarrier.arrayLayerCount = 1;
-
-            gfx::PipelineBarrierDescriptor barrierDesc{};
-            barrierDesc.textureBarriers = { initBarrier };
-            initEncoder->pipelineBarrier(barrierDesc);
-            initEncoder->end();
-
-            gfx::FenceDescriptor initFenceDesc{};
-            initFenceDesc.signaled = false;
-            auto initFence = device->createFence(initFenceDesc);
-
-            gfx::SubmitDescriptor submitDescriptor{};
-            submitDescriptor.commandEncoders.push_back(initEncoder);
-            submitDescriptor.signalFence = initFence;
-
-            queue->submit(submitDescriptor);
-            auto waitResult = initFence->wait(gfx::TimeoutInfinite);
-            if (!gfx::isSuccess(waitResult)) {
-                throw std::runtime_error("Failed to wait for init fence");
-            }
-        }
-
-        std::cout << "Compute resources created successfully" << std::endl;
-        return true;
-    } catch (const std::exception& e) {
-        std::cerr << "Failed to create compute resources: " << e.what() << std::endl;
-        return false;
-    }
+    surface.reset();
+    queue.reset();
+    device.reset();
+    adapter.reset();
+    instance.reset();
+    gfx::unloadBackend(BACKEND_API);
 }
 
-bool ComputeApp::createRenderResources()
-{
-    try {
-        // Load shaders - try SPIR-V first, then WGSL
-        gfx::ShaderSourceType shaderSourceType;
-        std::vector<uint8_t> vertexShaderCode, fragmentShaderCode;
-
-        if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
-            shaderSourceType = gfx::ShaderSourceType::SPIRV;
-            std::cout << "Loading SPIR-V shaders..." << std::endl;
-            vertexShaderCode = loadBinaryFile("shaders/fullscreen.vert.spv");
-            fragmentShaderCode = loadBinaryFile("shaders/postprocess.frag.spv");
-        } else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
-            shaderSourceType = gfx::ShaderSourceType::WGSL;
-            std::cout << "Loading WGSL shaders..." << std::endl;
-            auto vertexWgsl = loadTextFile("shaders/fullscreen.vert.wgsl");
-            auto fragmentWgsl = loadTextFile("shaders/postprocess.frag.wgsl");
-            vertexShaderCode.assign(vertexWgsl.begin(), vertexWgsl.end());
-            fragmentShaderCode.assign(fragmentWgsl.begin(), fragmentWgsl.end());
-        } else {
-            std::cerr << "Error: No supported shader format found" << std::endl;
-            return false;
-        }
-
-        if (vertexShaderCode.empty() || fragmentShaderCode.empty()) {
-            std::cerr << "Failed to load shaders" << std::endl;
-            return false;
-        }
-
-        gfx::ShaderDescriptor vertexShaderDesc{};
-        vertexShaderDesc.label = "Vertex Shader";
-        vertexShaderDesc.sourceType = shaderSourceType;
-        vertexShaderDesc.code = vertexShaderCode;
-        vertexShaderDesc.entryPoint = "main";
-
-        vertexShader = device->createShader(vertexShaderDesc);
-        if (!vertexShader) {
-            std::cerr << "Failed to create vertex shader" << std::endl;
-            return false;
-        }
-
-        gfx::ShaderDescriptor fragmentShaderDesc{};
-        fragmentShaderDesc.label = "Fragment Shader";
-        fragmentShaderDesc.sourceType = shaderSourceType;
-        fragmentShaderDesc.code = fragmentShaderCode;
-        fragmentShaderDesc.entryPoint = "main";
-
-        fragmentShader = device->createShader(fragmentShaderDesc);
-        if (!fragmentShader) {
-            std::cerr << "Failed to create fragment shader" << std::endl;
-            return false;
-        }
-
-        // Create sampler
-        gfx::SamplerDescriptor samplerDesc{};
-        samplerDesc.magFilter = gfx::FilterMode::Linear;
-        samplerDesc.minFilter = gfx::FilterMode::Linear;
-        samplerDesc.addressModeU = gfx::AddressMode::ClampToEdge;
-        samplerDesc.addressModeV = gfx::AddressMode::ClampToEdge;
-
-        sampler = device->createSampler(samplerDesc);
-        if (!sampler) {
-            std::cerr << "Failed to create sampler" << std::endl;
-            return false;
-        }
-
-        // Create render uniform buffers (one per frame in flight)
-        gfx::BufferDescriptor renderUniformBufferDesc{};
-        renderUniformBufferDesc.label = "Render Uniform Buffer";
-        renderUniformBufferDesc.size = sizeof(RenderUniformData);
-        renderUniformBufferDesc.usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst;
-
-        renderUniformBuffers.resize(framesInFlightCount);
-        for (size_t i = 0; i < framesInFlightCount; ++i) {
-            renderUniformBuffers[i] = device->createBuffer(renderUniformBufferDesc);
-            if (!renderUniformBuffers[i]) {
-                std::cerr << "Failed to create render uniform buffer " << i << std::endl;
-                return false;
-            }
-        }
-
-        // Create render bind group layout
-        gfx::BindGroupLayoutEntry samplerEntry{
-            .binding = 0,
-            .visibility = gfx::ShaderStage::Fragment,
-            .resource = gfx::BindGroupLayoutEntry::SamplerBinding{
-                .comparison = false,
-            }
-        };
-
-        gfx::BindGroupLayoutEntry textureEntry{
-            .binding = 1,
-            .visibility = gfx::ShaderStage::Fragment,
-            .resource = gfx::BindGroupLayoutEntry::TextureBinding{
-                .multisampled = false,
-                .viewDimension = gfx::TextureViewType::View2D,
-            }
-        };
-
-        gfx::BindGroupLayoutEntry uniformBufferEntry{
-            .binding = 2,
-            .visibility = gfx::ShaderStage::Fragment,
-            .resource = gfx::BindGroupLayoutEntry::BufferBinding{
-                .hasDynamicOffset = false,
-                .minBindingSize = sizeof(RenderUniformData),
-            }
-        };
-
-        gfx::BindGroupLayoutDescriptor renderLayoutDesc{};
-        renderLayoutDesc.label = "Render Bind Group Layout";
-        renderLayoutDesc.entries = { samplerEntry, textureEntry, uniformBufferEntry };
-
-        renderBindGroupLayout = device->createBindGroupLayout(renderLayoutDesc);
-        if (!renderBindGroupLayout) {
-            std::cerr << "Failed to create render bind group layout" << std::endl;
-            return false;
-        }
-
-        // Create render bind groups (one per frame in flight)
-        renderBindGroups.resize(framesInFlightCount);
-        for (size_t i = 0; i < framesInFlightCount; ++i) {
-            gfx::BindGroupEntry samplerBindEntry{};
-            samplerBindEntry.binding = 0;
-            samplerBindEntry.resource = sampler;
-
-            gfx::BindGroupEntry textureBindEntry{};
-            textureBindEntry.binding = 1;
-            textureBindEntry.resource = computeTextureView;
-
-            gfx::BindGroupEntry bufferBindEntry{};
-            bufferBindEntry.binding = 2;
-            bufferBindEntry.resource = renderUniformBuffers[i];
-            bufferBindEntry.offset = 0;
-            bufferBindEntry.size = sizeof(RenderUniformData);
-
-            gfx::BindGroupDescriptor renderBindGroupDesc{};
-            renderBindGroupDesc.label = "Render Bind Group " + std::to_string(i);
-            renderBindGroupDesc.layout = renderBindGroupLayout;
-            renderBindGroupDesc.entries = { samplerBindEntry, textureBindEntry, bufferBindEntry };
-
-            renderBindGroups[i] = device->createBindGroup(renderBindGroupDesc);
-            if (!renderBindGroups[i]) {
-                std::cerr << "Failed to create render bind group " << i << std::endl;
-                return false;
-            }
-        }
-
-        // Create render pipeline
-        gfx::VertexState vertexState{};
-        vertexState.module = vertexShader;
-        vertexState.entryPoint = "main";
-        vertexState.buffers = {};
-
-        gfx::ColorTargetState colorTarget{};
-        colorTarget.format = swapchain->getInfo().format;
-        colorTarget.writeMask = gfx::ColorWriteMask::All;
-
-        gfx::FragmentState fragmentState{};
-        fragmentState.module = fragmentShader;
-        fragmentState.entryPoint = "main";
-        fragmentState.targets = { colorTarget };
-
-        gfx::PrimitiveState primitiveState{};
-        primitiveState.topology = gfx::PrimitiveTopology::TriangleList;
-        primitiveState.frontFace = gfx::FrontFace::CounterClockwise;
-        primitiveState.cullMode = gfx::CullMode::None;
-        primitiveState.polygonMode = gfx::PolygonMode::Fill;
-
-        gfx::RenderPipelineDescriptor pipelineDesc{};
-        pipelineDesc.label = "Render Pipeline";
-        pipelineDesc.vertex = vertexState;
-        pipelineDesc.fragment = fragmentState;
-        pipelineDesc.primitive = primitiveState;
-        pipelineDesc.sampleCount = gfx::SampleCount::Count1;
-        pipelineDesc.bindGroupLayouts = { renderBindGroupLayout };
-        pipelineDesc.renderPass = renderPass;
-
-        renderPipeline = device->createRenderPipeline(pipelineDesc);
-        if (!renderPipeline) {
-            std::cerr << "Failed to create render pipeline" << std::endl;
-            return false;
-        }
-
-        std::cout << "Render resources created successfully" << std::endl;
-        return true;
-    } catch (const std::exception& e) {
-        std::cerr << "Failed to create render resources: " << e.what() << std::endl;
-        return false;
-    }
-}
-
-bool ComputeApp::createSyncObjects()
+bool ComputeApp::createPerFrameResources()
 {
     try {
         gfx::SemaphoreDescriptor semaphoreDesc{};
@@ -735,28 +427,59 @@ bool ComputeApp::createSyncObjects()
     }
 }
 
-void ComputeApp::cleanupSizeDependentResources()
+void ComputeApp::destroyPerFrameResources()
 {
-    // Clean up render pass and framebuffers (these depend on window size)
-    framebuffers.clear();
-    renderPass.reset();
-
-    // Clean up swapchain (depends on window size)
-    swapchain.reset();
+    for (size_t i = 0; i < commandEncoders.size(); ++i) {
+        commandEncoders[i].reset();
+    }
+    for (size_t i = 0; i < inFlightFences.size(); ++i) {
+        inFlightFences[i].reset();
+    }
+    for (size_t i = 0; i < renderFinishedSemaphores.size(); ++i) {
+        renderFinishedSemaphores[i].reset();
+    }
+    for (size_t i = 0; i < imageAvailableSemaphores.size(); ++i) {
+        imageAvailableSemaphores[i].reset();
+    }
+    commandEncoders.clear();
+    inFlightFences.clear();
+    renderFinishedSemaphores.clear();
+    imageAvailableSemaphores.clear();
 }
 
 bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 {
+    if (!createSwapchain(width, height)) {
+        return false;
+    }
+
+    if (!createRenderPass()) {
+        return false;
+    }
+
+    if (!createFramebuffers()) {
+        return false;
+    }
+
+    return true;
+}
+
+void ComputeApp::destroySizeDependentResources()
+{
+    destroyFramebuffers();
+    destroyRenderPass();
+    destroySwapchain();
+}
+
+bool ComputeApp::createSwapchain(uint32_t width, uint32_t height)
+{
     try {
-        // Query surface capabilities to determine frame count
+        // Query surface capabilities
         auto surfaceInfo = surface->getInfo();
         std::cout << "Surface Info:" << std::endl;
         std::cout << "  Image Count: min " << surfaceInfo.minImageCount << ", max " << surfaceInfo.maxImageCount << std::endl;
-        std::cout << "  Extent: min (" << surfaceInfo.minExtent.width << ", " << surfaceInfo.minExtent.height << "), "
-                  << "max (" << surfaceInfo.maxExtent.width << ", " << surfaceInfo.maxExtent.height << ")" << std::endl;
 
-        // Calculate frames in flight based on surface capabilities
-        // Use min image count, but clamp to reasonable values (2-4 is typical)
+        // Calculate frames in flight
         framesInFlightCount = surfaceInfo.minImageCount;
         if (framesInFlightCount < 2) {
             framesInFlightCount = 2;
@@ -767,13 +490,14 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
         std::cout << "Frames in flight: " << framesInFlightCount << std::endl;
 
         gfx::SwapchainDescriptor swapchainDesc{};
+        swapchainDesc.label = "Main Swapchain";
         swapchainDesc.surface = surface;
         swapchainDesc.extent.width = width;
         swapchainDesc.extent.height = height;
         swapchainDesc.format = COLOR_FORMAT;
         swapchainDesc.usage = gfx::TextureUsage::RenderAttachment;
         swapchainDesc.presentMode = gfx::PresentMode::Fifo;
-        swapchainDesc.imageCount = framesInFlightCount;
+        swapchainDesc.imageCount = static_cast<uint32_t>(framesInFlightCount);
 
         swapchain = device->createSwapchain(swapchainDesc);
         if (!swapchain) {
@@ -781,13 +505,26 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
             return false;
         }
 
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Swapchain creation error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void ComputeApp::destroySwapchain()
+{
+    swapchain.reset();
+}
+
+bool ComputeApp::createRenderPass()
+{
+    try {
         auto swapchainInfo = swapchain->getInfo();
 
-        // Create render pass
         gfx::RenderPassCreateDescriptor renderPassDesc{};
         renderPassDesc.label = "Main Render Pass";
 
-        // Color attachment
         gfx::RenderPassColorAttachment colorAttachment{};
         colorAttachment.target.format = swapchainInfo.format;
         colorAttachment.target.sampleCount = gfx::SampleCount::Count1;
@@ -803,16 +540,30 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
             return false;
         }
 
-        // Create framebuffers for each swapchain image
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Render pass creation error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void ComputeApp::destroyRenderPass()
+{
+    renderPass.reset();
+}
+
+bool ComputeApp::createFramebuffers()
+{
+    try {
+        auto swapchainInfo = swapchain->getInfo();
         framebuffers.resize(swapchainInfo.imageCount);
 
         for (uint32_t i = 0; i < swapchainInfo.imageCount; ++i) {
             gfx::FramebufferDescriptor framebufferDesc{};
             framebufferDesc.label = "Framebuffer " + std::to_string(i);
             framebufferDesc.renderPass = renderPass;
-            framebufferDesc.extent = { width, height };
-
-            // Color attachment
+            framebufferDesc.extent.width = swapchainInfo.extent.width;
+            framebufferDesc.extent.height = swapchainInfo.extent.height;
             framebufferDesc.colorAttachments.push_back({ swapchain->getTextureView(i) });
 
             framebuffers[i] = device->createFramebuffer(framebufferDesc);
@@ -824,9 +575,607 @@ bool ComputeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "Failed to recreate swapchain: " << e.what() << std::endl;
+        std::cerr << "Framebuffer creation error: " << e.what() << std::endl;
         return false;
     }
+}
+
+void ComputeApp::destroyFramebuffers()
+{
+    framebuffers.clear();
+}
+
+bool ComputeApp::createComputeTexture()
+{
+    try {
+        // Create compute output texture (storage image)
+        gfx::TextureDescriptor textureDesc{};
+        textureDesc.type = gfx::TextureType::Texture2D;
+        textureDesc.size = { COMPUTE_TEXTURE_WIDTH, COMPUTE_TEXTURE_HEIGHT, 1 };
+        textureDesc.format = gfx::Format::R8G8B8A8Unorm;
+        textureDesc.usage = gfx::TextureUsage::StorageBinding | gfx::TextureUsage::TextureBinding;
+        textureDesc.mipLevelCount = 1;
+        textureDesc.sampleCount = gfx::SampleCount::Count1;
+
+        computeTexture = device->createTexture(textureDesc);
+        if (!computeTexture) {
+            std::cerr << "Failed to create compute texture" << std::endl;
+            return false;
+        }
+
+        gfx::TextureViewDescriptor viewDesc{};
+        viewDesc.format = gfx::Format::R8G8B8A8Unorm;
+        viewDesc.viewType = gfx::TextureViewType::View2D;
+        viewDesc.baseMipLevel = 0;
+        viewDesc.mipLevelCount = 1;
+        viewDesc.baseArrayLayer = 0;
+        viewDesc.arrayLayerCount = 1;
+
+        computeTextureView = computeTexture->createView(viewDesc);
+        if (!computeTextureView) {
+            std::cerr << "Failed to create compute texture view" << std::endl;
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create compute texture: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void ComputeApp::destroyComputeTexture()
+{
+    computeTextureView.reset();
+    computeTexture.reset();
+}
+
+bool ComputeApp::createComputeShaders()
+{
+    try {
+        // Load shader - try SPIR-V first, then WGSL
+        gfx::ShaderSourceType shaderSourceType;
+        std::vector<uint8_t> shaderCode;
+
+        if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
+            shaderSourceType = gfx::ShaderSourceType::SPIRV;
+            std::cout << "Loading SPIR-V compute shader..." << std::endl;
+            shaderCode = util::loadBinaryFile("shaders/generate.comp.spv");
+        } else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
+            shaderSourceType = gfx::ShaderSourceType::WGSL;
+            std::cout << "Loading WGSL compute shader..." << std::endl;
+            auto wgsl = util::loadTextFile("shaders/generate.comp.wgsl");
+            shaderCode.assign(wgsl.begin(), wgsl.end());
+        } else {
+            std::cerr << "Error: No supported shader format found" << std::endl;
+            return false;
+        }
+
+        if (shaderCode.empty()) {
+            std::cerr << "Failed to load compute shader" << std::endl;
+            return false;
+        }
+
+        gfx::ShaderDescriptor shaderDesc{};
+        shaderDesc.label = "Compute Shader";
+        shaderDesc.sourceType = shaderSourceType;
+        shaderDesc.code = shaderCode;
+        shaderDesc.entryPoint = "main";
+
+        computeShader = device->createShader(shaderDesc);
+        if (!computeShader) {
+            std::cerr << "Failed to create compute shader" << std::endl;
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create compute shaders: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void ComputeApp::destroyComputeShaders()
+{
+    computeShader.reset();
+}
+
+bool ComputeApp::createComputeBindGroupLayout()
+{
+    try {
+        // Create compute bind group layout
+        gfx::BindGroupLayoutEntry storageTextureEntry{
+            .binding = 0,
+            .visibility = gfx::ShaderStage::Compute,
+            .resource = gfx::BindGroupLayoutEntry::StorageTextureBinding{
+                .format = gfx::Format::R8G8B8A8Unorm,
+                .writeOnly = true,
+                .viewDimension = gfx::TextureViewType::View2D,
+            }
+        };
+
+        gfx::BindGroupLayoutEntry uniformBufferEntry{
+            .binding = 1,
+            .visibility = gfx::ShaderStage::Compute,
+            .resource = gfx::BindGroupLayoutEntry::BufferBinding{
+                .hasDynamicOffset = false,
+                .minBindingSize = sizeof(ComputeUniformData),
+            }
+        };
+
+        gfx::BindGroupLayoutDescriptor computeLayoutDesc{};
+        computeLayoutDesc.label = "Compute Bind Group Layout";
+        computeLayoutDesc.entries.push_back(storageTextureEntry);
+        computeLayoutDesc.entries.push_back(uniformBufferEntry);
+
+        computeBindGroupLayout = device->createBindGroupLayout(computeLayoutDesc);
+        if (!computeBindGroupLayout) {
+            std::cerr << "Failed to create compute bind group layout" << std::endl;
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create compute bind group layout: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void ComputeApp::destroyComputeBindGroupLayout()
+{
+    computeBindGroupLayout.reset();
+}
+
+bool ComputeApp::createComputePipeline()
+{
+    try {
+        // Create compute uniform buffers (one per frame in flight)
+        gfx::BufferDescriptor computeUniformBufferDesc{};
+        computeUniformBufferDesc.label = "Compute Uniform Buffer";
+        computeUniformBufferDesc.size = sizeof(ComputeUniformData);
+        computeUniformBufferDesc.usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst;
+
+        computeUniformBuffers.resize(framesInFlightCount);
+        for (size_t i = 0; i < framesInFlightCount; ++i) {
+            computeUniformBuffers[i] = device->createBuffer(computeUniformBufferDesc);
+            if (!computeUniformBuffers[i]) {
+                std::cerr << "Failed to create compute uniform buffer " << i << std::endl;
+                return false;
+            }
+        }
+
+        // Create compute bind groups (one per frame in flight)
+        computeBindGroups.resize(framesInFlightCount);
+        for (size_t i = 0; i < framesInFlightCount; ++i) {
+            gfx::BindGroupEntry textureEntry{};
+            textureEntry.binding = 0;
+            textureEntry.resource = computeTextureView;
+
+            gfx::BindGroupEntry bufferEntry{};
+            bufferEntry.binding = 1;
+            bufferEntry.resource = computeUniformBuffers[i];
+            bufferEntry.offset = 0;
+            bufferEntry.size = sizeof(ComputeUniformData);
+
+            gfx::BindGroupDescriptor computeBindGroupDesc{};
+            computeBindGroupDesc.label = "Compute Bind Group " + std::to_string(i);
+            computeBindGroupDesc.layout = computeBindGroupLayout;
+            computeBindGroupDesc.entries.push_back(textureEntry);
+            computeBindGroupDesc.entries.push_back(bufferEntry);
+
+            computeBindGroups[i] = device->createBindGroup(computeBindGroupDesc);
+            if (!computeBindGroups[i]) {
+                std::cerr << "Failed to create compute bind group " << i << std::endl;
+                return false;
+            }
+        }
+
+        // Create compute pipeline
+        gfx::ComputePipelineDescriptor computePipelineDesc{};
+        computePipelineDesc.label = "Compute Pipeline";
+        computePipelineDesc.compute = computeShader;
+        computePipelineDesc.entryPoint = "main";
+        computePipelineDesc.bindGroupLayouts.push_back(computeBindGroupLayout);
+
+        computePipeline = device->createComputePipeline(computePipelineDesc);
+        if (!computePipeline) {
+            std::cerr << "Failed to create compute pipeline" << std::endl;
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create compute pipeline: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void ComputeApp::destroyComputePipeline()
+{
+    computePipeline.reset();
+    for (size_t i = 0; i < computeBindGroups.size(); ++i) {
+        computeBindGroups[i].reset();
+    }
+    for (size_t i = 0; i < computeUniformBuffers.size(); ++i) {
+        computeUniformBuffers[i].reset();
+    }
+    computeBindGroups.clear();
+    computeUniformBuffers.clear();
+}
+
+bool ComputeApp::transitionComputeTexture()
+{
+    try {
+        // Transition compute texture from Undefined to ShaderReadOnly layout
+        gfx::CommandEncoderDescriptor initEncoderDesc{};
+        initEncoderDesc.label = "Init Texture Transition";
+        auto initEncoder = device->createCommandEncoder(initEncoderDesc);
+        if (!initEncoder) {
+            std::cerr << "Failed to create command encoder for texture transition" << std::endl;
+            return false;
+        }
+
+        initEncoder->begin();
+
+        gfx::TextureBarrier initBarrier{};
+        initBarrier.texture = computeTexture;
+        initBarrier.oldLayout = gfx::TextureLayout::Undefined;
+        initBarrier.newLayout = gfx::TextureLayout::ShaderReadOnly;
+        initBarrier.srcStageMask = gfx::PipelineStage::TopOfPipe;
+        initBarrier.dstStageMask = gfx::PipelineStage::FragmentShader;
+        initBarrier.srcAccessMask = gfx::AccessFlags::None;
+        initBarrier.dstAccessMask = gfx::AccessFlags::ShaderRead;
+        initBarrier.baseMipLevel = 0;
+        initBarrier.mipLevelCount = 1;
+        initBarrier.baseArrayLayer = 0;
+        initBarrier.arrayLayerCount = 1;
+
+        gfx::PipelineBarrierDescriptor barrierDesc{};
+        barrierDesc.textureBarriers.push_back(initBarrier);
+        initEncoder->pipelineBarrier(barrierDesc);
+        initEncoder->end();
+
+        gfx::FenceDescriptor initFenceDesc{};
+        initFenceDesc.signaled = false;
+        auto initFence = device->createFence(initFenceDesc);
+        if (!initFence) {
+            std::cerr << "Failed to create fence for texture transition" << std::endl;
+            return false;
+        }
+
+        gfx::SubmitDescriptor submitDescriptor{};
+        submitDescriptor.commandEncoders.push_back(initEncoder);
+        submitDescriptor.signalFence = initFence;
+
+        queue->submit(submitDescriptor);
+        auto waitResult = initFence->wait(gfx::TimeoutInfinite);
+        if (!gfx::isSuccess(waitResult)) {
+            std::cerr << "Failed to wait for texture transition fence" << std::endl;
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to transition compute texture: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool ComputeApp::createComputeResources()
+{
+    if (!createComputeTexture()) {
+        return false;
+    }
+
+    if (!createComputeShaders()) {
+        return false;
+    }
+
+    if (!createComputeBindGroupLayout()) {
+        return false;
+    }
+
+    if (!createComputePipeline()) {
+        return false;
+    }
+
+    if (!transitionComputeTexture()) {
+        return false;
+    }
+
+    std::cout << "Compute resources created successfully" << std::endl;
+    return true;
+}
+
+void ComputeApp::destroyComputeResources()
+{
+    destroyComputePipeline();
+    destroyComputeBindGroupLayout();
+    destroyComputeShaders();
+    destroyComputeTexture();
+}
+
+bool ComputeApp::createSampler()
+{
+    try {
+        // Create sampler
+        gfx::SamplerDescriptor samplerDesc{};
+        samplerDesc.magFilter = gfx::FilterMode::Linear;
+        samplerDesc.minFilter = gfx::FilterMode::Linear;
+        samplerDesc.addressModeU = gfx::AddressMode::ClampToEdge;
+        samplerDesc.addressModeV = gfx::AddressMode::ClampToEdge;
+
+        sampler = device->createSampler(samplerDesc);
+        if (!sampler) {
+            std::cerr << "Failed to create sampler" << std::endl;
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create sampler: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void ComputeApp::destroySampler()
+{
+    sampler.reset();
+}
+
+bool ComputeApp::createRenderShaders()
+{
+    try {
+        // Load shaders - try SPIR-V first, then WGSL
+        gfx::ShaderSourceType shaderSourceType;
+        std::vector<uint8_t> vertexShaderCode, fragmentShaderCode;
+
+        if (device->supportsShaderFormat(gfx::ShaderSourceType::SPIRV)) {
+            shaderSourceType = gfx::ShaderSourceType::SPIRV;
+            std::cout << "Loading SPIR-V shaders..." << std::endl;
+            vertexShaderCode = util::loadBinaryFile("shaders/fullscreen.vert.spv");
+            fragmentShaderCode = util::loadBinaryFile("shaders/postprocess.frag.spv");
+        } else if (device->supportsShaderFormat(gfx::ShaderSourceType::WGSL)) {
+            shaderSourceType = gfx::ShaderSourceType::WGSL;
+            std::cout << "Loading WGSL shaders..." << std::endl;
+            auto vertexWgsl = util::loadTextFile("shaders/fullscreen.vert.wgsl");
+            auto fragmentWgsl = util::loadTextFile("shaders/postprocess.frag.wgsl");
+            vertexShaderCode.assign(vertexWgsl.begin(), vertexWgsl.end());
+            fragmentShaderCode.assign(fragmentWgsl.begin(), fragmentWgsl.end());
+        } else {
+            std::cerr << "Error: No supported shader format found" << std::endl;
+            return false;
+        }
+
+        if (vertexShaderCode.empty() || fragmentShaderCode.empty()) {
+            std::cerr << "Failed to load shaders" << std::endl;
+            return false;
+        }
+
+        gfx::ShaderDescriptor vertexShaderDesc{};
+        vertexShaderDesc.label = "Vertex Shader";
+        vertexShaderDesc.sourceType = shaderSourceType;
+        vertexShaderDesc.code = vertexShaderCode;
+        vertexShaderDesc.entryPoint = "main";
+
+        vertexShader = device->createShader(vertexShaderDesc);
+        if (!vertexShader) {
+            std::cerr << "Failed to create vertex shader" << std::endl;
+            return false;
+        }
+
+        gfx::ShaderDescriptor fragmentShaderDesc{};
+        fragmentShaderDesc.label = "Fragment Shader";
+        fragmentShaderDesc.sourceType = shaderSourceType;
+        fragmentShaderDesc.code = fragmentShaderCode;
+        fragmentShaderDesc.entryPoint = "main";
+
+        fragmentShader = device->createShader(fragmentShaderDesc);
+        if (!fragmentShader) {
+            std::cerr << "Failed to create fragment shader" << std::endl;
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create render shaders: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void ComputeApp::destroyRenderShaders()
+{
+    fragmentShader.reset();
+    vertexShader.reset();
+}
+
+bool ComputeApp::createRenderBindGroupLayout()
+{
+    try {
+        // Create render bind group layout
+        gfx::BindGroupLayoutEntry samplerEntry{
+            .binding = 0,
+            .visibility = gfx::ShaderStage::Fragment,
+            .resource = gfx::BindGroupLayoutEntry::SamplerBinding{
+                .comparison = false,
+            }
+        };
+
+        gfx::BindGroupLayoutEntry textureEntry{
+            .binding = 1,
+            .visibility = gfx::ShaderStage::Fragment,
+            .resource = gfx::BindGroupLayoutEntry::TextureBinding{
+                .multisampled = false,
+                .viewDimension = gfx::TextureViewType::View2D,
+            }
+        };
+
+        gfx::BindGroupLayoutEntry uniformBufferEntry{
+            .binding = 2,
+            .visibility = gfx::ShaderStage::Fragment,
+            .resource = gfx::BindGroupLayoutEntry::BufferBinding{
+                .hasDynamicOffset = false,
+                .minBindingSize = sizeof(RenderUniformData),
+            }
+        };
+
+        gfx::BindGroupLayoutDescriptor renderLayoutDesc{};
+        renderLayoutDesc.label = "Render Bind Group Layout";
+        renderLayoutDesc.entries.push_back(samplerEntry);
+        renderLayoutDesc.entries.push_back(textureEntry);
+        renderLayoutDesc.entries.push_back(uniformBufferEntry);
+
+        renderBindGroupLayout = device->createBindGroupLayout(renderLayoutDesc);
+        if (!renderBindGroupLayout) {
+            std::cerr << "Failed to create render bind group layout" << std::endl;
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create render bind group layout: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void ComputeApp::destroyRenderBindGroupLayout()
+{
+    renderBindGroupLayout.reset();
+}
+
+bool ComputeApp::createRenderPipeline()
+{
+    try {
+        // Create render uniform buffers (one per frame in flight)
+        gfx::BufferDescriptor renderUniformBufferDesc{};
+        renderUniformBufferDesc.label = "Render Uniform Buffer";
+        renderUniformBufferDesc.size = sizeof(RenderUniformData);
+        renderUniformBufferDesc.usage = gfx::BufferUsage::Uniform | gfx::BufferUsage::CopyDst;
+
+        renderUniformBuffers.resize(framesInFlightCount);
+        for (size_t i = 0; i < framesInFlightCount; ++i) {
+            renderUniformBuffers[i] = device->createBuffer(renderUniformBufferDesc);
+            if (!renderUniformBuffers[i]) {
+                std::cerr << "Failed to create render uniform buffer " << i << std::endl;
+                return false;
+            }
+        }
+
+        // Create render bind groups (one per frame in flight)
+        renderBindGroups.resize(framesInFlightCount);
+        for (size_t i = 0; i < framesInFlightCount; ++i) {
+            gfx::BindGroupEntry samplerBindEntry{};
+            samplerBindEntry.binding = 0;
+            samplerBindEntry.resource = sampler;
+
+            gfx::BindGroupEntry textureBindEntry{};
+            textureBindEntry.binding = 1;
+            textureBindEntry.resource = computeTextureView;
+
+            gfx::BindGroupEntry bufferBindEntry{};
+            bufferBindEntry.binding = 2;
+            bufferBindEntry.resource = renderUniformBuffers[i];
+            bufferBindEntry.offset = 0;
+            bufferBindEntry.size = sizeof(RenderUniformData);
+
+            gfx::BindGroupDescriptor renderBindGroupDesc{};
+            renderBindGroupDesc.label = "Render Bind Group " + std::to_string(i);
+            renderBindGroupDesc.layout = renderBindGroupLayout;
+            renderBindGroupDesc.entries.push_back(samplerBindEntry);
+            renderBindGroupDesc.entries.push_back(textureBindEntry);
+            renderBindGroupDesc.entries.push_back(bufferBindEntry);
+
+            renderBindGroups[i] = device->createBindGroup(renderBindGroupDesc);
+            if (!renderBindGroups[i]) {
+                std::cerr << "Failed to create render bind group " << i << std::endl;
+                return false;
+            }
+        }
+
+        // Create render pipeline
+        gfx::VertexState vertexState{};
+        vertexState.module = vertexShader;
+        vertexState.entryPoint = "main";
+        vertexState.buffers = {};
+
+        gfx::ColorTargetState colorTarget{};
+        colorTarget.format = swapchain->getInfo().format;
+        colorTarget.writeMask = gfx::ColorWriteMask::All;
+
+        gfx::FragmentState fragmentState{};
+        fragmentState.module = fragmentShader;
+        fragmentState.entryPoint = "main";
+        fragmentState.targets.push_back(colorTarget);
+
+        gfx::PrimitiveState primitiveState{};
+        primitiveState.topology = gfx::PrimitiveTopology::TriangleList;
+        primitiveState.frontFace = gfx::FrontFace::CounterClockwise;
+        primitiveState.cullMode = gfx::CullMode::None;
+        primitiveState.polygonMode = gfx::PolygonMode::Fill;
+
+        gfx::RenderPipelineDescriptor pipelineDesc{};
+        pipelineDesc.label = "Render Pipeline";
+        pipelineDesc.vertex = vertexState;
+        pipelineDesc.fragment = fragmentState;
+        pipelineDesc.primitive = primitiveState;
+        pipelineDesc.sampleCount = gfx::SampleCount::Count1;
+        pipelineDesc.bindGroupLayouts.push_back(renderBindGroupLayout);
+        pipelineDesc.renderPass = renderPass;
+
+        renderPipeline = device->createRenderPipeline(pipelineDesc);
+        if (!renderPipeline) {
+            std::cerr << "Failed to create render pipeline" << std::endl;
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create render pipeline: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void ComputeApp::destroyRenderPipeline()
+{
+    renderPipeline.reset();
+    for (size_t i = 0; i < renderBindGroups.size(); ++i) {
+        renderBindGroups[i].reset();
+    }
+    for (size_t i = 0; i < renderUniformBuffers.size(); ++i) {
+        renderUniformBuffers[i].reset();
+    }
+    renderBindGroups.clear();
+    renderUniformBuffers.clear();
+}
+
+bool ComputeApp::createRenderResources()
+{
+    if (!createRenderShaders()) {
+        return false;
+    }
+
+    if (!createSampler()) {
+        return false;
+    }
+
+    if (!createRenderBindGroupLayout()) {
+        return false;
+    }
+
+    if (!createRenderPipeline()) {
+        return false;
+    }
+
+    std::cout << "Render resources created successfully" << std::endl;
+    return true;
+}
+
+void ComputeApp::destroyRenderResources()
+{
+    destroyRenderPipeline();
+    destroyRenderBindGroupLayout();
+    destroyRenderShaders();
+    destroySampler();
 }
 
 void ComputeApp::update(float deltaTime)
@@ -987,7 +1336,7 @@ bool ComputeApp::mainLoopIteration()
         device->waitIdle();
 
         // Recreate only size-dependent resources (including swapchain)
-        cleanupSizeDependentResources();
+        destroySizeDependentResources();
         if (!createSizeDependentResources(windowWidth, windowHeight)) {
             std::cerr << "Failed to recreate size-dependent resources after resize" << std::endl;
             return false;
@@ -1051,95 +1400,7 @@ void ComputeApp::emscriptenMainLoop(void* userData)
 }
 #endif
 
-void ComputeApp::run()
-{
-    // Run main loop (platform-specific)
-#if defined(__EMSCRIPTEN__)
-    // Note: emscripten_set_main_loop_arg returns immediately and never blocks
-    // Cleanup happens in emscriptenMainLoop when the loop exits
-    // Execution continues in the browser event loop
-    emscripten_set_main_loop_arg(ComputeApp::emscriptenMainLoop, this, 0, 1);
-#else
-    while (mainLoopIteration()) {
-        // Loop continues until mainLoopIteration returns false
-    }
-#endif
-}
-
-void ComputeApp::cleanup()
-{
-    if (device) {
-        device->waitIdle();
-    }
-
-    // Sync objects
-    for (size_t i = 0; i < commandEncoders.size(); ++i) {
-        commandEncoders[i].reset();
-    }
-    for (size_t i = 0; i < inFlightFences.size(); ++i) {
-        inFlightFences[i].reset();
-    }
-    for (size_t i = 0; i < renderFinishedSemaphores.size(); ++i) {
-        renderFinishedSemaphores[i].reset();
-    }
-    for (size_t i = 0; i < imageAvailableSemaphores.size(); ++i) {
-        imageAvailableSemaphores[i].reset();
-    }
-    commandEncoders.clear();
-    inFlightFences.clear();
-    renderFinishedSemaphores.clear();
-    imageAvailableSemaphores.clear();
-
-    // Render resources
-    renderPipeline.reset();
-    for (size_t i = 0; i < renderBindGroups.size(); ++i) {
-        renderBindGroups[i].reset();
-    }
-    for (size_t i = 0; i < renderUniformBuffers.size(); ++i) {
-        renderUniformBuffers[i].reset();
-    }
-    renderBindGroups.clear();
-    renderUniformBuffers.clear();
-    renderBindGroupLayout.reset();
-    sampler.reset();
-    fragmentShader.reset();
-    vertexShader.reset();
-    framebuffers.clear();
-    renderPass.reset();
-
-    // Compute resources
-    computePipeline.reset();
-    for (size_t i = 0; i < computeBindGroups.size(); ++i) {
-        computeBindGroups[i].reset();
-    }
-    for (size_t i = 0; i < computeUniformBuffers.size(); ++i) {
-        computeUniformBuffers[i].reset();
-    }
-    computeBindGroups.clear();
-    computeUniformBuffers.clear();
-    computeBindGroupLayout.reset();
-    computeShader.reset();
-    computeTextureView.reset();
-    computeTexture.reset();
-
-    // Core resources
-    cleanupSizeDependentResources();
-    surface.reset();
-    queue.reset();
-    device.reset();
-    adapter.reset();
-    instance.reset();
-
-    if (window) {
-        glfwDestroyWindow(window);
-        window = nullptr;
-    }
-    glfwTerminate();
-
-    gfx::unloadBackend(BACKEND_API);
-}
-
-gfx::PlatformWindowHandle ComputeApp::extractNativeHandle()
+gfx::PlatformWindowHandle ComputeApp::getPlatformWindowHandle()
 {
     gfx::PlatformWindowHandle handle{};
 
@@ -1160,7 +1421,32 @@ gfx::PlatformWindowHandle ComputeApp::extractNativeHandle()
     return handle;
 }
 
-std::vector<uint8_t> ComputeApp::loadBinaryFile(const char* filepath)
+void ComputeApp::errorCallback(int error, const char* description)
+{
+    std::cerr << "GLFW Error " << error << ": " << description << std::endl;
+}
+
+void ComputeApp::framebufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+    auto* app = static_cast<ComputeApp*>(glfwGetWindowUserPointer(window));
+    if (app) {
+        app->windowWidth = static_cast<uint32_t>(width);
+        app->windowHeight = static_cast<uint32_t>(height);
+    }
+}
+
+void ComputeApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    (void)scancode;
+    (void)mods;
+
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+}
+
+namespace util {
+std::vector<uint8_t> loadBinaryFile(const char* filepath)
 {
     std::ifstream file(filepath, std::ios::binary | std::ios::ate);
     if (!file) {
@@ -1182,7 +1468,7 @@ std::vector<uint8_t> ComputeApp::loadBinaryFile(const char* filepath)
     return buffer;
 }
 
-std::string ComputeApp::loadTextFile(const char* filepath)
+std::string loadTextFile(const char* filepath)
 {
     std::FILE* file = std::fopen(filepath, "r");
     if (!file) {
@@ -1211,25 +1497,7 @@ std::string ComputeApp::loadTextFile(const char* filepath)
 
     return buffer;
 }
-
-void ComputeApp::framebufferResizeCallback(GLFWwindow* window, int width, int height)
-{
-    auto* app = static_cast<ComputeApp*>(glfwGetWindowUserPointer(window));
-    if (app) {
-        app->windowWidth = static_cast<uint32_t>(width);
-        app->windowHeight = static_cast<uint32_t>(height);
-    }
-}
-
-void ComputeApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    (void)scancode;
-    (void)mods;
-
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
-}
+} // namespace util
 
 int main()
 {
@@ -1237,7 +1505,7 @@ int main()
 
     ComputeApp app;
 
-    if (!app.initialize()) {
+    if (!app.init()) {
         app.cleanup();
         return -1;
     }

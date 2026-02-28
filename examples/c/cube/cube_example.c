@@ -182,8 +182,6 @@ static bool createRenderTargetTextures(CubeApp* app, uint32_t width, uint32_t he
 static void destroyRenderTargetTextures(CubeApp* app);
 static bool createFrameBuffers(CubeApp* app, uint32_t width, uint32_t height);
 static void destroyFrameBuffers(CubeApp* app);
-static bool loadTexture(CubeApp* app);
-static void unloadTexture(CubeApp* app);
 static bool createGeometry(CubeApp* app);
 static void destroyGeometry(CubeApp* app);
 static bool createUniformBuffer(CubeApp* app);
@@ -192,12 +190,14 @@ static bool createBindGroup(CubeApp* app);
 static void destroyBindGroup(CubeApp* app);
 static bool createShaders(CubeApp* app);
 static void destroyShaders(CubeApp* app);
+static bool loadTexture(CubeApp* app);
+static void unloadTexture(CubeApp* app);
 static bool createRenderingResources(CubeApp* app);
 static void destroyRenderingResources(CubeApp* app);
 static bool createRenderPipeline(CubeApp* app);
 static void destroyRenderPipeline(CubeApp* app);
-static void updateCube(CubeApp* app, int cubeIndex);
 
+static void updateCube(CubeApp* app, int cubeIndex);
 static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window);
 static float getCurrentTime(void);
 static void* loadBinaryFile(const char* filepath, size_t* outSize);
@@ -431,6 +431,265 @@ static void destroyGraphics(CubeApp* app)
     gfxUnloadBackend(GFX_BACKEND_API);
 }
 
+static bool createPerFrameResources(CubeApp* app)
+{
+    // Allocate per-frame resources array
+    app->frameResources = (PerFrameResources*)calloc(app->framesInFlightCount, sizeof(PerFrameResources));
+    if (!app->frameResources) {
+        fprintf(stderr, "Failed to allocate per-frame resources array\n");
+        return false;
+    }
+
+    // Create synchronization objects and command encoders for each frame in flight
+    GfxSemaphoreDescriptor semaphoreDesc = {};
+    semaphoreDesc.sType = GFX_STRUCTURE_TYPE_SEMAPHORE_DESCRIPTOR;
+    semaphoreDesc.pNext = NULL;
+    semaphoreDesc.label = "Semaphore";
+    semaphoreDesc.type = GFX_SEMAPHORE_TYPE_BINARY;
+    semaphoreDesc.initialValue = 0;
+
+    GfxFenceDescriptor fenceDesc = {};
+    fenceDesc.sType = GFX_STRUCTURE_TYPE_FENCE_DESCRIPTOR;
+    fenceDesc.pNext = NULL;
+    fenceDesc.label = "Fence";
+    fenceDesc.signaled = true; // Start signaled so first frame doesn't wait
+
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+        char label[64];
+        PerFrameResources* frame = &app->frameResources[i];
+
+        // Create semaphores
+        snprintf(label, sizeof(label), "Image Available Semaphore %u", i);
+        semaphoreDesc.label = label;
+        if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &frame->imageAvailableSemaphore) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create image available semaphore %u\n", i);
+            return false;
+        }
+
+        snprintf(label, sizeof(label), "Render Finished Semaphore %u", i);
+        semaphoreDesc.label = label;
+        if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &frame->renderFinishedSemaphore) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create render finished semaphore %u\n", i);
+            return false;
+        }
+
+        // Create fence
+        snprintf(label, sizeof(label), "In Flight Fence %u", i);
+        fenceDesc.label = label;
+        if (gfxDeviceCreateFence(app->device, &fenceDesc, &frame->inFlightFence) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create in flight fence %u\n", i);
+            return false;
+        }
+
+        // Create command encoder
+        snprintf(label, sizeof(label), "Command Encoder %u", i);
+        GfxCommandEncoderDescriptor encoderDesc = {};
+        encoderDesc.sType = GFX_STRUCTURE_TYPE_COMMAND_ENCODER_DESCRIPTOR;
+        encoderDesc.pNext = NULL;
+        encoderDesc.label = label;
+        if (gfxDeviceCreateCommandEncoder(app->device, &encoderDesc, &frame->commandEncoder) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create command encoder %u\n", i);
+            return false;
+        }
+
+        // Create bind groups for each cube in this frame
+        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+            snprintf(label, sizeof(label), "Uniform Bind Group (Frame %u, Cube %d)", i, cubeIdx);
+
+            size_t offset = (i * CUBE_COUNT + cubeIdx) * app->uniformAlignedSize;
+
+            GfxBindGroupEntry entry = {
+                .binding = 0,
+                .type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER,
+                .resource = {
+                    .buffer = {
+                        .buffer = app->sharedUniformBuffer,
+                        .offset = offset,
+                        .size = sizeof(UniformData) } }
+            };
+
+            GfxBindGroupDescriptor bindGroupDesc = {};
+            bindGroupDesc.sType = GFX_STRUCTURE_TYPE_BIND_GROUP_DESCRIPTOR;
+            bindGroupDesc.pNext = NULL;
+            bindGroupDesc.label = label;
+            bindGroupDesc.layout = app->uniformBindGroupLayout;
+            bindGroupDesc.entries = &entry;
+            bindGroupDesc.entryCount = 1;
+
+            if (gfxDeviceCreateBindGroup(app->device, &bindGroupDesc, &frame->uniformBindGroups[cubeIdx]) != GFX_RESULT_SUCCESS) {
+                fprintf(stderr, "Failed to create bind group for frame %u, cube %d\n", i, cubeIdx);
+                return false;
+            }
+        }
+    }
+
+    app->currentFrame = 0;
+    return true;
+}
+
+static void destroyPerFrameResources(CubeApp* app)
+{
+    if (!app->frameResources) {
+        return;
+    }
+
+    // Wait for all in-flight frames to complete before destroying
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+        PerFrameResources* frame = &app->frameResources[i];
+        if (frame->inFlightFence) {
+            gfxFenceWait(frame->inFlightFence, GFX_TIMEOUT_INFINITE);
+        }
+    }
+
+    // Destroy per-frame resources
+    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
+        PerFrameResources* frame = &app->frameResources[i];
+
+        // Destroy bind groups
+        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
+            if (frame->uniformBindGroups[cubeIdx]) {
+                gfxBindGroupDestroy(frame->uniformBindGroups[cubeIdx]);
+                frame->uniformBindGroups[cubeIdx] = NULL;
+            }
+        }
+
+        // Destroy synchronization objects
+        if (frame->imageAvailableSemaphore) {
+            gfxSemaphoreDestroy(frame->imageAvailableSemaphore);
+            frame->imageAvailableSemaphore = NULL;
+        }
+        if (frame->renderFinishedSemaphore) {
+            gfxSemaphoreDestroy(frame->renderFinishedSemaphore);
+            frame->renderFinishedSemaphore = NULL;
+        }
+        if (frame->inFlightFence) {
+            gfxFenceDestroy(frame->inFlightFence);
+            frame->inFlightFence = NULL;
+        }
+
+        // Destroy command encoder
+        if (frame->commandEncoder) {
+            gfxCommandEncoderDestroy(frame->commandEncoder);
+            frame->commandEncoder = NULL;
+        }
+    }
+
+    // Free the per-frame resources array
+    if (app->frameResources) {
+        free(app->frameResources);
+        app->frameResources = NULL;
+    }
+}
+
+static bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
+{
+    if (!createSwapchain(app, width, height)) {
+        return false;
+    }
+
+    uint32_t actualWidth = app->swapchainInfo.extent.width;
+    uint32_t actualHeight = app->swapchainInfo.extent.height;
+
+    if (!createRenderTargetTextures(app, actualWidth, actualHeight)) {
+        return false;
+    }
+
+    // Create render pass AFTER swapchain so we have the format
+    if (!createRenderPass(app)) {
+        return false;
+    }
+
+    if (!createFrameBuffers(app, actualWidth, actualHeight)) {
+        return false;
+    }
+
+    return true;
+}
+
+static void destroySizeDependentResources(CubeApp* app)
+{
+    // Destroy framebuffers
+    destroyFrameBuffers(app);
+
+    // Destroy render pass (depends on swapchain format)
+    destroyRenderPass(app);
+
+    // Destroy render target textures (depth and MSAA)
+    destroyRenderTargetTextures(app);
+
+    // Destroy swapchain
+    destroySwapchain(app);
+}
+
+static bool createRenderPass(CubeApp* app)
+{
+    // Create render pass (persistent, reusable across frames)
+    // Define color attachment target with MSAA
+    GfxRenderPassColorAttachmentTarget colorTarget = {
+        .format = app->swapchainInfo.format,
+        .sampleCount = MSAA_SAMPLE_COUNT,
+        .ops = {
+            .loadOp = GFX_LOAD_OP_CLEAR,
+            .storeOp = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? GFX_STORE_OP_DONT_CARE : GFX_STORE_OP_STORE },
+        .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
+    };
+
+    // Define resolve target (for MSAA -> non-MSAA resolve)
+    GfxRenderPassColorAttachmentTarget resolveTarget = {
+        .format = app->swapchainInfo.format,
+        .sampleCount = GFX_SAMPLE_COUNT_1,
+        .ops = {
+            .loadOp = GFX_LOAD_OP_DONT_CARE,
+            .storeOp = GFX_STORE_OP_STORE },
+        .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
+    };
+
+    // Bundle color attachment with optional resolve
+    GfxRenderPassColorAttachment colorAttachment = {
+        .target = colorTarget,
+        .resolveTarget = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? &resolveTarget : NULL
+    };
+
+    // Define depth/stencil attachment target
+    GfxRenderPassDepthStencilAttachmentTarget depthTarget = {
+        .format = DEPTH_FORMAT,
+        .sampleCount = MSAA_SAMPLE_COUNT,
+        .depthOps = {
+            .loadOp = GFX_LOAD_OP_CLEAR,
+            .storeOp = GFX_STORE_OP_DONT_CARE },
+        .stencilOps = { .loadOp = GFX_LOAD_OP_DONT_CARE, .storeOp = GFX_STORE_OP_DONT_CARE },
+        .finalLayout = GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT
+    };
+
+    GfxRenderPassDepthStencilAttachment depthAttachment = {
+        .target = depthTarget,
+        .resolveTarget = NULL
+    };
+
+    GfxRenderPassDescriptor renderPassDesc = {};
+    renderPassDesc.sType = GFX_STRUCTURE_TYPE_RENDER_PASS_DESCRIPTOR;
+    renderPassDesc.pNext = NULL;
+    renderPassDesc.label = "Main Render Pass";
+    renderPassDesc.colorAttachments = &colorAttachment;
+    renderPassDesc.colorAttachmentCount = 1;
+    renderPassDesc.depthStencilAttachment = &depthAttachment;
+
+    if (gfxDeviceCreateRenderPass(app->device, &renderPassDesc, &app->renderPass) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create render pass\n");
+        return false;
+    }
+
+    return true;
+}
+
+static void destroyRenderPass(CubeApp* app)
+{
+    if (app->renderPass) {
+        gfxRenderPassDestroy(app->renderPass);
+        app->renderPass = NULL;
+    }
+}
+
 static bool createSwapchain(CubeApp* app, uint32_t width, uint32_t height)
 {
     GfxSwapchainDescriptor swapchainDesc = {};
@@ -634,196 +893,6 @@ static void destroyFrameBuffers(CubeApp* app)
         free(app->framebuffers);
         app->framebuffers = NULL;
     }
-}
-
-static bool createPerFrameResources(CubeApp* app)
-{
-    // Allocate per-frame resources array
-    app->frameResources = (PerFrameResources*)calloc(app->framesInFlightCount, sizeof(PerFrameResources));
-    if (!app->frameResources) {
-        fprintf(stderr, "Failed to allocate per-frame resources array\n");
-        return false;
-    }
-
-    // Create synchronization objects and command encoders for each frame in flight
-    GfxSemaphoreDescriptor semaphoreDesc = {};
-    semaphoreDesc.sType = GFX_STRUCTURE_TYPE_SEMAPHORE_DESCRIPTOR;
-    semaphoreDesc.pNext = NULL;
-    semaphoreDesc.label = "Semaphore";
-    semaphoreDesc.type = GFX_SEMAPHORE_TYPE_BINARY;
-    semaphoreDesc.initialValue = 0;
-
-    GfxFenceDescriptor fenceDesc = {};
-    fenceDesc.sType = GFX_STRUCTURE_TYPE_FENCE_DESCRIPTOR;
-    fenceDesc.pNext = NULL;
-    fenceDesc.label = "Fence";
-    fenceDesc.signaled = true; // Start signaled so first frame doesn't wait
-
-    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
-        char label[64];
-        PerFrameResources* frame = &app->frameResources[i];
-
-        // Create semaphores
-        snprintf(label, sizeof(label), "Image Available Semaphore %u", i);
-        semaphoreDesc.label = label;
-        if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &frame->imageAvailableSemaphore) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create image available semaphore %u\n", i);
-            return false;
-        }
-
-        snprintf(label, sizeof(label), "Render Finished Semaphore %u", i);
-        semaphoreDesc.label = label;
-        if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &frame->renderFinishedSemaphore) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create render finished semaphore %u\n", i);
-            return false;
-        }
-
-        // Create fence
-        snprintf(label, sizeof(label), "In Flight Fence %u", i);
-        fenceDesc.label = label;
-        if (gfxDeviceCreateFence(app->device, &fenceDesc, &frame->inFlightFence) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create in flight fence %u\n", i);
-            return false;
-        }
-
-        // Create command encoder
-        snprintf(label, sizeof(label), "Command Encoder %u", i);
-        GfxCommandEncoderDescriptor encoderDesc = {};
-        encoderDesc.sType = GFX_STRUCTURE_TYPE_COMMAND_ENCODER_DESCRIPTOR;
-        encoderDesc.pNext = NULL;
-        encoderDesc.label = label;
-        if (gfxDeviceCreateCommandEncoder(app->device, &encoderDesc, &frame->commandEncoder) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create command encoder %u\n", i);
-            return false;
-        }
-
-        // Create bind groups for each cube in this frame
-        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
-            snprintf(label, sizeof(label), "Uniform Bind Group (Frame %u, Cube %d)", i, cubeIdx);
-
-            size_t offset = (i * CUBE_COUNT + cubeIdx) * app->uniformAlignedSize;
-
-            GfxBindGroupEntry entry = {
-                .binding = 0,
-                .type = GFX_BIND_GROUP_ENTRY_TYPE_BUFFER,
-                .resource = {
-                    .buffer = {
-                        .buffer = app->sharedUniformBuffer,
-                        .offset = offset,
-                        .size = sizeof(UniformData) } }
-            };
-
-            GfxBindGroupDescriptor bindGroupDesc = {};
-            bindGroupDesc.sType = GFX_STRUCTURE_TYPE_BIND_GROUP_DESCRIPTOR;
-            bindGroupDesc.pNext = NULL;
-            bindGroupDesc.label = label;
-            bindGroupDesc.layout = app->uniformBindGroupLayout;
-            bindGroupDesc.entries = &entry;
-            bindGroupDesc.entryCount = 1;
-
-            if (gfxDeviceCreateBindGroup(app->device, &bindGroupDesc, &frame->uniformBindGroups[cubeIdx]) != GFX_RESULT_SUCCESS) {
-                fprintf(stderr, "Failed to create bind group for frame %u, cube %d\n", i, cubeIdx);
-                return false;
-            }
-        }
-    }
-
-    app->currentFrame = 0;
-    return true;
-}
-
-static void destroyPerFrameResources(CubeApp* app)
-{
-    if (!app->frameResources) {
-        return;
-    }
-
-    // Wait for all in-flight frames to complete before destroying
-    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
-        PerFrameResources* frame = &app->frameResources[i];
-        if (frame->inFlightFence) {
-            gfxFenceWait(frame->inFlightFence, GFX_TIMEOUT_INFINITE);
-        }
-    }
-
-    // Destroy per-frame resources
-    for (uint32_t i = 0; i < app->framesInFlightCount; ++i) {
-        PerFrameResources* frame = &app->frameResources[i];
-
-        // Destroy bind groups
-        for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
-            if (frame->uniformBindGroups[cubeIdx]) {
-                gfxBindGroupDestroy(frame->uniformBindGroups[cubeIdx]);
-                frame->uniformBindGroups[cubeIdx] = NULL;
-            }
-        }
-
-        // Destroy synchronization objects
-        if (frame->imageAvailableSemaphore) {
-            gfxSemaphoreDestroy(frame->imageAvailableSemaphore);
-            frame->imageAvailableSemaphore = NULL;
-        }
-        if (frame->renderFinishedSemaphore) {
-            gfxSemaphoreDestroy(frame->renderFinishedSemaphore);
-            frame->renderFinishedSemaphore = NULL;
-        }
-        if (frame->inFlightFence) {
-            gfxFenceDestroy(frame->inFlightFence);
-            frame->inFlightFence = NULL;
-        }
-
-        // Destroy command encoder
-        if (frame->commandEncoder) {
-            gfxCommandEncoderDestroy(frame->commandEncoder);
-            frame->commandEncoder = NULL;
-        }
-    }
-
-    // Free the per-frame resources array
-    if (app->frameResources) {
-        free(app->frameResources);
-        app->frameResources = NULL;
-    }
-}
-
-static bool createSizeDependentResources(CubeApp* app, uint32_t width, uint32_t height)
-{
-    if (!createSwapchain(app, width, height)) {
-        return false;
-    }
-
-    uint32_t actualWidth = app->swapchainInfo.extent.width;
-    uint32_t actualHeight = app->swapchainInfo.extent.height;
-
-    if (!createRenderTargetTextures(app, actualWidth, actualHeight)) {
-        return false;
-    }
-
-    // Create render pass AFTER swapchain so we have the format
-    if (!createRenderPass(app)) {
-        return false;
-    }
-
-    if (!createFrameBuffers(app, actualWidth, actualHeight)) {
-        return false;
-    }
-
-    return true;
-}
-
-static void destroySizeDependentResources(CubeApp* app)
-{
-    // Destroy framebuffers
-    destroyFrameBuffers(app);
-
-    // Destroy render pass (depends on swapchain format)
-    destroyRenderPass(app);
-
-    // Destroy render target textures (depth and MSAA)
-    destroyRenderTargetTextures(app);
-
-    // Destroy swapchain
-    destroySwapchain(app);
 }
 
 static bool createGeometry(CubeApp* app)
@@ -1170,669 +1239,6 @@ static void destroyShaders(CubeApp* app)
     }
 }
 
-static bool createRenderPass(CubeApp* app)
-{
-    // Create render pass (persistent, reusable across frames)
-    // Define color attachment target with MSAA
-    GfxRenderPassColorAttachmentTarget colorTarget = {
-        .format = app->swapchainInfo.format,
-        .sampleCount = MSAA_SAMPLE_COUNT,
-        .ops = {
-            .loadOp = GFX_LOAD_OP_CLEAR,
-            .storeOp = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? GFX_STORE_OP_DONT_CARE : GFX_STORE_OP_STORE },
-        .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
-    };
-
-    // Define resolve target (for MSAA -> non-MSAA resolve)
-    GfxRenderPassColorAttachmentTarget resolveTarget = {
-        .format = app->swapchainInfo.format,
-        .sampleCount = GFX_SAMPLE_COUNT_1,
-        .ops = {
-            .loadOp = GFX_LOAD_OP_DONT_CARE,
-            .storeOp = GFX_STORE_OP_STORE },
-        .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
-    };
-
-    // Bundle color attachment with optional resolve
-    GfxRenderPassColorAttachment colorAttachment = {
-        .target = colorTarget,
-        .resolveTarget = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? &resolveTarget : NULL
-    };
-
-    // Define depth/stencil attachment target
-    GfxRenderPassDepthStencilAttachmentTarget depthTarget = {
-        .format = DEPTH_FORMAT,
-        .sampleCount = MSAA_SAMPLE_COUNT,
-        .depthOps = {
-            .loadOp = GFX_LOAD_OP_CLEAR,
-            .storeOp = GFX_STORE_OP_DONT_CARE },
-        .stencilOps = { .loadOp = GFX_LOAD_OP_DONT_CARE, .storeOp = GFX_STORE_OP_DONT_CARE },
-        .finalLayout = GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT
-    };
-
-    GfxRenderPassDepthStencilAttachment depthAttachment = {
-        .target = depthTarget,
-        .resolveTarget = NULL
-    };
-
-    GfxRenderPassDescriptor renderPassDesc = {};
-    renderPassDesc.sType = GFX_STRUCTURE_TYPE_RENDER_PASS_DESCRIPTOR;
-    renderPassDesc.pNext = NULL;
-    renderPassDesc.label = "Main Render Pass";
-    renderPassDesc.colorAttachments = &colorAttachment;
-    renderPassDesc.colorAttachmentCount = 1;
-    renderPassDesc.depthStencilAttachment = &depthAttachment;
-
-    if (gfxDeviceCreateRenderPass(app->device, &renderPassDesc, &app->renderPass) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create render pass\n");
-        return false;
-    }
-
-    return true;
-}
-
-static void destroyRenderPass(CubeApp* app)
-{
-    if (app->renderPass) {
-        gfxRenderPassDestroy(app->renderPass);
-        app->renderPass = NULL;
-    }
-}
-
-static bool createRenderingResources(CubeApp* app)
-{
-    printf("[DEBUG] createRenderingResources called\n");
-
-    if (!createGeometry(app)) {
-        return false;
-    }
-
-    if (!loadTexture(app)) {
-        return false;
-    }
-
-    if (!createUniformBuffer(app)) {
-        return false;
-    }
-
-    if (!createBindGroup(app)) {
-        return false;
-    }
-
-    if (!createShaders(app)) {
-        return false;
-    }
-
-    // Initialize animation state
-    app->rotationAngleX = 0.0f;
-    app->rotationAngleY = 0.0f;
-
-    return true;
-}
-
-static void destroyRenderingResources(CubeApp* app)
-{
-    // Destroy render pipeline
-    destroyRenderPipeline(app);
-
-    // Destroy shaders
-    destroyShaders(app);
-
-    // Unload texture
-    unloadTexture(app);
-
-    // Destroy bind groups and layouts
-    destroyBindGroup(app);
-
-    // Destroy uniform buffer
-    destroyUniformBuffer(app);
-
-    // Destroy geometry buffers
-    destroyGeometry(app);
-}
-
-static bool createRenderPipeline(CubeApp* app)
-{
-    // Define vertex attributes
-    GfxVertexAttribute attributes[] = {
-        { .format = GFX_FORMAT_R32G32B32_FLOAT,
-            .offset = offsetof(Vertex, position),
-            .shaderLocation = 0 },
-        { .format = GFX_FORMAT_R32G32B32_FLOAT,
-            .offset = offsetof(Vertex, color),
-            .shaderLocation = 1 },
-        { .format = GFX_FORMAT_R32G32_FLOAT,
-            .offset = offsetof(Vertex, texCoord),
-            .shaderLocation = 2 }
-    };
-
-    // Define vertex buffer layout
-    GfxVertexBufferLayout vertexBufferLayout = {
-        .arrayStride = sizeof(Vertex),
-        .attributes = attributes,
-        .attributeCount = 3,
-        .stepMode = GFX_VERTEX_STEP_MODE_VERTEX
-    };
-
-    // Vertex state
-    GfxVertexState vertexState = {
-        .module = app->vertexShader,
-        .entryPoint = "main",
-        .buffers = &vertexBufferLayout,
-        .bufferCount = 1
-    };
-
-    // Color target state
-    // Note: Always 1 target even with MSAA - resolve is handled by render pass, not fragment shader
-    // layout(location = 0) out vec4 outColor;
-    // Use actual swapchain format (may differ from requested format on web)
-    GfxColorTargetState colorTarget = {
-        .format = app->swapchainInfo.format,
-        .blend = NULL,
-        .writeMask = GFX_COLOR_WRITE_MASK_ALL
-    };
-
-    // Fragment state
-    GfxFragmentState fragmentState = {
-        .module = app->fragmentShader,
-        .entryPoint = "main",
-        .targets = &colorTarget,
-        .targetCount = 1
-    };
-
-    // Primitive state
-    GfxPrimitiveState primitiveState = {
-        .topology = GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-        .stripIndexFormat = GFX_INDEX_FORMAT_UNDEFINED,
-        .frontFace = GFX_FRONT_FACE_COUNTER_CLOCKWISE,
-        .cullMode = GFX_CULL_MODE_BACK, // Enable back-face culling
-        .polygonMode = GFX_POLYGON_MODE_FILL
-    };
-
-    // Depth/stencil state - enable depth testing
-    GfxDepthStencilState depthStencilState = {
-        .format = DEPTH_FORMAT,
-        .depthWriteEnabled = true,
-        .depthCompare = GFX_COMPARE_FUNCTION_LESS,
-        .stencilFront = {
-            .compare = GFX_COMPARE_FUNCTION_ALWAYS,
-            .failOp = GFX_STENCIL_OPERATION_KEEP,
-            .depthFailOp = GFX_STENCIL_OPERATION_KEEP,
-            .passOp = GFX_STENCIL_OPERATION_KEEP },
-        .stencilBack = { .compare = GFX_COMPARE_FUNCTION_ALWAYS, .failOp = GFX_STENCIL_OPERATION_KEEP, .depthFailOp = GFX_STENCIL_OPERATION_KEEP, .passOp = GFX_STENCIL_OPERATION_KEEP },
-        .stencilReadMask = 0xFF,
-        .stencilWriteMask = 0xFF,
-        .depthBias = 0,
-        .depthBiasSlopeScale = 0.0f,
-        .depthBiasClamp = 0.0f
-    };
-
-    // Create render pipeline
-    // Create array with the bind group layout pointer
-    GfxBindGroupLayout bindGroupLayouts[] = { app->uniformBindGroupLayout, app->textureBindGroupLayout };
-
-    GfxRenderPipelineDescriptor pipelineDesc = {};
-    pipelineDesc.sType = GFX_STRUCTURE_TYPE_RENDER_PIPELINE_DESCRIPTOR;
-    pipelineDesc.pNext = NULL;
-    pipelineDesc.label = "Cube Render Pipeline";
-    pipelineDesc.vertex = &vertexState;
-    pipelineDesc.fragment = &fragmentState;
-    pipelineDesc.primitive = &primitiveState;
-    pipelineDesc.depthStencil = &depthStencilState;
-    pipelineDesc.sampleCount = MSAA_SAMPLE_COUNT;
-    pipelineDesc.renderPass = app->renderPass;
-    pipelineDesc.bindGroupLayouts = bindGroupLayouts;
-    pipelineDesc.bindGroupLayoutCount = 2;
-
-    if (gfxDeviceCreateRenderPipeline(app->device, &pipelineDesc, &app->renderPipeline) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to create render pipeline\n");
-        return false;
-    }
-
-    return true;
-}
-
-static void destroyRenderPipeline(CubeApp* app)
-{
-    if (app->renderPipeline) {
-        gfxRenderPipelineDestroy(app->renderPipeline);
-        app->renderPipeline = NULL;
-    }
-}
-
-static void updateCube(CubeApp* app, int cubeIndex)
-{
-    UniformData uniforms = { 0 }; // Initialize to zero!
-
-    // Create rotation matrices (combine X and Y rotations)
-    // Each cube rotates slightly differently
-    float rotX[16], rotY[16], tempModel[16];
-    matrixRotateX(rotX, (app->rotationAngleX + cubeIndex * 30.0f) * M_PI / 180.0f);
-    matrixRotateY(rotY, (app->rotationAngleY + cubeIndex * 45.0f) * M_PI / 180.0f);
-    matrixMultiply(tempModel, rotY, rotX);
-
-    // Position cubes side by side: left (-3, 0, 0), center (0, 0, 0), right (3, 0, 0)
-    float translation[16];
-    matrixIdentity(translation);
-    translation[12] = (cubeIndex - 1) * 3.0f; // x offset: -3, 0, 3
-
-    // Apply translation after rotation: model = rotation * translation
-    // This rotates in place, then translates to world position
-    matrixMultiply(uniforms.model, tempModel, translation);
-
-    // Create view matrix (camera positioned at 0, 0, 10 looking at origin)
-    matrixLookAt(uniforms.view,
-        0.0f, 0.0f, 10.0f, // eye position - pulled back to see all 3 cubes
-        0.0f, 0.0f, 0.0f, // look at point
-        0.0f, 1.0f, 0.0f); // up vector
-
-    // Create perspective projection matrix
-    float aspect = (float)app->swapchainInfo.extent.width / (float)app->swapchainInfo.extent.height;
-    matrixPerspective(uniforms.projection,
-        45.0f * M_PI / 180.0f, // 45 degree FOV
-        aspect,
-        0.1f, // near plane
-        100.0f, // far plane
-        app->adapterInfo.backend); // Adjust for clip space differences
-
-    // Upload uniform data to buffer at aligned offset
-    // Formula: (frame * CUBE_COUNT + cube) * alignedSize
-    size_t offset = (app->currentFrame * CUBE_COUNT + cubeIndex) * app->uniformAlignedSize;
-    if (gfxQueueWriteBuffer(app->queue, app->sharedUniformBuffer, offset, &uniforms, sizeof(uniforms)) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to write uniform data for cube %u\n", cubeIndex);
-    }
-}
-
-static void update(CubeApp* app, float deltaTime)
-{
-    // Update rotation angles (both X and Y axes)
-    app->rotationAngleX += 45.0f * deltaTime; // 45 degrees per second around X
-    app->rotationAngleY += 30.0f * deltaTime; // 30 degrees per second around Y
-    if (app->rotationAngleX >= 360.0f) {
-        app->rotationAngleX -= 360.0f;
-    }
-    if (app->rotationAngleY >= 360.0f) {
-        app->rotationAngleY -= 360.0f;
-    }
-
-    // Update uniforms for each cube
-    for (int i = 0; i < CUBE_COUNT; ++i) {
-        updateCube(app, i);
-    }
-}
-
-static void render(CubeApp* app)
-{
-    // Check if async texture upload is complete
-    if (!app->textureUploadComplete) {
-        bool isReady;
-        gfxFenceGetStatus(app->textureUploadFence, &isReady);
-        if (isReady) {
-            printf("Texture upload completed asynchronously!\n");
-            app->textureUploadComplete = true;
-
-            // Clean up resources now that upload is done
-            gfxBufferDestroy(app->textureStagingBuffer);
-            app->textureStagingBuffer = NULL;
-
-            // Safe to destroy encoder now that GPU is done with it
-            gfxCommandEncoderDestroy(app->textureUploadEncoder);
-            app->textureUploadEncoder = NULL;
-        } else {
-            // Texture not ready yet - render clear color only
-            printf("Waiting for async texture upload...\n");
-        }
-    }
-
-    PerFrameResources* frame = &app->frameResources[app->currentFrame];
-
-    // Wait for previous frame to finish
-    gfxFenceWait(frame->inFlightFence, GFX_TIMEOUT_INFINITE);
-    gfxFenceReset(frame->inFlightFence);
-
-    // Acquire next swapchain image
-    uint32_t imageIndex;
-    GfxResult result = gfxSwapchainAcquireNextImage(app->swapchain, GFX_TIMEOUT_INFINITE,
-        frame->imageAvailableSemaphore, NULL, &imageIndex);
-
-    if (result != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to acquire swapchain image\n");
-        return;
-    }
-
-    GfxCommandEncoder encoder = frame->commandEncoder;
-    if (gfxCommandEncoderBegin(encoder) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to begin command encoder\n");
-        return;
-    }
-
-    // Begin render pass using pre-created render pass and framebuffer
-    GfxColor clearColor = { 0.1f, 0.2f, 0.3f, 1.0f };
-
-    GfxRenderPassBeginDescriptor beginDesc = {
-        .label = "Main Render Pass",
-        .renderPass = app->renderPass,
-        .framebuffer = app->framebuffers[imageIndex],
-        .colorClearValues = &clearColor,
-        .colorClearValueCount = 1,
-        .depthClearValue = 1.0f,
-        .stencilClearValue = 0
-    };
-
-    GfxRenderPassEncoder renderPass;
-    if (gfxCommandEncoderBeginRenderPass(encoder, &beginDesc, &renderPass) == GFX_RESULT_SUCCESS) {
-
-        // Set pipeline
-        gfxRenderPassEncoderSetPipeline(renderPass, app->renderPipeline);
-
-        // Set viewport and scissor to fill the entire render target
-        GfxViewport viewport = { 0.0f, 0.0f, (float)app->swapchainInfo.extent.width, (float)app->swapchainInfo.extent.height, 0.0f, 1.0f };
-        GfxScissorRect scissor = { { 0, 0 }, { app->swapchainInfo.extent.width, app->swapchainInfo.extent.height } };
-        gfxRenderPassEncoderSetViewport(renderPass, &viewport);
-        gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
-
-        // Only draw if texture is loaded
-        if (app->textureUploadComplete) {
-            // Set vertex buffer
-            GfxBufferInfo vertexBufferInfo;
-            if (gfxBufferGetInfo(app->vertexBuffer, &vertexBufferInfo) != GFX_RESULT_SUCCESS) {
-                fprintf(stderr, "Failed to get vertex buffer info\n");
-                return;
-            }
-            gfxRenderPassEncoderSetVertexBuffer(renderPass, 0, app->vertexBuffer, 0,
-                vertexBufferInfo.size);
-
-            // Set index buffer
-            GfxBufferInfo indexBufferInfo;
-            if (gfxBufferGetInfo(app->indexBuffer, &indexBufferInfo) != GFX_RESULT_SUCCESS) {
-                fprintf(stderr, "Failed to get index buffer info\n");
-                return;
-            }
-            gfxRenderPassEncoderSetIndexBuffer(renderPass, app->indexBuffer,
-                GFX_INDEX_FORMAT_UINT16, 0,
-                indexBufferInfo.size);
-
-            // Bind texture (shared by all cubes)
-            gfxRenderPassEncoderSetBindGroup(renderPass, 1, app->textureBindGroup, NULL, 0);
-
-            // Draw CUBE_COUNT cubes at different positions
-            for (int i = 0; i < CUBE_COUNT; ++i) {
-                // Bind the specific cube's bind group (no dynamic offsets)
-                gfxRenderPassEncoderSetBindGroup(renderPass, 0, frame->uniformBindGroups[i], NULL, 0);
-
-                // Draw indexed (36 indices for the cube)
-                gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
-            }
-        }
-
-        // End render pass
-        if (gfxRenderPassEncoderEnd(renderPass) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to end render pass\n");
-            return;
-        }
-    }
-
-    // Finish command encoding
-    if (gfxCommandEncoderEnd(encoder) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to end command encoder\n");
-        return;
-    }
-
-    // Submit commands with synchronization
-    GfxSubmitDescriptor submitDescriptor = { 0 };
-    submitDescriptor.commandEncoders = &encoder;
-    submitDescriptor.commandEncoderCount = 1;
-    submitDescriptor.waitSemaphores = &frame->imageAvailableSemaphore;
-    submitDescriptor.waitSemaphoreCount = 1;
-    submitDescriptor.signalSemaphores = &frame->renderFinishedSemaphore;
-    submitDescriptor.signalSemaphoreCount = 1;
-    submitDescriptor.signalFence = frame->inFlightFence;
-
-    if (gfxQueueSubmit(app->queue, &submitDescriptor) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to submit command buffer to queue\n");
-        return;
-    }
-
-    // Present with synchronization
-    GfxPresentDescriptor presentDescriptor = {};
-    presentDescriptor.sType = GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR;
-    presentDescriptor.pNext = NULL;
-    presentDescriptor.waitSemaphores = &frame->renderFinishedSemaphore;
-    presentDescriptor.waitSemaphoreCount = 1;
-    if (gfxSwapchainPresent(app->swapchain, &presentDescriptor) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to present swapchain image\n");
-        return;
-    }
-
-    // Move to next frame
-    app->currentFrame = (app->currentFrame + 1) % app->framesInFlightCount;
-}
-
-static bool init(CubeApp* app)
-{
-    // Initialize in order of dependencies
-
-    // 1. Create window
-    if (!createWindow(app, WINDOW_WIDTH, WINDOW_HEIGHT)) {
-        fprintf(stderr, "Failed to create window\n");
-        return false;
-    }
-
-    // 2. Create graphics context (instance, adapter, device, surface)
-    if (!createGraphics(app)) {
-        fprintf(stderr, "Failed to create graphics\n");
-        return false;
-    }
-
-    // 3. Create size-dependent resources (swapchain, framebuffers, render pass)
-    if (!createSizeDependentResources(app, app->windowWidth, app->windowHeight)) {
-        fprintf(stderr, "Failed to create size-dependent resources\n");
-        return false;
-    }
-
-    // 4. Create rendering resources (textures, buffers, layouts)
-    if (!createRenderingResources(app)) {
-        fprintf(stderr, "Failed to create rendering resources\n");
-        return false;
-    }
-
-    // 5. Create per-frame resources (depends on uniform buffer and layouts)
-    if (!createPerFrameResources(app)) {
-        fprintf(stderr, "Failed to create per-frame resources\n");
-        return false;
-    }
-
-    // 6. Create render pipeline (depends on render pass and resources)
-    if (!createRenderPipeline(app)) {
-        fprintf(stderr, "Failed to create render pipeline\n");
-        return false;
-    }
-
-    // Initialize loop state
-    app->currentFrame = 0;
-    app->previousWidth = app->windowWidth;
-    app->previousHeight = app->windowHeight;
-    app->lastTime = getCurrentTime();
-
-    // Initialize FPS tracking
-    app->fpsFrameCount = 0;
-    app->fpsTimeAccumulator = 0.0f;
-    app->fpsFrameTimeMin = FLT_MAX;
-    app->fpsFrameTimeMax = 0.0f;
-
-    printf("Application initialized successfully!\n");
-    return true;
-}
-
-static void cleanup(CubeApp* app)
-{
-    // Wait for device to finish all GPU work before cleanup
-    if (app->device) {
-        gfxDeviceWaitIdle(app->device);
-    }
-
-    // Destroy in reverse order of creation for symmetry
-
-    // 5. Destroy render pipeline (depends on render pass and resources)
-    destroyRenderPipeline(app);
-
-    // 4. Destroy per-frame resources (depends on uniform buffer and layouts)
-    destroyPerFrameResources(app);
-
-    // 3. Destroy rendering resources (textures, buffers, layouts)
-    destroyRenderingResources(app);
-
-    // 2. Destroy size-dependent resources (swapchain, framebuffers, render pass)
-    destroySizeDependentResources(app);
-
-    // 1. Destroy graphics context (surface, device, instance)
-    destroyGraphics(app);
-
-    // 0. Destroy window
-    destroyWindow(app);
-}
-
-// Matrix math utility functions
-void matrixIdentity(float* matrix)
-{
-    memset(matrix, 0, 16 * sizeof(float));
-    matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.0f;
-}
-
-void matrixMultiply(float* result, const float* a, const float* b)
-{
-    float temp[16];
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            temp[i * 4 + j] = 0;
-            for (int k = 0; k < 4; k++) {
-                temp[i * 4 + j] += a[i * 4 + k] * b[k * 4 + j];
-            }
-        }
-    }
-    memcpy(result, temp, sizeof(float) * 16);
-}
-
-void matrixRotateX(float* matrix, float angle)
-{
-    float c = cosf(angle);
-    float s = sinf(angle);
-
-    matrixIdentity(matrix);
-    matrix[5] = c;
-    matrix[6] = -s;
-    matrix[9] = s;
-    matrix[10] = c;
-}
-
-void matrixRotateY(float* matrix, float angle)
-{
-    float c = cosf(angle);
-    float s = sinf(angle);
-
-    matrixIdentity(matrix);
-    matrix[0] = c;
-    matrix[2] = s;
-    matrix[8] = -s;
-    matrix[10] = c;
-}
-
-void matrixRotateZ(float* matrix, float angle)
-{
-    float c = cosf(angle);
-    float s = sinf(angle);
-
-    matrixIdentity(matrix);
-    matrix[0] = c;
-    matrix[1] = -s;
-    matrix[4] = s;
-    matrix[5] = c;
-}
-
-void matrixPerspective(float* matrix, float fov, float aspect, float nearPlane, float farPlane, GfxBackend backend)
-{
-    memset(matrix, 0, 16 * sizeof(float));
-
-    float f = 1.0f / tanf(fov / 2.0f);
-
-    matrix[0] = f / aspect;
-    if (backend == GFX_BACKEND_VULKAN) {
-        matrix[5] = -f; // Invert Y for Vulkan
-    } else {
-        matrix[5] = f;
-    }
-    matrix[10] = (farPlane + nearPlane) / (nearPlane - farPlane);
-    matrix[11] = -1.0f;
-    matrix[14] = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
-}
-
-void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ)
-{
-    // Calculate forward vector
-    float fx = centerX - eyeX;
-    float fy = centerY - eyeY;
-    float fz = centerZ - eyeZ;
-
-    // Normalize forward vector
-    if (!vectorNormalize(&fx, &fy, &fz)) {
-        matrixIdentity(matrix);
-        return;
-    }
-
-    // Calculate right vector (forward cross up)
-    float rx = fy * upZ - fz * upY;
-    float ry = fz * upX - fx * upZ;
-    float rz = fx * upY - fy * upX;
-
-    // Normalize right vector (check if forward and up are parallel)
-    if (!vectorNormalize(&rx, &ry, &rz)) {
-        matrixIdentity(matrix);
-        return;
-    }
-
-    // Calculate up vector (right cross forward)
-    float ux = ry * fz - rz * fy;
-    float uy = rz * fx - rx * fz;
-    float uz = rx * fy - ry * fx;
-
-    // Build view matrix
-    matrix[0] = rx;
-    matrix[1] = ux;
-    matrix[2] = -fx;
-    matrix[3] = 0.0f;
-
-    matrix[4] = ry;
-    matrix[5] = uy;
-    matrix[6] = -fy;
-    matrix[7] = 0.0f;
-
-    matrix[8] = rz;
-    matrix[9] = uz;
-    matrix[10] = -fz;
-    matrix[11] = 0.0f;
-
-    matrix[12] = -(rx * eyeX + ry * eyeY + rz * eyeZ);
-    matrix[13] = -(ux * eyeX + uy * eyeY + uz * eyeZ);
-    matrix[14] = fx * eyeX + fy * eyeY + fz * eyeZ;
-    matrix[15] = 1.0f;
-}
-
-// Normalize a 3D vector in place. Returns false if vector is too small to normalize.
-bool vectorNormalize(float* x, float* y, float* z)
-{
-    const float epsilon = 1e-6f;
-    float len = sqrtf((*x) * (*x) + (*y) * (*y) + (*z) * (*z));
-
-    if (len < epsilon) {
-        return false;
-    }
-
-    *x /= len;
-    *y /= len;
-    *z /= len;
-    return true;
-}
-
 static bool loadTexture(CubeApp* app)
 {
     const char* texturePath = "textures/vulkan.png";
@@ -2049,6 +1455,230 @@ static void unloadTexture(CubeApp* app)
     }
 }
 
+static bool createRenderingResources(CubeApp* app)
+{
+    printf("[DEBUG] createRenderingResources called\n");
+
+    if (!createGeometry(app)) {
+        return false;
+    }
+
+    if (!loadTexture(app)) {
+        return false;
+    }
+
+    if (!createUniformBuffer(app)) {
+        return false;
+    }
+
+    if (!createBindGroup(app)) {
+        return false;
+    }
+
+    if (!createShaders(app)) {
+        return false;
+    }
+    return true;
+}
+
+static void destroyRenderingResources(CubeApp* app)
+{
+    // Destroy render pipeline
+    destroyRenderPipeline(app);
+
+    // Destroy shaders
+    destroyShaders(app);
+
+    // Unload texture
+    unloadTexture(app);
+
+    // Destroy bind groups and layouts
+    destroyBindGroup(app);
+
+    // Destroy uniform buffer
+    destroyUniformBuffer(app);
+
+    // Destroy geometry buffers
+    destroyGeometry(app);
+}
+
+static bool createRenderPipeline(CubeApp* app)
+{
+    // Define vertex attributes
+    GfxVertexAttribute attributes[] = {
+        { .format = GFX_FORMAT_R32G32B32_FLOAT,
+            .offset = offsetof(Vertex, position),
+            .shaderLocation = 0 },
+        { .format = GFX_FORMAT_R32G32B32_FLOAT,
+            .offset = offsetof(Vertex, color),
+            .shaderLocation = 1 },
+        { .format = GFX_FORMAT_R32G32_FLOAT,
+            .offset = offsetof(Vertex, texCoord),
+            .shaderLocation = 2 }
+    };
+
+    // Define vertex buffer layout
+    GfxVertexBufferLayout vertexBufferLayout = {
+        .arrayStride = sizeof(Vertex),
+        .attributes = attributes,
+        .attributeCount = 3,
+        .stepMode = GFX_VERTEX_STEP_MODE_VERTEX
+    };
+
+    // Vertex state
+    GfxVertexState vertexState = {
+        .module = app->vertexShader,
+        .entryPoint = "main",
+        .buffers = &vertexBufferLayout,
+        .bufferCount = 1
+    };
+
+    // Color target state
+    // Note: Always 1 target even with MSAA - resolve is handled by render pass, not fragment shader
+    // layout(location = 0) out vec4 outColor;
+    // Use actual swapchain format (may differ from requested format on web)
+    GfxColorTargetState colorTarget = {
+        .format = app->swapchainInfo.format,
+        .blend = NULL,
+        .writeMask = GFX_COLOR_WRITE_MASK_ALL
+    };
+
+    // Fragment state
+    GfxFragmentState fragmentState = {
+        .module = app->fragmentShader,
+        .entryPoint = "main",
+        .targets = &colorTarget,
+        .targetCount = 1
+    };
+
+    // Primitive state
+    GfxPrimitiveState primitiveState = {
+        .topology = GFX_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .stripIndexFormat = GFX_INDEX_FORMAT_UNDEFINED,
+        .frontFace = GFX_FRONT_FACE_COUNTER_CLOCKWISE,
+        .cullMode = GFX_CULL_MODE_BACK, // Enable back-face culling
+        .polygonMode = GFX_POLYGON_MODE_FILL
+    };
+
+    // Depth/stencil state - enable depth testing
+    GfxDepthStencilState depthStencilState = {
+        .format = DEPTH_FORMAT,
+        .depthWriteEnabled = true,
+        .depthCompare = GFX_COMPARE_FUNCTION_LESS,
+        .stencilFront = {
+            .compare = GFX_COMPARE_FUNCTION_ALWAYS,
+            .failOp = GFX_STENCIL_OPERATION_KEEP,
+            .depthFailOp = GFX_STENCIL_OPERATION_KEEP,
+            .passOp = GFX_STENCIL_OPERATION_KEEP },
+        .stencilBack = { .compare = GFX_COMPARE_FUNCTION_ALWAYS, .failOp = GFX_STENCIL_OPERATION_KEEP, .depthFailOp = GFX_STENCIL_OPERATION_KEEP, .passOp = GFX_STENCIL_OPERATION_KEEP },
+        .stencilReadMask = 0xFF,
+        .stencilWriteMask = 0xFF,
+        .depthBias = 0,
+        .depthBiasSlopeScale = 0.0f,
+        .depthBiasClamp = 0.0f
+    };
+
+    // Create render pipeline
+    // Create array with the bind group layout pointer
+    GfxBindGroupLayout bindGroupLayouts[] = { app->uniformBindGroupLayout, app->textureBindGroupLayout };
+
+    GfxRenderPipelineDescriptor pipelineDesc = {};
+    pipelineDesc.sType = GFX_STRUCTURE_TYPE_RENDER_PIPELINE_DESCRIPTOR;
+    pipelineDesc.pNext = NULL;
+    pipelineDesc.label = "Cube Render Pipeline";
+    pipelineDesc.vertex = &vertexState;
+    pipelineDesc.fragment = &fragmentState;
+    pipelineDesc.primitive = &primitiveState;
+    pipelineDesc.depthStencil = &depthStencilState;
+    pipelineDesc.sampleCount = MSAA_SAMPLE_COUNT;
+    pipelineDesc.renderPass = app->renderPass;
+    pipelineDesc.bindGroupLayouts = bindGroupLayouts;
+    pipelineDesc.bindGroupLayoutCount = 2;
+
+    if (gfxDeviceCreateRenderPipeline(app->device, &pipelineDesc, &app->renderPipeline) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to create render pipeline\n");
+        return false;
+    }
+
+    return true;
+}
+
+static void destroyRenderPipeline(CubeApp* app)
+{
+    if (app->renderPipeline) {
+        gfxRenderPipelineDestroy(app->renderPipeline);
+        app->renderPipeline = NULL;
+    }
+}
+
+static void updateCube(CubeApp* app, int cubeIndex)
+{
+    UniformData uniforms = { 0 }; // Initialize to zero!
+
+    // Create rotation matrices (combine X and Y rotations)
+    // Each cube rotates slightly differently
+    float rotX[16], rotY[16], tempModel[16];
+    matrixRotateX(rotX, (app->rotationAngleX + cubeIndex * 30.0f) * M_PI / 180.0f);
+    matrixRotateY(rotY, (app->rotationAngleY + cubeIndex * 45.0f) * M_PI / 180.0f);
+    matrixMultiply(tempModel, rotY, rotX);
+
+    // Position cubes side by side: left (-3, 0, 0), center (0, 0, 0), right (3, 0, 0)
+    float translation[16];
+    matrixIdentity(translation);
+    translation[12] = (cubeIndex - 1) * 3.0f; // x offset: -3, 0, 3
+
+    // Apply translation after rotation: model = rotation * translation
+    // This rotates in place, then translates to world position
+    matrixMultiply(uniforms.model, tempModel, translation);
+
+    // Create view matrix (camera positioned at 0, 0, 10 looking at origin)
+    matrixLookAt(uniforms.view,
+        0.0f, 0.0f, 10.0f, // eye position - pulled back to see all 3 cubes
+        0.0f, 0.0f, 0.0f, // look at point
+        0.0f, 1.0f, 0.0f); // up vector
+
+    // Create perspective projection matrix
+    float aspect = (float)app->swapchainInfo.extent.width / (float)app->swapchainInfo.extent.height;
+    matrixPerspective(uniforms.projection,
+        45.0f * M_PI / 180.0f, // 45 degree FOV
+        aspect,
+        0.1f, // near plane
+        100.0f, // far plane
+        app->adapterInfo.backend); // Adjust for clip space differences
+
+    // Upload uniform data to buffer at aligned offset
+    // Formula: (frame * CUBE_COUNT + cube) * alignedSize
+    size_t offset = (app->currentFrame * CUBE_COUNT + cubeIndex) * app->uniformAlignedSize;
+    if (gfxQueueWriteBuffer(app->queue, app->sharedUniformBuffer, offset, &uniforms, sizeof(uniforms)) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to write uniform data for cube %u\n", cubeIndex);
+    }
+}
+
+static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
+{
+    GfxPlatformWindowHandle handle = { 0 };
+#if defined(__EMSCRIPTEN__)
+    handle = gfxPlatformWindowHandleFromEmscripten("#canvas");
+#elif defined(_WIN32)
+    handle = gfxPlatformWindowHandleFromWin32(GetModuleHandle(NULL), glfwGetWin32Window(window));
+#elif defined(__linux__)
+    // handle = gfxPlatformWindowHandleFromXlib(glfwGetX11Display(), glfwGetX11Window(window));
+    handle = gfxPlatformWindowHandleFromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
+#elif defined(__APPLE__)
+    handle = gfxPlatformWindowHandleFromMetal(glfwGetCocoaWindow(window));
+#endif
+    return handle;
+}
+
+static float getCurrentTime(void)
+{
+#if defined(__EMSCRIPTEN__)
+    return (float)emscripten_get_now() / 1000.0f;
+#else
+    return (float)glfwGetTime();
+#endif
+}
+
 // Helper function to load binary files (SPIR-V shaders)
 static void* loadBinaryFile(const char* filepath, size_t* outSize)
 {
@@ -2136,35 +1766,402 @@ static void* loadTextFile(const char* filepath, size_t* outSize)
     return buffer;
 }
 
-static GfxPlatformWindowHandle getPlatformWindowHandle(GLFWwindow* window)
+// Matrix math utility functions
+void matrixIdentity(float* matrix)
 {
-    GfxPlatformWindowHandle handle = { 0 };
-#if defined(__EMSCRIPTEN__)
-    handle = gfxPlatformWindowHandleFromEmscripten("#canvas");
-#elif defined(_WIN32)
-    handle = gfxPlatformWindowHandleFromWin32(GetModuleHandle(NULL), glfwGetWin32Window(window));
-#elif defined(__linux__)
-    // handle = gfxPlatformWindowHandleFromXlib(glfwGetX11Display(), glfwGetX11Window(window));
-    handle = gfxPlatformWindowHandleFromWayland(glfwGetWaylandDisplay(), glfwGetWaylandWindow(window));
-#elif defined(__APPLE__)
-    handle = gfxPlatformWindowHandleFromMetal(glfwGetCocoaWindow(window));
-#endif
-    return handle;
+    memset(matrix, 0, 16 * sizeof(float));
+    matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.0f;
 }
 
-static float getCurrentTime(void)
+void matrixMultiply(float* result, const float* a, const float* b)
 {
-#if defined(__EMSCRIPTEN__)
-    return (float)emscripten_get_now() / 1000.0f;
-#else
-    return (float)glfwGetTime();
-#endif
+    float temp[16];
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            temp[i * 4 + j] = 0;
+            for (int k = 0; k < 4; k++) {
+                temp[i * 4 + j] += a[i * 4 + k] * b[k * 4 + j];
+            }
+        }
+    }
+    memcpy(result, temp, sizeof(float) * 16);
+}
+
+void matrixRotateX(float* matrix, float angle)
+{
+    float c = cosf(angle);
+    float s = sinf(angle);
+
+    matrixIdentity(matrix);
+    matrix[5] = c;
+    matrix[6] = -s;
+    matrix[9] = s;
+    matrix[10] = c;
+}
+
+void matrixRotateY(float* matrix, float angle)
+{
+    float c = cosf(angle);
+    float s = sinf(angle);
+
+    matrixIdentity(matrix);
+    matrix[0] = c;
+    matrix[2] = s;
+    matrix[8] = -s;
+    matrix[10] = c;
+}
+
+void matrixRotateZ(float* matrix, float angle)
+{
+    float c = cosf(angle);
+    float s = sinf(angle);
+
+    matrixIdentity(matrix);
+    matrix[0] = c;
+    matrix[1] = -s;
+    matrix[4] = s;
+    matrix[5] = c;
+}
+
+void matrixPerspective(float* matrix, float fov, float aspect, float nearPlane, float farPlane, GfxBackend backend)
+{
+    memset(matrix, 0, 16 * sizeof(float));
+
+    float f = 1.0f / tanf(fov / 2.0f);
+
+    matrix[0] = f / aspect;
+    if (backend == GFX_BACKEND_VULKAN) {
+        matrix[5] = -f; // Invert Y for Vulkan
+    } else {
+        matrix[5] = f;
+    }
+    matrix[10] = (farPlane + nearPlane) / (nearPlane - farPlane);
+    matrix[11] = -1.0f;
+    matrix[14] = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
+}
+
+void matrixLookAt(float* matrix, float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ)
+{
+    // Calculate forward vector
+    float fx = centerX - eyeX;
+    float fy = centerY - eyeY;
+    float fz = centerZ - eyeZ;
+
+    // Normalize forward vector
+    if (!vectorNormalize(&fx, &fy, &fz)) {
+        matrixIdentity(matrix);
+        return;
+    }
+
+    // Calculate right vector (forward cross up)
+    float rx = fy * upZ - fz * upY;
+    float ry = fz * upX - fx * upZ;
+    float rz = fx * upY - fy * upX;
+
+    // Normalize right vector (check if forward and up are parallel)
+    if (!vectorNormalize(&rx, &ry, &rz)) {
+        matrixIdentity(matrix);
+        return;
+    }
+
+    // Calculate up vector (right cross forward)
+    float ux = ry * fz - rz * fy;
+    float uy = rz * fx - rx * fz;
+    float uz = rx * fy - ry * fx;
+
+    // Build view matrix
+    matrix[0] = rx;
+    matrix[1] = ux;
+    matrix[2] = -fx;
+    matrix[3] = 0.0f;
+
+    matrix[4] = ry;
+    matrix[5] = uy;
+    matrix[6] = -fy;
+    matrix[7] = 0.0f;
+
+    matrix[8] = rz;
+    matrix[9] = uz;
+    matrix[10] = -fz;
+    matrix[11] = 0.0f;
+
+    matrix[12] = -(rx * eyeX + ry * eyeY + rz * eyeZ);
+    matrix[13] = -(ux * eyeX + uy * eyeY + uz * eyeZ);
+    matrix[14] = fx * eyeX + fy * eyeY + fz * eyeZ;
+    matrix[15] = 1.0f;
+}
+
+// Normalize a 3D vector in place. Returns false if vector is too small to normalize.
+bool vectorNormalize(float* x, float* y, float* z)
+{
+    const float epsilon = 1e-6f;
+    float len = sqrtf((*x) * (*x) + (*y) * (*y) + (*z) * (*z));
+
+    if (len < epsilon) {
+        return false;
+    }
+
+    *x /= len;
+    *y /= len;
+    *z /= len;
+    return true;
+}
+
+static bool init(CubeApp* app)
+{
+    // Initialize in order of dependencies
+
+    // 1. Create window
+    if (!createWindow(app, WINDOW_WIDTH, WINDOW_HEIGHT)) {
+        fprintf(stderr, "Failed to create window\n");
+        return false;
+    }
+
+    // 2. Create graphics context (instance, adapter, device, surface)
+    if (!createGraphics(app)) {
+        fprintf(stderr, "Failed to create graphics\n");
+        return false;
+    }
+
+    // 3. Create size-dependent resources (swapchain, framebuffers, render pass)
+    if (!createSizeDependentResources(app, app->windowWidth, app->windowHeight)) {
+        fprintf(stderr, "Failed to create size-dependent resources\n");
+        return false;
+    }
+
+    // 4. Create rendering resources (textures, buffers, layouts)
+    if (!createRenderingResources(app)) {
+        fprintf(stderr, "Failed to create rendering resources\n");
+        return false;
+    }
+
+    // 5. Create per-frame resources (depends on uniform buffer and layouts)
+    if (!createPerFrameResources(app)) {
+        fprintf(stderr, "Failed to create per-frame resources\n");
+        return false;
+    }
+
+    // 6. Create render pipeline (depends on render pass and resources)
+    if (!createRenderPipeline(app)) {
+        fprintf(stderr, "Failed to create render pipeline\n");
+        return false;
+    }
+
+    // Initialize loop state
+    app->currentFrame = 0;
+    app->previousWidth = app->windowWidth;
+    app->previousHeight = app->windowHeight;
+    app->lastTime = getCurrentTime();
+
+    // Initialize animation state
+    app->rotationAngleX = 0.0f;
+    app->rotationAngleY = 0.0f;
+
+    // Initialize FPS tracking
+    app->fpsFrameCount = 0;
+    app->fpsTimeAccumulator = 0.0f;
+    app->fpsFrameTimeMin = FLT_MAX;
+    app->fpsFrameTimeMax = 0.0f;
+
+    printf("Application initialized successfully!\n");
+    return true;
+}
+
+static void cleanup(CubeApp* app)
+{
+    // Wait for device to finish all GPU work before cleanup
+    if (app->device) {
+        gfxDeviceWaitIdle(app->device);
+    }
+
+    // 5. Destroy render pipeline (depends on render pass and resources)
+    destroyRenderPipeline(app);
+
+    // 4. Destroy per-frame resources (depends on uniform buffer and layouts)
+    destroyPerFrameResources(app);
+
+    // 3. Destroy rendering resources (textures, buffers, layouts)
+    destroyRenderingResources(app);
+
+    // 2. Destroy size-dependent resources (swapchain, framebuffers, render pass)
+    destroySizeDependentResources(app);
+
+    // 1. Destroy graphics context (surface, device, instance)
+    destroyGraphics(app);
+
+    // 0. Destroy window
+    destroyWindow(app);
+}
+
+static void update(CubeApp* app, float deltaTime)
+{
+    // Update rotation angles (both X and Y axes)
+    app->rotationAngleX += 45.0f * deltaTime; // 45 degrees per second around X
+    app->rotationAngleY += 30.0f * deltaTime; // 30 degrees per second around Y
+    if (app->rotationAngleX >= 360.0f) {
+        app->rotationAngleX -= 360.0f;
+    }
+    if (app->rotationAngleY >= 360.0f) {
+        app->rotationAngleY -= 360.0f;
+    }
+
+    // Update uniforms for each cube
+    for (int i = 0; i < CUBE_COUNT; ++i) {
+        updateCube(app, i);
+    }
+}
+
+static void render(CubeApp* app)
+{
+    // Check if async texture upload is complete
+    if (!app->textureUploadComplete) {
+        bool isReady;
+        gfxFenceGetStatus(app->textureUploadFence, &isReady);
+        if (isReady) {
+            printf("Texture upload completed asynchronously!\n");
+            app->textureUploadComplete = true;
+
+            // Clean up resources now that upload is done
+            gfxBufferDestroy(app->textureStagingBuffer);
+            app->textureStagingBuffer = NULL;
+
+            // Safe to destroy encoder now that GPU is done with it
+            gfxCommandEncoderDestroy(app->textureUploadEncoder);
+            app->textureUploadEncoder = NULL;
+        } else {
+            // Texture not ready yet - render clear color only
+            printf("Waiting for async texture upload...\n");
+        }
+    }
+
+    PerFrameResources* frame = &app->frameResources[app->currentFrame];
+
+    // Wait for previous frame to finish
+    gfxFenceWait(frame->inFlightFence, GFX_TIMEOUT_INFINITE);
+    gfxFenceReset(frame->inFlightFence);
+
+    // Acquire next swapchain image
+    uint32_t imageIndex;
+    GfxResult result = gfxSwapchainAcquireNextImage(app->swapchain, GFX_TIMEOUT_INFINITE,
+        frame->imageAvailableSemaphore, NULL, &imageIndex);
+
+    if (result != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to acquire swapchain image\n");
+        return;
+    }
+
+    GfxCommandEncoder encoder = frame->commandEncoder;
+    if (gfxCommandEncoderBegin(encoder) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to begin command encoder\n");
+        return;
+    }
+
+    // Begin render pass using pre-created render pass and framebuffer
+    GfxColor clearColor = { 0.1f, 0.2f, 0.3f, 1.0f };
+
+    GfxRenderPassBeginDescriptor beginDesc = {
+        .label = "Main Render Pass",
+        .renderPass = app->renderPass,
+        .framebuffer = app->framebuffers[imageIndex],
+        .colorClearValues = &clearColor,
+        .colorClearValueCount = 1,
+        .depthClearValue = 1.0f,
+        .stencilClearValue = 0
+    };
+
+    GfxRenderPassEncoder renderPass;
+    if (gfxCommandEncoderBeginRenderPass(encoder, &beginDesc, &renderPass) == GFX_RESULT_SUCCESS) {
+
+        // Set pipeline
+        gfxRenderPassEncoderSetPipeline(renderPass, app->renderPipeline);
+
+        // Set viewport and scissor to fill the entire render target
+        GfxViewport viewport = { 0.0f, 0.0f, (float)app->swapchainInfo.extent.width, (float)app->swapchainInfo.extent.height, 0.0f, 1.0f };
+        GfxScissorRect scissor = { { 0, 0 }, { app->swapchainInfo.extent.width, app->swapchainInfo.extent.height } };
+        gfxRenderPassEncoderSetViewport(renderPass, &viewport);
+        gfxRenderPassEncoderSetScissorRect(renderPass, &scissor);
+
+        // Only draw if texture is loaded
+        if (app->textureUploadComplete) {
+            // Set vertex buffer
+            GfxBufferInfo vertexBufferInfo;
+            if (gfxBufferGetInfo(app->vertexBuffer, &vertexBufferInfo) != GFX_RESULT_SUCCESS) {
+                fprintf(stderr, "Failed to get vertex buffer info\n");
+                return;
+            }
+            gfxRenderPassEncoderSetVertexBuffer(renderPass, 0, app->vertexBuffer, 0,
+                vertexBufferInfo.size);
+
+            // Set index buffer
+            GfxBufferInfo indexBufferInfo;
+            if (gfxBufferGetInfo(app->indexBuffer, &indexBufferInfo) != GFX_RESULT_SUCCESS) {
+                fprintf(stderr, "Failed to get index buffer info\n");
+                return;
+            }
+            gfxRenderPassEncoderSetIndexBuffer(renderPass, app->indexBuffer,
+                GFX_INDEX_FORMAT_UINT16, 0,
+                indexBufferInfo.size);
+
+            // Bind texture (shared by all cubes)
+            gfxRenderPassEncoderSetBindGroup(renderPass, 1, app->textureBindGroup, NULL, 0);
+
+            // Draw CUBE_COUNT cubes at different positions
+            for (int i = 0; i < CUBE_COUNT; ++i) {
+                // Bind the specific cube's bind group (no dynamic offsets)
+                gfxRenderPassEncoderSetBindGroup(renderPass, 0, frame->uniformBindGroups[i], NULL, 0);
+
+                // Draw indexed (36 indices for the cube)
+                gfxRenderPassEncoderDrawIndexed(renderPass, 36, 1, 0, 0, 0);
+            }
+        }
+
+        // End render pass
+        if (gfxRenderPassEncoderEnd(renderPass) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to end render pass\n");
+            return;
+        }
+    }
+
+    // Finish command encoding
+    if (gfxCommandEncoderEnd(encoder) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to end command encoder\n");
+        return;
+    }
+
+    // Submit commands with synchronization
+    GfxSubmitDescriptor submitDescriptor = { 0 };
+    submitDescriptor.commandEncoders = &encoder;
+    submitDescriptor.commandEncoderCount = 1;
+    submitDescriptor.waitSemaphores = &frame->imageAvailableSemaphore;
+    submitDescriptor.waitSemaphoreCount = 1;
+    submitDescriptor.signalSemaphores = &frame->renderFinishedSemaphore;
+    submitDescriptor.signalSemaphoreCount = 1;
+    submitDescriptor.signalFence = frame->inFlightFence;
+
+    if (gfxQueueSubmit(app->queue, &submitDescriptor) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to submit command buffer to queue\n");
+        return;
+    }
+
+    // Present with synchronization
+    GfxPresentDescriptor presentDescriptor = {};
+    presentDescriptor.sType = GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR;
+    presentDescriptor.pNext = NULL;
+    presentDescriptor.waitSemaphores = &frame->renderFinishedSemaphore;
+    presentDescriptor.waitSemaphoreCount = 1;
+    if (gfxSwapchainPresent(app->swapchain, &presentDescriptor) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to present swapchain image\n");
+        return;
+    }
+
+    // Move to next frame
+    app->currentFrame = (app->currentFrame + 1) % app->framesInFlightCount;
 }
 
 // Returns false if loop should exit
 static bool mainLoopIteration(CubeApp* app)
 {
-    if (!app || glfwWindowShouldClose(app->window)) {
+    if (glfwWindowShouldClose(app->window)) {
         return false;
     }
 
