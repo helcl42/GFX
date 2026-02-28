@@ -62,10 +62,12 @@ static void logCallback(GfxLogLevel level, const char* message, void* userData)
 
 typedef struct {
     float time;
+    float padding[3];  // Pad to 16 bytes for WebGPU alignment
 } ComputeUniformData;
 
 typedef struct {
     float postProcessStrength;
+    float padding[3];  // Pad to 16 bytes for WebGPU alignment
 } RenderUniformData;
 
 // Application settings/configuration
