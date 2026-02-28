@@ -96,7 +96,7 @@ endfunction()
 # =============================================================================
 if(BUILD_FOR_WEB)
     # Web Cube Example (Emscripten)
-    add_executable(cube_example_web ${CMAKE_CURRENT_SOURCE_DIR}/c/cube/cube_example.c)
+    add_executable(cube_example_web ${CMAKE_CURRENT_SOURCE_DIR}/c/cube/CubeExample.c)
     target_link_libraries(cube_example_web gfx stb_image)
     
     # Emscripten-specific flags for web cube example
@@ -127,7 +127,7 @@ if(BUILD_FOR_WEB)
     message(STATUS "Web example will be built to: ${CMAKE_CURRENT_BINARY_DIR}/web/cube_example_web.html")
     
     # Web Compute Example (Emscripten)
-    add_executable(compute_example_web ${CMAKE_CURRENT_SOURCE_DIR}/c/compute/compute_example.c)
+    add_executable(compute_example_web ${CMAKE_CURRENT_SOURCE_DIR}/c/compute/ComputeExample.c)
     target_link_libraries(compute_example_web gfx)
     
     # Emscripten-specific flags for web compute example
@@ -158,7 +158,7 @@ if(BUILD_FOR_WEB)
     
     # Web C++ Cube Example (Emscripten)
     if(BUILD_CPP_WRAPPER)
-        add_executable(cube_example_cpp_web ${CMAKE_CURRENT_SOURCE_DIR}/cpp/cube/cube_example.cpp)
+        add_executable(cube_example_cpp_web ${CMAKE_CURRENT_SOURCE_DIR}/cpp/cube/CubeExample.cpp)
         target_link_libraries(cube_example_cpp_web gfx_cpp)
     
     # Emscripten-specific flags for web C++ cube example
@@ -190,7 +190,7 @@ if(BUILD_FOR_WEB)
     
     # Web C++ Compute Example (Emscripten)
     if(BUILD_CPP_WRAPPER)
-        add_executable(compute_example_cpp_web ${CMAKE_CURRENT_SOURCE_DIR}/cpp/compute/compute_example.cpp)
+        add_executable(compute_example_cpp_web ${CMAKE_CURRENT_SOURCE_DIR}/cpp/compute/ComputeExample.cpp)
         target_link_libraries(compute_example_cpp_web gfx_cpp)
         
         # Emscripten-specific flags for web C++ compute example
@@ -223,7 +223,7 @@ if(BUILD_FOR_WEB)
 # =============================================================================
 else()
     # Native C Cube Example
-    add_executable(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/c/cube/cube_example.c)
+    add_executable(cube_example_c ${CMAKE_CURRENT_SOURCE_DIR}/c/cube/CubeExample.c)
     target_link_libraries(cube_example_c gfx glfw stb_image)  # Add stb_image
     if(ENABLE_ASAN AND NOT MSVC)
         target_link_options(cube_example_c PRIVATE -fsanitize=address)
@@ -256,7 +256,7 @@ else()
     )
     
     # Native C Threaded Cube Example (uses pthreads)
-    add_executable(cube_example_c_threaded ${CMAKE_CURRENT_SOURCE_DIR}/c/cube/cube_example_threaded.c)
+    add_executable(cube_example_c_threaded ${CMAKE_CURRENT_SOURCE_DIR}/c/cube/CubeExampleThreaded.c)
     target_link_libraries(cube_example_c_threaded gfx glfw stb_image)
     if(NOT MSVC)
         target_link_libraries(cube_example_c_threaded pthread)
@@ -292,7 +292,7 @@ else()
     )
 
     # Threaded C++ Cube Example (uses C API with C++ language features)
-    add_executable(cube_example_cpp_threaded ${CMAKE_CURRENT_SOURCE_DIR}/cpp/cube/cube_example_threaded.cpp)
+    add_executable(cube_example_cpp_threaded ${CMAKE_CURRENT_SOURCE_DIR}/cpp/cube/CubeExampleThreaded.cpp)
     target_link_libraries(cube_example_cpp_threaded gfx glfw stb_image)
     if(NOT MSVC)
         target_link_libraries(cube_example_cpp_threaded pthread)
@@ -324,7 +324,7 @@ else()
 
     # C++ Cube Example (uses C++ wrapper)
     if(BUILD_CPP_WRAPPER)
-        add_executable(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/cpp/cube/cube_example.cpp)
+        add_executable(cube_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/cpp/cube/CubeExample.cpp)
         target_link_libraries(cube_example_cpp gfx_cpp glfw stb_image)
         add_dependencies(cube_example_cpp gfx_cpp)
         if(ENABLE_ASAN AND NOT MSVC)
@@ -355,7 +355,7 @@ else()
     endif()  # BUILD_CPP_WRAPPER
 
     # C Compute Example
-    add_executable(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/c/compute/compute_example.c)
+    add_executable(compute_example_c ${CMAKE_CURRENT_SOURCE_DIR}/c/compute/ComputeExample.c)
     target_link_libraries(compute_example_c gfx glfw)
     if(ENABLE_ASAN AND NOT MSVC)
         target_link_options(compute_example_c PRIVATE -fsanitize=address)
@@ -392,7 +392,7 @@ else()
 
     # C++ Compute Example
     if(BUILD_CPP_WRAPPER)
-        add_executable(compute_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/cpp/compute/compute_example.cpp)
+        add_executable(compute_example_cpp ${CMAKE_CURRENT_SOURCE_DIR}/cpp/compute/ComputeExample.cpp)
         target_link_libraries(compute_example_cpp gfx_cpp glfw)
         add_dependencies(compute_example_cpp gfx_cpp)
         if(ENABLE_ASAN AND NOT MSVC)
