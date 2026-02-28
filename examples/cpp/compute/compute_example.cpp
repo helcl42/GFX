@@ -401,7 +401,6 @@ bool ComputeApp::createPerFrameResources()
         fenceDesc.signaled = true;
 
         imageAvailableSemaphores.resize(framesInFlightCount);
-        renderFinishedSemaphores.resize(framesInFlightCount);
         inFlightFences.resize(framesInFlightCount);
         commandEncoders.resize(framesInFlightCount);
 
@@ -409,12 +408,6 @@ bool ComputeApp::createPerFrameResources()
             imageAvailableSemaphores[i] = device->createSemaphore(semaphoreDesc);
             if (!imageAvailableSemaphores[i]) {
                 std::cerr << "Failed to create image available semaphore " << i << std::endl;
-                return false;
-            }
-
-            renderFinishedSemaphores[i] = device->createSemaphore(semaphoreDesc);
-            if (!renderFinishedSemaphores[i]) {
-                std::cerr << "Failed to create render finished semaphore " << i << std::endl;
                 return false;
             }
 
@@ -446,15 +439,11 @@ void ComputeApp::destroyPerFrameResources()
     for (size_t i = 0; i < inFlightFences.size(); ++i) {
         inFlightFences[i].reset();
     }
-    for (size_t i = 0; i < renderFinishedSemaphores.size(); ++i) {
-        renderFinishedSemaphores[i].reset();
-    }
     for (size_t i = 0; i < imageAvailableSemaphores.size(); ++i) {
         imageAvailableSemaphores[i].reset();
     }
     commandEncoders.clear();
     inFlightFences.clear();
-    renderFinishedSemaphores.clear();
     imageAvailableSemaphores.clear();
 }
 
@@ -516,6 +505,22 @@ bool ComputeApp::createSwapchain(uint32_t width, uint32_t height)
             return false;
         }
 
+        // Get swapchain info and create render finished semaphores (one per swapchain image)
+        auto swapchainInfo = swapchain->getInfo();
+        renderFinishedSemaphores.resize(swapchainInfo.imageCount);
+
+        gfx::SemaphoreDescriptor semaphoreDesc{};
+        semaphoreDesc.type = gfx::SemaphoreType::Binary;
+
+        for (uint32_t i = 0; i < swapchainInfo.imageCount; ++i) {
+            semaphoreDesc.label = "Render Finished Semaphore Image " + std::to_string(i);
+            renderFinishedSemaphores[i] = device->createSemaphore(semaphoreDesc);
+            if (!renderFinishedSemaphores[i]) {
+                std::cerr << "Failed to create render finished semaphore " << i << std::endl;
+                return false;
+            }
+        }
+
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Swapchain creation error: " << e.what() << std::endl;
@@ -525,6 +530,12 @@ bool ComputeApp::createSwapchain(uint32_t width, uint32_t height)
 
 void ComputeApp::destroySwapchain()
 {
+    // Clean up render finished semaphores
+    for (size_t i = 0; i < renderFinishedSemaphores.size(); ++i) {
+        renderFinishedSemaphores[i].reset();
+    }
+    renderFinishedSemaphores.clear();
+
     swapchain.reset();
 }
 
@@ -1304,7 +1315,7 @@ void ComputeApp::render()
         gfx::SubmitDescriptor submitDescriptor{};
         submitDescriptor.commandEncoders = { encoder };
         submitDescriptor.waitSemaphores = { imageAvailableSemaphores[frameIndex] };
-        submitDescriptor.signalSemaphores = { renderFinishedSemaphores[frameIndex] };
+        submitDescriptor.signalSemaphores = { renderFinishedSemaphores[imageIndex] };
         submitDescriptor.signalFence = inFlightFences[frameIndex];
 
         auto submitResult = queue->submit(submitDescriptor);
@@ -1314,7 +1325,7 @@ void ComputeApp::render()
 
         // Present
         gfx::PresentDescriptor presentDescriptor{};
-        presentDescriptor.waitSemaphores = { renderFinishedSemaphores[frameIndex] };
+        presentDescriptor.waitSemaphores = { renderFinishedSemaphores[imageIndex] };
 
         result = swapchain->present(presentDescriptor);
 

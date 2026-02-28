@@ -167,7 +167,6 @@ struct PerFrameResources {
     // Synchronization
     GfxSemaphore imageAvailableSemaphore = nullptr;
     GfxSemaphore clearFinishedSemaphore = nullptr;
-    GfxSemaphore renderFinishedSemaphore = nullptr;
     GfxFence inFlightFence = nullptr;
 
     // Command encoders
@@ -304,6 +303,9 @@ private:
     // Per-frame resources
     std::vector<PerFrameResources> frameResources;
     uint32_t currentFrame = 0;
+
+    // Per-swapchain-image semaphores
+    std::vector<GfxSemaphore> renderFinishedSemaphores;
 
     // Animation state
     float rotationAngleX = 0.0f;
@@ -636,11 +638,38 @@ bool CubeApp::createSwapchain(uint32_t width, uint32_t height)
 
     std::cout << "Swapchain created: " << swapchainInfo.extent.width << "x" << swapchainInfo.extent.height
               << ", format: " << swapchainInfo.format << std::endl;
+
+    // Create render finished semaphores (one per swapchain image)
+    renderFinishedSemaphores.resize(swapchainInfo.imageCount, nullptr);
+    GfxSemaphoreDescriptor semaphoreDesc = {
+        .sType = GFX_STRUCTURE_TYPE_SEMAPHORE_DESCRIPTOR,
+        .pNext = nullptr,
+        .type = GFX_SEMAPHORE_TYPE_BINARY
+    };
+
+    for (uint32_t i = 0; i < swapchainInfo.imageCount; ++i) {
+        std::string labelStr = std::format("Render Finished Semaphore Image {}", i);
+        semaphoreDesc.label = labelStr.c_str();
+        if (gfxDeviceCreateSemaphore(device, &semaphoreDesc, &renderFinishedSemaphores[i]) != GFX_RESULT_SUCCESS) {
+            std::cerr << std::format("Failed to create render finished semaphore {}\n", i);
+            return false;
+        }
+    }
+
     return true;
 }
 
 void CubeApp::destroySwapchain()
 {
+    // Clean up render finished semaphores
+    for (auto& semaphore : renderFinishedSemaphores) {
+        if (semaphore) {
+            gfxSemaphoreDestroy(semaphore);
+            semaphore = nullptr;
+        }
+    }
+    renderFinishedSemaphores.clear();
+
     if (swapchain) {
         gfxSwapchainDestroy(swapchain);
         swapchain = nullptr;
@@ -1391,13 +1420,6 @@ bool CubeApp::createPerFrameResources()
             return false;
         }
 
-        labelStr = std::format("Render Finished Semaphore {}", i);
-        semaphoreDesc.label = labelStr.c_str();
-        if (gfxDeviceCreateSemaphore(device, &semaphoreDesc, &frame.renderFinishedSemaphore) != GFX_RESULT_SUCCESS) {
-            std::cerr << std::format("Failed to create render finished semaphore {}\n", i);
-            return false;
-        }
-
         // Create fence
         labelStr = std::format("In Flight Fence {}", i);
         fenceDesc.label = labelStr.c_str();
@@ -1521,10 +1543,6 @@ void CubeApp::destroyPerFrameResources()
         if (frame.clearFinishedSemaphore) {
             gfxSemaphoreDestroy(frame.clearFinishedSemaphore);
             frame.clearFinishedSemaphore = nullptr;
-        }
-        if (frame.renderFinishedSemaphore) {
-            gfxSemaphoreDestroy(frame.renderFinishedSemaphore);
-            frame.renderFinishedSemaphore = nullptr;
         }
         if (frame.inFlightFence) {
             gfxFenceDestroy(frame.inFlightFence);
@@ -1780,7 +1798,7 @@ void CubeApp::render()
                 .commandEncoderCount = 1,
                 .waitSemaphores = nullptr,
                 .waitSemaphoreCount = 0,
-                .signalSemaphores = &frame.renderFinishedSemaphore,
+                .signalSemaphores = &renderFinishedSemaphores[imageIndex],
                 .signalSemaphoreCount = 1,
                 .signalFence = frame.inFlightFence
             };
@@ -1806,7 +1824,7 @@ void CubeApp::render()
                 .commandEncoderCount = 1,
                 .waitSemaphores = nullptr,
                 .waitSemaphoreCount = 0,
-                .signalSemaphores = &frame.renderFinishedSemaphore,
+                .signalSemaphores = &renderFinishedSemaphores[imageIndex],
                 .signalSemaphoreCount = 1,
                 .signalFence = frame.inFlightFence
             };
@@ -1862,7 +1880,7 @@ void CubeApp::render()
             .commandEncoderCount = 1,
             .waitSemaphores = &frame.imageAvailableSemaphore,
             .waitSemaphoreCount = 1,
-            .signalSemaphores = &frame.renderFinishedSemaphore,
+            .signalSemaphores = &renderFinishedSemaphores[imageIndex],
             .signalSemaphoreCount = 1,
             .signalFence = frame.inFlightFence
         };
@@ -1873,7 +1891,7 @@ void CubeApp::render()
     GfxPresentDescriptor presentDescriptor = {};
     presentDescriptor.sType = GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR;
     presentDescriptor.pNext = NULL;
-    presentDescriptor.waitSemaphores = &frame.renderFinishedSemaphore;
+    presentDescriptor.waitSemaphores = &renderFinishedSemaphores[imageIndex];
     presentDescriptor.waitSemaphoreCount = 1;
     gfxSwapchainPresent(swapchain, &presentDescriptor);
 

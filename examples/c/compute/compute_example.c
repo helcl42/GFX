@@ -79,7 +79,6 @@ typedef struct {
 typedef struct {
     GfxCommandEncoder commandEncoder;
     GfxSemaphore imageAvailableSemaphore;
-    GfxSemaphore renderFinishedSemaphore;
     GfxFence inFlightFence;
     GfxBindGroup computeBindGroup;
     GfxBuffer computeUniformBuffer;
@@ -121,6 +120,9 @@ typedef struct {
     // Per-frame resources (dynamic array)
     PerFrameResources* frameResources;
     GfxFramebuffer* framebuffers;
+
+    // Per-swapchain-image semaphores
+    GfxSemaphore* renderFinishedSemaphores;
 
     uint32_t currentFrame;
     uint32_t previousWidth;
@@ -374,11 +376,6 @@ static bool createPerFrameResources(ComputeApp* app)
             return false;
         }
 
-        if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &app->frameResources[i].renderFinishedSemaphore) != GFX_RESULT_SUCCESS) {
-            fprintf(stderr, "Failed to create render finished semaphore\n");
-            return false;
-        }
-
         if (gfxDeviceCreateFence(app->device, &fenceDesc, &app->frameResources[i].inFlightFence) != GFX_RESULT_SUCCESS) {
             fprintf(stderr, "Failed to create fence\n");
             return false;
@@ -545,10 +542,6 @@ static void destroyPerFrameResources(ComputeApp* app)
                 gfxFenceDestroy(frame->inFlightFence);
                 frame->inFlightFence = NULL;
             }
-            if (frame->renderFinishedSemaphore) {
-                gfxSemaphoreDestroy(frame->renderFinishedSemaphore);
-                frame->renderFinishedSemaphore = NULL;
-            }
             if (frame->imageAvailableSemaphore) {
                 gfxSemaphoreDestroy(frame->imageAvailableSemaphore);
                 frame->imageAvailableSemaphore = NULL;
@@ -670,11 +663,45 @@ static bool createSwapchain(ComputeApp* app, uint32_t width, uint32_t height)
     }
 
     gfxSwapchainGetInfo(app->swapchain, &app->swapchainInfo);
+
+    // Create render finished semaphores (one per swapchain image)
+    app->renderFinishedSemaphores = (GfxSemaphore*)malloc(app->swapchainInfo.imageCount * sizeof(GfxSemaphore));
+    if (!app->renderFinishedSemaphores) {
+        fprintf(stderr, "Failed to allocate renderFinishedSemaphores\n");
+        return false;
+    }
+    for (uint32_t i = 0; i < app->swapchainInfo.imageCount; ++i) {
+        app->renderFinishedSemaphores[i] = NULL;
+    }
+
+    GfxSemaphoreDescriptor semaphoreDesc = {};
+    semaphoreDesc.sType = GFX_STRUCTURE_TYPE_SEMAPHORE_DESCRIPTOR;
+    semaphoreDesc.pNext = NULL;
+    semaphoreDesc.type = GFX_SEMAPHORE_TYPE_BINARY;
+
+    for (uint32_t i = 0; i < app->swapchainInfo.imageCount; ++i) {
+        if (gfxDeviceCreateSemaphore(app->device, &semaphoreDesc, &app->renderFinishedSemaphores[i]) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create render finished semaphore %u\n", i);
+            return false;
+        }
+    }
+
     return true;
 }
 
 static void destroySwapchain(ComputeApp* app)
 {
+    // Clean up render finished semaphores
+    if (app->renderFinishedSemaphores) {
+        for (uint32_t i = 0; i < app->swapchainInfo.imageCount; ++i) {
+            if (app->renderFinishedSemaphores[i]) {
+                gfxSemaphoreDestroy(app->renderFinishedSemaphores[i]);
+            }
+        }
+        free(app->renderFinishedSemaphores);
+        app->renderFinishedSemaphores = NULL;
+    }
+
     if (app->swapchain) {
         gfxSwapchainDestroy(app->swapchain);
         app->swapchain = NULL;
@@ -1676,7 +1703,7 @@ static void render(ComputeApp* app)
     submitDescriptor.waitSemaphoreCount = 1;
     submitDescriptor.waitSemaphores = &frame->imageAvailableSemaphore;
     submitDescriptor.signalSemaphoreCount = 1;
-    submitDescriptor.signalSemaphores = &frame->renderFinishedSemaphore;
+    submitDescriptor.signalSemaphores = &app->renderFinishedSemaphores[imageIndex];
     submitDescriptor.signalFence = frame->inFlightFence;
 
     if (gfxQueueSubmit(app->queue, &submitDescriptor) != GFX_RESULT_SUCCESS) {
@@ -1689,7 +1716,7 @@ static void render(ComputeApp* app)
     presentDescriptor.sType = GFX_STRUCTURE_TYPE_PRESENT_DESCRIPTOR;
     presentDescriptor.pNext = NULL;
     presentDescriptor.waitSemaphoreCount = 1;
-    presentDescriptor.waitSemaphores = &frame->renderFinishedSemaphore;
+    presentDescriptor.waitSemaphores = &app->renderFinishedSemaphores[imageIndex];
 
     result = gfxSwapchainPresent(app->swapchain, &presentDescriptor);
     if (result != GFX_RESULT_SUCCESS) {

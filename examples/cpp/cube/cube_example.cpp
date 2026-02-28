@@ -86,10 +86,9 @@ struct Settings {
 
 // Per-frame resources
 struct PerFrameResources {
-    std::shared_ptr<gfx::CommandEncoder> commandEncoder;
     std::shared_ptr<gfx::Semaphore> imageAvailableSemaphore;
-    std::shared_ptr<gfx::Semaphore> renderFinishedSemaphore;
     std::shared_ptr<gfx::Fence> inFlightFence;
+    std::shared_ptr<gfx::CommandEncoder> commandEncoder;
     std::vector<std::shared_ptr<gfx::BindGroup>> uniformBindGroups;
 };
 
@@ -194,6 +193,9 @@ private:
     size_t uniformAlignedSize = 0;
     std::vector<PerFrameResources> frameResources;
     size_t currentFrame = 0;
+
+    // Per-swapchain-image resources (to avoid semaphore reuse issues)
+    std::vector<std::shared_ptr<gfx::Semaphore>> renderFinishedSemaphores;
 
     // Animation state
     float rotationAngleX = 0.0f;
@@ -464,6 +466,20 @@ bool CubeApp::createSizeDependentResources(uint32_t width, uint32_t height)
 
         // Get actual swapchain dimensions (may differ from requested)
         auto swapchainInfo = swapchain->getInfo();
+
+        // Create render finished semaphores (one per swapchain image)
+        renderFinishedSemaphores.resize(swapchainInfo.imageCount);
+        for (uint32_t i = 0; i < swapchainInfo.imageCount; ++i) {
+            gfx::SemaphoreDescriptor semDesc{};
+            semDesc.label = "Render Finished Semaphore Image " + std::to_string(i);
+            semDesc.type = gfx::SemaphoreType::Binary;
+
+            renderFinishedSemaphores[i] = device->createSemaphore(semDesc);
+            if (!renderFinishedSemaphores[i]) {
+                std::cerr << "Failed to create render finished semaphore " << i << std::endl;
+                return false;
+            }
+        }
         uint32_t actualWidth = swapchainInfo.extent.width;
         uint32_t actualHeight = swapchainInfo.extent.height;
 
@@ -636,7 +652,6 @@ void CubeApp::destroyPerFrameResources()
         // Clean up sync objects and command encoder
         frame.commandEncoder.reset();
         frame.inFlightFence.reset();
-        frame.renderFinishedSemaphore.reset();
         frame.imageAvailableSemaphore.reset();
     }
 
@@ -661,13 +676,6 @@ bool CubeApp::createPerFrameResources()
             frame.imageAvailableSemaphore = device->createSemaphore(semDesc);
             if (!frame.imageAvailableSemaphore) {
                 std::cerr << "Failed to create image available semaphore " << i << std::endl;
-                return false;
-            }
-
-            semDesc.label = "Render Finished Semaphore Frame " + std::to_string(i);
-            frame.renderFinishedSemaphore = device->createSemaphore(semDesc);
-            if (!frame.renderFinishedSemaphore) {
-                std::cerr << "Failed to create render finished semaphore " << i << std::endl;
                 return false;
             }
 
@@ -731,6 +739,9 @@ void CubeApp::destroySizeDependentResources()
     msaaColorTexture.reset();
     depthTextureView.reset();
     depthTexture.reset();
+
+    // Clean up render finished semaphores
+    renderFinishedSemaphores.clear();
 
     // Also destroy swapchain to fully recreate it
     swapchain.reset();
@@ -1182,7 +1193,7 @@ void CubeApp::render()
         gfx::SubmitDescriptor submitDescriptor{};
         submitDescriptor.commandEncoders = { commandEncoder };
         submitDescriptor.waitSemaphores = { frame.imageAvailableSemaphore };
-        submitDescriptor.signalSemaphores = { frame.renderFinishedSemaphore };
+        submitDescriptor.signalSemaphores = { renderFinishedSemaphores[imageIndex] };
         submitDescriptor.signalFence = frame.inFlightFence;
 
         auto submitResult = queue->submit(submitDescriptor);
@@ -1192,7 +1203,7 @@ void CubeApp::render()
 
         // Present with explicit synchronization
         gfx::PresentDescriptor presentDescriptor{};
-        presentDescriptor.waitSemaphores = { frame.renderFinishedSemaphore };
+        presentDescriptor.waitSemaphores = { renderFinishedSemaphores[imageIndex] };
 
         result = swapchain->present(presentDescriptor);
         if (result != gfx::Result::Success) {
