@@ -66,7 +66,6 @@ static void logCallback(GfxLogLevel level, const char* message, void* userData)
 // Vertex structure for cube
 typedef struct {
     float position[3];
-    float color[3];
     float texCoord[2];
 } Vertex;
 
@@ -905,40 +904,40 @@ static bool createGeometry(CubeApp* app)
     // Create cube vertices (24 vertices - 4 per face for proper UV mapping)
     Vertex vertices[] = {
         // Front face (Z+)
-        { { -1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 0
-        { { 1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 1
-        { { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 2
-        { { -1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // 3
+        { { -1.0f, -1.0f, 1.0f }, { 0.0f, 1.0f } }, // 0
+        { { 1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f } }, // 1
+        { { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 2
+        { { -1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // 3
 
         // Back face (Z-)
-        { { 1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 4
-        { { -1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 5
-        { { -1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 6
-        { { 1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // 7
+        { { 1.0f, -1.0f, -1.0f }, { 0.0f, 1.0f } }, // 4
+        { { -1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f } }, // 5
+        { { -1.0f, 1.0f, -1.0f }, { 1.0f, 0.0f } }, // 6
+        { { 1.0f, 1.0f, -1.0f }, { 0.0f, 0.0f } }, // 7
 
         // Left face (X-)
-        { { -1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 8
-        { { -1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 9
-        { { -1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 10
-        { { -1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // 11
+        { { -1.0f, -1.0f, -1.0f }, { 0.0f, 1.0f } }, // 8
+        { { -1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f } }, // 9
+        { { -1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 10
+        { { -1.0f, 1.0f, -1.0f }, { 0.0f, 0.0f } }, // 11
 
         // Right face (X+)
-        { { 1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 12
-        { { 1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 13
-        { { 1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 14
-        { { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // 15
+        { { 1.0f, -1.0f, 1.0f }, { 0.0f, 1.0f } }, // 12
+        { { 1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f } }, // 13
+        { { 1.0f, 1.0f, -1.0f }, { 1.0f, 0.0f } }, // 14
+        { { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // 15
 
         // Top face (Y+)
-        { { -1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 16
-        { { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 17
-        { { 1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 18
-        { { -1.0f, 1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } }, // 19
+        { { -1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 16
+        { { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 17
+        { { 1.0f, 1.0f, -1.0f }, { 1.0f, 0.0f } }, // 18
+        { { -1.0f, 1.0f, -1.0f }, { 0.0f, 0.0f } }, // 19
 
         // Bottom face (Y-)
-        { { -1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }, // 20
-        { { 1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }, // 21
-        { { 1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } }, // 22
-        { { -1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } } // 23
+        { { -1.0f, -1.0f, -1.0f }, { 0.0f, 1.0f } }, // 20
+        { { 1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f } }, // 21
+        { { 1.0f, -1.0f, 1.0f }, { 1.0f, 0.0f } }, // 22
+        { { -1.0f, -1.0f, 1.0f }, { 0.0f, 0.0f } } // 23
     };
 
     // Create cube indices (36 indices for 12 triangles)
@@ -1514,19 +1513,16 @@ static bool createRenderPipeline(CubeApp* app)
         { .format = GFX_FORMAT_R32G32B32_FLOAT,
             .offset = offsetof(Vertex, position),
             .shaderLocation = 0 },
-        { .format = GFX_FORMAT_R32G32B32_FLOAT,
-            .offset = offsetof(Vertex, color),
-            .shaderLocation = 1 },
         { .format = GFX_FORMAT_R32G32_FLOAT,
             .offset = offsetof(Vertex, texCoord),
-            .shaderLocation = 2 }
+            .shaderLocation = 1 }
     };
 
     // Define vertex buffer layout
     GfxVertexBufferLayout vertexBufferLayout = {
         .arrayStride = sizeof(Vertex),
         .attributes = attributes,
-        .attributeCount = 3,
+        .attributeCount = 2,
         .stepMode = GFX_VERTEX_STEP_MODE_VERTEX
     };
 
