@@ -43,13 +43,6 @@ static constexpr uint32_t COMPUTE_TEXTURE_WIDTH = 512;
 static constexpr uint32_t COMPUTE_TEXTURE_HEIGHT = 512;
 static constexpr gfx::Format COLOR_FORMAT = gfx::Format::B8G8R8A8UnormSrgb;
 
-#if defined(__EMSCRIPTEN__)
-static constexpr gfx::Backend BACKEND_API = gfx::Backend::WebGPU;
-#else
-// here we can choose between VULKAN, WEBGPU
-static constexpr gfx::Backend BACKEND_API = gfx::Backend::Vulkan;
-#endif
-
 // Log callback function
 static void logCallback(gfx::LogLevel level, const std::string& message)
 {
@@ -85,6 +78,12 @@ struct RenderUniformData {
     float padding[3]; // WebGPU requires 16-byte alignment for uniform buffers
 };
 
+// Application settings/configuration
+struct Settings {
+    gfx::Backend backend;
+    bool vsync;
+};
+
 namespace util {
 std::vector<uint8_t> loadBinaryFile(const char* filepath);
 std::string loadTextFile(const char* filepath);
@@ -92,6 +91,9 @@ std::string loadTextFile(const char* filepath);
 
 class ComputeApp {
 public:
+    explicit ComputeApp(const Settings& settings);
+    ~ComputeApp() = default;
+
     bool init();
     void run();
     void cleanup();
@@ -149,6 +151,8 @@ private:
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 private:
+    Settings settings;
+
     GLFWwindow* window = nullptr;
 
     std::shared_ptr<gfx::Instance> instance;
@@ -200,6 +204,11 @@ private:
     float fpsFrameTimeMin = FLT_MAX;
     float fpsFrameTimeMax = 0.0f;
 };
+
+ComputeApp::ComputeApp(const Settings& settings)
+    : settings(settings)
+{
+}
 
 bool ComputeApp::init()
 {
@@ -275,7 +284,9 @@ bool ComputeApp::createWindow(uint32_t width, uint32_t height)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    window = glfwCreateWindow(windowWidth, windowHeight, "Compute & Postprocess Example (C++)", nullptr, nullptr);
+    const char* backendName = (settings.backend == gfx::Backend::Vulkan) ? "Vulkan" : "WebGPU";
+    std::string windowTitle = std::string("Compute & Postprocess Example (C++) - ") + backendName;
+    window = glfwCreateWindow(windowWidth, windowHeight, windowTitle.c_str(), nullptr, nullptr);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -303,7 +314,7 @@ bool ComputeApp::createGraphics()
     // Set up logging callback
     gfx::setLogCallback(logCallback);
 
-    auto result = gfx::loadBackend(BACKEND_API);
+    auto result = gfx::loadBackend(settings.backend);
     if (!gfx::isSuccess(result)) {
         std::cerr << "Failed to load graphics backend: " << static_cast<int32_t>(result) << std::endl;
         return false;
@@ -313,7 +324,7 @@ bool ComputeApp::createGraphics()
         gfx::InstanceDescriptor instanceDesc{};
         instanceDesc.applicationName = "Compute & Postprocess Example (C++)";
         instanceDesc.applicationVersion = 1;
-        instanceDesc.backend = BACKEND_API;
+        instanceDesc.backend = settings.backend;
         instanceDesc.enabledExtensions = { gfx::INSTANCE_EXTENSION_SURFACE, gfx::INSTANCE_EXTENSION_DEBUG };
 
         instance = gfx::createInstance(instanceDesc);
@@ -377,7 +388,7 @@ void ComputeApp::destroyGraphics()
     device.reset();
     adapter.reset();
     instance.reset();
-    gfx::unloadBackend(BACKEND_API);
+    gfx::unloadBackend(settings.backend);
 }
 
 bool ComputeApp::createPerFrameResources()
@@ -496,7 +507,7 @@ bool ComputeApp::createSwapchain(uint32_t width, uint32_t height)
         swapchainDesc.extent.height = height;
         swapchainDesc.format = COLOR_FORMAT;
         swapchainDesc.usage = gfx::TextureUsage::RenderAttachment;
-        swapchainDesc.presentMode = gfx::PresentMode::Fifo;
+        swapchainDesc.presentMode = settings.vsync ? gfx::PresentMode::Fifo : gfx::PresentMode::Immediate;
         swapchainDesc.imageCount = static_cast<uint32_t>(framesInFlightCount);
 
         swapchain = device->createSwapchain(swapchainDesc);
@@ -1499,11 +1510,64 @@ std::string loadTextFile(const char* filepath)
 }
 } // namespace util
 
-int main()
+static bool parseArguments(int argc, char** argv, Settings& settings)
+{
+#if defined(__EMSCRIPTEN__)
+    settings.backend = gfx::Backend::WebGPU;
+#else
+    settings.backend = gfx::Backend::Vulkan;
+#endif
+    settings.vsync = true; // VSync on by default
+
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--backend") == 0 && i + 1 < argc) {
+            i++;
+            if (std::strcmp(argv[i], "vulkan") == 0) {
+                settings.backend = gfx::Backend::Vulkan;
+            } else if (std::strcmp(argv[i], "webgpu") == 0) {
+                settings.backend = gfx::Backend::WebGPU;
+            } else {
+                std::cerr << "Unknown backend: " << argv[i] << std::endl;
+                return false;
+            }
+        } else if (std::strcmp(argv[i], "--vsync") == 0 && i + 1 < argc) {
+            i++;
+            int vsync = std::atoi(argv[i]);
+            if (vsync == 0) {
+                settings.vsync = false;
+            } else if (vsync == 1) {
+                settings.vsync = true;
+            } else {
+                std::cerr << "Invalid vsync value: " << argv[i] << std::endl;
+                std::cerr << "Valid values: 0 (off), 1 (on)" << std::endl;
+                return false;
+            }
+        } else if (std::strcmp(argv[i], "--help") == 0) {
+            std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
+            std::cout << "Options:" << std::endl;
+            std::cout << "  --backend [vulkan|webgpu]   Select graphics backend" << std::endl;
+            std::cout << "  --vsync [0|1]               VSync: 0=off, 1=on" << std::endl;
+            std::cout << "  --help                      Show this help message" << std::endl;
+            return false;
+        } else {
+            std::cerr << "Unknown argument: " << argv[i] << std::endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+int main(int argc, char** argv)
 {
     std::cout << "=== Compute & Postprocess Example (C++) ===" << std::endl;
 
-    ComputeApp app;
+    Settings settings;
+    if (!parseArguments(argc, argv, settings)) {
+        return 0;
+    }
+
+    ComputeApp app(settings);
 
     if (!app.init()) {
         app.cleanup();

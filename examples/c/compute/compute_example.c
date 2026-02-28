@@ -35,13 +35,6 @@
 #define COMPUTE_TEXTURE_HEIGHT 512
 #define COLOR_FORMAT GFX_FORMAT_B8G8R8A8_UNORM_SRGB
 
-#if defined(__EMSCRIPTEN__)
-#define GFX_BACKEND_API GFX_BACKEND_WEBGPU
-#else
-// here we can choose between VULKAN, WEBGPU
-#define GFX_BACKEND_API GFX_BACKEND_VULKAN
-#endif
-
 // Log callback function
 static void logCallback(GfxLogLevel level, const char* message, void* userData)
 {
@@ -74,6 +67,12 @@ typedef struct {
 typedef struct {
     float postProcessStrength;
 } RenderUniformData;
+
+// Application settings/configuration
+typedef struct {
+    GfxBackend backend; // Graphics backend selection
+    bool vsync; // VSync enabled (FIFO) or disabled (IMMEDIATE)
+} Settings;
 
 typedef struct {
     GfxCommandEncoder commandEncoder;
@@ -131,6 +130,9 @@ typedef struct {
     float fpsTimeAccumulator;
     float fpsFrameTimeMin;
     float fpsFrameTimeMax;
+
+    // Application settings
+    Settings settings;
 } ComputeApp;
 
 // Private function declarations
@@ -177,6 +179,7 @@ static void* loadBinaryFile(const char* filepath, size_t* outSize);
 static void* loadTextFile(const char* filepath, size_t* outSize);
 
 // The public functions called from main
+static bool parseArguments(int argc, char** argv, Settings* settings);
 static bool init(ComputeApp* app);
 static void cleanup(ComputeApp* app);
 static void update(ComputeApp* app, float deltaTime);
@@ -215,7 +218,11 @@ static bool createWindow(ComputeApp* app, uint32_t width, uint32_t height)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    app->window = glfwCreateWindow(width, height, "Compute & Postprocess Example (C)", NULL, NULL);
+    const char* backendName = (app->settings.backend == GFX_BACKEND_VULKAN) ? "Vulkan" : "WebGPU";
+    char windowTitle[128];
+    snprintf(windowTitle, sizeof(windowTitle), "Compute Example - %s", backendName);
+
+    app->window = glfwCreateWindow(width, height, windowTitle, NULL, NULL);
     if (!app->window) {
         fprintf(stderr, "Failed to create GLFW window\n");
         glfwTerminate();
@@ -246,8 +253,9 @@ static bool createGraphics(ComputeApp* app)
     // Set up logging callback
     gfxSetLogCallback(logCallback, NULL);
 
-    printf("Loading graphics backend...\n");
-    if (gfxLoadBackend(GFX_BACKEND_API) != GFX_RESULT_SUCCESS) {
+    const char* backendName = (app->settings.backend == GFX_BACKEND_VULKAN) ? "Vulkan" : "WebGPU";
+    printf("Loading graphics backend (%s)...\n", backendName);
+    if (gfxLoadBackend(app->settings.backend) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to load any graphics backend\n");
         return false;
     }
@@ -257,7 +265,7 @@ static bool createGraphics(ComputeApp* app)
     GfxInstanceDescriptor instanceDesc = {};
     instanceDesc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
     instanceDesc.pNext = NULL;
-    instanceDesc.backend = GFX_BACKEND_API;
+    instanceDesc.backend = app->settings.backend;
     instanceDesc.applicationName = "Compute Example (C)";
     instanceDesc.applicationVersion = 1;
     instanceDesc.enabledExtensions = instanceExtensions;
@@ -336,7 +344,7 @@ static void destroyGraphics(ComputeApp* app)
         app->instance = NULL;
     }
 
-    gfxUnloadBackend(GFX_BACKEND_API);
+    gfxUnloadBackend(app->settings.backend);
 }
 
 static bool createPerFrameResources(ComputeApp* app)
@@ -651,7 +659,7 @@ static bool createSwapchain(ComputeApp* app, uint32_t width, uint32_t height)
     swapchainDesc.extent.height = height;
     swapchainDesc.format = COLOR_FORMAT;
     swapchainDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
-    swapchainDesc.presentMode = GFX_PRESENT_MODE_FIFO;
+    swapchainDesc.presentMode = app->settings.vsync ? GFX_PRESENT_MODE_FIFO : GFX_PRESENT_MODE_IMMEDIATE;
     swapchainDesc.imageCount = app->framesInFlightCount;
 
     if (gfxDeviceCreateSwapchain(app->device, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
@@ -1769,11 +1777,64 @@ static void emscriptenMainLoop(void* userData)
 }
 #endif
 
-int main(void)
+static bool parseArguments(int argc, char** argv, Settings* settings)
+{
+#if defined(__EMSCRIPTEN__)
+    settings->backend = GFX_BACKEND_WEBGPU;
+#else
+    settings->backend = GFX_BACKEND_VULKAN;
+#endif
+    settings->vsync = true; // VSync on by default
+
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "--backend") == 0 && i + 1 < argc) {
+            i++;
+            if (strcmp(argv[i], "vulkan") == 0) {
+                settings->backend = GFX_BACKEND_VULKAN;
+            } else if (strcmp(argv[i], "webgpu") == 0) {
+                settings->backend = GFX_BACKEND_WEBGPU;
+            } else {
+                fprintf(stderr, "Unknown backend: %s\n", argv[i]);
+                return false;
+            }
+        } else if (strcmp(argv[i], "--vsync") == 0 && i + 1 < argc) {
+            i++;
+            int vsync = atoi(argv[i]);
+            if (vsync == 0) {
+                settings->vsync = false;
+            } else if (vsync == 1) {
+                settings->vsync = true;
+            } else {
+                fprintf(stderr, "Invalid vsync value: %s\n", argv[i]);
+                fprintf(stderr, "Valid values: 0 (off), 1 (on)\n");
+                return false;
+            }
+        } else if (strcmp(argv[i], "--help") == 0) {
+            printf("Usage: %s [options]\n", argv[0]);
+            printf("Options:\n");
+            printf("  --backend [vulkan|webgpu]   Select graphics backend\n");
+            printf("  --vsync [0|1]               VSync: 0=off, 1=on\n");
+            printf("  --help                      Show this help message\n");
+            return false;
+        } else {
+            fprintf(stderr, "Unknown argument: %s\n", argv[i]);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+int main(int argc, char** argv)
 {
     printf("=== Compute & Postprocess Example (C) ===\n\n");
 
     ComputeApp app = { 0 }; // Initialize all members to NULL/0
+
+    // Parse command line arguments
+    if (!parseArguments(argc, argv, &app.settings)) {
+        return 0;
+    }
 
     // Initialize all resources and state
     if (!init(&app)) {

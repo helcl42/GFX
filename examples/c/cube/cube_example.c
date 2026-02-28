@@ -35,16 +35,8 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 #define CUBE_COUNT 3
-#define MSAA_SAMPLE_COUNT GFX_SAMPLE_COUNT_4
 #define COLOR_FORMAT GFX_FORMAT_B8G8R8A8_UNORM_SRGB
 #define DEPTH_FORMAT GFX_FORMAT_DEPTH32_FLOAT
-
-#if defined(__EMSCRIPTEN__)
-#define GFX_BACKEND_API GFX_BACKEND_WEBGPU
-#else
-// here we can choose between VULKAN, WEBGPU
-#define GFX_BACKEND_API GFX_BACKEND_VULKAN
-#endif
 
 // Log callback function
 static void logCallback(GfxLogLevel level, const char* message, void* userData)
@@ -84,6 +76,13 @@ typedef struct {
     float view[16]; // View matrix
     float projection[16]; // Projection matrix
 } UniformData;
+
+// Application settings/configuration
+typedef struct {
+    GfxBackend backend; // Graphics backend selection
+    GfxSampleCount msaaSampleCount; // MSAA sample count
+    bool vsync; // VSync enabled (FIFO) or disabled (IMMEDIATE)
+} Settings;
 
 // Per-frame-in-flight resources
 typedef struct {
@@ -163,6 +162,9 @@ typedef struct {
     float fpsTimeAccumulator;
     float fpsFrameTimeMin;
     float fpsFrameTimeMax;
+
+    // Application settings
+    Settings settings;
 } CubeApp;
 
 // Private function declarations
@@ -254,9 +256,11 @@ static bool createWindow(CubeApp* app, uint32_t width, uint32_t height)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    app->window = glfwCreateWindow(width, height,
-        "Cube Example - Unified Graphics API",
-        NULL, NULL);
+    const char* backendName = (app->settings.backend == GFX_BACKEND_VULKAN) ? "Vulkan" : "WebGPU";
+    char windowTitle[128];
+    snprintf(windowTitle, sizeof(windowTitle), "Cube Example - %s", backendName);
+
+    app->window = glfwCreateWindow(width, height, windowTitle, NULL, NULL);
 
     if (!app->window) {
         fprintf(stderr, "Failed to create GLFW window\n");
@@ -289,9 +293,10 @@ static bool createGraphics(CubeApp* app)
 
     // Load the graphics backend BEFORE creating an instance
     // This is now decoupled - you load the backend API once at startup
-    printf("Loading graphics backend...\n");
-    if (gfxLoadBackend(GFX_BACKEND_API) != GFX_RESULT_SUCCESS) {
-        fprintf(stderr, "Failed to load any graphics backend\n");
+    const char* backendName = (app->settings.backend == GFX_BACKEND_VULKAN) ? "Vulkan" : "WebGPU";
+    printf("Loading graphics backend (%s)...\n", backendName);
+    if (gfxLoadBackend(app->settings.backend) != GFX_RESULT_SUCCESS) {
+        fprintf(stderr, "Failed to load graphics backend\n");
         return false;
     }
     printf("Graphics backend loaded successfully!\n");
@@ -301,7 +306,7 @@ static bool createGraphics(CubeApp* app)
     GfxInstanceDescriptor instanceDesc = {};
     instanceDesc.sType = GFX_STRUCTURE_TYPE_INSTANCE_DESCRIPTOR;
     instanceDesc.pNext = NULL;
-    instanceDesc.backend = GFX_BACKEND_API;
+    instanceDesc.backend = app->settings.backend;
     instanceDesc.applicationName = "Cube Example (C)";
     instanceDesc.applicationVersion = 1;
     instanceDesc.enabledExtensions = instanceExtensions;
@@ -428,7 +433,7 @@ static void destroyGraphics(CubeApp* app)
 
     // Unload the backend API after destroying all instances
     printf("Unloading graphics backend...\n");
-    gfxUnloadBackend(GFX_BACKEND_API);
+    gfxUnloadBackend(app->settings.backend);
 }
 
 static bool createPerFrameResources(CubeApp* app)
@@ -627,10 +632,10 @@ static bool createRenderPass(CubeApp* app)
     // Define color attachment target with MSAA
     GfxRenderPassColorAttachmentTarget colorTarget = {
         .format = app->swapchainInfo.format,
-        .sampleCount = MSAA_SAMPLE_COUNT,
+        .sampleCount = app->settings.msaaSampleCount,
         .ops = {
             .loadOp = GFX_LOAD_OP_CLEAR,
-            .storeOp = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? GFX_STORE_OP_DONT_CARE : GFX_STORE_OP_STORE },
+            .storeOp = (app->settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? GFX_STORE_OP_DONT_CARE : GFX_STORE_OP_STORE },
         .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
     };
 
@@ -647,13 +652,13 @@ static bool createRenderPass(CubeApp* app)
     // Bundle color attachment with optional resolve
     GfxRenderPassColorAttachment colorAttachment = {
         .target = colorTarget,
-        .resolveTarget = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? &resolveTarget : NULL
+        .resolveTarget = (app->settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? &resolveTarget : NULL
     };
 
     // Define depth/stencil attachment target
     GfxRenderPassDepthStencilAttachmentTarget depthTarget = {
         .format = DEPTH_FORMAT,
-        .sampleCount = MSAA_SAMPLE_COUNT,
+        .sampleCount = app->settings.msaaSampleCount,
         .depthOps = {
             .loadOp = GFX_LOAD_OP_CLEAR,
             .storeOp = GFX_STORE_OP_DONT_CARE },
@@ -701,7 +706,7 @@ static bool createSwapchain(CubeApp* app, uint32_t width, uint32_t height)
     swapchainDesc.extent.height = height;
     swapchainDesc.format = COLOR_FORMAT;
     swapchainDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
-    swapchainDesc.presentMode = GFX_PRESENT_MODE_FIFO;
+    swapchainDesc.presentMode = app->settings.vsync ? GFX_PRESENT_MODE_FIFO : GFX_PRESENT_MODE_IMMEDIATE;
     swapchainDesc.imageCount = app->framesInFlightCount;
 
     if (gfxDeviceCreateSwapchain(app->device, &swapchainDesc, &app->swapchain) != GFX_RESULT_SUCCESS) {
@@ -739,7 +744,7 @@ static bool createRenderTargetTextures(CubeApp* app, uint32_t width, uint32_t he
     depthTextureDesc.size = (GfxExtent3D){ .width = width, .height = height, .depth = 1 };
     depthTextureDesc.arrayLayerCount = 1;
     depthTextureDesc.mipLevelCount = 1;
-    depthTextureDesc.sampleCount = MSAA_SAMPLE_COUNT;
+    depthTextureDesc.sampleCount = app->settings.msaaSampleCount;
     depthTextureDesc.format = DEPTH_FORMAT;
     depthTextureDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
@@ -765,7 +770,7 @@ static bool createRenderTargetTextures(CubeApp* app, uint32_t width, uint32_t he
         return false;
     }
 
-    // Create MSAA color texture (is unused if MSAA_SAMPLE_COUNT == 1)
+    // Create MSAA color texture (is unused if MSAA sample count == 1)
     GfxTextureDescriptor msaaColorTextureDesc = {};
     msaaColorTextureDesc.sType = GFX_STRUCTURE_TYPE_TEXTURE_DESCRIPTOR;
     msaaColorTextureDesc.pNext = NULL;
@@ -774,7 +779,7 @@ static bool createRenderTargetTextures(CubeApp* app, uint32_t width, uint32_t he
     msaaColorTextureDesc.size = (GfxExtent3D){ .width = width, .height = height, .depth = 1 };
     msaaColorTextureDesc.arrayLayerCount = 1;
     msaaColorTextureDesc.mipLevelCount = 1;
-    msaaColorTextureDesc.sampleCount = MSAA_SAMPLE_COUNT;
+    msaaColorTextureDesc.sampleCount = app->settings.msaaSampleCount;
     msaaColorTextureDesc.format = app->swapchainInfo.format;
     msaaColorTextureDesc.usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT;
 
@@ -783,7 +788,7 @@ static bool createRenderTargetTextures(CubeApp* app, uint32_t width, uint32_t he
         return false;
     }
 
-    // Create MSAA color texture view (is unused if MSAA_SAMPLE_COUNT == 1)
+    // Create MSAA color texture view (is unused if MSAA sample count == 1)
     GfxTextureViewDescriptor msaaColorViewDesc = {};
     msaaColorViewDesc.sType = GFX_STRUCTURE_TYPE_TEXTURE_VIEW_DESCRIPTOR;
     msaaColorViewDesc.pNext = NULL;
@@ -846,8 +851,8 @@ static bool createFrameBuffers(CubeApp* app, uint32_t width, uint32_t height)
 
         // Bundle color view with resolve target
         GfxFramebufferAttachment fbColorAttachment = {
-            .view = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? app->msaaColorTextureView : backbuffer,
-            .resolveTarget = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? backbuffer : NULL
+            .view = (app->settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? app->msaaColorTextureView : backbuffer,
+            .resolveTarget = (app->settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? backbuffer : NULL
         };
 
         // Depth/stencil attachment (no resolve)
@@ -1590,7 +1595,7 @@ static bool createRenderPipeline(CubeApp* app)
     pipelineDesc.fragment = &fragmentState;
     pipelineDesc.primitive = &primitiveState;
     pipelineDesc.depthStencil = &depthStencilState;
-    pipelineDesc.sampleCount = MSAA_SAMPLE_COUNT;
+    pipelineDesc.sampleCount = app->settings.msaaSampleCount;
     pipelineDesc.renderPass = app->renderPass;
     pipelineDesc.bindGroupLayouts = bindGroupLayouts;
     pipelineDesc.bindGroupLayoutCount = 2;
@@ -2238,11 +2243,96 @@ static void emscriptenMainLoop(void* userData)
 }
 #endif
 
-int main(void)
+static bool parseArguments(int argc, char** argv, Settings* settings)
+{
+#if defined(__EMSCRIPTEN__)
+    settings->backend = GFX_BACKEND_WEBGPU;
+#else
+    settings->backend = GFX_BACKEND_VULKAN;
+#endif
+    settings->msaaSampleCount = GFX_SAMPLE_COUNT_4;
+    settings->vsync = true; // VSync on by default
+
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "--backend") == 0 && i + 1 < argc) {
+            i++;
+            if (strcmp(argv[i], "vulkan") == 0) {
+                settings->backend = GFX_BACKEND_VULKAN;
+            } else if (strcmp(argv[i], "webgpu") == 0) {
+                settings->backend = GFX_BACKEND_WEBGPU;
+            } else {
+                fprintf(stderr, "Unknown backend: %s\n", argv[i]);
+                return false;
+            }
+        } else if (strcmp(argv[i], "--msaa") == 0 && i + 1 < argc) {
+            i++;
+            int samples = atoi(argv[i]);
+            switch (samples) {
+            case 1:
+                settings->msaaSampleCount = GFX_SAMPLE_COUNT_1;
+                break;
+            case 2:
+                settings->msaaSampleCount = GFX_SAMPLE_COUNT_2;
+                break;
+            case 4:
+                settings->msaaSampleCount = GFX_SAMPLE_COUNT_4;
+                break;
+            case 8:
+                settings->msaaSampleCount = GFX_SAMPLE_COUNT_8;
+                break;
+            case 16:
+                settings->msaaSampleCount = GFX_SAMPLE_COUNT_16;
+                break;
+            case 32:
+                settings->msaaSampleCount = GFX_SAMPLE_COUNT_32;
+                break;
+            case 64:
+                settings->msaaSampleCount = GFX_SAMPLE_COUNT_64;
+                break;
+            default:
+                fprintf(stderr, "Invalid MSAA sample count: %d\n", samples);
+                fprintf(stderr, "Valid values: 1, 2, 4, 8, 16, 32, 64\n");
+                return false;
+            }
+        } else if (strcmp(argv[i], "--vsync") == 0 && i + 1 < argc) {
+            i++;
+            int vsync = atoi(argv[i]);
+            if (vsync == 0) {
+                settings->vsync = false;
+            } else if (vsync == 1) {
+                settings->vsync = true;
+            } else {
+                fprintf(stderr, "Invalid vsync value: %s\n", argv[i]);
+                fprintf(stderr, "Valid values: 0 (off), 1 (on)\n");
+                return false;
+            }
+        } else if (strcmp(argv[i], "--help") == 0) {
+            printf("Usage: %s [options]\n", argv[0]);
+            printf("Options:\n");
+            printf("  --backend [vulkan|webgpu]   Select graphics backend\n");
+            printf("  --msaa [1|2|4|8]            Select MSAA sample count\n");
+            printf("  --vsync [0|1]               VSync: 0=off, 1=on\n");
+            printf("  --help                      Show this help message\n");
+            return false;
+        } else {
+            fprintf(stderr, "Unknown argument: %s\n", argv[i]);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+int main(int argc, char** argv)
 {
     printf("=== Cube Example with Unified Graphics API (C) ===\n\n");
 
     CubeApp app = { 0 }; // Initialize all members to NULL/0
+
+    // Parse command line arguments
+    if (!parseArguments(argc, argv, &app.settings)) {
+        return 0;
+    }
 
     // Initialize all resources and state
     if (!init(&app)) {

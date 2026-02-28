@@ -45,15 +45,12 @@
 constexpr uint32_t WINDOW_WIDTH = 800;
 constexpr uint32_t WINDOW_HEIGHT = 600;
 constexpr uint32_t CUBE_COUNT = 12;
-constexpr GfxSampleCount MSAA_SAMPLE_COUNT = GFX_SAMPLE_COUNT_4;
 constexpr GfxFormat COLOR_FORMAT = GFX_FORMAT_B8G8R8A8_UNORM_SRGB;
 constexpr GfxFormat DEPTH_FORMAT = GFX_FORMAT_DEPTH32_FLOAT;
 
 #if defined(__EMSCRIPTEN__)
-constexpr GfxBackend GFX_BACKEND_API = GFX_BACKEND_WEBGPU;
 constexpr bool USE_THREADING = false;
 #else
-constexpr GfxBackend GFX_BACKEND_API = GFX_BACKEND_VULKAN;
 constexpr bool USE_THREADING = true;
 #endif
 
@@ -158,6 +155,13 @@ struct UniformData {
     std::array<std::array<float, 4>, 4> projection; // Projection matrix
 };
 
+// Settings structure for command-line arguments
+struct Settings {
+    GfxBackend backend;
+    GfxSampleCount msaaSampleCount;
+    bool vsync;
+};
+
 // Per-frame resources for threaded rendering
 struct PerFrameResources {
     // Synchronization
@@ -195,7 +199,7 @@ bool vectorNormalize(float& x, float& y, float& z);
 // Main application class
 class CubeApp {
 public:
-    CubeApp() = default;
+    explicit CubeApp(const Settings& settings);
     ~CubeApp() = default;
 
     bool init();
@@ -252,6 +256,8 @@ private:
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 private:
+    Settings settings;
+
     // Public for GLFW callbacks
     GLFWwindow* window = nullptr;
     uint32_t windowWidth = WINDOW_WIDTH;
@@ -315,6 +321,11 @@ private:
     std::unique_ptr<ThreadPool> threadPool;
     std::atomic<uint32_t> currentImageIndex{ 0 };
 };
+
+CubeApp::CubeApp(const Settings& settings)
+    : settings(settings)
+{
+}
 
 bool CubeApp::init()
 {
@@ -424,9 +435,11 @@ bool CubeApp::createWindow(uint32_t width, uint32_t height)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    const char* title = USE_THREADING ? "Threaded Cube Example (C++ ThreadPool) - Parallel Command Recording" : "Cube Example (C++) - Unified Graphics API";
+    std::string backendName = (settings.backend == GFX_BACKEND_VULKAN) ? "Vulkan" : "WebGPU";
+    std::string threadingInfo = USE_THREADING ? " (Threaded) - Parallel Command Recording" : "";
+    std::string title = "Cube Example (C++ ThreadPool) - " + backendName + threadingInfo;
 
-    window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+    window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
     if (!window) {
         std::cerr << "Failed to create GLFW window\n";
         glfwTerminate();
@@ -454,14 +467,14 @@ bool CubeApp::createGraphics()
     // Set up logging callback
     gfxSetLogCallback(logCallback, nullptr);
 
-    auto result = gfxLoadBackend(GFX_BACKEND_API);
+    auto result = gfxLoadBackend(settings.backend);
     if (result != GFX_RESULT_SUCCESS) {
         std::cerr << "Failed to load graphics backend: " << gfxResultToString(result) << std::endl;
         return false;
     }
 
     std::cout << "Loading graphics backend...\n";
-    if (gfxLoadBackend(GFX_BACKEND_API) != GFX_RESULT_SUCCESS) {
+    if (gfxLoadBackend(settings.backend) != GFX_RESULT_SUCCESS) {
         std::cerr << "Failed to load graphics backend\n";
         return false;
     }
@@ -470,7 +483,7 @@ bool CubeApp::createGraphics()
     // Create instance
     const char* instanceExtensions[] = { GFX_INSTANCE_EXTENSION_SURFACE, GFX_INSTANCE_EXTENSION_DEBUG };
     GfxInstanceDescriptor instanceDesc = {
-        .backend = GFX_BACKEND_API,
+        .backend = settings.backend,
         .applicationName = "Cube Example (C++ ThreadPool)",
         .applicationVersion = 1,
         .enabledExtensions = instanceExtensions,
@@ -593,7 +606,7 @@ void CubeApp::destroyGraphics()
     }
 
     std::cout << "Unloading graphics backend..." << std::endl;
-    gfxUnloadBackend(GFX_BACKEND_API);
+    gfxUnloadBackend(settings.backend);
 }
 
 bool CubeApp::createSwapchain(uint32_t width, uint32_t height)
@@ -604,7 +617,7 @@ bool CubeApp::createSwapchain(uint32_t width, uint32_t height)
         .extent = { width, height },
         .format = COLOR_FORMAT,
         .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT,
-        .presentMode = GFX_PRESENT_MODE_IMMEDIATE,
+        .presentMode = settings.vsync ? GFX_PRESENT_MODE_FIFO : GFX_PRESENT_MODE_IMMEDIATE,
         .imageCount = framesInFlight
     };
 
@@ -640,7 +653,7 @@ bool CubeApp::createTextures(uint32_t width, uint32_t height)
         .size = { .width = width, .height = height, .depth = 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
-        .sampleCount = MSAA_SAMPLE_COUNT,
+        .sampleCount = settings.msaaSampleCount,
         .format = DEPTH_FORMAT,
         .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT
     };
@@ -672,7 +685,7 @@ bool CubeApp::createTextures(uint32_t width, uint32_t height)
         .size = { .width = width, .height = height, .depth = 1 },
         .arrayLayerCount = 1,
         .mipLevelCount = 1,
-        .sampleCount = MSAA_SAMPLE_COUNT,
+        .sampleCount = settings.msaaSampleCount,
         .format = swapchainInfo.format,
         .usage = GFX_TEXTURE_USAGE_RENDER_ATTACHMENT
     };
@@ -733,8 +746,8 @@ bool CubeApp::createFramebuffers(uint32_t width, uint32_t height)
         }
 
         GfxFramebufferAttachment fbColorAttachment = {
-            .view = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? msaaColorTextureView : backbuffer,
-            .resolveTarget = (MSAA_SAMPLE_COUNT > GFX_SAMPLE_COUNT_1) ? backbuffer : nullptr
+            .view = (settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? msaaColorTextureView : backbuffer,
+            .resolveTarget = (settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? backbuffer : nullptr
         };
 
         GfxFramebufferAttachment fbDepthAttachment = {
@@ -778,7 +791,7 @@ bool CubeApp::createRenderPass()
     // Clear pass target
     GfxRenderPassColorAttachmentTarget clearColorTarget = {
         .format = swapchainInfo.format,
-        .sampleCount = MSAA_SAMPLE_COUNT,
+        .sampleCount = settings.msaaSampleCount,
         .ops = { .loadOp = GFX_LOAD_OP_CLEAR, .storeOp = GFX_STORE_OP_STORE },
         .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
     };
@@ -786,7 +799,7 @@ bool CubeApp::createRenderPass()
     // Load pass target
     GfxRenderPassColorAttachmentTarget colorTarget = {
         .format = swapchainInfo.format,
-        .sampleCount = MSAA_SAMPLE_COUNT,
+        .sampleCount = settings.msaaSampleCount,
         .ops = { .loadOp = GFX_LOAD_OP_LOAD, .storeOp = GFX_STORE_OP_STORE },
         .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
     };
@@ -808,7 +821,7 @@ bool CubeApp::createRenderPass()
 
     GfxRenderPassDepthStencilAttachmentTarget depthTarget = {
         .format = DEPTH_FORMAT,
-        .sampleCount = MSAA_SAMPLE_COUNT,
+        .sampleCount = settings.msaaSampleCount,
         .depthOps = { .loadOp = GFX_LOAD_OP_CLEAR, .storeOp = GFX_STORE_OP_DONT_CARE },
         .stencilOps = { .loadOp = GFX_LOAD_OP_DONT_CARE, .storeOp = GFX_STORE_OP_DONT_CARE },
         .finalLayout = GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT
@@ -863,7 +876,7 @@ bool CubeApp::createRenderPass()
 
     GfxRenderPassDepthStencilAttachmentTarget resolveDepthTarget = {
         .format = DEPTH_FORMAT,
-        .sampleCount = MSAA_SAMPLE_COUNT,
+        .sampleCount = this->settings.msaaSampleCount,
         .depthOps = { .loadOp = GFX_LOAD_OP_LOAD, .storeOp = GFX_STORE_OP_DONT_CARE },
         .stencilOps = { .loadOp = GFX_LOAD_OP_DONT_CARE, .storeOp = GFX_STORE_OP_DONT_CARE },
         .finalLayout = GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT
@@ -1275,7 +1288,7 @@ bool CubeApp::createRenderPipeline()
     pipelineDesc.fragment = &fragmentState;
     pipelineDesc.primitive = &primitiveState;
     pipelineDesc.depthStencil = &depthStencilState;
-    pipelineDesc.sampleCount = MSAA_SAMPLE_COUNT;
+    pipelineDesc.sampleCount = this->settings.msaaSampleCount;
     pipelineDesc.renderPass = renderPass;
     pipelineDesc.bindGroupLayouts = bindGroupLayouts;
     pipelineDesc.bindGroupLayoutCount = 1;
@@ -2058,19 +2071,94 @@ bool vectorNormalize(float& x, float& y, float& z)
 }
 } // namespace math
 
-int main()
+bool parseArguments(int argc, char** argv, Settings& settings)
+{
+    // Set defaults
+#if defined(__EMSCRIPTEN__)
+    settings.backend = GFX_BACKEND_WEBGPU;
+#else
+    settings.backend = GFX_BACKEND_VULKAN;
+#endif
+    settings.msaaSampleCount = GFX_SAMPLE_COUNT_4;
+    settings.vsync = true;
+
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+
+        if (arg == "--help" || arg == "-h") {
+            std::cout << "Usage: " << argv[0] << " [options]\n";
+            std::cout << "Options:\n";
+            std::cout << "  --backend [vulkan|webgpu]  Select backend (default: vulkan on native, webgpu on emscripten)\n";
+            std::cout << "  --msaa [1|2|4|8|16|32|64]  MSAA sample count (default: 4)\n";
+            std::cout << "  --vsync [0|1]              Enable/disable vsync (default: 1)\n";
+            std::cout << "  --help, -h                 Show this help message\n";
+            return false;
+        } else if (arg == "--backend" && i + 1 < argc) {
+            std::string backend = argv[++i];
+            if (backend == "vulkan") {
+                settings.backend = GFX_BACKEND_VULKAN;
+            } else if (backend == "webgpu") {
+                settings.backend = GFX_BACKEND_WEBGPU;
+            } else {
+                std::cerr << "Error: Invalid backend '" << backend << "'. Use 'vulkan' or 'webgpu'." << std::endl;
+                return false;
+            }
+        } else if (arg == "--msaa" && i + 1 < argc) {
+            int msaa = std::atoi(argv[++i]);
+            switch (msaa) {
+            case 1:
+                settings.msaaSampleCount = GFX_SAMPLE_COUNT_1;
+                break;
+            case 2:
+                settings.msaaSampleCount = GFX_SAMPLE_COUNT_2;
+                break;
+            case 4:
+                settings.msaaSampleCount = GFX_SAMPLE_COUNT_4;
+                break;
+            case 8:
+                settings.msaaSampleCount = GFX_SAMPLE_COUNT_8;
+                break;
+            case 16:
+                settings.msaaSampleCount = GFX_SAMPLE_COUNT_16;
+                break;
+            case 32:
+                settings.msaaSampleCount = GFX_SAMPLE_COUNT_32;
+                break;
+            case 64:
+                settings.msaaSampleCount = GFX_SAMPLE_COUNT_64;
+                break;
+            default:
+                std::cerr << "Error: Invalid MSAA sample count '" << msaa << "'. Use 1, 2, 4, 8, 16, 32, or 64." << std::endl;
+                return false;
+            }
+        } else if (arg == "--vsync" && i + 1 < argc) {
+            int vsync = std::atoi(argv[++i]);
+            settings.vsync = (vsync != 0);
+        } else {
+            std::cerr << "Error: Unknown argument '" << arg << "'" << std::endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+int main(int argc, char** argv)
 {
     std::cout << "=== Threaded Cube Example (C++ ThreadPool with C API) ===" << std::endl
               << std::endl;
 
-    CubeApp app;
+    Settings settings;
+    if (!parseArguments(argc, argv, settings)) {
+        return 0;
+    }
 
+    CubeApp app(settings);
     if (!app.init()) {
         std::cerr << "Failed to initialize application" << std::endl;
         app.cleanup();
         return -1;
     }
-
     app.run();
     app.cleanup();
 
