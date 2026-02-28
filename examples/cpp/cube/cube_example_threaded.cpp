@@ -173,6 +173,7 @@ struct PerFrameResources {
     // Command encoders
     GfxCommandEncoder clearEncoder = nullptr;
     GfxCommandEncoder resolveEncoder = nullptr;
+    GfxCommandEncoder transitionEncoder = nullptr; // For COLOR_ATTACHMENT->PRESENT_SRC (MSAA=1)
     std::vector<GfxCommandEncoder> cubeEncoders; // One per cube
 
     // Bind groups
@@ -240,6 +241,7 @@ private:
     void recordClearCommands(uint32_t imageIndex);
     void recordCubeCommands(int cubeIndex, uint32_t imageIndex);
     void recordResolveCommands(uint32_t imageIndex);
+    void recordLayoutTransition(uint32_t imageIndex);
     void render();
     float getCurrentTime();
     bool mainLoopIteration();
@@ -281,6 +283,7 @@ private:
     GfxShader fragmentShader = nullptr;
     GfxRenderPass clearRenderPass = nullptr;
     GfxRenderPass renderPass = nullptr;
+    GfxRenderPass transitionRenderPass = nullptr; // For layout transition (MSAA=1)
     GfxRenderPass resolveRenderPass = nullptr;
     GfxRenderPipeline renderPipeline = nullptr;
     GfxBindGroupLayout uniformBindGroupLayout = nullptr;
@@ -793,7 +796,7 @@ bool CubeApp::createRenderPass()
         .format = swapchainInfo.format,
         .sampleCount = settings.msaaSampleCount,
         .ops = { .loadOp = GFX_LOAD_OP_CLEAR, .storeOp = GFX_STORE_OP_STORE },
-        .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
+        .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT // Always COLOR_ATTACHMENT so subsequent passes can LOAD
     };
 
     // Load pass target
@@ -801,7 +804,7 @@ bool CubeApp::createRenderPass()
         .format = swapchainInfo.format,
         .sampleCount = settings.msaaSampleCount,
         .ops = { .loadOp = GFX_LOAD_OP_LOAD, .storeOp = GFX_STORE_OP_STORE },
-        .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
+        .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT // Keep in COLOR_ATTACHMENT (renderPassFinal handles PRESENT_SRC)
     };
 
     // Resolve target
@@ -835,7 +838,7 @@ bool CubeApp::createRenderPass()
     // Clear render pass
     GfxRenderPassColorAttachment clearColorAttachment = {
         .target = clearColorTarget,
-        .resolveTarget = &dummyResolveTarget
+        .resolveTarget = (settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? &dummyResolveTarget : nullptr
     };
 
     GfxRenderPassDescriptor clearPassDesc = {
@@ -853,7 +856,7 @@ bool CubeApp::createRenderPass()
     // Main render pass
     GfxRenderPassColorAttachment colorAttachment = {
         .target = colorTarget,
-        .resolveTarget = &dummyResolveTarget
+        .resolveTarget = (settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? &dummyResolveTarget : nullptr
     };
 
     GfxRenderPassDescriptor renderPassDesc = {
@@ -868,10 +871,51 @@ bool CubeApp::createRenderPass()
         return false;
     }
 
+    // Transition render pass (MSAA=1: COLOR_ATTACHMENT->PRESENT_SRC)
+    if (settings.msaaSampleCount == GFX_SAMPLE_COUNT_1) {
+        GfxRenderPassColorAttachmentTarget transitionColorTarget = {
+            .format = swapchainInfo.format,
+            .sampleCount = settings.msaaSampleCount,
+            .ops = { .loadOp = GFX_LOAD_OP_LOAD, .storeOp = GFX_STORE_OP_STORE },
+            .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
+        };
+
+        GfxRenderPassColorAttachment transitionColorAttachment = {
+            .target = transitionColorTarget,
+            .resolveTarget = nullptr
+        };
+
+        // Depth attachment for framebuffer compatibility (not actually used)
+        GfxRenderPassDepthStencilAttachmentTarget transitionDepthTarget = {
+            .format = DEPTH_FORMAT,
+            .sampleCount = settings.msaaSampleCount,
+            .depthOps = { .loadOp = GFX_LOAD_OP_DONT_CARE, .storeOp = GFX_STORE_OP_DONT_CARE },
+            .stencilOps = { .loadOp = GFX_LOAD_OP_DONT_CARE, .storeOp = GFX_STORE_OP_DONT_CARE },
+            .finalLayout = GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT
+        };
+
+        GfxRenderPassDepthStencilAttachment transitionDepthAttachment = {
+            .target = transitionDepthTarget,
+            .resolveTarget = nullptr
+        };
+
+        GfxRenderPassDescriptor transitionPassDesc = {
+            .label = "Layout Transition Pass",
+            .colorAttachments = &transitionColorAttachment,
+            .colorAttachmentCount = 1,
+            .depthStencilAttachment = &transitionDepthAttachment
+        };
+
+        if (gfxDeviceCreateRenderPass(device, &transitionPassDesc, &transitionRenderPass) != GFX_RESULT_SUCCESS) {
+            std::cerr << "Failed to create transition render pass\n";
+            return false;
+        }
+    }
+
     // Resolve render pass
     GfxRenderPassColorAttachment resolveColorAttachment = {
         .target = colorTarget,
-        .resolveTarget = &resolveTarget
+        .resolveTarget = (settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? &resolveTarget : nullptr
     };
 
     GfxRenderPassDepthStencilAttachmentTarget resolveDepthTarget = {
@@ -907,6 +951,10 @@ void CubeApp::destroyRenderPass()
     if (resolveRenderPass) {
         gfxRenderPassDestroy(resolveRenderPass);
         resolveRenderPass = nullptr;
+    }
+    if (transitionRenderPass) {
+        gfxRenderPassDestroy(transitionRenderPass);
+        transitionRenderPass = nullptr;
     }
     if (clearRenderPass) {
         gfxRenderPassDestroy(clearRenderPass);
@@ -1385,6 +1433,14 @@ bool CubeApp::createPerFrameResources()
             return false;
         }
 
+        // Create transition encoder
+        labelStr = std::format("Transition Encoder Frame {}", i);
+        GfxCommandEncoderDescriptor transitionEncoderDesc = { .label = labelStr.c_str() };
+        if (gfxDeviceCreateCommandEncoder(device, &transitionEncoderDesc, &frame.transitionEncoder) != GFX_RESULT_SUCCESS) {
+            std::cerr << std::format("Failed to create transition encoder {}\n", i);
+            return false;
+        }
+
         // Create bind groups
         frame.uniformBindGroups.resize(CUBE_COUNT);
         for (size_t cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
@@ -1451,6 +1507,10 @@ void CubeApp::destroyPerFrameResources()
         if (frame.resolveEncoder) {
             gfxCommandEncoderDestroy(frame.resolveEncoder);
             frame.resolveEncoder = nullptr;
+        }
+        if (frame.transitionEncoder) {
+            gfxCommandEncoderDestroy(frame.transitionEncoder);
+            frame.transitionEncoder = nullptr;
         }
 
         // Destroy synchronization objects
@@ -1620,6 +1680,31 @@ void CubeApp::recordResolveCommands(uint32_t imageIndex)
     gfxCommandEncoderEnd(frame.resolveEncoder);
 }
 
+void CubeApp::recordLayoutTransition(uint32_t imageIndex)
+{
+    auto& frame = frameResources[currentFrame];
+    gfxCommandEncoderBegin(frame.transitionEncoder);
+
+    // Use an empty render pass to transition layout via initialLayout/finalLayout
+    GfxRenderPassBeginDescriptor beginDesc = {
+        .label = "Layout Transition Pass",
+        .renderPass = transitionRenderPass,
+        .framebuffer = framebuffers[imageIndex],
+        .colorClearValues = nullptr,
+        .colorClearValueCount = 0,
+        .depthClearValue = 1.0f,
+        .stencilClearValue = 0
+    };
+
+    GfxRenderPassEncoder renderPass;
+    if (gfxCommandEncoderBeginRenderPass(frame.transitionEncoder, &beginDesc, &renderPass) == GFX_RESULT_SUCCESS) {
+        // Empty pass - just transitions layout
+        gfxRenderPassEncoderEnd(renderPass);
+    }
+
+    gfxCommandEncoderEnd(frame.transitionEncoder);
+}
+
 void CubeApp::render()
 {
     auto& frame = frameResources[currentFrame];
@@ -1673,30 +1758,60 @@ void CubeApp::render()
             cubeEncoderArray[i] = frame.cubeEncoders[i];
         }
 
-        GfxSubmitDescriptor cubesSubmit = {
-            .commandEncoders = cubeEncoderArray.data(),
-            .commandEncoderCount = static_cast<uint32_t>(cubeEncoderArray.size()),
-            .waitSemaphores = &frame.clearFinishedSemaphore,
-            .waitSemaphoreCount = 1,
-            .signalSemaphores = nullptr,
-            .signalSemaphoreCount = 0,
-            .signalFence = nullptr
-        };
-        gfxQueueSubmit(queue, &cubesSubmit);
+        // When MSAA > 1, we need a resolve pass after cube rendering
+        // When MSAA == 1, we render directly to swapchain so no resolve needed
+        if (settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) {
+            GfxSubmitDescriptor cubesSubmit = {
+                .commandEncoders = cubeEncoderArray.data(),
+                .commandEncoderCount = static_cast<uint32_t>(cubeEncoderArray.size()),
+                .waitSemaphores = &frame.clearFinishedSemaphore,
+                .waitSemaphoreCount = 1,
+                .signalSemaphores = nullptr,
+                .signalSemaphoreCount = 0,
+                .signalFence = nullptr
+            };
+            gfxQueueSubmit(queue, &cubesSubmit);
 
-        // Submit resolve encoder
-        recordResolveCommands(imageIndex);
+            // Submit resolve encoder
+            recordResolveCommands(imageIndex);
 
-        GfxSubmitDescriptor resolveSubmit = {
-            .commandEncoders = &frame.resolveEncoder,
-            .commandEncoderCount = 1,
-            .waitSemaphores = nullptr,
-            .waitSemaphoreCount = 0,
-            .signalSemaphores = &frame.renderFinishedSemaphore,
-            .signalSemaphoreCount = 1,
-            .signalFence = frame.inFlightFence
-        };
-        gfxQueueSubmit(queue, &resolveSubmit);
+            GfxSubmitDescriptor resolveSubmit = {
+                .commandEncoders = &frame.resolveEncoder,
+                .commandEncoderCount = 1,
+                .waitSemaphores = nullptr,
+                .waitSemaphoreCount = 0,
+                .signalSemaphores = &frame.renderFinishedSemaphore,
+                .signalSemaphoreCount = 1,
+                .signalFence = frame.inFlightFence
+            };
+            gfxQueueSubmit(queue, &resolveSubmit);
+        } else {
+            // No MSAA: submit cube rendering, then layout transition
+            GfxSubmitDescriptor cubesSubmit = {
+                .commandEncoders = cubeEncoderArray.data(),
+                .commandEncoderCount = static_cast<uint32_t>(cubeEncoderArray.size()),
+                .waitSemaphores = &frame.clearFinishedSemaphore,
+                .waitSemaphoreCount = 1,
+                .signalSemaphores = nullptr,
+                .signalSemaphoreCount = 0,
+                .signalFence = nullptr
+            };
+            gfxQueueSubmit(queue, &cubesSubmit);
+
+            // Submit layout transition
+            recordLayoutTransition(imageIndex);
+
+            GfxSubmitDescriptor transitionSubmit = {
+                .commandEncoders = &frame.transitionEncoder,
+                .commandEncoderCount = 1,
+                .waitSemaphores = nullptr,
+                .waitSemaphoreCount = 0,
+                .signalSemaphores = &frame.renderFinishedSemaphore,
+                .signalSemaphoreCount = 1,
+                .signalFence = frame.inFlightFence
+            };
+            gfxQueueSubmit(queue, &transitionSubmit);
+        }
     } else {
         // Non-threaded path for WebGPU
         GfxCommandEncoder encoder = frame.cubeEncoders[0];

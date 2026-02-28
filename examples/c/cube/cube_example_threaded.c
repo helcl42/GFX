@@ -90,6 +90,7 @@ typedef struct {
     GfxCommandEncoder clearEncoder;
     GfxCommandEncoder cubeEncoders[CUBE_COUNT]; // One per cube for parallel recording
     GfxCommandEncoder resolveEncoder;
+    GfxCommandEncoder transitionEncoder; // For COLOR_ATTACHMENT->PRESENT_SRC transition (MSAA=1 only)
     GfxSemaphore imageAvailableSemaphore;
     GfxSemaphore clearFinishedSemaphore;
     GfxSemaphore renderFinishedSemaphore;
@@ -128,6 +129,7 @@ typedef struct CubeApp {
     GfxShader fragmentShader;
     GfxRenderPass clearRenderPass; // For clear pass (UNDEFINED->COLOR_ATTACHMENT)
     GfxRenderPass renderPass; // For cube passes (LOAD from COLOR_ATTACHMENT)
+    GfxRenderPass transitionRenderPass; // For layout transition (COLOR_ATTACHMENT->PRESENT_SRC, MSAA=1 only)
     GfxRenderPass resolveRenderPass; // For final resolve pass (LOAD + resolve to swapchain)
     GfxRenderPipeline renderPipeline;
     GfxBindGroupLayout uniformBindGroupLayout;
@@ -223,6 +225,7 @@ static void* loadTextFile(const char* filepath, size_t* outSize);
 static void recordCubeCommands(CubeApp* app, int cubeIndex, uint32_t imageIndex);
 static void recordClearCommands(CubeApp* app, uint32_t imageIndex);
 static void recordResolveCommands(CubeApp* app, uint32_t imageIndex);
+static void recordLayoutTransition(CubeApp* app, uint32_t imageIndex);
 
 #if USE_THREADING
 static bool createThreading(CubeApp* app);
@@ -560,6 +563,18 @@ static bool createPerFrameResources(CubeApp* app)
             return false;
         }
 
+        // Create transition encoder (for COLOR_ATTACHMENT->PRESENT_SRC when MSAA=1)
+        snprintf(label, sizeof(label), "Transition Encoder %d", i);
+        GfxCommandEncoderDescriptor transitionEncoderDesc = {};
+        transitionEncoderDesc.sType = GFX_STRUCTURE_TYPE_COMMAND_ENCODER_DESCRIPTOR;
+        transitionEncoderDesc.pNext = NULL;
+        transitionEncoderDesc.label = label;
+
+        if (gfxDeviceCreateCommandEncoder(app->device, &transitionEncoderDesc, &frame->transitionEncoder) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create transition encoder %d\n", i);
+            return false;
+        }
+
         // Create bind groups for each cube in this frame
         for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
             snprintf(label, sizeof(label), "Uniform Bind Group (Frame %d, Cube %d)", i, cubeIdx);
@@ -645,6 +660,10 @@ static void destroyPerFrameResources(CubeApp* app)
             gfxCommandEncoderDestroy(frame->resolveEncoder);
             frame->resolveEncoder = NULL;
         }
+        if (frame->transitionEncoder) {
+            gfxCommandEncoderDestroy(frame->transitionEncoder);
+            frame->transitionEncoder = NULL;
+        }
         for (int cubeIdx = 0; cubeIdx < CUBE_COUNT; ++cubeIdx) {
             if (frame->cubeEncoders[cubeIdx]) {
                 gfxCommandEncoderDestroy(frame->cubeEncoders[cubeIdx]);
@@ -712,7 +731,7 @@ static bool createRenderPass(CubeApp* app)
         .ops = {
             .loadOp = GFX_LOAD_OP_LOAD,
             .storeOp = GFX_STORE_OP_STORE }, // STORE to preserve MSAA content across passes
-        .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
+        .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT // Keep in COLOR_ATTACHMENT (renderPassFinal handles PRESENT_SRC)
     };
 
     // Define resolve target (for MSAA -> non-MSAA resolve)
@@ -738,7 +757,7 @@ static bool createRenderPass(CubeApp* app)
     // Bundle color attachment - include resolve target for framebuffer compatibility
     GfxRenderPassColorAttachment colorAttachment = {
         .target = colorTarget,
-        .resolveTarget = &dummyResolveTarget // Include for compatibility, but DONT_CARE storeOp means no actual resolve
+        .resolveTarget = (app->settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? &dummyResolveTarget : NULL // Include for compatibility only when MSAA is used
     };
 
     // Define depth/stencil attachment target
@@ -764,12 +783,12 @@ static bool createRenderPass(CubeApp* app)
         .ops = {
             .loadOp = GFX_LOAD_OP_CLEAR,
             .storeOp = GFX_STORE_OP_STORE }, // STORE so it can be loaded by subsequent passes
-        .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
+        .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT // Always COLOR_ATTACHMENT so cube passes can LOAD it
     };
 
     GfxRenderPassColorAttachment clearColorAttachment = {
         .target = clearColorTarget,
-        .resolveTarget = &dummyResolveTarget // Include for framebuffer compatibility
+        .resolveTarget = (app->settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? &dummyResolveTarget : NULL // Include for framebuffer compatibility only when MSAA is used
     };
 
     GfxRenderPassDescriptor clearPassDesc = {};
@@ -798,6 +817,54 @@ static bool createRenderPass(CubeApp* app)
     if (gfxDeviceCreateRenderPass(app->device, &renderPassDesc, &app->renderPass) != GFX_RESULT_SUCCESS) {
         fprintf(stderr, "Failed to create render pass\n");
         return false;
+    }
+
+    // Create transition render pass (for MSAA=1: COLOR_ATTACHMENT->PRESENT_SRC)
+    if (app->settings.msaaSampleCount == GFX_SAMPLE_COUNT_1) {
+        GfxRenderPassColorAttachmentTarget transitionColorTarget = {
+            .format = app->swapchainInfo.format,
+            .sampleCount = app->settings.msaaSampleCount,
+            .ops = {
+                .loadOp = GFX_LOAD_OP_LOAD, // Load existing content
+                .storeOp = GFX_STORE_OP_STORE },
+            .finalLayout = GFX_TEXTURE_LAYOUT_PRESENT_SRC
+        };
+
+        GfxRenderPassColorAttachment transitionColorAttachment = {
+            .target = transitionColorTarget,
+            .resolveTarget = NULL
+        };
+
+        // Depth attachment for transition pass - just to match framebuffer, not actually used
+        GfxRenderPassDepthStencilAttachmentTarget transitionDepthTarget = {
+            .format = DEPTH_FORMAT,
+            .sampleCount = app->settings.msaaSampleCount,
+            .depthOps = {
+                .loadOp = GFX_LOAD_OP_DONT_CARE, // Don't care - not using depth
+                .storeOp = GFX_STORE_OP_DONT_CARE },
+            .stencilOps = { .loadOp = GFX_LOAD_OP_DONT_CARE, .storeOp = GFX_STORE_OP_DONT_CARE },
+            .finalLayout = GFX_TEXTURE_LAYOUT_DEPTH_STENCIL_ATTACHMENT
+        };
+
+        GfxRenderPassDepthStencilAttachment transitionDepthAttachment = {
+            .target = transitionDepthTarget,
+            .resolveTarget = NULL
+        };
+
+        GfxRenderPassDescriptor transitionPassDesc = {};
+        transitionPassDesc.sType = GFX_STRUCTURE_TYPE_RENDER_PASS_DESCRIPTOR;
+        transitionPassDesc.pNext = NULL;
+        transitionPassDesc.label = "Layout Transition Pass";
+        transitionPassDesc.colorAttachments = &transitionColorAttachment;
+        transitionPassDesc.colorAttachmentCount = 1;
+        transitionPassDesc.depthStencilAttachment = &transitionDepthAttachment; // Include for framebuffer compatibility
+
+        if (gfxDeviceCreateRenderPass(app->device, &transitionPassDesc, &app->transitionRenderPass) != GFX_RESULT_SUCCESS) {
+            fprintf(stderr, "Failed to create transition render pass\n");
+            return false;
+        }
+    } else {
+        app->transitionRenderPass = NULL;
     }
 
     // Create final resolve pass (loadOp=LOAD + resolve to swapchain)
@@ -843,6 +910,10 @@ static void destroyRenderPass(CubeApp* app)
     if (app->resolveRenderPass) {
         gfxRenderPassDestroy(app->resolveRenderPass);
         app->resolveRenderPass = NULL;
+    }
+    if (app->transitionRenderPass) {
+        gfxRenderPassDestroy(app->transitionRenderPass);
+        app->transitionRenderPass = NULL;
     }
     if (app->clearRenderPass) {
         gfxRenderPassDestroy(app->clearRenderPass);
@@ -1609,7 +1680,6 @@ static void recordCubeCommands(CubeApp* app, int cubeIndex, uint32_t imageIndex)
     gfxCommandEncoderBegin(encoder);
 
     // Begin render pass using pre-created render pass and framebuffer
-    // Only the first cube (index 0) clears the screen, others load existing content
     GfxColor clearColor = { 0.1f, 0.2f, 0.3f, 1.0f };
 
     GfxRenderPassBeginDescriptor beginDesc = {
@@ -1719,6 +1789,33 @@ static void recordResolveCommands(CubeApp* app, uint32_t imageIndex)
     GfxRenderPassEncoder renderPass;
     if (gfxCommandEncoderBeginRenderPass(encoder, &beginDesc, &renderPass) == GFX_RESULT_SUCCESS) {
         // Just begin and end - the resolve happens automatically
+        gfxRenderPassEncoderEnd(renderPass);
+    }
+
+    gfxCommandEncoderEnd(encoder);
+}
+
+// Record a simple layout transition from COLOR_ATTACHMENT to PRESENT_SRC (for MSAA=1 only)
+static void recordLayoutTransition(CubeApp* app, uint32_t imageIndex)
+{
+    PerFrameResources* frame = &app->frameResources[app->currentFrame];
+    GfxCommandEncoder encoder = frame->transitionEncoder;
+    gfxCommandEncoderBegin(encoder);
+
+    // Use an empty render pass to transition layout via initialLayout/finalLayout
+    GfxRenderPassBeginDescriptor beginDesc = {
+        .label = "Layout Transition Pass",
+        .renderPass = app->transitionRenderPass,
+        .framebuffer = app->framebuffers[imageIndex],
+        .colorClearValues = NULL,
+        .colorClearValueCount = 0,
+        .depthClearValue = 1.0f,
+        .stencilClearValue = 0
+    };
+
+    GfxRenderPassEncoder renderPass;
+    if (gfxCommandEncoderBeginRenderPass(encoder, &beginDesc, &renderPass) == GFX_RESULT_SUCCESS) {
+        // Empty pass - just begin and end to trigger layout transition
         gfxRenderPassEncoderEnd(renderPass);
     }
 
@@ -2127,28 +2224,58 @@ void render(CubeApp* app)
     cubesSubmit.commandEncoderCount = CUBE_COUNT;
     cubesSubmit.waitSemaphores = &frame->clearFinishedSemaphore;
     cubesSubmit.waitSemaphoreCount = 1;
-    cubesSubmit.signalSemaphores = NULL; // Don't signal yet, resolve pass will signal
-    cubesSubmit.signalSemaphoreCount = 0;
-    cubesSubmit.signalFence = NULL; // Don't signal fence yet
+
+    if (app->settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) {
+        // When using MSAA, don't signal yet - resolve pass will signal
+        cubesSubmit.signalSemaphores = NULL; // Don't signal yet, resolve pass will signal
+        cubesSubmit.signalSemaphoreCount = 0;
+        cubesSubmit.signalFence = NULL; // Don't signal fence yet
+    } else {
+        // When not using MSAA, don't signal yet - transition pass will signal
+        cubesSubmit.signalSemaphores = NULL;
+        cubesSubmit.signalSemaphoreCount = 0;
+        cubesSubmit.signalFence = NULL;
+    }
 
     gfxQueueSubmit(app->queue, &cubesSubmit);
 
-    // Record and submit final resolve pass
-    recordResolveCommands(app, imageIndex);
+    // Record and submit layout transition (only when MSAA == 1)
+    if (app->settings.msaaSampleCount == GFX_SAMPLE_COUNT_1) {
+        recordLayoutTransition(app, imageIndex);
 
-    GfxSubmitDescriptor resolveSubmit = {};
-    resolveSubmit.sType = GFX_STRUCTURE_TYPE_SUBMIT_DESCRIPTOR;
-    resolveSubmit.pNext = NULL;
+        GfxSubmitDescriptor transitionSubmit = {};
+        transitionSubmit.sType = GFX_STRUCTURE_TYPE_SUBMIT_DESCRIPTOR;
+        transitionSubmit.pNext = NULL;
 
-    resolveSubmit.commandEncoders = &frame->resolveEncoder;
-    resolveSubmit.commandEncoderCount = 1;
-    resolveSubmit.waitSemaphores = NULL; // No wait needed, depends on cube submits via queue ordering
-    resolveSubmit.waitSemaphoreCount = 0;
-    resolveSubmit.signalSemaphores = &frame->renderFinishedSemaphore;
-    resolveSubmit.signalSemaphoreCount = 1;
-    resolveSubmit.signalFence = frame->inFlightFence;
+        transitionSubmit.commandEncoders = &frame->transitionEncoder;
+        transitionSubmit.commandEncoderCount = 1;
+        transitionSubmit.waitSemaphores = NULL; // No wait needed, depends on cube submits via queue ordering
+        transitionSubmit.waitSemaphoreCount = 0;
+        transitionSubmit.signalSemaphores = &frame->renderFinishedSemaphore;
+        transitionSubmit.signalSemaphoreCount = 1;
+        transitionSubmit.signalFence = frame->inFlightFence;
 
-    gfxQueueSubmit(app->queue, &resolveSubmit);
+        gfxQueueSubmit(app->queue, &transitionSubmit);
+    }
+
+    // Record and submit final resolve pass (only when MSAA > 1)
+    if (app->settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) {
+        recordResolveCommands(app, imageIndex);
+
+        GfxSubmitDescriptor resolveSubmit = {};
+        resolveSubmit.sType = GFX_STRUCTURE_TYPE_SUBMIT_DESCRIPTOR;
+        resolveSubmit.pNext = NULL;
+
+        resolveSubmit.commandEncoders = &frame->resolveEncoder;
+        resolveSubmit.commandEncoderCount = 1;
+        resolveSubmit.waitSemaphores = NULL; // No wait needed, depends on cube submits via queue ordering
+        resolveSubmit.waitSemaphoreCount = 0;
+        resolveSubmit.signalSemaphores = &frame->renderFinishedSemaphore;
+        resolveSubmit.signalSemaphoreCount = 1;
+        resolveSubmit.signalFence = frame->inFlightFence;
+
+        gfxQueueSubmit(app->queue, &resolveSubmit);
+    }
 #else
     // Non-threaded path for WebGPU - record all cubes in ONE render pass
     GfxCommandEncoder encoder = frame->cubeEncoders[0];

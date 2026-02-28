@@ -635,7 +635,7 @@ static bool createRenderPass(CubeApp* app)
         .ops = {
             .loadOp = GFX_LOAD_OP_CLEAR,
             .storeOp = (app->settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? GFX_STORE_OP_DONT_CARE : GFX_STORE_OP_STORE },
-        .finalLayout = GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT
+        .finalLayout = (app->settings.msaaSampleCount > GFX_SAMPLE_COUNT_1) ? GFX_TEXTURE_LAYOUT_COLOR_ATTACHMENT : GFX_TEXTURE_LAYOUT_PRESENT_SRC
     };
 
     // Define resolve target (for MSAA -> non-MSAA resolve)
