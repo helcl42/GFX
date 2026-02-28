@@ -60,3 +60,10 @@ jobs:
           build_web/examples/web/compute_example_cpp_web.wasm
           build_web/examples/web/compute_example_cpp_web.data
         retention-days: 7
+
+    - name: Deploy Web
+      run: |
+        mkdir -p deploy
+        cp -r build_web/examples/web/* deploy/
+        # Copy the clean template from your repo to the deploy folder
+        cp web/index.html deploy/index.html

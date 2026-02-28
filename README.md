@@ -2,6 +2,8 @@
 
 A graphics library providing a low-level Vulkan-like API that works "identically" on both native platforms (via Vulkan/WebGPU) and the web (via WebGPU). Write your rendering code once using modern graphics concepts, and deploy everywhere without modifications - from high-performance desktop/mobile applications to web browsers.
 
+**🌐 [Try the live WebGPU examples in your browser!](https://helcl42.github.io/gfx/)**
+
 ## Features
 
 - **Unified API**: Single, consistent API across Vulkan and WebGPU backends(open for other backends like Metal, D3D12)
@@ -111,6 +113,8 @@ cmake -B build -DBUILD_SHARED_LIBS=OFF     # Build static libs (default: ON for 
 ### WebAssembly Build
 
 Build for the web using Emscripten:
+
+**🌐 [View live demos](https://helcl42.github.io/gfx/)** - All examples running in your browser via WebGPU!
 
 ```bash
 # Install Emscripten SDK (one-time setup)
